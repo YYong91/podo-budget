@@ -2,6 +2,7 @@
 
 from datetime import datetime
 
+import sqlalchemy
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -78,16 +79,11 @@ async def get_monthly_stats(
     by_category = [{"category": row.name or "미분류", "amount": float(row.amount)} for row in category_result.all()]
 
     # 일별 추이
+    day_col = func.cast(Expense.date, sqlalchemy.Date).label("day")
     daily_result = await db.execute(
-        select(
-            func.date_trunc("day", Expense.date).label("day"),
-            func.sum(Expense.amount).label("amount"),
-        )
-        .where(Expense.date >= start, Expense.date < end)
-        .group_by(func.date_trunc("day", Expense.date))
-        .order_by(func.date_trunc("day", Expense.date))
+        select(day_col, func.sum(Expense.amount).label("amount")).where(Expense.date >= start, Expense.date < end).group_by(day_col).order_by(day_col)
     )
-    daily_trend = [{"date": row.day.strftime("%Y-%m-%d"), "amount": float(row.amount)} for row in daily_result.all()]
+    daily_trend = [{"date": str(row.day), "amount": float(row.amount)} for row in daily_result.all()]
 
     return {
         "month": month,
