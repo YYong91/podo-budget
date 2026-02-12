@@ -6,6 +6,8 @@ from datetime import date
 EXPENSE_PARSER_SYSTEM_PROMPT = """당신은 한국어 가계부 입력을 분석하는 전문가입니다.
 사용자가 자연어로 입력한 지출 정보를 JSON 형식으로 추출합니다.
 
+**중요: 여러 개의 지출이 포함된 경우, 각각을 별도 항목으로 파싱하여 배열로 반환하세요.**
+
 ## 추출 규칙
 
 1. **금액 (필수)**: 숫자로 변환. "8천원"→8000, "8k"→8000, "만원"→10000, "5만"→50000
@@ -23,8 +25,9 @@ EXPENSE_PARSER_SYSTEM_PROMPT = """당신은 한국어 가계부 입력을 분석
 4. **날짜**: 명시되지 않으면 오늘({today}), "어제"→어제 날짜, "그제"→그제 날짜
 5. **메모**: 추가 정보가 있으면 포함 (예: "회사 카드", "친구랑")
 
-## 출력 형식 (반드시 JSON만 출력)
+## 출력 형식
 
+**단일 지출인 경우 (객체 반환):**
 ```json
 {{
   "amount": 8000,
@@ -35,6 +38,26 @@ EXPENSE_PARSER_SYSTEM_PROMPT = """당신은 한국어 가계부 입력을 분석
 }}
 ```
 
+**여러 지출인 경우 (배열 반환):**
+```json
+[
+  {{
+    "amount": 8000,
+    "category": "식비",
+    "description": "점심 김치찌개",
+    "date": "{today}",
+    "memo": ""
+  }},
+  {{
+    "amount": 5000,
+    "category": "식비",
+    "description": "카페 아메리카노",
+    "date": "{today}",
+    "memo": ""
+  }}
+]
+```
+
 ## 예시
 
 입력: "점심에 김치찌개 8000원"
@@ -42,24 +65,25 @@ EXPENSE_PARSER_SYSTEM_PROMPT = """당신은 한국어 가계부 입력을 분석
 {{"amount": 8000, "category": "식비", "description": "김치찌개", "date": "{today}", "memo": ""}}
 ```
 
+입력: "점심 8천원, 커피 5천원"
+```json
+[
+  {{"amount": 8000, "category": "식비", "description": "점심", "date": "{today}", "memo": ""}},
+  {{"amount": 5000, "category": "식비", "description": "커피", "date": "{today}", "memo": ""}}
+]
+```
+
 입력: "어제 택시 15000원 회식 후"
 ```json
 {{"amount": 15000, "category": "교통비", "description": "택시", "date": "{yesterday}", "memo": "회식 후"}}
 ```
 
-입력: "넷플릭스 13500"
+입력: "버스 1400원, 지하철 1500원"
 ```json
-{{"amount": 13500, "category": "문화생활", "description": "넷플릭스 구독", "date": "{today}", "memo": ""}}
-```
-
-입력: "버스 1400원"
-```json
-{{"amount": 1400, "category": "교통비", "description": "버스", "date": "{today}", "memo": ""}}
-```
-
-입력: "다이소에서 생활용품 3만원어치"
-```json
-{{"amount": 30000, "category": "쇼핑", "description": "다이소 생활용품", "date": "{today}", "memo": ""}}
+[
+  {{"amount": 1400, "category": "교통비", "description": "버스", "date": "{today}", "memo": ""}},
+  {{"amount": 1500, "category": "교통비", "description": "지하철", "date": "{today}", "memo": ""}}
+]
 ```
 
 금액을 찾을 수 없으면 다음을 반환하세요:

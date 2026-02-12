@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import categories, chat, expenses, insights, telegram
+from app.api import auth, budget, categories, chat, expenses, insights, telegram
 from app.core.config import settings
 from app.core.database import Base, engine
 from app.core.exceptions import register_exception_handlers
@@ -36,6 +36,8 @@ app.add_middleware(
 register_exception_handlers(app)
 
 # API 라우터 등록
+app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
+app.include_router(budget.router, prefix="/api/budgets", tags=["budgets"])
 app.include_router(chat.router, prefix="/api/chat", tags=["chat"])
 app.include_router(expenses.router, prefix="/api/expenses", tags=["expenses"])
 app.include_router(categories.router, prefix="/api/categories", tags=["categories"])

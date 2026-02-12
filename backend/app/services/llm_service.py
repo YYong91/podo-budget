@@ -1,19 +1,47 @@
-"""LLM 프로바이더 추상화 및 구현 모듈"""
+"""LLM 프로바이더 추상화 및 구현 모듈
+
+기능별로 다른 프로바이더/모델을 사용할 수 있도록 설계되어 있습니다.
+- get_llm_provider("parse")  → 지출 파싱용 프로바이더
+- get_llm_provider("insights") → 인사이트 생성용 프로바이더
+- get_llm_provider("ocr")    → OCR용 프로바이더
+- get_llm_provider()         → 기본 프로바이더
+
+.env 예시:
+    LLM_PROVIDER=anthropic              # 기본 프로바이더
+    LLM_PROVIDER_PARSE=openai           # 파싱은 OpenAI로 오버라이드
+    LLM_MODEL_PARSE=gpt-4.1-mini        # 파싱 모델 지정
+"""
 
 import json
 import logging
 from abc import ABC, abstractmethod
-from typing import Any
+from typing import Any, Literal
 
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
+# 기능 타입 정의
+LLMFeature = Literal["parse", "insights", "ocr"]
+
+# 프로바이더별 기본 모델
+DEFAULT_MODELS: dict[str, str] = {
+    "anthropic": "claude-sonnet-4-5-20250929",
+    "openai": "gpt-4o-mini",
+    "google": "gemini-2.0-flash",
+    "local": "llama3",
+}
+
 
 class LLMProvider(ABC):
     @abstractmethod
-    async def parse_expense(self, user_input: str) -> dict[str, Any]:
-        """사용자 입력을 파싱하여 지출 정보 추출"""
+    async def parse_expense(self, user_input: str) -> dict[str, Any] | list[dict[str, Any]]:
+        """사용자 입력을 파싱하여 지출 정보 추출
+
+        Returns:
+            단일 지출: dict (에러 포함 가능)
+            여러 지출: list[dict] (각 항목은 지출 정보)
+        """
         pass
 
     @abstractmethod
@@ -23,14 +51,18 @@ class LLMProvider(ABC):
 
 
 class AnthropicProvider(LLMProvider):
-    def __init__(self):
+    def __init__(self, model: str = ""):
         import anthropic
 
         self.client = anthropic.AsyncAnthropic(api_key=settings.ANTHROPIC_API_KEY)
-        self.model = "claude-sonnet-4-5-20250929"
+        self.model = model or DEFAULT_MODELS["anthropic"]
 
-    async def parse_expense(self, user_input: str) -> dict[str, Any]:
-        """Claude API로 자연어 지출 입력을 구조화된 데이터로 변환"""
+    async def parse_expense(self, user_input: str) -> dict[str, Any] | list[dict[str, Any]]:
+        """Claude API로 자연어 지출 입력을 구조화된 데이터로 변환
+
+        단일 지출 또는 여러 지출을 파싱합니다.
+        여러 지출인 경우 리스트로 반환합니다.
+        """
         from app.services.prompts import get_expense_parser_prompt
 
         max_retries = 2
@@ -38,7 +70,7 @@ class AnthropicProvider(LLMProvider):
             try:
                 response = await self.client.messages.create(
                     model=self.model,
-                    max_tokens=256,
+                    max_tokens=512,  # 여러 지출 처리를 위해 토큰 증가
                     system=get_expense_parser_prompt(),
                     messages=[{"role": "user", "content": user_input}],
                 )
@@ -54,15 +86,31 @@ class AnthropicProvider(LLMProvider):
 
                 parsed = json.loads(text)
 
-                # 에러 응답 확인
-                if "error" in parsed:
+                # 단일 지출 (dict)인 경우
+                if isinstance(parsed, dict):
+                    # 에러 응답 확인
+                    if "error" in parsed:
+                        return parsed
+
+                    # 필수 필드 검증
+                    if "amount" not in parsed or parsed["amount"] is None:
+                        return {"error": "금액을 찾을 수 없습니다"}
+
                     return parsed
 
-                # 필수 필드 검증
-                if "amount" not in parsed or parsed["amount"] is None:
-                    return {"error": "금액을 찾을 수 없습니다"}
+                # 여러 지출 (list)인 경우
+                elif isinstance(parsed, list):
+                    # 각 항목의 필수 필드 검증
+                    for item in parsed:
+                        if not isinstance(item, dict):
+                            return {"error": "잘못된 형식입니다"}
+                        if "amount" not in item or item["amount"] is None:
+                            return {"error": "일부 항목의 금액을 찾을 수 없습니다"}
 
-                return parsed
+                    return parsed
+
+                else:
+                    return {"error": "잘못된 형식입니다"}
 
             except json.JSONDecodeError:
                 logger.warning(f"JSON 파싱 실패 (시도 {attempt + 1}/{max_retries}): {text}")
@@ -103,12 +151,13 @@ class AnthropicProvider(LLMProvider):
 
 
 class OpenAIProvider(LLMProvider):
-    def __init__(self):
+    def __init__(self, model: str = ""):
         import openai
 
         self.client = openai.AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
+        self.model = model or DEFAULT_MODELS["openai"]
 
-    async def parse_expense(self, user_input: str) -> dict[str, Any]:
+    async def parse_expense(self, user_input: str) -> dict[str, Any] | list[dict[str, Any]]:
         # TODO: OpenAI 구현
         return {"error": "OpenAI 프로바이더는 아직 구현되지 않았습니다"}
 
@@ -116,8 +165,24 @@ class OpenAIProvider(LLMProvider):
         return "OpenAI 프로바이더는 아직 구현되지 않았습니다"
 
 
+class GoogleProvider(LLMProvider):
+    def __init__(self, model: str = ""):
+        self.model = model or DEFAULT_MODELS["google"]
+        self.api_key = settings.GOOGLE_API_KEY
+
+    async def parse_expense(self, user_input: str) -> dict[str, Any] | list[dict[str, Any]]:
+        # TODO: Google Gemini 구현
+        return {"error": "Google 프로바이더는 아직 구현되지 않았습니다"}
+
+    async def generate_insights(self, expenses_data: dict[str, Any]) -> str:
+        return "Google 프로바이더는 아직 구현되지 않았습니다"
+
+
 class LocalLLMProvider(LLMProvider):
-    async def parse_expense(self, user_input: str) -> dict[str, Any]:
+    def __init__(self, model: str = ""):
+        self.model = model or DEFAULT_MODELS["local"]
+
+    async def parse_expense(self, user_input: str) -> dict[str, Any] | list[dict[str, Any]]:
         # TODO: 로컬 LLM 구현
         return {"error": "로컬 LLM 프로바이더는 아직 구현되지 않았습니다"}
 
@@ -125,13 +190,50 @@ class LocalLLMProvider(LLMProvider):
         return "로컬 LLM 프로바이더는 아직 구현되지 않았습니다"
 
 
-def get_llm_provider() -> LLMProvider:
-    """설정된 LLM provider 반환"""
-    if settings.LLM_PROVIDER == "openai":
-        return OpenAIProvider()
-    elif settings.LLM_PROVIDER == "anthropic":
-        return AnthropicProvider()
-    elif settings.LLM_PROVIDER == "local":
-        return LocalLLMProvider()
-    else:
-        raise ValueError(f"Unknown LLM provider: {settings.LLM_PROVIDER}")
+def _resolve_provider_and_model(feature: LLMFeature | None = None) -> tuple[str, str]:
+    """기능에 맞는 프로바이더와 모델을 결정
+
+    기능별 오버라이드가 있으면 사용, 없으면 기본값으로 fallback.
+    """
+    provider = settings.LLM_PROVIDER
+    model = settings.LLM_MODEL
+
+    if feature:
+        feature_provider = getattr(settings, f"LLM_PROVIDER_{feature.upper()}", None)
+        feature_model = getattr(settings, f"LLM_MODEL_{feature.upper()}", "")
+        if feature_provider:
+            provider = feature_provider
+        if feature_model:
+            model = feature_model
+
+    return provider, model
+
+
+def _create_provider(provider_name: str, model: str) -> LLMProvider:
+    """프로바이더 인스턴스 생성"""
+    providers = {
+        "anthropic": AnthropicProvider,
+        "openai": OpenAIProvider,
+        "google": GoogleProvider,
+        "local": LocalLLMProvider,
+    }
+    cls = providers.get(provider_name)
+    if not cls:
+        raise ValueError(f"Unknown LLM provider: {provider_name}")
+    return cls(model=model)
+
+
+def get_llm_provider(feature: LLMFeature | None = None) -> LLMProvider:
+    """설정된 LLM provider 반환
+
+    Args:
+        feature: 기능 이름 ("parse", "insights", "ocr").
+                 None이면 기본 프로바이더를 반환합니다.
+
+    사용 예:
+        get_llm_provider()            # 기본 프로바이더
+        get_llm_provider("parse")     # 지출 파싱용 (오버라이드 가능)
+        get_llm_provider("insights")  # 인사이트용 (오버라이드 가능)
+    """
+    provider_name, model = _resolve_provider_and_model(feature)
+    return _create_provider(provider_name, model)

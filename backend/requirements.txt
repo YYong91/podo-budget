@@ -10,6 +10,11 @@ asyncpg==0.29.0
 python-multipart==0.0.6
 httpx==0.26.0
 
+# 인증 (JWT)
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+bcrypt==4.0.1
+
 # LLM 클라이언트
 anthropic>=0.40.0
 
