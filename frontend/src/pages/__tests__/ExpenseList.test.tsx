@@ -231,6 +231,23 @@ describe('ExpenseList', () => {
     })
 
     it('다음 버튼을 클릭하면 다음 페이지로 이동한다', async () => {
+      // 충분한 데이터를 반환하도록 MSW handler override
+      const manyExpenses = Array.from({ length: 25 }, (_, i) => ({
+        ...mockExpenses[0],
+        id: i + 1,
+        description: `지출 ${i + 1}`,
+      }))
+
+      server.use(
+        http.get('/api/expenses', ({ request }) => {
+          const url = new URL(request.url)
+          const skip = Number(url.searchParams.get('skip')) || 0
+          const limit = Number(url.searchParams.get('limit')) || 20
+          const paginated = manyExpenses.slice(skip, skip + limit)
+          return HttpResponse.json(paginated)
+        })
+      )
+
       const user = userEvent.setup()
       renderExpenseList()
 
@@ -242,9 +259,12 @@ describe('ExpenseList', () => {
       expect(screen.getByText('페이지 1')).toBeInTheDocument()
 
       const nextButton = screen.getByRole('button', { name: '다음' })
+      // 다음 버튼이 활성화되어 있는지 확인 (20개 이상이므로 활성화됨)
+      expect(nextButton).not.toBeDisabled()
+
       await user.click(nextButton)
 
-      // 페이지 변경 확인 - API 호출이 일어나고 새 데이터가 로드되므로 waitFor 사용
+      // 페이지 변경 확인
       await waitFor(() => {
         expect(screen.getByText('페이지 2')).toBeInTheDocument()
       })

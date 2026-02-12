@@ -6,7 +6,7 @@
 
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import toast from 'react-hot-toast'
+import { useToast } from '../hooks/useToast'
 import { expenseApi } from '../api/expenses'
 import { categoryApi } from '../api/categories'
 import type { Expense, Category } from '../types'
@@ -28,6 +28,7 @@ function formatDate(dateStr: string): string {
 export default function ExpenseDetail() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const { addToast } = useToast()
 
   const [expense, setExpense] = useState<Expense | null>(null)
   const [categories, setCategories] = useState<Category[]>([])
@@ -63,7 +64,7 @@ export default function ExpenseDetail() {
           date: expenseRes.data.date.slice(0, 10), // YYYY-MM-DD
         })
       } catch {
-        toast.error('지출 내역을 불러오는데 실패했습니다')
+        addToast('error', '지출 내역을 불러오는데 실패했습니다')
       } finally {
         setLoading(false)
       }
@@ -78,12 +79,12 @@ export default function ExpenseDetail() {
     if (!expense) return
 
     if (!editForm.description.trim()) {
-      toast.error('설명을 입력해주세요')
+      addToast('error', '설명을 입력해주세요')
       return
     }
 
     if (editForm.amount <= 0) {
-      toast.error('금액은 0보다 커야 합니다')
+      addToast('error', '금액은 0보다 커야 합니다')
       return
     }
 
@@ -96,9 +97,9 @@ export default function ExpenseDetail() {
       })
       setExpense(updated.data)
       setIsEditing(false)
-      toast.success('저장되었습니다')
+      addToast('success', '저장되었습니다')
     } catch {
-      toast.error('저장에 실패했습니다')
+      addToast('error', '저장에 실패했습니다')
     }
   }
 
@@ -110,10 +111,10 @@ export default function ExpenseDetail() {
 
     try {
       await expenseApi.delete(expense.id)
-      toast.success('삭제되었습니다')
+      addToast('success', '삭제되었습니다')
       navigate('/expenses')
     } catch {
-      toast.error('삭제에 실패했습니다')
+      addToast('error', '삭제에 실패했습니다')
     }
   }
 

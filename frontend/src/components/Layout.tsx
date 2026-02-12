@@ -1,18 +1,23 @@
 /* 메인 레이아웃 - 헤더 + 사이드바 + 콘텐츠 */
 
 import { useState } from 'react'
-import { Link, Outlet, useLocation } from 'react-router-dom'
+import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { useAuth } from '../contexts/AuthContext'
 
 const navItems = [
   { path: '/', label: '대시보드', icon: '📊' },
   { path: '/expenses', label: '지출 목록', icon: '💰' },
+  { path: '/expenses/new', label: '지출 입력', icon: '➕' },
   { path: '/categories', label: '카테고리', icon: '📁' },
+  { path: '/budgets', label: '예산 관리', icon: '📋' },
   { path: '/insights', label: '인사이트', icon: '💡' },
 ]
 
 export default function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const location = useLocation()
+  const navigate = useNavigate()
+  const { user, logout } = useAuth()
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -30,6 +35,22 @@ export default function Layout() {
               HomeNRich
             </Link>
             <span className="text-xs text-gray-400 hidden sm:inline">가계부</span>
+          </div>
+          <div className="flex items-center gap-3">
+            {user && (
+              <>
+                <span className="text-sm text-gray-600 hidden sm:inline">{user.username}</span>
+                <button
+                  onClick={() => {
+                    logout()
+                    navigate('/login')
+                  }}
+                  className="text-sm text-gray-600 hover:text-gray-900 transition-colors"
+                >
+                  로그아웃
+                </button>
+              </>
+            )}
           </div>
         </div>
       </header>

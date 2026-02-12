@@ -5,13 +5,14 @@
  */
 
 import { useEffect, useState } from 'react'
-import toast from 'react-hot-toast'
+import { useToast } from '../hooks/useToast'
 import { categoryApi } from '../api/categories'
 import EmptyState from '../components/EmptyState'
 import ErrorState from '../components/ErrorState'
 import type { Category } from '../types'
 
 export default function CategoryManager() {
+  const { addToast } = useToast()
   const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
@@ -43,7 +44,7 @@ export default function CategoryManager() {
       setCategories(res.data)
     } catch {
       setError(true)
-      toast.error('카테고리 목록을 불러오는데 실패했습니다')
+      addToast('error', '카테고리 목록을 불러오는데 실패했습니다')
     } finally {
       setLoading(false)
     }
@@ -54,7 +55,7 @@ export default function CategoryManager() {
    */
   const handleAdd = async () => {
     if (!newName.trim()) {
-      toast.error('카테고리 이름을 입력해주세요')
+      addToast('error', '카테고리 이름을 입력해주세요')
       return
     }
 
@@ -63,13 +64,13 @@ export default function CategoryManager() {
         name: newName.trim(),
         description: newDescription.trim() || undefined,
       })
-      toast.success('카테고리가 추가되었습니다')
+      addToast('success', '카테고리가 추가되었습니다')
       setNewName('')
       setNewDescription('')
       setIsAdding(false)
       fetchCategories()
     } catch {
-      toast.error('카테고리 추가에 실패했습니다')
+      addToast('error', '카테고리 추가에 실패했습니다')
     }
   }
 
@@ -89,7 +90,7 @@ export default function CategoryManager() {
    */
   const handleUpdate = async (id: number) => {
     if (!editForm.name.trim()) {
-      toast.error('카테고리 이름을 입력해주세요')
+      addToast('error', '카테고리 이름을 입력해주세요')
       return
     }
 
@@ -98,11 +99,11 @@ export default function CategoryManager() {
         name: editForm.name.trim(),
         description: editForm.description.trim() || undefined,
       })
-      toast.success('카테고리가 수정되었습니다')
+      addToast('success', '카테고리가 수정되었습니다')
       setEditingId(null)
       fetchCategories()
     } catch {
-      toast.error('카테고리 수정에 실패했습니다')
+      addToast('error', '카테고리 수정에 실패했습니다')
     }
   }
 
@@ -112,11 +113,11 @@ export default function CategoryManager() {
   const handleDelete = async (id: number) => {
     try {
       await categoryApi.delete(id)
-      toast.success('카테고리가 삭제되었습니다')
+      addToast('success', '카테고리가 삭제되었습니다')
       setDeleteTarget(null)
       fetchCategories()
     } catch {
-      toast.error('카테고리 삭제에 실패했습니다')
+      addToast('error', '카테고리 삭제에 실패했습니다')
     }
   }
 

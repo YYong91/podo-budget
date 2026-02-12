@@ -47,3 +47,66 @@ export interface InsightsResponse {
   by_category: Record<string, number>
   insights: string
 }
+
+export interface User {
+  id: number
+  username: string
+  is_active: boolean
+  created_at: string
+}
+
+export interface LoginRequest {
+  username: string
+  password: string
+}
+
+export interface RegisterRequest {
+  username: string
+  password: string
+}
+
+export interface AuthResponse {
+  access_token: string
+  token_type: string
+}
+
+export interface Budget {
+  id: number
+  category_id: number
+  amount: number
+  period: 'monthly' | 'weekly' | 'daily'
+  start_date: string
+  end_date: string | null
+  alert_threshold: number | null
+  created_at: string
+  updated_at: string
+}
+
+export interface BudgetCreateRequest {
+  category_id: number
+  amount: number
+  period: 'monthly' | 'weekly' | 'daily'
+  start_date: string
+  end_date?: string
+  alert_threshold?: number
+}
+
+export interface BudgetUpdateRequest {
+  amount?: number
+  period?: 'monthly' | 'weekly' | 'daily'
+  start_date?: string
+  end_date?: string
+  alert_threshold?: number
+}
+
+export interface BudgetAlert {
+  budget_id: number
+  category_id: number
+  category_name: string
+  budget_amount: number
+  spent_amount: number
+  remaining_amount: number
+  usage_percentage: number
+  is_exceeded: boolean
+  is_warning: boolean
+}
