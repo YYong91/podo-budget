@@ -13,6 +13,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import settings
 from app.core.database import get_db
 from app.models.expense import Expense
+from app.services.bot_messages import (
+    format_expense_saved,
+    format_help_message,
+    format_parse_error,
+    format_server_error,
+    format_welcome_message,
+)
 from app.services.category_service import get_or_create_category
 from app.services.llm_service import get_llm_provider
 
@@ -30,7 +37,7 @@ async def send_telegram_message(chat_id: int, text: str):
 
     url = f"{TELEGRAM_API.format(token=settings.TELEGRAM_BOT_TOKEN)}/sendMessage"
     async with httpx.AsyncClient() as client:
-        await client.post(url, json={"chat_id": chat_id, "text": text, "parse_mode": "Markdown"})
+        await client.post(url, json={"chat_id": chat_id, "text": text})
 
 
 @router.post("/webhook")
@@ -52,29 +59,12 @@ async def telegram_webhook(request: Request, db: AsyncSession = Depends(get_db))
 
     # /start 명령어 처리
     if user_text.startswith("/start"):
-        await send_telegram_message(
-            chat_id,
-            "안녕하세요! HomeNRich 가계부 봇입니다.\n\n"
-            "지출을 자연어로 입력해주세요.\n"
-            "예: `점심 김치찌개 8000원`\n"
-            "예: `택시 15000원`\n"
-            "예: `넷플릭스 13500`",
-        )
+        await send_telegram_message(chat_id, format_welcome_message())
         return {"ok": True}
 
     # /help 명령어 처리
     if user_text.startswith("/help"):
-        await send_telegram_message(
-            chat_id,
-            "*사용법*\n\n"
-            "지출 내역을 자연어로 입력하면 자동으로 분류하여 저장합니다.\n\n"
-            "*입력 예시:*\n"
-            "• `점심 김치찌개 8000원`\n"
-            "• `어제 택시 15000원 회식 후`\n"
-            "• `다이소 생활용품 3만원`\n"
-            "• `버스 1400원`\n"
-            "• `넷플릭스 13500`",
-        )
+        await send_telegram_message(chat_id, format_help_message())
         return {"ok": True}
 
     # LLM으로 지출 파싱
@@ -84,39 +74,38 @@ async def telegram_webhook(request: Request, db: AsyncSession = Depends(get_db))
 
         # 파싱 실패
         if "error" in parsed:
-            await send_telegram_message(chat_id, f"파싱 실패: {parsed['error']}\n다시 입력해주세요.")
+            await send_telegram_message(chat_id, format_parse_error(user_text))
             return {"ok": True}
 
         # 카테고리 매칭/생성
-        category = await get_or_create_category(db, parsed.get("category", "기타"))
+        category_name = parsed.get("category", "기타")
+        category = await get_or_create_category(db, category_name)
 
         # Expense 생성
+        expense_date = datetime.fromisoformat(parsed.get("date", datetime.now().isoformat()))
         expense = Expense(
             amount=parsed["amount"],
             description=parsed.get("description", user_text),
             category_id=category.id,
             raw_input=user_text,
-            date=datetime.fromisoformat(parsed.get("date", datetime.now().isoformat())),
+            date=expense_date,
         )
         db.add(expense)
         await db.commit()
 
         # 성공 응답
-        amount_formatted = f"{int(parsed['amount']):,}"
-        reply = (
-            f"기록 완료!\n\n"
-            f"금액: ₩{amount_formatted}\n"
-            f"카테고리: {parsed.get('category', '기타')}\n"
-            f"내용: {parsed.get('description', '-')}\n"
-            f"날짜: {parsed.get('date', '오늘')}"
+        await send_telegram_message(
+            chat_id,
+            format_expense_saved(
+                amount=parsed["amount"],
+                category=category_name,
+                description=parsed.get("description", user_text),
+                date=expense_date.strftime("%Y-%m-%d"),
+            ),
         )
-        if parsed.get("memo"):
-            reply += f"\n메모: {parsed['memo']}"
-
-        await send_telegram_message(chat_id, reply)
 
     except Exception as e:
         logger.error(f"Telegram webhook 처리 실패: {e}")
-        await send_telegram_message(chat_id, "처리 중 오류가 발생했습니다. 다시 시도해주세요.")
+        await send_telegram_message(chat_id, format_server_error())
 
     return {"ok": True}

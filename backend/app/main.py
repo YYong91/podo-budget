@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api import categories, chat, expenses, insights, telegram
 from app.core.config import settings
 from app.core.database import Base, engine
+from app.core.exceptions import register_exception_handlers
 
 
 @asynccontextmanager
@@ -30,6 +31,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# 전역 에러 핸들러 등록
+register_exception_handlers(app)
 
 # API 라우터 등록
 app.include_router(chat.router, prefix="/api/chat", tags=["chat"])
