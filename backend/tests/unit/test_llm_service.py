@@ -148,6 +148,34 @@ async def test_anthropic_parse_expense_missing_amount():
 
 
 @pytest.mark.asyncio
+async def test_anthropic_parse_expense_multiple():
+    """여러 지출을 동시에 파싱하는 경우 (리스트 반환)"""
+    mock_response = MagicMock()
+    mock_response.content = [
+        MagicMock(
+            text='[{"amount": 8000, "category": "식비", "description": "점심", "date": "2026-02-12", "memo": ""}, '
+            '{"amount": 5000, "category": "식비", "description": "커피", "date": "2026-02-12", "memo": ""}]'
+        )
+    ]
+
+    with patch("app.services.llm_service.settings") as mock_settings:
+        mock_settings.ANTHROPIC_API_KEY = "test-key"  # pragma: allowlist secret
+
+        with patch("anthropic.AsyncAnthropic") as mock_anthropic:
+            mock_client = AsyncMock()
+            mock_client.messages.create.return_value = mock_response
+            mock_anthropic.return_value = mock_client
+
+            provider = AnthropicProvider()
+            result = await provider.parse_expense("점심 8천원, 커피 5천원")
+
+            assert isinstance(result, list)
+            assert len(result) == 2
+            assert result[0]["amount"] == 8000
+            assert result[1]["amount"] == 5000
+
+
+@pytest.mark.asyncio
 async def test_anthropic_generate_insights_success():
     """AnthropicProvider.generate_insights() 성공 케이스 (Mock)"""
     mock_response = MagicMock()
