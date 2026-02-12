@@ -143,7 +143,7 @@ export default function ExpenseDetail() {
   return (
     <div className="space-y-6">
       {/* 헤더 */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <Link
             to="/expenses"
@@ -154,18 +154,18 @@ export default function ExpenseDetail() {
           <h1 className="text-2xl font-bold text-gray-900">지출 상세</h1>
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex gap-2 justify-end">
           {isEditing ? (
             <>
               <button
                 onClick={() => setIsEditing(false)}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                className="flex-1 sm:flex-none px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
               >
                 취소
               </button>
               <button
                 onClick={handleSave}
-                className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors"
+                className="flex-1 sm:flex-none px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors"
               >
                 저장
               </button>
@@ -174,13 +174,13 @@ export default function ExpenseDetail() {
             <>
               <button
                 onClick={() => setIsEditing(true)}
-                className="px-4 py-2 text-sm font-medium text-primary-700 bg-primary-50 rounded-lg hover:bg-primary-100 transition-colors"
+                className="flex-1 sm:flex-none px-4 py-2 text-sm font-medium text-primary-700 bg-primary-50 rounded-lg hover:bg-primary-100 transition-colors"
               >
                 수정
               </button>
               <button
                 onClick={() => setShowDeleteModal(true)}
-                className="px-4 py-2 text-sm font-medium text-red-700 bg-red-50 rounded-lg hover:bg-red-100 transition-colors"
+                className="flex-1 sm:flex-none px-4 py-2 text-sm font-medium text-red-700 bg-red-50 rounded-lg hover:bg-red-100 transition-colors"
               >
                 삭제
               </button>
@@ -190,7 +190,7 @@ export default function ExpenseDetail() {
       </div>
 
       {/* 지출 정보 카드 */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 space-y-5">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6 space-y-5">
         {/* 금액 */}
         <div>
           <label className="block text-sm font-medium text-gray-500 mb-2">
@@ -203,11 +203,11 @@ export default function ExpenseDetail() {
               onChange={(e) =>
                 setEditForm({ ...editForm, amount: Number(e.target.value) })
               }
-              className="w-full px-4 py-2 text-2xl font-bold text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              className="w-full px-4 py-2 text-xl sm:text-2xl font-bold text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               placeholder="10000"
             />
           ) : (
-            <p className="text-3xl font-bold text-gray-900">
+            <p className="text-2xl sm:text-3xl font-bold text-gray-900">
               {formatAmount(expense.amount)}
             </p>
           )}

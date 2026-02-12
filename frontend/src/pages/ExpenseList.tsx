@@ -1,10 +1,20 @@
-/* 지출 목록 페이지 - 필터링, 정렬, 페이지네이션 */
+/**
+ * @file ExpenseList.tsx
+ * @description 지출 목록 페이지 - 필터링, 정렬, 페이지네이션
+ * 날짜/카테고리 필터, 날짜/금액 정렬, 페이지네이션을 제공한다.
+ */
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { expenseApi } from '../api/expenses'
 import { categoryApi } from '../api/categories'
+import EmptyState from '../components/EmptyState'
+import ErrorState from '../components/ErrorState'
 import type { Expense, Category } from '../types'
+
+/* 정렬 타입 정의 */
+type SortField = 'date' | 'amount'
+type SortDirection = 'asc' | 'desc'
 
 function formatAmount(amount: number): string {
   return `₩${amount.toLocaleString('ko-KR')}`
@@ -14,6 +24,7 @@ export default function ExpenseList() {
   const [expenses, setExpenses] = useState<Expense[]>([])
   const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(false)
   const [page, setPage] = useState(0)
   const limit = 20
 
@@ -22,8 +33,16 @@ export default function ExpenseList() {
   const [endDate, setEndDate] = useState('')
   const [categoryId, setCategoryId] = useState<number | undefined>()
 
+  /* 정렬 상태 */
+  const [sortField, setSortField] = useState<SortField>('date')
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc')
+
+  /**
+   * 지출 목록 조회
+   */
   async function fetchExpenses() {
     setLoading(true)
+    setError(false)
     try {
       const res = await expenseApi.getAll({
         skip: page * limit,
@@ -34,11 +53,55 @@ export default function ExpenseList() {
       })
       setExpenses(res.data)
     } catch {
-      // API 미연결
+      setError(true)
     } finally {
       setLoading(false)
     }
   }
+
+  /**
+   * 정렬 토글 핸들러
+   * 같은 필드 클릭 시 방향 반전, 다른 필드 클릭 시 해당 필드로 desc 정렬
+   */
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'))
+    } else {
+      setSortField(field)
+      setSortDirection('desc')
+    }
+  }
+
+  /**
+   * 정렬 아이콘 렌더링
+   */
+  const renderSortIcon = (field: SortField) => {
+    if (sortField !== field) {
+      return <span className="text-gray-300 ml-1">⇅</span>
+    }
+    return (
+      <span className="text-primary-600 ml-1">
+        {sortDirection === 'asc' ? '▲' : '▼'}
+      </span>
+    )
+  }
+
+  /**
+   * 클라이언트 사이드 정렬 적용
+   */
+  const sortedExpenses = useMemo(() => {
+    const sorted = [...expenses]
+    sorted.sort((a, b) => {
+      let comparison = 0
+      if (sortField === 'date') {
+        comparison = a.date.localeCompare(b.date)
+      } else if (sortField === 'amount') {
+        comparison = a.amount - b.amount
+      }
+      return sortDirection === 'asc' ? comparison : -comparison
+    })
+    return sorted
+  }, [expenses, sortField, sortDirection])
 
   useEffect(() => {
     categoryApi.getAll().then((res) => setCategories(res.data)).catch(() => {})
@@ -48,10 +111,24 @@ export default function ExpenseList() {
     fetchExpenses()
   }, [page, startDate, endDate, categoryId])
 
-  /* 카테고리 이름 찾기 */
+  /**
+   * 카테고리 이름 찾기
+   */
   function getCategoryName(catId: number | null): string {
     if (!catId) return '미분류'
     return categories.find((c) => c.id === catId)?.name ?? '미분류'
+  }
+
+  /* 에러 발생 시 */
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <h1 className="text-2xl font-bold text-gray-900">지출 목록</h1>
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+          <ErrorState onRetry={fetchExpenses} />
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -60,14 +137,14 @@ export default function ExpenseList() {
 
       {/* 필터 바 */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-        <div className="flex flex-wrap gap-4 items-end">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div>
             <label className="block text-xs text-gray-500 mb-1">시작일</label>
             <input
               type="date"
               value={startDate}
               onChange={(e) => { setStartDate(e.target.value); setPage(0) }}
-              className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
             />
           </div>
           <div>
@@ -76,7 +153,7 @@ export default function ExpenseList() {
               type="date"
               value={endDate}
               onChange={(e) => { setEndDate(e.target.value); setPage(0) }}
-              className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
             />
           </div>
           <div>
@@ -84,7 +161,7 @@ export default function ExpenseList() {
             <select
               value={categoryId ?? ''}
               onChange={(e) => { setCategoryId(e.target.value ? Number(e.target.value) : undefined); setPage(0) }}
-              className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
             >
               <option value="">전체</option>
               {categories.map((cat) => (
@@ -92,12 +169,14 @@ export default function ExpenseList() {
               ))}
             </select>
           </div>
-          <button
-            onClick={() => { setStartDate(''); setEndDate(''); setCategoryId(undefined); setPage(0) }}
-            className="text-sm text-gray-500 hover:text-gray-700 underline"
-          >
-            필터 초기화
-          </button>
+          <div className="flex items-end">
+            <button
+              onClick={() => { setStartDate(''); setEndDate(''); setCategoryId(undefined); setPage(0) }}
+              className="w-full sm:w-auto px-4 py-2 text-sm text-gray-500 hover:text-gray-700 underline"
+            >
+              필터 초기화
+            </button>
+          </div>
         </div>
       </div>
 
@@ -108,40 +187,62 @@ export default function ExpenseList() {
             <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary-600" />
           </div>
         ) : expenses.length > 0 ? (
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th className="text-left text-xs font-medium text-gray-500 uppercase px-4 py-3">날짜</th>
-                <th className="text-left text-xs font-medium text-gray-500 uppercase px-4 py-3">내용</th>
-                <th className="text-left text-xs font-medium text-gray-500 uppercase px-4 py-3 hidden sm:table-cell">카테고리</th>
-                <th className="text-right text-xs font-medium text-gray-500 uppercase px-4 py-3">금액</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {expenses.map((expense) => (
-                <tr key={expense.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">
-                    {expense.date.slice(0, 10)}
-                  </td>
-                  <td className="px-4 py-3">
-                    <Link to={`/expenses/${expense.id}`} className="text-sm font-medium text-gray-900 hover:text-primary-600">
-                      {expense.description}
-                    </Link>
-                  </td>
-                  <td className="px-4 py-3 hidden sm:table-cell">
-                    <span className="inline-block bg-primary-50 text-primary-700 text-xs px-2 py-1 rounded-full">
-                      {getCategoryName(expense.category_id)}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-sm font-semibold text-gray-900 text-right whitespace-nowrap">
-                    {formatAmount(expense.amount)}
-                  </td>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th
+                    className="text-left text-xs font-medium text-gray-500 uppercase px-4 py-3 cursor-pointer hover:bg-gray-100 select-none transition-colors"
+                    onClick={() => handleSort('date')}
+                  >
+                    <div className="flex items-center">
+                      날짜
+                      {renderSortIcon('date')}
+                    </div>
+                  </th>
+                  <th className="text-left text-xs font-medium text-gray-500 uppercase px-4 py-3">내용</th>
+                  <th className="text-left text-xs font-medium text-gray-500 uppercase px-4 py-3 hidden sm:table-cell">카테고리</th>
+                  <th
+                    className="text-right text-xs font-medium text-gray-500 uppercase px-4 py-3 cursor-pointer hover:bg-gray-100 select-none transition-colors"
+                    onClick={() => handleSort('amount')}
+                  >
+                    <div className="flex items-center justify-end">
+                      금액
+                      {renderSortIcon('amount')}
+                    </div>
+                  </th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {sortedExpenses.map((expense) => (
+                  <tr key={expense.id} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">
+                      {expense.date.slice(0, 10).replace(/-/g, '.')}
+                    </td>
+                    <td className="px-4 py-3">
+                      <Link to={`/expenses/${expense.id}`} className="text-sm font-medium text-gray-900 hover:text-primary-600 transition-colors">
+                        {expense.description}
+                      </Link>
+                    </td>
+                    <td className="px-4 py-3 hidden sm:table-cell">
+                      <span className="inline-block bg-primary-50 text-primary-700 text-xs px-2 py-1 rounded-full">
+                        {getCategoryName(expense.category_id)}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-sm font-semibold text-gray-900 text-right whitespace-nowrap">
+                      {formatAmount(expense.amount)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         ) : (
-          <p className="text-gray-400 text-center py-12">지출 내역이 없습니다</p>
+          <EmptyState
+            icon="📋"
+            title="지출 내역이 없습니다"
+            description="필터 조건을 변경하거나 새로운 지출을 추가해보세요."
+          />
         )}
       </div>
 

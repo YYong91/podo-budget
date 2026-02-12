@@ -7,11 +7,14 @@
 import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { categoryApi } from '../api/categories'
+import EmptyState from '../components/EmptyState'
+import ErrorState from '../components/ErrorState'
 import type { Category } from '../types'
 
 export default function CategoryManager() {
   const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(false)
 
   // 추가 폼 상태
   const [newName, setNewName] = useState('')
@@ -33,10 +36,13 @@ export default function CategoryManager() {
    * 카테고리 목록 조회
    */
   const fetchCategories = async () => {
+    setLoading(true)
+    setError(false)
     try {
       const res = await categoryApi.getAll()
       setCategories(res.data)
     } catch {
+      setError(true)
       toast.error('카테고리 목록을 불러오는데 실패했습니다')
     } finally {
       setLoading(false)
@@ -122,14 +128,26 @@ export default function CategoryManager() {
     )
   }
 
+  /* 에러 발생 시 */
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <h1 className="text-2xl font-bold text-gray-900">카테고리 관리</h1>
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+          <ErrorState onRetry={fetchCategories} />
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-6">
       {/* 헤더 */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <h1 className="text-2xl font-bold text-gray-900">카테고리 관리</h1>
         <button
           onClick={() => setIsAdding(true)}
-          className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors"
+          className="w-full sm:w-auto px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors"
         >
           + 추가
         </button>
@@ -137,28 +155,29 @@ export default function CategoryManager() {
 
       {/* 카테고리 목록 */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        <table className="w-full">
-          <thead>
-            <tr className="border-b border-gray-200 bg-gray-50">
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                이름
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                설명
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                생성일
-              </th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                작업
-              </th>
-            </tr>
-          </thead>
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-gray-200 bg-gray-50">
+                <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  이름
+                </th>
+                <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">
+                  설명
+                </th>
+                <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">
+                  생성일
+                </th>
+                <th className="px-4 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  작업
+                </th>
+              </tr>
+            </thead>
           <tbody className="divide-y divide-gray-100">
             {/* 추가 폼 (isAdding일 때) */}
             {isAdding && (
               <tr className="bg-primary-50">
-                <td className="px-6 py-4">
+                <td className="px-4 sm:px-6 py-4">
                   <input
                     type="text"
                     value={newName}
@@ -168,7 +187,7 @@ export default function CategoryManager() {
                     autoFocus
                   />
                 </td>
-                <td className="px-6 py-4">
+                <td className="px-4 sm:px-6 py-4 hidden md:table-cell">
                   <input
                     type="text"
                     value={newDescription}
@@ -177,24 +196,26 @@ export default function CategoryManager() {
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   />
                 </td>
-                <td className="px-6 py-4"></td>
-                <td className="px-6 py-4 text-right">
-                  <button
-                    onClick={handleAdd}
-                    className="px-3 py-1.5 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors mr-2"
-                  >
-                    저장
-                  </button>
-                  <button
-                    onClick={() => {
-                      setIsAdding(false)
-                      setNewName('')
-                      setNewDescription('')
-                    }}
-                    className="px-3 py-1.5 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-                  >
-                    취소
-                  </button>
+                <td className="px-4 sm:px-6 py-4 hidden sm:table-cell"></td>
+                <td className="px-4 sm:px-6 py-4 text-right">
+                  <div className="flex justify-end gap-2">
+                    <button
+                      onClick={handleAdd}
+                      className="px-3 py-1.5 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors"
+                    >
+                      저장
+                    </button>
+                    <button
+                      onClick={() => {
+                        setIsAdding(false)
+                        setNewName('')
+                        setNewDescription('')
+                      }}
+                      className="px-3 py-1.5 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                    >
+                      취소
+                    </button>
+                  </div>
                 </td>
               </tr>
             )}
@@ -206,9 +227,9 @@ export default function CategoryManager() {
                 return (
                   <tr
                     key={category.id}
-                    className={isEditing ? 'bg-primary-50' : 'hover:bg-gray-50'}
+                    className={isEditing ? 'bg-primary-50' : 'hover:bg-gray-50 transition-colors'}
                   >
-                    <td className="px-6 py-4">
+                    <td className="px-4 sm:px-6 py-4">
                       {isEditing ? (
                         <input
                           type="text"
@@ -220,12 +241,18 @@ export default function CategoryManager() {
                           autoFocus
                         />
                       ) : (
-                        <span className="font-medium text-gray-900">
-                          {category.name}
-                        </span>
+                        <div>
+                          <span className="font-medium text-gray-900">
+                            {category.name}
+                          </span>
+                          {/* 모바일에서만 설명 표시 */}
+                          <div className="md:hidden text-sm text-gray-600 mt-1">
+                            {category.description || '-'}
+                          </div>
+                        </div>
                       )}
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-4 sm:px-6 py-4 hidden md:table-cell">
                       {isEditing ? (
                         <input
                           type="text"
@@ -244,17 +271,17 @@ export default function CategoryManager() {
                         </span>
                       )}
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-4 sm:px-6 py-4 hidden sm:table-cell">
                       <span className="text-sm text-gray-500">
                         {category.created_at.slice(0, 10).replace(/-/g, '.')}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-right">
+                    <td className="px-4 sm:px-6 py-4 text-right">
                       {isEditing ? (
-                        <>
+                        <div className="flex justify-end gap-2">
                           <button
                             onClick={() => handleUpdate(category.id)}
-                            className="px-3 py-1.5 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors mr-2"
+                            className="px-3 py-1.5 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors"
                           >
                             저장
                           </button>
@@ -264,12 +291,12 @@ export default function CategoryManager() {
                           >
                             취소
                           </button>
-                        </>
+                        </div>
                       ) : (
-                        <>
+                        <div className="flex justify-end gap-2">
                           <button
                             onClick={() => startEdit(category)}
-                            className="px-3 py-1.5 text-sm font-medium text-primary-700 bg-primary-50 rounded-lg hover:bg-primary-100 transition-colors mr-2"
+                            className="px-3 py-1.5 text-sm font-medium text-primary-700 bg-primary-50 rounded-lg hover:bg-primary-100 transition-colors"
                           >
                             수정
                           </button>
@@ -279,7 +306,7 @@ export default function CategoryManager() {
                           >
                             삭제
                           </button>
-                        </>
+                        </div>
                       )}
                     </td>
                   </tr>
@@ -287,17 +314,22 @@ export default function CategoryManager() {
               })
             ) : (
               <tr>
-                <td colSpan={4} className="px-6 py-12 text-center">
-                  <p className="text-gray-400">
-                    아직 카테고리가 없습니다.
-                    <br />
-                    새 카테고리를 추가해보세요!
-                  </p>
+                <td colSpan={4}>
+                  <EmptyState
+                    icon="📁"
+                    title="아직 카테고리가 없습니다"
+                    description="새 카테고리를 추가하여 지출을 체계적으로 관리해보세요."
+                    action={{
+                      label: '+ 카테고리 추가',
+                      onClick: () => setIsAdding(true),
+                    }}
+                  />
                 </td>
               </tr>
             )}
           </tbody>
-        </table>
+          </table>
+        </div>
       </div>
 
       {/* 삭제 확인 모달 */}

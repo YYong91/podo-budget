@@ -7,6 +7,7 @@
 import { useState } from 'react'
 import toast from 'react-hot-toast'
 import { insightsApi } from '../api/insights'
+import EmptyState from '../components/EmptyState'
 import type { InsightsResponse } from '../types'
 
 /**
@@ -101,9 +102,9 @@ export default function InsightsPage() {
       <h1 className="text-2xl font-bold text-gray-900">AI 인사이트</h1>
 
       {/* 월 선택 및 생성 버튼 */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
-          <div className="flex-1">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
+        <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-end">
+          <div className="flex-1 w-full">
             <label
               htmlFor="month-select"
               className="block text-sm font-medium text-gray-700 mb-2"
@@ -115,13 +116,13 @@ export default function InsightsPage() {
               type="month"
               value={selectedMonth}
               onChange={(e) => setSelectedMonth(e.target.value)}
-              className="w-full sm:w-auto px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             />
           </div>
           <button
             onClick={handleGenerate}
             disabled={loading}
-            className="px-6 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors mt-auto"
+            className="w-full sm:w-auto px-6 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors whitespace-nowrap"
           >
             {loading ? '생성 중...' : '인사이트 생성'}
           </button>
@@ -149,7 +150,7 @@ export default function InsightsPage() {
       {!loading && insights && (
         <div className="space-y-6">
           {/* 월별 요약 */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">
               {insights.month} 요약
             </h2>
@@ -170,7 +171,7 @@ export default function InsightsPage() {
           </div>
 
           {/* 카테고리별 금액 */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">
               카테고리별 지출
             </h2>
@@ -210,7 +211,7 @@ export default function InsightsPage() {
           </div>
 
           {/* AI 인사이트 */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
             <div className="flex items-center gap-2 mb-4">
               <span className="text-2xl">💡</span>
               <h2 className="text-lg font-semibold text-gray-900">
@@ -226,14 +227,12 @@ export default function InsightsPage() {
 
       {/* 초기 상태 (아직 인사이트 생성 안 함) */}
       {!loading && !insights && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
-          <span className="text-5xl mb-4 block">💡</span>
-          <p className="text-gray-500 mb-2">
-            월을 선택하고 "인사이트 생성" 버튼을 클릭하세요
-          </p>
-          <p className="text-sm text-gray-400">
-            AI가 당신의 지출 패턴을 분석하고 개인화된 조언을 제공합니다
-          </p>
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+          <EmptyState
+            icon="💡"
+            title="월을 선택하고 인사이트를 생성하세요"
+            description="AI가 당신의 지출 패턴을 분석하고 개인화된 조언을 제공합니다."
+          />
         </div>
       )}
     </div>
