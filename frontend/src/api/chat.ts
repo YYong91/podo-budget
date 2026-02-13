@@ -10,12 +10,14 @@ import type { ChatResponse } from '../types'
 export const chatApi = {
   /**
    * 자연어 메시지를 전송하여 지출을 자동으로 파싱하고 저장
-   * @param message - 사용자가 입력한 자연어 메시지 (예: "오늘 점심에 김치찌개 8000원 먹었어")
-   * @returns LLM 응답 및 생성된 지출 내역
+   * @param message - 사용자가 입력한 자연어 메시지
+   * @param householdId - 가구 ID (선택)
+   * @param preview - true이면 파싱 결과만 반환 (저장하지 않음)
    */
-  sendMessage: (message: string, householdId?: number) =>
+  sendMessage: (message: string, householdId?: number, preview?: boolean) =>
     apiClient.post<ChatResponse>('/chat', {
       message,
       ...(householdId != null && { household_id: householdId }),
+      ...(preview != null && { preview }),
     }),
 }

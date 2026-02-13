@@ -37,9 +37,18 @@ export interface DailyAmount {
   amount: number
 }
 
+export interface ParsedExpenseItem {
+  amount: number
+  description: string
+  category: string
+  date: string
+  memo: string
+}
+
 export interface ChatResponse {
   message: string
   expenses_created: Expense[] | null
+  parsed_expenses: ParsedExpenseItem[] | null
   insights: string | null
 }
 
