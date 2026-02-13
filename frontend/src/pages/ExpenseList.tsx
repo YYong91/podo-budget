@@ -8,6 +8,7 @@ import { useEffect, useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { expenseApi } from '../api/expenses'
 import { categoryApi } from '../api/categories'
+import { useHouseholdStore } from '../stores/useHouseholdStore'
 import EmptyState from '../components/EmptyState'
 import ErrorState from '../components/ErrorState'
 import type { Expense, Category } from '../types'
@@ -21,6 +22,7 @@ function formatAmount(amount: number): string {
 }
 
 export default function ExpenseList() {
+  const activeHouseholdId = useHouseholdStore((s) => s.activeHouseholdId)
   const [expenses, setExpenses] = useState<Expense[]>([])
   const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
@@ -50,6 +52,7 @@ export default function ExpenseList() {
         start_date: startDate || undefined,
         end_date: endDate || undefined,
         category_id: categoryId,
+        household_id: activeHouseholdId ?? undefined,
       })
       setExpenses(res.data)
     } catch {
@@ -109,7 +112,7 @@ export default function ExpenseList() {
 
   useEffect(() => {
     fetchExpenses()
-  }, [page, startDate, endDate, categoryId])
+  }, [page, startDate, endDate, categoryId, activeHouseholdId])
 
   /**
    * 카테고리 이름 찾기

@@ -14,6 +14,7 @@ class ExpenseBase(BaseModel):
 
 class ExpenseCreate(ExpenseBase):
     raw_input: str | None = None
+    household_id: int | None = None
 
 
 class ExpenseUpdate(BaseModel):
@@ -26,6 +27,8 @@ class ExpenseUpdate(BaseModel):
 class ExpenseResponse(ExpenseBase):
     id: int
     raw_input: str | None = None
+    household_id: int | None = None
+    user_id: int | None = None
     created_at: datetime
     updated_at: datetime
 

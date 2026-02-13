@@ -12,6 +12,7 @@ import { useToast } from '../hooks/useToast'
 import { expenseApi } from '../api/expenses'
 import { categoryApi } from '../api/categories'
 import { chatApi } from '../api/chat'
+import { useHouseholdStore } from '../stores/useHouseholdStore'
 import type { Category } from '../types'
 
 type InputMode = 'natural' | 'form'
@@ -19,6 +20,7 @@ type InputMode = 'natural' | 'form'
 export default function ExpenseForm() {
   const navigate = useNavigate()
   const { addToast } = useToast()
+  const activeHouseholdId = useHouseholdStore((s) => s.activeHouseholdId)
 
   // 입력 모드 상태
   const [mode, setMode] = useState<InputMode>('natural')
@@ -61,7 +63,7 @@ export default function ExpenseForm() {
 
     setLoading(true)
     try {
-      const res = await chatApi.sendMessage(naturalInput.trim())
+      const res = await chatApi.sendMessage(naturalInput.trim(), activeHouseholdId ?? undefined)
 
       if (res.data.expenses_created && res.data.expenses_created.length > 0) {
         addToast('success', `${res.data.expenses_created.length}건의 지출이 저장되었습니다`)
@@ -109,6 +111,7 @@ export default function ExpenseForm() {
         description: formData.description.trim(),
         category_id: formData.category_id ? Number(formData.category_id) : null,
         date: formData.date,
+        household_id: activeHouseholdId,
       })
       addToast('success', '지출이 저장되었습니다')
       // 지출 목록으로 이동

@@ -3,6 +3,10 @@
 사용자별로 자연어 입력을 처리하여 지출을 생성합니다.
 생성된 지출은 자동으로 현재 로그인한 사용자의 지출로 기록됩니다.
 
+공유 가계부(Household) 연동:
+- household_id가 있으면 해당 가구의 공유 지출로 기록
+- 없으면 사용자의 활성 가구를 자동 감지
+
 Rate Limiting:
 - 사용자당 분당 10회로 제한 (LLM API 호출 보호)
 """
@@ -12,6 +16,7 @@ from datetime import datetime
 from fastapi import APIRouter, Depends, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.dependencies import get_household_member, get_user_active_household_id
 from app.core.auth import get_current_user
 from app.core.database import get_db
 from app.core.rate_limit import limiter
@@ -36,24 +41,17 @@ async def chat(
     """채팅 인터페이스로 지출 입력 및 인사이트 요청
 
     자연어로 입력된 지출을 LLM이 파싱하여 현재 로그인한 사용자의 지출로 기록합니다.
-
-    Rate Limiting:
-    - 사용자당 분당 10회 제한
-    - 초과 시 429 Too Many Requests 응답
-
-    예시:
-    - 단일 지출: "오늘 점심에 김치찌개 8000원 먹었어"
-    - 여러 지출: "점심 8천원, 커피 5천원"
-
-    Args:
-        request: FastAPI Request 객체 (rate limiting용)
-        chat_request: 사용자 메시지
-        current_user: 현재 인증된 사용자
-        db: 데이터베이스 세션
-
-    Returns:
-        생성된 지출 목록과 응답 메시지
+    household_id가 있으면 해당 가구의 공유 지출로 기록됩니다.
     """
+    # household_id 결정: 요청에서 받거나 활성 가구 자동 감지
+    household_id = chat_request.household_id
+    if household_id is None:
+        household_id = await get_user_active_household_id(current_user, db)
+
+    # 가구가 있으면 멤버 검증
+    if household_id is not None:
+        await get_household_member(household_id, current_user, db)
+
     llm = get_llm_provider("parse")
 
     # LLM으로 사용자 입력 파싱
@@ -72,9 +70,10 @@ async def chat(
         # 카테고리 매칭/생성 (사용자별로 처리)
         category = await get_or_create_category(db, parsed.get("category", "기타"), current_user.id)
 
-        # 지출 생성 (user_id 설정)
+        # 지출 생성 (user_id + household_id 설정)
         expense = Expense(
             user_id=current_user.id,
+            household_id=household_id,
             amount=parsed["amount"],
             description=parsed.get("description", chat_request.message),
             category_id=category.id,
@@ -100,9 +99,10 @@ async def chat(
             # 카테고리 매칭/생성 (사용자별로 처리)
             category = await get_or_create_category(db, item.get("category", "기타"), current_user.id)
 
-            # 지출 생성 (user_id 설정)
+            # 지출 생성 (user_id + household_id 설정)
             expense = Expense(
                 user_id=current_user.id,
+                household_id=household_id,
                 amount=item["amount"],
                 description=item.get("description", ""),
                 category_id=category.id,

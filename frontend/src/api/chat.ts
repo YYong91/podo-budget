@@ -13,6 +13,9 @@ export const chatApi = {
    * @param message - 사용자가 입력한 자연어 메시지 (예: "오늘 점심에 김치찌개 8000원 먹었어")
    * @returns LLM 응답 및 생성된 지출 내역
    */
-  sendMessage: (message: string) =>
-    apiClient.post<ChatResponse>('/chat', { message }),
+  sendMessage: (message: string, householdId?: number) =>
+    apiClient.post<ChatResponse>('/chat', {
+      message,
+      ...(householdId != null && { household_id: householdId }),
+    }),
 }

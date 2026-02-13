@@ -9,6 +9,7 @@ interface GetExpensesParams {
   start_date?: string
   end_date?: string
   category_id?: number
+  household_id?: number
 }
 
 export const expenseApi = {
@@ -27,6 +28,8 @@ export const expenseApi = {
   delete: (id: number) =>
     apiClient.delete(`/expenses/${id}`),
 
-  getMonthlyStats: (month: string) =>
-    apiClient.get<MonthlyStats>('/expenses/stats/monthly', { params: { month } }),
+  getMonthlyStats: (month: string, householdId?: number) =>
+    apiClient.get<MonthlyStats>('/expenses/stats/monthly', {
+      params: { month, ...(householdId != null && { household_id: householdId }) },
+    }),
 }

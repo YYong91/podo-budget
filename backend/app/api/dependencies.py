@@ -19,6 +19,36 @@ from app.models.household_member import HouseholdMember
 from app.models.user import User
 
 
+async def get_user_active_household_id(
+    user: User,
+    db: AsyncSession,
+) -> int | None:
+    """사용자의 활성 가구 ID 조회
+
+    사용자가 속한 활성 가구(left_at is None) 중 첫 번째 household_id를 반환합니다.
+
+    Args:
+        user: 현재 로그인한 사용자
+        db: 데이터베이스 세션
+
+    Returns:
+        활성 가구 ID 또는 None (가구에 속하지 않은 경우)
+    """
+    result = await db.execute(
+        select(HouseholdMember.household_id)
+        .join(Household, HouseholdMember.household_id == Household.id)
+        .where(
+            and_(
+                HouseholdMember.user_id == user.id,
+                HouseholdMember.left_at.is_(None),
+                Household.deleted_at.is_(None),
+            )
+        )
+        .limit(1)
+    )
+    return result.scalar_one_or_none()
+
+
 async def get_household_member(
     household_id: int,
     current_user: User = Depends(get_current_user),

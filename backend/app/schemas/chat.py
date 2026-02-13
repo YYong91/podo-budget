@@ -5,6 +5,7 @@ from app.schemas.expense import ExpenseResponse
 
 class ChatRequest(BaseModel):
     message: str
+    household_id: int | None = None
 
 
 class ChatResponse(BaseModel):

@@ -27,6 +27,8 @@ interface HouseholdState {
   currentHousehold: HouseholdDetail | null
   /** 내가 받은 초대 목록 */
   myInvitations: HouseholdInvitation[]
+  /** 활성 가구 ID (지출 연동용) */
+  activeHouseholdId: number | null
   /** 로딩 상태 */
   isLoading: boolean
   /** 에러 메시지 */
@@ -74,6 +76,8 @@ interface HouseholdActions {
   clearError: () => void
   /** 현재 Household 초기화 */
   clearCurrentHousehold: () => void
+  /** 활성 가구 ID getter */
+  getActiveHouseholdId: () => number | null
 }
 
 type HouseholdStore = HouseholdState & HouseholdActions
@@ -88,6 +92,7 @@ export const useHouseholdStore = create<HouseholdStore>((set, get) => ({
   households: [],
   currentHousehold: null,
   myInvitations: [],
+  activeHouseholdId: null,
   isLoading: false,
   error: null,
 
@@ -102,7 +107,13 @@ export const useHouseholdStore = create<HouseholdStore>((set, get) => ({
     set({ isLoading: true, error: null })
     try {
       const response = await householdApi.getHouseholds()
-      set({ households: response.data, isLoading: false })
+      const households = response.data
+      // 활성 가구가 아직 설정되지 않았으면 첫 번째 가구를 자동 선택
+      const currentActive = get().activeHouseholdId
+      const activeId = currentActive && households.some((h) => h.id === currentActive)
+        ? currentActive
+        : households.length > 0 ? households[0].id : null
+      set({ households, activeHouseholdId: activeId, isLoading: false })
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : '목록 조회 중 오류가 발생했습니다'
       set({ error: errorMessage, isLoading: false })
@@ -175,11 +186,15 @@ export const useHouseholdStore = create<HouseholdStore>((set, get) => ({
     set({ isLoading: true, error: null })
     try {
       await householdApi.deleteHousehold(id)
-      set((state) => ({
-        households: state.households.filter((h) => h.id !== id),
-        currentHousehold: state.currentHousehold?.id === id ? null : state.currentHousehold,
-        isLoading: false,
-      }))
+      set((state) => {
+        const remaining = state.households.filter((h) => h.id !== id)
+        return {
+          households: remaining,
+          currentHousehold: state.currentHousehold?.id === id ? null : state.currentHousehold,
+          activeHouseholdId: state.activeHouseholdId === id ? (remaining.length > 0 ? remaining[0].id : null) : state.activeHouseholdId,
+          isLoading: false,
+        }
+      })
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : '삭제 중 오류가 발생했습니다'
       set({ error: errorMessage, isLoading: false })
@@ -230,11 +245,15 @@ export const useHouseholdStore = create<HouseholdStore>((set, get) => ({
     set({ isLoading: true, error: null })
     try {
       await householdApi.leaveHousehold(householdId)
-      set((state) => ({
-        households: state.households.filter((h) => h.id !== householdId),
-        currentHousehold: state.currentHousehold?.id === householdId ? null : state.currentHousehold,
-        isLoading: false,
-      }))
+      set((state) => {
+        const remaining = state.households.filter((h) => h.id !== householdId)
+        return {
+          households: remaining,
+          currentHousehold: state.currentHousehold?.id === householdId ? null : state.currentHousehold,
+          activeHouseholdId: state.activeHouseholdId === householdId ? (remaining.length > 0 ? remaining[0].id : null) : state.activeHouseholdId,
+          isLoading: false,
+        }
+      })
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : '탈퇴 중 오류가 발생했습니다'
       set({ error: errorMessage, isLoading: false })
@@ -341,5 +360,12 @@ export const useHouseholdStore = create<HouseholdStore>((set, get) => ({
    */
   clearCurrentHousehold: () => {
     set({ currentHousehold: null })
+  },
+
+  /**
+   * 활성 가구 ID 반환
+   */
+  getActiveHouseholdId: () => {
+    return get().activeHouseholdId
   },
 }))

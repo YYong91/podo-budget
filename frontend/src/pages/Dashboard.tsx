@@ -8,6 +8,7 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { PieChart, Pie, Cell, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
 import { expenseApi } from '../api/expenses'
+import { useHouseholdStore } from '../stores/useHouseholdStore'
 import EmptyState from '../components/EmptyState'
 import ErrorState from '../components/ErrorState'
 import type { Expense, MonthlyStats } from '../types'
@@ -27,6 +28,7 @@ function getCurrentMonth(): string {
 
 export default function Dashboard() {
   const navigate = useNavigate()
+  const activeHouseholdId = useHouseholdStore((s) => s.activeHouseholdId)
   const [stats, setStats] = useState<MonthlyStats | null>(null)
   const [recentExpenses, setRecentExpenses] = useState<Expense[]>([])
   const [loading, setLoading] = useState(true)
@@ -40,8 +42,8 @@ export default function Dashboard() {
     setError(false)
     try {
       const [statsRes, expensesRes] = await Promise.all([
-        expenseApi.getMonthlyStats(getCurrentMonth()),
-        expenseApi.getAll({ limit: 5 }),
+        expenseApi.getMonthlyStats(getCurrentMonth(), activeHouseholdId ?? undefined),
+        expenseApi.getAll({ limit: 5, household_id: activeHouseholdId ?? undefined }),
       ])
       setStats(statsRes.data)
       setRecentExpenses(expensesRes.data)
@@ -54,7 +56,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     fetchData()
-  }, [])
+  }, [activeHouseholdId])
 
   if (loading) {
     return (
