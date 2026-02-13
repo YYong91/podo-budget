@@ -8,7 +8,7 @@ LLMProviderType = Literal["openai", "anthropic", "google", "local"]
 class Settings(BaseSettings):
     APP_NAME: str = "HomeNRich"
     DEBUG: bool = True
-    SECRET_KEY: str = "change-this-in-production"
+    SECRET_KEY: str = ""  # 프로덕션에서는 반드시 설정 필요 (lifespan에서 검증)
 
     # Database
     DATABASE_URL: str = "postgresql+asyncpg://homenrich:homenrich@localhost:5432/homenrich"  # pragma: allowlist secret
@@ -32,6 +32,12 @@ class Settings(BaseSettings):
 
     # Telegram Bot
     TELEGRAM_BOT_TOKEN: str = ""
+
+    # KakaoTalk Bot
+    KAKAO_BOT_API_KEY: str = ""
+
+    # CORS — 허용할 프론트엔드 오리진 (쉼표로 구분)
+    CORS_ORIGINS: str = "http://localhost:5173,http://localhost:3000"
 
     class Config:
         env_file = ".env"

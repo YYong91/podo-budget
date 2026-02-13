@@ -1,6 +1,7 @@
 """예산 관리 API 라우트
 
 예산 설정, 조회, 수정, 삭제 및 예산 초과 알림 기능을 제공합니다.
+사용자별로 예산 데이터를 격리하여 관리합니다.
 """
 
 from datetime import datetime
@@ -9,40 +10,52 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.auth import get_current_user
 from app.core.database import get_db
 from app.models.budget import Budget
 from app.models.category import Category
 from app.models.expense import Expense
+from app.models.user import User
 from app.schemas.budget import BudgetAlert, BudgetCreate, BudgetResponse, BudgetUpdate
 
 router = APIRouter()
 
 
 @router.get("/", response_model=list[BudgetResponse])
-async def get_budgets(db: AsyncSession = Depends(get_db)):
+async def get_budgets(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
     """전체 예산 목록 조회
 
-    설정된 모든 예산을 반환합니다.
+    현재 로그인한 사용자의 예산만 반환합니다.
 
     Args:
+        current_user: 현재 인증된 사용자
         db: 데이터베이스 세션
 
     Returns:
         예산 목록 (생성일 역순)
     """
-    result = await db.execute(select(Budget).order_by(Budget.created_at.desc()))
+    result = await db.execute(select(Budget).where(Budget.user_id == current_user.id).order_by(Budget.created_at.desc()))
     budgets = result.scalars().all()
     return budgets
 
 
 @router.post("/", response_model=BudgetResponse, status_code=status.HTTP_201_CREATED)
-async def create_budget(budget_data: BudgetCreate, db: AsyncSession = Depends(get_db)):
+async def create_budget(
+    budget_data: BudgetCreate,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
     """예산 생성
 
-    특정 카테고리에 대한 예산을 설정합니다.
+    현재 사용자의 예산을 생성합니다.
+    user_id는 자동으로 현재 로그인한 사용자로 설정됩니다.
 
     Args:
         budget_data: 예산 생성 정보
+        current_user: 현재 인증된 사용자
         db: 데이터베이스 세션
 
     Returns:
@@ -70,6 +83,7 @@ async def create_budget(budget_data: BudgetCreate, db: AsyncSession = Depends(ge
 
     # Budget 생성
     new_budget = Budget(
+        user_id=current_user.id,
         category_id=budget_data.category_id,
         amount=budget_data.amount,
         period=budget_data.period,
@@ -86,25 +100,32 @@ async def create_budget(budget_data: BudgetCreate, db: AsyncSession = Depends(ge
 
 
 @router.put("/{budget_id}", response_model=BudgetResponse)
-async def update_budget(budget_id: int, budget_data: BudgetUpdate, db: AsyncSession = Depends(get_db)):
+async def update_budget(
+    budget_id: int,
+    budget_data: BudgetUpdate,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
     """예산 수정
 
-    기존 예산의 정보를 업데이트합니다. 제공된 필드만 수정됩니다.
+    현재 로그인한 사용자의 예산만 수정할 수 있습니다.
+    제공된 필드만 수정됩니다.
 
     Args:
         budget_id: 예산 ID
         budget_data: 수정할 필드들
+        current_user: 현재 인증된 사용자
         db: 데이터베이스 세션
 
     Returns:
         수정된 예산 정보
 
     Raises:
-        HTTPException 404: 예산을 찾을 수 없는 경우
+        HTTPException 404: 예산을 찾을 수 없거나 소유자가 아닌 경우
         HTTPException 400: 종료일이 시작일보다 이른 경우
     """
-    # 예산 조회
-    result = await db.execute(select(Budget).where(Budget.id == budget_id))
+    # 예산 조회 (소유자 확인 포함)
+    result = await db.execute(select(Budget).where(Budget.id == budget_id, Budget.user_id == current_user.id))
     budget = result.scalar_one_or_none()
 
     if not budget:
@@ -132,17 +153,24 @@ async def update_budget(budget_id: int, budget_data: BudgetUpdate, db: AsyncSess
 
 
 @router.delete("/{budget_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_budget(budget_id: int, db: AsyncSession = Depends(get_db)):
+async def delete_budget(
+    budget_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
     """예산 삭제
+
+    현재 로그인한 사용자의 예산만 삭제할 수 있습니다.
 
     Args:
         budget_id: 예산 ID
+        current_user: 현재 인증된 사용자
         db: 데이터베이스 세션
 
     Raises:
-        HTTPException 404: 예산을 찾을 수 없는 경우
+        HTTPException 404: 예산을 찾을 수 없거나 소유자가 아닌 경우
     """
-    result = await db.execute(select(Budget).where(Budget.id == budget_id))
+    result = await db.execute(select(Budget).where(Budget.id == budget_id, Budget.user_id == current_user.id))
     budget = result.scalar_one_or_none()
 
     if not budget:
@@ -156,9 +184,13 @@ async def delete_budget(budget_id: int, db: AsyncSession = Depends(get_db)):
 
 
 @router.get("/alerts", response_model=list[BudgetAlert])
-async def get_budget_alerts(db: AsyncSession = Depends(get_db)):
+async def get_budget_alerts(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
     """예산 초과/경고 알림 조회
 
+    현재 로그인한 사용자의 예산 알림만 조회합니다.
     각 카테고리별로 설정된 예산과 현재까지의 지출을 비교하여
     예산 초과 또는 경고 임계값 도달 여부를 알려줍니다.
 
@@ -167,13 +199,14 @@ async def get_budget_alerts(db: AsyncSession = Depends(get_db)):
     - weekly, daily: 마찬가지로 기간 내 지출 집계
 
     Args:
+        current_user: 현재 인증된 사용자
         db: 데이터베이스 세션
 
     Returns:
         예산 알림 목록 (초과/경고 있는 것 우선, 사용률 높은 순)
     """
-    # 모든 활성 예산 조회
-    result = await db.execute(select(Budget))
+    # 현재 사용자의 활성 예산 조회
+    result = await db.execute(select(Budget).where(Budget.user_id == current_user.id))
     budgets = result.scalars().all()
 
     alerts = []
@@ -194,12 +227,14 @@ async def get_budget_alerts(db: AsyncSession = Depends(get_db)):
         if not category:
             continue
 
-        # 해당 카테고리의 기간 내 지출 합계
+        # 해당 카테고리의 기간 내 지출 합계 (사용자 필터 추가)
         expense_result = await db.execute(
-            select(func.sum(Expense.amount))
-            .where(Expense.category_id == budget.category_id)
-            .where(Expense.date >= budget.start_date)
-            .where(Expense.date <= end_date)
+            select(func.sum(Expense.amount)).where(
+                Expense.user_id == current_user.id,
+                Expense.category_id == budget.category_id,
+                Expense.date >= budget.start_date,
+                Expense.date <= end_date,
+            )
         )
         spent_amount = expense_result.scalar() or 0.0
 

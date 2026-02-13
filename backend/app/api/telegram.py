@@ -26,6 +26,7 @@ from app.services.bot_messages import (
     format_server_error,
     format_welcome_message,
 )
+from app.services.bot_user_service import get_or_create_bot_user
 from app.services.category_service import get_or_create_category
 from app.services.llm_service import get_llm_provider
 
@@ -78,6 +79,9 @@ async def telegram_webhook(request: Request, db: AsyncSession = Depends(get_db))
     chat_id = message["chat"]["id"]
     user_text = message["text"]
 
+    # 봇 사용자 생성 또는 조회 (데이터 격리를 위함)
+    bot_user = await get_or_create_bot_user(db, platform="telegram", platform_user_id=str(chat_id))
+
     # /start 명령어 처리
     if user_text.startswith("/start"):
         await send_telegram_message(chat_id, format_welcome_message())
@@ -90,17 +94,17 @@ async def telegram_webhook(request: Request, db: AsyncSession = Depends(get_db))
 
     # /report 명령어 처리 (이번 달 지출 요약)
     if user_text.startswith("/report"):
-        await handle_report_command(chat_id, db)
+        await handle_report_command(chat_id, db, user_id=bot_user.id)
         return {"ok": True}
 
     # /budget 명령어 처리 (예산 현황)
     if user_text.startswith("/budget"):
-        await handle_budget_command(chat_id, db)
+        await handle_budget_command(chat_id, db, user_id=bot_user.id)
         return {"ok": True}
 
     # LLM으로 지출 파싱
     try:
-        llm = get_llm_provider()
+        llm = get_llm_provider("parse")
         parsed = await llm.parse_expense(user_text)
 
         # 단일 지출 (dict) 처리
@@ -110,13 +114,14 @@ async def telegram_webhook(request: Request, db: AsyncSession = Depends(get_db))
                 await send_telegram_message(chat_id, format_parse_error(user_text))
                 return {"ok": True}
 
-            # 카테고리 매칭/생성
+            # 카테고리 매칭/생성 (사용자별 카테고리 관리)
             category_name = parsed.get("category", "기타")
-            category = await get_or_create_category(db, category_name)
+            category = await get_or_create_category(db, category_name, user_id=bot_user.id)
 
-            # Expense 생성
+            # Expense 생성 (user_id 연결로 데이터 격리)
             expense_date = datetime.fromisoformat(parsed.get("date", datetime.now().isoformat()))
             expense = Expense(
+                user_id=bot_user.id,
                 amount=parsed["amount"],
                 description=parsed.get("description", user_text),
                 category_id=category.id,
@@ -157,13 +162,14 @@ async def telegram_webhook(request: Request, db: AsyncSession = Depends(get_db))
             created_expenses = []
 
             for item in parsed:
-                # 카테고리 매칭/생성
+                # 카테고리 매칭/생성 (사용자별 카테고리 관리)
                 category_name = item.get("category", "기타")
-                category = await get_or_create_category(db, category_name)
+                category = await get_or_create_category(db, category_name, user_id=bot_user.id)
 
-                # Expense 생성
+                # Expense 생성 (user_id 연결로 데이터 격리)
                 expense_date = datetime.fromisoformat(item.get("date", datetime.now().isoformat()))
                 expense = Expense(
+                    user_id=bot_user.id,
                     amount=item["amount"],
                     description=item.get("description", ""),
                     category_id=category.id,
@@ -256,17 +262,19 @@ async def answer_callback_query(callback_id: str, text: str):
         await client.post(url, json={"callback_query_id": callback_id, "text": text})
 
 
-async def handle_report_command(chat_id: int, db: AsyncSession):
+async def handle_report_command(chat_id: int, db: AsyncSession, user_id: int):
     """이번 달 지출 요약 리포트 전송
 
     카테고리별 지출 합계와 건수를 집계하여 메시지로 보냅니다.
+    사용자별로 데이터를 격리하여 조회합니다.
 
     Args:
         chat_id: 메시지를 보낼 채팅방 ID
         db: 데이터베이스 세션
+        user_id: 조회할 사용자 ID
     """
     try:
-        # 이번 달 1일부터 현재까지 지출 집계
+        # 이번 달 1일부터 현재까지 지출 집계 (해당 사용자만)
         now = datetime.now()
         result = await db.execute(
             select(
@@ -275,6 +283,7 @@ async def handle_report_command(chat_id: int, db: AsyncSession):
                 func.count(Expense.id).label("count"),
             )
             .join(Category, Expense.category_id == Category.id)
+            .where(Expense.user_id == user_id)
             .where(extract("year", Expense.date) == now.year)
             .where(extract("month", Expense.date) == now.month)
             .group_by(Category.name)
@@ -292,18 +301,20 @@ async def handle_report_command(chat_id: int, db: AsyncSession):
         await send_telegram_message(chat_id, format_server_error())
 
 
-async def handle_budget_command(chat_id: int, db: AsyncSession):
+async def handle_budget_command(chat_id: int, db: AsyncSession, user_id: int):
     """예산 현황 전송
 
     설정된 예산과 현재 지출을 비교하여 메시지로 보냅니다.
+    사용자별로 데이터를 격리하여 조회합니다.
 
     Args:
         chat_id: 메시지를 보낼 채팅방 ID
         db: 데이터베이스 세션
+        user_id: 조회할 사용자 ID
     """
     try:
-        # 모든 활성 예산 조회
-        budget_result = await db.execute(select(Budget))
+        # 해당 사용자의 활성 예산 조회
+        budget_result = await db.execute(select(Budget).where(Budget.user_id == user_id))
         budgets = budget_result.scalars().all()
 
         if not budgets:
@@ -326,9 +337,10 @@ async def handle_budget_command(chat_id: int, db: AsyncSession):
             if not category:
                 continue
 
-            # 지출 합계
+            # 지출 합계 (해당 사용자만)
             expense_result = await db.execute(
                 select(func.sum(Expense.amount))
+                .where(Expense.user_id == user_id)
                 .where(Expense.category_id == budget.category_id)
                 .where(Expense.date >= budget.start_date)
                 .where(Expense.date <= end_date)

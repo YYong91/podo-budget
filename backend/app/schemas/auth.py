@@ -14,10 +14,12 @@ class UserCreate(BaseModel):
     Attributes:
         username: 사용자명 (3-50자, 영문/숫자/언더스코어)
         password: 비밀번호 (8자 이상)
+        email: 이메일 주소 (선택, 가구 초대 시스템용)
     """
 
     username: str = Field(..., min_length=3, max_length=50, description="사용자명")
     password: str = Field(..., min_length=8, description="비밀번호 (8자 이상)")
+    email: str | None = Field(None, max_length=255, description="이메일 (선택, 가구 초대용)")
 
 
 class LoginRequest(BaseModel):
@@ -47,6 +49,7 @@ class UserResponse(BaseModel):
 
     id: int
     username: str
+    email: str | None
     is_active: bool
     created_at: datetime
 

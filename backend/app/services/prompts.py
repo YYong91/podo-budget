@@ -1,6 +1,6 @@
 """LLM 프롬프트 템플릿 모듈"""
 
-from datetime import date
+from datetime import date, timedelta
 
 # 지출 파싱용 시스템 프롬프트
 EXPENSE_PARSER_SYSTEM_PROMPT = """당신은 한국어 가계부 입력을 분석하는 전문가입니다.
@@ -95,7 +95,7 @@ EXPENSE_PARSER_SYSTEM_PROMPT = """당신은 한국어 가계부 입력을 분석
 def get_expense_parser_prompt() -> str:
     """오늘 날짜를 삽입한 시스템 프롬프트 반환"""
     today = date.today()
-    yesterday = date.today().replace(day=today.day - 1) if today.day > 1 else today
+    yesterday = today - timedelta(days=1)
     return EXPENSE_PARSER_SYSTEM_PROMPT.format(
         today=today.isoformat(),
         yesterday=yesterday.isoformat(),

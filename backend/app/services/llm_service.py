@@ -158,11 +158,95 @@ class OpenAIProvider(LLMProvider):
         self.model = model or DEFAULT_MODELS["openai"]
 
     async def parse_expense(self, user_input: str) -> dict[str, Any] | list[dict[str, Any]]:
-        # TODO: OpenAI 구현
-        return {"error": "OpenAI 프로바이더는 아직 구현되지 않았습니다"}
+        """OpenAI API로 자연어 지출 입력을 구조화된 데이터로 변환
+
+        단일 지출 또는 여러 지출을 파싱합니다.
+        여러 지출인 경우 리스트로 반환합니다.
+        """
+        from app.services.prompts import get_expense_parser_prompt
+
+        max_retries = 2
+        for attempt in range(max_retries):
+            try:
+                response = await self.client.chat.completions.create(
+                    model=self.model,
+                    max_tokens=512,  # 여러 지출 처리를 위해 토큰 증가
+                    messages=[
+                        {"role": "system", "content": get_expense_parser_prompt()},
+                        {"role": "user", "content": user_input},
+                    ],
+                )
+
+                # 텍스트 응답에서 JSON 추출
+                text = response.choices[0].message.content.strip()
+
+                # ```json ... ``` 블록이 있으면 내부만 추출
+                if "```json" in text:
+                    text = text.split("```json")[1].split("```")[0].strip()
+                elif "```" in text:
+                    text = text.split("```")[1].split("```")[0].strip()
+
+                parsed = json.loads(text)
+
+                # 단일 지출 (dict)인 경우
+                if isinstance(parsed, dict):
+                    # 에러 응답 확인
+                    if "error" in parsed:
+                        return parsed
+
+                    # 필수 필드 검증
+                    if "amount" not in parsed or parsed["amount"] is None:
+                        return {"error": "금액을 찾을 수 없습니다"}
+
+                    return parsed
+
+                # 여러 지출 (list)인 경우
+                elif isinstance(parsed, list):
+                    # 각 항목의 필수 필드 검증
+                    for item in parsed:
+                        if not isinstance(item, dict):
+                            return {"error": "잘못된 형식입니다"}
+                        if "amount" not in item or item["amount"] is None:
+                            return {"error": "일부 항목의 금액을 찾을 수 없습니다"}
+
+                    return parsed
+
+                else:
+                    return {"error": "잘못된 형식입니다"}
+
+            except json.JSONDecodeError:
+                logger.warning(f"JSON 파싱 실패 (시도 {attempt + 1}/{max_retries}): {text}")
+                if attempt == max_retries - 1:
+                    return {"error": "응답을 파싱할 수 없습니다"}
+            except Exception as e:
+                logger.error(f"OpenAI API 호출 실패: {e}")
+                if attempt == max_retries - 1:
+                    return {"error": f"LLM 서비스 오류: {str(e)}"}
+
+        return {"error": "알 수 없는 오류가 발생했습니다"}
 
     async def generate_insights(self, expenses_data: dict[str, Any]) -> str:
-        return "OpenAI 프로바이더는 아직 구현되지 않았습니다"
+        """지출 데이터를 분석하여 인사이트 Markdown 텍스트 생성"""
+        from app.services.prompts import INSIGHTS_SYSTEM_PROMPT
+
+        try:
+            # 지출 데이터를 텍스트로 정리
+            data_text = json.dumps(expenses_data, ensure_ascii=False, indent=2)
+
+            response = await self.client.chat.completions.create(
+                model=self.model,
+                max_tokens=1024,
+                messages=[
+                    {"role": "system", "content": INSIGHTS_SYSTEM_PROMPT},
+                    {"role": "user", "content": f"다음 지출 데이터를 분석해주세요:\n\n{data_text}"},
+                ],
+            )
+
+            return response.choices[0].message.content
+
+        except Exception as e:
+            logger.error(f"인사이트 생성 실패: {e}")
+            return f"인사이트 생성 중 오류가 발생했습니다: {str(e)}"
 
 
 class GoogleProvider(LLMProvider):
