@@ -1,6 +1,6 @@
 # HomeNRich 구현 현황 (Implementation Status)
 
-**최종 업데이트**: 2026-02-13
+**최종 업데이트**: 2026-02-14
 **기준 문서**: `PRODUCT.md`, `ROADMAP.md`
 
 기능별 구현 완료도를 추적합니다. 기능 완료/변경 시 이 문서를 업데이트합니다.
@@ -12,7 +12,7 @@
 | Phase | 진행률 | 상태 |
 |-------|--------|------|
 | Phase 1 (Core MVP) | 40% | API/UI 구조 완료, LLM 파싱 미구현 |
-| Phase 2 (Household) | API만 완료 | Expense 연결 미완 |
+| Phase 2 (Household) | 70% | Expense 연결 완료, 전환 UI 미완 |
 | Phase 3 (Bot) | 스켈레톤 | 실제 동작 안 함 |
 | Phase 4 (배포) | 0% | 미착수 |
 
@@ -35,7 +35,8 @@
 |------|------|------|--------|------|
 | 지출 CRUD | 완료 | api/expenses.py | 있음 | - |
 | 날짜 필터링 | 완료 | api/expenses.py | 있음 | - |
-| household_id 필터링 | 부분 | api/expenses.py | 부분 | API 있지만 권한 검증 미완 |
+| household_id 필터링 | 완료 | api/expenses.py | 있음 | 멤버 검증 + 가구 전체 조회 |
+| household_id 자동감지 | 완료 | api/dependencies.py | 있음 | 활성 가구 자동 설정 |
 
 ### LLM 자연어 파싱
 
@@ -62,9 +63,9 @@
 | 가구 CRUD | 완료 | api/households.py | 있음 | - |
 | 멤버 관리 | 완료 | api/households.py | 있음 | owner/member/viewer 역할 |
 | 초대 생성/수락/거절 | 완료 | api/invitations.py | 있음 | - |
-| Expense 연결 | **미완** | - | - | household_id 세팅 안 됨 |
+| Expense 연결 | 완료 | api/expenses.py, api/chat.py | 있음 | 생성/조회 시 household_id 자동 설정 |
 | 이메일 발송 | 미구현 | - | - | SendGrid 연동 필요 |
-| Expense 권한 검증 | 미완 | - | - | require_household_member() 미완 |
+| Expense 권한 검증 | 완료 | api/dependencies.py | 있음 | get_household_member()로 멤버 검증 |
 
 ### 봇 통합
 
@@ -146,7 +147,7 @@
 
 | 영역 | 테스트 수 | 커버리지 |
 |------|-----------|----------|
-| 백엔드 (pytest) | 136개 | 미측정 |
+| 백엔드 (pytest) | 199개 | 미측정 |
 | 프론트엔드 (Vitest) | 157개 | 미측정 |
 | E2E | 0개 | - |
 
@@ -157,7 +158,7 @@
 ### P0 (Critical)
 - LLM 파싱 미구현: 자연어 입력이 동작하지 않음 (stub 상태)
 - Alembic 미초기화: DB 스키마 변경 추적 불가
-- Household <-> Expense 미연결: API는 있지만 실제 공유 로직 없음
+- ~~Household <-> Expense 미연결~~ (2026-02-14 해결)
 
 ### P1 (High)
 - 이메일 발송 미구현: 초대 링크를 직접 복사해야 함

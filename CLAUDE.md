@@ -129,9 +129,9 @@ Frontend: `frontend/.env.development`:
 - `docs/operations/` — 운영/배포 가이드
 - `docs/archive/` — 폐기된 문서 (참고용)
 
-## Current State (2026-02-13)
+## Current State (2026-02-14)
 
-- **Backend**: 인증, 지출 CRUD, 카테고리, 예산, 인사이트, Household/초대 API 모두 구현됨. LLM 파싱은 stub 상태. 테스트 136개.
-- **Frontend**: React 19 SPA. 대시보드, 지출, 카테고리, 예산, 인사이트, 가구 관리 페이지 구현. 테스트 157개.
+- **Backend**: 인증, 지출 CRUD, 카테고리, 예산, 인사이트, Household/초대 API 모두 구현됨. Expense ↔ Household 연결 완료. LLM 파싱은 stub 상태. 테스트 199개.
+- **Frontend**: React 19 SPA. 대시보드, 지출, 카테고리, 예산, 인사이트, 가구 관리 페이지 구현. activeHouseholdId로 지출 자동 연동. 테스트 157개.
 - **Infrastructure**: Docker Compose로 PostgreSQL + Backend + Frontend 실행 가능.
-- **핵심 미완성**: Household API는 있지만 Expense와 연결되지 않음 (chat.py, expenses.py에서 household_id 미사용). LLM 파싱 미구현.
+- **핵심 미완성**: LLM 파싱 미구현. Alembic 마이그레이션 미초기화.

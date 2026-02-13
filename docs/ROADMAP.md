@@ -1,6 +1,6 @@
 # HomeNRich 로드맵 (Roadmap)
 
-**최종 업데이트**: 2026-02-13
+**최종 업데이트**: 2026-02-14
 **기준 문서**: `PRODUCT.md`
 
 이 문서는 HomeNRich의 단계별 구현 계획을 정의합니다.
@@ -51,11 +51,11 @@
 
 | 기능 | 상태 | 완료 조건 |
 |------|------|----------|
-| Expense 스키마 확장 | 예정 | ExpenseCreate에 household_id 추가 |
-| chat.py household 지원 | 예정 | 자연어에서 개인/공유 힌트 추출 |
-| expenses.py household 필터링 | 예정 | household_id로 공유 지출 조회 |
+| Expense 스키마 확장 | **완료** | ExpenseCreate에 household_id 추가 |
+| chat.py household 지원 | **완료** | household_id 자동감지 + 멤버 검증 |
+| expenses.py household 필터링 | **완료** | household_id로 공유 지출 조회 |
 | 자연어 컨텍스트 탐지 서비스 | 예정 | "우리" -> 공유, "내" -> 개인 |
-| Household 권한 검증 | 예정 | 멤버만 지출 조회/수정 가능 |
+| Household 권한 검증 | **완료** | 멤버만 지출 조회/수정 가능 |
 | 초대 이메일 발송 | 예정 | SendGrid/SES 연동 |
 | Household 전환 UI | 예정 | 헤더 드롭다운으로 가구 전환 |
 | 멤버별 지출 필터링 UI | 예정 | "남편 지출만 보기" 가능 |
