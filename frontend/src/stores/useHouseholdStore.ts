@@ -78,6 +78,8 @@ interface HouseholdActions {
   clearCurrentHousehold: () => void
   /** 활성 가구 ID getter */
   getActiveHouseholdId: () => number | null
+  /** 활성 가구 전환 */
+  setActiveHouseholdId: (id: number | null) => void
 }
 
 type HouseholdStore = HouseholdState & HouseholdActions
@@ -367,5 +369,13 @@ export const useHouseholdStore = create<HouseholdStore>((set, get) => ({
    */
   getActiveHouseholdId: () => {
     return get().activeHouseholdId
+  },
+
+  /**
+   * 활성 가구 전환
+   * 지출 목록/대시보드에서 해당 가구의 데이터만 표시하도록 변경한다.
+   */
+  setActiveHouseholdId: (id: number | null) => {
+    set({ activeHouseholdId: id })
   },
 }))

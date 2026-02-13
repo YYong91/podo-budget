@@ -19,22 +19,44 @@ const navItems = [
 
 export default function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [householdDropdownOpen, setHouseholdDropdownOpen] = useState(false)
   const location = useLocation()
   const navigate = useNavigate()
   const { user, logout } = useAuth()
-  const { myInvitations, fetchMyInvitations } = useHouseholdStore()
+  const {
+    households,
+    activeHouseholdId,
+    myInvitations,
+    fetchHouseholds,
+    fetchMyInvitations,
+    setActiveHouseholdId,
+  } = useHouseholdStore()
 
-  // 컴포넌트 마운트 시 초대 목록 조회 (뱃지 표시용)
+  // 컴포넌트 마운트 시 가구 목록 + 초대 목록 조회
   useEffect(() => {
-    fetchMyInvitations().catch(() => {
-      // 에러는 무시 (뱃지 표시 실패해도 앱 동작에는 지장 없음)
+    fetchHouseholds().catch(() => {
+      // 가구 목록 조회 실패해도 앱 동작에는 지장 없음
     })
-  }, [fetchMyInvitations])
+    fetchMyInvitations().catch(() => {
+      // 뱃지 표시 실패해도 앱 동작에는 지장 없음
+    })
+  }, [fetchHouseholds, fetchMyInvitations])
+
+  // 드롭다운 외부 클릭 시 닫기
+  useEffect(() => {
+    if (!householdDropdownOpen) return
+    const handleClick = () => setHouseholdDropdownOpen(false)
+    document.addEventListener('click', handleClick)
+    return () => document.removeEventListener('click', handleClick)
+  }, [householdDropdownOpen])
 
   // pending 상태인 초대 개수
   const pendingInvitationCount = myInvitations.filter(
     (inv) => inv.status === 'pending'
   ).length
+
+  // 현재 활성 가구 이름
+  const activeHousehold = households.find((h) => h.id === activeHouseholdId)
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -82,6 +104,59 @@ export default function Layout() {
             ${sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
           `}
         >
+          {/* 가구 선택 드롭다운 */}
+          <div className="mb-4">
+            {households.length === 0 ? (
+              <Link
+                to="/households"
+                onClick={() => setSidebarOpen(false)}
+                className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm bg-primary-50 text-primary-700 hover:bg-primary-100 transition-colors"
+              >
+                <span>🏠</span>
+                <span>가계부를 만들어주세요</span>
+              </Link>
+            ) : households.length === 1 ? (
+              <div className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm bg-gray-100 text-gray-700">
+                <span>🏠</span>
+                <span className="font-medium truncate">{activeHousehold?.name ?? '가구'}</span>
+              </div>
+            ) : (
+              <div className="relative">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setHouseholdDropdownOpen(!householdDropdownOpen)
+                  }}
+                  className="flex items-center justify-between w-full px-3 py-2 rounded-lg text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 transition-colors"
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span>🏠</span>
+                    <span className="font-medium truncate">{activeHousehold?.name ?? '가구 선택'}</span>
+                  </div>
+                  <span className="text-xs text-gray-400 ml-1">▼</span>
+                </button>
+                {householdDropdownOpen && (
+                  <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 py-1">
+                    {households.map((h) => (
+                      <button
+                        key={h.id}
+                        onClick={() => {
+                          setActiveHouseholdId(h.id)
+                          setHouseholdDropdownOpen(false)
+                        }}
+                        className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 transition-colors truncate ${
+                          h.id === activeHouseholdId ? 'text-primary-700 font-medium bg-primary-50' : 'text-gray-700'
+                        }`}
+                      >
+                        {h.name}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
           <nav className="space-y-1">
             {navItems.map((item) => {
               const isActive = location.pathname === item.path
