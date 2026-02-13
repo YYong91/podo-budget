@@ -29,12 +29,24 @@ services:
       - ./backend:/app
       - ./pyproject.toml:/app/pyproject.toml
       - ./uv.lock:/app/uv.lock
+    env_file:
+      - ./backend/.env
     environment:
       - DATABASE_URL=postgresql+asyncpg://homenrich:homenrich@db:5432/homenrich
     depends_on:
       db:
         condition: service_healthy
     command: uv run uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: homenrich-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
 
 volumes:
   postgres_data:

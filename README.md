@@ -25,8 +25,16 @@
 - **Docker**: 컨테이너화
 - **Docker Compose**: 로컬 개발 환경 구성
 
-### Frontend (예정)
-- React / Vue.js
+### Frontend
+- **React 19**: 최신 React 기능 활용
+- **Vite 7**: 빠른 빌드 및 HMR
+- **Tailwind CSS v4**: 유틸리티 우선 스타일링
+- **Nginx**: 프로덕션 서빙
+
+### Deployment
+- **Fly.io**: 컨테이너 호스팅 (도쿄 리전)
+- **Cloudflare**: CDN + DNS + DDoS 방어
+- **GitHub Actions**: CI/CD 자동화
 
 ## 시작하기
 
@@ -149,18 +157,55 @@ ANTHROPIC_API_KEY=your_api_key_here
 LLM_PROVIDER=local
 ```
 
+## 배포 (Production)
+
+### 빠른 시작 (5분 배포)
+
+```bash
+# 1. Fly CLI 설치 및 로그인
+brew install flyctl
+flyctl auth login
+
+# 2. 자동 배포 스크립트 실행
+chmod +x scripts/deploy-*.sh
+./scripts/deploy-init.sh      # Backend + DB
+cd frontend && ../scripts/deploy-frontend.sh  # Frontend
+
+# 3. 접속
+open https://homenrich-frontend.fly.dev
+```
+
+**무료 티어**: Fly.io 무료 플랫폼 활용 (3개 앱, 3GB DB)
+**월 예상 비용**: $0~5 (LLM API 비용만)
+
+### 상세 가이드
+
+- **빠른 배포**: `QUICKSTART.md`
+- **전체 배포 가이드**: `DEPLOYMENT.md`
+- **인프라 아키텍처 & 비용**: `INFRASTRUCTURE.md`
+- **보안 설정**: `SECURITY.md`
+
+### CI/CD
+
+GitHub Actions가 자동으로 설정되어 있습니다:
+- `main` 브랜치 push → 자동 배포 (Production)
+- PR 생성 → 테스트 실행 (Staging)
+
+---
+
 ## 개발 로드맵
 
 - [x] 프로젝트 초기 구조 설정
 - [x] FastAPI 백엔드 기본 구조
 - [x] Docker 환경 구성
+- [x] 데이터베이스 마이그레이션 설정 (Alembic)
+- [x] 프론트엔드 개발 (React 19)
+- [x] 배포 설정 (Fly.io)
+- [x] CI/CD 파이프라인 (GitHub Actions)
 - [ ] LLM 통합 및 자연어 파싱 구현
-- [ ] 데이터베이스 마이그레이션 설정 (Alembic)
 - [ ] 예산 관리 기능
 - [ ] 인사이트 생성 로직
-- [ ] 프론트엔드 개발
-- [ ] 테스트 작성
-- [ ] 배포 설정
+- [ ] 테스트 작성 (Backend + Frontend)
 
 ## 라이선스
 

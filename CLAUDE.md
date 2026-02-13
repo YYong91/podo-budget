@@ -116,8 +116,22 @@ Key variables in `backend/.env` (see `.env.example`):
 Frontend: `frontend/.env.development`:
 - `VITE_API_URL` — API base URL (default: `/api`, proxied by Vite)
 
-## Current State
+## Project Documents
 
-- **Backend**: Foundational structure in place. LLM integration methods (`parse_expense`, `generate_insights`) implemented with Anthropic provider. Tests directory is empty.
-- **Frontend**: React SPA implemented with 5 pages (Dashboard, ExpenseList, ExpenseDetail, CategoryManager, InsightsPage). API clients, layout, routing complete. Custom hooks and tests not yet implemented.
-- **Infrastructure**: Docker Compose configured. ESLint configured for frontend. Backend uses pre-commit hooks (ruff, detect-secrets).
+프로젝트 방향성은 아래 3개 기준 문서로 관리합니다:
+
+- **`docs/PRODUCT.md`** — 프로덕트 정의서 (Source of Truth). 기획 변경 시 가장 먼저 업데이트
+- **`docs/ROADMAP.md`** — 단계별 구현 계획 (Phase 1~4)
+- **`docs/IMPLEMENTATION_STATUS.md`** — 기능별 구현 현황 추적
+
+기타 문서:
+- `docs/features/` — 기능별 상세 (USER_FLOWS, CATEGORY_RULES, BOT_MESSAGES)
+- `docs/operations/` — 운영/배포 가이드
+- `docs/archive/` — 폐기된 문서 (참고용)
+
+## Current State (2026-02-13)
+
+- **Backend**: 인증, 지출 CRUD, 카테고리, 예산, 인사이트, Household/초대 API 모두 구현됨. LLM 파싱은 stub 상태. 테스트 136개.
+- **Frontend**: React 19 SPA. 대시보드, 지출, 카테고리, 예산, 인사이트, 가구 관리 페이지 구현. 테스트 157개.
+- **Infrastructure**: Docker Compose로 PostgreSQL + Backend + Frontend 실행 가능.
+- **핵심 미완성**: Household API는 있지만 Expense와 연결되지 않음 (chat.py, expenses.py에서 household_id 미사용). LLM 파싱 미구현.
