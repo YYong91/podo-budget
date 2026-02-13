@@ -9,7 +9,7 @@ primary_region = "nrt"  # 도쿄 (Tokyo Narita)
     VITE_API_URL = "/api"
 
 [env]
-  BACKEND_URL = "http://homenrich-backend.internal:8000"
+  BACKEND_URL = "https://homenrich-backend.fly.dev"
 
 [http_service]
   internal_port = 80
@@ -34,8 +34,3 @@ primary_region = "nrt"  # 도쿄 (Tokyo Narita)
   cpu_kind = "shared"
   cpus = 1
   memory_mb = 256
-
-# Static file caching (nginx 설정과 연동)
-[[http_service.headers]]
-  path = "/assets/*"
-  Cache-Control = "public, max-age=31536000, immutable"

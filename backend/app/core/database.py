@@ -3,14 +3,13 @@ from sqlalchemy.orm import declarative_base
 
 from app.core.config import settings
 
-# DATABASE_URL에서 asyncpg가 이해하지 못하는 쿼리 파라미터 제거 후 connect_args로 전달
-db_url = settings.DATABASE_URL
-connect_args: dict = {}
+# asyncpg 사용 시 SSL 비활성화 (Fly.io 내부 네트워크 등)
+# URL에서 asyncpg가 이해하지 못하는 쿼리 파라미터 정리
+db_url = settings.DATABASE_URL.split("?")[0]  # 쿼리 파라미터 제거
 
-if "ssl=disable" in db_url or "sslmode=disable" in db_url:
-    db_url = db_url.replace("?ssl=disable", "").replace("&ssl=disable", "")
-    db_url = db_url.replace("?sslmode=disable", "").replace("&sslmode=disable", "")
-    connect_args["ssl"] = False
+connect_args: dict = {}
+if "asyncpg" in settings.DATABASE_URL:
+    connect_args["ssl"] = False  # Fly.io 내부 네트워크에서는 SSL 불필요
 
 engine = create_async_engine(
     db_url,

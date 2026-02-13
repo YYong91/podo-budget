@@ -49,6 +49,7 @@ class Household(Base):
     # cascade="all, delete-orphan": 가구 삭제 시 멤버와 초대도 함께 삭제
     members = relationship("HouseholdMember", back_populates="household", cascade="all, delete-orphan")
     invitations = relationship("HouseholdInvitation", back_populates="household", cascade="all, delete-orphan")
+    expenses = relationship("Expense", back_populates="household")
 
     def __repr__(self):
         return f"<Household(id={self.id}, name={self.name}, currency={self.currency})>"

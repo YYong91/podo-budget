@@ -44,6 +44,7 @@ async def get_user_active_household_id(
                 Household.deleted_at.is_(None),
             )
         )
+        .order_by(HouseholdMember.joined_at.asc())  # 가장 먼저 가입한 가구를 기본값으로 (결정적 정렬)
         .limit(1)
     )
     return result.scalar_one_or_none()

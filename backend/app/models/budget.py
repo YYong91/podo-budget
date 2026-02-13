@@ -32,7 +32,7 @@ class Budget(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)  # 점진적 마이그레이션을 위해 nullable=True
-    household_id = Column(Integer, ForeignKey("households.id"), nullable=True, index=True)  # 공유 가구 예산
+    household_id = Column(Integer, ForeignKey("households.id", ondelete="SET NULL"), nullable=True, index=True)  # 공유 가구 예산
     category_id = Column(Integer, ForeignKey("categories.id"), nullable=False)
     amount = Column(Float, nullable=False)
     period = Column(String, nullable=False)  # monthly, weekly, daily

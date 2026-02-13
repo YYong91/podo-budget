@@ -5,7 +5,7 @@ user_id를 통해 각 사용자의 지출을 격리하며,
 household_id가 있는 경우 해당 가구의 공유 지출로 기록됩니다.
 """
 
-from sqlalchemy import Column, DateTime, Float, ForeignKey, Integer, String, Text
+from sqlalchemy import Column, DateTime, Float, ForeignKey, Index, Integer, String, Text
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
@@ -29,10 +29,16 @@ class Expense(Base):
     """
 
     __tablename__ = "expenses"
+    __table_args__ = (
+        Index("ix_expenses_date", "date"),  # 날짜 범위 조회 성능
+        Index("ix_expenses_category_id", "category_id"),  # 카테고리별 조회 성능
+        Index("ix_expenses_household_date", "household_id", "date"),  # 가구별 월별 조회
+        Index("ix_expenses_user_date", "user_id", "date"),  # 사용자별 기간 조회
+    )
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)  # 점진적 마이그레이션을 위해 nullable=True
-    household_id = Column(Integer, ForeignKey("households.id"), nullable=True, index=True)  # 공유 가계부용
+    household_id = Column(Integer, ForeignKey("households.id", ondelete="SET NULL"), nullable=True, index=True)  # 공유 가계부용
     amount = Column(Float, nullable=False)
     description = Column(String, nullable=False)
     category_id = Column(Integer, ForeignKey("categories.id"), nullable=True)
@@ -44,3 +50,4 @@ class Expense(Base):
     # Relationships
     user = relationship("User", back_populates="expenses")
     category = relationship("Category", back_populates="expenses")
+    household = relationship("Household", back_populates="expenses")

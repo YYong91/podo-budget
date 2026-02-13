@@ -30,7 +30,7 @@ class Category(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)  # None이면 시스템 카테고리
-    household_id = Column(Integer, ForeignKey("households.id"), nullable=True, index=True)  # 가구 공유 카테고리
+    household_id = Column(Integer, ForeignKey("households.id", ondelete="SET NULL"), nullable=True, index=True)  # 가구 공유 카테고리
     name = Column(String, nullable=False)
     description = Column(String, nullable=True)
     created_at = Column(DateTime, default=func.now())
