@@ -10,6 +10,7 @@ interface GetExpensesParams {
   end_date?: string
   category_id?: number
   household_id?: number
+  member_user_id?: number
 }
 
 export const expenseApi = {

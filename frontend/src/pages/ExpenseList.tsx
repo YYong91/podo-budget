@@ -1,7 +1,7 @@
 /**
  * @file ExpenseList.tsx
  * @description 지출 목록 페이지 - 필터링, 정렬, 페이지네이션
- * 날짜/카테고리 필터, 날짜/금액 정렬, 페이지네이션을 제공한다.
+ * 날짜/카테고리/멤버 필터, 날짜/금액 정렬, 페이지네이션을 제공한다.
  */
 
 import { useEffect, useState, useMemo } from 'react'
@@ -11,7 +11,7 @@ import { categoryApi } from '../api/categories'
 import { useHouseholdStore } from '../stores/useHouseholdStore'
 import EmptyState from '../components/EmptyState'
 import ErrorState from '../components/ErrorState'
-import type { Expense, Category } from '../types'
+import type { Expense, Category, HouseholdMember } from '../types'
 
 /* 정렬 타입 정의 */
 type SortField = 'date' | 'amount'
@@ -23,8 +23,12 @@ function formatAmount(amount: number): string {
 
 export default function ExpenseList() {
   const activeHouseholdId = useHouseholdStore((s) => s.activeHouseholdId)
+  const currentHousehold = useHouseholdStore((s) => s.currentHousehold)
+  const fetchHouseholdDetail = useHouseholdStore((s) => s.fetchHouseholdDetail)
+
   const [expenses, setExpenses] = useState<Expense[]>([])
   const [categories, setCategories] = useState<Category[]>([])
+  const [members, setMembers] = useState<HouseholdMember[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
   const [page, setPage] = useState(0)
@@ -34,6 +38,7 @@ export default function ExpenseList() {
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
   const [categoryId, setCategoryId] = useState<number | undefined>()
+  const [memberUserId, setMemberUserId] = useState<number | undefined>()
 
   /* 정렬 상태 */
   const [sortField, setSortField] = useState<SortField>('date')
@@ -53,6 +58,7 @@ export default function ExpenseList() {
         end_date: endDate || undefined,
         category_id: categoryId,
         household_id: activeHouseholdId ?? undefined,
+        member_user_id: memberUserId,
       })
       setExpenses(res.data)
     } catch {
@@ -64,7 +70,6 @@ export default function ExpenseList() {
 
   /**
    * 정렬 토글 핸들러
-   * 같은 필드 클릭 시 방향 반전, 다른 필드 클릭 시 해당 필드로 desc 정렬
    */
   const handleSort = (field: SortField) => {
     if (sortField === field) {
@@ -106,13 +111,33 @@ export default function ExpenseList() {
     return sorted
   }, [expenses, sortField, sortDirection])
 
+  // 카테고리 목록 로드
   useEffect(() => {
     categoryApi.getAll().then((res) => setCategories(res.data)).catch(() => {})
   }, [])
 
+  // 활성 가구 변경 시 멤버 목록 로드
+  useEffect(() => {
+    if (activeHouseholdId) {
+      fetchHouseholdDetail(activeHouseholdId).catch(() => {})
+    } else {
+      setMembers([])
+      setMemberUserId(undefined)
+    }
+  }, [activeHouseholdId, fetchHouseholdDetail])
+
+  // currentHousehold 변경 시 멤버 목록 동기화
+  useEffect(() => {
+    if (currentHousehold && currentHousehold.id === activeHouseholdId) {
+      setMembers(currentHousehold.members)
+    } else {
+      setMembers([])
+    }
+  }, [currentHousehold, activeHouseholdId])
+
   useEffect(() => {
     fetchExpenses()
-  }, [page, startDate, endDate, categoryId, activeHouseholdId])
+  }, [page, startDate, endDate, categoryId, activeHouseholdId, memberUserId])
 
   /**
    * 카테고리 이름 찾기
@@ -120,6 +145,14 @@ export default function ExpenseList() {
   function getCategoryName(catId: number | null): string {
     if (!catId) return '미분류'
     return categories.find((c) => c.id === catId)?.name ?? '미분류'
+  }
+
+  /**
+   * 멤버 이름 찾기
+   */
+  function getMemberName(userId: number | null): string {
+    if (!userId) return ''
+    return members.find((m) => m.user_id === userId)?.username ?? ''
   }
 
   /* 에러 발생 시 */
@@ -134,13 +167,16 @@ export default function ExpenseList() {
     )
   }
 
+  // 가구 활성 상태이고 멤버 2명 이상일 때만 멤버 필터 표시
+  const showMemberFilter = activeHouseholdId != null && members.length > 1
+
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold text-gray-900">지출 목록</h1>
 
       {/* 필터 바 */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className={`grid grid-cols-1 sm:grid-cols-2 ${showMemberFilter ? 'lg:grid-cols-5' : 'lg:grid-cols-4'} gap-4`}>
           <div>
             <label className="block text-xs text-gray-500 mb-1">시작일</label>
             <input
@@ -172,9 +208,25 @@ export default function ExpenseList() {
               ))}
             </select>
           </div>
+          {/* 멤버 필터 (가구 활성 + 멤버 2명 이상) */}
+          {showMemberFilter && (
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">멤버</label>
+              <select
+                value={memberUserId ?? ''}
+                onChange={(e) => { setMemberUserId(e.target.value ? Number(e.target.value) : undefined); setPage(0) }}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              >
+                <option value="">전체 멤버</option>
+                {members.map((m) => (
+                  <option key={m.user_id} value={m.user_id}>{m.username}</option>
+                ))}
+              </select>
+            </div>
+          )}
           <div className="flex items-end">
             <button
-              onClick={() => { setStartDate(''); setEndDate(''); setCategoryId(undefined); setPage(0) }}
+              onClick={() => { setStartDate(''); setEndDate(''); setCategoryId(undefined); setMemberUserId(undefined); setPage(0) }}
               className="w-full sm:w-auto px-4 py-2 text-sm text-gray-500 hover:text-gray-700 underline"
             >
               필터 초기화
@@ -205,6 +257,10 @@ export default function ExpenseList() {
                   </th>
                   <th className="text-left text-xs font-medium text-gray-500 uppercase px-4 py-3">내용</th>
                   <th className="text-left text-xs font-medium text-gray-500 uppercase px-4 py-3 hidden sm:table-cell">카테고리</th>
+                  {/* 가구 활성 시 작성자 열 표시 */}
+                  {showMemberFilter && (
+                    <th className="text-left text-xs font-medium text-gray-500 uppercase px-4 py-3 hidden md:table-cell">작성자</th>
+                  )}
                   <th
                     className="text-right text-xs font-medium text-gray-500 uppercase px-4 py-3 cursor-pointer hover:bg-gray-100 select-none transition-colors"
                     onClick={() => handleSort('amount')}
@@ -232,6 +288,13 @@ export default function ExpenseList() {
                         {getCategoryName(expense.category_id)}
                       </span>
                     </td>
+                    {showMemberFilter && (
+                      <td className="px-4 py-3 hidden md:table-cell">
+                        <span className="text-xs text-gray-500">
+                          {getMemberName(expense.user_id)}
+                        </span>
+                      </td>
+                    )}
                     <td className="px-4 py-3 text-sm font-semibold text-gray-900 text-right whitespace-nowrap">
                       {formatAmount(expense.amount)}
                     </td>

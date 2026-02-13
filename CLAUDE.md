@@ -131,6 +131,7 @@ Frontend: `frontend/.env.development`:
 
 ## Current State (2026-02-14)
 
-- **Backend**: 인증, 지출 CRUD, 카테고리, 예산, 인사이트, Household/초대 API 모두 구현됨. Expense ↔ Household 연결 완료. LLM 파싱(Anthropic/OpenAI) 구현 완료. Alembic 초기화 완료. 테스트 199개.
-- **Frontend**: React 19 SPA. 대시보드, 지출, 카테고리, 예산, 인사이트, 가구 관리 페이지 구현. activeHouseholdId로 지출 자동 연동. 테스트 157개.
+- **Backend**: 인증, 지출 CRUD, 카테고리, 예산, 인사이트, Household/초대 API 모두 구현됨. LLM 파싱(Anthropic/OpenAI) + 프리뷰 모드 구현. 자연어 컨텍스트 탐지("우리"→공유/"나"→개인). 멤버별 필터링. Alembic 초기화 완료. 테스트 199개.
+- **Frontend**: React 19 SPA. 자연어 입력 → 프리뷰 → 수정 → 확인 플로우. 가구 전환 드롭다운. 멤버별 필터링. 테스트 157개.
 - **Infrastructure**: Docker Compose로 PostgreSQL + Backend + Frontend 실행 가능.
+- **Phase 1**: 100% 완료. **Phase 2**: 95% 완료 (이메일 발송 제외).

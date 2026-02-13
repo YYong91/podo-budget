@@ -61,6 +61,7 @@ async def get_expenses(
     end_date: datetime | None = None,
     category_id: int | None = None,
     household_id: int | None = None,
+    member_user_id: int | None = Query(None, description="가구 내 특정 멤버의 지출만 조회"),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
@@ -74,6 +75,9 @@ async def get_expenses(
         await get_household_member(household_id, current_user, db)
         # 가구 전체 멤버의 지출 조회
         query = select(Expense).where(Expense.household_id == household_id)
+        # 특정 멤버 필터링
+        if member_user_id is not None:
+            query = query.where(Expense.user_id == member_user_id)
     else:
         # 하위 호환: 본인 지출만 조회
         query = select(Expense).where(Expense.user_id == current_user.id)
