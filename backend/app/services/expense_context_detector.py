@@ -12,6 +12,7 @@
 import re
 
 # 공유 키워드: 가구 전체에 해당하는 지출
+# 주의: "집", "가구"는 가구(furniture) 구입과 혼동되어 제거됨
 SHARED_KEYWORDS = [
     "우리",
     "같이",
@@ -19,23 +20,24 @@ SHARED_KEYWORDS = [
     "공동",
     "가족",
     "공유",
-    "집",
-    "가구",
 ]
 
 # 개인 키워드: 본인만의 지출
+# 주의: "나"는 너무 포괄적이므로 제외, "나만", "나 혼자" 등 명확한 표현만 사용
 PERSONAL_KEYWORDS = [
     "내",
     "나만",
     "개인",
     "혼자",
-    "나",
     "개인적",
 ]
 
+# 한국어 조사 패턴: 키워드 뒤에 올 수 있는 일반적인 조사들
+_PARTICLES = r"[을를이가은는의도와과에서로으로]"
+
 # 정규식 패턴: 단어 경계를 고려한 매칭
-_shared_pattern = re.compile("|".join(rf"(?:^|\s){re.escape(kw)}(?:\s|$|[을를이가은는])" for kw in SHARED_KEYWORDS))
-_personal_pattern = re.compile("|".join(rf"(?:^|\s){re.escape(kw)}(?:\s|$|[을를이가은는의])" for kw in PERSONAL_KEYWORDS))
+_shared_pattern = re.compile("|".join(rf"(?:^|\s){re.escape(kw)}(?:\s|$|{_PARTICLES})" for kw in SHARED_KEYWORDS))
+_personal_pattern = re.compile("|".join(rf"(?:^|\s){re.escape(kw)}(?:\s|$|{_PARTICLES})" for kw in PERSONAL_KEYWORDS))
 
 
 def detect_expense_context(message: str) -> str | None:

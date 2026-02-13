@@ -35,7 +35,7 @@ from app.services.llm_service import get_llm_provider
 router = APIRouter()
 
 
-def _to_parsed_items(parsed: dict | list) -> list[ParsedExpenseItem]:
+def _to_parsed_items(parsed: dict | list, household_id: int | None = None) -> list[ParsedExpenseItem]:
     """LLM 파싱 결과를 ParsedExpenseItem 리스트로 변환"""
     items = [parsed] if isinstance(parsed, dict) else parsed
     result = []
@@ -47,6 +47,7 @@ def _to_parsed_items(parsed: dict | list) -> list[ParsedExpenseItem]:
                 category=item.get("category", "기타"),
                 date=item.get("date", datetime.now().strftime("%Y-%m-%d")),
                 memo=item.get("memo", ""),
+                household_id=household_id,
             )
         )
     return result
@@ -104,7 +105,7 @@ async def chat(
 
     # Preview 모드: 파싱 결과만 반환 (저장하지 않음)
     if chat_request.preview:
-        parsed_items = _to_parsed_items(parsed)
+        parsed_items = _to_parsed_items(parsed, household_id=household_id)
         count = len(parsed_items)
         total = sum(item.amount for item in parsed_items)
         return ChatResponse(

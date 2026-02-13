@@ -23,6 +23,7 @@ class ParsedExpenseItem(BaseModel):
     category: str
     date: str
     memo: str = ""
+    household_id: int | None = None  # 공유/개인 구분용 (None이면 개인 지출)
 
 
 class ChatResponse(BaseModel):
