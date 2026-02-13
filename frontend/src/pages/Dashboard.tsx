@@ -90,12 +90,10 @@ export default function Dashboard() {
           <EmptyState
             icon="💸"
             title="아직 이번 달 지출 기록이 없어요"
-            description="Telegram 봇으로 간편하게 지출을 입력하거나, 웹에서 직접 기록해보세요."
+            description="웹에서 직접 지출을 기록하거나, 텔레그램 봇을 연동하여 채팅으로 입력해보세요."
             action={{
-              label: '📱 Telegram 봇 연결하기',
-              onClick: () => {
-                window.open('https://t.me/your_bot', '_blank')
-              },
+              label: '➕ 지출 추가하기',
+              onClick: () => navigate('/expenses/new'),
             }}
             secondaryAction={{
               label: '📝 지출 목록 보기',

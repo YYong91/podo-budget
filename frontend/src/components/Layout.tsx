@@ -1,8 +1,10 @@
 /* 메인 레이아웃 - 헤더 + 사이드바 + 콘텐츠 */
 
-import { useState } from 'react'
+import type { } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import { useHouseholdStore } from '../stores/useHouseholdStore'
 
 const navItems = [
   { path: '/', label: '대시보드', icon: '📊' },
@@ -11,6 +13,8 @@ const navItems = [
   { path: '/categories', label: '카테고리', icon: '📁' },
   { path: '/budgets', label: '예산 관리', icon: '📋' },
   { path: '/insights', label: '인사이트', icon: '💡' },
+  { path: '/households', label: '공유 가계부', icon: '🏠' },
+  { path: '/settings', label: '설정', icon: '⚙️' },
 ]
 
 export default function Layout() {
@@ -18,6 +22,19 @@ export default function Layout() {
   const location = useLocation()
   const navigate = useNavigate()
   const { user, logout } = useAuth()
+  const { myInvitations, fetchMyInvitations } = useHouseholdStore()
+
+  // 컴포넌트 마운트 시 초대 목록 조회 (뱃지 표시용)
+  useEffect(() => {
+    fetchMyInvitations().catch(() => {
+      // 에러는 무시 (뱃지 표시 실패해도 앱 동작에는 지장 없음)
+    })
+  }, [fetchMyInvitations])
+
+  // pending 상태인 초대 개수
+  const pendingInvitationCount = myInvitations.filter(
+    (inv) => inv.status === 'pending'
+  ).length
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -75,7 +92,7 @@ export default function Layout() {
                   onClick={() => setSidebarOpen(false)}
                   className={`
                     flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium
-                    transition-colors
+                    transition-colors relative
                     ${isActive
                       ? 'bg-primary-50 text-primary-700'
                       : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
@@ -84,9 +101,37 @@ export default function Layout() {
                 >
                   <span>{item.icon}</span>
                   {item.label}
+                  {/* 공유 가계부 메뉴에 초대 뱃지 표시 */}
+                  {item.path === '/households' && pendingInvitationCount > 0 && (
+                    <span className="ml-auto bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full min-w-[20px] text-center">
+                      {pendingInvitationCount}
+                    </span>
+                  )}
                 </Link>
               )
             })}
+
+            {/* 받은 초대 링크 (초대가 있을 때만 표시) */}
+            {pendingInvitationCount > 0 && (
+              <Link
+                to="/invitations"
+                onClick={() => setSidebarOpen(false)}
+                className={`
+                  flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium
+                  transition-colors relative
+                  ${location.pathname === '/invitations'
+                    ? 'bg-primary-50 text-primary-700'
+                    : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                  }
+                `}
+              >
+                <span>📨</span>
+                받은 초대
+                <span className="ml-auto bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full min-w-[20px] text-center">
+                  {pendingInvitationCount}
+                </span>
+              </Link>
+            )}
           </nav>
         </aside>
 

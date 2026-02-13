@@ -51,6 +51,7 @@ export interface InsightsResponse {
 export interface User {
   id: number
   username: string
+  email: string | null
   is_active: boolean
   created_at: string
 }
@@ -63,6 +64,7 @@ export interface LoginRequest {
 export interface RegisterRequest {
   username: string
   password: string
+  email?: string
 }
 
 export interface AuthResponse {
@@ -110,3 +112,16 @@ export interface BudgetAlert {
   is_exceeded: boolean
   is_warning: boolean
 }
+
+/* Household 관련 타입 */
+export type {
+  Household,
+  HouseholdDetail,
+  HouseholdMember,
+  HouseholdInvitation,
+  CreateHouseholdDto,
+  UpdateHouseholdDto,
+  InviteMemberDto,
+  MemberRole,
+  AcceptInvitationResponse,
+} from './household'

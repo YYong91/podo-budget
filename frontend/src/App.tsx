@@ -1,28 +1,60 @@
+import { lazy, Suspense } from 'react'
 import { Routes, Route } from 'react-router-dom'
 import Layout from './components/Layout'
-import Dashboard from './pages/Dashboard'
-import ExpenseList from './pages/ExpenseList'
-import ExpenseForm from './pages/ExpenseForm'
-import ExpenseDetail from './pages/ExpenseDetail'
-import CategoryManager from './pages/CategoryManager'
-import InsightsPage from './pages/InsightsPage'
-import BudgetManager from './pages/BudgetManager'
-import LoginPage from './pages/LoginPage'
+import ProtectedRoute from './components/ProtectedRoute'
+
+/* 코드 스플리팅: 페이지별 lazy loading으로 초기 번들 크기 축소 */
+const Dashboard = lazy(() => import('./pages/Dashboard'))
+const ExpenseList = lazy(() => import('./pages/ExpenseList'))
+const ExpenseForm = lazy(() => import('./pages/ExpenseForm'))
+const ExpenseDetail = lazy(() => import('./pages/ExpenseDetail'))
+const CategoryManager = lazy(() => import('./pages/CategoryManager'))
+const InsightsPage = lazy(() => import('./pages/InsightsPage'))
+const BudgetManager = lazy(() => import('./pages/BudgetManager'))
+const HouseholdListPage = lazy(() => import('./pages/HouseholdListPage'))
+const HouseholdDetailPage = lazy(() => import('./pages/HouseholdDetailPage'))
+const InvitationListPage = lazy(() => import('./pages/InvitationListPage'))
+const AcceptInvitationPage = lazy(() => import('./pages/AcceptInvitationPage'))
+const LoginPage = lazy(() => import('./pages/LoginPage'))
+const PrivacyPolicyPage = lazy(() => import('./pages/PrivacyPolicyPage'))
+const TermsOfServicePage = lazy(() => import('./pages/TermsOfServicePage'))
+const SettingsPage = lazy(() => import('./pages/SettingsPage'))
+
+/* 로딩 스피너 */
+function PageLoading() {
+  return (
+    <div className="flex items-center justify-center min-h-[50vh]">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600" />
+    </div>
+  )
+}
 
 function App() {
   return (
-    <Routes>
-      <Route path="/login" element={<LoginPage />} />
-      <Route element={<Layout />}>
-        <Route path="/" element={<Dashboard />} />
-        <Route path="/expenses" element={<ExpenseList />} />
-        <Route path="/expenses/new" element={<ExpenseForm />} />
-        <Route path="/expenses/:id" element={<ExpenseDetail />} />
-        <Route path="/categories" element={<CategoryManager />} />
-        <Route path="/insights" element={<InsightsPage />} />
-        <Route path="/budgets" element={<BudgetManager />} />
-      </Route>
-    </Routes>
+    <Suspense fallback={<PageLoading />}>
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/privacy" element={<PrivacyPolicyPage />} />
+        <Route path="/terms" element={<TermsOfServicePage />} />
+        {/* 인증이 필요한 라우트들을 ProtectedRoute로 감싼다 */}
+        <Route element={<ProtectedRoute />}>
+          <Route element={<Layout />}>
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/expenses" element={<ExpenseList />} />
+            <Route path="/expenses/new" element={<ExpenseForm />} />
+            <Route path="/expenses/:id" element={<ExpenseDetail />} />
+            <Route path="/categories" element={<CategoryManager />} />
+            <Route path="/insights" element={<InsightsPage />} />
+            <Route path="/budgets" element={<BudgetManager />} />
+            <Route path="/households" element={<HouseholdListPage />} />
+            <Route path="/households/:id" element={<HouseholdDetailPage />} />
+            <Route path="/invitations" element={<InvitationListPage />} />
+            <Route path="/invitations/accept" element={<AcceptInvitationPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
+          </Route>
+        </Route>
+      </Routes>
+    </Suspense>
   )
 }
 

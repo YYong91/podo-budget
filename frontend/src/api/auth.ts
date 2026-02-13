@@ -30,10 +30,18 @@ export const login = (data: LoginRequest) =>
 export const getCurrentUser = () =>
   apiClient.get<User>('/auth/me')
 
+/**
+ * 계정 삭제 API
+ * @returns 삭제 성공 응답
+ */
+export const deleteAccount = () =>
+  apiClient.delete('/auth/me')
+
 const authApi = {
   register,
   login,
   getCurrentUser,
+  deleteAccount,
 }
 
 export default authApi

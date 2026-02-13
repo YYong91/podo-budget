@@ -5,7 +5,7 @@
  */
 
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Navigate, Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../hooks/useToast'
 
@@ -13,21 +13,39 @@ type TabType = 'login' | 'register'
 
 export default function LoginPage() {
   const navigate = useNavigate()
-  const { login, register } = useAuth()
+  const { user, login, register } = useAuth()
   const { addToast } = useToast()
 
   const [activeTab, setActiveTab] = useState<TabType>('login')
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
+  const [email, setEmail] = useState('')
+  const [termsAgreed, setTermsAgreed] = useState(false)
+  const [privacyAgreed, setPrivacyAgreed] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [errors, setErrors] = useState<{ username?: string; password?: string }>({})
+  const [errors, setErrors] = useState<{ username?: string; password?: string; email?: string }>({})
+
+  // 이미 로그인된 사용자는 메인 페이지로 리다이렉트
+  if (user) {
+    return <Navigate to="/" replace />
+  }
+
+  /**
+   * 이메일 형식 검증
+   * @param email - 검증할 이메일
+   * @returns 유효하면 true
+   */
+  const isValidEmail = (email: string): boolean => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    return emailRegex.test(email)
+  }
 
   /**
    * 폼 validation
    * @returns 유효하면 true, 아니면 false
    */
   const validateForm = (): boolean => {
-    const newErrors: { username?: string; password?: string } = {}
+    const newErrors: { username?: string; password?: string; email?: string } = {}
 
     if (username.length < 3) {
       newErrors.username = '사용자명은 3자 이상이어야 합니다'
@@ -35,6 +53,11 @@ export default function LoginPage() {
 
     if (password.length < 8) {
       newErrors.password = '비밀번호는 8자 이상이어야 합니다'
+    }
+
+    // 회원가입 시 이메일 검증 (선택이지만 입력한 경우)
+    if (activeTab === 'register' && email.trim() && !isValidEmail(email)) {
+      newErrors.email = '올바른 이메일 형식이 아닙니다'
     }
 
     setErrors(newErrors)
@@ -59,7 +82,11 @@ export default function LoginPage() {
         await login({ username, password })
         addToast('success', '로그인되었습니다')
       } else {
-        await register({ username, password })
+        // 회원가입 시 이메일 포함
+        const registerData = email.trim()
+          ? { username, password, email: email.trim() }
+          : { username, password }
+        await register(registerData)
         addToast('success', '회원가입이 완료되었습니다')
       }
       navigate('/')
@@ -89,6 +116,9 @@ export default function LoginPage() {
             onClick={() => {
               setActiveTab('login')
               setErrors({})
+              setEmail('')
+              setTermsAgreed(false)
+              setPrivacyAgreed(false)
             }}
             className={`flex-1 py-2 text-sm font-medium transition-colors ${
               activeTab === 'login'
@@ -158,10 +188,81 @@ export default function LoginPage() {
             )}
           </div>
 
+          {/* 이메일 입력 (회원가입 시에만) */}
+          {activeTab === 'register' && (
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                이메일 <span className="text-gray-400">(선택)</span>
+              </label>
+              <input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                  errors.email ? 'border-red-500' : 'border-gray-300'
+                }`}
+                placeholder="초대 받기에 사용됩니다"
+                disabled={loading}
+              />
+              {errors.email && (
+                <p className="text-sm text-red-500 mt-1">{errors.email}</p>
+              )}
+            </div>
+          )}
+
+          {/* 약관 동의 (회원가입 시에만) */}
+          {activeTab === 'register' && (
+            <div className="space-y-3 pt-2">
+              <div className="flex items-start gap-2">
+                <input
+                  id="terms"
+                  type="checkbox"
+                  checked={termsAgreed}
+                  onChange={(e) => setTermsAgreed(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                  disabled={loading}
+                />
+                <label htmlFor="terms" className="text-sm text-gray-700 flex-1">
+                  <Link
+                    to="/terms"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary-600 hover:text-primary-700 underline"
+                  >
+                    이용약관
+                  </Link>
+                  에 동의합니다 <span className="text-red-500">*</span>
+                </label>
+              </div>
+              <div className="flex items-start gap-2">
+                <input
+                  id="privacy"
+                  type="checkbox"
+                  checked={privacyAgreed}
+                  onChange={(e) => setPrivacyAgreed(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                  disabled={loading}
+                />
+                <label htmlFor="privacy" className="text-sm text-gray-700 flex-1">
+                  <Link
+                    to="/privacy"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary-600 hover:text-primary-700 underline"
+                  >
+                    개인정보처리방침
+                  </Link>
+                  에 동의합니다 <span className="text-red-500">*</span>
+                </label>
+              </div>
+            </div>
+          )}
+
           {/* 제출 버튼 */}
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || (activeTab === 'register' && (!termsAgreed || !privacyAgreed))}
             className="w-full py-2.5 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
           >
             {loading ? (
