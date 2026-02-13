@@ -12,6 +12,7 @@ from fastapi import APIRouter, Depends, Request
 from sqlalchemy import extract, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.dependencies import get_user_active_household_id
 from app.core.database import get_db
 from app.models.budget import Budget
 from app.models.category import Category
@@ -26,6 +27,7 @@ from app.services.bot_messages import (
 )
 from app.services.bot_user_service import get_or_create_bot_user
 from app.services.category_service import get_or_create_category
+from app.services.expense_context_detector import resolve_household_id
 from app.services.llm_service import get_llm_provider
 
 logger = logging.getLogger(__name__)
@@ -86,9 +88,12 @@ async def kakao_webhook(request: Request, db: AsyncSession = Depends(get_db)):
         # 봇 사용자 생성 또는 조회 (데이터 격리를 위함)
         bot_user = await get_or_create_bot_user(db, platform="kakao", platform_user_id=kakao_user_id)
 
+        # 사용자의 활성 가구 ID 조회
+        active_household_id = await get_user_active_household_id(bot_user, db)
+
         # utterance가 없으면 에러 응답
         if not utterance:
-            return make_simple_text_response("❓ 메시지를 입력해주세요.\n\n" '예: "점심에 김치찌개 8000원"')
+            return make_simple_text_response('❓ 메시지를 입력해주세요.\n\n예: "점심에 김치찌개 8000원"')
 
         # /help 명령어 처리
         if utterance.startswith("/help"):
@@ -109,6 +114,9 @@ async def kakao_webhook(request: Request, db: AsyncSession = Depends(get_db)):
             llm = get_llm_provider("parse")
             parsed = await llm.parse_expense(utterance)
 
+            # 자연어 컨텍스트 기반 household_id 결정
+            household_id = await resolve_household_id(utterance, None, active_household_id)
+
             # 단일 지출 (dict) 처리
             if isinstance(parsed, dict):
                 # 파싱 실패
@@ -119,7 +127,7 @@ async def kakao_webhook(request: Request, db: AsyncSession = Depends(get_db)):
                 category_name = parsed.get("category", "기타")
                 category = await get_or_create_category(db, category_name, user_id=bot_user.id)
 
-                # Expense 생성 (user_id 연결로 데이터 격리)
+                # Expense 생성 (user_id + household_id 연결)
                 expense_date = datetime.fromisoformat(parsed.get("date", datetime.now().isoformat()))
                 expense = Expense(
                     user_id=bot_user.id,
@@ -128,6 +136,7 @@ async def kakao_webhook(request: Request, db: AsyncSession = Depends(get_db)):
                     category_id=category.id,
                     raw_input=utterance,
                     date=expense_date,
+                    household_id=household_id,
                 )
                 db.add(expense)
                 await db.commit()
@@ -153,7 +162,7 @@ async def kakao_webhook(request: Request, db: AsyncSession = Depends(get_db)):
                     category_name = item.get("category", "기타")
                     category = await get_or_create_category(db, category_name, user_id=bot_user.id)
 
-                    # Expense 생성 (user_id 연결로 데이터 격리)
+                    # Expense 생성 (user_id + household_id 연결)
                     expense_date = datetime.fromisoformat(item.get("date", datetime.now().isoformat()))
                     expense = Expense(
                         user_id=bot_user.id,
@@ -162,6 +171,7 @@ async def kakao_webhook(request: Request, db: AsyncSession = Depends(get_db)):
                         category_id=category.id,
                         raw_input=utterance,
                         date=expense_date,
+                        household_id=household_id,
                     )
                     db.add(expense)
                     created_expenses.append(expense)
@@ -175,7 +185,7 @@ async def kakao_webhook(request: Request, db: AsyncSession = Depends(get_db)):
 
                 for idx, (expense, item) in enumerate(zip(created_expenses, parsed, strict=False), 1):
                     await db.refresh(expense)
-                    message_lines.append(f"{idx}. 💰 {item['amount']:,.0f}원 - " f"📂 {item.get('category', '기타')} - {item.get('description', '')}")
+                    message_lines.append(f"{idx}. 💰 {item['amount']:,.0f}원 - 📂 {item.get('category', '기타')} - {item.get('description', '')}")
 
                 message_lines.append(f"\n💰 총 {total_amount:,.0f}원")
 

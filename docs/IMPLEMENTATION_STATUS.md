@@ -13,7 +13,7 @@
 |-------|--------|------|
 | Phase 1 (Core MVP) | **100%** | 완료 |
 | Phase 2 (Household) | **95%** | 이메일 발송 제외 완료 |
-| Phase 3 (Bot) | 스켈레톤 | 실제 동작 안 함 |
+| Phase 3 (Bot) | **80%** | Household 연동 + 카테고리 변경 완료 |
 | Phase 4 (배포) | 0% | 미착수 |
 
 ---
@@ -42,10 +42,11 @@
 
 | 기능 | 상태 | 파일 | 테스트 | 비고 |
 |------|------|------|--------|------|
-| LLMProvider 인터페이스 | 완료 | services/llm_service.py | 없음 | Strategy 패턴 |
-| OpenAI API 호출 | 완료 | services/llm_service.py | 없음 | parse_expense() 구현 |
-| Anthropic API 호출 | 완료 | services/llm_service.py | 없음 | parse_expense() 구현 |
+| LLMProvider 인터페이스 | 완료 | services/llm_service.py | 있음 | Strategy 패턴, Mock 테스트 |
+| OpenAI API 호출 | 완료 | services/llm_service.py | 있음 (skip) | API 키 없으면 skip |
+| Anthropic API 호출 | 완료 | services/llm_service.py | 있음 | Mock 기반 6개 테스트 |
 | 프롬프트 엔지니어링 | 완료 | services/prompts.py | 없음 | Few-shot 예시 포함 |
+| 컨텍스트 탐지 | 완료 | services/expense_context_detector.py | 있음 (27개) | 공유/개인 키워드 감지 |
 
 ### 카테고리 / 예산
 
@@ -69,10 +70,13 @@
 
 ### 봇 통합
 
-| 기능 | 상태 | 파일 | 테스트 |
-|------|------|------|--------|
-| Telegram Webhook | 스켈레톤 | api/telegram.py | 없음 |
-| Kakao OpenBuilder | 스켈레톤 | api/kakao.py | 없음 |
+| 기능 | 상태 | 파일 | 테스트 | 비고 |
+|------|------|------|--------|------|
+| Telegram Webhook | 완료 | api/telegram.py | 있음 (14개) | LLM 파싱 + Household 연동 |
+| Telegram 카테고리 변경 | 완료 | api/telegram.py | 있음 | 인라인 키보드 선택 |
+| Telegram 지출 삭제 | 완료 | api/telegram.py | 있음 | 인라인 버튼 |
+| Kakao OpenBuilder | 완료 | api/kakao.py | 있음 (11개) | LLM 파싱 + Household 연동 |
+| 봇 Household 연동 | 완료 | telegram.py, kakao.py | 있음 | 컨텍스트 탐지 자동 연결 |
 
 ### 데이터베이스
 
@@ -80,7 +84,9 @@
 |------|------|------|
 | SQLAlchemy 모델 | 완료 | User, Expense, Category, Budget, Household, HouseholdMember, HouseholdInvitation |
 | Alembic 마이그레이션 | 완료 | 초기 마이그레이션 ef6a56f45278 |
-| 인덱스 | 부분 | user_id, household_id에만 |
+| Alembic 마이그레이션 #2 | 완료 | 인덱스 + FK CASCADE 정비 (a1b2c3d4e5f6) |
+| 인덱스 | 완료 | user_id, household_id, date, category_id + 복합 인덱스 |
+| FK CASCADE | 완료 | expenses/categories/budgets → households (SET NULL) |
 
 ---
 
@@ -147,7 +153,7 @@
 
 | 영역 | 테스트 수 | 커버리지 |
 |------|-----------|----------|
-| 백엔드 (pytest) | 199개 | 미측정 |
+| 백엔드 (pytest) | 233개 | 미측정 |
 | 프론트엔드 (Vitest) | 157개 | 미측정 |
 | E2E | 0개 | - |
 
@@ -162,13 +168,14 @@
 
 ### P1 (High)
 - 이메일 발송 미구현: 초대 링크를 직접 복사해야 함
-- Telegram/Kakao 봇 미완성: 스켈레톤만 있음
+- ~~Telegram/Kakao 봇 미완성~~ (2026-02-14 해결: LLM 파싱 + Household 연동 + 카테고리 변경 구현)
 - ~~프론트엔드 자연어 입력 UI 없음~~ (2026-02-14 해결: 프리뷰/수정/확인 플로우 구현)
 
 ### P2 (Medium)
 - 테스트 커버리지 미측정
 - LLM API 실패 시 에러 핸들링 부족
-- DB 인덱스 부족 (날짜 범위 조회 성능)
+- ~~DB 인덱스 부족~~ (2026-02-14 해결: date, category_id, 복합 인덱스 추가)
+- 대시보드 통합 뷰 미구현 (PRODUCT.md D3: 공유 우선 + 개인 접기)
 
 ---
 

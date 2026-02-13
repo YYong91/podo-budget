@@ -4,12 +4,17 @@ Telegram Webhook API 통합 테스트
 - /start, /help 명령어 응답
 - LLM 파싱 → 지출 저장 플로우 (Mock)
 - 에러 처리 (파싱 실패, 서버 오류)
+- Household 연동 (컨텍스트 탐지)
+- 카테고리 변경 콜백
 """
 
 import pytest
 from sqlalchemy import select
 
+from app.models.category import Category
 from app.models.expense import Expense
+from app.models.household import Household
+from app.models.household_member import HouseholdMember
 from app.models.user import User
 
 
@@ -228,3 +233,207 @@ async def test_webhook_same_user_reuses_account(client, db_session, mock_telegra
     assert len(expenses) == 2
     assert expenses[0].user_id == expenses[1].user_id
     assert expenses[0].user_id == users[0].id
+
+
+@pytest.mark.asyncio
+async def test_webhook_expense_no_household(client, db_session, mock_telegram_send, mock_llm_parse_expense):
+    """가구 미가입 사용자의 지출은 household_id가 None"""
+    payload = {
+        "message": {
+            "chat": {"id": 55555},
+            "text": "점심에 김치찌개 8000원",
+        }
+    }
+
+    response = await client.post("/api/telegram/webhook", json=payload)
+    assert response.status_code == 200
+
+    result = await db_session.execute(select(Expense))
+    expenses = result.scalars().all()
+    assert len(expenses) == 1
+    assert expenses[0].household_id is None
+
+
+@pytest.mark.asyncio
+async def test_webhook_expense_with_household(client, db_session, mock_telegram_send, mock_llm_parse_expense):
+    """가구에 속한 사용자의 지출은 household_id가 자동 설정됨"""
+    from app.services.bot_user_service import get_or_create_bot_user
+
+    # 봇 사용자 생성 + 가구 가입
+    bot_user = await get_or_create_bot_user(db_session, platform="telegram", platform_user_id="66666")
+    household = Household(name="테스트 가구")
+    db_session.add(household)
+    await db_session.flush()
+    member = HouseholdMember(household_id=household.id, user_id=bot_user.id, role="owner")
+    db_session.add(member)
+    await db_session.commit()
+
+    payload = {
+        "message": {
+            "chat": {"id": 66666},
+            "text": "우리 저녁 50000원",
+        }
+    }
+
+    response = await client.post("/api/telegram/webhook", json=payload)
+    assert response.status_code == 200
+
+    result = await db_session.execute(select(Expense))
+    expenses = result.scalars().all()
+    assert len(expenses) == 1
+    assert expenses[0].household_id == household.id
+    assert expenses[0].user_id == bot_user.id
+
+
+@pytest.mark.asyncio
+async def test_webhook_personal_keyword_no_household(client, db_session, mock_telegram_send, mock_llm_parse_expense):
+    """'내' 등 개인 키워드 사용 시 household_id가 None"""
+    from app.services.bot_user_service import get_or_create_bot_user
+
+    # 봇 사용자 생성 + 가구 가입
+    bot_user = await get_or_create_bot_user(db_session, platform="telegram", platform_user_id="77777")
+    household = Household(name="테스트 가구2")
+    db_session.add(household)
+    await db_session.flush()
+    member = HouseholdMember(household_id=household.id, user_id=bot_user.id, role="owner")
+    db_session.add(member)
+    await db_session.commit()
+
+    payload = {
+        "message": {
+            "chat": {"id": 77777},
+            "text": "내 점심 8000원",
+        }
+    }
+
+    response = await client.post("/api/telegram/webhook", json=payload)
+    assert response.status_code == 200
+
+    result = await db_session.execute(select(Expense))
+    expenses = result.scalars().all()
+    assert len(expenses) == 1
+    # 개인 키워드 → household_id는 None
+    assert expenses[0].household_id is None
+
+
+@pytest.mark.asyncio
+async def test_callback_delete_expense(client, db_session, mock_telegram_send, mock_llm_parse_expense):
+    """인라인 버튼으로 지출 삭제"""
+    from unittest.mock import AsyncMock, patch
+
+    # 먼저 지출 생성
+    payload = {
+        "message": {
+            "chat": {"id": 88888},
+            "text": "점심 8000원",
+        }
+    }
+    await client.post("/api/telegram/webhook", json=payload)
+
+    result = await db_session.execute(select(Expense))
+    expense = result.scalars().first()
+    assert expense is not None
+
+    # 삭제 콜백
+    mock_telegram_send.reset_mock()
+    with patch("app.api.telegram.answer_callback_query", new_callable=AsyncMock):
+        callback_payload = {
+            "callback_query": {
+                "id": "cb_1",
+                "message": {"chat": {"id": 88888}},
+                "data": f"delete_expense:{expense.id}",
+            }
+        }
+        response = await client.post("/api/telegram/webhook", json=callback_payload)
+        assert response.status_code == 200
+
+    # 지출이 삭제되었는지 확인
+    result = await db_session.execute(select(Expense))
+    assert len(result.scalars().all()) == 0
+
+
+@pytest.mark.asyncio
+async def test_callback_change_category(client, db_session, mock_telegram_send, mock_llm_parse_expense):
+    """인라인 버튼으로 카테고리 변경 키보드 표시"""
+    from unittest.mock import AsyncMock, patch
+
+    # 지출 생성
+    payload = {
+        "message": {
+            "chat": {"id": 99999},
+            "text": "점심 8000원",
+        }
+    }
+    await client.post("/api/telegram/webhook", json=payload)
+
+    result = await db_session.execute(select(Expense))
+    expense = result.scalars().first()
+    assert expense is not None
+
+    # 카테고리 변경 콜백 → 카테고리 선택 키보드가 표시되어야 함
+    mock_telegram_send.reset_mock()
+    with patch("app.api.telegram.answer_callback_query", new_callable=AsyncMock):
+        callback_payload = {
+            "callback_query": {
+                "id": "cb_2",
+                "message": {"chat": {"id": 99999}},
+                "data": f"change_category:{expense.id}",
+            }
+        }
+        response = await client.post("/api/telegram/webhook", json=callback_payload)
+        assert response.status_code == 200
+
+    # 카테고리 선택 메시지가 전송되었는지 확인
+    mock_telegram_send.assert_called_once()
+    call_args = mock_telegram_send.call_args
+    assert "카테고리" in call_args[0][1]
+    # reply_markup에 inline_keyboard가 있어야 함
+    assert "inline_keyboard" in call_args[1]["reply_markup"]
+
+
+@pytest.mark.asyncio
+async def test_callback_set_category(client, db_session, mock_telegram_send, mock_llm_parse_expense):
+    """인라인 버튼으로 카테고리 실제 변경"""
+    from unittest.mock import AsyncMock, patch
+
+    # 지출 생성
+    payload = {
+        "message": {
+            "chat": {"id": 10101},
+            "text": "점심 8000원",
+        }
+    }
+    await client.post("/api/telegram/webhook", json=payload)
+
+    result = await db_session.execute(select(Expense))
+    expense = result.scalars().first()
+    assert expense is not None
+    original_category_id = expense.category_id
+
+    # 새 카테고리 생성
+    new_cat = Category(name="교통", user_id=expense.user_id)
+    db_session.add(new_cat)
+    await db_session.commit()
+    await db_session.refresh(new_cat)
+
+    # set_category 콜백
+    mock_telegram_send.reset_mock()
+    with patch("app.api.telegram.answer_callback_query", new_callable=AsyncMock):
+        callback_payload = {
+            "callback_query": {
+                "id": "cb_3",
+                "message": {"chat": {"id": 10101}},
+                "data": f"set_category:{expense.id}:{new_cat.id}",
+            }
+        }
+        response = await client.post("/api/telegram/webhook", json=callback_payload)
+        assert response.status_code == 200
+
+    # 카테고리가 변경되었는지 확인
+    await db_session.refresh(expense)
+    assert expense.category_id == new_cat.id
+    assert expense.category_id != original_category_id
+
+    # 변경 완료 메시지 확인
+    mock_telegram_send.assert_called_once()
+    assert "교통" in mock_telegram_send.call_args[0][1]

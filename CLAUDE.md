@@ -131,7 +131,7 @@ Frontend: `frontend/.env.development`:
 
 ## Current State (2026-02-14)
 
-- **Backend**: 인증, 지출 CRUD, 카테고리, 예산, 인사이트, Household/초대 API 모두 구현됨. LLM 파싱(Anthropic/OpenAI) + 프리뷰 모드 구현. 자연어 컨텍스트 탐지("우리"→공유/"나"→개인). 멤버별 필터링. Alembic 초기화 완료. 테스트 199개.
+- **Backend**: 인증, 지출 CRUD, 카테고리, 예산, 인사이트, Household/초대 API 모두 구현됨. LLM 파싱(Anthropic/OpenAI) + 프리뷰 모드. 자연어 컨텍스트 탐지. 멤버별 필터링. Telegram/Kakao 봇 완전 구현 (LLM 파싱 + Household 연동 + 카테고리 변경). 테스트 227개.
 - **Frontend**: React 19 SPA. 자연어 입력 → 프리뷰 → 수정 → 확인 플로우. 가구 전환 드롭다운. 멤버별 필터링. 테스트 157개.
 - **Infrastructure**: Docker Compose로 PostgreSQL + Backend + Frontend 실행 가능.
-- **Phase 1**: 100% 완료. **Phase 2**: 95% 완료 (이메일 발송 제외).
+- **Phase 1**: 100%. **Phase 2**: 95% (이메일 발송 제외). **Phase 3**: 80% (봇 배포/토큰 설정 제외).

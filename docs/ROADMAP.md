@@ -96,9 +96,12 @@
 
 | 기능 | 상태 | 완료 조건 |
 |------|------|----------|
-| Telegram Webhook 설정 | 부분 구현 | /start, /help 명령어 동작 |
-| Telegram 자연어 입력 | 예정 | "점심 8000원" -> 자동 등록 |
-| Kakao OpenBuilder 연동 | 부분 구현 | 스킬 서버 동작 |
+| Telegram Webhook 설정 | **완료** | /start, /help, /report, /budget 명령어 동작 |
+| Telegram 자연어 입력 | **완료** | "점심 8000원" → LLM 파싱 → 자동 등록 |
+| Telegram 카테고리 변경 | **완료** | 인라인 키보드로 카테고리 선택/변경 |
+| Telegram Household 연동 | **완료** | 컨텍스트 탐지 → household_id 자동 설정 |
+| Kakao OpenBuilder 연동 | **완료** | LLM 파싱 + Household 연동 |
+| 봇 실제 배포 (토큰 설정) | 예정 | 실서버에서 Webhook URL 등록 |
 
 ---
 
