@@ -15,8 +15,11 @@ import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
+from app.core.auth import create_access_token, hash_password
 from app.core.database import Base, get_db
+from app.core.rate_limit import limiter
 from app.main import app
+from app.models.user import User
 
 # 테스트용 SQLite 데이터베이스 URL
 TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
@@ -28,6 +31,14 @@ TestSessionLocal = async_sessionmaker(
     class_=AsyncSession,
     expire_on_commit=False,
 )
+
+
+@pytest.fixture(autouse=True)
+def _disable_rate_limit():
+    """테스트 환경에서 rate limit 비활성화"""
+    limiter.enabled = False
+    yield
+    limiter.enabled = True
 
 
 @pytest.fixture(scope="session")
@@ -61,10 +72,89 @@ async def db_session() -> AsyncGenerator[AsyncSession, None]:
 
 
 @pytest_asyncio.fixture
-async def client(db_session: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
+async def test_user(db_session: AsyncSession) -> User:
+    """테스트용 사용자 생성
+
+    기본 테스트 사용자를 생성하고 반환합니다.
+    username: testuser, password: testpass123  # pragma: allowlist secret
+
+    Returns:
+        생성된 User 객체
     """
-    테스트용 HTTP 클라이언트 (FastAPI 앱과 연동)
-    DB 의존성을 테스트용 세션으로 오버라이드
+    user = User(
+        username="testuser",
+        hashed_password=hash_password("testpass123"),  # pragma: allowlist secret
+        is_active=True,
+    )
+    db_session.add(user)
+    await db_session.commit()
+    await db_session.refresh(user)
+    return user
+
+
+@pytest_asyncio.fixture
+async def test_user2(db_session: AsyncSession) -> User:
+    """두 번째 테스트용 사용자 생성 (데이터 격리 테스트용)
+
+    데이터 격리 테스트를 위한 두 번째 사용자를 생성합니다.
+    username: testuser2, password: testpass456  # pragma: allowlist secret
+
+    Returns:
+        생성된 User 객체
+    """
+    user = User(
+        username="testuser2",
+        hashed_password=hash_password("testpass456"),  # pragma: allowlist secret
+        is_active=True,
+    )
+    db_session.add(user)
+    await db_session.commit()
+    await db_session.refresh(user)
+    return user
+
+
+@pytest_asyncio.fixture
+async def auth_token(test_user: User) -> str:
+    """테스트용 JWT 토큰 생성
+
+    test_user를 위한 유효한 JWT 토큰을 생성합니다.
+
+    Args:
+        test_user: 테스트용 사용자
+
+    Returns:
+        JWT 액세스 토큰
+    """
+    return create_access_token(data={"sub": test_user.username})
+
+
+@pytest_asyncio.fixture
+async def auth_token2(test_user2: User) -> str:
+    """두 번째 사용자용 JWT 토큰 생성
+
+    test_user2를 위한 유효한 JWT 토큰을 생성합니다.
+
+    Args:
+        test_user2: 두 번째 테스트용 사용자
+
+    Returns:
+        JWT 액세스 토큰
+    """
+    return create_access_token(data={"sub": test_user2.username})
+
+
+@pytest_asyncio.fixture
+async def client(db_session: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
+    """테스트용 HTTP 클라이언트 (FastAPI 앱과 연동)
+
+    DB 의존성을 테스트용 세션으로 오버라이드합니다.
+    인증이 필요 없는 엔드포인트 테스트에 사용합니다.
+
+    Args:
+        db_session: 테스트용 데이터베이스 세션
+
+    Yields:
+        AsyncClient 인스턴스
     """
 
     async def override_get_db():
@@ -75,6 +165,67 @@ async def client(db_session: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
     async with AsyncClient(
         transport=ASGITransport(app=app),  # type: ignore
         base_url="http://test",
+    ) as ac:
+        yield ac
+
+    app.dependency_overrides.clear()
+
+
+@pytest_asyncio.fixture
+async def authenticated_client(db_session: AsyncSession, test_user: User, auth_token: str) -> AsyncGenerator[AsyncClient, None]:
+    """인증된 테스트용 HTTP 클라이언트
+
+    JWT 토큰을 Authorization 헤더에 자동으로 포함하는 클라이언트입니다.
+    인증이 필요한 엔드포인트 테스트에 사용합니다.
+
+    Args:
+        db_session: 테스트용 데이터베이스 세션
+        test_user: 테스트용 사용자
+        auth_token: JWT 토큰
+
+    Yields:
+        인증 헤더가 포함된 AsyncClient 인스턴스
+    """
+
+    async def override_get_db():
+        yield db_session
+
+    app.dependency_overrides[get_db] = override_get_db
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app),  # type: ignore
+        base_url="http://test",
+        headers={"Authorization": f"Bearer {auth_token}"},
+    ) as ac:
+        yield ac
+
+    app.dependency_overrides.clear()
+
+
+@pytest_asyncio.fixture
+async def authenticated_client2(db_session: AsyncSession, test_user2: User, auth_token2: str) -> AsyncGenerator[AsyncClient, None]:
+    """두 번째 사용자용 인증된 테스트용 HTTP 클라이언트
+
+    데이터 격리 테스트를 위한 두 번째 인증된 클라이언트입니다.
+
+    Args:
+        db_session: 테스트용 데이터베이스 세션
+        test_user2: 두 번째 테스트용 사용자
+        auth_token2: 두 번째 사용자용 JWT 토큰
+
+    Yields:
+        인증 헤더가 포함된 AsyncClient 인스턴스
+    """
+
+    async def override_get_db():
+        yield db_session
+
+    app.dependency_overrides[get_db] = override_get_db
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app),  # type: ignore
+        base_url="http://test",
+        headers={"Authorization": f"Bearer {auth_token2}"},
     ) as ac:
         yield ac
 

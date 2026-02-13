@@ -9,6 +9,7 @@ import pytest
 from sqlalchemy import select
 
 from app.models.category import Category
+from app.models.user import User
 
 
 @pytest.mark.asyncio
@@ -43,24 +44,24 @@ async def test_db_session_isolation(db_session):
 @pytest.mark.asyncio
 async def test_db_session_rollback_on_error(db_session):
     """에러 발생 시 롤백이 정상 작동하는지 테스트"""
-    # 정상 데이터 생성
-    category1 = Category(name="정상 카테고리")
-    db_session.add(category1)
+    # 정상 데이터 생성 (User.username은 unique 제약이 있음)
+    user1 = User(username="rollback_test", hashed_password="hash1")
+    db_session.add(user1)
     await db_session.commit()
 
-    # 중복 이름으로 에러 발생 시도 (unique 제약)
+    # 중복 username으로 에러 발생 시도 (unique 제약)
     try:
-        category2 = Category(name="정상 카테고리")
-        db_session.add(category2)
+        user2 = User(username="rollback_test", hashed_password="hash2")
+        db_session.add(user2)
         await db_session.commit()
     except Exception:
         await db_session.rollback()
 
     # 롤백 후에도 첫 번째 데이터는 유지되어야 함
-    result = await db_session.execute(select(Category))
-    categories = result.scalars().all()
-    assert len(categories) == 1
-    assert categories[0].name == "정상 카테고리"
+    result = await db_session.execute(select(User).where(User.username == "rollback_test"))
+    users = result.scalars().all()
+    assert len(users) == 1
+    assert users[0].username == "rollback_test"
 
 
 @pytest.mark.asyncio

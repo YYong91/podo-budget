@@ -19,7 +19,7 @@ def test_settings_default_values():
 
         assert settings.APP_NAME == "HomeNRich"
         assert settings.DEBUG is True
-        assert settings.SECRET_KEY == "change-this-in-production"  # pragma: allowlist secret
+        assert settings.SECRET_KEY == ""  # 프로덕션에서는 반드시 설정 필요
         assert settings.LLM_PROVIDER == "anthropic"
         assert "postgresql+asyncpg" in settings.DATABASE_URL
 

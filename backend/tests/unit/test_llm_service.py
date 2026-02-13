@@ -203,17 +203,111 @@ async def test_anthropic_generate_insights_success():
 
 @pytest.mark.skipif(not _has_openai, reason="openai 패키지 미설치")
 @pytest.mark.asyncio
-async def test_openai_provider_not_implemented():
-    """OpenAIProvider는 아직 구현되지 않음 (TODO)"""
+async def test_openai_parse_expense_success():
+    """OpenAIProvider.parse_expense() 성공 케이스 (Mock)"""
+    mock_choice = MagicMock()
+    mock_choice.message.content = '{"amount": 8000, "category": "식비", "description": "김치찌개", "date": "2026-02-11", "memo": ""}'
+    mock_response = MagicMock()
+    mock_response.choices = [mock_choice]
+
     with patch("app.services.llm_service.settings") as mock_settings:
         mock_settings.OPENAI_API_KEY = "test-key"  # pragma: allowlist secret
 
-        with patch("openai.AsyncOpenAI"):
-            provider = OpenAIProvider()
-            result = await provider.parse_expense("테스트")
+        with patch("openai.AsyncOpenAI") as mock_openai:
+            mock_client = AsyncMock()
+            mock_client.chat.completions.create.return_value = mock_response
+            mock_openai.return_value = mock_client
 
-            assert "error" in result
-            assert "구현되지 않았습니다" in result["error"]
+            provider = OpenAIProvider()
+            result = await provider.parse_expense("점심에 김치찌개 8000원")
+
+            assert result["amount"] == 8000
+            assert result["category"] == "식비"
+            assert result["description"] == "김치찌개"
+            assert "error" not in result
+
+
+@pytest.mark.skipif(not _has_openai, reason="openai 패키지 미설치")
+@pytest.mark.asyncio
+async def test_openai_parse_expense_with_json_block():
+    """OpenAIProvider가 ```json 블록을 올바르게 파싱하는지 테스트"""
+    json_block_text = '```json\n{"amount": 15000, "category": "교통비", "description": "택시"}\n```'
+    mock_choice = MagicMock()
+    mock_choice.message.content = json_block_text
+    mock_response = MagicMock()
+    mock_response.choices = [mock_choice]
+
+    with patch("app.services.llm_service.settings") as mock_settings:
+        mock_settings.OPENAI_API_KEY = "test-key"  # pragma: allowlist secret
+
+        with patch("openai.AsyncOpenAI") as mock_openai:
+            mock_client = AsyncMock()
+            mock_client.chat.completions.create.return_value = mock_response
+            mock_openai.return_value = mock_client
+
+            provider = OpenAIProvider()
+            result = await provider.parse_expense("택시 15000원")
+
+            assert result["amount"] == 15000
+            assert result["category"] == "교통비"
+
+
+@pytest.mark.skipif(not _has_openai, reason="openai 패키지 미설치")
+@pytest.mark.asyncio
+async def test_openai_parse_expense_multiple():
+    """OpenAI로 여러 지출을 동시에 파싱하는 경우 (리스트 반환)"""
+    mock_choice = MagicMock()
+    mock_choice.message.content = (
+        '[{"amount": 8000, "category": "식비", "description": "점심", "date": "2026-02-12", "memo": ""}, '
+        '{"amount": 5000, "category": "식비", "description": "커피", "date": "2026-02-12", "memo": ""}]'
+    )
+    mock_response = MagicMock()
+    mock_response.choices = [mock_choice]
+
+    with patch("app.services.llm_service.settings") as mock_settings:
+        mock_settings.OPENAI_API_KEY = "test-key"  # pragma: allowlist secret
+
+        with patch("openai.AsyncOpenAI") as mock_openai:
+            mock_client = AsyncMock()
+            mock_client.chat.completions.create.return_value = mock_response
+            mock_openai.return_value = mock_client
+
+            provider = OpenAIProvider()
+            result = await provider.parse_expense("점심 8천원, 커피 5천원")
+
+            assert isinstance(result, list)
+            assert len(result) == 2
+            assert result[0]["amount"] == 8000
+            assert result[1]["amount"] == 5000
+
+
+@pytest.mark.skipif(not _has_openai, reason="openai 패키지 미설치")
+@pytest.mark.asyncio
+async def test_openai_generate_insights_success():
+    """OpenAIProvider.generate_insights() 성공 케이스 (Mock)"""
+    mock_choice = MagicMock()
+    mock_choice.message.content = "# 2월 지출 분석\n\n총 지출: ₩50,000"
+    mock_response = MagicMock()
+    mock_response.choices = [mock_choice]
+
+    with patch("app.services.llm_service.settings") as mock_settings:
+        mock_settings.OPENAI_API_KEY = "test-key"  # pragma: allowlist secret
+
+        with patch("openai.AsyncOpenAI") as mock_openai:
+            mock_client = AsyncMock()
+            mock_client.chat.completions.create.return_value = mock_response
+            mock_openai.return_value = mock_client
+
+            provider = OpenAIProvider()
+            expenses_data = {
+                "month": "2026-02",
+                "total": 50000,
+                "by_category": {"식비": 30000, "교통비": 20000},
+            }
+            result = await provider.generate_insights(expenses_data)
+
+            assert "지출 분석" in result
+            assert "50,000" in result
 
 
 @pytest.mark.asyncio

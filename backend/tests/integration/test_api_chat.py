@@ -1,8 +1,10 @@
 """
-채팅 API 통합 테스트
+채팅 API 통합 테스트 (인증 적용)
 
 - POST /api/chat/ - 자연어 지출 입력 처리
 - LLM 파싱 결과에 따라 지출 생성 또는 에러 응답
+
+모든 엔드포인트는 JWT 인증이 필요합니다.
 """
 
 from datetime import datetime
@@ -12,12 +14,12 @@ from sqlalchemy import select
 
 from app.models.category import Category
 from app.models.expense import Expense
+from app.models.user import User
 
 
 @pytest.mark.asyncio
-async def test_chat_parse_expense_success(client, db_session, mock_llm_parse_expense):
+async def test_chat_parse_expense_success(authenticated_client, test_user: User, db_session, mock_llm_parse_expense):
     """채팅으로 지출 입력 성공 케이스"""
-    # Mock LLM 응답 설정
     mock_llm_parse_expense.return_value = {
         "amount": 8000,
         "category": "식비",
@@ -27,9 +29,9 @@ async def test_chat_parse_expense_success(client, db_session, mock_llm_parse_exp
     }
 
     payload = {"message": "점심에 김치찌개 8000원"}
-    response = await client.post("/api/chat/", json=payload)
+    response = await authenticated_client.post("/api/chat/", json=payload)
 
-    assert response.status_code == 200
+    assert response.status_code == 201
 
     data = response.json()
     assert "기록되었습니다" in data["message"]
@@ -54,15 +56,14 @@ async def test_chat_parse_expense_success(client, db_session, mock_llm_parse_exp
 
 
 @pytest.mark.asyncio
-async def test_chat_parse_expense_with_existing_category(client, db_session, mock_llm_parse_expense):
+async def test_chat_parse_expense_with_existing_category(authenticated_client, test_user: User, db_session, mock_llm_parse_expense):
     """기존 카테고리가 있으면 재사용"""
     # 기존 카테고리 생성
-    existing_cat = Category(name="교통비", description="대중교통")
+    existing_cat = Category(user_id=test_user.id, name="교통비", description="대중교통")
     db_session.add(existing_cat)
     await db_session.commit()
     await db_session.refresh(existing_cat)
 
-    # Mock LLM 응답 (교통비 카테고리)
     mock_llm_parse_expense.return_value = {
         "amount": 15000,
         "category": "교통비",
@@ -72,9 +73,9 @@ async def test_chat_parse_expense_with_existing_category(client, db_session, moc
     }
 
     payload = {"message": "택시 15000원"}
-    response = await client.post("/api/chat/", json=payload)
+    response = await authenticated_client.post("/api/chat/", json=payload)
 
-    assert response.status_code == 200
+    assert response.status_code == 201
 
     # 카테고리가 중복 생성되지 않았는지 확인
     cat_result = await db_session.execute(select(Category).where(Category.name == "교통비"))
@@ -84,15 +85,14 @@ async def test_chat_parse_expense_with_existing_category(client, db_session, moc
 
 
 @pytest.mark.asyncio
-async def test_chat_parse_expense_error(client, db_session, mock_llm_parse_expense):
+async def test_chat_parse_expense_error(authenticated_client, test_user: User, db_session, mock_llm_parse_expense):
     """LLM 파싱 실패 시 에러 응답"""
-    # Mock LLM 에러 응답
     mock_llm_parse_expense.return_value = {"error": "금액을 찾을 수 없습니다"}
 
     payload = {"message": "그냥 텍스트"}
-    response = await client.post("/api/chat/", json=payload)
+    response = await authenticated_client.post("/api/chat/", json=payload)
 
-    assert response.status_code == 200  # 200이지만 에러 메시지 포함
+    assert response.status_code == 201
 
     data = response.json()
     assert data["message"] == "금액을 찾을 수 없습니다"
@@ -106,21 +106,20 @@ async def test_chat_parse_expense_error(client, db_session, mock_llm_parse_expen
 
 
 @pytest.mark.asyncio
-async def test_chat_with_date_parsing(client, db_session, mock_llm_parse_expense):
+async def test_chat_with_date_parsing(authenticated_client, test_user: User, db_session, mock_llm_parse_expense):
     """날짜 파싱이 포함된 지출 입력"""
-    # Mock LLM 응답 (어제 날짜)
     mock_llm_parse_expense.return_value = {
         "amount": 15000,
         "category": "교통비",
         "description": "택시",
-        "date": "2026-02-10",  # 어제
+        "date": "2026-02-10",
         "memo": "회식 후",
     }
 
     payload = {"message": "어제 택시 15000원 회식 후"}
-    response = await client.post("/api/chat/", json=payload)
+    response = await authenticated_client.post("/api/chat/", json=payload)
 
-    assert response.status_code == 200
+    assert response.status_code == 201
 
     data = response.json()
     assert data["expenses_created"] is not None
@@ -134,9 +133,8 @@ async def test_chat_with_date_parsing(client, db_session, mock_llm_parse_expense
 
 
 @pytest.mark.asyncio
-async def test_chat_with_memo(client, db_session, mock_llm_parse_expense):
+async def test_chat_with_memo(authenticated_client, test_user: User, db_session, mock_llm_parse_expense):
     """메모가 포함된 지출 입력"""
-    # Mock LLM 응답 (메모 포함)
     mock_llm_parse_expense.return_value = {
         "amount": 13500,
         "category": "문화생활",
@@ -146,16 +144,15 @@ async def test_chat_with_memo(client, db_session, mock_llm_parse_expense):
     }
 
     payload = {"message": "넷플릭스 13500 월 구독료"}
-    response = await client.post("/api/chat/", json=payload)
+    response = await authenticated_client.post("/api/chat/", json=payload)
 
-    assert response.status_code == 200
+    assert response.status_code == 201
     assert response.json()["expenses_created"] is not None
 
 
 @pytest.mark.asyncio
-async def test_chat_category_default_to_other(client, db_session, mock_llm_parse_expense):
+async def test_chat_category_default_to_other(authenticated_client, test_user: User, db_session, mock_llm_parse_expense):
     """카테고리가 명시되지 않으면 '기타'로 분류"""
-    # Mock LLM 응답 (카테고리 없음)
     mock_llm_parse_expense.return_value = {
         "amount": 5000,
         "description": "알 수 없는 지출",
@@ -164,9 +161,9 @@ async def test_chat_category_default_to_other(client, db_session, mock_llm_parse
     }
 
     payload = {"message": "5000원 사용"}
-    response = await client.post("/api/chat/", json=payload)
+    response = await authenticated_client.post("/api/chat/", json=payload)
 
-    assert response.status_code == 200
+    assert response.status_code == 201
 
     # '기타' 카테고리가 생성되었는지 확인
     cat_result = await db_session.execute(select(Category).where(Category.name == "기타"))
@@ -175,9 +172,8 @@ async def test_chat_category_default_to_other(client, db_session, mock_llm_parse
 
 
 @pytest.mark.asyncio
-async def test_chat_large_amount_formatting(client, db_session, mock_llm_parse_expense):
+async def test_chat_large_amount_formatting(authenticated_client, test_user: User, db_session, mock_llm_parse_expense):
     """큰 금액도 천단위 콤마로 포맷팅"""
-    # Mock LLM 응답 (큰 금액)
     mock_llm_parse_expense.return_value = {
         "amount": 1500000,
         "category": "쇼핑",
@@ -187,18 +183,17 @@ async def test_chat_large_amount_formatting(client, db_session, mock_llm_parse_e
     }
 
     payload = {"message": "노트북 150만원"}
-    response = await client.post("/api/chat/", json=payload)
+    response = await authenticated_client.post("/api/chat/", json=payload)
 
-    assert response.status_code == 200
+    assert response.status_code == 201
 
     data = response.json()
     assert "₩1,500,000" in data["message"]
 
 
 @pytest.mark.asyncio
-async def test_chat_without_description(client, db_session, mock_llm_parse_expense):
+async def test_chat_without_description(authenticated_client, test_user: User, db_session, mock_llm_parse_expense):
     """설명이 없으면 원본 메시지를 사용"""
-    # Mock LLM 응답 (description 없음)
     mock_llm_parse_expense.return_value = {
         "amount": 3000,
         "category": "기타",
@@ -207,9 +202,9 @@ async def test_chat_without_description(client, db_session, mock_llm_parse_expen
     }
 
     payload = {"message": "3000원 지출"}
-    response = await client.post("/api/chat/", json=payload)
+    response = await authenticated_client.post("/api/chat/", json=payload)
 
-    assert response.status_code == 200
+    assert response.status_code == 201
 
     # DB에서 원본 메시지가 description으로 사용되었는지 확인
     result = await db_session.execute(select(Expense))
