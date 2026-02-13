@@ -11,7 +11,7 @@
 
 | Phase | 진행률 | 상태 |
 |-------|--------|------|
-| Phase 1 (Core MVP) | 40% | API/UI 구조 완료, LLM 파싱 미구현 |
+| Phase 1 (Core MVP) | 85% | API/UI/LLM 파싱 완료, 자연어 입력 UI 미완 |
 | Phase 2 (Household) | 70% | Expense 연결 완료, 전환 UI 미완 |
 | Phase 3 (Bot) | 스켈레톤 | 실제 동작 안 함 |
 | Phase 4 (배포) | 0% | 미착수 |
@@ -43,9 +43,9 @@
 | 기능 | 상태 | 파일 | 테스트 | 비고 |
 |------|------|------|--------|------|
 | LLMProvider 인터페이스 | 완료 | services/llm_service.py | 없음 | Strategy 패턴 |
-| OpenAI API 호출 | Stub | services/llm_service.py | 없음 | parse_expense() 미구현 |
-| Anthropic API 호출 | Stub | services/llm_service.py | 없음 | parse_expense() 미구현 |
-| 프롬프트 엔지니어링 | 미구현 | - | - | Few-shot 예시 필요 |
+| OpenAI API 호출 | 완료 | services/llm_service.py | 없음 | parse_expense() 구현 |
+| Anthropic API 호출 | 완료 | services/llm_service.py | 없음 | parse_expense() 구현 |
+| 프롬프트 엔지니어링 | 완료 | services/prompts.py | 없음 | Few-shot 예시 포함 |
 
 ### 카테고리 / 예산
 
@@ -54,7 +54,7 @@
 | 카테고리 CRUD | 완료 | api/categories.py | 있음 |
 | 예산 CRUD | 완료 | api/budget.py | 있음 |
 | 예산 초과 알림 | 완료 | api/insights.py | 있음 |
-| AI 인사이트 생성 | Stub | services/llm_service.py | 없음 |
+| AI 인사이트 생성 | 완료 | services/llm_service.py | 없음 |
 
 ### 가구 (Household)
 
@@ -79,7 +79,7 @@
 | 항목 | 상태 | 비고 |
 |------|------|------|
 | SQLAlchemy 모델 | 완료 | User, Expense, Category, Budget, Household, HouseholdMember, HouseholdInvitation |
-| Alembic 마이그레이션 | 미구현 | `alembic init` 필요 |
+| Alembic 마이그레이션 | 완료 | 초기 마이그레이션 ef6a56f45278 |
 | 인덱스 | 부분 | user_id, household_id에만 |
 
 ---
@@ -156,8 +156,8 @@
 ## 알려진 이슈
 
 ### P0 (Critical)
-- LLM 파싱 미구현: 자연어 입력이 동작하지 않음 (stub 상태)
-- Alembic 미초기화: DB 스키마 변경 추적 불가
+- ~~LLM 파싱 미구현~~ (2026-02-14 해결: Anthropic/OpenAI/프롬프트 구현 완료)
+- ~~Alembic 미초기화~~ (2026-02-14 해결: 초기 마이그레이션 완료)
 - ~~Household <-> Expense 미연결~~ (2026-02-14 해결)
 
 ### P1 (High)

@@ -13,9 +13,9 @@ from app.core.config import Settings
 
 
 def test_settings_default_values():
-    """Settings 기본값 테스트"""
+    """Settings 기본값 테스트 (.env 파일 무시하고 순수 기본값만 검증)"""
     with patch.dict("os.environ", {}, clear=True):
-        settings = Settings()
+        settings = Settings(_env_file=None)
 
         assert settings.APP_NAME == "HomeNRich"
         assert settings.DEBUG is True
@@ -36,7 +36,7 @@ def test_settings_from_env():
     }
 
     with patch.dict("os.environ", env, clear=True):
-        settings = Settings()
+        settings = Settings(_env_file=None)
 
         assert settings.APP_NAME == "TestApp"
         assert settings.DEBUG is False
@@ -50,39 +50,39 @@ def test_llm_provider_literal_type():
     """LLM_PROVIDER가 Literal 타입으로 제한되는지 테스트"""
     # 유효한 값
     with patch.dict("os.environ", {"LLM_PROVIDER": "anthropic"}, clear=True):
-        settings = Settings()
+        settings = Settings(_env_file=None)
         assert settings.LLM_PROVIDER == "anthropic"
 
     with patch.dict("os.environ", {"LLM_PROVIDER": "openai"}, clear=True):
-        settings = Settings()
+        settings = Settings(_env_file=None)
         assert settings.LLM_PROVIDER == "openai"
 
     with patch.dict("os.environ", {"LLM_PROVIDER": "local"}, clear=True):
-        settings = Settings()
+        settings = Settings(_env_file=None)
         assert settings.LLM_PROVIDER == "local"
 
     # 잘못된 값 (Pydantic이 ValidationError 발생시킴)
     with patch.dict("os.environ", {"LLM_PROVIDER": "invalid"}, clear=True), pytest.raises((ValueError, Exception)):
-        Settings()
+        Settings(_env_file=None)
 
 
 def test_settings_case_sensitive():
     """Config.case_sensitive=True로 인해 대소문자 구분"""
     # 소문자 환경변수는 무시됨
     with patch.dict("os.environ", {"app_name": "lowercase"}, clear=True):
-        settings = Settings()
+        settings = Settings(_env_file=None)
         assert settings.APP_NAME == "HomeNRich"  # 기본값 유지
 
     # 대문자 환경변수는 반영됨
     with patch.dict("os.environ", {"APP_NAME": "UPPERCASE"}, clear=True):
-        settings = Settings()
+        settings = Settings(_env_file=None)
         assert settings.APP_NAME == "UPPERCASE"
 
 
 def test_database_url_default():
     """DATABASE_URL 기본값 검증"""
     with patch.dict("os.environ", {}, clear=True):
-        settings = Settings()
+        settings = Settings(_env_file=None)
         assert "postgresql+asyncpg" in settings.DATABASE_URL
         assert "homenrich" in settings.DATABASE_URL
         assert "5432" in settings.DATABASE_URL

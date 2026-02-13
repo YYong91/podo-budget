@@ -44,7 +44,7 @@ cd frontend
 npm test                          # Run all tests (Vitest)
 ```
 
-### Database migrations (Alembic — not yet initialized)
+### Database migrations (Alembic)
 ```bash
 cd backend
 alembic upgrade head              # Apply migrations
@@ -97,8 +97,8 @@ frontend/src/
 
 ### Database
 - PostgreSQL 16 with asyncpg driver
-- Three models: Expense → Category (FK), Budget → Category (FK)
-- Alembic listed in dependencies but migrations not yet initialized
+- Seven models: User, Expense, Category, Budget, Household, HouseholdMember, HouseholdInvitation
+- Alembic 초기화 완료 (초기 마이그레이션: ef6a56f45278)
 
 ### Infrastructure
 - Docker Compose: `db` (postgres:16-alpine with healthcheck) + `backend` (python:3.12-slim)
@@ -131,7 +131,6 @@ Frontend: `frontend/.env.development`:
 
 ## Current State (2026-02-14)
 
-- **Backend**: 인증, 지출 CRUD, 카테고리, 예산, 인사이트, Household/초대 API 모두 구현됨. Expense ↔ Household 연결 완료. LLM 파싱은 stub 상태. 테스트 199개.
+- **Backend**: 인증, 지출 CRUD, 카테고리, 예산, 인사이트, Household/초대 API 모두 구현됨. Expense ↔ Household 연결 완료. LLM 파싱(Anthropic/OpenAI) 구현 완료. Alembic 초기화 완료. 테스트 199개.
 - **Frontend**: React 19 SPA. 대시보드, 지출, 카테고리, 예산, 인사이트, 가구 관리 페이지 구현. activeHouseholdId로 지출 자동 연동. 테스트 157개.
 - **Infrastructure**: Docker Compose로 PostgreSQL + Backend + Frontend 실행 가능.
-- **핵심 미완성**: LLM 파싱 미구현. Alembic 마이그레이션 미초기화.
