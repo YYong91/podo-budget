@@ -312,12 +312,11 @@ async def test_openai_generate_insights_success():
 
 @pytest.mark.asyncio
 async def test_local_llm_provider_not_implemented():
-    """LocalLLMProvider는 아직 구현되지 않음 (TODO)"""
+    """LocalLLMProvider는 아직 구현되지 않음 (NotImplementedError)"""
     provider = LocalLLMProvider()
-    result = await provider.parse_expense("테스트")
 
-    assert "error" in result
-    assert "구현되지 않았습니다" in result["error"]
+    with pytest.raises(NotImplementedError, match="구현되지 않았습니다"):
+        await provider.parse_expense("테스트")
 
-    insights = await provider.generate_insights({})
-    assert "구현되지 않았습니다" in insights
+    with pytest.raises(NotImplementedError, match="구현되지 않았습니다"):
+        await provider.generate_insights({})
