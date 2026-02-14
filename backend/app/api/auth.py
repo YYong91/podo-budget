@@ -216,9 +216,12 @@ async def delete_account(
     except Exception as e:
         # 실패 시 롤백
         await db.rollback()
+        import logging
+
+        logging.getLogger(__name__).error(f"계정 삭제 실패 (user_id={user_id}): {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"계정 삭제 중 오류가 발생했습니다: {str(e)}",
+            detail="계정 삭제 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.",
         ) from e
 
     # 204 No Content는 빈 응답 반환

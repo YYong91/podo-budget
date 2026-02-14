@@ -3,23 +3,17 @@
 
 def format_expense_saved(amount: float, category: str, description: str, date: str) -> str:
     """지출 저장 성공 메시지"""
-    return f"✅ 지출이 기록되었어요!\n\n" f"💰 {amount:,.0f}원\n" f"📂 {category}\n" f"📅 {date}\n" f"📝 {description}"
+    return f"✅ 지출이 기록되었어요!\n\n💰 {amount:,.0f}원\n📂 {category}\n📅 {date}\n📝 {description}"
 
 
 def format_parse_error(raw_input: str) -> str:
     """파싱 실패 - 금액 없음"""
-    return f"❓ 금액을 찾을 수 없어요.\n\n" f'입력하신 내용: "{raw_input}"\n\n' f"얼마를 쓰셨나요?\n" f'예시: "8000원" 또는 "8천원"'
+    return f'❓ 금액을 찾을 수 없어요.\n\n입력하신 내용: "{raw_input}"\n\n얼마를 쓰셨나요?\n예시: "8000원" 또는 "8천원"'
 
 
 def format_unknown_input(raw_input: str) -> str:
     """파싱 실패 - 알 수 없는 표현"""
-    return (
-        f"😅 무슨 뜻인지 이해하지 못했어요.\n\n"
-        f'입력하신 내용: "{raw_input}"\n\n'
-        f"이렇게 입력해보세요:\n"
-        f'"점심에 김치찌개 8000원"\n'
-        f'"스타벅스 아메리카노 4500원"'
-    )
+    return f'😅 무슨 뜻인지 이해하지 못했어요.\n\n입력하신 내용: "{raw_input}"\n\n이렇게 입력해보세요:\n"점심에 김치찌개 8000원"\n"스타벅스 아메리카노 4500원"'
 
 
 def format_help_message() -> str:
@@ -66,6 +60,11 @@ def format_delete_confirm(amount: float, category: str, description: str) -> str
 def format_server_error() -> str:
     """서버 오류 메시지"""
     return "⚠️ 일시적인 오류가 발생했어요.\n잠시 후 다시 시도해주시겠어요?"
+
+
+def format_timeout_message() -> str:
+    """LLM 응답 타임아웃 메시지 (카카오 5초 제한)"""
+    return "⏳ AI 분석에 시간이 좀 걸리고 있어요.\n같은 내용을 다시 보내주시면 더 빠르게 처리해드릴게요!"
 
 
 def format_report_message(report_data: list[dict]) -> str:

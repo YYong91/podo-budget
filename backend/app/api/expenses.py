@@ -87,7 +87,7 @@ async def get_expenses(
         query = query.where(Expense.date >= start_date)
     if end_date:
         query = query.where(Expense.date <= end_date)
-    if category_id:
+    if category_id is not None:
         query = query.where(Expense.category_id == category_id)
 
     query = query.order_by(Expense.date.desc()).offset(skip).limit(limit)

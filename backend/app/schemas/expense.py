@@ -2,11 +2,11 @@
 
 from datetime import datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class ExpenseBase(BaseModel):
-    amount: float
+    amount: float = Field(..., gt=0, description="지출 금액 (0보다 커야 함)")
     description: str
     category_id: int | None = None
     date: datetime
@@ -18,7 +18,7 @@ class ExpenseCreate(ExpenseBase):
 
 
 class ExpenseUpdate(BaseModel):
-    amount: float | None = None
+    amount: float | None = Field(None, gt=0, description="지출 금액 (0보다 커야 함)")
     description: str | None = None
     category_id: int | None = None
     date: datetime | None = None

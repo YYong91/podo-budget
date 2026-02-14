@@ -112,7 +112,7 @@
 
 - Fly.io 배포 (Backend + Frontend + DB)
 - CI/CD 설정 (GitHub Actions)
-- Sentry 에러 트래킹
+- ~~Sentry 에러 트래킹~~ **완료** — Backend(sentry-sdk) + Frontend(@sentry/react), DSN 없으면 비활성화
 - 베타 테스터 10쌍 (20명) 모집
 - 2주간 피드백 수집
 

@@ -86,3 +86,23 @@ def test_database_url_default():
         assert "postgresql+asyncpg" in settings.DATABASE_URL
         assert "homenrich" in settings.DATABASE_URL
         assert "5432" in settings.DATABASE_URL
+
+
+def test_sentry_dsn_default_empty():
+    """SENTRY_DSN 기본값은 빈 문자열 (비활성화)"""
+    with patch.dict("os.environ", {}, clear=True):
+        settings = Settings(_env_file=None)
+        assert settings.SENTRY_DSN == ""
+        assert settings.SENTRY_ENVIRONMENT == "development"
+
+
+def test_sentry_dsn_from_env():
+    """SENTRY_DSN 환경변수 로딩 테스트"""
+    env = {
+        "SENTRY_DSN": "https://abc123@sentry.io/456",
+        "SENTRY_ENVIRONMENT": "production",
+    }
+    with patch.dict("os.environ", env, clear=True):
+        settings = Settings(_env_file=None)
+        assert settings.SENTRY_DSN == "https://abc123@sentry.io/456"
+        assert settings.SENTRY_ENVIRONMENT == "production"

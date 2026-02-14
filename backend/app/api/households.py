@@ -10,7 +10,7 @@
 """
 
 import uuid
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import and_, delete, func, select, update
@@ -302,7 +302,12 @@ async def delete_household(
         - 관련된 멤버십과 초대는 자동으로 cascade 처리됩니다
     """
     # 소프트 삭제
-    update_stmt = update(Household).where(Household.id == household_id).values(deleted_at=datetime.utcnow()).execution_options(synchronize_session="fetch")
+    update_stmt = (
+        update(Household)
+        .where(Household.id == household_id)
+        .values(deleted_at=datetime.now(UTC).replace(tzinfo=None))
+        .execution_options(synchronize_session="fetch")
+    )
 
     await db.execute(update_stmt)
     await db.commit()
@@ -431,7 +436,7 @@ async def remove_member(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="소유자는 추방할 수 없습니다")
 
     # 소프트 삭제 (left_at 설정)
-    target_member.left_at = datetime.utcnow()
+    target_member.left_at = datetime.now(UTC).replace(tzinfo=None)
     await db.commit()
 
 
@@ -493,7 +498,7 @@ async def leave_household(
         transferred_to = None
 
     # 현재 사용자 탈퇴 처리
-    member.left_at = datetime.utcnow()
+    member.left_at = datetime.now(UTC).replace(tzinfo=None)
     await db.commit()
 
     message = "가구에서 탈퇴했습니다"
@@ -575,7 +580,7 @@ async def create_invitation(
 
     # 초대 생성
     token = str(uuid.uuid4())
-    expires_at = datetime.utcnow() + timedelta(days=7)
+    expires_at = datetime.now(UTC).replace(tzinfo=None) + timedelta(days=7)
 
     invitation = HouseholdInvitation(
         household_id=household_id,

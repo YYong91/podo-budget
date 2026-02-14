@@ -8,6 +8,8 @@ Telegram Webhook API 통합 테스트
 - 카테고리 변경 콜백
 """
 
+from unittest.mock import patch
+
 import pytest
 from sqlalchemy import select
 
@@ -317,8 +319,8 @@ async def test_webhook_personal_keyword_no_household(client, db_session, mock_te
 
 
 @pytest.mark.asyncio
-async def test_callback_delete_expense(client, db_session, mock_telegram_send, mock_llm_parse_expense):
-    """인라인 버튼으로 지출 삭제"""
+async def test_callback_delete_expense_confirmation(client, db_session, mock_telegram_send, mock_llm_parse_expense):
+    """인라인 버튼으로 지출 삭제 — 확인 프롬프트 표시"""
     from unittest.mock import AsyncMock, patch
 
     # 먼저 지출 생성
@@ -334,7 +336,7 @@ async def test_callback_delete_expense(client, db_session, mock_telegram_send, m
     expense = result.scalars().first()
     assert expense is not None
 
-    # 삭제 콜백
+    # 삭제 버튼 클릭 → 확인 프롬프트 표시 (아직 삭제 안 됨)
     mock_telegram_send.reset_mock()
     with patch("app.api.telegram.answer_callback_query", new_callable=AsyncMock):
         callback_payload = {
@@ -347,9 +349,82 @@ async def test_callback_delete_expense(client, db_session, mock_telegram_send, m
         response = await client.post("/api/telegram/webhook", json=callback_payload)
         assert response.status_code == 200
 
-    # 지출이 삭제되었는지 확인
+    # 아직 삭제되지 않음 (확인 프롬프트 단계)
+    result = await db_session.execute(select(Expense))
+    assert len(result.scalars().all()) == 1
+
+    # 확인 메시지에 "정말 삭제" 문구가 포함되어야 함
+    mock_telegram_send.assert_called_once()
+    sent_message = mock_telegram_send.call_args[0][1]
+    assert "정말 삭제" in sent_message
+    # 확인/취소 인라인 키보드가 포함되어야 함
+    assert "inline_keyboard" in mock_telegram_send.call_args[1]["reply_markup"]
+
+
+@pytest.mark.asyncio
+async def test_callback_confirm_delete(client, db_session, mock_telegram_send, mock_llm_parse_expense):
+    """삭제 확인 후 실제 삭제 수행"""
+    from unittest.mock import AsyncMock, patch
+
+    # 지출 생성
+    payload = {"message": {"chat": {"id": 88888}, "text": "점심 8000원"}}
+    await client.post("/api/telegram/webhook", json=payload)
+
+    result = await db_session.execute(select(Expense))
+    expense = result.scalars().first()
+    assert expense is not None
+
+    # confirm_delete 콜백 → 실제 삭제
+    mock_telegram_send.reset_mock()
+    with patch("app.api.telegram.answer_callback_query", new_callable=AsyncMock):
+        callback_payload = {
+            "callback_query": {
+                "id": "cb_confirm",
+                "message": {"chat": {"id": 88888}},
+                "data": f"confirm_delete:{expense.id}",
+            }
+        }
+        response = await client.post("/api/telegram/webhook", json=callback_payload)
+        assert response.status_code == 200
+
+    # 실제 삭제 확인
     result = await db_session.execute(select(Expense))
     assert len(result.scalars().all()) == 0
+
+
+@pytest.mark.asyncio
+async def test_callback_cancel_delete(client, db_session, mock_telegram_send, mock_llm_parse_expense):
+    """삭제 취소 시 지출 유지"""
+    from unittest.mock import AsyncMock, patch
+
+    # 지출 생성
+    payload = {"message": {"chat": {"id": 88888}, "text": "점심 8000원"}}
+    await client.post("/api/telegram/webhook", json=payload)
+
+    result = await db_session.execute(select(Expense))
+    expense = result.scalars().first()
+    assert expense is not None
+
+    # cancel_delete 콜백 → 삭제 취소
+    mock_telegram_send.reset_mock()
+    with patch("app.api.telegram.answer_callback_query", new_callable=AsyncMock):
+        callback_payload = {
+            "callback_query": {
+                "id": "cb_cancel",
+                "message": {"chat": {"id": 88888}},
+                "data": f"cancel_delete:{expense.id}",
+            }
+        }
+        response = await client.post("/api/telegram/webhook", json=callback_payload)
+        assert response.status_code == 200
+
+    # 지출이 여전히 존재
+    result = await db_session.execute(select(Expense))
+    assert len(result.scalars().all()) == 1
+
+    # 취소 메시지 확인
+    mock_telegram_send.assert_called_once()
+    assert "취소" in mock_telegram_send.call_args[0][1]
 
 
 @pytest.mark.asyncio
@@ -437,3 +512,194 @@ async def test_callback_set_category(client, db_session, mock_telegram_send, moc
     # 변경 완료 메시지 확인
     mock_telegram_send.assert_called_once()
     assert "교통" in mock_telegram_send.call_args[0][1]
+
+
+# ──────────────────────────────────────────────
+# Callback IDOR 보안 테스트 (TST-002)
+# ──────────────────────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_callback_idor_delete_blocked(client, db_session, mock_telegram_send, mock_llm_parse_expense):
+    """다른 사용자의 지출을 삭제 시도하면 거부"""
+    from unittest.mock import AsyncMock
+    from unittest.mock import patch as mock_patch
+
+    # 사용자 A(chat_id=11111)가 지출 생성
+    payload = {"message": {"chat": {"id": 11111}, "text": "점심 8000원"}}
+    await client.post("/api/telegram/webhook", json=payload)
+
+    result = await db_session.execute(select(Expense))
+    expense = result.scalars().first()
+    assert expense is not None
+
+    # 사용자 B(chat_id=22222)가 사용자 A의 지출을 삭제 시도
+    mock_telegram_send.reset_mock()
+    with mock_patch("app.api.telegram.answer_callback_query", new_callable=AsyncMock) as mock_answer:
+        callback_payload = {
+            "callback_query": {
+                "id": "cb_idor",
+                "message": {"chat": {"id": 22222}},  # 다른 사용자
+                "data": f"confirm_delete:{expense.id}",
+            }
+        }
+        response = await client.post("/api/telegram/webhook", json=callback_payload)
+        assert response.status_code == 200
+
+        # "본인의 지출만" 거부 메시지
+        mock_answer.assert_called_once()
+        assert "본인" in mock_answer.call_args[0][1]
+
+    # 지출이 삭제되지 않았는지 확인
+    result = await db_session.execute(select(Expense))
+    assert len(result.scalars().all()) == 1
+
+
+@pytest.mark.asyncio
+async def test_callback_idor_change_category_blocked(client, db_session, mock_telegram_send, mock_llm_parse_expense):
+    """다른 사용자의 지출 카테고리 변경 시도하면 거부"""
+    from unittest.mock import AsyncMock
+    from unittest.mock import patch as mock_patch
+
+    # 사용자 A가 지출 생성
+    payload = {"message": {"chat": {"id": 33333}, "text": "점심 8000원"}}
+    await client.post("/api/telegram/webhook", json=payload)
+
+    result = await db_session.execute(select(Expense))
+    expense = result.scalars().first()
+    original_category_id = expense.category_id
+
+    # 사용자 B가 카테고리 변경 시도
+    mock_telegram_send.reset_mock()
+    with mock_patch("app.api.telegram.answer_callback_query", new_callable=AsyncMock) as mock_answer:
+        callback_payload = {
+            "callback_query": {
+                "id": "cb_idor2",
+                "message": {"chat": {"id": 44444}},  # 다른 사용자
+                "data": f"change_category:{expense.id}",
+            }
+        }
+        response = await client.post("/api/telegram/webhook", json=callback_payload)
+        assert response.status_code == 200
+
+        mock_answer.assert_called_once()
+        assert "본인" in mock_answer.call_args[0][1]
+
+    # 카테고리가 변경되지 않았는지 확인
+    await db_session.refresh(expense)
+    assert expense.category_id == original_category_id
+
+
+# ──────────────────────────────────────────────
+# Webhook 보안 테스트
+# ──────────────────────────────────────────────
+
+
+# ──────────────────────────────────────────────
+# /report, /budget, 다건 입력 테스트
+# ──────────────────────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_webhook_report_command(client, db_session, mock_telegram_send, mock_llm_parse_expense):
+    """/report 명령어 — 이번 달 지출 요약 전송"""
+    # 먼저 지출을 생성
+    payload = {"message": {"chat": {"id": 44444}, "text": "점심 8000원"}}
+    await client.post("/api/telegram/webhook", json=payload)
+
+    # /report 실행
+    mock_telegram_send.reset_mock()
+    report_payload = {"message": {"chat": {"id": 44444}, "text": "/report"}}
+    response = await client.post("/api/telegram/webhook", json=report_payload)
+    assert response.status_code == 200
+
+    mock_telegram_send.assert_called_once()
+    sent_message = mock_telegram_send.call_args[0][1]
+    assert "지출 리포트" in sent_message or "총 지출" in sent_message
+
+
+@pytest.mark.asyncio
+async def test_webhook_report_empty(client, db_session, mock_telegram_send):
+    """/report 명령어 — 지출이 없을 때"""
+    payload = {"message": {"chat": {"id": 44444}, "text": "/report"}}
+    response = await client.post("/api/telegram/webhook", json=payload)
+    assert response.status_code == 200
+
+    mock_telegram_send.assert_called_once()
+    sent_message = mock_telegram_send.call_args[0][1]
+    assert "없" in sent_message
+
+
+@pytest.mark.asyncio
+async def test_webhook_budget_command(client, db_session, mock_telegram_send):
+    """/budget 명령어 — 예산 없을 때"""
+    payload = {"message": {"chat": {"id": 44444}, "text": "/budget"}}
+    response = await client.post("/api/telegram/webhook", json=payload)
+    assert response.status_code == 200
+
+    mock_telegram_send.assert_called_once()
+    sent_message = mock_telegram_send.call_args[0][1]
+    assert "예산" in sent_message
+
+
+@pytest.mark.asyncio
+async def test_webhook_multiple_expenses(client, db_session, mock_telegram_send, mock_llm_parse_expense):
+    """여러 지출 동시 입력 (list 반환)"""
+    mock_llm_parse_expense.return_value = [
+        {"amount": 5000, "category": "식비", "description": "점심", "date": "2026-02-14", "memo": ""},
+        {"amount": 4500, "category": "카페", "description": "커피", "date": "2026-02-14", "memo": ""},
+    ]
+
+    payload = {"message": {"chat": {"id": 44444}, "text": "점심 5천원, 커피 4500원"}}
+    response = await client.post("/api/telegram/webhook", json=payload)
+    assert response.status_code == 200
+
+    # DB에 2건 저장
+    result = await db_session.execute(select(Expense))
+    expenses = result.scalars().all()
+    assert len(expenses) == 2
+
+    # 전송된 메시지에 건수와 합계
+    mock_telegram_send.assert_called_once()
+    sent_message = mock_telegram_send.call_args[0][1]
+    assert "2건" in sent_message
+    assert "9,500" in sent_message
+
+
+@pytest.mark.asyncio
+async def test_webhook_rejects_invalid_secret(client, db_session):
+    """시크릿 토큰이 설정된 경우, 잘못된 토큰은 403 반환"""
+    with patch("app.api.telegram.settings") as mock_settings:
+        mock_settings.TELEGRAM_WEBHOOK_SECRET = "my-secret-token"  # pragma: allowlist secret
+        mock_settings.TELEGRAM_BOT_TOKEN = "fake-token"
+
+        payload = {"message": {"chat": {"id": 12345}, "text": "/start"}}
+
+        # 토큰 없이 요청
+        response = await client.post("/api/telegram/webhook", json=payload)
+        assert response.status_code == 403
+
+        # 잘못된 토큰으로 요청
+        response = await client.post(
+            "/api/telegram/webhook",
+            json=payload,
+            headers={"X-Telegram-Bot-Api-Secret-Token": "wrong-token"},
+        )
+        assert response.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_webhook_accepts_valid_secret(client, db_session, mock_telegram_send):
+    """시크릿 토큰이 설정된 경우, 올바른 토큰은 통과"""
+    with patch("app.api.telegram.settings") as mock_settings:
+        mock_settings.TELEGRAM_WEBHOOK_SECRET = "my-secret-token"  # pragma: allowlist secret
+        mock_settings.TELEGRAM_BOT_TOKEN = "fake-token"
+
+        payload = {"message": {"chat": {"id": 12345}, "text": "/start"}}
+
+        response = await client.post(
+            "/api/telegram/webhook",
+            json=payload,
+            headers={"X-Telegram-Bot-Api-Secret-Token": "my-secret-token"},
+        )
+        assert response.status_code == 200

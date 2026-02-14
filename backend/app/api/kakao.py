@@ -3,16 +3,21 @@
 카카오 i 오픈빌더 스킬 서버 형태로 구현됩니다.
 사용자가 자연어로 지출을 입력하면 LLM으로 파싱하여 DB에 저장합니다.
 Telegram 봇과 달리 응답을 JSON으로 직접 반환합니다.
+
+주의: 카카오 오픈빌더는 5초 내 응답이 필수입니다.
+LLM 호출을 4.5초로 제한하고 타임아웃 시 안내 메시지를 반환합니다.
 """
 
+import asyncio
 import logging
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy import extract, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import get_user_active_household_id
+from app.core.config import settings
 from app.core.database import get_db
 from app.models.budget import Budget
 from app.models.category import Category
@@ -24,6 +29,7 @@ from app.services.bot_messages import (
     format_parse_error,
     format_report_message,
     format_server_error,
+    format_timeout_message,
 )
 from app.services.bot_user_service import get_or_create_bot_user
 from app.services.category_service import get_or_create_category
@@ -75,7 +81,15 @@ async def kakao_webhook(request: Request, db: AsyncSession = Depends(get_db)):
     - 자연어 입력: LLM으로 파싱 → DB 저장 → 결과 응답
 
     응답은 Telegram과 달리 JSON을 직접 반환합니다 (비동기 send 없음).
+
+    보안: KAKAO_BOT_API_KEY 설정 시 Authorization 헤더 검증
     """
+    # Webhook API 키 검증 (설정된 경우에만)
+    if settings.KAKAO_BOT_API_KEY:
+        auth_header = request.headers.get("Authorization", "")
+        if auth_header != settings.KAKAO_BOT_API_KEY:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="유효하지 않은 API 키")
+
     try:
         data = await request.json()
 
@@ -109,10 +123,18 @@ async def kakao_webhook(request: Request, db: AsyncSession = Depends(get_db)):
         if utterance.startswith("/budget"):
             return await handle_budget_command(db, user_id=bot_user.id)
 
-        # 자연어 지출 입력 → LLM 파싱
+        # 자연어 지출 입력 → LLM 파싱 (4.5초 타임아웃)
         try:
             llm = get_llm_provider("parse")
-            parsed = await llm.parse_expense(utterance)
+            try:
+                async with asyncio.timeout(4.5):
+                    parsed = await llm.parse_expense(utterance)
+            except TimeoutError:
+                logger.warning(f"카카오 LLM 파싱 타임아웃: {utterance}")
+                return make_simple_text_response(
+                    format_timeout_message(),
+                    quick_replies=[make_quick_reply("🔄 다시 시도", utterance), make_quick_reply("❓ 도움말", "/help")],
+                )
 
             # 자연어 컨텍스트 기반 household_id 결정
             household_id = await resolve_household_id(utterance, None, active_household_id)

@@ -1,5 +1,6 @@
 from contextlib import asynccontextmanager
 
+import sentry_sdk
 from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -10,6 +11,16 @@ from app.core.config import settings
 from app.core.database import Base, engine
 from app.core.exceptions import register_exception_handlers
 from app.core.rate_limit import limiter
+
+# Sentry 초기화 — DSN이 설정된 경우에만 활성화
+if settings.SENTRY_DSN:
+    sentry_sdk.init(
+        dsn=settings.SENTRY_DSN,
+        environment=settings.SENTRY_ENVIRONMENT,
+        traces_sample_rate=1.0 if settings.DEBUG else 0.2,
+        profiles_sample_rate=1.0 if settings.DEBUG else 0.1,
+        send_default_pii=False,
+    )
 
 
 @asynccontextmanager
@@ -124,11 +135,13 @@ async def health_db():
     DB 연결 체크 (상세 진단용)
     프로덕션에서는 내부 네트워크에서만 접근하도록 제한 권장
     """
+    from sqlalchemy import text
+
     from app.core.database import AsyncSessionLocal
 
     try:
         async with AsyncSessionLocal() as session:
-            await session.execute("SELECT 1")
+            await session.execute(text("SELECT 1"))
         return {"status": "healthy", "database": "connected"}
-    except Exception as e:
-        return {"status": "unhealthy", "database": "disconnected", "error": str(e)}
+    except Exception:
+        return {"status": "unhealthy", "database": "disconnected"}

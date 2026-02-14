@@ -465,8 +465,8 @@ async def test_create_invitation_owner_역할로는_초대_불가(authenticated_
         f"/api/households/{household_id}/invitations",
         json={"email": "owner@example.com", "role": "owner"},
     )
-    assert response.status_code == 400
-    assert "소유자 역할로 초대할 수 없습니다" in response.json()["detail"]
+    # 스키마에서 owner 역할이 차단됨 (Pydantic 검증)
+    assert response.status_code == 422
 
 
 @pytest.mark.asyncio
@@ -867,3 +867,63 @@ async def test_remove_member_member는_추방_불가(
     response = await authenticated_client2.delete(f"/api/households/{household_id}/members/{test_user.id}")
     assert response.status_code == 403
     assert "관리자 권한이 필요합니다" in response.json()["detail"]
+
+
+# ──────────────────────────────────────────────
+# 재가입 시나리오 테스트 (TST-003)
+# ──────────────────────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_rejoin_household_after_leave(authenticated_client, authenticated_client2, test_user, test_user2, db_session):
+    """탈퇴 후 재초대 수락 시 정상 재가입 (UniqueConstraint 회피)"""
+    # 1. 가구 생성 (사용자1 = owner)
+    response = await authenticated_client.post("/api/households/", json={"name": "재가입 테스트"})
+    assert response.status_code == 201
+    household_id = response.json()["id"]
+
+    # 2. 사용자2를 멤버로 추가 (DB 직접 추가)
+    member = HouseholdMember(household_id=household_id, user_id=test_user2.id, role="member")
+    db_session.add(member)
+    await db_session.commit()
+
+    # 3. 사용자2 탈퇴
+    response = await authenticated_client2.post(f"/api/households/{household_id}/leave")
+    assert response.status_code == 200
+
+    # 탈퇴 확인
+    result = await db_session.execute(
+        select(HouseholdMember).where(
+            HouseholdMember.household_id == household_id,
+            HouseholdMember.user_id == test_user2.id,
+        )
+    )
+    left_member = result.scalar_one()
+    assert left_member.left_at is not None
+
+    # 4. 사용자1이 사용자2를 다시 초대 (이메일 필요)
+    # test_user2에 이메일 설정
+    test_user2.email = "user2@test.com"
+    await db_session.commit()
+
+    response = await authenticated_client.post(
+        f"/api/households/{household_id}/invitations",
+        json={"email": "user2@test.com", "role": "member"},
+    )
+    assert response.status_code == 201
+    token = response.json()["token"]
+
+    # 5. 사용자2가 초대 수락 → 재가입 성공 (UniqueConstraint 에러 없이)
+    response = await authenticated_client2.post(f"/api/invitations/{token}/accept")
+    assert response.status_code == 200
+
+    # 6. 재가입 확인: left_at가 None으로 복원됨
+    result = await db_session.execute(
+        select(HouseholdMember).where(
+            HouseholdMember.household_id == household_id,
+            HouseholdMember.user_id == test_user2.id,
+            HouseholdMember.left_at.is_(None),
+        )
+    )
+    rejoin_member = result.scalar_one_or_none()
+    assert rejoin_member is not None

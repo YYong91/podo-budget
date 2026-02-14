@@ -8,7 +8,7 @@ LLM으로 파싱하여 DB에 저장합니다.
 import logging
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy import extract, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -47,6 +47,9 @@ async def send_telegram_message(chat_id: int, text: str, reply_markup: dict | No
         chat_id: 메시지를 보낼 채팅방 ID
         text: 메시지 본문
         reply_markup: 인라인 키보드 등의 마크업 (선택사항)
+
+    Raises:
+        httpx.HTTPStatusError: 429 (Rate Limit) 등 Telegram API 에러 시
     """
     import httpx
 
@@ -55,8 +58,13 @@ async def send_telegram_message(chat_id: int, text: str, reply_markup: dict | No
     if reply_markup:
         payload["reply_markup"] = reply_markup
 
-    async with httpx.AsyncClient() as client:
-        await client.post(url, json=payload)
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        resp = await client.post(url, json=payload)
+        if resp.status_code == 429:
+            retry_after = resp.json().get("parameters", {}).get("retry_after", 30)
+            logger.warning(f"Telegram rate limit 초과 (chat_id={chat_id}), retry_after={retry_after}s")
+        elif resp.status_code >= 400:
+            logger.error(f"Telegram API 에러: {resp.status_code} - {resp.text}")
 
 
 @router.post("/webhook")
@@ -66,7 +74,15 @@ async def telegram_webhook(request: Request, db: AsyncSession = Depends(get_db))
     Telegram이 새 메시지 또는 callback_query를 이 URL로 POST합니다.
     - 메시지: LLM으로 파싱 → DB 저장 → 결과 응답
     - callback_query: 인라인 버튼 클릭 처리 (카테고리 변경, 삭제)
+
+    보안: TELEGRAM_WEBHOOK_SECRET 설정 시 X-Telegram-Bot-Api-Secret-Token 헤더 검증
     """
+    # Webhook 시크릿 토큰 검증 (설정된 경우에만)
+    if settings.TELEGRAM_WEBHOOK_SECRET:
+        token = request.headers.get("X-Telegram-Bot-Api-Secret-Token", "")
+        if token != settings.TELEGRAM_WEBHOOK_SECRET:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="유효하지 않은 webhook 토큰")
+
     data = await request.json()
 
     # Callback Query 처리 (인라인 버튼 클릭)
@@ -218,6 +234,8 @@ async def handle_callback_query(callback_query: dict, db: AsyncSession):
     - change_category:{expense_id} — 카테고리 변경
     - delete_expense:{expense_id} — 지출 삭제
 
+    보안: chat_id로 봇 사용자를 조회하여 지출 소유권을 검증합니다.
+
     Args:
         callback_query: Telegram callback_query 객체
         db: 데이터베이스 세션
@@ -250,12 +268,41 @@ async def handle_callback_query(callback_query: dict, db: AsyncSession):
             await answer_callback_query(callback_id, "지출을 찾을 수 없어요.")
             return {"ok": True}
 
+        # 소유권 검증: chat_id로 봇 사용자를 조회하여 지출의 소유자인지 확인
+        bot_user = await get_or_create_bot_user(db, platform="telegram", platform_user_id=str(chat_id))
+        if expense.user_id != bot_user.id:
+            await answer_callback_query(callback_id, "본인의 지출만 수정할 수 있어요.")
+            return {"ok": True}
+
         if action == "delete_expense":
-            # 지출 삭제
+            # 삭제 확인 프롬프트 (2단계: 먼저 확인 → 실제 삭제)
+            await answer_callback_query(callback_id, "삭제 확인이 필요합니다.")
+            confirm_keyboard = {
+                "inline_keyboard": [
+                    [
+                        {"text": "✅ 삭제 확인", "callback_data": f"confirm_delete:{expense.id}"},
+                        {"text": "❌ 취소", "callback_data": f"cancel_delete:{expense.id}"},
+                    ]
+                ]
+            }
+            await send_telegram_message(
+                chat_id,
+                f"🗑️ 정말 삭제하시겠어요?\n\n💰 {expense.amount:,.0f}원 - {expense.description}",
+                reply_markup=confirm_keyboard,
+            )
+
+        elif action == "confirm_delete":
+            # 실제 삭제 수행
+            amount = expense.amount
             await db.delete(expense)
             await db.commit()
             await answer_callback_query(callback_id, "삭제되었습니다!")
-            await send_telegram_message(chat_id, f"✅ {expense.amount:,.0f}원 지출이 삭제되었어요.")
+            await send_telegram_message(chat_id, f"✅ {amount:,.0f}원 지출이 삭제되었어요.")
+
+        elif action == "cancel_delete":
+            # 삭제 취소
+            await answer_callback_query(callback_id, "삭제가 취소되었습니다.")
+            await send_telegram_message(chat_id, "↩️ 삭제가 취소되었어요.")
 
         elif action == "change_category":
             # 카테고리 선택 인라인 키보드 표시

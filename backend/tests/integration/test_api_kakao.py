@@ -7,10 +7,14 @@
 - 카카오 응답 형식 검증
 """
 
+from unittest.mock import patch
+
 import pytest
 from sqlalchemy import select
 
 from app.models.expense import Expense
+from app.models.household import Household
+from app.models.household_member import HouseholdMember
 from app.models.user import User
 
 
@@ -297,3 +301,132 @@ async def test_kakao_webhook_same_user_reuses_account(client, db_session, mock_l
     assert len(expenses) == 2
     assert expenses[0].user_id == expenses[1].user_id
     assert expenses[0].user_id == users[0].id
+
+
+# ──────────────────────────────────────────────
+# Webhook 보안 테스트
+# ──────────────────────────────────────────────
+
+
+# ──────────────────────────────────────────────
+# Household 컨텍스트 통합 테스트
+# ──────────────────────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_kakao_webhook_expense_with_household(client, db_session, mock_llm_parse_expense):
+    """가구에 속한 사용자의 공유 키워드 지출"""
+    from app.services.bot_user_service import get_or_create_bot_user
+
+    # 봇 사용자 생성 + 가구 가입
+    bot_user = await get_or_create_bot_user(db_session, platform="kakao", platform_user_id="kakao_hh_111")
+    household = Household(name="테스트 가구")
+    db_session.add(household)
+    await db_session.flush()
+    member = HouseholdMember(household_id=household.id, user_id=bot_user.id, role="owner")
+    db_session.add(member)
+    await db_session.commit()
+
+    payload = make_kakao_request("우리 저녁 50000원", user_id="kakao_hh_111")
+    response = await client.post("/api/kakao/webhook", json=payload)
+    assert response.status_code == 200
+
+    result = await db_session.execute(select(Expense))
+    expenses = result.scalars().all()
+    assert len(expenses) == 1
+    assert expenses[0].household_id == household.id
+
+
+@pytest.mark.asyncio
+async def test_kakao_webhook_personal_keyword_no_household(client, db_session, mock_llm_parse_expense):
+    """가구에 속해있어도 개인 키워드 → household_id=None"""
+    from app.services.bot_user_service import get_or_create_bot_user
+
+    # 봇 사용자 생성 + 가구 가입
+    bot_user = await get_or_create_bot_user(db_session, platform="kakao", platform_user_id="kakao_hh_222")
+    household = Household(name="테스트 가구2")
+    db_session.add(household)
+    await db_session.flush()
+    member = HouseholdMember(household_id=household.id, user_id=bot_user.id, role="owner")
+    db_session.add(member)
+    await db_session.commit()
+
+    payload = make_kakao_request("내 커피 5000원", user_id="kakao_hh_222")
+    response = await client.post("/api/kakao/webhook", json=payload)
+    assert response.status_code == 200
+
+    result = await db_session.execute(select(Expense))
+    expenses = result.scalars().all()
+    assert len(expenses) == 1
+    assert expenses[0].household_id is None
+
+
+# ──────────────────────────────────────────────
+# Webhook 보안 테스트
+# ──────────────────────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_kakao_webhook_rejects_invalid_api_key(client, db_session):
+    """API 키가 설정된 경우, 잘못된 키는 403 반환"""
+    with patch("app.api.kakao.settings") as mock_settings:
+        mock_settings.KAKAO_BOT_API_KEY = "valid-api-key"  # pragma: allowlist secret
+
+        payload = make_kakao_request("/help")
+
+        # 키 없이 요청
+        response = await client.post("/api/kakao/webhook", json=payload)
+        assert response.status_code == 403
+
+        # 잘못된 키로 요청
+        response = await client.post(
+            "/api/kakao/webhook",
+            json=payload,
+            headers={"Authorization": "wrong-key"},
+        )
+        assert response.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_kakao_webhook_accepts_valid_api_key(client, db_session):
+    """API 키가 설정된 경우, 올바른 키는 통과"""
+    with patch("app.api.kakao.settings") as mock_settings:
+        mock_settings.KAKAO_BOT_API_KEY = "valid-api-key"  # pragma: allowlist secret
+
+        payload = make_kakao_request("/help")
+
+        response = await client.post(
+            "/api/kakao/webhook",
+            json=payload,
+            headers={"Authorization": "valid-api-key"},
+        )
+        assert response.status_code == 200
+
+
+# ──────────────────────────────────────────────
+# 타임아웃 테스트
+# ──────────────────────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_kakao_webhook_llm_timeout(client, db_session, mock_llm_parse_expense):
+    """LLM 파싱이 4.5초 초과 시 타임아웃 안내 메시지 반환"""
+    import asyncio
+
+    async def slow_parse(_):
+        await asyncio.sleep(10)
+        return {"amount": 8000, "category": "식비", "description": "김치찌개", "date": "2026-02-14", "memo": ""}
+
+    mock_llm_parse_expense.side_effect = slow_parse
+
+    payload = make_kakao_request("점심 8000원")
+    response = await client.post("/api/kakao/webhook", json=payload)
+    assert response.status_code == 200
+
+    data = response.json()
+    text = data["template"]["outputs"][0]["simpleText"]["text"]
+    assert "시간" in text or "다시" in text
+
+    # DB에 저장되지 않아야 함
+    result = await db_session.execute(select(Expense))
+    assert len(result.scalars().all()) == 0

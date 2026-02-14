@@ -7,6 +7,8 @@ primary_region = "nrt"  # 도쿄 (Tokyo Narita)
 [build]
   [build.args]
     VITE_API_URL = "/api"
+    VITE_SENTRY_DSN = ""
+    VITE_SENTRY_ENVIRONMENT = "production"
 
 [env]
   BACKEND_URL = "https://homenrich-backend.fly.dev"

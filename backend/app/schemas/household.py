@@ -146,7 +146,7 @@ class InvitationCreate(BaseModel):
     """
 
     email: EmailStr = Field(..., description="초대받을 사람의 이메일")
-    role: str = Field(default="member", pattern="^(member|admin|owner)$", description="member, admin, 또는 owner")
+    role: str = Field(default="member", pattern="^(member|admin)$", description="member 또는 admin")
 
 
 class InvitationResponse(BaseModel):

@@ -11,6 +11,7 @@ from app.services.bot_messages import (
     format_help_message,
     format_parse_error,
     format_server_error,
+    format_timeout_message,
     format_unknown_input,
     format_welcome_message,
 )
@@ -87,3 +88,11 @@ def test_format_server_error():
 
     assert "오류" in result
     assert "다시 시도" in result
+
+
+def test_format_timeout_message():
+    """타임아웃 메시지 포맷"""
+    result = format_timeout_message()
+
+    assert "시간" in result
+    assert "다시" in result

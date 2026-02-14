@@ -32,9 +32,14 @@ class Settings(BaseSettings):
 
     # Telegram Bot
     TELEGRAM_BOT_TOKEN: str = ""
+    TELEGRAM_WEBHOOK_SECRET: str = ""  # setWebhook의 secret_token과 일치해야 함
 
     # KakaoTalk Bot
     KAKAO_BOT_API_KEY: str = ""
+
+    # Sentry 에러 트래킹 (DSN 미설정 시 비활성화)
+    SENTRY_DSN: str = ""
+    SENTRY_ENVIRONMENT: str = "development"
 
     # CORS — 허용할 프론트엔드 오리진 (쉼표로 구분)
     CORS_ORIGINS: str = "http://localhost:5173,http://localhost:3000"

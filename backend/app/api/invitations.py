@@ -9,7 +9,7 @@ households.py와 분리된 이유: 다른 prefix(/api/invitations)를 사용하�
 - 초대 거절
 """
 
-from datetime import datetime
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import and_, or_, select
@@ -135,10 +135,10 @@ async def accept_invitation(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"이미 처리된 초대입니다 (상태: {invitation.status})")
 
     # 만료 확인
-    if invitation.expires_at < datetime.utcnow():
+    if invitation.expires_at < datetime.now(UTC).replace(tzinfo=None):
         # 만료된 초대는 상태를 expired로 변경
         invitation.status = "expired"
-        invitation.responded_at = datetime.utcnow()
+        invitation.responded_at = datetime.now(UTC).replace(tzinfo=None)
         await db.commit()
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="만료된 초대입니다")
 
@@ -150,31 +150,47 @@ async def accept_invitation(
     if not household:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="가구를 찾을 수 없습니다")
 
-    # 이미 멤버인지 확인
-    existing_member_query = select(HouseholdMember).where(
+    # 이미 활성 멤버인지 확인
+    active_member_query = select(HouseholdMember).where(
         and_(
             HouseholdMember.household_id == invitation.household_id,
             HouseholdMember.user_id == current_user.id,
             HouseholdMember.left_at.is_(None),
         )
     )
-    existing_member_result = await db.execute(existing_member_query)
-    existing_member = existing_member_result.scalar_one_or_none()
+    active_member_result = await db.execute(active_member_query)
+    active_member = active_member_result.scalar_one_or_none()
 
-    if existing_member:
+    if active_member:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="이미 가구 멤버입니다")
 
-    # 멤버 추가
-    new_member = HouseholdMember(
-        household_id=invitation.household_id,
-        user_id=current_user.id,
-        role=invitation.role,
+    # 이전에 탈퇴한 멤버가 재가입하는 경우 → 기존 레코드 복원 (UniqueConstraint 회피)
+    former_member_query = select(HouseholdMember).where(
+        and_(
+            HouseholdMember.household_id == invitation.household_id,
+            HouseholdMember.user_id == current_user.id,
+            HouseholdMember.left_at.is_not(None),
+        )
     )
-    db.add(new_member)
+    former_member_result = await db.execute(former_member_query)
+    former_member = former_member_result.scalar_one_or_none()
+
+    if former_member:
+        # 기존 레코드 복원
+        former_member.left_at = None
+        former_member.role = invitation.role
+    else:
+        # 신규 멤버 추가
+        new_member = HouseholdMember(
+            household_id=invitation.household_id,
+            user_id=current_user.id,
+            role=invitation.role,
+        )
+        db.add(new_member)
 
     # 초대 상태 업데이트
     invitation.status = "accepted"
-    invitation.responded_at = datetime.utcnow()
+    invitation.responded_at = datetime.now(UTC).replace(tzinfo=None)
     invitation.invitee_user_id = current_user.id  # user_id가 없었던 경우 업데이트
 
     await db.commit()
@@ -240,7 +256,7 @@ async def reject_invitation(
 
     # 초대 거절
     invitation.status = "rejected"
-    invitation.responded_at = datetime.utcnow()
+    invitation.responded_at = datetime.now(UTC).replace(tzinfo=None)
     invitation.invitee_user_id = current_user.id  # user_id가 없었던 경우 업데이트
 
     await db.commit()

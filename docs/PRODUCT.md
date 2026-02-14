@@ -155,6 +155,13 @@ HomeNRich는 **"채팅하듯 말하면 알아서 정리되는 AI 공유 가계�
 - **이유**: 가구 해체 후에도 개인 지출 기록은 보존해야 함 (데이터 손실 방지)
 - **구현**: FK ondelete="SET NULL" 적용 (마이그레이션 a1b2c3d4e5f6)
 
+### D6: 봇 Webhook 보안 정책
+- **결정**: 시크릿 토큰/API 키 설정 시에만 검증 (선택적 보안)
+- **이유**: 개발 환경에서는 빈 문자열로 검증 건너뛰기, 프로덕션에서는 반드시 설정
+- **Telegram**: `TELEGRAM_WEBHOOK_SECRET` → `X-Telegram-Bot-Api-Secret-Token` 헤더 검증
+- **Kakao**: `KAKAO_BOT_API_KEY` → `Authorization` 헤더 검증
+- **실패 시**: HTTP 403 반환
+
 ---
 
 ## 리스크

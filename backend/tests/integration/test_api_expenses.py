@@ -247,3 +247,44 @@ async def test_monthly_stats_invalid_format(authenticated_client, test_user: Use
     """월별 통계 (잘못된 month 형식) - Validation Error"""
     response = await authenticated_client.get("/api/expenses/stats/monthly?month=202602")
     assert response.status_code == 422
+
+
+# ──────────────────────────────────────────────
+# 금액 검증 테스트 (TST-004)
+# ──────────────────────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_create_expense_negative_amount(authenticated_client, test_user: User, db_session):
+    """음수 금액 지출 생성 시 422 반환"""
+    category = Category(name="테스트", user_id=test_user.id)
+    db_session.add(category)
+    await db_session.commit()
+    await db_session.refresh(category)
+
+    payload = {
+        "amount": -5000,
+        "description": "음수 테스트",
+        "category_id": category.id,
+        "date": "2026-02-14T12:00:00",
+    }
+    response = await authenticated_client.post("/api/expenses/", json=payload)
+    assert response.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_create_expense_zero_amount(authenticated_client, test_user: User, db_session):
+    """0원 지출 생성 시 422 반환"""
+    category = Category(name="테스트", user_id=test_user.id)
+    db_session.add(category)
+    await db_session.commit()
+    await db_session.refresh(category)
+
+    payload = {
+        "amount": 0,
+        "description": "0원 테스트",
+        "category_id": category.id,
+        "date": "2026-02-14T12:00:00",
+    }
+    response = await authenticated_client.post("/api/expenses/", json=payload)
+    assert response.status_code == 422

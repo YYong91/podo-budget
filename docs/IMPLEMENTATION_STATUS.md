@@ -13,8 +13,8 @@
 |-------|--------|------|
 | Phase 1 (Core MVP) | **100%** | 완료 |
 | Phase 2 (Household) | **95%** | 이메일 발송 제외 완료 |
-| Phase 3 (Bot) | **80%** | Household 연동 + 카테고리 변경 완료 |
-| Phase 4 (배포) | 0% | 미착수 |
+| Phase 3 (Bot) | **95%** | 보안/타임아웃/삭제확인 보강 완료 |
+| Phase 4 (배포) | **30%** | Sentry 에러 트래킹 완료 |
 
 ---
 
@@ -72,10 +72,13 @@
 
 | 기능 | 상태 | 파일 | 테스트 | 비고 |
 |------|------|------|--------|------|
-| Telegram Webhook | 완료 | api/telegram.py | 있음 (14개) | LLM 파싱 + Household 연동 |
+| Telegram Webhook | 완료 | api/telegram.py | 있음 (22개) | LLM 파싱 + Household 연동 |
 | Telegram 카테고리 변경 | 완료 | api/telegram.py | 있음 | 인라인 키보드 선택 |
-| Telegram 지출 삭제 | 완료 | api/telegram.py | 있음 | 인라인 버튼 |
-| Kakao OpenBuilder | 완료 | api/kakao.py | 있음 (11개) | LLM 파싱 + Household 연동 |
+| Telegram 지출 삭제 | 완료 | api/telegram.py | 있음 | 2단계 확인 프롬프트 |
+| Telegram 시크릿 검증 | 완료 | api/telegram.py | 있음 | X-Telegram-Bot-Api-Secret-Token |
+| Kakao OpenBuilder | 완료 | api/kakao.py | 있음 (18개) | LLM 파싱 + Household 연동 |
+| Kakao 5초 타임아웃 | 완료 | api/kakao.py | 있음 | asyncio.timeout(4.5) |
+| Kakao API 키 검증 | 완료 | api/kakao.py | 있음 | Authorization 헤더 |
 | 봇 Household 연동 | 완료 | telegram.py, kakao.py | 있음 | 컨텍스트 탐지 자동 연결 |
 
 ### 데이터베이스
@@ -145,7 +148,7 @@
 | Frontend Dockerfile | 완료 | Node.js + Nginx |
 | Fly.io 배포 | 미구현 | - |
 | CI/CD (GitHub Actions) | 미구현 | - |
-| Sentry 에러 트래킹 | 미구현 | - |
+| Sentry 에러 트래킹 | **완료** | Backend + Frontend 통합, DSN 없으면 비활성화 |
 
 ---
 
@@ -153,7 +156,7 @@
 
 | 영역 | 테스트 수 | 커버리지 |
 |------|-----------|----------|
-| 백엔드 (pytest) | 233개 | 미측정 |
+| 백엔드 (pytest) | 247개 | 미측정 |
 | 프론트엔드 (Vitest) | 157개 | 미측정 |
 | E2E | 0개 | - |
 
@@ -168,7 +171,7 @@
 
 ### P1 (High)
 - 이메일 발송 미구현: 초대 링크를 직접 복사해야 함
-- ~~Telegram/Kakao 봇 미완성~~ (2026-02-14 해결: LLM 파싱 + Household 연동 + 카테고리 변경 구현)
+- ~~Telegram/Kakao 봇 미완성~~ (2026-02-14 해결: LLM 파싱 + Household 연동 + 카테고리 변경 + Webhook 보안 + 타임아웃)
 - ~~프론트엔드 자연어 입력 UI 없음~~ (2026-02-14 해결: 프리뷰/수정/확인 플로우 구현)
 
 ### P2 (Medium)
