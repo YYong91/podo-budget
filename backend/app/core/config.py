@@ -12,6 +12,7 @@ class Settings(BaseSettings):
 
     # Database
     DATABASE_URL: str = "postgresql+asyncpg://homenrich:homenrich@localhost:5432/homenrich"  # pragma: allowlist secret
+    DATABASE_SSL: bool = False  # 외부 관리형 DB(Supabase 등) 사용 시 True
 
     # LLM — 기본 프로바이더/모델 (모든 기능에 적용)
     LLM_PROVIDER: LLMProviderType = "anthropic"

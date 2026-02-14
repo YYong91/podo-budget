@@ -135,7 +135,7 @@ Frontend: `frontend/.env.development`:
 
 ## Current State (2026-02-14)
 
-- **Backend**: 인증, 지출 CRUD, 카테고리, 예산, 인사이트, Household/초대 API 모두 구현됨. LLM 파싱(Anthropic/OpenAI) + 프리뷰 모드. 자연어 컨텍스트 탐지. 멤버별 필터링. Telegram/Kakao 봇 (LLM 파싱 + Household 연동 + 카테고리 변경 + Webhook 보안 + 타임아웃 + 삭제 확인). 테스트 247개.
-- **Frontend**: React 19 SPA. 자연어 입력 → 프리뷰 → 수정 → 확인 플로우. 가구 전환 드롭다운. 멤버별 필터링. 테스트 157개.
+- **Backend**: 인증, 지출 CRUD, 카테고리, 예산, 인사이트, Household/초대 API 모두 구현됨. LLM 파싱(Anthropic/OpenAI) + 프리뷰 모드. 자연어 컨텍스트 탐지. 멤버별 필터링. Telegram/Kakao 봇. QA 2차 완료 (IDOR, race condition, XSS, datetime, validation 등 16개 버그 수정). 테스트 254개.
+- **Frontend**: React 19 SPA. 자연어 입력 → 프리뷰 → 수정 → 확인 플로우. 가구 전환 드롭다운. 멤버별 필터링. XSS 수정, 보안 헤더 추가. 테스트 157개 (전체 통과).
 - **Infrastructure**: Docker Compose로 PostgreSQL + Backend + Frontend 실행 가능.
-- **Phase 1**: 100%. **Phase 2**: 95% (이메일 발송 제외). **Phase 3**: 95% (봇 배포 제외). **Phase 4**: Sentry 에러 트래킹 완료.
+- **Phase 1**: 100%. **Phase 2**: 95% (이메일 발송 제외). **Phase 3**: 95% (봇 배포 제외). **Phase 4**: 80% (Sentry + CI/CD + Fly.io 설정 완료, 결제 활성화 후 배포).

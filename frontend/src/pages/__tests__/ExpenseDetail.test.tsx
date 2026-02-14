@@ -4,7 +4,7 @@
  * 지출 상세 정보 표시, 수정, 삭제 기능을 테스트한다.
  */
 
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import userEvent from '@testing-library/user-event'
@@ -12,21 +12,45 @@ import ExpenseDetail from '../ExpenseDetail'
 import { mockExpenses, mockCategories } from '../../mocks/fixtures'
 import { server } from '../../mocks/server'
 import { http, HttpResponse } from 'msw'
-import toast from 'react-hot-toast'
+import { ToastProvider } from '../../contexts/ToastContext'
 
 /**
- * ExpenseDetail을 특정 ID로 렌더링
+ * addToast 함수를 모킹하기 위한 변수
+ */
+let mockAddToast: ReturnType<typeof vi.fn>
+
+/**
+ * useToast 훅 모킹
+ */
+vi.mock('../../hooks/useToast', () => ({
+  useToast: () => ({
+    addToast: mockAddToast,
+    removeToast: vi.fn(),
+  }),
+}))
+
+/**
+ * ExpenseDetail을 ToastProvider와 함께 특정 ID로 렌더링
  */
 function renderExpenseDetail(expenseId = '1') {
   return render(
-    <MemoryRouter initialEntries={[`/expenses/${expenseId}`]}>
-      <Routes>
-        <Route path="/expenses/:id" element={<ExpenseDetail />} />
-        <Route path="/expenses" element={<div>지출 목록 페이지</div>} />
-      </Routes>
-    </MemoryRouter>
+    <ToastProvider>
+      <MemoryRouter initialEntries={[`/expenses/${expenseId}`]}>
+        <Routes>
+          <Route path="/expenses/:id" element={<ExpenseDetail />} />
+          <Route path="/expenses" element={<div>지출 목록 페이지</div>} />
+        </Routes>
+      </MemoryRouter>
+    </ToastProvider>
   )
 }
+
+/**
+ * 각 테스트 전에 mockAddToast 초기화
+ */
+beforeEach(() => {
+  mockAddToast = vi.fn()
+})
 
 describe('ExpenseDetail', () => {
   describe('기본 렌더링', () => {
@@ -172,7 +196,6 @@ describe('ExpenseDetail', () => {
 
     it('저장 버튼을 클릭하면 수정 사항을 저장한다', async () => {
       const user = userEvent.setup()
-      const toastSpy = vi.spyOn(toast, 'success')
 
       renderExpenseDetail()
 
@@ -195,13 +218,12 @@ describe('ExpenseDetail', () => {
       await user.click(saveButton)
 
       await waitFor(() => {
-        expect(toastSpy).toHaveBeenCalledWith('저장되었습니다')
+        expect(mockAddToast).toHaveBeenCalledWith('success', '저장되었습니다')
       })
     })
 
     it('빈 설명으로 저장하면 에러 메시지를 표시한다', async () => {
       const user = userEvent.setup()
-      const toastSpy = vi.spyOn(toast, 'error')
 
       renderExpenseDetail()
 
@@ -222,7 +244,7 @@ describe('ExpenseDetail', () => {
       const saveButton = screen.getByRole('button', { name: '저장' })
       await user.click(saveButton)
 
-      expect(toastSpy).toHaveBeenCalledWith('설명을 입력해주세요')
+      expect(mockAddToast).toHaveBeenCalledWith('error', '설명을 입력해주세요')
     })
   })
 
@@ -271,7 +293,6 @@ describe('ExpenseDetail', () => {
 
     it('삭제 모달에서 삭제를 클릭하면 지출을 삭제하고 목록 페이지로 이동한다', async () => {
       const user = userEvent.setup()
-      const toastSpy = vi.spyOn(toast, 'success')
 
       renderExpenseDetail()
 
@@ -292,7 +313,7 @@ describe('ExpenseDetail', () => {
       await user.click(modalDeleteButton)
 
       await waitFor(() => {
-        expect(toastSpy).toHaveBeenCalledWith('삭제되었습니다')
+        expect(mockAddToast).toHaveBeenCalledWith('success', '삭제되었습니다')
         expect(screen.getByText('지출 목록 페이지')).toBeInTheDocument()
       })
     })
@@ -306,11 +327,10 @@ describe('ExpenseDetail', () => {
         })
       )
 
-      const toastSpy = vi.spyOn(toast, 'error')
       renderExpenseDetail('999')
 
       await waitFor(() => {
-        expect(toastSpy).toHaveBeenCalledWith('지출 내역을 불러오는데 실패했습니다')
+        expect(mockAddToast).toHaveBeenCalledWith('error', '지출 내역을 불러오는데 실패했습니다')
         expect(screen.getByText('지출 내역을 찾을 수 없습니다')).toBeInTheDocument()
       })
     })

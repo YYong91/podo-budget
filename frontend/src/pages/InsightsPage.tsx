@@ -26,11 +26,27 @@ function getCurrentMonth(): string {
 }
 
 /**
- * Markdown 스타일 텍스트를 간단히 렌더링
- * (실제 프로덕션에서는 react-markdown 사용 권장)
+ * 볼드(**text**) 마크다운을 React 엘리먼트로 안전하게 변환
+ * dangerouslySetInnerHTML 없이 XSS 방지
+ */
+function renderBoldText(text: string): React.ReactNode[] {
+  const parts = text.split(/(\*\*.*?\*\*)/g)
+  return parts.map((part, j) => {
+    if (part.startsWith('**') && part.endsWith('**')) {
+      return (
+        <strong key={j} className="font-semibold">
+          {part.slice(2, -2)}
+        </strong>
+      )
+    }
+    return part
+  })
+}
+
+/**
+ * Markdown 스타일 텍스트를 안전한 React 엘리먼트로 렌더링
  */
 function renderMarkdown(text: string) {
-  // 간단한 처리: 줄바꿈, 볼드, 리스트
   return text.split('\n').map((line, i) => {
     // 헤딩 (## 제목)
     if (line.startsWith('## ')) {
@@ -44,26 +60,19 @@ function renderMarkdown(text: string) {
     if (line.startsWith('- ')) {
       return (
         <li key={i} className="ml-4 text-gray-700">
-          {line.replace('- ', '')}
+          {renderBoldText(line.replace('- ', ''))}
         </li>
       )
     }
-    // 볼드 (**텍스트**)
-    const boldRendered = line.replace(
-      /\*\*(.*?)\*\*/g,
-      '<strong class="font-semibold">$1</strong>'
-    )
     // 빈 줄
     if (line.trim() === '') {
       return <div key={i} className="h-2" />
     }
-    // 일반 텍스트
+    // 일반 텍스트 (볼드 안전 렌더링)
     return (
-      <p
-        key={i}
-        className="text-gray-700 leading-relaxed"
-        dangerouslySetInnerHTML={{ __html: boldRendered }}
-      />
+      <p key={i} className="text-gray-700 leading-relaxed">
+        {renderBoldText(line)}
+      </p>
     )
   })
 }

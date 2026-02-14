@@ -5,6 +5,7 @@
 """
 
 from sqlalchemy import or_, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.category import Category
@@ -15,6 +16,8 @@ async def get_or_create_category(db: AsyncSession, category_name: str, user_id: 
 
     시스템 카테고리(user_id=None) 또는 사용자의 개인 카테고리를 우선 검색합니다.
     둘 다 없으면 해당 사용자의 개인 카테고리로 자동 생성합니다.
+
+    동시 요청으로 UniqueConstraint 위반이 발생하면 재조회합니다.
 
     Args:
         db: 데이터베이스 세션
@@ -35,12 +38,23 @@ async def get_or_create_category(db: AsyncSession, category_name: str, user_id: 
 
     if category is None:
         # 없으면 사용자의 개인 카테고리로 자동 생성
-        category = Category(
-            user_id=user_id,
-            name=category_name,
-            description=f"자동 생성된 카테고리: {category_name}",
-        )
-        db.add(category)
-        await db.flush()
+        try:
+            category = Category(
+                user_id=user_id,
+                name=category_name,
+                description=f"자동 생성된 카테고리: {category_name}",
+            )
+            db.add(category)
+            await db.flush()
+        except IntegrityError:
+            # 동시 요청으로 이미 생성된 경우 → 롤백 후 재조회
+            await db.rollback()
+            result = await db.execute(
+                select(Category).where(
+                    Category.name == category_name,
+                    or_(Category.user_id == None, Category.user_id == user_id),  # noqa: E711
+                )
+            )
+            category = result.scalar_one()
 
     return category

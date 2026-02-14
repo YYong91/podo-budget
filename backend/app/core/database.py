@@ -1,15 +1,20 @@
+import ssl
+
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import declarative_base
 
 from app.core.config import settings
 
-# asyncpg 사용 시 SSL 비활성화 (Fly.io 내부 네트워크 등)
 # URL에서 asyncpg가 이해하지 못하는 쿼리 파라미터 정리
-db_url = settings.DATABASE_URL.split("?")[0]  # 쿼리 파라미터 제거
+db_url = settings.DATABASE_URL.split("?")[0]
 
+# SSL 설정: 외부 DB(Supabase 등)는 SSL 필요, Fly.io 내부는 불필요
 connect_args: dict = {}
-if "asyncpg" in settings.DATABASE_URL:
-    connect_args["ssl"] = False  # Fly.io 내부 네트워크에서는 SSL 불필요
+if settings.DATABASE_SSL:
+    ssl_ctx = ssl.create_default_context()
+    connect_args["ssl"] = ssl_ctx
+else:
+    connect_args["ssl"] = False
 
 engine = create_async_engine(
     db_url,

@@ -4,11 +4,38 @@
  * 헤더, 사이드바, 네비게이션 항목, 반응형 동작을 테스트한다.
  */
 
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import userEvent from '@testing-library/user-event'
 import Layout from '../Layout'
+
+/**
+ * useAuth 훅 모킹
+ */
+vi.mock('../../contexts/AuthContext', () => ({
+  useAuth: () => ({
+    user: { id: 1, username: 'testuser', email: null, is_active: true, created_at: '2024-01-01' },
+    logout: vi.fn(),
+    loading: false,
+    login: vi.fn(),
+    register: vi.fn(),
+  }),
+}))
+
+/**
+ * useHouseholdStore 훅 모킹
+ */
+vi.mock('../../stores/useHouseholdStore', () => ({
+  useHouseholdStore: () => ({
+    households: [],
+    activeHouseholdId: null,
+    myInvitations: [],
+    fetchHouseholds: vi.fn().mockResolvedValue(undefined),
+    fetchMyInvitations: vi.fn().mockResolvedValue(undefined),
+    setActiveHouseholdId: vi.fn(),
+  }),
+}))
 
 /**
  * Layout 컴포넌트를 MemoryRouter로 감싸서 렌더링하는 헬퍼 함수

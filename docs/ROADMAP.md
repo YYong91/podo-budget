@@ -110,8 +110,8 @@
 **목표**: Fly.io 배포 + 베타 테스터 모집
 **선행 조건**: Phase 1-3 완료
 
-- Fly.io 배포 (Backend + Frontend + DB)
-- CI/CD 설정 (GitHub Actions)
+- ~~Fly.io 배포 (Backend + Frontend + DB)~~ **설정 완료** — fly.toml + Dockerfile + 시크릿 설정, 트라이얼 만료로 결제 활성화 필요
+- ~~CI/CD 설정 (GitHub Actions)~~ **완료** — Production (main push → test → deploy) + PR Test
 - ~~Sentry 에러 트래킹~~ **완료** — Backend(sentry-sdk) + Frontend(@sentry/react), DSN 없으면 비활성화
 - 베타 테스터 10쌍 (20명) 모집
 - 2주간 피드백 수집

@@ -14,7 +14,7 @@
 | Phase 1 (Core MVP) | **100%** | 완료 |
 | Phase 2 (Household) | **95%** | 이메일 발송 제외 완료 |
 | Phase 3 (Bot) | **95%** | 보안/타임아웃/삭제확인 보강 완료 |
-| Phase 4 (배포) | **30%** | Sentry 에러 트래킹 완료 |
+| Phase 4 (배포) | **80%** | Sentry + CI/CD + Fly.io 설정 완료, 결제 활성화 후 배포 |
 
 ---
 
@@ -146,8 +146,8 @@
 | Docker Compose (개발) | 완료 | PostgreSQL + Backend + Frontend |
 | Backend Dockerfile | 완료 | Python 3.12-slim, uv |
 | Frontend Dockerfile | 완료 | Node.js + Nginx |
-| Fly.io 배포 | 미구현 | - |
-| CI/CD (GitHub Actions) | 미구현 | - |
+| Fly.io 배포 | **설정 완료** | 앱 3개 생성 + 시크릿 설정, 트라이얼 만료로 결제 활성화 필요 |
+| CI/CD (GitHub Actions) | **완료** | deploy-production.yml + deploy-staging.yml (PR 테스트) |
 | Sentry 에러 트래킹 | **완료** | Backend + Frontend 통합, DSN 없으면 비활성화 |
 
 ---
@@ -156,8 +156,8 @@
 
 | 영역 | 테스트 수 | 커버리지 |
 |------|-----------|----------|
-| 백엔드 (pytest) | 247개 | 미측정 |
-| 프론트엔드 (Vitest) | 157개 | 미측정 |
+| 백엔드 (pytest) | 254개 (5 skip) | 미측정 |
+| 프론트엔드 (Vitest) | 157개 (all pass) | 미측정 |
 | E2E | 0개 | - |
 
 ---
@@ -168,17 +168,30 @@
 - ~~LLM 파싱 미구현~~ (2026-02-14 해결: Anthropic/OpenAI/프롬프트 구현 완료)
 - ~~Alembic 미초기화~~ (2026-02-14 해결: 초기 마이그레이션 완료)
 - ~~Household <-> Expense 미연결~~ (2026-02-14 해결)
+- ~~Telegram callback IDOR 취약점~~ (2026-02-14 해결: 소유권 검증 추가)
+- ~~HouseholdMember 재가입 불가~~ (2026-02-14 해결: 기존 레코드 복원 로직)
+- ~~health_db raw SQL text() 누락~~ (2026-02-14 해결)
+- ~~InsightsPage XSS 취약점~~ (2026-02-14 해결: dangerouslySetInnerHTML 제거)
 
 ### P1 (High)
 - 이메일 발송 미구현: 초대 링크를 직접 복사해야 함
 - ~~Telegram/Kakao 봇 미완성~~ (2026-02-14 해결: LLM 파싱 + Household 연동 + 카테고리 변경 + Webhook 보안 + 타임아웃)
 - ~~프론트엔드 자연어 입력 UI 없음~~ (2026-02-14 해결: 프리뷰/수정/확인 플로우 구현)
+- ~~datetime.utcnow() deprecated~~ (2026-02-14 해결: datetime.now(UTC) 전면 교체)
+- ~~Expense 금액 검증 누락~~ (2026-02-14 해결: Field(gt=0) 추가)
+- ~~InvitationCreate owner 역할 허용~~ (2026-02-14 해결: member|admin만 허용)
+- ~~UserCreate email 검증 누락~~ (2026-02-14 해결: EmailStr 적용)
+- ~~category_id 0 falsy 처리~~ (2026-02-14 해결: is not None 체크)
+- ~~에러 메시지 내부 정보 노출~~ (2026-02-14 해결: 로깅 분리)
+- ~~Category race condition~~ (2026-02-14 해결: IntegrityError 재조회)
+- ~~Nginx 보안 헤더 누락~~ (2026-02-14 해결: HSTS, CSP, Referrer-Policy 추가)
 
 ### P2 (Medium)
 - 테스트 커버리지 미측정
-- LLM API 실패 시 에러 핸들링 부족
+- ~~LLM API 실패 시 에러 핸들링 부족~~ (2026-02-14 해결: Kakao 타임아웃, Telegram 에러 로깅)
 - ~~DB 인덱스 부족~~ (2026-02-14 해결: date, category_id, 복합 인덱스 추가)
 - 대시보드 통합 뷰 미구현 (PRODUCT.md D3: 공유 우선 + 개인 접기)
+- Float → Numeric 타입 변경 (대규모 리팩토링, 현재 운영 영향 없음)
 
 ---
 

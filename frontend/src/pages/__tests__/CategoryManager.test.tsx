@@ -4,18 +4,47 @@
  * 카테고리 목록, 추가, 수정, 삭제 기능을 테스트한다.
  */
 
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import CategoryManager from '../CategoryManager'
 import { mockCategories } from '../../mocks/fixtures'
 import { server } from '../../mocks/server'
 import { http, HttpResponse } from 'msw'
-import toast from 'react-hot-toast'
+import { ToastProvider } from '../../contexts/ToastContext'
 
+/**
+ * addToast 함수를 모킹하기 위한 변수
+ */
+let mockAddToast: ReturnType<typeof vi.fn>
+
+/**
+ * useToast 훅 모킹
+ */
+vi.mock('../../hooks/useToast', () => ({
+  useToast: () => ({
+    addToast: mockAddToast,
+    removeToast: vi.fn(),
+  }),
+}))
+
+/**
+ * CategoryManager를 ToastProvider로 감싸서 렌더링
+ */
 function renderCategoryManager() {
-  return render(<CategoryManager />)
+  return render(
+    <ToastProvider>
+      <CategoryManager />
+    </ToastProvider>
+  )
 }
+
+/**
+ * 각 테스트 전에 mockAddToast 초기화
+ */
+beforeEach(() => {
+  mockAddToast = vi.fn()
+})
 
 describe('CategoryManager', () => {
   describe('기본 렌더링', () => {
@@ -96,7 +125,6 @@ describe('CategoryManager', () => {
 
     it('카테고리 이름을 입력하고 저장할 수 있다', async () => {
       const user = userEvent.setup()
-      const toastSpy = vi.spyOn(toast, 'success')
 
       renderCategoryManager()
 
@@ -118,13 +146,12 @@ describe('CategoryManager', () => {
       await user.click(saveButton)
 
       await waitFor(() => {
-        expect(toastSpy).toHaveBeenCalledWith('카테고리가 추가되었습니다')
+        expect(mockAddToast).toHaveBeenCalledWith('success', '카테고리가 추가되었습니다')
       })
     })
 
     it('빈 이름으로 저장하면 에러 메시지를 표시한다', async () => {
       const user = userEvent.setup()
-      const toastSpy = vi.spyOn(toast, 'error')
 
       renderCategoryManager()
 
@@ -142,7 +169,7 @@ describe('CategoryManager', () => {
       const saveButton = screen.getByRole('button', { name: '저장' })
       await user.click(saveButton)
 
-      expect(toastSpy).toHaveBeenCalledWith('카테고리 이름을 입력해주세요')
+      expect(mockAddToast).toHaveBeenCalledWith('error', '카테고리 이름을 입력해주세요')
     })
 
     it('추가 폼에서 취소 버튼을 클릭하면 폼이 닫힌다', async () => {
@@ -190,7 +217,6 @@ describe('CategoryManager', () => {
 
     it('카테고리 이름을 수정할 수 있다', async () => {
       const user = userEvent.setup()
-      const toastSpy = vi.spyOn(toast, 'success')
 
       renderCategoryManager()
 
@@ -213,7 +239,7 @@ describe('CategoryManager', () => {
       await user.click(saveButton)
 
       await waitFor(() => {
-        expect(toastSpy).toHaveBeenCalledWith('카테고리가 수정되었습니다')
+        expect(mockAddToast).toHaveBeenCalledWith('success', '카테고리가 수정되었습니다')
       })
     })
 
@@ -285,7 +311,6 @@ describe('CategoryManager', () => {
 
     it('삭제 모달에서 삭제를 클릭하면 카테고리를 삭제한다', async () => {
       const user = userEvent.setup()
-      const toastSpy = vi.spyOn(toast, 'success')
 
       renderCategoryManager()
 
@@ -305,7 +330,7 @@ describe('CategoryManager', () => {
       await user.click(modalDeleteButton)
 
       await waitFor(() => {
-        expect(toastSpy).toHaveBeenCalledWith('카테고리가 삭제되었습니다')
+        expect(mockAddToast).toHaveBeenCalledWith('success', '카테고리가 삭제되었습니다')
       })
     })
   })
@@ -348,12 +373,11 @@ describe('CategoryManager', () => {
         })
       )
 
-      const toastSpy = vi.spyOn(toast, 'error')
       renderCategoryManager()
 
       await waitFor(() => {
         expect(screen.getByText('문제가 발생했습니다')).toBeInTheDocument()
-        expect(toastSpy).toHaveBeenCalledWith('카테고리 목록을 불러오는데 실패했습니다')
+        expect(mockAddToast).toHaveBeenCalledWith('error', '카테고리 목록을 불러오는데 실패했습니다')
       })
     })
   })

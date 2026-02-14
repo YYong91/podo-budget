@@ -14,10 +14,15 @@ export const chatApi = {
    * @param householdId - 가구 ID (선택)
    * @param preview - true이면 파싱 결과만 반환 (저장하지 않음)
    */
+  /** LLM 호출이 포함되므로 30초 타임아웃 적용 */
   sendMessage: (message: string, householdId?: number, preview?: boolean) =>
-    apiClient.post<ChatResponse>('/chat', {
-      message,
-      ...(householdId != null && { household_id: householdId }),
-      ...(preview != null && { preview }),
-    }),
+    apiClient.post<ChatResponse>(
+      '/chat',
+      {
+        message,
+        ...(householdId != null && { household_id: householdId }),
+        ...(preview != null && { preview }),
+      },
+      { timeout: 30000 },
+    ),
 }

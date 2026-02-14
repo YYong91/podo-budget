@@ -206,7 +206,8 @@ describe('InsightsPage', () => {
 
       await waitFor(() => {
         Object.entries(mockInsights.by_category).forEach(([category, amount]) => {
-          expect(screen.getByText(category)).toBeInTheDocument()
+          // 카테고리명이 인사이트 마크다운에도 나올 수 있으므로 getAllByText 사용
+          expect(screen.getAllByText(category).length).toBeGreaterThan(0)
           expect(screen.getByText(`₩${amount.toLocaleString('ko-KR')}`)).toBeInTheDocument()
         })
       })
@@ -299,9 +300,9 @@ describe('InsightsPage', () => {
       await waitFor(() => {
         // 카테고리별 지출 섹션 확인
         expect(screen.getByText('카테고리별 지출')).toBeInTheDocument()
-        // 카테고리들이 표시되는지 확인 (정렬은 내부적으로 Object.entries().sort()로 처리됨)
+        // 카테고리들이 표시되는지 확인 (인사이트 마크다운에도 나올 수 있으므로 getAllByText)
         Object.keys(mockInsights.by_category).forEach(category => {
-          expect(screen.getByText(category)).toBeInTheDocument()
+          expect(screen.getAllByText(category).length).toBeGreaterThan(0)
         })
       })
     })

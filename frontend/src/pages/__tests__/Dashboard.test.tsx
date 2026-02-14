@@ -175,7 +175,7 @@ describe('Dashboard', () => {
       })
     })
 
-    it('빈 상태에서 Telegram 봇 연결하기 버튼을 표시한다', async () => {
+    it('빈 상태에서 지출 추가하기 버튼을 표시한다', async () => {
       server.use(
         http.get('/api/expenses/stats/monthly', () => {
           return HttpResponse.json({
@@ -193,7 +193,7 @@ describe('Dashboard', () => {
       renderDashboard()
 
       await waitFor(() => {
-        expect(screen.getByRole('button', { name: /Telegram 봇 연결하기/i })).toBeInTheDocument()
+        expect(screen.getByRole('button', { name: /지출 추가하기/i })).toBeInTheDocument()
       })
     })
   })
