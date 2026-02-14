@@ -4,7 +4,7 @@
 household_id가 없으면 개인 예산, 있으면 가구 공유 예산입니다.
 """
 
-from sqlalchemy import Column, DateTime, Float, ForeignKey, Integer, String
+from sqlalchemy import Column, DateTime, Float, ForeignKey, Integer, Numeric, String
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
@@ -34,7 +34,7 @@ class Budget(Base):
     user_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)  # 점진적 마이그레이션을 위해 nullable=True
     household_id = Column(Integer, ForeignKey("households.id", ondelete="SET NULL"), nullable=True, index=True)  # 공유 가구 예산
     category_id = Column(Integer, ForeignKey("categories.id"), nullable=False)
-    amount = Column(Float, nullable=False)
+    amount = Column(Numeric(12, 2), nullable=False)
     period = Column(String, nullable=False)  # monthly, weekly, daily
     start_date = Column(DateTime, nullable=False)
     end_date = Column(DateTime, nullable=True)
