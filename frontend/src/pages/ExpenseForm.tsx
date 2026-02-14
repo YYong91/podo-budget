@@ -246,7 +246,7 @@ export default function ExpenseForm() {
               onChange={(e) => setNaturalInput(e.target.value)}
               placeholder="예: 오늘 점심에 김치찌개 8000원 먹었어&#10;어제 스타벅스에서 아메리카노 4500원"
               rows={5}
-              className="w-full px-4 py-3 bg-amber-50/50 border border-stone-300 rounded-lg focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500 resize-none"
+              className="w-full px-4 py-3 bg-amber-50/50 border border-stone-300 rounded-xl focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500 resize-none"
               disabled={loading}
             />
             <p className="mt-2 text-xs text-stone-400">
@@ -267,8 +267,8 @@ export default function ExpenseForm() {
       {/* 파싱 결과 프리뷰 카드 */}
       {mode === 'natural' && previewItems && (
         <div className="space-y-4">
-          <div className="bg-sky-50 border border-sky-200 rounded-2xl p-4">
-            <p className="text-sm text-sky-800 font-medium">
+          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4">
+            <p className="text-sm text-amber-800 font-medium">
               {previewItems.length}건의 지출을 인식했습니다. 내용을 확인하고 수정한 뒤 저장하세요.
             </p>
           </div>
@@ -297,7 +297,7 @@ export default function ExpenseForm() {
                       type="number"
                       value={item.amount}
                       onChange={(e) => updatePreviewItem(index, 'amount', Number(e.target.value))}
-                      className="w-full pl-7 pr-3 py-2 border border-stone-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500"
+                      className="w-full pl-7 pr-3 py-2 border border-stone-300 rounded-xl text-sm focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500"
                       min="1"
                     />
                   </div>
@@ -310,7 +310,7 @@ export default function ExpenseForm() {
                     type="date"
                     value={item.date.slice(0, 10)}
                     onChange={(e) => updatePreviewItem(index, 'date', e.target.value)}
-                    className="w-full px-3 py-2 border border-stone-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500"
+                    className="w-full px-3 py-2 border border-stone-300 rounded-xl text-sm focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500"
                   />
                 </div>
 
@@ -321,7 +321,7 @@ export default function ExpenseForm() {
                     type="text"
                     value={item.description}
                     onChange={(e) => updatePreviewItem(index, 'description', e.target.value)}
-                    className="w-full px-3 py-2 border border-stone-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500"
+                    className="w-full px-3 py-2 border border-stone-300 rounded-xl text-sm focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500"
                   />
                 </div>
 
@@ -331,7 +331,7 @@ export default function ExpenseForm() {
                   <select
                     value={item.category_id ?? ''}
                     onChange={(e) => updatePreviewItem(index, 'category_id', e.target.value ? Number(e.target.value) : null)}
-                    className="w-full px-3 py-2 border border-stone-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500"
+                    className="w-full px-3 py-2 border border-stone-300 rounded-xl text-sm focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500"
                   >
                     <option value="">미분류 ({item.category})</option>
                     {categories.map((cat) => (
