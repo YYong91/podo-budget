@@ -35,6 +35,7 @@ from app.schemas.household import (
     MemberResponse,
     MemberRoleUpdate,
 )
+from app.services.email_service import send_invitation_email
 
 router = APIRouter()
 
@@ -605,6 +606,14 @@ async def create_invitation(
     inviter_query = select(User).where(User.id == member.user_id)
     inviter_result = await db.execute(inviter_query)
     inviter = inviter_result.scalar_one()
+
+    # 초대 이메일 발송 (비동기, 실패해도 초대 자체는 성공)
+    await send_invitation_email(
+        to_email=invitation.invitee_email,
+        household_name=household.name,
+        inviter_name=inviter.username,
+        invite_token=token,
+    )
 
     return InvitationResponse(
         id=invitation.id,

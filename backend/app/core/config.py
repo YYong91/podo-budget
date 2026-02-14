@@ -45,6 +45,10 @@ class Settings(BaseSettings):
     # CORS — 허용할 프론트엔드 오리진 (쉼표로 구분)
     CORS_ORIGINS: str = "http://localhost:5173,http://localhost:3000"
 
+    # Email (Resend) — 빈 문자열이면 이메일 발송 비활성화
+    RESEND_API_KEY: str = ""
+    RESEND_FROM_EMAIL: str = "HomeNRich <noreply@homenrich.app>"
+
     model_config = SettingsConfigDict(
         env_file=".env",
         case_sensitive=True,
