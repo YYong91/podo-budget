@@ -55,3 +55,22 @@ class UserResponse(BaseModel):
 
     class Config:
         from_attributes = True  # SQLAlchemy 모델을 Pydantic으로 변환 허용
+
+
+class ForgotPasswordRequest(BaseModel):
+    """비밀번호 찾기 요청 스키마"""
+
+    email: EmailStr = Field(..., description="등록된 이메일 주소")
+
+
+class ResetPasswordRequest(BaseModel):
+    """비밀번호 재설정 요청 스키마"""
+
+    token: str = Field(..., description="비밀번호 재설정 토큰")
+    new_password: str = Field(..., min_length=8, description="새 비밀번호 (8자 이상)")
+
+
+class MessageResponse(BaseModel):
+    """간단한 메시지 응답 스키마"""
+
+    message: str

@@ -9,7 +9,14 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.auth import create_access_token, get_current_user, hash_password, verify_password
+from app.core.auth import (
+    create_access_token,
+    create_password_reset_token,
+    get_current_user,
+    hash_password,
+    verify_password,
+    verify_password_reset_token,
+)
 from app.core.database import get_db
 from app.models.budget import Budget
 from app.models.category import Category
@@ -18,7 +25,16 @@ from app.models.household import Household
 from app.models.household_invitation import HouseholdInvitation
 from app.models.household_member import HouseholdMember
 from app.models.user import User
-from app.schemas.auth import LoginRequest, TokenResponse, UserCreate, UserResponse
+from app.schemas.auth import (
+    ForgotPasswordRequest,
+    LoginRequest,
+    MessageResponse,
+    ResetPasswordRequest,
+    TokenResponse,
+    UserCreate,
+    UserResponse,
+)
+from app.services.email_service import send_password_reset_email
 
 router = APIRouter()
 
@@ -131,6 +147,60 @@ async def get_me(current_user: User = Depends(get_current_user)):
         현재 사용자 정보
     """
     return current_user
+
+
+@router.post("/forgot-password", response_model=MessageResponse)
+async def forgot_password(data: ForgotPasswordRequest, db: AsyncSession = Depends(get_db)):
+    """비밀번호 재설정 요청
+
+    등록된 이메일로 비밀번호 재설정 링크를 발송합니다.
+    보안상 이메일 존재 여부와 관계없이 동일한 응답을 반환합니다.
+    """
+    # 이메일로 사용자 조회
+    result = await db.execute(select(User).where(User.email == data.email))
+    user = result.scalar_one_or_none()
+
+    if user:
+        # 리셋 토큰 생성 및 이메일 발송
+        reset_token = create_password_reset_token(user.email)
+        await send_password_reset_email(
+            to_email=user.email,
+            reset_token=reset_token,
+        )
+
+    # 보안: 이메일 존재 여부와 관계없이 동일 응답
+    return MessageResponse(message="등록된 이메일이라면 비밀번호 재설정 링크가 발송됩니다")
+
+
+@router.post("/reset-password", response_model=MessageResponse)
+async def reset_password(data: ResetPasswordRequest, db: AsyncSession = Depends(get_db)):
+    """비밀번호 재설정
+
+    유효한 재설정 토큰과 새 비밀번호로 비밀번호를 변경합니다.
+    """
+    # 토큰 검증
+    email = verify_password_reset_token(data.token)
+    if not email:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="유효하지 않거나 만료된 토큰입니다",
+        )
+
+    # 이메일로 사용자 조회
+    result = await db.execute(select(User).where(User.email == email))
+    user = result.scalar_one_or_none()
+
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="유효하지 않거나 만료된 토큰입니다",
+        )
+
+    # 비밀번호 변경
+    user.hashed_password = hash_password(data.new_password)
+    await db.commit()
+
+    return MessageResponse(message="비밀번호가 성공적으로 변경되었습니다")
 
 
 @router.delete("/me", status_code=status.HTTP_204_NO_CONTENT)

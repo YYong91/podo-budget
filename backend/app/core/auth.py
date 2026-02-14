@@ -128,3 +128,24 @@ async def get_current_user(
         )
 
     return user
+
+
+def create_password_reset_token(email: str) -> str:
+    """비밀번호 재설정용 JWT 토큰 생성 (1시간 만료)"""
+    expire = datetime.now(UTC) + timedelta(hours=1)
+    return jwt.encode(
+        {"sub": email, "type": "password_reset", "exp": expire},
+        settings.SECRET_KEY,
+        algorithm=ALGORITHM,
+    )
+
+
+def verify_password_reset_token(token: str) -> str | None:
+    """비밀번호 재설정 토큰 검증, 유효하면 이메일 반환"""
+    try:
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[ALGORITHM])
+        if payload.get("type") != "password_reset":
+            return None
+        return payload.get("sub")
+    except JWTError:
+        return None
