@@ -6,6 +6,7 @@
 
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { Loader2 } from 'lucide-react'
 import { PieChart, Pie, Cell, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
 import { expenseApi } from '../api/expenses'
 import { useHouseholdStore } from '../stores/useHouseholdStore'
@@ -13,7 +14,7 @@ import EmptyState from '../components/EmptyState'
 import ErrorState from '../components/ErrorState'
 import type { Expense, MonthlyStats } from '../types'
 
-const COLORS = ['#4f46e5', '#06b6d4', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#6b7280']
+const COLORS = ['#D97706', '#0EA5E9', '#10B981', '#F43F5E', '#8B5CF6', '#EC4899', '#06B6D4', '#78716C']
 
 /* 금액 포맷 */
 function formatAmount(amount: number): string {
@@ -61,7 +62,7 @@ export default function Dashboard() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600" />
+        <Loader2 className="w-8 h-8 animate-spin text-amber-600" />
       </div>
     )
   }
@@ -70,8 +71,8 @@ export default function Dashboard() {
   if (error) {
     return (
       <div className="space-y-6">
-        <h1 className="text-2xl font-bold text-gray-900">대시보드</h1>
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+        <h1 className="text-xl font-semibold text-stone-800">대시보드</h1>
+        <div className="bg-white rounded-xl shadow-sm border border-stone-200/60">
           <ErrorState onRetry={fetchData} />
         </div>
       </div>
@@ -87,18 +88,17 @@ export default function Dashboard() {
   if (hasNoData) {
     return (
       <div className="space-y-6">
-        <h1 className="text-2xl font-bold text-gray-900">대시보드</h1>
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+        <h1 className="text-xl font-semibold text-stone-800">대시보드</h1>
+        <div className="bg-white rounded-xl shadow-sm border border-stone-200/60">
           <EmptyState
-            icon="💸"
             title="아직 이번 달 지출 기록이 없어요"
             description="웹에서 직접 지출을 기록하거나, 텔레그램 봇을 연동하여 채팅으로 입력해보세요."
             action={{
-              label: '➕ 지출 추가하기',
+              label: '지출 추가하기',
               onClick: () => navigate('/expenses/new'),
             }}
             secondaryAction={{
-              label: '📝 지출 목록 보기',
+              label: '지출 목록 보기',
               onClick: () => navigate('/expenses'),
             }}
           />
@@ -109,25 +109,25 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">대시보드</h1>
+      <h1 className="text-xl font-semibold text-stone-800">대시보드</h1>
 
       {/* 상단 카드 */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
-          <p className="text-sm text-gray-500">이번 달 총 지출</p>
-          <p className="text-3xl font-bold text-gray-900 mt-1">{formatAmount(total)}</p>
+        <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl border border-amber-200/60 shadow-sm p-5 hover:shadow-md transition-shadow duration-200">
+          <p className="text-sm text-amber-700/70">이번 달 총 지출</p>
+          <p className="text-2xl font-bold tracking-tight text-stone-900 mt-1">{formatAmount(total)}</p>
         </div>
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
-          <p className="text-sm text-gray-500">카테고리 수</p>
-          <p className="text-3xl font-bold text-gray-900 mt-1">{byCategory.length}</p>
+        <div className="bg-white rounded-2xl border border-stone-200/60 shadow-sm hover:shadow-md transition-shadow duration-200 p-5">
+          <p className="text-sm text-stone-500">카테고리 수</p>
+          <p className="text-3xl font-bold text-stone-900 mt-1">{byCategory.length}</p>
         </div>
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
-          <p className="text-sm text-gray-500">기록된 일수</p>
-          <p className="text-3xl font-bold text-gray-900 mt-1">{dailyTrend.length}</p>
+        <div className="bg-white rounded-2xl border border-stone-200/60 shadow-sm hover:shadow-md transition-shadow duration-200 p-5">
+          <p className="text-sm text-stone-500">기록된 일수</p>
+          <p className="text-3xl font-bold text-stone-900 mt-1">{dailyTrend.length}</p>
         </div>
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
-          <p className="text-sm text-gray-500">일 평균 지출</p>
-          <p className="text-3xl font-bold text-gray-900 mt-1">
+        <div className="bg-white rounded-2xl border border-stone-200/60 shadow-sm hover:shadow-md transition-shadow duration-200 p-5">
+          <p className="text-sm text-stone-500">일 평균 지출</p>
+          <p className="text-3xl font-bold text-stone-900 mt-1">
             {dailyTrend.length > 0 ? formatAmount(Math.round(total / dailyTrend.length)) : '₩0'}
           </p>
         </div>
@@ -136,8 +136,8 @@ export default function Dashboard() {
       {/* 차트 영역 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* 카테고리별 파이 차트 */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-5">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">카테고리별 지출</h2>
+        <div className="bg-white rounded-2xl border border-stone-200/60 shadow-sm p-4 sm:p-5">
+          <h2 className="text-base font-semibold text-stone-700 mb-4">카테고리별 지출</h2>
           {byCategory.length > 0 ? (
             <ResponsiveContainer width="100%" height={250} className="min-h-[250px]">
               <PieChart>
@@ -159,58 +159,57 @@ export default function Dashboard() {
             </ResponsiveContainer>
           ) : (
             <div className="h-[250px] flex items-center justify-center">
-              <p className="text-sm text-gray-400">아직 카테고리별 데이터가 없습니다</p>
+              <p className="text-sm text-stone-400">아직 카테고리별 데이터가 없습니다</p>
             </div>
           )}
         </div>
 
         {/* 일별 트렌드 라인 차트 */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-5">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">일별 지출 추이</h2>
+        <div className="bg-white rounded-2xl border border-stone-200/60 shadow-sm p-4 sm:p-5">
+          <h2 className="text-base font-semibold text-stone-700 mb-4">일별 지출 추이</h2>
           {dailyTrend.length > 0 ? (
             <ResponsiveContainer width="100%" height={250} className="min-h-[250px]">
               <LineChart data={dailyTrend}>
                 <XAxis dataKey="date" tick={{ fontSize: 11 }} tickFormatter={(d) => d.slice(5)} />
                 <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
                 <Tooltip formatter={(value) => formatAmount(Number(value))} />
-                <Line type="monotone" dataKey="amount" stroke="#4f46e5" strokeWidth={2} dot={{ r: 3 }} />
+                <Line type="monotone" dataKey="amount" stroke="#D97706" strokeWidth={2} dot={{ r: 3 }} />
               </LineChart>
             </ResponsiveContainer>
           ) : (
             <div className="h-[250px] flex items-center justify-center">
-              <p className="text-sm text-gray-400">아직 일별 데이터가 없습니다</p>
+              <p className="text-sm text-stone-400">아직 일별 데이터가 없습니다</p>
             </div>
           )}
         </div>
       </div>
 
       {/* 최근 지출 */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+      <div className="bg-white rounded-2xl border border-stone-200/60 shadow-sm p-5">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-gray-900">최근 지출</h2>
-          <Link to="/expenses" className="text-sm text-primary-600 hover:text-primary-700">
+          <h2 className="text-base font-semibold text-stone-700">최근 지출</h2>
+          <Link to="/expenses" className="text-sm text-amber-600 hover:text-amber-700">
             전체 보기 →
           </Link>
         </div>
         {recentExpenses.length > 0 ? (
-          <div className="divide-y divide-gray-100">
+          <div className="divide-y divide-stone-100">
             {recentExpenses.map((expense) => (
               <Link
                 key={expense.id}
                 to={`/expenses/${expense.id}`}
-                className="flex items-center justify-between py-3 hover:bg-gray-50 -mx-2 px-2 rounded transition-colors"
+                className="flex items-center justify-between py-3 hover:bg-amber-50/50 -mx-2 px-2 rounded transition-colors"
               >
                 <div className="min-w-0 flex-1">
-                  <p className="font-medium text-gray-900 truncate">{expense.description}</p>
-                  <p className="text-sm text-gray-500">{expense.date.slice(0, 10).replace(/-/g, '.')}</p>
+                  <p className="font-medium text-stone-900 truncate">{expense.description}</p>
+                  <p className="text-sm text-stone-500">{expense.date.slice(0, 10).replace(/-/g, '.')}</p>
                 </div>
-                <p className="font-semibold text-gray-900 ml-4 whitespace-nowrap">{formatAmount(expense.amount)}</p>
+                <p className="font-semibold text-stone-900 ml-4 whitespace-nowrap">{formatAmount(expense.amount)}</p>
               </Link>
             ))}
           </div>
         ) : (
           <EmptyState
-            icon="📝"
             title="아직 기록된 지출이 없습니다"
             description="Telegram 봇으로 지출을 입력하거나 웹에서 직접 추가해보세요."
           />

@@ -102,7 +102,6 @@ export default function AcceptInvitationPage() {
     return (
       <div className="space-y-6">
         <EmptyState
-          icon="⚠️"
           title="유효하지 않은 초대 링크입니다"
           description="초대 링크가 올바르지 않습니다. 초대를 보낸 사람에게 다시 요청해주세요."
           action={{
@@ -121,7 +120,6 @@ export default function AcceptInvitationPage() {
     return (
       <div className="space-y-6">
         <EmptyState
-          icon="❌"
           title="초대 처리에 실패했습니다"
           description={error}
           action={{
@@ -143,20 +141,20 @@ export default function AcceptInvitationPage() {
         {/* 헤더 */}
         <div className="text-center mb-8">
           <div className="text-6xl mb-4">📨</div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">
+          <h1 className="text-2xl font-bold text-stone-900 mb-2">
             가구 초대를 받으셨습니다
           </h1>
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-stone-500">
             아래 버튼을 눌러 초대를 수락하거나 거절하세요
           </p>
         </div>
 
         {/* 버튼 */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 space-y-3">
+        <div className="bg-white rounded-2xl shadow-sm border border-stone-200 p-6 space-y-3">
           <button
             onClick={handleAccept}
             disabled={isProcessing}
-            className="w-full px-4 py-3 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full px-4 py-3 text-sm font-medium text-white bg-amber-600 rounded-lg hover:bg-amber-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isProcessing && action === 'accept' ? (
               <div className="flex items-center justify-center gap-2">
@@ -171,11 +169,11 @@ export default function AcceptInvitationPage() {
           <button
             onClick={handleReject}
             disabled={isProcessing}
-            className="w-full px-4 py-3 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full px-4 py-3 text-sm font-medium text-stone-700 bg-white border border-stone-300 rounded-lg hover:bg-stone-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isProcessing && action === 'reject' ? (
               <div className="flex items-center justify-center gap-2">
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-700" />
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-stone-700" />
                 <span>처리 중...</span>
               </div>
             ) : (
@@ -186,7 +184,7 @@ export default function AcceptInvitationPage() {
           <button
             onClick={() => navigate('/households')}
             disabled={isProcessing}
-            className="w-full px-4 py-3 text-sm font-medium text-gray-500 hover:text-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full px-4 py-3 text-sm font-medium text-stone-500 hover:text-stone-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             나중에 결정
           </button>
@@ -194,7 +192,7 @@ export default function AcceptInvitationPage() {
 
         {/* 추가 안내 */}
         <div className="mt-6 text-center">
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-stone-500">
             이미 로그인한 상태에서만 초대를 수락할 수 있습니다
           </p>
         </div>

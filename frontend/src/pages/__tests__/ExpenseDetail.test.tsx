@@ -64,7 +64,7 @@ describe('ExpenseDetail', () => {
     it('뒤로가기 링크를 표시한다', async () => {
       renderExpenseDetail()
       await waitFor(() => {
-        const backLink = screen.getByRole('link', { name: '←' })
+        const backLink = screen.getByRole('link', { name: '목록으로' })
         expect(backLink).toHaveAttribute('href', '/expenses')
       })
     })
