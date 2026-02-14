@@ -279,8 +279,8 @@ export default function ExpenseList() {
                     <td className="px-4 py-3 text-sm text-stone-600 whitespace-nowrap">
                       {expense.date.slice(0, 10).replace(/-/g, '.')}
                     </td>
-                    <td className="px-4 py-3">
-                      <Link to={`/expenses/${expense.id}`} className="text-sm font-medium text-stone-900 hover:text-amber-600 transition-colors">
+                    <td className="px-4 py-3 max-w-[200px] sm:max-w-none">
+                      <Link to={`/expenses/${expense.id}`} className="text-sm font-medium text-stone-900 hover:text-amber-600 transition-colors block truncate">
                         {expense.description}
                       </Link>
                     </td>

@@ -211,7 +211,7 @@ export default function ExpenseForm() {
         <button
           onClick={() => { setMode('natural'); setPreviewItems(null) }}
           className={`
-            flex-1 px-4 py-2.5 text-sm font-medium rounded-lg transition-all
+            flex-1 px-4 py-3 text-sm font-medium rounded-lg transition-all
             ${mode === 'natural'
               ? 'bg-amber-600 text-white shadow-sm shadow-amber-200'
               : 'text-stone-600 hover:bg-stone-50'
@@ -223,7 +223,7 @@ export default function ExpenseForm() {
         <button
           onClick={() => { setMode('form'); setPreviewItems(null) }}
           className={`
-            flex-1 px-4 py-2.5 text-sm font-medium rounded-lg transition-all
+            flex-1 px-4 py-3 text-sm font-medium rounded-lg transition-all
             ${mode === 'form'
               ? 'bg-amber-600 text-white shadow-sm shadow-amber-200'
               : 'text-stone-600 hover:bg-stone-50'
