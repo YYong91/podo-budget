@@ -17,12 +17,13 @@ describe('EmptyState', () => {
     })
 
     it('기본 아이콘을 표시한다', () => {
-      render(<EmptyState title="테스트" />)
-      expect(screen.getByText('📭')).toBeInTheDocument()
+      const { container } = render(<EmptyState title="테스트" />)
+      // Lucide 아이콘은 SVG로 렌더링됨
+      expect(container.querySelector('svg')).toBeInTheDocument()
     })
 
     it('커스텀 아이콘을 표시한다', () => {
-      render(<EmptyState icon="🎉" title="테스트" />)
+      render(<EmptyState icon={<span>🎉</span>} title="테스트" />)
       expect(screen.getByText('🎉')).toBeInTheDocument()
     })
 
@@ -109,7 +110,7 @@ describe('EmptyState', () => {
       render(<EmptyState title="테스트" action={action} />)
 
       const button = screen.getByRole('button', { name: '추가' })
-      expect(button).toHaveClass('bg-primary-600')
+      expect(button).toHaveClass('bg-amber-600')
     })
 
     it('보조 액션 버튼은 secondary 스타일을 가진다', () => {
@@ -117,7 +118,7 @@ describe('EmptyState', () => {
       render(<EmptyState title="테스트" secondaryAction={secondaryAction} />)
 
       const button = screen.getByRole('button', { name: '취소' })
-      expect(button).toHaveClass('bg-white', 'border-gray-300')
+      expect(button).toHaveClass('bg-white', 'border-stone-300')
     })
   })
 })

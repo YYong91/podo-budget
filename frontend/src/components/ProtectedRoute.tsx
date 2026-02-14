@@ -5,6 +5,7 @@
  */
 
 import { Navigate, Outlet } from 'react-router-dom'
+import { Loader2 } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 
 /**
@@ -17,10 +18,10 @@ export default function ProtectedRoute() {
   // 로딩 중일 때는 스피너 표시
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-stone-50">
         <div className="flex flex-col items-center gap-3">
-          <div className="animate-spin rounded-full h-10 w-10 border-4 border-primary-600 border-t-transparent" />
-          <p className="text-sm text-gray-500">로딩 중...</p>
+          <Loader2 className="animate-spin w-10 h-10 text-amber-600" />
+          <p className="text-sm text-stone-500">로딩 중...</p>
         </div>
       </div>
     )

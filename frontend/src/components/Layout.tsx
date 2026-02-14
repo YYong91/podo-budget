@@ -5,16 +5,31 @@ import { useState, useEffect } from 'react'
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useHouseholdStore } from '../stores/useHouseholdStore'
+import {
+  LayoutDashboard,
+  Receipt,
+  PlusCircle,
+  Tags,
+  PiggyBank,
+  TrendingUp,
+  Users,
+  Settings as SettingsIcon,
+  Mail,
+  Home,
+  Menu,
+  ChevronDown,
+} from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 
-const navItems = [
-  { path: '/', label: '대시보드', icon: '📊' },
-  { path: '/expenses', label: '지출 목록', icon: '💰' },
-  { path: '/expenses/new', label: '지출 입력', icon: '➕' },
-  { path: '/categories', label: '카테고리', icon: '📁' },
-  { path: '/budgets', label: '예산 관리', icon: '📋' },
-  { path: '/insights', label: '인사이트', icon: '💡' },
-  { path: '/households', label: '공유 가계부', icon: '🏠' },
-  { path: '/settings', label: '설정', icon: '⚙️' },
+const navItems: { path: string; label: string; icon: LucideIcon }[] = [
+  { path: '/', label: '대시보드', icon: LayoutDashboard },
+  { path: '/expenses', label: '지출 목록', icon: Receipt },
+  { path: '/expenses/new', label: '지출 입력', icon: PlusCircle },
+  { path: '/categories', label: '카테고리', icon: Tags },
+  { path: '/budgets', label: '예산 관리', icon: PiggyBank },
+  { path: '/insights', label: '인사이트', icon: TrendingUp },
+  { path: '/households', label: '공유 가계부', icon: Users },
+  { path: '/settings', label: '설정', icon: SettingsIcon },
 ]
 
 export default function Layout() {
@@ -59,32 +74,34 @@ export default function Layout() {
   const activeHousehold = households.find((h) => h.id === activeHouseholdId)
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-stone-50">
       {/* 헤더 */}
-      <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-30">
-        <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between">
+      <header className="bg-white shadow-sm border-b border-stone-200 sticky top-0 z-30">
+        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button
-              className="md:hidden p-2 rounded-md hover:bg-gray-100"
+              className="md:hidden p-2 rounded-md hover:bg-stone-100"
               onClick={() => setSidebarOpen(!sidebarOpen)}
+              aria-label="메뉴 열기"
             >
-              <span className="text-xl">☰</span>
+              <Menu className="w-5 h-5" />
             </button>
-            <Link to="/" className="text-lg font-bold text-primary-600">
+            <Link to="/" className="flex items-center gap-2 text-lg font-bold text-amber-600">
+              <Home className="w-5 h-5" />
               HomeNRich
             </Link>
-            <span className="text-xs text-gray-400 hidden sm:inline">가계부</span>
+            <span className="text-xs text-stone-400 hidden sm:inline">가계부</span>
           </div>
           <div className="flex items-center gap-3">
             {user && (
               <>
-                <span className="text-sm text-gray-600 hidden sm:inline">{user.username}</span>
+                <span className="text-sm text-stone-600 hidden sm:inline">{user.username}</span>
                 <button
                   onClick={() => {
                     logout()
                     navigate('/login')
                   }}
-                  className="text-sm text-gray-600 hover:text-gray-900 transition-colors"
+                  className="text-sm text-stone-500 hover:text-stone-700 transition-colors"
                 >
                   로그아웃
                 </button>
@@ -92,14 +109,16 @@ export default function Layout() {
             )}
           </div>
         </div>
+        {/* Amber gradient 라인 */}
+        <div className="h-0.5 bg-gradient-to-r from-amber-400 via-amber-300 to-transparent" />
       </header>
 
       <div className="flex">
         {/* 사이드바 (데스크톱: 항상 표시, 모바일: 토글) */}
         <aside
           className={`
-            fixed md:sticky top-14 left-0 z-20 h-[calc(100vh-3.5rem)]
-            w-56 bg-white border-r border-gray-200 p-4
+            fixed md:sticky top-16 left-0 z-20 h-[calc(100vh-4rem)]
+            w-60 bg-stone-50 border-r border-stone-200 p-4
             transition-transform duration-200 ease-in-out
             ${sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
           `}
@@ -110,14 +129,14 @@ export default function Layout() {
               <Link
                 to="/households"
                 onClick={() => setSidebarOpen(false)}
-                className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm bg-primary-50 text-primary-700 hover:bg-primary-100 transition-colors"
+                className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm bg-amber-50 text-amber-700 hover:bg-amber-100 transition-colors"
               >
-                <span>🏠</span>
+                <Home className="w-4 h-4" />
                 <span>가계부를 만들어주세요</span>
               </Link>
             ) : households.length === 1 ? (
-              <div className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm bg-gray-100 text-gray-700">
-                <span>🏠</span>
+              <div className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm bg-stone-100 text-stone-700">
+                <Home className="w-4 h-4" />
                 <span className="font-medium truncate">{activeHousehold?.name ?? '가구'}</span>
               </div>
             ) : (
@@ -127,16 +146,16 @@ export default function Layout() {
                     e.stopPropagation()
                     setHouseholdDropdownOpen(!householdDropdownOpen)
                   }}
-                  className="flex items-center justify-between w-full px-3 py-2 rounded-lg text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 transition-colors"
+                  className="flex items-center justify-between w-full px-3 py-2 rounded-lg text-sm bg-stone-100 hover:bg-stone-200 text-stone-700 transition-colors"
                 >
                   <div className="flex items-center gap-2 min-w-0">
-                    <span>🏠</span>
+                    <Home className="w-4 h-4" />
                     <span className="font-medium truncate">{activeHousehold?.name ?? '가구 선택'}</span>
                   </div>
-                  <span className="text-xs text-gray-400 ml-1">▼</span>
+                  <ChevronDown className="w-3.5 h-3.5 text-stone-400 ml-1 flex-shrink-0" />
                 </button>
                 {householdDropdownOpen && (
-                  <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 py-1">
+                  <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-stone-200 rounded-lg shadow-lg z-50 py-1">
                     {households.map((h) => (
                       <button
                         key={h.id}
@@ -144,8 +163,8 @@ export default function Layout() {
                           setActiveHouseholdId(h.id)
                           setHouseholdDropdownOpen(false)
                         }}
-                        className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 transition-colors truncate ${
-                          h.id === activeHouseholdId ? 'text-primary-700 font-medium bg-primary-50' : 'text-gray-700'
+                        className={`w-full text-left px-3 py-2 text-sm hover:bg-stone-100 transition-colors truncate ${
+                          h.id === activeHouseholdId ? 'text-amber-700 font-medium bg-amber-50' : 'text-stone-700'
                         }`}
                       >
                         {h.name}
@@ -160,21 +179,22 @@ export default function Layout() {
           <nav className="space-y-1">
             {navItems.map((item) => {
               const isActive = location.pathname === item.path
+              const Icon = item.icon
               return (
                 <Link
                   key={item.path}
                   to={item.path}
                   onClick={() => setSidebarOpen(false)}
                   className={`
-                    flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium
+                    flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium
                     transition-colors relative
                     ${isActive
-                      ? 'bg-primary-50 text-primary-700'
-                      : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                      ? 'bg-amber-50 text-amber-800 border-l-3 border-amber-500'
+                      : 'text-stone-600 hover:bg-stone-100 hover:text-stone-800'
                     }
                   `}
                 >
-                  <span>{item.icon}</span>
+                  <Icon className="w-[18px] h-[18px]" />
                   {item.label}
                   {/* 공유 가계부 메뉴에 초대 뱃지 표시 */}
                   {item.path === '/households' && pendingInvitationCount > 0 && (
@@ -192,15 +212,15 @@ export default function Layout() {
                 to="/invitations"
                 onClick={() => setSidebarOpen(false)}
                 className={`
-                  flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium
+                  flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium
                   transition-colors relative
                   ${location.pathname === '/invitations'
-                    ? 'bg-primary-50 text-primary-700'
-                    : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                    ? 'bg-amber-50 text-amber-800 border-l-3 border-amber-500'
+                    : 'text-stone-600 hover:bg-stone-100 hover:text-stone-800'
                   }
                 `}
               >
-                <span>📨</span>
+                <Mail className="w-[18px] h-[18px]" />
                 받은 초대
                 <span className="ml-auto bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full min-w-[20px] text-center">
                   {pendingInvitationCount}

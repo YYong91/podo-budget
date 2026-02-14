@@ -4,6 +4,8 @@
  * API 에러나 예상치 못한 오류 발생 시 사용자에게 안내하고 재시도를 유도한다.
  */
 
+import { AlertTriangle } from 'lucide-react'
+
 interface ErrorStateProps {
   title?: string
   message?: string
@@ -23,17 +25,19 @@ export default function ErrorState({
 }: ErrorStateProps) {
   return (
     <div className="flex flex-col items-center justify-center py-12 px-4">
-      <div className="text-6xl mb-4">⚠️</div>
-      <h3 className="text-lg font-semibold text-gray-900 mb-2 text-center">
+      <div className="w-16 h-16 rounded-full bg-rose-50 flex items-center justify-center mb-4">
+        <AlertTriangle className="w-8 h-8 text-rose-400" />
+      </div>
+      <h3 className="text-lg font-semibold text-stone-900 mb-2 text-center">
         {title}
       </h3>
-      <p className="text-sm text-gray-500 mb-6 text-center max-w-md">
+      <p className="text-sm text-stone-500 mb-6 text-center max-w-md">
         {message}
       </p>
       {onRetry && (
         <button
           onClick={onRetry}
-          className="px-5 py-2.5 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors"
+          className="px-5 py-2.5 text-sm font-medium text-white bg-amber-600 hover:bg-amber-700 rounded-xl shadow-sm shadow-amber-200 active:scale-[0.98] transition-all"
         >
           다시 시도
         </button>
