@@ -34,7 +34,6 @@ function getCurrentMonth(): string {
 /* 통계 카드 섹션 */
 function StatsCards({ stats, incomeTotal }: { stats: MonthlyStats; incomeTotal?: number }) {
   const total = stats.total ?? 0
-  const byCategory = stats.by_category ?? []
   const dailyTrend = stats.daily_trend ?? []
   const income = incomeTotal ?? 0
   const netIncome = income - total
