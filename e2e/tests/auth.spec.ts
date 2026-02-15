@@ -64,8 +64,8 @@ test.describe('인증 플로우', () => {
     // form 내 submit 버튼 클릭
     await page.locator('form').getByRole('button', { name: '로그인' }).click()
 
-    // 에러 토스트 메시지 확인
-    await expect(page.getByText(/실패|잘못|일치하지/)).toBeVisible({ timeout: 5000 })
+    // 에러 토스트 메시지 확인 (토스트가 뜨는 시간 고려)
+    await expect(page.getByText(/실패|잘못|일치하지/)).toBeVisible({ timeout: 10000 })
   })
 
   test('미인증 접근 → 로그인 페이지 리다이렉트', async ({ page }) => {

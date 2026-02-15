@@ -1,5 +1,28 @@
 import { test, expect } from '../fixtures/auth'
 
+/** API로 지출 생성하는 헬퍼 */
+async function createExpense(
+  page: import('@playwright/test').Page,
+  data: { amount: number; description: string },
+) {
+  const token = await page.evaluate(() => localStorage.getItem('auth_token'))
+  const apiUrl = process.env.E2E_API_URL || 'http://localhost:8000'
+
+  const res = await page.request.post(`${apiUrl}/api/expenses`, {
+    headers: { Authorization: `Bearer ${token}` },
+    data: {
+      ...data,
+      date: new Date().toISOString(),
+    },
+  })
+
+  if (!res.ok()) {
+    const body = await res.text()
+    throw new Error(`지출 생성 API 실패 (${res.status()}): ${body}`)
+  }
+  return res.json()
+}
+
 test.describe('대시보드', () => {
   test('빈 상태 → EmptyState 표시', async ({ authedPage: page }) => {
     await page.goto('/')
@@ -11,19 +34,10 @@ test.describe('대시보드', () => {
   })
 
   test('지출 있을 때 → 통계 카드 표시', async ({ authedPage: page }) => {
-    // API로 지출 생성
-    const token = await page.evaluate(() => localStorage.getItem('auth_token'))
-    const apiUrl = process.env.E2E_API_URL || 'http://localhost:8000'
-
-    const res = await page.request.post(`${apiUrl}/api/expenses`, {
-      headers: { Authorization: `Bearer ${token}` },
-      data: {
-        amount: 25000,
-        description: 'E2E 대시보드 테스트',
-        date: new Date().toISOString().slice(0, 10),
-      },
+    await createExpense(page, {
+      amount: 25000,
+      description: 'E2E 대시보드 테스트',
     })
-    expect(res.ok()).toBeTruthy()
 
     await page.goto('/')
 
@@ -33,18 +47,10 @@ test.describe('대시보드', () => {
   })
 
   test('최근 지출 목록에 항목 표시', async ({ authedPage: page }) => {
-    const token = await page.evaluate(() => localStorage.getItem('auth_token'))
-    const apiUrl = process.env.E2E_API_URL || 'http://localhost:8000'
-
-    const res = await page.request.post(`${apiUrl}/api/expenses`, {
-      headers: { Authorization: `Bearer ${token}` },
-      data: {
-        amount: 12000,
-        description: 'E2E 최근 지출 항목',
-        date: new Date().toISOString().slice(0, 10),
-      },
+    await createExpense(page, {
+      amount: 12000,
+      description: 'E2E 최근 지출 항목',
     })
-    expect(res.ok()).toBeTruthy()
 
     await page.goto('/')
 

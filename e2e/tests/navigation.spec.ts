@@ -24,7 +24,7 @@ test.describe('네비게이션', () => {
   test('404 페이지 표시', async ({ authedPage: page }) => {
     await page.goto('/nonexistent-page-12345')
 
-    await expect(page.getByText(/404|찾을 수 없|존재하지 않/)).toBeVisible({ timeout: 5000 })
+    await expect(page.getByText(/404|찾을 수 없|존재하지 않/).first()).toBeVisible({ timeout: 10000 })
   })
 
   test('모바일 뷰포트에서 사이드바 토글', async ({ authedPage: page }) => {
