@@ -89,3 +89,101 @@ jobs:
           npm run build
         env:
           VITE_API_URL: /api
+
+  e2e-test:
+    name: E2E Tests
+    needs: [test-backend, test-frontend]
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test  # pragma: allowlist secret
+          POSTGRES_DB: test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: "latest"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install backend dependencies
+        run: uv sync --all-extras
+
+      - name: Start backend
+        env:
+          DATABASE_URL: postgresql+asyncpg://test:test@localhost:5432/test  # pragma: allowlist secret
+          SECRET_KEY: test-secret-key  # pragma: allowlist secret
+          LLM_PROVIDER: anthropic
+          ANTHROPIC_API_KEY: test-key  # pragma: allowlist secret
+          DEBUG: "true"
+        run: |
+          cd backend
+          uv run uvicorn app.main:app --host 0.0.0.0 --port 8000 &
+          # 최대 30초 대기 (DB 테이블 생성 포함)
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:8000/health > /dev/null 2>&1; then
+              echo "Backend ready after ${i}s"
+              break
+            fi
+            sleep 1
+          done
+          curl -f http://localhost:8000/health || exit 1
+
+      - name: Build frontend
+        run: |
+          cd frontend
+          npm ci
+          npm run build
+        env:
+          VITE_API_URL: http://localhost:8000/api
+
+      - name: Serve frontend
+        run: |
+          npx serve frontend/dist -l 5173 -s &
+          sleep 2
+
+      - name: Install Playwright
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+
+      - name: Run E2E tests
+        env:
+          E2E_BASE_URL: http://localhost:5173
+          E2E_API_URL: http://localhost:8000
+          CI: "true"
+        run: npx playwright test --config e2e/playwright.config.ts
+
+      - name: Upload test artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            test-results/
+            playwright-report/
+          retention-days: 7

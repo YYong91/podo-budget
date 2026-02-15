@@ -56,6 +56,11 @@ logs/
 htmlcov/
 .pytest_cache/
 
+# Playwright
+test-results/
+playwright-report/
+blob-report/
+
 # Frontend (React/Vue)
 node_modules/
 npm-debug.log*
