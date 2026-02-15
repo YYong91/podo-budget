@@ -73,7 +73,7 @@ describe('Layout', () => {
       expect(screen.getByRole('link', { name: /대시보드/i })).toBeInTheDocument()
       expect(screen.getByRole('link', { name: /지출 목록/i })).toBeInTheDocument()
       expect(screen.getByRole('link', { name: /카테고리/i })).toBeInTheDocument()
-      expect(screen.getByRole('link', { name: /인사이트/i })).toBeInTheDocument()
+      expect(screen.getByRole('link', { name: /리포트/i })).toBeInTheDocument()
     })
 
     it('현재 경로에 해당하는 네비게이션 항목에 active 스타일을 적용한다', () => {
