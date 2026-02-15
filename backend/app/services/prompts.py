@@ -86,6 +86,24 @@ EXPENSE_PARSER_SYSTEM_PROMPT = """당신은 한국어 가계부 입력을 분석
 ]
 ```
 
+## 수입 vs 지출 분류
+
+**수입 키워드**: 월급, 급여, 보너스, 상여금, 용돈 받음, 환불, 수입, 들어왔, 입금, 이자, 배당금, 임대 수익, 프리랜스 수입
+**지출 키워드**: 그 외 모든 지출 관련 표현
+
+수입인 경우 JSON에 `"type": "income"` 필드를 추가합니다.
+지출인 경우 `"type"` 필드를 추가하지 않거나 `"type": "expense"`로 설정합니다.
+
+입력: "월급 350만원 들어왔어"
+```json
+{{"amount": 3500000, "category": "급여", "description": "월급", "date": "{today}", "memo": "", "type": "income"}}
+```
+
+입력: "보너스 50만원"
+```json
+{{"amount": 500000, "category": "급여", "description": "보너스", "date": "{today}", "memo": "", "type": "income"}}
+```
+
 금액을 찾을 수 없으면 다음을 반환하세요:
 ```json
 {{"error": "금액을 찾을 수 없습니다"}}
