@@ -11,16 +11,18 @@ class CategoryBase(BaseModel):
 
 
 class CategoryCreate(CategoryBase):
-    pass
+    type: str = "expense"
 
 
 class CategoryUpdate(BaseModel):
     name: str | None = None
     description: str | None = None
+    type: str | None = None
 
 
 class CategoryResponse(CategoryBase):
     id: int
+    type: str = "expense"
     created_at: datetime
 
     class Config:

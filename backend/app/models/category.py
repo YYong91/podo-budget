@@ -33,6 +33,7 @@ class Category(Base):
     household_id = Column(Integer, ForeignKey("households.id", ondelete="SET NULL"), nullable=True, index=True)  # 가구 공유 카테고리
     name = Column(String, nullable=False)
     description = Column(String, nullable=True)
+    type = Column(String(10), nullable=False, default="expense")  # expense | income | both
     created_at = Column(DateTime, default=func.now())
 
     # Relationships
