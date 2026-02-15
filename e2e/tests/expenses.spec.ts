@@ -68,15 +68,25 @@ test.describe('지출 CRUD', () => {
 
     await page.goto(`/expenses/${expense.id}`)
 
+    // 상세 페이지 로딩 대기
+    await expect(page.getByText('E2E 수정 전')).toBeVisible({ timeout: 10000 })
+
     // 수정 모드 진입
     await page.getByRole('button', { name: '수정' }).click()
 
-    // 설명 필드 수정
+    // 설명 필드 수정 (fill은 기존 값을 자동으로 지움)
     const descInput = page.getByPlaceholder('김치찌개')
-    await descInput.clear()
+    await expect(descInput).toBeVisible()
     await descInput.fill('E2E 수정 후')
 
-    await page.getByRole('button', { name: '저장' }).click()
+    // PUT 요청 완료를 기다리며 저장
+    const [response] = await Promise.all([
+      page.waitForResponse((res) => res.url().includes('/api/expenses/') && res.request().method() === 'PUT'),
+      page.getByRole('button', { name: '저장' }).click(),
+    ])
+
+    // API 응답 확인
+    expect(response.ok()).toBeTruthy()
 
     // 수정된 내용 확인
     await expect(page.getByText('E2E 수정 후')).toBeVisible({ timeout: 10000 })
