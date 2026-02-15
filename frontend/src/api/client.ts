@@ -1,7 +1,7 @@
 /* API 클라이언트 설정 */
 
-import * as Sentry from '@sentry/react'
 import axios from 'axios'
+import { captureException } from '../utils/sentry'
 
 const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_URL || '/api',
@@ -18,7 +18,7 @@ apiClient.interceptors.response.use(
     // 5xx 서버 에러 또는 네트워크 에러만 Sentry에 보고
     const status = error.response?.status
     if (!status || status >= 500) {
-      Sentry.captureException(error)
+      captureException(error)
     }
 
     return Promise.reject(error)
