@@ -4,15 +4,18 @@
  * 가구가 선택된 경우 공유 지출을 먼저 보여주고, 개인 지출은 접기 가능한 섹션으로 표시한다.
  */
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Loader2, ChevronDown, ChevronUp } from 'lucide-react'
-import { PieChart, Pie, Cell, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
+import { Chart as ChartJS, ArcElement, LineElement, PointElement, CategoryScale, LinearScale, Filler, Tooltip as ChartTooltip, Legend } from 'chart.js'
+import { Pie, Line } from 'react-chartjs-2'
 import { expenseApi } from '../api/expenses'
 import { useHouseholdStore } from '../stores/useHouseholdStore'
 import EmptyState from '../components/EmptyState'
 import ErrorState from '../components/ErrorState'
 import type { Expense, MonthlyStats } from '../types'
+
+ChartJS.register(ArcElement, LineElement, PointElement, CategoryScale, LinearScale, Filler, ChartTooltip, Legend)
 
 const COLORS = ['#D97706', '#0EA5E9', '#10B981', '#F43F5E', '#8B5CF6', '#EC4899', '#06B6D4', '#78716C']
 
@@ -61,6 +64,35 @@ function StatsCards({ stats }: { stats: MonthlyStats }) {
 function ChartSection({ stats }: { stats: MonthlyStats }) {
   const byCategory = stats.by_category ?? []
   const dailyTrend = stats.daily_trend ?? []
+  const pieRef = useRef<ChartJS<'pie'>>(null)
+  const lineRef = useRef<ChartJS<'line'>>(null)
+
+  const pieData = {
+    labels: byCategory.map((c) => c.category),
+    datasets: [
+      {
+        data: byCategory.map((c) => c.amount),
+        backgroundColor: byCategory.map((_, i) => COLORS[i % COLORS.length]),
+        borderWidth: 0,
+      },
+    ],
+  }
+
+  const lineData = {
+    labels: dailyTrend.map((d) => d.date.slice(5)),
+    datasets: [
+      {
+        data: dailyTrend.map((d) => d.amount),
+        borderColor: '#D97706',
+        backgroundColor: 'rgba(217, 119, 6, 0.1)',
+        borderWidth: 2,
+        pointRadius: 3,
+        pointBackgroundColor: '#D97706',
+        tension: 0.3,
+        fill: true,
+      },
+    ],
+  }
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -68,24 +100,24 @@ function ChartSection({ stats }: { stats: MonthlyStats }) {
       <div className="bg-white rounded-2xl border border-stone-200/60 shadow-sm p-4 sm:p-5">
         <h2 className="text-base font-semibold text-stone-700 mb-4">카테고리별 지출</h2>
         {byCategory.length > 0 ? (
-          <ResponsiveContainer width="100%" height={250} className="min-h-[250px]">
-            <PieChart>
-              <Pie
-                data={byCategory}
-                dataKey="amount"
-                nameKey="category"
-                cx="50%"
-                cy="50%"
-                outerRadius={80}
-                label={({ name, percent }) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`}
-              >
-                {byCategory.map((_, i) => (
-                  <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip formatter={(value) => formatAmount(Number(value))} />
-            </PieChart>
-          </ResponsiveContainer>
+          <div className="h-[250px] flex items-center justify-center">
+            <Pie
+              ref={pieRef}
+              data={pieData}
+              options={{
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                  legend: { display: false },
+                  tooltip: {
+                    callbacks: {
+                      label: (ctx) => `${ctx.label} ${formatAmount(ctx.parsed)}`,
+                    },
+                  },
+                },
+              }}
+            />
+          </div>
         ) : (
           <div className="h-[250px] flex items-center justify-center">
             <p className="text-sm text-stone-400">아직 카테고리별 데이터가 없습니다</p>
@@ -97,14 +129,36 @@ function ChartSection({ stats }: { stats: MonthlyStats }) {
       <div className="bg-white rounded-2xl border border-stone-200/60 shadow-sm p-4 sm:p-5">
         <h2 className="text-base font-semibold text-stone-700 mb-4">일별 지출 추이</h2>
         {dailyTrend.length > 0 ? (
-          <ResponsiveContainer width="100%" height={250} className="min-h-[250px]">
-            <LineChart data={dailyTrend}>
-              <XAxis dataKey="date" tick={{ fontSize: 11 }} tickFormatter={(d) => d.slice(5)} />
-              <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
-              <Tooltip formatter={(value) => formatAmount(Number(value))} />
-              <Line type="monotone" dataKey="amount" stroke="#D97706" strokeWidth={2} dot={{ r: 3 }} />
-            </LineChart>
-          </ResponsiveContainer>
+          <div className="h-[250px]">
+            <Line
+              ref={lineRef}
+              data={lineData}
+              options={{
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                  legend: { display: false },
+                  tooltip: {
+                    callbacks: {
+                      label: (ctx) => formatAmount(ctx.parsed.y ?? 0),
+                    },
+                  },
+                },
+                scales: {
+                  x: {
+                    ticks: { font: { size: 11 } },
+                    grid: { display: false },
+                  },
+                  y: {
+                    ticks: {
+                      font: { size: 11 },
+                      callback: (v) => `${(Number(v) / 1000).toFixed(0)}k`,
+                    },
+                  },
+                },
+              }}
+            />
+          </div>
         ) : (
           <div className="h-[250px] flex items-center justify-center">
             <p className="text-sm text-stone-400">아직 일별 데이터가 없습니다</p>

@@ -2,24 +2,11 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
-import * as Sentry from '@sentry/react'
 import { ToastProvider } from './contexts/ToastContext'
 import { AuthProvider } from './contexts/AuthContext'
+import { initSentry, getErrorBoundary } from './utils/sentry'
 import './index.css'
 import App from './App.tsx'
-
-// Sentry 초기화 — DSN이 설정된 경우에만 활성화
-const sentryDsn = import.meta.env.VITE_SENTRY_DSN
-if (sentryDsn) {
-  Sentry.init({
-    dsn: sentryDsn,
-    environment: import.meta.env.VITE_SENTRY_ENVIRONMENT || 'development',
-    integrations: [Sentry.browserTracingIntegration(), Sentry.replayIntegration()],
-    tracesSampleRate: import.meta.env.DEV ? 1.0 : 0.2,
-    replaysSessionSampleRate: 0,
-    replaysOnErrorSampleRate: 1.0,
-  })
-}
 
 // Sentry ErrorBoundary 폴백 (Tailwind 로드 실패해도 동작하도록 인라인 스타일)
 function SentryFallback() {
@@ -45,9 +32,14 @@ function SentryFallback() {
   )
 }
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <Sentry.ErrorBoundary fallback={<SentryFallback />}>
+// Sentry 초기화 후 앱 렌더링 (DSN 없으면 즉시 렌더링)
+async function bootstrap() {
+  await initSentry()
+
+  const ErrorBoundary = getErrorBoundary()
+
+  const appTree = (
+    <StrictMode>
       <BrowserRouter>
         <AuthProvider>
           <ToastProvider>
@@ -55,6 +47,16 @@ createRoot(document.getElementById('root')!).render(
           </ToastProvider>
         </AuthProvider>
       </BrowserRouter>
-    </Sentry.ErrorBoundary>
-  </StrictMode>,
-)
+    </StrictMode>
+  )
+
+  createRoot(document.getElementById('root')!).render(
+    ErrorBoundary ? (
+      <ErrorBoundary fallback={<SentryFallback />}>{appTree}</ErrorBoundary>
+    ) : (
+      appTree
+    ),
+  )
+}
+
+bootstrap()
