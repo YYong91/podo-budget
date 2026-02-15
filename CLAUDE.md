@@ -57,9 +57,9 @@ alembic revision --autogenerate -m "description"  # Generate migration
 
 ```
 backend/app/
-├── api/          # Route handlers (chat, expenses, insights)
+├── api/          # Route handlers (chat, expenses, income, insights)
 ├── core/         # Config (Pydantic BaseSettings) and async DB engine
-├── models/       # SQLAlchemy 2.0 ORM models (Expense, Category, Budget)
+├── models/       # SQLAlchemy 2.0 ORM models (Expense, Income, Category, Budget)
 ├── schemas/      # Pydantic request/response schemas
 ├── services/     # Business logic (LLM integration)
 └── main.py       # FastAPI app entry, CORS config, router registration
@@ -71,7 +71,7 @@ backend/app/
 frontend/src/
 ├── api/           # Axios API clients (expenses, categories, insights)
 ├── components/    # Reusable components (Layout with sidebar navigation)
-├── pages/         # Page components (Dashboard, ExpenseList, ExpenseDetail, CategoryManager, InsightsPage, ForgotPasswordPage, ResetPasswordPage)
+├── pages/         # Page components (Dashboard, ExpenseList, ExpenseDetail, IncomeList, IncomeDetail, CategoryManager, InsightsPage, ForgotPasswordPage, ResetPasswordPage)
 ├── hooks/         # Custom hooks (empty — not yet implemented)
 ├── types/         # TypeScript type definitions (Expense, Category, MonthlyStats, etc.)
 ├── assets/        # Static assets
@@ -97,8 +97,8 @@ frontend/src/
 
 ### Database
 - PostgreSQL 16 with asyncpg driver
-- Seven models: User, Expense, Category, Budget, Household, HouseholdMember, HouseholdInvitation
-- Alembic: 3 migrations (초기 스키마, 인덱스/FK, Float→Numeric)
+- Eight models: User, Expense, Income, Category, Budget, Household, HouseholdMember, HouseholdInvitation
+- Alembic: 4 migrations (초기 스키마, 인덱스/FK, Float→Numeric, Income+Category type)
 
 ### Infrastructure
 - Docker Compose: `db` (postgres:16-alpine with healthcheck) + `backend` (python:3.12-slim)
@@ -137,7 +137,7 @@ Frontend: `frontend/.env.development`:
 
 ## Current State (2026-02-15)
 
-- **Backend**: 인증(비밀번호 재설정 포함), 지출 CRUD, 카테고리, 예산, 인사이트, Household/초대 API 모두 구현됨. LLM 파싱(Anthropic/OpenAI) + 프리뷰 모드. 자연어 컨텍스트 탐지. 멤버별 필터링. Telegram/Kakao 봇. Resend 이메일 발송. 금액 필드 Numeric(12,2). QA 2차 완료 + 전체 정비 QA 완료. 테스트 299개.
-- **Frontend**: React 19 SPA. Amber/Stone 디자인 시스템. 자연어 입력 → 프리뷰 → 수정 → 확인 플로우. 비밀번호 재설정 페이지. 대시보드 통합 뷰 (공유 우선 + 개인 접기). 가구 전환 드롭다운. 멤버별 필터링. 테스트 157개 (전체 통과).
+- **Backend**: 인증(비밀번호 재설정 포함), 지출 CRUD, **수입 CRUD + 통계**, 카테고리(type 필드), 예산, 인사이트, Household/초대 API 모두 구현됨. LLM 파싱(Anthropic/OpenAI) + 프리뷰 모드 + **수입/지출 자동 분류**. 자연어 컨텍스트 탐지. 멤버별 필터링. Telegram/Kakao 봇. Resend 이메일 발송. 금액 필드 Numeric(12,2). 테스트 345개.
+- **Frontend**: React 19 SPA. Amber/Stone 디자인 시스템(수입: Emerald). 자연어 입력 → 프리뷰 → 수정 → 확인 플로우. **수입 목록/상세 페이지**. **대시보드 수입/순수익 카드**. **리포트 지출/수입 토글**. 비밀번호 재설정 페이지. 대시보드 통합 뷰 (공유 우선 + 개인 접기). 가구 전환 드롭다운. 멤버별 필터링. 테스트 389개 (전체 통과).
 - **Infrastructure**: Docker Compose로 PostgreSQL + Backend + Frontend 실행 가능.
 - **Phase 1**: 100%. **Phase 2**: 100%. **Phase 3**: 95% (봇 배포 제외). **Phase 4**: 85% (Sentry + CI/CD + Fly.io 설정 완료, 결제 활성화 후 배포).

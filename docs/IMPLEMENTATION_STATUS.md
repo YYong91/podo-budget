@@ -1,6 +1,6 @@
 # HomeNRich 구현 현황 (Implementation Status)
 
-**최종 업데이트**: 2026-02-15
+**최종 업데이트**: 2026-02-16
 **기준 문서**: `PRODUCT.md`, `ROADMAP.md`
 
 기능별 구현 완료도를 추적합니다. 기능 완료/변경 시 이 문서를 업데이트합니다.
@@ -48,6 +48,18 @@
 | 프롬프트 엔지니어링 | 완료 | services/prompts.py | 없음 | Few-shot 예시 포함 |
 | 컨텍스트 탐지 | 완료 | services/expense_context_detector.py | 있음 (27개) | 공유/개인 키워드 감지 |
 
+### 수입 (Income)
+
+| 기능 | 상태 | 파일 | 테스트 | 비고 |
+|------|------|------|--------|------|
+| 수입 CRUD | 완료 | api/income.py | 있음 (12개) | 생성/조회/수정/삭제 |
+| 수입 통계 (주간/월간/연간) | 완료 | api/income.py | 있음 (5개) | GET /income/stats |
+| Household 연동 | 완료 | api/income.py | 있음 | household_id 필터링 + 멤버 검증 |
+| Chat API 수입 분류 | 완료 | api/chat.py | 있음 (3개) | LLM이 income/expense 자동 분류 |
+| Income 모델 | 완료 | models/income.py | 있음 (3개) | User/Category/Household 관계 |
+| Income 스키마 | 완료 | schemas/income.py | 있음 (5개) | Pydantic v2, amount gt=0 |
+| Category type 필드 | 완료 | models/category.py | 있음 (4개) | expense/income/both 구분 |
+
 ### 카테고리 / 예산
 
 | 기능 | 상태 | 파일 | 테스트 |
@@ -94,10 +106,11 @@
 
 | 항목 | 상태 | 비고 |
 |------|------|------|
-| SQLAlchemy 모델 | 완료 | User, Expense, Category, Budget, Household, HouseholdMember, HouseholdInvitation |
+| SQLAlchemy 모델 | 완료 | User, Expense, Income, Category, Budget, Household, HouseholdMember, HouseholdInvitation |
 | Alembic 마이그레이션 | 완료 | 초기 마이그레이션 ef6a56f45278 |
 | Alembic 마이그레이션 #2 | 완료 | 인덱스 + FK CASCADE 정비 (a1b2c3d4e5f6) |
 | Alembic 마이그레이션 #3 | 완료 | Float → Numeric(12,2) for monetary fields |
+| Alembic 마이그레이션 #4 | 완료 | incomes 테이블 + categories.type 컬럼 |
 | 인덱스 | 완료 | user_id, household_id, date, category_id + 복합 인덱스 |
 | FK CASCADE | 완료 | expenses/categories/budgets → households (SET NULL) |
 
@@ -120,7 +133,8 @@
 | 기능 | 상태 | 테스트 |
 |------|------|--------|
 | 지출 요약 (이번 달) | 완료 | 있음 |
-| 최근 지출 목록 | 완료 | 있음 |
+| 수입 요약 + 순수익 | 완료 | 있음 |
+| 최근 지출/수입 목록 | 완료 | 있음 |
 | 예산 진행률 | 완료 | 있음 |
 | 통합 뷰 (공유+개인) | 완료 | 있음 |
 
@@ -142,13 +156,21 @@
 | 초대 승인 페이지 | 완료 | 있음 | /invitations/accept?token= |
 | 멤버별 필터링 | 완료 | - | 드롭다운 + 작성자 열 |
 
+### 수입 관리
+
+| 기능 | 상태 | 테스트 | 비고 |
+|------|------|--------|------|
+| 수입 목록 페이지 | 완료 | 있음 (5개) | 필터링/정렬/페이지네이션 |
+| 수입 상세 페이지 | 완료 | 있음 (13개) | 조회/수정/삭제 |
+| 사이드바 수입 메뉴 | 완료 | - | Wallet 아이콘 |
+
 ### 기타
 
 | 기능 | 상태 | 테스트 |
 |------|------|--------|
 | 카테고리 관리 | 완료 | 있음 |
 | 예산 관리 | 완료 | 있음 |
-| 리포트 페이지 | 완료 | 있음 | 주간/월간/연간 탭 + AI 인사이트 탭 |
+| 리포트 페이지 | 완료 | 있음 | 주간/월간/연간 탭 + 지출/수입 토글 + AI 인사이트 탭 |
 | 5단계 변화량 표시 | 완료 | 있음 | 많이 늘음~많이 줄음 |
 | 기간 비교 차트 | 완료 | 있음 | 3개월 트렌드 막대 차트 |
 
@@ -172,8 +194,8 @@
 
 | 영역 | 테스트 수 | 커버리지 |
 |------|-----------|----------|
-| 백엔드 (pytest) | 299개 (5 skip) | 측정 완료 (핵심 모듈 80%+) |
-| 프론트엔드 (Vitest) | 343개 (all pass) | 미측정 |
+| 백엔드 (pytest) | 345개 (5 skip) | 측정 완료 (핵심 모듈 80%+) |
+| 프론트엔드 (Vitest) | 389개 (all pass) | 미측정 |
 | E2E (Playwright) | 15개 (4 파일) | 인증, 지출 CRUD, 대시보드, 네비게이션 |
 
 ---
