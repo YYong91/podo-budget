@@ -38,4 +38,5 @@ class Category(Base):
     # Relationships
     user = relationship("User", back_populates="categories")
     expenses = relationship("Expense", back_populates="category")
+    incomes = relationship("Income", back_populates="category")
     budgets = relationship("Budget", back_populates="category")

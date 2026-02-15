@@ -4,6 +4,7 @@ from app.models.expense import Expense
 from app.models.household import Household
 from app.models.household_invitation import HouseholdInvitation
 from app.models.household_member import HouseholdMember
+from app.models.income import Income
 from app.models.user import User
 
 __all__ = [
@@ -13,5 +14,6 @@ __all__ = [
     "Household",
     "HouseholdInvitation",
     "HouseholdMember",
+    "Income",
     "User",
 ]
