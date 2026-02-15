@@ -22,6 +22,8 @@ const TermsOfServicePage = lazy(() => import('./pages/TermsOfServicePage'))
 const SettingsPage = lazy(() => import('./pages/SettingsPage'))
 const ForgotPasswordPage = lazy(() => import('./pages/ForgotPasswordPage'))
 const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'))
+const IncomeList = lazy(() => import('./pages/IncomeList'))
+const IncomeDetail = lazy(() => import('./pages/IncomeDetail'))
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'))
 
 /* 로딩 스피너 */
@@ -50,6 +52,8 @@ function App() {
             <Route path="/expenses/new" element={<ExpenseForm />} />
             <Route path="/expenses/:id" element={<ExpenseDetail />} />
             <Route path="/categories" element={<CategoryManager />} />
+            <Route path="/income" element={<IncomeList />} />
+            <Route path="/income/:id" element={<IncomeDetail />} />
             <Route path="/insights" element={<InsightsPage />} />
             <Route path="/budgets" element={<BudgetManager />} />
             <Route path="/households" element={<HouseholdListPage />} />
