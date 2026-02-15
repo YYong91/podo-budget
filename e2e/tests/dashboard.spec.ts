@@ -10,12 +10,12 @@ test.describe('대시보드', () => {
     ).toBeVisible({ timeout: 10000 })
   })
 
-  test('지출 있을 때 → 통계 카드 표시', async ({ authedPage: page, request }) => {
+  test('지출 있을 때 → 통계 카드 표시', async ({ authedPage: page }) => {
     // API로 지출 생성
     const token = await page.evaluate(() => localStorage.getItem('auth_token'))
     const apiUrl = process.env.E2E_API_URL || 'http://localhost:8000'
 
-    await request.post(`${apiUrl}/api/expenses`, {
+    const res = await page.request.post(`${apiUrl}/api/expenses`, {
       headers: { Authorization: `Bearer ${token}` },
       data: {
         amount: 25000,
@@ -23,6 +23,7 @@ test.describe('대시보드', () => {
         date: new Date().toISOString().slice(0, 10),
       },
     })
+    expect(res.ok()).toBeTruthy()
 
     await page.goto('/')
 
@@ -31,11 +32,11 @@ test.describe('대시보드', () => {
     await expect(page.getByText(/25,000|₩25/)).toBeVisible()
   })
 
-  test('최근 지출 목록에 항목 표시', async ({ authedPage: page, request }) => {
+  test('최근 지출 목록에 항목 표시', async ({ authedPage: page }) => {
     const token = await page.evaluate(() => localStorage.getItem('auth_token'))
     const apiUrl = process.env.E2E_API_URL || 'http://localhost:8000'
 
-    await request.post(`${apiUrl}/api/expenses`, {
+    const res = await page.request.post(`${apiUrl}/api/expenses`, {
       headers: { Authorization: `Bearer ${token}` },
       data: {
         amount: 12000,
@@ -43,6 +44,7 @@ test.describe('대시보드', () => {
         date: new Date().toISOString().slice(0, 10),
       },
     })
+    expect(res.ok()).toBeTruthy()
 
     await page.goto('/')
 

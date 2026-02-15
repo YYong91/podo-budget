@@ -8,8 +8,8 @@ test.describe('인증 플로우', () => {
   test('회원가입 후 대시보드로 이동', async ({ page }) => {
     await page.goto('/login')
 
-    // 회원가입 탭 클릭
-    await page.getByRole('button', { name: '회원가입' }).click()
+    // 회원가입 탭 클릭 (탭 버튼 = first, 링크 버튼 = second)
+    await page.getByRole('button', { name: '회원가입' }).first().click()
 
     const username = uniqueId()
     await page.getByPlaceholder('사용자명').fill(username)
@@ -22,7 +22,8 @@ test.describe('인증 플로우', () => {
       await checkboxes.nth(i).check()
     }
 
-    await page.getByRole('button', { name: '가입하기' }).click()
+    // 제출 버튼 (form 내 submit 버튼)
+    await page.locator('form').getByRole('button', { name: '회원가입' }).click()
 
     // 대시보드로 이동 확인
     await expect(page).toHaveURL('/', { timeout: 10000 })
@@ -40,7 +41,9 @@ test.describe('인증 플로우', () => {
     await page.goto('/login')
     await page.getByPlaceholder('사용자명').fill(username)
     await page.getByPlaceholder('비밀번호').fill(password)
-    await page.getByRole('button', { name: '로그인' }).click()
+
+    // form 내 submit 버튼 클릭
+    await page.locator('form').getByRole('button', { name: '로그인' }).click()
 
     await expect(page).toHaveURL('/', { timeout: 10000 })
     // 대시보드 제목 확인
@@ -57,7 +60,9 @@ test.describe('인증 플로우', () => {
     await page.goto('/login')
     await page.getByPlaceholder('사용자명').fill(username)
     await page.getByPlaceholder('비밀번호').fill('WrongPass999!')
-    await page.getByRole('button', { name: '로그인' }).click()
+
+    // form 내 submit 버튼 클릭
+    await page.locator('form').getByRole('button', { name: '로그인' }).click()
 
     // 에러 토스트 메시지 확인
     await expect(page.getByText(/실패|잘못|일치하지/)).toBeVisible({ timeout: 5000 })
