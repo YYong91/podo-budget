@@ -85,7 +85,14 @@ test.describe('지출 CRUD', () => {
       page.getByRole('button', { name: '저장' }).click(),
     ])
 
-    // API 응답 확인
+    // PUT 실패 시 디버깅을 위해 응답 상세 출력
+    if (!response.ok()) {
+      const body = await response.text()
+      console.error(`PUT 실패 (${response.status()}): ${body}`)
+      console.error(`요청 URL: ${response.url()}`)
+      const reqBody = response.request().postData()
+      console.error(`요청 본문: ${reqBody}`)
+    }
     expect(response.ok()).toBeTruthy()
 
     // 수정된 내용 확인
