@@ -4,7 +4,7 @@
  * API 응답을 모킹하기 위한 샘플 데이터를 정의한다.
  */
 
-import type { Expense, Category, MonthlyStats, InsightsResponse } from '../types'
+import type { Expense, Category, MonthlyStats, InsightsResponse, StatsResponse, ComparisonResponse } from '../types'
 
 /**
  * 테스트용 카테고리 목록
@@ -86,6 +86,46 @@ export const mockMonthlyStats: MonthlyStats = {
   daily_trend: [
     { date: '2024-01-14', amount: 50000 },
     { date: '2024-01-15', amount: 11500 },
+  ],
+}
+
+/**
+ * 테스트용 기간별 통계
+ */
+export const mockStats: StatsResponse = {
+  period: 'monthly',
+  label: '2024년 1월',
+  start_date: '2024-01-01',
+  end_date: '2024-01-31',
+  total: 61500,
+  count: 3,
+  by_category: [
+    { category: '쇼핑', amount: 50000, count: 1, percentage: 81.3 },
+    { category: '식비', amount: 8000, count: 1, percentage: 13.0 },
+    { category: '교통', amount: 3500, count: 1, percentage: 5.7 },
+  ],
+  trend: [
+    { label: '01/14', amount: 50000 },
+    { label: '01/15', amount: 11500 },
+  ],
+}
+
+/**
+ * 테스트용 기간 비교
+ */
+export const mockComparison: ComparisonResponse = {
+  current: { label: '2024년 1월', total: 61500 },
+  previous: { label: '2023년 12월', total: 55000 },
+  change: { amount: 6500, percentage: 11.8 },
+  trend: [
+    { label: '2023년 11월', total: 48000 },
+    { label: '2023년 12월', total: 55000 },
+    { label: '2024년 1월', total: 61500 },
+  ],
+  by_category_comparison: [
+    { category: '식비', current: 8000, previous: 12000, change_amount: -4000, change_percentage: -33.3 },
+    { category: '교통', current: 3500, previous: 3000, change_amount: 500, change_percentage: 16.7 },
+    { category: '쇼핑', current: 50000, previous: 40000, change_amount: 10000, change_percentage: 25.0 },
   ],
 }
 
