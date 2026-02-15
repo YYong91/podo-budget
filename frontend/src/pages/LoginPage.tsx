@@ -6,6 +6,7 @@
 
 import { useState } from 'react'
 import { useNavigate, Navigate, Link } from 'react-router-dom'
+import { Home, Loader2 } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../hooks/useToast'
 
@@ -101,16 +102,19 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 w-full max-w-md p-8">
+    <div className="min-h-screen bg-stone-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl shadow-sm border border-stone-200/60 w-full max-w-md p-8">
         {/* 로고 */}
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-primary-600">HomeNRich</h1>
-          <p className="text-sm text-gray-500 mt-1">AI 가계부</p>
+          <div className="flex items-center justify-center gap-2 mb-1">
+            <Home className="w-6 h-6 text-amber-600" />
+            <h1 className="text-2xl font-bold text-amber-600">HomeNRich</h1>
+          </div>
+          <p className="text-sm text-stone-500 mt-1">부부가 함께 쓰는 AI 가계부</p>
         </div>
 
         {/* 탭 */}
-        <div className="flex border-b border-gray-200 mb-6">
+        <div className="flex border-b border-stone-200 mb-6">
           <button
             type="button"
             onClick={() => {
@@ -122,8 +126,8 @@ export default function LoginPage() {
             }}
             className={`flex-1 py-2 text-sm font-medium transition-colors ${
               activeTab === 'login'
-                ? 'text-primary-600 border-b-2 border-primary-600'
-                : 'text-gray-500 hover:text-gray-700'
+                ? 'text-amber-600 border-b-2 border-amber-600'
+                : 'text-stone-500 hover:text-stone-700'
             }`}
           >
             로그인
@@ -136,8 +140,8 @@ export default function LoginPage() {
             }}
             className={`flex-1 py-2 text-sm font-medium transition-colors ${
               activeTab === 'register'
-                ? 'text-primary-600 border-b-2 border-primary-600'
-                : 'text-gray-500 hover:text-gray-700'
+                ? 'text-amber-600 border-b-2 border-amber-600'
+                : 'text-stone-500 hover:text-stone-700'
             }`}
           >
             회원가입
@@ -148,7 +152,7 @@ export default function LoginPage() {
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* 사용자명 입력 */}
           <div>
-            <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="username" className="block text-sm font-medium text-stone-700 mb-1">
               사용자명
             </label>
             <input
@@ -156,8 +160,8 @@ export default function LoginPage() {
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-                errors.username ? 'border-red-500' : 'border-gray-300'
+              className={`w-full px-3 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500 ${
+                errors.username ? 'border-red-500' : 'border-stone-300'
               }`}
               placeholder="사용자명 입력"
               disabled={loading}
@@ -169,7 +173,7 @@ export default function LoginPage() {
 
           {/* 비밀번호 입력 */}
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="password" className="block text-sm font-medium text-stone-700 mb-1">
               비밀번호
             </label>
             <input
@@ -177,8 +181,8 @@ export default function LoginPage() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-                errors.password ? 'border-red-500' : 'border-gray-300'
+              className={`w-full px-3 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500 ${
+                errors.password ? 'border-red-500' : 'border-stone-300'
               }`}
               placeholder="비밀번호 입력"
               disabled={loading}
@@ -191,16 +195,16 @@ export default function LoginPage() {
           {/* 이메일 입력 (회원가입 시에만) */}
           {activeTab === 'register' && (
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                이메일 <span className="text-gray-400">(선택)</span>
+              <label htmlFor="email" className="block text-sm font-medium text-stone-700 mb-1">
+                이메일 <span className="text-stone-400">(선택)</span>
               </label>
               <input
                 id="email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-                  errors.email ? 'border-red-500' : 'border-gray-300'
+                className={`w-full px-3 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500 ${
+                  errors.email ? 'border-red-500' : 'border-stone-300'
                 }`}
                 placeholder="초대 받기에 사용됩니다"
                 disabled={loading}
@@ -220,15 +224,15 @@ export default function LoginPage() {
                   type="checkbox"
                   checked={termsAgreed}
                   onChange={(e) => setTermsAgreed(e.target.checked)}
-                  className="mt-0.5 h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                  className="mt-0.5 h-4 w-4 text-amber-600 border-stone-300 rounded focus:ring-amber-500"
                   disabled={loading}
                 />
-                <label htmlFor="terms" className="text-sm text-gray-700 flex-1">
+                <label htmlFor="terms" className="text-sm text-stone-700 flex-1">
                   <Link
                     to="/terms"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-primary-600 hover:text-primary-700 underline"
+                    className="text-amber-600 hover:text-amber-700 underline"
                   >
                     이용약관
                   </Link>
@@ -241,15 +245,15 @@ export default function LoginPage() {
                   type="checkbox"
                   checked={privacyAgreed}
                   onChange={(e) => setPrivacyAgreed(e.target.checked)}
-                  className="mt-0.5 h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                  className="mt-0.5 h-4 w-4 text-amber-600 border-stone-300 rounded focus:ring-amber-500"
                   disabled={loading}
                 />
-                <label htmlFor="privacy" className="text-sm text-gray-700 flex-1">
+                <label htmlFor="privacy" className="text-sm text-stone-700 flex-1">
                   <Link
                     to="/privacy"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-primary-600 hover:text-primary-700 underline"
+                    className="text-amber-600 hover:text-amber-700 underline"
                   >
                     개인정보처리방침
                   </Link>
@@ -263,11 +267,11 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading || (activeTab === 'register' && (!termsAgreed || !privacyAgreed))}
-            className="w-full py-2.5 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+            className="w-full py-2.5 bg-amber-600 text-white font-medium rounded-xl hover:bg-amber-700 shadow-sm shadow-amber-200 active:scale-[0.98] transition-all disabled:bg-stone-300 disabled:cursor-not-allowed"
           >
             {loading ? (
               <span className="flex items-center justify-center gap-2">
-                <span className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
+                <Loader2 className="w-4 h-4 animate-spin" />
                 처리 중...
               </span>
             ) : (
@@ -277,25 +281,32 @@ export default function LoginPage() {
         </form>
 
         {/* 안내 메시지 */}
-        <div className="mt-6 text-center text-sm text-gray-500">
+        <div className="mt-6 text-center text-sm text-stone-500">
           {activeTab === 'login' ? (
-            <p>
-              계정이 없으신가요?{' '}
-              <button
-                type="button"
-                onClick={() => setActiveTab('register')}
-                className="text-primary-600 hover:text-primary-700 font-medium"
-              >
-                회원가입
-              </button>
-            </p>
+            <>
+              <p className="mb-2">
+                <Link to="/forgot-password" className="text-stone-500 hover:text-stone-700 text-xs">
+                  비밀번호를 잊으셨나요?
+                </Link>
+              </p>
+              <p>
+                계정이 없으신가요?{' '}
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('register')}
+                  className="text-amber-600 hover:text-amber-700 font-medium"
+                >
+                  회원가입
+                </button>
+              </p>
+            </>
           ) : (
             <p>
               이미 계정이 있으신가요?{' '}
               <button
                 type="button"
                 onClick={() => setActiveTab('login')}
-                className="text-primary-600 hover:text-primary-700 font-medium"
+                className="text-amber-600 hover:text-amber-700 font-medium"
               >
                 로그인
               </button>

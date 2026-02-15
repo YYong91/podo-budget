@@ -5,7 +5,9 @@
  * 자동 사라짐, 수동 닫기, 애니메이션 기능을 제공한다.
  */
 
+import type { ReactNode } from 'react'
 import { useEffect } from 'react'
+import { Check, X, AlertTriangle, Info } from 'lucide-react'
 
 export type ToastType = 'success' | 'error' | 'warning' | 'info'
 
@@ -18,38 +20,46 @@ export interface ToastProps {
 }
 
 /**
- * 토스트 타입별 스타일 정의
+ * 토스트 타입별 스타일 및 아이콘 정의
  * @param type - 토스트 타입
- * @returns 배경색, 테두리색, 아이콘을 포함한 스타일 객체
+ * @returns 배경색, 테두리색, 아이콘 컴포넌트를 포함한 스타일 객체
  */
-const getToastStyle = (type: ToastType) => {
+const getToastStyle = (type: ToastType): {
+  bg: string
+  border: string
+  text: string
+  icon: ReactNode
+  iconBg: string
+} => {
+  const iconClassName = 'w-4 h-4'
+
   const styles = {
     success: {
       bg: 'bg-green-50',
       border: 'border-green-200',
       text: 'text-green-800',
-      icon: '✓',
+      icon: <Check className={iconClassName} />,
       iconBg: 'bg-green-100',
     },
     error: {
       bg: 'bg-red-50',
       border: 'border-red-200',
       text: 'text-red-800',
-      icon: '✕',
+      icon: <X className={iconClassName} />,
       iconBg: 'bg-red-100',
     },
     warning: {
       bg: 'bg-yellow-50',
       border: 'border-yellow-200',
       text: 'text-yellow-800',
-      icon: '⚠',
+      icon: <AlertTriangle className={iconClassName} />,
       iconBg: 'bg-yellow-100',
     },
     info: {
       bg: 'bg-blue-50',
       border: 'border-blue-200',
       text: 'text-blue-800',
-      icon: 'ℹ',
+      icon: <Info className={iconClassName} />,
       iconBg: 'bg-blue-100',
     },
   }
@@ -76,7 +86,7 @@ export default function Toast({ id, type, message, duration = 3000, onClose }: T
     <div
       className={`
         ${style.bg} ${style.border} ${style.text}
-        border rounded-lg shadow-lg p-4 mb-3
+        border rounded-xl shadow-lg p-4 mb-3
         flex items-start gap-3
         animate-slideIn
         max-w-md w-full
@@ -85,7 +95,7 @@ export default function Toast({ id, type, message, duration = 3000, onClose }: T
     >
       {/* 아이콘 */}
       <div className={`${style.iconBg} rounded-full w-6 h-6 flex items-center justify-center flex-shrink-0`}>
-        <span className="text-sm font-bold">{style.icon}</span>
+        {style.icon}
       </div>
 
       {/* 메시지 */}

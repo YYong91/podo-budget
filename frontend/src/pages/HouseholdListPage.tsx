@@ -7,6 +7,7 @@
 import type { } from 'react'
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { Users, Calendar } from 'lucide-react'
 import { useHouseholdStore } from '../stores/useHouseholdStore'
 import { useToast } from '../hooks/useToast'
 import CreateHouseholdModal from '../components/CreateHouseholdModal'
@@ -43,9 +44,9 @@ function getRoleBadgeColor(role: string): string {
     case 'admin':
       return 'bg-blue-50 text-blue-700 border-blue-200'
     case 'member':
-      return 'bg-gray-50 text-gray-700 border-gray-200'
+      return 'bg-stone-50 text-stone-700 border-stone-200'
     default:
-      return 'bg-gray-50 text-gray-700 border-gray-200'
+      return 'bg-stone-50 text-stone-700 border-stone-200'
   }
 }
 
@@ -113,7 +114,7 @@ export default function HouseholdListPage() {
   if (isLoading && households.length === 0) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600" />
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-600" />
       </div>
     )
   }
@@ -124,8 +125,8 @@ export default function HouseholdListPage() {
   if (error && households.length === 0) {
     return (
       <div className="space-y-6">
-        <h1 className="text-2xl font-bold text-gray-900">공유 가계부</h1>
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+        <h1 className="text-2xl font-bold text-stone-900">공유 가계부</h1>
+        <div className="bg-white rounded-2xl shadow-sm border border-stone-200">
           <ErrorState onRetry={fetchHouseholds} />
         </div>
       </div>
@@ -137,14 +138,14 @@ export default function HouseholdListPage() {
       {/* 헤더 */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">공유 가계부</h1>
-          <p className="text-sm text-gray-500 mt-1">
+          <h1 className="text-2xl font-bold text-stone-900">공유 가계부</h1>
+          <p className="text-sm text-stone-500 mt-1">
             가족이나 친구들과 함께 지출을 관리하세요
           </p>
         </div>
         <button
           onClick={() => setShowCreateModal(true)}
-          className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors"
+          className="px-4 py-2 text-sm font-medium text-white bg-amber-600 rounded-lg hover:bg-amber-700 transition-colors"
         >
           + 가구 만들기
         </button>
@@ -153,7 +154,6 @@ export default function HouseholdListPage() {
       {/* 가구 목록 */}
       {households.length === 0 ? (
         <EmptyState
-          icon="🏠"
           title="아직 속한 가구가 없습니다"
           description="새로운 가구를 만들거나 다른 사람의 초대를 받아보세요"
           action={{
@@ -171,11 +171,11 @@ export default function HouseholdListPage() {
             <div
               key={household.id}
               onClick={() => handleCardClick(household.id)}
-              className="bg-white rounded-xl shadow-sm border border-gray-200 p-5 hover:shadow-md hover:border-primary-300 transition-all cursor-pointer"
+              className="bg-white rounded-2xl shadow-sm border border-stone-200 p-5 hover:shadow-md hover:border-amber-300 transition-all cursor-pointer"
             >
               {/* 가구 이름 및 역할 */}
               <div className="flex items-start justify-between mb-3">
-                <h3 className="text-lg font-semibold text-gray-900">
+                <h3 className="text-lg font-semibold text-stone-900">
                   {household.name}
                 </h3>
                 <span
@@ -189,19 +189,19 @@ export default function HouseholdListPage() {
 
               {/* 설명 */}
               {household.description && (
-                <p className="text-sm text-gray-600 mb-4 line-clamp-2">
+                <p className="text-sm text-stone-600 mb-4 line-clamp-2">
                   {household.description}
                 </p>
               )}
 
               {/* 정보 */}
-              <div className="flex items-center justify-between text-xs text-gray-500 pt-3 border-t border-gray-100">
+              <div className="flex items-center justify-between text-xs text-stone-500 pt-3 border-t border-stone-100">
                 <div className="flex items-center gap-1">
-                  <span>👥</span>
+                  <Users className="w-3.5 h-3.5" />
                   <span>{household.member_count}명</span>
                 </div>
                 <div className="flex items-center gap-1">
-                  <span>📅</span>
+                  <Calendar className="w-3.5 h-3.5" />
                   <span>{formatDate(household.created_at)}</span>
                 </div>
               </div>

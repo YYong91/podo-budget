@@ -8,6 +8,7 @@
 
 import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
+import { ArrowLeft } from 'lucide-react'
 import { useToast } from '../hooks/useToast'
 import { expenseApi } from '../api/expenses'
 import { categoryApi } from '../api/categories'
@@ -87,8 +88,8 @@ export default function ExpenseForm() {
       } else {
         addToast('info', res.data.message || '지출 정보를 인식하지 못했습니다')
       }
-    } catch (error: any) {
-      const errorMsg = error.response?.data?.detail || '파싱에 실패했습니다'
+    } catch (error: unknown) {
+      const errorMsg = (error as { response?: { data?: { detail?: string } } }).response?.data?.detail || '파싱에 실패했습니다'
       addToast('error', errorMsg)
     } finally {
       setLoading(false)
@@ -119,8 +120,8 @@ export default function ExpenseForm() {
       setPreviewItems(null)
       setNaturalInput('')
       setTimeout(() => navigate('/expenses'), 500)
-    } catch (error: any) {
-      const errorMsg = error.response?.data?.detail || '저장에 실패했습니다'
+    } catch (error: unknown) {
+      const errorMsg = (error as { response?: { data?: { detail?: string } } }).response?.data?.detail || '저장에 실패했습니다'
       addToast('error', errorMsg)
     } finally {
       setLoading(false)
@@ -184,8 +185,8 @@ export default function ExpenseForm() {
       })
       addToast('success', '지출이 저장되었습니다')
       setTimeout(() => navigate('/expenses'), 500)
-    } catch (error: any) {
-      const errorMsg = error.response?.data?.detail || '지출 저장에 실패했습니다'
+    } catch (error: unknown) {
+      const errorMsg = (error as { response?: { data?: { detail?: string } } }).response?.data?.detail || '지출 저장에 실패했습니다'
       addToast('error', errorMsg)
     } finally {
       setLoading(false)
@@ -198,46 +199,46 @@ export default function ExpenseForm() {
       <div className="flex items-center gap-3">
         <Link
           to="/expenses"
-          className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+          className="p-2 rounded-lg hover:bg-stone-100 transition-colors"
         >
-          <span className="text-xl">←</span>
+          <ArrowLeft className="w-5 h-5 text-stone-600" />
         </Link>
-        <h1 className="text-2xl font-bold text-gray-900">지출 입력</h1>
+        <h1 className="text-xl font-semibold text-stone-800">지출 입력</h1>
       </div>
 
       {/* 모드 전환 탭 */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-2 flex gap-2">
+      <div className="bg-white rounded-xl shadow-sm border border-stone-200/60 p-2 flex gap-2">
         <button
           onClick={() => { setMode('natural'); setPreviewItems(null) }}
           className={`
-            flex-1 px-4 py-2.5 text-sm font-medium rounded-lg transition-all
+            flex-1 px-4 py-3 text-sm font-medium rounded-lg transition-all
             ${mode === 'natural'
-              ? 'bg-primary-600 text-white shadow-sm'
-              : 'text-gray-600 hover:bg-gray-50'
+              ? 'bg-amber-600 text-white shadow-sm shadow-amber-200'
+              : 'text-stone-600 hover:bg-stone-50'
             }
           `}
         >
-          💬 자연어 입력
+          자연어 입력
         </button>
         <button
           onClick={() => { setMode('form'); setPreviewItems(null) }}
           className={`
-            flex-1 px-4 py-2.5 text-sm font-medium rounded-lg transition-all
+            flex-1 px-4 py-3 text-sm font-medium rounded-lg transition-all
             ${mode === 'form'
-              ? 'bg-primary-600 text-white shadow-sm'
-              : 'text-gray-600 hover:bg-gray-50'
+              ? 'bg-amber-600 text-white shadow-sm shadow-amber-200'
+              : 'text-stone-600 hover:bg-stone-50'
             }
           `}
         >
-          📝 직접 입력
+          직접 입력
         </button>
       </div>
 
       {/* 자연어 입력 모드 */}
       {mode === 'natural' && !previewItems && (
-        <form onSubmit={handlePreview} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 space-y-4">
+        <form onSubmit={handlePreview} className="bg-white rounded-2xl shadow-sm border border-stone-200/60 p-6 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-stone-700 mb-2">
               자연어로 지출 입력하기
             </label>
             <textarea
@@ -245,18 +246,18 @@ export default function ExpenseForm() {
               onChange={(e) => setNaturalInput(e.target.value)}
               placeholder="예: 오늘 점심에 김치찌개 8000원 먹었어&#10;어제 스타벅스에서 아메리카노 4500원"
               rows={5}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
+              className="w-full px-4 py-3 bg-amber-50/50 border border-stone-300 rounded-xl focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500 resize-none"
               disabled={loading}
             />
-            <p className="mt-2 text-xs text-gray-500">
-              💡 날짜, 내용, 금액을 자연스럽게 입력하면 AI가 자동으로 분석합니다. 결과를 확인한 뒤 저장됩니다.
+            <p className="mt-2 text-xs text-stone-400">
+              날짜, 내용, 금액을 자연스럽게 입력하면 AI가 자동으로 분석합니다. 결과를 확인한 뒤 저장됩니다.
             </p>
           </div>
 
           <button
             type="submit"
             disabled={loading || !naturalInput.trim()}
-            className="w-full px-4 py-3 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="w-full px-4 py-3 text-sm font-medium text-white bg-amber-600 rounded-xl hover:bg-amber-700 shadow-sm shadow-amber-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
           >
             {loading ? '분석 중...' : '분석하기'}
           </button>
@@ -266,20 +267,20 @@ export default function ExpenseForm() {
       {/* 파싱 결과 프리뷰 카드 */}
       {mode === 'natural' && previewItems && (
         <div className="space-y-4">
-          <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-            <p className="text-sm text-blue-800 font-medium">
+          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4">
+            <p className="text-sm text-amber-800 font-medium">
               {previewItems.length}건의 지출을 인식했습니다. 내용을 확인하고 수정한 뒤 저장하세요.
             </p>
           </div>
 
           {previewItems.map((item, index) => (
-            <div key={index} className="bg-white rounded-xl shadow-sm border border-gray-200 p-5 space-y-4">
+            <div key={index} className="bg-white rounded-2xl shadow-sm border border-stone-200/60 border-l-4 border-l-amber-400 p-5 space-y-4">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-500">지출 #{index + 1}</span>
+                <span className="text-sm font-medium text-stone-500">지출 #{index + 1}</span>
                 {previewItems.length > 1 && (
                   <button
                     onClick={() => removePreviewItem(index)}
-                    className="text-sm text-red-500 hover:text-red-700 transition-colors"
+                    className="text-sm text-rose-500 hover:text-rose-700 transition-colors"
                   >
                     삭제
                   </button>
@@ -289,14 +290,14 @@ export default function ExpenseForm() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {/* 금액 */}
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1">금액</label>
+                  <label className="block text-xs text-stone-500 mb-1">금액</label>
                   <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">₩</span>
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-500 text-sm">₩</span>
                     <input
                       type="number"
                       value={item.amount}
                       onChange={(e) => updatePreviewItem(index, 'amount', Number(e.target.value))}
-                      className="w-full pl-7 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      className="w-full pl-7 pr-3 py-2 border border-stone-300 rounded-xl text-sm focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500"
                       min="1"
                     />
                   </div>
@@ -304,33 +305,33 @@ export default function ExpenseForm() {
 
                 {/* 날짜 */}
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1">날짜</label>
+                  <label className="block text-xs text-stone-500 mb-1">날짜</label>
                   <input
                     type="date"
                     value={item.date.slice(0, 10)}
                     onChange={(e) => updatePreviewItem(index, 'date', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-stone-300 rounded-xl text-sm focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500"
                   />
                 </div>
 
                 {/* 설명 */}
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1">설명</label>
+                  <label className="block text-xs text-stone-500 mb-1">설명</label>
                   <input
                     type="text"
                     value={item.description}
                     onChange={(e) => updatePreviewItem(index, 'description', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-stone-300 rounded-xl text-sm focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500"
                   />
                 </div>
 
                 {/* 카테고리 */}
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1">카테고리</label>
+                  <label className="block text-xs text-stone-500 mb-1">카테고리</label>
                   <select
                     value={item.category_id ?? ''}
                     onChange={(e) => updatePreviewItem(index, 'category_id', e.target.value ? Number(e.target.value) : null)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-stone-300 rounded-xl text-sm focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500"
                   >
                     <option value="">미분류 ({item.category})</option>
                     {categories.map((cat) => (
@@ -346,7 +347,7 @@ export default function ExpenseForm() {
           <div className="flex gap-3">
             <button
               onClick={() => { setPreviewItems(null) }}
-              className="flex-1 px-4 py-3 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+              className="flex-1 px-4 py-3 text-sm font-medium text-stone-700 bg-stone-100 rounded-xl hover:bg-stone-200 transition-colors"
               disabled={loading}
             >
               다시 입력
@@ -354,7 +355,7 @@ export default function ExpenseForm() {
             <button
               onClick={handleConfirmSave}
               disabled={loading}
-              className="flex-1 px-4 py-3 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="flex-1 px-4 py-3 text-sm font-medium text-white bg-amber-600 rounded-xl hover:bg-amber-700 shadow-sm shadow-amber-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
             >
               {loading ? '저장 중...' : `${previewItems.length}건 저장하기`}
             </button>
@@ -364,20 +365,20 @@ export default function ExpenseForm() {
 
       {/* 폼 입력 모드 */}
       {mode === 'form' && (
-        <form onSubmit={handleFormSubmit} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 space-y-5">
+        <form onSubmit={handleFormSubmit} className="bg-white rounded-2xl shadow-sm border border-stone-200/60 p-6 space-y-5">
           {/* 금액 (필수) */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              금액 <span className="text-red-500">*</span>
+            <label className="block text-sm font-medium text-stone-700 mb-2">
+              금액 <span className="text-rose-500">*</span>
             </label>
             <div className="relative">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500">₩</span>
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-500">₩</span>
               <input
                 type="number"
                 value={formData.amount}
                 onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
                 placeholder="10000"
-                className="w-full pl-8 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                className="w-full pl-8 pr-4 py-3 border border-stone-300 rounded-xl focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500"
                 disabled={loading}
                 min="1"
                 step="100"
@@ -387,28 +388,28 @@ export default function ExpenseForm() {
 
           {/* 설명 (필수) */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              설명 <span className="text-red-500">*</span>
+            <label className="block text-sm font-medium text-stone-700 mb-2">
+              설명 <span className="text-rose-500">*</span>
             </label>
             <input
               type="text"
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               placeholder="김치찌개"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              className="w-full px-4 py-3 border border-stone-300 rounded-xl focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500"
               disabled={loading}
             />
           </div>
 
           {/* 카테고리 (선택) */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-stone-700 mb-2">
               카테고리
             </label>
             <select
               value={formData.category_id}
               onChange={(e) => setFormData({ ...formData, category_id: e.target.value })}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              className="w-full px-4 py-3 border border-stone-300 rounded-xl focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500"
               disabled={loading}
             >
               <option value="">미분류</option>
@@ -422,14 +423,14 @@ export default function ExpenseForm() {
 
           {/* 날짜 (기본 오늘) */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              날짜 <span className="text-red-500">*</span>
+            <label className="block text-sm font-medium text-stone-700 mb-2">
+              날짜 <span className="text-rose-500">*</span>
             </label>
             <input
               type="date"
               value={formData.date}
               onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              className="w-full px-4 py-3 border border-stone-300 rounded-xl focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500"
               disabled={loading}
             />
           </div>
@@ -439,7 +440,7 @@ export default function ExpenseForm() {
             <button
               type="button"
               onClick={() => navigate('/expenses')}
-              className="flex-1 px-4 py-3 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+              className="flex-1 px-4 py-3 text-sm font-medium text-stone-700 bg-stone-100 rounded-xl hover:bg-stone-200 transition-colors"
               disabled={loading}
             >
               취소
@@ -447,7 +448,7 @@ export default function ExpenseForm() {
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 px-4 py-3 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="flex-1 px-4 py-3 text-sm font-medium text-white bg-amber-600 rounded-xl hover:bg-amber-700 shadow-sm shadow-amber-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
             >
               {loading ? '저장 중...' : '저장하기'}
             </button>

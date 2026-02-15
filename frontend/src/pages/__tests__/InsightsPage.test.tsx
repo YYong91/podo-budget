@@ -284,8 +284,8 @@ describe('InsightsPage', () => {
       await user.click(generateButton)
 
       await waitFor(() => {
-        // 진행 바는 bg-primary-600 클래스를 가진 div로 렌더링됨
-        const progressBars = document.querySelectorAll('.bg-primary-600.h-2')
+        // 진행 바는 bg-amber-600 클래스를 가진 div로 렌더링됨
+        const progressBars = document.querySelectorAll('.bg-amber-600.h-2')
         expect(progressBars.length).toBeGreaterThan(0)
       })
     })

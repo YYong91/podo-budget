@@ -1,6 +1,6 @@
 # HomeNRich 구현 현황 (Implementation Status)
 
-**최종 업데이트**: 2026-02-14
+**최종 업데이트**: 2026-02-15
 **기준 문서**: `PRODUCT.md`, `ROADMAP.md`
 
 기능별 구현 완료도를 추적합니다. 기능 완료/변경 시 이 문서를 업데이트합니다.
@@ -12,9 +12,9 @@
 | Phase | 진행률 | 상태 |
 |-------|--------|------|
 | Phase 1 (Core MVP) | **100%** | 완료 |
-| Phase 2 (Household) | **95%** | 이메일 발송 제외 완료 |
+| Phase 2 (Household) | **100%** | 완료 (이메일 발송 구현 완료) |
 | Phase 3 (Bot) | **95%** | 보안/타임아웃/삭제확인 보강 완료 |
-| Phase 4 (배포) | **80%** | Sentry + CI/CD + Fly.io 설정 완료, 결제 활성화 후 배포 |
+| Phase 4 (배포) | **85%** | QA 완료, 결제 활성화 후 배포 |
 
 ---
 
@@ -27,7 +27,7 @@
 | 회원가입 | 완료 | api/auth.py | 있음 |
 | 로그인 | 완료 | api/auth.py | 있음 |
 | JWT 검증 | 완료 | core/auth.py | 있음 |
-| 비밀번호 재설정 | 미구현 | - | - |
+| 비밀번호 재설정 | 완료 | core/auth.py, api/auth.py | 있음 |
 
 ### 지출 (Expense)
 
@@ -65,7 +65,7 @@
 | 멤버 관리 | 완료 | api/households.py | 있음 | owner/member/viewer 역할 |
 | 초대 생성/수락/거절 | 완료 | api/invitations.py | 있음 | - |
 | Expense 연결 | 완료 | api/expenses.py, api/chat.py | 있음 | 생성/조회 시 household_id 자동 설정 |
-| 이메일 발송 | 미구현 | - | - | SendGrid 연동 필요 |
+| 이메일 발송 | 완료 | services/email_service.py | 있음 (Mock) | Resend API |
 | Expense 권한 검증 | 완료 | api/dependencies.py | 있음 | get_household_member()로 멤버 검증 |
 
 ### 봇 통합
@@ -88,6 +88,7 @@
 | SQLAlchemy 모델 | 완료 | User, Expense, Category, Budget, Household, HouseholdMember, HouseholdInvitation |
 | Alembic 마이그레이션 | 완료 | 초기 마이그레이션 ef6a56f45278 |
 | Alembic 마이그레이션 #2 | 완료 | 인덱스 + FK CASCADE 정비 (a1b2c3d4e5f6) |
+| Alembic 마이그레이션 #3 | 완료 | Float → Numeric(12,2) for monetary fields |
 | 인덱스 | 완료 | user_id, household_id, date, category_id + 복합 인덱스 |
 | FK CASCADE | 완료 | expenses/categories/budgets → households (SET NULL) |
 
@@ -102,6 +103,8 @@
 | 회원가입 페이지 | 완료 | 있음 |
 | 로그인 페이지 | 완료 | 있음 |
 | JWT 자동 로그인 | 완료 | 있음 |
+| 비밀번호 찾기 페이지 | 완료 | 있음 |
+| 비밀번호 재설정 페이지 | 완료 | 있음 |
 
 ### 대시보드
 
@@ -110,6 +113,7 @@
 | 지출 요약 (이번 달) | 완료 | 있음 |
 | 최근 지출 목록 | 완료 | 있음 |
 | 예산 진행률 | 완료 | 있음 |
+| 통합 뷰 (공유+개인) | 완료 | 있음 |
 
 ### 지출 관리
 
@@ -126,7 +130,7 @@
 | 가구 목록/생성 | 완료 | 있음 | - |
 | 멤버 초대 | 완료 | 있음 | - |
 | Household 전환 UI | 완료 | - | 사이드바 드롭다운 |
-| 초대 승인 페이지 | 미구현 | - | /invite/{token} |
+| 초대 승인 페이지 | 완료 | 있음 | /invitations/accept?token= |
 | 멤버별 필터링 | 완료 | - | 드롭다운 + 작성자 열 |
 
 ### 기타
@@ -156,7 +160,7 @@
 
 | 영역 | 테스트 수 | 커버리지 |
 |------|-----------|----------|
-| 백엔드 (pytest) | 254개 (5 skip) | 미측정 |
+| 백엔드 (pytest) | 299개 (5 skip) | 측정 완료 (핵심 모듈 80%+) |
 | 프론트엔드 (Vitest) | 157개 (all pass) | 미측정 |
 | E2E | 0개 | - |
 
@@ -174,7 +178,7 @@
 - ~~InsightsPage XSS 취약점~~ (2026-02-14 해결: dangerouslySetInnerHTML 제거)
 
 ### P1 (High)
-- 이메일 발송 미구현: 초대 링크를 직접 복사해야 함
+- ~~이메일 발송 미구현~~ (2026-02-15 해결: Resend API 연동 완료)
 - ~~Telegram/Kakao 봇 미완성~~ (2026-02-14 해결: LLM 파싱 + Household 연동 + 카테고리 변경 + Webhook 보안 + 타임아웃)
 - ~~프론트엔드 자연어 입력 UI 없음~~ (2026-02-14 해결: 프리뷰/수정/확인 플로우 구현)
 - ~~datetime.utcnow() deprecated~~ (2026-02-14 해결: datetime.now(UTC) 전면 교체)
@@ -187,11 +191,11 @@
 - ~~Nginx 보안 헤더 누락~~ (2026-02-14 해결: HSTS, CSP, Referrer-Policy 추가)
 
 ### P2 (Medium)
-- 테스트 커버리지 미측정
+- ~~테스트 커버리지 미측정~~ (2026-02-15 해결: 측정 완료, 핵심 모듈 80%+)
 - ~~LLM API 실패 시 에러 핸들링 부족~~ (2026-02-14 해결: Kakao 타임아웃, Telegram 에러 로깅)
 - ~~DB 인덱스 부족~~ (2026-02-14 해결: date, category_id, 복합 인덱스 추가)
-- 대시보드 통합 뷰 미구현 (PRODUCT.md D3: 공유 우선 + 개인 접기)
-- Float → Numeric 타입 변경 (대규모 리팩토링, 현재 운영 영향 없음)
+- ~~대시보드 통합 뷰 미구현~~ (2026-02-15 해결: 공유 우선 + 개인 접기 구현)
+- ~~Float → Numeric 타입 변경~~ (2026-02-15 해결: Numeric(12,2) 마이그레이션 완료)
 
 ---
 

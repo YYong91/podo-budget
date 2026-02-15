@@ -88,8 +88,8 @@ export default function InviteMemberModal({
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
-        <h2 className="text-xl font-bold text-gray-900 mb-4">
+      <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6">
+        <h2 className="text-xl font-bold text-stone-900 mb-4">
           멤버 초대
         </h2>
 
@@ -98,16 +98,16 @@ export default function InviteMemberModal({
           <div>
             <label
               htmlFor="email"
-              className="block text-sm font-medium text-gray-700 mb-1"
+              className="block text-sm font-medium text-stone-700 mb-1"
             >
-              이메일 <span className="text-red-500">*</span>
+              이메일 <span className="text-rose-500">*</span>
             </label>
             <input
               id="email"
               type="email"
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+              className="w-full px-3 py-2 border border-stone-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500"
               placeholder="example@email.com"
               disabled={isLoading}
               required
@@ -118,7 +118,7 @@ export default function InviteMemberModal({
           <div>
             <label
               htmlFor="role"
-              className="block text-sm font-medium text-gray-700 mb-1"
+              className="block text-sm font-medium text-stone-700 mb-1"
             >
               역할
             </label>
@@ -131,21 +131,21 @@ export default function InviteMemberModal({
                   role: e.target.value as 'member' | 'admin',
                 })
               }
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+              className="w-full px-3 py-2 border border-stone-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500"
               disabled={isLoading}
             >
               <option value="member">멤버</option>
               <option value="admin">관리자</option>
             </select>
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs text-stone-500 mt-1">
               관리자는 멤버 초대 및 가구 설정을 수정할 수 있습니다
             </p>
           </div>
 
           {/* 에러 메시지 */}
           {error && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-sm text-red-600">{error}</p>
+            <div className="p-3 bg-rose-50 border border-rose-200 rounded-lg">
+              <p className="text-sm text-rose-600">{error}</p>
             </div>
           )}
 
@@ -155,14 +155,14 @@ export default function InviteMemberModal({
               type="button"
               onClick={handleClose}
               disabled={isLoading}
-              className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 px-4 py-2 text-sm font-medium text-stone-700 bg-white border border-stone-300 rounded-lg hover:bg-stone-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               취소
             </button>
             <button
               type="submit"
               disabled={isLoading}
-              className="flex-1 px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 px-4 py-2 text-sm font-medium text-white bg-amber-600 rounded-lg hover:bg-amber-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? '초대 중...' : '초대'}
             </button>

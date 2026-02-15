@@ -255,11 +255,10 @@ class GoogleProvider(LLMProvider):
         self.api_key = settings.GOOGLE_API_KEY
 
     async def parse_expense(self, user_input: str) -> dict[str, Any] | list[dict[str, Any]]:
-        # TODO: Google Gemini 구현
-        return {"error": "Google 프로바이더는 아직 구현되지 않았습니다"}
+        raise NotImplementedError("Google Gemini 프로바이더는 아직 구현되지 않았습니다")
 
     async def generate_insights(self, expenses_data: dict[str, Any]) -> str:
-        return "Google 프로바이더는 아직 구현되지 않았습니다"
+        raise NotImplementedError("Google Gemini 프로바이더는 아직 구현되지 않았습니다")
 
 
 class LocalLLMProvider(LLMProvider):
@@ -267,11 +266,10 @@ class LocalLLMProvider(LLMProvider):
         self.model = model or DEFAULT_MODELS["local"]
 
     async def parse_expense(self, user_input: str) -> dict[str, Any] | list[dict[str, Any]]:
-        # TODO: 로컬 LLM 구현
-        return {"error": "로컬 LLM 프로바이더는 아직 구현되지 않았습니다"}
+        raise NotImplementedError("로컬 LLM 프로바이더는 아직 구현되지 않았습니다")
 
     async def generate_insights(self, expenses_data: dict[str, Any]) -> str:
-        return "로컬 LLM 프로바이더는 아직 구현되지 않았습니다"
+        raise NotImplementedError("로컬 LLM 프로바이더는 아직 구현되지 않았습니다")
 
 
 def _resolve_provider_and_model(feature: LLMFeature | None = None) -> tuple[str, str]:

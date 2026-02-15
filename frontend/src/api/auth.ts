@@ -37,11 +37,28 @@ export const getCurrentUser = () =>
 export const deleteAccount = () =>
   apiClient.delete('/auth/me')
 
+/**
+ * 비밀번호 찾기 API
+ * @param email - 등록된 이메일 주소
+ */
+export const forgotPassword = (email: string) =>
+  apiClient.post('/auth/forgot-password', { email })
+
+/**
+ * 비밀번호 재설정 API
+ * @param token - 재설정 토큰
+ * @param new_password - 새 비밀번호
+ */
+export const resetPassword = (token: string, new_password: string) =>
+  apiClient.post('/auth/reset-password', { token, new_password })
+
 const authApi = {
   register,
   login,
   getCurrentUser,
   deleteAccount,
+  forgotPassword,
+  resetPassword,
 }
 
 export default authApi

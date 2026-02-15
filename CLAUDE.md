@@ -71,13 +71,13 @@ backend/app/
 frontend/src/
 ├── api/           # Axios API clients (expenses, categories, insights)
 ├── components/    # Reusable components (Layout with sidebar navigation)
-├── pages/         # Page components (Dashboard, ExpenseList, ExpenseDetail, CategoryManager, InsightsPage)
+├── pages/         # Page components (Dashboard, ExpenseList, ExpenseDetail, CategoryManager, InsightsPage, ForgotPasswordPage, ResetPasswordPage)
 ├── hooks/         # Custom hooks (empty — not yet implemented)
 ├── types/         # TypeScript type definitions (Expense, Category, MonthlyStats, etc.)
 ├── assets/        # Static assets
 ├── App.tsx        # React Router routes
 ├── main.tsx       # Entry point
-└── index.css      # Tailwind CSS v4 with custom Indigo theme
+└── index.css      # Tailwind CSS v4 with custom Amber/Stone theme
 ```
 
 ### Frontend key patterns
@@ -91,14 +91,14 @@ frontend/src/
 
 ### Backend key patterns
 - **Async throughout**: asyncpg driver, AsyncSession, async route handlers
-- **LLM provider abstraction**: `services/llm_service.py` uses Strategy pattern — abstract `LLMProvider` base class with `OpenAIProvider`, `AnthropicProvider`, `LocalLLMProvider`. Selected at runtime via `LLM_PROVIDER` env var
+- **LLM provider abstraction**: `services/llm_service.py` uses Strategy pattern — abstract `LLMProvider` base class with `OpenAIProvider`, `AnthropicProvider`, `GoogleProvider`, `LocalLLMProvider` (미구현은 NotImplementedError). Selected at runtime via `LLM_PROVIDER` env var
 - **Dependency injection**: FastAPI `Depends()` for database sessions (`get_db` in `core/database.py`)
-- **Config via Pydantic BaseSettings**: `core/config.py` loads from `.env` with typed defaults
+- **Config via Pydantic BaseSettings with `model_config = SettingsConfigDict()` (v2 style)**: `core/config.py` loads from `.env` with typed defaults
 
 ### Database
 - PostgreSQL 16 with asyncpg driver
 - Seven models: User, Expense, Category, Budget, Household, HouseholdMember, HouseholdInvitation
-- Alembic 초기화 완료 (초기 마이그레이션: ef6a56f45278)
+- Alembic: 3 migrations (초기 스키마, 인덱스/FK, Float→Numeric)
 
 ### Infrastructure
 - Docker Compose: `db` (postgres:16-alpine with healthcheck) + `backend` (python:3.12-slim)
@@ -114,6 +114,8 @@ Key variables in `backend/.env` (see `.env.example`):
 - `DEBUG`, `SECRET_KEY`
 - `SENTRY_DSN` — Sentry DSN (빈 문자열이면 비활성화)
 - `SENTRY_ENVIRONMENT` — Sentry 환경 (`development` | `production`)
+- `RESEND_API_KEY` — Resend 이메일 API 키 (빈 문자열이면 비활성화)
+- `RESEND_FROM_EMAIL` — 발신자 이메일 주소
 
 Frontend: `frontend/.env.development`:
 - `VITE_API_URL` — API base URL (default: `/api`, proxied by Vite)
@@ -133,9 +135,9 @@ Frontend: `frontend/.env.development`:
 - `docs/operations/` — 운영/배포 가이드
 - `docs/archive/` — 폐기된 문서 (참고용)
 
-## Current State (2026-02-14)
+## Current State (2026-02-15)
 
-- **Backend**: 인증, 지출 CRUD, 카테고리, 예산, 인사이트, Household/초대 API 모두 구현됨. LLM 파싱(Anthropic/OpenAI) + 프리뷰 모드. 자연어 컨텍스트 탐지. 멤버별 필터링. Telegram/Kakao 봇. QA 2차 완료 (IDOR, race condition, XSS, datetime, validation 등 16개 버그 수정). 테스트 254개.
-- **Frontend**: React 19 SPA. 자연어 입력 → 프리뷰 → 수정 → 확인 플로우. 가구 전환 드롭다운. 멤버별 필터링. XSS 수정, 보안 헤더 추가. 테스트 157개 (전체 통과).
+- **Backend**: 인증(비밀번호 재설정 포함), 지출 CRUD, 카테고리, 예산, 인사이트, Household/초대 API 모두 구현됨. LLM 파싱(Anthropic/OpenAI) + 프리뷰 모드. 자연어 컨텍스트 탐지. 멤버별 필터링. Telegram/Kakao 봇. Resend 이메일 발송. 금액 필드 Numeric(12,2). QA 2차 완료 + 전체 정비 QA 완료. 테스트 299개.
+- **Frontend**: React 19 SPA. Amber/Stone 디자인 시스템. 자연어 입력 → 프리뷰 → 수정 → 확인 플로우. 비밀번호 재설정 페이지. 대시보드 통합 뷰 (공유 우선 + 개인 접기). 가구 전환 드롭다운. 멤버별 필터링. 테스트 157개 (전체 통과).
 - **Infrastructure**: Docker Compose로 PostgreSQL + Backend + Frontend 실행 가능.
-- **Phase 1**: 100%. **Phase 2**: 95% (이메일 발송 제외). **Phase 3**: 95% (봇 배포 제외). **Phase 4**: 80% (Sentry + CI/CD + Fly.io 설정 완료, 결제 활성화 후 배포).
+- **Phase 1**: 100%. **Phase 2**: 100%. **Phase 3**: 95% (봇 배포 제외). **Phase 4**: 85% (Sentry + CI/CD + Fly.io 설정 완료, 결제 활성화 후 배포).

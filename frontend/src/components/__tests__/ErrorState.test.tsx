@@ -24,8 +24,9 @@ describe('ErrorState', () => {
     })
 
     it('에러 아이콘을 표시한다', () => {
-      render(<ErrorState />)
-      expect(screen.getByText('⚠️')).toBeInTheDocument()
+      const { container } = render(<ErrorState />)
+      // Lucide 아이콘은 SVG로 렌더링됨
+      expect(container.querySelector('svg')).toBeInTheDocument()
     })
 
     it('커스텀 제목을 표시한다', () => {
@@ -83,7 +84,7 @@ describe('ErrorState', () => {
       render(<ErrorState onRetry={onRetry} />)
 
       const button = screen.getByRole('button', { name: '다시 시도' })
-      expect(button).toHaveClass('bg-primary-600', 'text-white')
+      expect(button).toHaveClass('bg-amber-600', 'text-white')
     })
   })
 })

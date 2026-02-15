@@ -62,7 +62,7 @@ describe('Layout', () => {
 
     it('모바일 메뉴 버튼을 표시한다', () => {
       renderLayout()
-      const menuButton = screen.getByRole('button', { name: /☰/i })
+      const menuButton = screen.getByRole('button', { name: /메뉴 열기/i })
       expect(menuButton).toBeInTheDocument()
     })
   })
@@ -79,14 +79,14 @@ describe('Layout', () => {
     it('현재 경로에 해당하는 네비게이션 항목에 active 스타일을 적용한다', () => {
       renderLayout('/')
       const dashboardLink = screen.getByRole('link', { name: /대시보드/i })
-      expect(dashboardLink).toHaveClass('bg-primary-50', 'text-primary-700')
+      expect(dashboardLink).toHaveClass('bg-amber-50', 'text-amber-800')
     })
 
     it('다른 경로의 네비게이션 항목에는 active 스타일이 없다', () => {
       renderLayout('/')
       const expenseLink = screen.getByRole('link', { name: /지출 목록/i })
-      expect(expenseLink).not.toHaveClass('bg-primary-50')
-      expect(expenseLink).toHaveClass('text-gray-600')
+      expect(expenseLink).not.toHaveClass('bg-amber-50')
+      expect(expenseLink).toHaveClass('text-stone-600')
     })
   })
 
@@ -95,7 +95,7 @@ describe('Layout', () => {
       const user = userEvent.setup()
       renderLayout()
 
-      const menuButton = screen.getByRole('button', { name: /☰/i })
+      const menuButton = screen.getByRole('button', { name: /메뉴 열기/i })
       await user.click(menuButton)
 
       // 오버레이가 나타나는지 확인 (bg-black/30 클래스를 가진 div)
@@ -108,7 +108,7 @@ describe('Layout', () => {
       renderLayout()
 
       // 사이드바 열기
-      const menuButton = screen.getByRole('button', { name: /☰/i })
+      const menuButton = screen.getByRole('button', { name: /메뉴 열기/i })
       await user.click(menuButton)
 
       // 오버레이 클릭
@@ -128,7 +128,7 @@ describe('Layout', () => {
       renderLayout()
 
       // 사이드바 열기
-      const menuButton = screen.getByRole('button', { name: /☰/i })
+      const menuButton = screen.getByRole('button', { name: /메뉴 열기/i })
       await user.click(menuButton)
 
       // 네비게이션 링크 클릭
