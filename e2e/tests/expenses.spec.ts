@@ -12,7 +12,9 @@ async function createExpense(
     headers: { Authorization: `Bearer ${token}` },
     data: {
       ...data,
-      date: new Date().toISOString(),
+      // asyncpg는 TIMESTAMP WITHOUT TIME ZONE에 timezone-aware datetime 거부
+      // Z 제거하여 timezone-naive datetime 문자열로 전송
+      date: new Date().toISOString().replace('Z', ''),
     },
   })
 

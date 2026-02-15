@@ -12,7 +12,8 @@ async function createExpense(
     headers: { Authorization: `Bearer ${token}` },
     data: {
       ...data,
-      date: new Date().toISOString(),
+      // asyncpg는 TIMESTAMP WITHOUT TIME ZONE에 timezone-aware datetime 거부
+      date: new Date().toISOString().replace('Z', ''),
     },
   })
 
