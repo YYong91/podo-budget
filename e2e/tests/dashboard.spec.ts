@@ -44,7 +44,7 @@ test.describe('대시보드', () => {
 
     // 이번 달 총 지출 카드 확인
     await expect(page.getByText(/이번 달 총 지출/)).toBeVisible({ timeout: 10000 })
-    await expect(page.getByText(/25,000|₩25/)).toBeVisible()
+    await expect(page.getByText(/25,000|₩25/).first()).toBeVisible()
   })
 
   test('최근 지출 목록에 항목 표시', async ({ authedPage: page }) => {

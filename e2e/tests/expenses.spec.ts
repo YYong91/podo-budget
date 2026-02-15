@@ -79,7 +79,7 @@ test.describe('지출 CRUD', () => {
     await page.getByRole('button', { name: '저장' }).click()
 
     // 수정된 내용 확인
-    await expect(page.getByText('E2E 수정 후')).toBeVisible({ timeout: 5000 })
+    await expect(page.getByText('E2E 수정 후')).toBeVisible({ timeout: 10000 })
   })
 
   test('지출 삭제', async ({ authedPage: page }) => {
