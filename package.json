@@ -1,0 +1,26 @@
+{
+  "name": "homenrich",
+  "version": "1.0.0",
+  "description": "> 채팅하듯 말하면 알아서 정리되는 AI 가계부 앱",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/YYong91/homenrich.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/YYong91/homenrich/issues"
+  },
+  "homepage": "https://github.com/YYong91/homenrich#readme",
+  "devDependencies": {
+    "@playwright/test": "^1.58.2"
+  }
+}
