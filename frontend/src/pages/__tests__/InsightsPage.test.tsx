@@ -115,6 +115,34 @@ describe('InsightsPage', () => {
     })
   })
 
+  describe('지출/수입 토글', () => {
+    it('기본값은 지출이다', async () => {
+      renderInsightsPage()
+      await waitFor(() => {
+        expect(screen.getByText('총 지출')).toBeInTheDocument()
+      })
+    })
+
+    it('수입 토글을 클릭하면 수입 통계를 표시한다', async () => {
+      const user = userEvent.setup()
+      renderInsightsPage()
+      await waitFor(() => {
+        expect(screen.getByText('총 지출')).toBeInTheDocument()
+      })
+      await user.click(screen.getByRole('button', { name: '수입' }))
+      await waitFor(() => {
+        expect(screen.getByText('총 수입')).toBeInTheDocument()
+      })
+    })
+
+    it('AI 탭에서는 지출/수입 토글이 표시되지 않는다', async () => {
+      const user = userEvent.setup()
+      renderInsightsPage()
+      await user.click(screen.getByText('AI 인사이트'))
+      expect(screen.queryByRole('button', { name: '수입' })).not.toBeInTheDocument()
+    })
+  })
+
   describe('AI 인사이트 탭', () => {
     async function switchToAiTab() {
       const user = userEvent.setup()

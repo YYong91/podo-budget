@@ -8,6 +8,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { TrendingUp, BarChart3, Calendar, CalendarDays, Loader2, Sparkles } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { insightsApi, statsApi } from '../api/insights'
+import { incomeApi } from '../api/income'
 import { useHouseholdStore } from '../stores/useHouseholdStore'
 import EmptyState from '../components/EmptyState'
 import PeriodNavigator from '../components/stats/PeriodNavigator'
@@ -18,6 +19,7 @@ import CategoryBreakdown from '../components/stats/CategoryBreakdown'
 import type { InsightsResponse, StatsResponse, ComparisonResponse } from '../types'
 
 type TabType = 'weekly' | 'monthly' | 'yearly' | 'ai'
+type DataType = 'expense' | 'income'
 
 const TABS: { id: TabType; label: string; icon: React.ReactNode }[] = [
   { id: 'weekly', label: '주간', icon: <Calendar className="w-4 h-4" /> },
@@ -94,22 +96,25 @@ function formatAmount(amount: number): string {
 
 // ── 통계 탭 컴포넌트 ──
 
-function StatsTab({ period, dateStr, householdId }: { period: string; dateStr: string; householdId: number | undefined }) {
+function StatsTab({ period, dateStr, householdId, dataType }: { period: string; dateStr: string; householdId: number | undefined; dataType: DataType }) {
   const [stats, setStats] = useState<StatsResponse | null>(null)
   const [comparison, setComparison] = useState<ComparisonResponse | null>(null)
   const [loading, setLoading] = useState(true)
+  const isIncome = dataType === 'income'
 
   useEffect(() => {
     let cancelled = false
     async function fetchData() {
       setLoading(true)
       try {
-        const statsRes = await statsApi.getStats(period, dateStr, householdId)
+        const statsRes = isIncome
+          ? await incomeApi.getStats(period, dateStr, householdId)
+          : await statsApi.getStats(period, dateStr, householdId)
         if (cancelled) return
         setStats(statsRes.data)
 
-        // 주간은 비교 데이터 없음
-        if (period !== 'weekly') {
+        // 수입은 비교 데이터 없음, 주간도 비교 데이터 없음
+        if (!isIncome && period !== 'weekly') {
           const compRes = await statsApi.getComparison(period, dateStr, 3, householdId)
           if (cancelled) return
           setComparison(compRes.data)
@@ -124,18 +129,19 @@ function StatsTab({ period, dateStr, householdId }: { period: string; dateStr: s
     }
     fetchData()
     return () => { cancelled = true }
-  }, [period, dateStr, householdId])
+  }, [period, dateStr, householdId, isIncome])
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="w-8 h-8 animate-spin text-amber-600" />
+        <Loader2 className={`w-8 h-8 animate-spin ${isIncome ? 'text-emerald-600' : 'text-amber-600'}`} />
       </div>
     )
   }
 
+  const emptyLabel = isIncome ? '수입' : '지출'
   if (!stats || stats.total === 0) {
-    return <EmptyState title="이 기간에 기록된 지출이 없습니다" description="다른 기간을 선택해보세요." />
+    return <EmptyState title={`이 기간에 기록된 ${emptyLabel}이 없습니다`} description="다른 기간을 선택해보세요." />
   }
 
   return (
@@ -145,6 +151,8 @@ function StatsTab({ period, dateStr, householdId }: { period: string; dateStr: s
         count={stats.count}
         trend={stats.trend}
         changePercentage={comparison?.change.percentage ?? null}
+        totalLabel={isIncome ? '총 수입' : '총 지출'}
+        accentColor={isIncome ? 'emerald' : 'amber'}
       />
       <TrendChart data={stats.trend} />
       {comparison && comparison.trend.length > 0 && (
@@ -162,6 +170,7 @@ function StatsTab({ period, dateStr, householdId }: { period: string; dateStr: s
 
 export default function InsightsPage() {
   const [activeTab, setActiveTab] = useState<TabType>('monthly')
+  const [dataType, setDataType] = useState<DataType>('expense')
   const [dateStr, setDateStr] = useState(toDateStr(new Date()))
   const activeHouseholdId = useHouseholdStore((s) => s.activeHouseholdId)
 
@@ -243,9 +252,33 @@ export default function InsightsPage() {
         ))}
       </div>
 
-      {/* 기간 네비게이션 (AI 탭 제외) */}
+      {/* 기간 네비게이션 + 지출/수입 토글 (AI 탭 제외) */}
       {activeTab !== 'ai' && (
-        <PeriodNavigator label={getNavLabel()} onPrev={handlePrev} onNext={handleNext} />
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <PeriodNavigator label={getNavLabel()} onPrev={handlePrev} onNext={handleNext} />
+          <div className="flex gap-1 bg-stone-100 p-1 rounded-lg">
+            <button
+              onClick={() => setDataType('expense')}
+              className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                dataType === 'expense'
+                  ? 'bg-white text-amber-700 shadow-sm'
+                  : 'text-stone-500 hover:text-stone-700'
+              }`}
+            >
+              지출
+            </button>
+            <button
+              onClick={() => setDataType('income')}
+              className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                dataType === 'income'
+                  ? 'bg-white text-emerald-700 shadow-sm'
+                  : 'text-stone-500 hover:text-stone-700'
+              }`}
+            >
+              수입
+            </button>
+          </div>
+        </div>
       )}
 
       {/* 통계 탭 콘텐츠 */}
@@ -254,6 +287,7 @@ export default function InsightsPage() {
           period={activeTab}
           dateStr={dateStr}
           householdId={activeHouseholdId ?? undefined}
+          dataType={dataType}
         />
       )}
 
