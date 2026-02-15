@@ -77,3 +77,6 @@ alembic/versions/*.pyc
 
 # 작업 보드 (로컬 전용)
 TASK.md
+
+# Git worktrees
+.worktrees/
