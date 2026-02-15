@@ -10,6 +10,8 @@ import {
   mockExpenses,
   mockMonthlyStats,
   mockInsights,
+  mockStats,
+  mockComparison,
 } from './fixtures'
 
 const BASE_URL = '/api'
@@ -49,6 +51,20 @@ export const handlers = [
     const paginated = filtered.slice(skip, skip + limit)
 
     return HttpResponse.json(paginated)
+  }),
+
+  /**
+   * GET /api/expenses/stats/comparison - 기간 비교
+   */
+  http.get(`${BASE_URL}/expenses/stats/comparison`, () => {
+    return HttpResponse.json(mockComparison)
+  }),
+
+  /**
+   * GET /api/expenses/stats - 기간별 통계
+   */
+  http.get(`${BASE_URL}/expenses/stats`, () => {
+    return HttpResponse.json(mockStats)
   }),
 
   /**

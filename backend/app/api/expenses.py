@@ -9,7 +9,8 @@
 - 가구 멤버 전체의 지출을 함께 조회할 수 있음
 """
 
-from datetime import datetime
+from calendar import monthrange
+from datetime import date, datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import func, select
@@ -20,7 +21,19 @@ from app.core.auth import get_current_user
 from app.core.database import get_db
 from app.models.expense import Expense
 from app.models.user import User
-from app.schemas.expense import ExpenseCreate, ExpenseResponse, ExpenseUpdate
+from app.schemas.expense import (
+    CategoryChange,
+    CategoryStats,
+    ChangeInfo,
+    ComparisonResponse,
+    ExpenseCreate,
+    ExpenseResponse,
+    ExpenseUpdate,
+    PeriodTotal,
+    StatsPeriod,
+    StatsResponse,
+    TrendPoint,
+)
 
 router = APIRouter()
 
@@ -93,6 +106,280 @@ async def get_expenses(
     query = query.order_by(Expense.date.desc()).offset(skip).limit(limit)
     result = await db.execute(query)
     return result.scalars().all()
+
+
+# ── 날짜 유틸 ──
+
+
+def _get_week_range(d: date) -> tuple[date, date]:
+    """주어진 날짜가 속한 주의 월요일~일요일 반환"""
+    monday = d - timedelta(days=d.weekday())
+    sunday = monday + timedelta(days=6)
+    return monday, sunday
+
+
+def _get_week_label(d: date) -> str:
+    """주차 라벨 생성 (예: '2월 3주차')"""
+    first_day = d.replace(day=1)
+    week_num = (d.day + first_day.weekday() - 1) // 7 + 1
+    return f"{d.month}월 {week_num}주차"
+
+
+def _get_month_range(d: date) -> tuple[date, date]:
+    """주어진 날짜가 속한 월의 첫날~마지막날 반환"""
+    first = d.replace(day=1)
+    _, last_day = monthrange(d.year, d.month)
+    last = d.replace(day=last_day)
+    return first, last
+
+
+def _get_year_range(d: date) -> tuple[date, date]:
+    """주어진 날짜가 속한 연도의 첫날~마지막날 반환"""
+    return date(d.year, 1, 1), date(d.year, 12, 31)
+
+
+def _build_scope_filter(household_id: int | None, current_user: User):
+    """가구 또는 개인 스코프 필터 생성"""
+    if household_id is not None:
+        return Expense.household_id == household_id
+    return Expense.user_id == current_user.id
+
+
+# ── 통계 API ──
+
+
+@router.get("/stats", response_model=StatsResponse)
+async def get_stats(
+    period: StatsPeriod = Query(..., description="통계 기간: weekly, monthly, yearly"),
+    date: str | None = Query(None, description="기준 날짜 YYYY-MM-DD (기본: 오늘)", alias="date"),
+    household_id: int | None = None,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """기간별 통계 조회 (주간/월간/연간)"""
+    from datetime import date as date_type
+
+    from app.models.category import Category
+
+    # 기준 날짜 파싱
+    ref_date = date_type.fromisoformat(date) if date else date_type.today()
+
+    # 기간 범위 결정
+    if period == StatsPeriod.weekly:
+        start_d, end_d = _get_week_range(ref_date)
+        label = _get_week_label(ref_date)
+    elif period == StatsPeriod.monthly:
+        start_d, end_d = _get_month_range(ref_date)
+        label = f"{ref_date.year}년 {ref_date.month}월"
+    else:  # yearly
+        start_d, end_d = _get_year_range(ref_date)
+        label = f"{ref_date.year}년"
+
+    start_dt = datetime(start_d.year, start_d.month, start_d.day)
+    end_dt = datetime(end_d.year, end_d.month, end_d.day, 23, 59, 59)
+
+    # 스코프 필터
+    if household_id is not None:
+        await get_household_member(household_id, current_user, db)
+    scope_filter = _build_scope_filter(household_id, current_user)
+    base_where = [scope_filter, Expense.date >= start_dt, Expense.date <= end_dt]
+
+    # 총합 + 건수
+    total_result = await db.execute(
+        select(
+            func.coalesce(func.sum(Expense.amount), 0),
+            func.count(Expense.id),
+        ).where(*base_where)
+    )
+    row = total_result.one()
+    total = float(row[0])
+    count = int(row[1])
+
+    # 카테고리별
+    cat_result = await db.execute(
+        select(
+            Category.name,
+            func.sum(Expense.amount).label("amount"),
+            func.count(Expense.id).label("cnt"),
+        )
+        .join(Category, Expense.category_id == Category.id, isouter=True)
+        .where(*base_where)
+        .group_by(Category.name)
+        .order_by(func.sum(Expense.amount).desc())
+    )
+    by_category = []
+    for r in cat_result.all():
+        amt = float(r.amount)
+        by_category.append(
+            CategoryStats(
+                category=r.name or "미분류",
+                amount=amt,
+                count=int(r.cnt),
+                percentage=round(amt / total * 100, 1) if total > 0 else 0,
+            )
+        )
+
+    # 트렌드
+    trend: list[TrendPoint] = []
+    if period == StatsPeriod.yearly:
+        # 월별 12포인트
+        for m in range(1, 13):
+            m_start = datetime(ref_date.year, m, 1)
+            _, m_last = monthrange(ref_date.year, m)
+            m_end = datetime(ref_date.year, m, m_last, 23, 59, 59)
+            r = await db.execute(select(func.coalesce(func.sum(Expense.amount), 0)).where(scope_filter, Expense.date >= m_start, Expense.date <= m_end))
+            trend.append(TrendPoint(label=f"{m}월", amount=float(r.scalar())))
+    else:
+        # 일별
+        day_col = func.date(Expense.date).label("day")
+        daily_result = await db.execute(select(day_col, func.sum(Expense.amount).label("amount")).where(*base_where).group_by(day_col).order_by(day_col))
+        for r in daily_result.all():
+            if r.day is not None:
+                day_str = str(r.day)[:10]
+                trend.append(
+                    TrendPoint(
+                        label=day_str[5:].replace("-", "/"),
+                        amount=float(r.amount),
+                    )
+                )
+
+    return StatsResponse(
+        period=period.value,
+        label=label,
+        start_date=str(start_d),
+        end_date=str(end_d),
+        total=total,
+        count=count,
+        by_category=by_category,
+        trend=trend,
+    )
+
+
+@router.get("/stats/comparison", response_model=ComparisonResponse)
+async def get_stats_comparison(
+    period: str = Query(
+        ...,
+        description="비교 기간: monthly 또는 yearly",
+        pattern=r"^(monthly|yearly)$",
+    ),
+    date: str | None = Query(None, description="기준 날짜 YYYY-MM-DD (기본: 오늘)", alias="date"),
+    months: int = Query(3, ge=2, le=12, description="비교할 개월 수"),
+    household_id: int | None = None,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """기간 비교 (전월 대비 + N개월 트렌드)"""
+    from datetime import date as date_type
+
+    from app.models.category import Category
+
+    ref_date = date_type.fromisoformat(date) if date else date_type.today()
+
+    # 스코프 필터
+    if household_id is not None:
+        await get_household_member(household_id, current_user, db)
+    scope_filter = _build_scope_filter(household_id, current_user)
+
+    async def _month_total(year: int, month: int) -> float:
+        m_start = datetime(year, month, 1)
+        _, m_last = monthrange(year, month)
+        m_end = datetime(year, month, m_last, 23, 59, 59)
+        r = await db.execute(select(func.coalesce(func.sum(Expense.amount), 0)).where(scope_filter, Expense.date >= m_start, Expense.date <= m_end))
+        return float(r.scalar())
+
+    async def _month_by_category(year: int, month: int) -> dict[str, float]:
+        m_start = datetime(year, month, 1)
+        _, m_last = monthrange(year, month)
+        m_end = datetime(year, month, m_last, 23, 59, 59)
+        r = await db.execute(
+            select(Category.name, func.sum(Expense.amount).label("amount"))
+            .join(Category, Expense.category_id == Category.id, isouter=True)
+            .where(scope_filter, Expense.date >= m_start, Expense.date <= m_end)
+            .group_by(Category.name)
+        )
+        return {row.name or "미분류": float(row.amount) for row in r.all()}
+
+    if period == "monthly":
+        cur_y, cur_m = ref_date.year, ref_date.month
+        prev_m = cur_m - 1 if cur_m > 1 else 12
+        prev_y = cur_y if cur_m > 1 else cur_y - 1
+
+        current_total = await _month_total(cur_y, cur_m)
+        previous_total = await _month_total(prev_y, prev_m)
+
+        current_label = f"{cur_y}년 {cur_m}월"
+        previous_label = f"{prev_y}년 {prev_m}월"
+
+        # N개월 트렌드 (현재 월 포함 과거 N개월)
+        trend_data: list[PeriodTotal] = []
+        y, m = cur_y, cur_m
+        # months-1 만큼 뒤로
+        for _ in range(months - 1):
+            m -= 1
+            if m < 1:
+                m = 12
+                y -= 1
+        # 시작점부터 현재까지 순서대로
+        for _ in range(months):
+            t = await _month_total(y, m)
+            trend_data.append(PeriodTotal(label=f"{y}년 {m}월", total=t))
+            m += 1
+            if m > 12:
+                m = 1
+                y += 1
+
+        # 카테고리별 비교
+        cur_cats = await _month_by_category(cur_y, cur_m)
+        prev_cats = await _month_by_category(prev_y, prev_m)
+        all_cats = set(cur_cats.keys()) | set(prev_cats.keys())
+        by_cat_comparison = []
+        for cat in sorted(all_cats):
+            c = cur_cats.get(cat, 0)
+            p = prev_cats.get(cat, 0)
+            change_pct = round((c - p) / p * 100, 1) if p > 0 else None
+            by_cat_comparison.append(
+                CategoryChange(
+                    category=cat,
+                    current=c,
+                    previous=p,
+                    change_amount=round(c - p, 2),
+                    change_percentage=change_pct,
+                )
+            )
+    else:  # yearly
+        cur_y = ref_date.year
+        prev_y = cur_y - 1
+
+        current_total = 0.0
+        previous_total = 0.0
+        for m in range(1, 13):
+            current_total += await _month_total(cur_y, m)
+            previous_total += await _month_total(prev_y, m)
+
+        current_label = f"{cur_y}년"
+        previous_label = f"{prev_y}년"
+
+        trend_data = []
+        for y_offset in range(months - 1, -1, -1):
+            y = cur_y - y_offset
+            y_total = 0.0
+            for m in range(1, 13):
+                y_total += await _month_total(y, m)
+            trend_data.append(PeriodTotal(label=f"{y}년", total=y_total))
+
+        by_cat_comparison = []
+
+    # 변화량 계산
+    change_amount = round(current_total - previous_total, 2)
+    change_pct = round(change_amount / previous_total * 100, 1) if previous_total > 0 else None
+
+    return ComparisonResponse(
+        current=PeriodTotal(label=current_label, total=current_total),
+        previous=PeriodTotal(label=previous_label, total=previous_total),
+        change=ChangeInfo(amount=change_amount, percentage=change_pct),
+        trend=trend_data,
+        by_category_comparison=by_cat_comparison,
+    )
 
 
 @router.get("/stats/monthly")

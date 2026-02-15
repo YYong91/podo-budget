@@ -1,35 +1,52 @@
 /**
  * @file InsightsPage.tsx
- * @description AI 인사이트 페이지
- * 월별 지출 분석 및 Claude API를 통한 AI 인사이트 생성 기능을 제공한다.
+ * @description 인사이트/통계 페이지
+ * 주간/월간/연간 통계 탭 + AI 인사이트 탭
  */
 
-import { useState } from 'react'
-import { TrendingUp, Loader2 } from 'lucide-react'
+import { useEffect, useState, useCallback } from 'react'
+import { TrendingUp, BarChart3, Calendar, CalendarDays, Loader2, Sparkles } from 'lucide-react'
 import toast from 'react-hot-toast'
-import { insightsApi } from '../api/insights'
+import { insightsApi, statsApi } from '../api/insights'
+import { useHouseholdStore } from '../stores/useHouseholdStore'
 import EmptyState from '../components/EmptyState'
-import type { InsightsResponse } from '../types'
+import PeriodNavigator from '../components/stats/PeriodNavigator'
+import StatsSummaryCards from '../components/stats/StatsSummaryCards'
+import TrendChart from '../components/stats/TrendChart'
+import ComparisonChart from '../components/stats/ComparisonChart'
+import CategoryBreakdown from '../components/stats/CategoryBreakdown'
+import type { InsightsResponse, StatsResponse, ComparisonResponse } from '../types'
 
-/**
- * 금액을 한국 원화 형식으로 포맷
- */
-function formatAmount(amount: number): string {
-  return `₩${amount.toLocaleString('ko-KR')}`
+type TabType = 'weekly' | 'monthly' | 'yearly' | 'ai'
+
+const TABS: { id: TabType; label: string; icon: React.ReactNode }[] = [
+  { id: 'weekly', label: '주간', icon: <Calendar className="w-4 h-4" /> },
+  { id: 'monthly', label: '월간', icon: <CalendarDays className="w-4 h-4" /> },
+  { id: 'yearly', label: '연간', icon: <BarChart3 className="w-4 h-4" /> },
+  { id: 'ai', label: 'AI 인사이트', icon: <Sparkles className="w-4 h-4" /> },
+]
+
+// ── 날짜 유틸 ──
+
+function toDateStr(d: Date): string {
+  return d.toISOString().slice(0, 10)
 }
 
-/**
- * 현재 월 (YYYY-MM)
- */
+function shiftDate(dateStr: string, tab: TabType, direction: number): string {
+  const d = new Date(dateStr + 'T00:00:00')
+  if (tab === 'weekly') d.setDate(d.getDate() + direction * 7)
+  else if (tab === 'monthly') d.setMonth(d.getMonth() + direction)
+  else d.setFullYear(d.getFullYear() + direction)
+  return toDateStr(d)
+}
+
 function getCurrentMonth(): string {
   const now = new Date()
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
 }
 
-/**
- * 볼드(**text**) 마크다운을 React 엘리먼트로 안전하게 변환
- * dangerouslySetInnerHTML 없이 XSS 방지
- */
+// ── 마크다운 렌더링 (기존 유지) ──
+
 function renderBoldText(text: string): React.ReactNode[] {
   const parts = text.split(/(\*\*.*?\*\*)/g)
   return parts.map((part, j) => {
@@ -44,12 +61,8 @@ function renderBoldText(text: string): React.ReactNode[] {
   })
 }
 
-/**
- * Markdown 스타일 텍스트를 안전한 React 엘리먼트로 렌더링
- */
 function renderMarkdown(text: string) {
   return text.split('\n').map((line, i) => {
-    // 헤딩 (## 제목)
     if (line.startsWith('## ')) {
       return (
         <h3 key={i} className="text-lg font-semibold text-stone-900 mt-4 mb-2">
@@ -57,7 +70,6 @@ function renderMarkdown(text: string) {
         </h3>
       )
     }
-    // 리스트 (- 항목)
     if (line.startsWith('- ')) {
       return (
         <li key={i} className="ml-4 text-stone-700">
@@ -65,11 +77,9 @@ function renderMarkdown(text: string) {
         </li>
       )
     }
-    // 빈 줄
     if (line.trim() === '') {
       return <div key={i} className="h-2" />
     }
-    // 일반 텍스트 (볼드 안전 렌더링)
     return (
       <p key={i} className="text-stone-700 leading-relaxed">
         {renderBoldText(line)}
@@ -78,21 +88,110 @@ function renderMarkdown(text: string) {
   })
 }
 
+function formatAmount(amount: number): string {
+  return `₩${amount.toLocaleString('ko-KR')}`
+}
+
+// ── 통계 탭 컴포넌트 ──
+
+function StatsTab({ period, dateStr, householdId }: { period: string; dateStr: string; householdId: number | undefined }) {
+  const [stats, setStats] = useState<StatsResponse | null>(null)
+  const [comparison, setComparison] = useState<ComparisonResponse | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    let cancelled = false
+    async function fetchData() {
+      setLoading(true)
+      try {
+        const statsRes = await statsApi.getStats(period, dateStr, householdId)
+        if (cancelled) return
+        setStats(statsRes.data)
+
+        // 주간은 비교 데이터 없음
+        if (period !== 'weekly') {
+          const compRes = await statsApi.getComparison(period, dateStr, 3, householdId)
+          if (cancelled) return
+          setComparison(compRes.data)
+        } else {
+          setComparison(null)
+        }
+      } catch {
+        if (!cancelled) toast.error('통계를 불러오는데 실패했습니다')
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }
+    fetchData()
+    return () => { cancelled = true }
+  }, [period, dateStr, householdId])
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="w-8 h-8 animate-spin text-amber-600" />
+      </div>
+    )
+  }
+
+  if (!stats || stats.total === 0) {
+    return <EmptyState title="이 기간에 기록된 지출이 없습니다" description="다른 기간을 선택해보세요." />
+  }
+
+  return (
+    <div className="space-y-6">
+      <StatsSummaryCards
+        total={stats.total}
+        count={stats.count}
+        trend={stats.trend}
+        changePercentage={comparison?.change.percentage ?? null}
+      />
+      <TrendChart data={stats.trend} />
+      {comparison && comparison.trend.length > 0 && (
+        <ComparisonChart data={comparison.trend} />
+      )}
+      <CategoryBreakdown
+        categories={stats.by_category}
+        comparisons={comparison?.by_category_comparison}
+      />
+    </div>
+  )
+}
+
+// ── 메인 페이지 ──
+
 export default function InsightsPage() {
+  const [activeTab, setActiveTab] = useState<TabType>('monthly')
+  const [dateStr, setDateStr] = useState(toDateStr(new Date()))
+  const activeHouseholdId = useHouseholdStore((s) => s.activeHouseholdId)
+
+  // AI 인사이트 상태 (기존)
   const [selectedMonth, setSelectedMonth] = useState(getCurrentMonth())
   const [insights, setInsights] = useState<InsightsResponse | null>(null)
-  const [loading, setLoading] = useState(false)
+  const [aiLoading, setAiLoading] = useState(false)
 
-  /**
-   * 인사이트 생성 요청
-   */
+  const handlePrev = useCallback(() => {
+    setDateStr((d) => shiftDate(d, activeTab, -1))
+  }, [activeTab])
+
+  const handleNext = useCallback(() => {
+    setDateStr((d) => shiftDate(d, activeTab, 1))
+  }, [activeTab])
+
+  // 탭 변경 시 날짜 리셋
+  const handleTabChange = (tab: TabType) => {
+    setActiveTab(tab)
+    if (tab !== 'ai') setDateStr(toDateStr(new Date()))
+  }
+
+  // AI 인사이트 생성
   const handleGenerate = async () => {
     if (!selectedMonth) {
       toast.error('월을 선택해주세요')
       return
     }
 
-    setLoading(true)
+    setAiLoading(true)
     try {
       const res = await insightsApi.generate(selectedMonth)
       setInsights(res.data)
@@ -102,8 +201,20 @@ export default function InsightsPage() {
         (error as { response?: { data?: { detail?: string } } }).response?.data?.detail || '인사이트 생성에 실패했습니다'
       toast.error(message)
     } finally {
-      setLoading(false)
+      setAiLoading(false)
     }
+  }
+
+  // 현재 탭의 네비게이션 라벨
+  const getNavLabel = () => {
+    const d = new Date(dateStr + 'T00:00:00')
+    if (activeTab === 'weekly') {
+      const firstDay = new Date(d.getFullYear(), d.getMonth(), 1)
+      const weekNum = Math.ceil((d.getDate() + firstDay.getDay()) / 7)
+      return `${d.getMonth() + 1}월 ${weekNum}주차`
+    }
+    if (activeTab === 'monthly') return `${d.getFullYear()}년 ${d.getMonth() + 1}월`
+    return `${d.getFullYear()}년`
   }
 
   return (
@@ -111,141 +222,178 @@ export default function InsightsPage() {
       {/* 헤더 */}
       <div className="flex items-center gap-2">
         <TrendingUp className="w-6 h-6 text-amber-600" />
-        <h1 className="text-2xl font-bold text-stone-900">AI 인사이트</h1>
+        <h1 className="text-2xl font-bold text-stone-900">리포트</h1>
       </div>
 
-      {/* 월 선택 및 생성 버튼 */}
-      <div className="bg-white rounded-2xl shadow-sm border border-stone-200 p-4 sm:p-6">
-        <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-end">
-          <div className="flex-1 w-full">
-            <label
-              htmlFor="month-select"
-              className="block text-sm font-medium text-stone-700 mb-2"
-            >
-              분석할 월 선택
-            </label>
-            <input
-              id="month-select"
-              type="month"
-              value={selectedMonth}
-              onChange={(e) => setSelectedMonth(e.target.value)}
-              className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500"
-            />
-          </div>
+      {/* 탭 */}
+      <div className="flex gap-1 bg-stone-100 p-1 rounded-xl">
+        {TABS.map((tab) => (
           <button
-            onClick={handleGenerate}
-            disabled={loading}
-            className="w-full sm:w-auto px-6 py-2 text-sm font-medium text-white bg-amber-600 rounded-lg hover:bg-amber-700 disabled:bg-stone-400 disabled:cursor-not-allowed transition-colors whitespace-nowrap"
+            key={tab.id}
+            onClick={() => handleTabChange(tab.id)}
+            className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+              activeTab === tab.id
+                ? 'bg-white text-amber-700 shadow-sm'
+                : 'text-stone-500 hover:text-stone-700'
+            }`}
           >
-            {loading ? '생성 중...' : '인사이트 생성'}
+            {tab.icon}
+            <span className="hidden sm:inline">{tab.label}</span>
           </button>
-        </div>
-
-        <p className="text-sm text-stone-500 mt-3">
-          Claude API를 통해 해당 월의 지출 패턴을 분석하고 인사이트를
-          제공합니다. (최대 30초 소요)
-        </p>
+        ))}
       </div>
 
-      {/* 로딩 스피너 */}
-      {loading && (
-        <div className="bg-white rounded-2xl shadow-sm border border-stone-200 p-12">
-          <div className="flex flex-col items-center gap-4">
-            <Loader2 className="animate-spin h-12 w-12 text-amber-600" />
-            <p className="text-stone-600">
-              AI가 당신의 지출을 분석하고 있습니다...
+      {/* 기간 네비게이션 (AI 탭 제외) */}
+      {activeTab !== 'ai' && (
+        <PeriodNavigator label={getNavLabel()} onPrev={handlePrev} onNext={handleNext} />
+      )}
+
+      {/* 통계 탭 콘텐츠 */}
+      {activeTab !== 'ai' && (
+        <StatsTab
+          period={activeTab}
+          dateStr={dateStr}
+          householdId={activeHouseholdId ?? undefined}
+        />
+      )}
+
+      {/* AI 인사이트 탭 콘텐츠 */}
+      {activeTab === 'ai' && (
+        <>
+          {/* 월 선택 및 생성 버튼 */}
+          <div className="bg-white rounded-2xl shadow-sm border border-stone-200 p-4 sm:p-6">
+            <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-end">
+              <div className="flex-1 w-full">
+                <label
+                  htmlFor="month-select"
+                  className="block text-sm font-medium text-stone-700 mb-2"
+                >
+                  분석할 월 선택
+                </label>
+                <input
+                  id="month-select"
+                  type="month"
+                  value={selectedMonth}
+                  onChange={(e) => setSelectedMonth(e.target.value)}
+                  className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500"
+                />
+              </div>
+              <button
+                onClick={handleGenerate}
+                disabled={aiLoading}
+                className="w-full sm:w-auto px-6 py-2 text-sm font-medium text-white bg-amber-600 rounded-lg hover:bg-amber-700 disabled:bg-stone-400 disabled:cursor-not-allowed transition-colors whitespace-nowrap"
+              >
+                {aiLoading ? '생성 중...' : '인사이트 생성'}
+              </button>
+            </div>
+
+            <p className="text-sm text-stone-500 mt-3">
+              Claude API를 통해 해당 월의 지출 패턴을 분석하고 인사이트를
+              제공합니다. (최대 30초 소요)
             </p>
           </div>
-        </div>
-      )}
 
-      {/* 인사이트 결과 */}
-      {!loading && insights && (
-        <div className="space-y-6">
-          {/* 월별 요약 */}
-          <div className="bg-white rounded-2xl shadow-sm border border-stone-200 p-4 sm:p-6">
-            <h2 className="text-lg font-semibold text-stone-900 mb-4">
-              {insights.month} 요약
-            </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="bg-amber-50 rounded-lg p-4">
-                <p className="text-sm text-stone-600 mb-1">총 지출</p>
-                <p className="text-2xl font-bold text-amber-700">
-                  {formatAmount(insights.total)}
-                </p>
-              </div>
-              <div className="bg-stone-50 rounded-lg p-4">
-                <p className="text-sm text-stone-600 mb-1">카테고리 수</p>
-                <p className="text-2xl font-bold text-stone-700">
-                  {Object.keys(insights.by_category).length}개
+          {/* 로딩 스피너 */}
+          {aiLoading && (
+            <div className="bg-white rounded-2xl shadow-sm border border-stone-200 p-12">
+              <div className="flex flex-col items-center gap-4">
+                <Loader2 className="animate-spin h-12 w-12 text-amber-600" />
+                <p className="text-stone-600">
+                  AI가 당신의 지출을 분석하고 있습니다...
                 </p>
               </div>
             </div>
-          </div>
+          )}
 
-          {/* 카테고리별 금액 */}
-          <div className="bg-white rounded-2xl shadow-sm border border-stone-200 p-4 sm:p-6">
-            <h2 className="text-lg font-semibold text-stone-900 mb-4">
-              카테고리별 지출
-            </h2>
-            <div className="space-y-3">
-              {Object.entries(insights.by_category)
-                .sort(([, a], [, b]) => b - a)
-                .map(([category, amount]) => {
-                  const percentage =
-                    insights.total > 0
-                      ? ((amount / insights.total) * 100).toFixed(1)
-                      : 0
-                  return (
-                    <div key={category} className="flex items-center gap-3">
-                      <div className="flex-1">
-                        <div className="flex justify-between items-center mb-1">
-                          <span className="text-sm font-medium text-stone-700">
-                            {category}
-                          </span>
-                          <span className="text-sm font-semibold text-stone-900">
-                            {formatAmount(amount)}
+          {/* 인사이트 결과 */}
+          {!aiLoading && insights && (
+            <div className="space-y-6">
+              {/* 월별 요약 */}
+              <div className="bg-white rounded-2xl shadow-sm border border-stone-200 p-4 sm:p-6">
+                <h2 className="text-lg font-semibold text-stone-900 mb-4">
+                  {insights.month} 요약
+                </h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="bg-amber-50 rounded-lg p-4">
+                    <p className="text-sm text-stone-600 mb-1">총 지출</p>
+                    <p className="text-2xl font-bold text-amber-700">
+                      {formatAmount(insights.total)}
+                    </p>
+                  </div>
+                  <div className="bg-stone-50 rounded-lg p-4">
+                    <p className="text-sm text-stone-600 mb-1">카테고리 수</p>
+                    <p className="text-2xl font-bold text-stone-700">
+                      {Object.keys(insights.by_category).length}개
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* 카테고리별 금액 */}
+              <div className="bg-white rounded-2xl shadow-sm border border-stone-200 p-4 sm:p-6">
+                <h2 className="text-lg font-semibold text-stone-900 mb-4">
+                  카테고리별 지출
+                </h2>
+                <div className="space-y-3">
+                  {Object.entries(insights.by_category)
+                    .sort(([, a], [, b]) => b - a)
+                    .map(([category, amount]) => {
+                      const percentage =
+                        insights.total > 0
+                          ? ((amount / insights.total) * 100).toFixed(1)
+                          : 0
+                      return (
+                        <div key={category} className="flex items-center gap-3">
+                          <div className="flex-1">
+                            <div className="flex justify-between items-center mb-1">
+                              <span className="text-sm font-medium text-stone-700">
+                                {category}
+                              </span>
+                              <span className="text-sm font-semibold text-stone-900">
+                                {formatAmount(amount)}
+                              </span>
+                            </div>
+                            <div className="w-full bg-stone-200 rounded-full h-2 overflow-hidden">
+                              <div
+                                className="bg-amber-600 h-2 rounded-full transition-all"
+                                style={{ width: `${percentage}%` }}
+                              />
+                            </div>
+                          </div>
+                          <span className="text-xs text-stone-500 w-12 text-right">
+                            {percentage}%
                           </span>
                         </div>
-                        <div className="w-full bg-stone-200 rounded-full h-2 overflow-hidden">
-                          <div
-                            className="bg-amber-600 h-2 rounded-full transition-all"
-                            style={{ width: `${percentage}%` }}
-                          />
-                        </div>
-                      </div>
-                      <span className="text-xs text-stone-500 w-12 text-right">
-                        {percentage}%
-                      </span>
-                    </div>
-                  )
-                })}
-            </div>
-          </div>
+                      )
+                    })}
+                </div>
+              </div>
 
-          {/* AI 인사이트 */}
-          <div className="bg-white rounded-2xl shadow-sm border border-stone-200 p-4 sm:p-6">
-            <div className="flex items-center gap-2 mb-4">
-              <TrendingUp className="w-5 h-5 text-amber-600" />
-              <h2 className="text-lg font-semibold text-stone-900">
-                AI 인사이트
-              </h2>
+              {/* AI 인사이트 */}
+              <div className="bg-white rounded-2xl shadow-sm border border-stone-200 p-4 sm:p-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <TrendingUp className="w-5 h-5 text-amber-600" />
+                  <h2 className="text-lg font-semibold text-stone-900">
+                    AI 분석
+                  </h2>
+                </div>
+                <div className="prose prose-sm max-w-none text-stone-700 space-y-2">
+                  {renderMarkdown(insights.insights)}
+                </div>
+              </div>
             </div>
-            <div className="prose prose-sm max-w-none text-stone-700 space-y-2">
-              {renderMarkdown(insights.insights)}
-            </div>
-          </div>
-        </div>
-      )}
+          )}
 
-      {/* 초기 상태 (아직 인사이트 생성 안 함) */}
-      {!loading && !insights && (
-        <div className="bg-white rounded-2xl shadow-sm border border-stone-200">
-          <EmptyState
-            title="월을 선택하고 인사이트를 생성하세요"
-            description="AI가 당신의 지출 패턴을 분석하고 개인화된 조언을 제공합니다."
-          />
-        </div>
+          {/* 초기 상태 (아직 인사이트 생성 안 함) */}
+          {!aiLoading && !insights && (
+            <div className="bg-white rounded-2xl shadow-sm border border-stone-200">
+              <EmptyState
+                title="월을 선택하고 인사이트를 생성하세요"
+                description="AI가 당신의 지출 패턴을 분석하고 개인화된 조언을 제공합니다."
+              />
+            </div>
+          )}
+        </>
       )}
     </div>
   )

@@ -124,6 +124,55 @@ export interface BudgetAlert {
   is_warning: boolean
 }
 
+/* 통계 관련 타입 */
+
+export interface CategoryStats {
+  category: string
+  amount: number
+  count: number
+  percentage: number
+}
+
+export interface TrendPoint {
+  label: string
+  amount: number
+}
+
+export interface StatsResponse {
+  period: string
+  label: string
+  start_date: string
+  end_date: string
+  total: number
+  count: number
+  by_category: CategoryStats[]
+  trend: TrendPoint[]
+}
+
+export interface PeriodTotal {
+  label: string
+  total: number
+}
+
+export interface CategoryChange {
+  category: string
+  current: number
+  previous: number
+  change_amount: number
+  change_percentage: number | null
+}
+
+export interface ComparisonResponse {
+  current: PeriodTotal
+  previous: PeriodTotal
+  change: {
+    amount: number
+    percentage: number | null
+  }
+  trend: PeriodTotal[]
+  by_category_comparison: CategoryChange[]
+}
+
 /* Household 관련 타입 */
 export type {
   Household,
