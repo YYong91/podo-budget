@@ -38,8 +38,8 @@ test.describe('지출 CRUD', () => {
     // 날짜는 기본값(오늘) 사용
     await page.getByRole('button', { name: /저장하기/ }).click()
 
-    // 성공 후 목록으로 이동 (성공 토스트 확인)
-    await expect(page.getByText(/저장되었습니다|지출이 저장/)).toBeVisible({ timeout: 10000 })
+    // 성공 후 목록 페이지로 이동 (/expenses/new에서 /expenses로 변경)
+    await page.waitForURL((url) => !url.pathname.includes('/new'), { timeout: 10000 })
   })
 
   test('지출 목록 조회', async ({ authedPage: page }) => {
