@@ -153,6 +153,7 @@
 | Fly.io 배포 | **설정 완료** | 앱 3개 생성 + 시크릿 설정, 트라이얼 만료로 결제 활성화 필요 |
 | CI/CD (GitHub Actions) | **완료** | deploy-production.yml + deploy-staging.yml (PR 테스트) |
 | Sentry 에러 트래킹 | **완료** | Backend + Frontend 통합, DSN 없으면 비활성화 |
+| PWA (오프라인 + 홈 화면) | **완료** | vite-plugin-pwa, 오프라인 앱 셸, 자동 업데이트 |
 
 ---
 
@@ -161,7 +162,7 @@
 | 영역 | 테스트 수 | 커버리지 |
 |------|-----------|----------|
 | 백엔드 (pytest) | 299개 (5 skip) | 측정 완료 (핵심 모듈 80%+) |
-| 프론트엔드 (Vitest) | 157개 (all pass) | 미측정 |
+| 프론트엔드 (Vitest) | 343개 (all pass) | 미측정 |
 | E2E | 0개 | - |
 
 ---
