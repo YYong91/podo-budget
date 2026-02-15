@@ -97,9 +97,9 @@ export default function InsightsPage() {
       const res = await insightsApi.generate(selectedMonth)
       setInsights(res.data)
       toast.success('인사이트가 생성되었습니다')
-    } catch (error: any) {
+    } catch (error: unknown) {
       const message =
-        error.response?.data?.detail || '인사이트 생성에 실패했습니다'
+        (error as { response?: { data?: { detail?: string } } }).response?.data?.detail || '인사이트 생성에 실패했습니다'
       toast.error(message)
     } finally {
       setLoading(false)

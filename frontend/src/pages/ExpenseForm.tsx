@@ -88,8 +88,8 @@ export default function ExpenseForm() {
       } else {
         addToast('info', res.data.message || '지출 정보를 인식하지 못했습니다')
       }
-    } catch (error: any) {
-      const errorMsg = error.response?.data?.detail || '파싱에 실패했습니다'
+    } catch (error: unknown) {
+      const errorMsg = (error as { response?: { data?: { detail?: string } } }).response?.data?.detail || '파싱에 실패했습니다'
       addToast('error', errorMsg)
     } finally {
       setLoading(false)
@@ -120,8 +120,8 @@ export default function ExpenseForm() {
       setPreviewItems(null)
       setNaturalInput('')
       setTimeout(() => navigate('/expenses'), 500)
-    } catch (error: any) {
-      const errorMsg = error.response?.data?.detail || '저장에 실패했습니다'
+    } catch (error: unknown) {
+      const errorMsg = (error as { response?: { data?: { detail?: string } } }).response?.data?.detail || '저장에 실패했습니다'
       addToast('error', errorMsg)
     } finally {
       setLoading(false)
@@ -185,8 +185,8 @@ export default function ExpenseForm() {
       })
       addToast('success', '지출이 저장되었습니다')
       setTimeout(() => navigate('/expenses'), 500)
-    } catch (error: any) {
-      const errorMsg = error.response?.data?.detail || '지출 저장에 실패했습니다'
+    } catch (error: unknown) {
+      const errorMsg = (error as { response?: { data?: { detail?: string } } }).response?.data?.detail || '지출 저장에 실패했습니다'
       addToast('error', errorMsg)
     } finally {
       setLoading(false)
