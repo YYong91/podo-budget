@@ -143,7 +143,14 @@ jobs:
         run: |
           cd backend
           uv run uvicorn app.main:app --host 0.0.0.0 --port 8000 &
-          sleep 5
+          # 최대 30초 대기 (DB 테이블 생성 포함)
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:8000/health > /dev/null 2>&1; then
+              echo "Backend ready after ${i}s"
+              break
+            fi
+            sleep 1
+          done
           curl -f http://localhost:8000/health || exit 1
 
       - name: Build frontend
