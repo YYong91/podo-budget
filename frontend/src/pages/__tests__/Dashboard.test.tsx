@@ -50,19 +50,17 @@ describe('Dashboard', () => {
       })
     })
 
-    it('카테고리 수를 표시한다', async () => {
+    it('이번 달 총 수입을 표시한다', async () => {
       renderDashboard()
       await waitFor(() => {
-        expect(screen.getByText('카테고리 수')).toBeInTheDocument()
-        expect(screen.getByText(String(mockMonthlyStats.by_category.length))).toBeInTheDocument()
+        expect(screen.getByText('이번 달 총 수입')).toBeInTheDocument()
       })
     })
 
-    it('기록된 일수를 표시한다', async () => {
+    it('순수익을 표시한다', async () => {
       renderDashboard()
       await waitFor(() => {
-        expect(screen.getByText('기록된 일수')).toBeInTheDocument()
-        expect(screen.getByText(String(mockMonthlyStats.daily_trend.length))).toBeInTheDocument()
+        expect(screen.getByText('순수익')).toBeInTheDocument()
       })
     })
 
@@ -126,9 +124,9 @@ describe('Dashboard', () => {
     it('전체 보기 링크를 표시한다', async () => {
       renderDashboard()
       await waitFor(() => {
-        const link = screen.getByRole('link', { name: /전체 보기/i })
-        expect(link).toBeInTheDocument()
-        expect(link).toHaveAttribute('href', '/expenses')
+        const links = screen.getAllByRole('link', { name: /전체 보기/i })
+        const expenseLink = links.find(l => l.getAttribute('href') === '/expenses')
+        expect(expenseLink).toBeDefined()
       })
     })
 

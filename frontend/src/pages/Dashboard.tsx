@@ -10,10 +10,11 @@ import { Loader2, ChevronDown, ChevronUp } from 'lucide-react'
 import { Chart as ChartJS, ArcElement, LineElement, PointElement, CategoryScale, LinearScale, Filler, Tooltip as ChartTooltip, Legend } from 'chart.js'
 import { Pie, Line } from 'react-chartjs-2'
 import { expenseApi } from '../api/expenses'
+import { incomeApi } from '../api/income'
 import { useHouseholdStore } from '../stores/useHouseholdStore'
 import EmptyState from '../components/EmptyState'
 import ErrorState from '../components/ErrorState'
-import type { Expense, MonthlyStats } from '../types'
+import type { Expense, Income, MonthlyStats, StatsResponse } from '../types'
 
 ChartJS.register(ArcElement, LineElement, PointElement, CategoryScale, LinearScale, Filler, ChartTooltip, Legend)
 
@@ -31,30 +32,36 @@ function getCurrentMonth(): string {
 }
 
 /* 통계 카드 섹션 */
-function StatsCards({ stats }: { stats: MonthlyStats }) {
+function StatsCards({ stats, incomeTotal }: { stats: MonthlyStats; incomeTotal?: number }) {
   const total = stats.total ?? 0
   const byCategory = stats.by_category ?? []
   const dailyTrend = stats.daily_trend ?? []
+  const income = incomeTotal ?? 0
+  const netIncome = income - total
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-      <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl border border-amber-200/60 shadow-sm p-5 hover:shadow-md transition-shadow duration-200">
-        <p className="text-sm text-amber-700/70">이번 달 총 지출</p>
-        <p className="text-2xl font-bold tracking-tight text-stone-900 mt-1">{formatAmount(total)}</p>
-      </div>
-      <div className="bg-white rounded-2xl border border-stone-200/60 shadow-sm hover:shadow-md transition-shadow duration-200 p-5">
-        <p className="text-sm text-stone-500">카테고리 수</p>
-        <p className="text-3xl font-bold text-stone-900 mt-1">{byCategory.length}</p>
-      </div>
-      <div className="bg-white rounded-2xl border border-stone-200/60 shadow-sm hover:shadow-md transition-shadow duration-200 p-5">
-        <p className="text-sm text-stone-500">기록된 일수</p>
-        <p className="text-3xl font-bold text-stone-900 mt-1">{dailyTrend.length}</p>
-      </div>
-      <div className="bg-white rounded-2xl border border-stone-200/60 shadow-sm hover:shadow-md transition-shadow duration-200 p-5">
-        <p className="text-sm text-stone-500">일 평균 지출</p>
-        <p className="text-3xl font-bold text-stone-900 mt-1">
-          {dailyTrend.length > 0 ? formatAmount(Math.round(total / dailyTrend.length)) : '₩0'}
-        </p>
+    <div className="space-y-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl border border-amber-200/60 shadow-sm p-5 hover:shadow-md transition-shadow duration-200">
+          <p className="text-sm text-amber-700/70">이번 달 총 지출</p>
+          <p className="text-2xl font-bold tracking-tight text-stone-900 mt-1">{formatAmount(total)}</p>
+        </div>
+        <div className="bg-gradient-to-br from-emerald-50 to-green-50 rounded-2xl border border-emerald-200/60 shadow-sm p-5 hover:shadow-md transition-shadow duration-200">
+          <p className="text-sm text-emerald-700/70">이번 달 총 수입</p>
+          <p className="text-2xl font-bold tracking-tight text-emerald-700 mt-1">+{formatAmount(income)}</p>
+        </div>
+        <div className={`bg-gradient-to-br ${netIncome >= 0 ? 'from-blue-50 to-sky-50 border-blue-200/60' : 'from-rose-50 to-red-50 border-rose-200/60'} rounded-2xl border shadow-sm p-5 hover:shadow-md transition-shadow duration-200`}>
+          <p className={`text-sm ${netIncome >= 0 ? 'text-blue-700/70' : 'text-rose-700/70'}`}>순수익</p>
+          <p className={`text-2xl font-bold tracking-tight mt-1 ${netIncome >= 0 ? 'text-blue-700' : 'text-rose-700'}`}>
+            {netIncome >= 0 ? '+' : ''}{formatAmount(netIncome)}
+          </p>
+        </div>
+        <div className="bg-white rounded-2xl border border-stone-200/60 shadow-sm hover:shadow-md transition-shadow duration-200 p-5">
+          <p className="text-sm text-stone-500">일 평균 지출</p>
+          <p className="text-3xl font-bold text-stone-900 mt-1">
+            {dailyTrend.length > 0 ? formatAmount(Math.round(total / dailyTrend.length)) : '₩0'}
+          </p>
+        </div>
       </div>
     </div>
   )
@@ -205,6 +212,37 @@ function RecentExpenses({ expenses }: { expenses: Expense[] }) {
   )
 }
 
+/* 최근 수입 섹션 */
+function RecentIncomes({ incomes }: { incomes: Income[] }) {
+  if (incomes.length === 0) return null
+
+  return (
+    <div className="bg-white rounded-2xl border border-stone-200/60 shadow-sm p-5">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-base font-semibold text-stone-700">최근 수입</h2>
+        <Link to="/income" className="text-sm text-emerald-600 hover:text-emerald-700">
+          전체 보기 →
+        </Link>
+      </div>
+      <div className="divide-y divide-stone-100">
+        {incomes.map((income) => (
+          <Link
+            key={income.id}
+            to={`/income/${income.id}`}
+            className="flex items-center justify-between py-3 hover:bg-emerald-50/50 -mx-2 px-2 rounded transition-colors"
+          >
+            <div className="min-w-0 flex-1">
+              <p className="font-medium text-stone-900 truncate">{income.description}</p>
+              <p className="text-sm text-stone-500">{income.date.slice(0, 10).replace(/-/g, '.')}</p>
+            </div>
+            <p className="font-semibold text-emerald-700 ml-4 whitespace-nowrap">+{formatAmount(income.amount)}</p>
+          </Link>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 export default function Dashboard() {
   const navigate = useNavigate()
   const activeHouseholdId = useHouseholdStore((s) => s.activeHouseholdId)
@@ -212,6 +250,8 @@ export default function Dashboard() {
   // 공유(가구) 데이터
   const [stats, setStats] = useState<MonthlyStats | null>(null)
   const [recentExpenses, setRecentExpenses] = useState<Expense[]>([])
+  const [incomeStats, setIncomeStats] = useState<StatsResponse | null>(null)
+  const [recentIncomes, setRecentIncomes] = useState<Income[]>([])
 
   // 개인 데이터 (가구 선택 시에만 별도 로드)
   const [personalStats, setPersonalStats] = useState<MonthlyStats | null>(null)
@@ -239,28 +279,40 @@ export default function Dashboard() {
     try {
       const month = getCurrentMonth()
 
+      // 수입 통계 + 최근 수입 (에러 무시 - 수입이 없어도 대시보드 동작)
+      const incomePromises = [
+        incomeApi.getStats('monthly', undefined, activeHouseholdId ?? undefined).catch(() => null),
+        incomeApi.getAll({ limit: 5, household_id: activeHouseholdId ?? undefined }).catch(() => ({ data: [] as Income[] })),
+      ] as const
+
       if (activeHouseholdId) {
         // 가구가 선택된 경우: 가구 데이터 + 개인 데이터 병렬 로드
-        const [householdStatsRes, householdExpensesRes, personalStatsRes, personalExpensesRes] = await Promise.all([
+        const [householdStatsRes, householdExpensesRes, personalStatsRes, personalExpensesRes, incStatsRes, incListRes] = await Promise.all([
           expenseApi.getMonthlyStats(month, activeHouseholdId),
           expenseApi.getAll({ limit: 5, household_id: activeHouseholdId }),
           expenseApi.getMonthlyStats(month),
           expenseApi.getAll({ limit: 5 }),
+          ...incomePromises,
         ])
         setStats(householdStatsRes.data)
         setRecentExpenses(householdExpensesRes.data)
         setPersonalStats(personalStatsRes.data)
         setPersonalExpenses(personalExpensesRes.data)
+        setIncomeStats(incStatsRes?.data ?? null)
+        setRecentIncomes(incListRes?.data ?? [])
       } else {
         // 가구 미선택: 개인 데이터만
-        const [statsRes, expensesRes] = await Promise.all([
+        const [statsRes, expensesRes, incStatsRes, incListRes] = await Promise.all([
           expenseApi.getMonthlyStats(month),
           expenseApi.getAll({ limit: 5 }),
+          ...incomePromises,
         ])
         setStats(statsRes.data)
         setRecentExpenses(expensesRes.data)
         setPersonalStats(null)
         setPersonalExpenses([])
+        setIncomeStats(incStatsRes?.data ?? null)
+        setRecentIncomes(incListRes?.data ?? [])
       }
     } catch {
       setError(true)
@@ -326,9 +378,12 @@ export default function Dashboard() {
       </h1>
 
       {/* 메인 데이터 (가구 선택 시 가구, 미선택 시 개인) */}
-      {stats && <StatsCards stats={stats} />}
+      {stats && <StatsCards stats={stats} incomeTotal={incomeStats?.total} />}
       {stats && <ChartSection stats={stats} />}
-      <RecentExpenses expenses={recentExpenses} />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <RecentExpenses expenses={recentExpenses} />
+        <RecentIncomes incomes={recentIncomes} />
+      </div>
 
       {/* 개인 지출 섹션 (가구 선택 시에만 표시) */}
       {showPersonalSection && (
