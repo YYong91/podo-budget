@@ -8,6 +8,8 @@ import { http, HttpResponse } from 'msw'
 import {
   mockCategories,
   mockExpenses,
+  mockIncomes,
+  mockIncomeStats,
   mockMonthlyStats,
   mockInsights,
   mockStats,
@@ -142,6 +144,63 @@ export const handlers = [
     }
 
     return HttpResponse.json(mockMonthlyStats)
+  }),
+
+  // ==================== 수입 API ====================
+
+  http.get(`${BASE_URL}/income`, ({ request }) => {
+    const url = new URL(request.url)
+    const skip = Number(url.searchParams.get('skip')) || 0
+    const limit = Number(url.searchParams.get('limit')) || 20
+    const startDate = url.searchParams.get('start_date')
+    const endDate = url.searchParams.get('end_date')
+
+    let filtered = [...mockIncomes]
+    if (startDate) filtered = filtered.filter((i) => i.date >= startDate)
+    if (endDate) filtered = filtered.filter((i) => i.date <= endDate)
+
+    const paginated = filtered.slice(skip, skip + limit)
+    return HttpResponse.json(paginated)
+  }),
+
+  http.get(`${BASE_URL}/income/stats`, () => {
+    return HttpResponse.json(mockIncomeStats)
+  }),
+
+  http.get(`${BASE_URL}/income/:id`, ({ params }) => {
+    const income = mockIncomes.find((i) => i.id === Number(params.id))
+    if (!income) return HttpResponse.json({ detail: 'Not found' }, { status: 404 })
+    return HttpResponse.json(income)
+  }),
+
+  http.post(`${BASE_URL}/income`, async ({ request }) => {
+    const body = (await request.json()) as Partial<(typeof mockIncomes)[0]>
+    const newIncome = {
+      id: Math.max(...mockIncomes.map((i) => i.id)) + 1,
+      amount: body.amount ?? 0,
+      description: body.description ?? '',
+      category_id: body.category_id ?? null,
+      raw_input: body.raw_input ?? null,
+      household_id: body.household_id ?? null,
+      user_id: 1,
+      date: body.date ?? new Date().toISOString(),
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }
+    return HttpResponse.json(newIncome, { status: 201 })
+  }),
+
+  http.put(`${BASE_URL}/income/:id`, async ({ params, request }) => {
+    const income = mockIncomes.find((i) => i.id === Number(params.id))
+    if (!income) return HttpResponse.json({ detail: 'Not found' }, { status: 404 })
+    const body = (await request.json()) as Partial<(typeof mockIncomes)[0]>
+    return HttpResponse.json({ ...income, ...body, updated_at: new Date().toISOString() })
+  }),
+
+  http.delete(`${BASE_URL}/income/:id`, ({ params }) => {
+    const income = mockIncomes.find((i) => i.id === Number(params.id))
+    if (!income) return HttpResponse.json({ detail: 'Not found' }, { status: 404 })
+    return HttpResponse.json(null, { status: 204 })
   }),
 
   // ==================== 카테고리 API ====================

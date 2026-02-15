@@ -4,7 +4,7 @@
  * API 응답을 모킹하기 위한 샘플 데이터를 정의한다.
  */
 
-import type { Expense, Category, MonthlyStats, InsightsResponse, StatsResponse, ComparisonResponse } from '../types'
+import type { Expense, Income, Category, MonthlyStats, InsightsResponse, StatsResponse, ComparisonResponse } from '../types'
 
 /**
  * 테스트용 카테고리 목록
@@ -126,6 +126,56 @@ export const mockComparison: ComparisonResponse = {
     { category: '식비', current: 8000, previous: 12000, change_amount: -4000, change_percentage: -33.3 },
     { category: '교통', current: 3500, previous: 3000, change_amount: 500, change_percentage: 16.7 },
     { category: '쇼핑', current: 50000, previous: 40000, change_amount: 10000, change_percentage: 25.0 },
+  ],
+}
+
+/**
+ * 테스트용 수입 목록
+ */
+export const mockIncomes: Income[] = [
+  {
+    id: 1,
+    amount: 3500000,
+    description: '2월 월급',
+    category_id: null,
+    raw_input: '월급 350만원',
+    household_id: null,
+    user_id: 1,
+    date: '2026-02-01T09:00:00Z',
+    created_at: '2026-02-01T09:00:00Z',
+    updated_at: '2026-02-01T09:00:00Z',
+  },
+  {
+    id: 2,
+    amount: 500000,
+    description: '프리랜스 수입',
+    category_id: null,
+    raw_input: null,
+    household_id: null,
+    user_id: 1,
+    date: '2026-02-10T10:00:00Z',
+    created_at: '2026-02-10T10:00:00Z',
+    updated_at: '2026-02-10T10:00:00Z',
+  },
+]
+
+/**
+ * 테스트용 수입 통계
+ */
+export const mockIncomeStats: StatsResponse = {
+  period: 'monthly',
+  label: '2026년 2월',
+  start_date: '2026-02-01',
+  end_date: '2026-02-28',
+  total: 4000000,
+  count: 2,
+  by_category: [
+    { category: '급여', amount: 3500000, count: 1, percentage: 87.5 },
+    { category: '부수입', amount: 500000, count: 1, percentage: 12.5 },
+  ],
+  trend: [
+    { label: '02/01', amount: 3500000 },
+    { label: '02/10', amount: 500000 },
   ],
 }
 
