@@ -20,6 +20,8 @@ const LoginPage = lazy(() => import('./pages/LoginPage'))
 const PrivacyPolicyPage = lazy(() => import('./pages/PrivacyPolicyPage'))
 const TermsOfServicePage = lazy(() => import('./pages/TermsOfServicePage'))
 const SettingsPage = lazy(() => import('./pages/SettingsPage'))
+const ForgotPasswordPage = lazy(() => import('./pages/ForgotPasswordPage'))
+const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'))
 
 /* 로딩 스피너 */
 function PageLoading() {
@@ -35,6 +37,8 @@ function App() {
     <Suspense fallback={<PageLoading />}>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/privacy" element={<PrivacyPolicyPage />} />
         <Route path="/terms" element={<TermsOfServicePage />} />
         {/* 인증이 필요한 라우트들을 ProtectedRoute로 감싼다 */}

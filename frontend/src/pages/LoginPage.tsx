@@ -283,16 +283,23 @@ export default function LoginPage() {
         {/* 안내 메시지 */}
         <div className="mt-6 text-center text-sm text-stone-500">
           {activeTab === 'login' ? (
-            <p>
-              계정이 없으신가요?{' '}
-              <button
-                type="button"
-                onClick={() => setActiveTab('register')}
-                className="text-amber-600 hover:text-amber-700 font-medium"
-              >
-                회원가입
-              </button>
-            </p>
+            <>
+              <p className="mb-2">
+                <Link to="/forgot-password" className="text-stone-500 hover:text-stone-700 text-xs">
+                  비밀번호를 잊으셨나요?
+                </Link>
+              </p>
+              <p>
+                계정이 없으신가요?{' '}
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('register')}
+                  className="text-amber-600 hover:text-amber-700 font-medium"
+                >
+                  회원가입
+                </button>
+              </p>
+            </>
           ) : (
             <p>
               이미 계정이 있으신가요?{' '}
