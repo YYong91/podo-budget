@@ -35,10 +35,21 @@ test.describe('지출 CRUD', () => {
     await page.getByPlaceholder('10000').fill('15000')
     await page.getByPlaceholder('김치찌개').fill('E2E 테스트 점심')
 
-    // 날짜는 기본값(오늘) 사용
-    await page.getByRole('button', { name: /저장하기/ }).click()
+    // 저장 및 POST 응답 대기
+    const [response] = await Promise.all([
+      page.waitForResponse((res) => res.url().includes('/api/expenses') && res.request().method() === 'POST'),
+      page.getByRole('button', { name: /저장하기/ }).click(),
+    ])
 
-    // 성공 후 목록 페이지로 이동 (/expenses/new에서 /expenses로 변경)
+    // POST 실패 시 디버깅 출력
+    if (!response.ok()) {
+      const body = await response.text()
+      console.error(`POST 실패 (${response.status()}): ${body}`)
+      console.error(`요청 본문: ${response.request().postData()}`)
+    }
+    expect(response.ok()).toBeTruthy()
+
+    // 성공 후 목록 페이지로 이동
     await page.waitForURL((url) => !url.pathname.includes('/new'), { timeout: 10000 })
   })
 
