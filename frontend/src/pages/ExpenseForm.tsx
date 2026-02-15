@@ -180,7 +180,8 @@ export default function ExpenseForm() {
         amount,
         description: formData.description.trim(),
         category_id: formData.category_id ? Number(formData.category_id) : null,
-        date: formData.date,
+        // date input은 YYYY-MM-DD 형식이므로 datetime으로 변환
+        date: formData.date.includes('T') ? formData.date : `${formData.date}T00:00:00`,
         household_id: activeHouseholdId,
       })
       addToast('success', '지출이 저장되었습니다')

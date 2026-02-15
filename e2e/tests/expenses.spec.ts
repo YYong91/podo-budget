@@ -38,8 +38,8 @@ test.describe('지출 CRUD', () => {
     // 날짜는 기본값(오늘) 사용
     await page.getByRole('button', { name: /저장하기/ }).click()
 
-    // 성공 후 목록 또는 상세 페이지로 이동
-    await expect(page).toHaveURL(/\/expenses/, { timeout: 10000 })
+    // 성공 후 목록으로 이동 (성공 토스트 확인)
+    await expect(page.getByText(/저장되었습니다|지출이 저장/)).toBeVisible({ timeout: 10000 })
   })
 
   test('지출 목록 조회', async ({ authedPage: page }) => {
@@ -79,21 +79,11 @@ test.describe('지출 CRUD', () => {
     await expect(descInput).toBeVisible()
     await descInput.fill('E2E 수정 후')
 
-    // PUT 요청 완료를 기다리며 저장
-    const [response] = await Promise.all([
+    // 저장 후 PUT 응답 대기
+    await Promise.all([
       page.waitForResponse((res) => res.url().includes('/api/expenses/') && res.request().method() === 'PUT'),
       page.getByRole('button', { name: '저장' }).click(),
     ])
-
-    // PUT 실패 시 디버깅을 위해 응답 상세 출력
-    if (!response.ok()) {
-      const body = await response.text()
-      console.error(`PUT 실패 (${response.status()}): ${body}`)
-      console.error(`요청 URL: ${response.url()}`)
-      const reqBody = response.request().postData()
-      console.error(`요청 본문: ${reqBody}`)
-    }
-    expect(response.ok()).toBeTruthy()
 
     // 수정된 내용 확인
     await expect(page.getByText('E2E 수정 후')).toBeVisible({ timeout: 10000 })

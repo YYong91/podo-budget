@@ -94,7 +94,8 @@ export default function ExpenseDetail() {
         amount: editForm.amount,
         description: editForm.description.trim(),
         category_id: editForm.category_id,
-        date: editForm.date,
+        // date input은 YYYY-MM-DD 형식이므로 datetime으로 변환
+        date: editForm.date.includes('T') ? editForm.date : `${editForm.date}T00:00:00`,
       })
       setExpense(updated.data)
       setIsEditing(false)
