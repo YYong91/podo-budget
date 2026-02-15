@@ -27,7 +27,7 @@ async function createAndLogin(
 /** 로그인된 상태의 페이지를 제공하는 fixture */
 export const test = base.extend<{ authedPage: Page }>({
   authedPage: async ({ page }, use) => {
-    const { token } = await createAndLogin(page, 'main')
+    const { token } = await createAndLogin(page.request, 'main')
 
     // localStorage에 토큰 주입 (앱이 localStorage에서 토큰을 읽는 경우)
     const baseURL = process.env.E2E_BASE_URL || 'http://localhost:5173'
