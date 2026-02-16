@@ -28,6 +28,9 @@ class ParsedExpenseItem(BaseModel):
     memo: str = ""
     household_id: int | None = None  # 공유/개인 구분용 (None이면 개인)
     type: str = "expense"  # "expense" | "income"
+    currency: str | None = None  # 외화 통화 코드 (예: "USD", "JPY")
+    original_amount: float | None = None  # 외화 원래 금액
+    exchange_rate: float | None = None  # 적용된 환율 (1 외화 = ? KRW)
 
 
 class ChatResponse(BaseModel):

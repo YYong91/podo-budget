@@ -12,20 +12,20 @@ class UserCreate(BaseModel):
     """회원가입 요청 스키마
 
     Attributes:
-        username: 사용자명 (3-50자, 영문/숫자/언더스코어)
+        username: 닉네임 (1-50자)
         password: 비밀번호 (8자 이상)
-        email: 이메일 주소 (선택, 가구 초대 시스템용)
+        email: 이메일 주소 (필수, 로그인에 사용)
     """
 
-    username: str = Field(..., min_length=3, max_length=50, description="사용자명")
+    username: str = Field(..., min_length=1, max_length=50, description="닉네임")
     password: str = Field(..., min_length=8, description="비밀번호 (8자 이상)")
-    email: EmailStr | None = Field(None, description="이메일 (선택, 가구 초대용)")
+    email: EmailStr = Field(..., description="이메일 (로그인에 사용)")
 
 
 class LoginRequest(BaseModel):
     """로그인 요청 스키마"""
 
-    username: str = Field(..., description="사용자명")
+    email: EmailStr = Field(..., description="이메일")
     password: str = Field(..., description="비밀번호")
 
 

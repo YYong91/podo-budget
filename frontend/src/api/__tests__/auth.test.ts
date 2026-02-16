@@ -57,8 +57,8 @@ describe('authApi', () => {
   describe('login', () => {
     it('POST /api/auth/login을 호출하여 토큰을 반환한다', async () => {
       const response = await authApi.login({
-        username: 'test',
-        password: 'password123', // pragma: allowlist secret // pragma: allowlist secret
+        email: 'test@example.com',
+        password: 'password123', // pragma: allowlist secret
       })
 
       expect(response.data).toEqual(mockAuthResponse)
@@ -72,6 +72,7 @@ describe('authApi', () => {
       const response = await authApi.register({
         username: 'test',
         password: 'password123', // pragma: allowlist secret
+        email: 'test@example.com',
       })
 
       expect(response.data).toEqual(mockUser)

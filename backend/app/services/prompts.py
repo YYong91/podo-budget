@@ -104,6 +104,30 @@ EXPENSE_PARSER_SYSTEM_PROMPT = """당신은 한국어 가계부 입력을 분석
 {{"amount": 500000, "category": "급여", "description": "보너스", "date": "{today}", "memo": "", "type": "income"}}
 ```
 
+## 외화 입력 처리
+
+사용자가 달러($, 달러), 엔(¥, 엔), 유로(€, 유로) 등 외화로 입력하면:
+- `"currency"` 필드에 통화 코드를 추가 (예: "USD", "JPY", "EUR")
+- `"original_amount"` 필드에 외화 원래 금액을 추가
+- `"amount"` 필드에도 외화 원래 금액을 그대로 넣기 (서버에서 환율 변환)
+
+입력: "스타벅스 $5.50"
+```json
+{{"amount": 5.50, "category": "식비", "description": "스타벅스", "date": "{today}", "memo": "", "currency": "USD", "original_amount": 5.50}}
+```
+
+입력: "아마존 30달러"
+```json
+{{"amount": 30, "category": "쇼핑", "description": "아마존", "date": "{today}", "memo": "", "currency": "USD", "original_amount": 30}}
+```
+
+입력: "편의점 500엔"
+```json
+{{"amount": 500, "category": "식비", "description": "편의점", "date": "{today}", "memo": "", "currency": "JPY", "original_amount": 500}}
+```
+
+**원화(₩, 원) 입력이면 currency, original_amount 필드를 추가하지 마세요.**
+
 금액을 찾을 수 없으면 다음을 반환하세요:
 ```json
 {{"error": "금액을 찾을 수 없습니다"}}

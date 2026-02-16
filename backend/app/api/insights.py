@@ -73,7 +73,7 @@ async def generate_insights(
     recent_result = await db.execute(select(Expense).where(user_filter, Expense.date >= start, Expense.date < end).order_by(Expense.amount.desc()).limit(20))
     top_expenses = [
         {
-            "amount": e.amount,
+            "amount": float(e.amount),
             "description": e.description,
             "date": e.date.strftime("%Y-%m-%d"),
         }

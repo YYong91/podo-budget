@@ -31,6 +31,7 @@ class User(Base):
     email = Column(String(255), unique=True, index=True, nullable=True)  # 초대 시스템용 이메일
     hashed_password = Column(String, nullable=False)
     is_active = Column(Boolean, default=True, nullable=False)
+    telegram_chat_id = Column(String, unique=True, index=True, nullable=True)  # Telegram 연동용
     created_at = Column(DateTime, default=func.now(), nullable=False)
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now(), nullable=False)
 

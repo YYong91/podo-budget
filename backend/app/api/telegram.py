@@ -27,7 +27,7 @@ from app.services.bot_messages import (
     format_server_error,
     format_welcome_message,
 )
-from app.services.bot_user_service import get_or_create_bot_user
+from app.services.bot_user_service import get_or_create_bot_user, link_telegram_account
 from app.services.category_service import get_or_create_category
 from app.services.expense_context_detector import resolve_household_id
 from app.services.llm_service import get_llm_provider
@@ -121,6 +121,28 @@ async def telegram_webhook(request: Request, db: AsyncSession = Depends(get_db))
     # /budget 명령어 처리 (예산 현황)
     if user_text.startswith("/budget"):
         await handle_budget_command(chat_id, db, user_id=bot_user.id)
+        return {"ok": True}
+
+    # /link 명령어 처리 (기존 웹 계정 연동)
+    if user_text.startswith("/link"):
+        parts = user_text.split(maxsplit=2)
+        if len(parts) < 3:
+            await send_telegram_message(
+                chat_id,
+                "🔗 계정 연동 방법:\n/link 사용자명 비밀번호\n\n예: /link yyong mypassword\n\n⚠️ 연동하면 이 채팅의 지출이 웹 계정에 직접 기록됩니다.",
+            )
+            return {"ok": True}
+
+        username = parts[1]
+        password = parts[2]
+        linked_user = await link_telegram_account(db, username, password, str(chat_id))
+        if linked_user:
+            await send_telegram_message(
+                chat_id,
+                f"✅ '{username}' 계정과 연동되었습니다!\n이제부터 입력하는 지출/수입이 웹에서도 바로 보입니다.",
+            )
+        else:
+            await send_telegram_message(chat_id, "❌ 사용자명 또는 비밀번호가 올바르지 않습니다.")
         return {"ok": True}
 
     # LLM으로 지출 파싱

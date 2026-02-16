@@ -48,17 +48,23 @@ export default function LoginPage() {
   const validateForm = (): boolean => {
     const newErrors: { username?: string; password?: string; email?: string } = {}
 
-    if (username.length < 3) {
-      newErrors.username = '사용자명은 3자 이상이어야 합니다'
+    if (activeTab === 'login') {
+      // 로그인: 이메일 + 비밀번호
+      if (!email.trim() || !isValidEmail(email)) {
+        newErrors.email = '올바른 이메일을 입력해주세요'
+      }
+    } else {
+      // 회원가입: 닉네임 + 이메일 + 비밀번호
+      if (username.length < 1) {
+        newErrors.username = '닉네임을 입력해주세요'
+      }
+      if (!email.trim() || !isValidEmail(email)) {
+        newErrors.email = '올바른 이메일을 입력해주세요'
+      }
     }
 
     if (password.length < 8) {
       newErrors.password = '비밀번호는 8자 이상이어야 합니다'
-    }
-
-    // 회원가입 시 이메일 검증 (선택이지만 입력한 경우)
-    if (activeTab === 'register' && email.trim() && !isValidEmail(email)) {
-      newErrors.email = '올바른 이메일 형식이 아닙니다'
     }
 
     setErrors(newErrors)
@@ -80,14 +86,10 @@ export default function LoginPage() {
 
     try {
       if (activeTab === 'login') {
-        await login({ username, password })
+        await login({ email: email.trim(), password })
         addToast('success', '로그인되었습니다')
       } else {
-        // 회원가입 시 이메일 포함
-        const registerData = email.trim()
-          ? { username, password, email: email.trim() }
-          : { username, password }
-        await register(registerData)
+        await register({ username, password, email: email.trim() })
         addToast('success', '회원가입이 완료되었습니다')
       }
       navigate('/')
@@ -150,24 +152,47 @@ export default function LoginPage() {
 
         {/* 폼 */}
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* 사용자명 입력 */}
+          {/* 닉네임 입력 (회원가입 시에만) */}
+          {activeTab === 'register' && (
+            <div>
+              <label htmlFor="username" className="block text-sm font-medium text-warm-700 mb-1">
+                닉네임
+              </label>
+              <input
+                id="username"
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                className={`w-full px-3 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500 ${
+                  errors.username ? 'border-red-500' : 'border-warm-300'
+                }`}
+                placeholder="닉네임 입력"
+                disabled={loading}
+              />
+              {errors.username && (
+                <p className="text-sm text-red-500 mt-1">{errors.username}</p>
+              )}
+            </div>
+          )}
+
+          {/* 이메일 입력 (로그인 + 회원가입 공통) */}
           <div>
-            <label htmlFor="username" className="block text-sm font-medium text-warm-700 mb-1">
-              사용자명
+            <label htmlFor="email" className="block text-sm font-medium text-warm-700 mb-1">
+              이메일
             </label>
             <input
-              id="username"
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               className={`w-full px-3 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500 ${
-                errors.username ? 'border-red-500' : 'border-warm-300'
+                errors.email ? 'border-red-500' : 'border-warm-300'
               }`}
-              placeholder="사용자명 입력"
+              placeholder="이메일 입력"
               disabled={loading}
             />
-            {errors.username && (
-              <p className="text-sm text-red-500 mt-1">{errors.username}</p>
+            {errors.email && (
+              <p className="text-sm text-red-500 mt-1">{errors.email}</p>
             )}
           </div>
 
@@ -191,29 +216,6 @@ export default function LoginPage() {
               <p className="text-sm text-red-500 mt-1">{errors.password}</p>
             )}
           </div>
-
-          {/* 이메일 입력 (회원가입 시에만) */}
-          {activeTab === 'register' && (
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-warm-700 mb-1">
-                이메일 <span className="text-warm-400">(선택)</span>
-              </label>
-              <input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className={`w-full px-3 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500 ${
-                  errors.email ? 'border-red-500' : 'border-warm-300'
-                }`}
-                placeholder="초대 받기에 사용됩니다"
-                disabled={loading}
-              />
-              {errors.email && (
-                <p className="text-sm text-red-500 mt-1">{errors.email}</p>
-              )}
-            </div>
-          )}
 
           {/* 약관 동의 (회원가입 시에만) */}
           {activeTab === 'register' && (

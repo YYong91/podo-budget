@@ -26,7 +26,7 @@ LLMFeature = Literal["parse", "insights", "ocr"]
 
 # 프로바이더별 기본 모델
 DEFAULT_MODELS: dict[str, str] = {
-    "anthropic": "claude-sonnet-4-5-20250929",
+    "anthropic": "claude-haiku-4-5-20251001",
     "openai": "gpt-4o-mini",
     "google": "gemini-2.0-flash",
     "local": "llama3",

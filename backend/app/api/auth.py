@@ -108,15 +108,15 @@ async def login(login_data: LoginRequest, db: AsyncSession = Depends(get_db)):
     Raises:
         HTTPException 401: 사용자명 또는 비밀번호가 틀린 경우
     """
-    # 사용자 조회
-    result = await db.execute(select(User).where(User.username == login_data.username))
+    # 이메일로 사용자 조회
+    result = await db.execute(select(User).where(User.email == login_data.email))
     user = result.scalar_one_or_none()
 
     # 사용자 없음 또는 비밀번호 불일치
     if not user or not verify_password(login_data.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="사용자명 또는 비밀번호가 올바르지 않습니다",
+            detail="이메일 또는 비밀번호가 올바르지 않습니다",
             headers={"WWW-Authenticate": "Bearer"},
         )
 

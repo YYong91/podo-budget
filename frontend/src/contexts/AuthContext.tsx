@@ -125,7 +125,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const register = async (data: RegisterRequest) => {
     await authApi.register(data)
     // 회원가입 후 자동 로그인
-    await login({ username: data.username, password: data.password })
+    await login({ email: data.email, password: data.password })
   }
 
   const logout = () => {

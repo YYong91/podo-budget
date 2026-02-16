@@ -31,26 +31,43 @@ from app.schemas.chat import ChatRequest, ChatResponse, ParsedExpenseItem
 from app.schemas.expense import ExpenseResponse
 from app.schemas.income import IncomeResponse
 from app.services.category_service import get_or_create_category
+from app.services.exchange_rate import get_exchange_rate
 from app.services.expense_context_detector import resolve_household_id
 from app.services.llm_service import get_llm_provider
 
 router = APIRouter()
 
 
-def _to_parsed_items(parsed: dict | list, household_id: int | None = None) -> list[ParsedExpenseItem]:
-    """LLM 파싱 결과를 ParsedExpenseItem 리스트로 변환"""
+async def _to_parsed_items(parsed: dict | list, household_id: int | None = None) -> list[ParsedExpenseItem]:
+    """LLM 파싱 결과를 ParsedExpenseItem 리스트로 변환 (외화 환율 변환 포함)"""
     items = [parsed] if isinstance(parsed, dict) else parsed
     result = []
     for item in items:
+        currency = item.get("currency")
+        original_amount = item.get("original_amount")
+        amount = item["amount"]
+        exchange_rate = None
+
+        # 외화인 경우 실시간 환율 변환
+        if currency and currency != "KRW":
+            rate = await get_exchange_rate(currency)
+            if rate:
+                exchange_rate = rate
+                original_amount = amount
+                amount = round(amount * rate)
+
         result.append(
             ParsedExpenseItem(
-                amount=item["amount"],
+                amount=amount,
                 description=item.get("description", ""),
                 category=item.get("category", "기타"),
                 date=item.get("date", datetime.now().strftime("%Y-%m-%d")),
                 memo=item.get("memo", ""),
                 household_id=household_id,
                 type=item.get("type", "expense"),
+                currency=currency,
+                original_amount=original_amount,
+                exchange_rate=exchange_rate,
             )
         )
     return result
@@ -110,7 +127,7 @@ async def chat(
 
     # Preview 모드: 파싱 결과만 반환 (저장하지 않음)
     if chat_request.preview:
-        parsed_items = _to_parsed_items(parsed, household_id=household_id)
+        parsed_items = await _to_parsed_items(parsed, household_id=household_id)
         count = len(parsed_items)
         total = sum(item.amount for item in parsed_items)
         income_count = sum(1 for item in parsed_items if item.type == "income")
@@ -122,8 +139,16 @@ async def chat(
         if income_count > 0:
             parts.append(f"수입 {income_count}건")
 
+        # 외화 변환 정보 추가
+        fx_info = ""
+        fx_items = [i for i in parsed_items if i.currency]
+        if fx_items:
+            fx_parts = [f"{i.currency} {i.original_amount:g} → ₩{i.amount:,.0f} (환율 {i.exchange_rate:,.2f})" for i in fx_items if i.exchange_rate]
+            if fx_parts:
+                fx_info = " [" + ", ".join(fx_parts) + "]"
+
         return ChatResponse(
-            message=f"{'과 '.join(parts)}(총 ₩{total:,.0f})을 인식했습니다. 확인 후 저장해주세요.",
+            message=f"{'과 '.join(parts)}(총 ₩{total:,.0f})을 인식했습니다.{fx_info} 확인 후 저장해주세요.",
             expenses_created=None,
             incomes_created=None,
             parsed_items=parsed_items,
@@ -131,7 +156,7 @@ async def chat(
             insights=None,
         )
 
-    # 일반 모드: 파싱 후 DB에 저장
+    # 일반 모드: 파싱 후 DB에 저장 (외화 환율 변환 포함)
     items = [parsed] if isinstance(parsed, dict) else parsed
     created_expenses = []
     created_incomes = []
@@ -140,11 +165,23 @@ async def chat(
         item_type = item.get("type", "expense")
         category = await get_or_create_category(db, item.get("category", "기타"), current_user.id)
 
+        # 외화 환율 변환
+        amount = item["amount"]
+        currency = item.get("currency")
+        memo = item.get("memo", "")
+        if currency and currency != "KRW":
+            rate = await get_exchange_rate(currency)
+            if rate:
+                original = amount
+                amount = round(amount * rate)
+                currency_memo = f"{currency} {original:g} (환율 {rate:,.2f})"
+                memo = f"{memo}, {currency_memo}" if memo else currency_memo
+
         if item_type == "income":
             record = Income(
                 user_id=current_user.id,
                 household_id=household_id,
-                amount=item["amount"],
+                amount=amount,
                 description=item.get("description", chat_request.message),
                 category_id=category.id,
                 raw_input=chat_request.message,
@@ -156,7 +193,7 @@ async def chat(
             record = Expense(
                 user_id=current_user.id,
                 household_id=household_id,
-                amount=item["amount"],
+                amount=amount,
                 description=item.get("description", chat_request.message),
                 category_id=category.id,
                 raw_input=chat_request.message,

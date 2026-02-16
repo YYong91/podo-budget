@@ -24,48 +24,67 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 async def get_or_create_bot_user(db: AsyncSession, platform: str, platform_user_id: str) -> User:
     """봇 플랫폼 사용자를 찾거나 생성한다
 
-    각 봇 플랫폼(telegram, kakao 등)에서 오는 사용자를 User 테이블에서 관리합니다.
-    username을 "{platform}_{platform_user_id}" 형식으로 생성하여 고유성을 보장합니다.
-
-    WHY: 봇을 통해 입력한 지출이 사용자별로 격리되어야 합니다.
-         Expense.user_id가 없으면 모든 봇 사용자의 데이터가 섞이게 됩니다.
+    1) telegram_chat_id로 연동된 기존 계정이 있으면 해당 유저 반환
+    2) 없으면 봇 전용 유저(telegram_xxx)를 찾거나 생성
 
     Args:
         db: 데이터베이스 세션
         platform: 플랫폼 이름 (예: "telegram", "kakao")
-        platform_user_id: 플랫폼에서 제공한 사용자 ID (예: Telegram chat_id, Kakao user.id)
+        platform_user_id: 플랫폼에서 제공한 사용자 ID
 
     Returns:
         찾았거나 새로 생성한 User 객체
-
-    Example:
-        >>> user = await get_or_create_bot_user(db, "telegram", "123456789")
-        >>> print(user.username)
-        "telegram_123456789"
     """
-    # username 규칙: {platform}_{platform_user_id}
-    username = f"{platform}_{platform_user_id}"
+    # 1) telegram_chat_id로 연동된 기존 계정 확인
+    if platform == "telegram":
+        result = await db.execute(select(User).where(User.telegram_chat_id == platform_user_id))
+        linked_user = result.scalar_one_or_none()
+        if linked_user:
+            return linked_user
 
-    # 기존 사용자 검색
+    # 2) 봇 전용 유저 검색/생성
+    username = f"{platform}_{platform_user_id}"
     result = await db.execute(select(User).where(User.username == username))
     user = result.scalar_one_or_none()
 
     if user is None:
-        # 새 사용자 생성
-        # 봇 사용자는 로그인하지 않으므로 랜덤 비밀번호 해시 생성
         random_password = secrets.token_urlsafe(32)
         hashed_password = pwd_context.hash(random_password)
 
         user = User(
             username=username,
-            email=None,  # 봇 사용자는 이메일 없음
+            email=None,
             hashed_password=hashed_password,
             is_active=True,
         )
         db.add(user)
-        await db.flush()  # ID를 즉시 할당받기 위해 flush 사용
-        await db.refresh(user)  # relationship 로드
-
+        await db.flush()
+        await db.refresh(user)
         logger.info(f"새 봇 사용자 생성: {username} (user_id={user.id})")
 
+    return user
+
+
+async def link_telegram_account(db: AsyncSession, username: str, password: str, telegram_chat_id: str) -> User | None:
+    """Telegram 계정을 기존 웹 계정에 연동
+
+    Args:
+        db: 데이터베이스 세션
+        username: 웹 계정 사용자명
+        password: 웹 계정 비밀번호
+        telegram_chat_id: Telegram chat ID
+
+    Returns:
+        연동 성공 시 User 객체, 실패 시 None
+    """
+    result = await db.execute(select(User).where(User.username == username))
+    user = result.scalar_one_or_none()
+
+    if not user or not pwd_context.verify(password, user.hashed_password):
+        return None
+
+    user.telegram_chat_id = telegram_chat_id
+    await db.commit()
+    await db.refresh(user)
+    logger.info(f"Telegram 연동 완료: {username} ← chat_id={telegram_chat_id}")
     return user
