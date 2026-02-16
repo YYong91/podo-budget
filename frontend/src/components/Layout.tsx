@@ -123,7 +123,7 @@ export default function Layout() {
         <aside
           className={`
             fixed md:sticky top-16 left-0 z-20 h-[calc(100vh-4rem)]
-            w-60 bg-cream border-r border-warm-200 p-4
+            w-60 bg-cream border-r border-warm-200 p-4 flex flex-col
             transition-transform duration-200 ease-in-out
             ${sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
           `}
@@ -233,6 +233,14 @@ export default function Layout() {
               </Link>
             )}
           </nav>
+
+          {/* 사이드바 하단 - 태그라인 */}
+          <div className="mt-auto pt-4 border-t border-warm-200 text-sm text-warm-500">
+            <div className="flex items-center gap-2 px-3">
+              <span>🍇</span>
+              <span>포도알처럼 하나씩</span>
+            </div>
+          </div>
         </aside>
 
         {/* 모바일 오버레이 */}
