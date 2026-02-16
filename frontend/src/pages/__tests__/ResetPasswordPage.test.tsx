@@ -34,9 +34,9 @@ describe('ResetPasswordPage', () => {
       expect(screen.getByText('비밀번호 재설정')).toBeInTheDocument()
     })
 
-    it('HomeNRich 로고를 표시한다', () => {
+    it('포도가계부 로고를 표시한다', () => {
       renderWithToken('test-reset-token')
-      expect(screen.getByText('HomeNRich')).toBeInTheDocument()
+      expect(screen.getByText(/포도가계부/)).toBeInTheDocument()
     })
 
     it('새 비밀번호 입력 필드를 표시한다', () => {

@@ -52,12 +52,12 @@ describe('Layout', () => {
   describe('헤더 렌더링', () => {
     it('헤더에 로고를 표시한다', () => {
       renderLayout()
-      expect(screen.getByText('HomeNRich')).toBeInTheDocument()
+      expect(screen.getByText(/포도가계부/)).toBeInTheDocument()
     })
 
     it('헤더에 부제목을 표시한다', () => {
       renderLayout()
-      expect(screen.getByText('가계부')).toBeInTheDocument()
+      expect(screen.getByText('AI 가계부')).toBeInTheDocument()
     })
 
     it('모바일 메뉴 버튼을 표시한다', () => {

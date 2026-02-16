@@ -51,7 +51,7 @@ export default function ResetPasswordPage() {
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-2 mb-1">
             <Home className="w-6 h-6 text-grape-600" />
-            <h1 className="text-2xl font-bold text-grape-600">HomeNRich</h1>
+            <h1 className="text-2xl font-bold text-grape-700">🍇 포도가계부</h1>
           </div>
           <p className="text-sm text-warm-500 mt-1">비밀번호 재설정</p>
         </div>

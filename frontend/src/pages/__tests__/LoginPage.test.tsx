@@ -87,10 +87,10 @@ describe('LoginPage', () => {
       expect(screen.queryByLabelText(/이메일/)).not.toBeInTheDocument()
     })
 
-    it('HomeNRich 로고와 서브타이틀을 표시한다', () => {
+    it('포도가계부 로고와 서브타이틀을 표시한다', () => {
       renderLoginPage()
 
-      expect(screen.getByText('HomeNRich')).toBeInTheDocument()
+      expect(screen.getByText(/포도가계부/)).toBeInTheDocument()
       expect(screen.getByText('부부가 함께 쓰는 AI 가계부')).toBeInTheDocument()
     })
 

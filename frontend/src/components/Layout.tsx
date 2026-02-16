@@ -91,11 +91,11 @@ export default function Layout() {
             >
               <Menu className="w-5 h-5" />
             </button>
-            <Link to="/" className="flex items-center gap-2 text-lg font-bold text-grape-600">
-              <Home className="w-5 h-5" />
-              HomeNRich
+            <Link to="/" className="flex items-center gap-2 text-lg font-bold text-grape-700">
+              🍇
+              포도가계부
             </Link>
-            <span className="text-xs text-warm-400 hidden sm:inline">가계부</span>
+            <span className="text-xs text-warm-400 hidden sm:inline">AI 가계부</span>
           </div>
           <div className="flex items-center gap-3">
             {user && (

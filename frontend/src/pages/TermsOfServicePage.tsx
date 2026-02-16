@@ -13,7 +13,7 @@ export default function TermsOfServicePage() {
       <header className="bg-white border-b border-warm-200 sticky top-0 z-10">
         <div className="max-w-4xl mx-auto px-4 py-4">
           <Link to="/login" className="text-xl font-bold text-grape-600">
-            HomeNRich
+            포도가계부
           </Link>
         </div>
       </header>
@@ -29,7 +29,7 @@ export default function TermsOfServicePage() {
             <section>
               <h2 className="text-xl font-semibold text-warm-900 mb-3">제1조 (목적)</h2>
               <p>
-                본 약관은 HomeNRich(이하 "서비스")가 제공하는 AI 기반 가계부 서비스의 이용 조건 및 절차, 이용자와 서비스 제공자의 권리, 의무 및 책임 사항을 규정함을 목적으로 합니다.
+                본 약관은 포도가계부(이하 "서비스")가 제공하는 AI 기반 가계부 서비스의 이용 조건 및 절차, 이용자와 서비스 제공자의 권리, 의무 및 책임 사항을 규정함을 목적으로 합니다.
               </p>
             </section>
 

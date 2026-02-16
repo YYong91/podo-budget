@@ -27,9 +27,9 @@ describe('ForgotPasswordPage', () => {
       expect(screen.getByText('비밀번호 찾기')).toBeInTheDocument()
     })
 
-    it('HomeNRich 로고를 표시한다', () => {
+    it('포도가계부 로고를 표시한다', () => {
       renderForgotPasswordPage()
-      expect(screen.getByText('HomeNRich')).toBeInTheDocument()
+      expect(screen.getByText(/포도가계부/)).toBeInTheDocument()
     })
 
     it('이메일 입력 필드를 표시한다', () => {

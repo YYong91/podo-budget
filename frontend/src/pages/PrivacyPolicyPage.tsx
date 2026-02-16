@@ -13,7 +13,7 @@ export default function PrivacyPolicyPage() {
       <header className="bg-white border-b border-warm-200 sticky top-0 z-10">
         <div className="max-w-4xl mx-auto px-4 py-4">
           <Link to="/login" className="text-xl font-bold text-grape-600">
-            HomeNRich
+            포도가계부
           </Link>
         </div>
       </header>
@@ -29,7 +29,7 @@ export default function PrivacyPolicyPage() {
             <section>
               <h2 className="text-xl font-semibold text-warm-900 mb-3">1. 개인정보의 수집 항목 및 방법</h2>
               <p className="mb-2">
-                HomeNRich(이하 "서비스")는 다음과 같은 개인정보를 수집합니다:
+                포도가계부(이하 "서비스")는 다음과 같은 개인정보를 수집합니다:
               </p>
               <ul className="list-disc list-inside space-y-1 ml-4">
                 <li><strong>필수 항목</strong>: 사용자명, 비밀번호(암호화 저장), 지출 내역(금액, 설명, 카테고리, 날짜)</li>
@@ -105,8 +105,8 @@ export default function PrivacyPolicyPage() {
                 서비스의 개인정보 보호책임자는 다음과 같습니다:
               </p>
               <ul className="list-none ml-4 mt-2 space-y-1">
-                <li><strong>책임자</strong>: HomeNRich 운영팀</li>
-                <li><strong>이메일</strong>: privacy@homenrich.example.com</li>
+                <li><strong>책임자</strong>: 포도가계부 운영팀</li>
+                <li><strong>이메일</strong>: privacy@podobudget.com</li>
               </ul>
               <p className="mt-2">
                 개인정보 관련 문의, 불만 처리, 피해 구제 등이 필요하신 경우 위 연락처로 문의해주시기 바랍니다.
