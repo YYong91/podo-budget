@@ -127,7 +127,7 @@ export default function IncomeForm() {
         })
         savedCount++
       }
-      addToast('success', `${savedCount}건의 수입이 저장되었습니다`)
+      addToast('success', `🍇 포도알 +${savedCount}! 수입이 저장되었습니다`)
       setPreviewItems(null)
       setNaturalInput('')
       setTimeout(() => navigate('/income'), 500)
@@ -193,7 +193,7 @@ export default function IncomeForm() {
         date: formData.date.includes('T') ? formData.date : `${formData.date}T00:00:00`,
         household_id: activeHouseholdId,
       })
-      addToast('success', '수입이 저장되었습니다')
+      addToast('success', '🍇 포도알 +1! 수입이 저장되었습니다')
       setTimeout(() => navigate('/income'), 500)
     } catch (error: unknown) {
       const errorMsg = (error as { response?: { data?: { detail?: string } } }).response?.data?.detail || '수입 저장에 실패했습니다'

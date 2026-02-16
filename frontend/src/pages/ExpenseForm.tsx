@@ -116,7 +116,7 @@ export default function ExpenseForm() {
         })
         savedCount++
       }
-      addToast('success', `${savedCount}건의 지출이 저장되었습니다`)
+      addToast('success', `🍇 포도알 +${savedCount}! 지출이 저장되었습니다`)
       setPreviewItems(null)
       setNaturalInput('')
       setTimeout(() => navigate('/expenses'), 500)
@@ -184,7 +184,7 @@ export default function ExpenseForm() {
         date: formData.date.includes('T') ? formData.date : `${formData.date}T00:00:00`,
         household_id: activeHouseholdId,
       })
-      addToast('success', '지출이 저장되었습니다')
+      addToast('success', '🍇 포도알 +1! 지출이 저장되었습니다')
       setTimeout(() => navigate('/expenses'), 500)
     } catch (error: unknown) {
       const errorMsg = (error as { response?: { data?: { detail?: string } } }).response?.data?.detail || '지출 저장에 실패했습니다'
