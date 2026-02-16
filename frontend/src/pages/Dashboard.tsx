@@ -47,9 +47,9 @@ function StatsCards({ stats, incomeTotal }: { stats: MonthlyStats; incomeTotal?:
           <p className="text-sm text-grape-700/70">이번 달 총 지출</p>
           <p className="text-2xl font-bold tracking-tight text-stone-900 mt-1">{formatAmount(total)}</p>
         </div>
-        <div className="bg-gradient-to-br from-emerald-50 to-green-50 rounded-2xl border border-emerald-200/60 shadow-sm p-5 hover:shadow-md transition-shadow duration-200">
-          <p className="text-sm text-emerald-700/70">이번 달 총 수입</p>
-          <p className="text-2xl font-bold tracking-tight text-emerald-700 mt-1">+{formatAmount(income)}</p>
+        <div className="bg-gradient-to-br from-leaf-50 to-leaf-100 rounded-2xl border border-leaf-200/60 shadow-sm p-5 hover:shadow-md transition-shadow duration-200">
+          <p className="text-sm text-leaf-700/70">이번 달 총 수입</p>
+          <p className="text-2xl font-bold tracking-tight text-leaf-700 mt-1">+{formatAmount(income)}</p>
         </div>
         <div className={`bg-gradient-to-br ${netIncome >= 0 ? 'from-blue-50 to-sky-50 border-blue-200/60' : 'from-rose-50 to-red-50 border-rose-200/60'} rounded-2xl border shadow-sm p-5 hover:shadow-md transition-shadow duration-200`}>
           <p className={`text-sm ${netIncome >= 0 ? 'text-blue-700/70' : 'text-rose-700/70'}`}>순수익</p>
@@ -235,12 +235,12 @@ function PendingRecurring({
             className={`flex items-center justify-between p-3 rounded-xl border-l-4 ${
               r.type === 'expense'
                 ? 'border-l-grape-400 bg-grape-50/50'
-                : 'border-l-emerald-400 bg-emerald-50/50'
+                : 'border-l-leaf-400 bg-leaf-50/50'
             }`}
           >
             <div className="min-w-0 flex-1">
               <p className="font-medium text-stone-900 truncate">{r.description}</p>
-              <p className={`text-sm font-semibold ${r.type === 'expense' ? 'text-stone-700' : 'text-emerald-700'}`}>
+              <p className={`text-sm font-semibold ${r.type === 'expense' ? 'text-stone-700' : 'text-leaf-700'}`}>
                 {r.type === 'income' ? '+' : ''}{formatAmount(r.amount)}
               </p>
             </div>
@@ -250,7 +250,7 @@ function PendingRecurring({
                 className={`px-3 py-1.5 rounded-lg text-xs font-medium text-white ${
                   r.type === 'expense'
                     ? 'bg-grape-600 hover:bg-grape-700'
-                    : 'bg-emerald-600 hover:bg-emerald-700'
+                    : 'bg-leaf-600 hover:bg-leaf-700'
                 } transition-colors`}
               >
                 등록
@@ -277,7 +277,7 @@ function RecentIncomes({ incomes }: { incomes: Income[] }) {
     <div className="bg-white rounded-2xl border border-stone-200/60 shadow-sm p-5">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-base font-semibold text-stone-700">최근 수입</h2>
-        <Link to="/income" className="text-sm text-emerald-600 hover:text-emerald-700">
+        <Link to="/income" className="text-sm text-leaf-600 hover:text-leaf-700">
           전체 보기 →
         </Link>
       </div>
@@ -286,13 +286,13 @@ function RecentIncomes({ incomes }: { incomes: Income[] }) {
           <Link
             key={income.id}
             to={`/income/${income.id}`}
-            className="flex items-center justify-between py-3 hover:bg-emerald-50/50 -mx-2 px-2 rounded transition-colors"
+            className="flex items-center justify-between py-3 hover:bg-leaf-50/50 -mx-2 px-2 rounded transition-colors"
           >
             <div className="min-w-0 flex-1">
               <p className="font-medium text-stone-900 truncate">{income.description}</p>
               <p className="text-sm text-stone-500">{income.date.slice(0, 10).replace(/-/g, '.')}</p>
             </div>
-            <p className="font-semibold text-emerald-700 ml-4 whitespace-nowrap">+{formatAmount(income.amount)}</p>
+            <p className="font-semibold text-leaf-700 ml-4 whitespace-nowrap">+{formatAmount(income.amount)}</p>
           </Link>
         ))}
       </div>

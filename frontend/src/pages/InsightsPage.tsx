@@ -134,7 +134,7 @@ function StatsTab({ period, dateStr, householdId, dataType }: { period: string; 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className={`w-8 h-8 animate-spin ${isIncome ? 'text-emerald-600' : 'text-grape-600'}`} />
+        <Loader2 className={`w-8 h-8 animate-spin ${isIncome ? 'text-leaf-600' : 'text-grape-600'}`} />
       </div>
     )
   }
@@ -152,7 +152,7 @@ function StatsTab({ period, dateStr, householdId, dataType }: { period: string; 
         trend={stats.trend}
         changePercentage={comparison?.change.percentage ?? null}
         totalLabel={isIncome ? '총 수입' : '총 지출'}
-        accentColor={isIncome ? 'emerald' : 'grape'}
+        accentColor={isIncome ? 'leaf' : 'grape'}
       />
       <TrendChart data={stats.trend} />
       {comparison && comparison.trend.length > 0 && (
@@ -271,7 +271,7 @@ export default function InsightsPage() {
               onClick={() => setDataType('income')}
               className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
                 dataType === 'income'
-                  ? 'bg-white text-emerald-700 shadow-sm'
+                  ? 'bg-white text-leaf-700 shadow-sm'
                   : 'text-stone-500 hover:text-stone-700'
               }`}
             >

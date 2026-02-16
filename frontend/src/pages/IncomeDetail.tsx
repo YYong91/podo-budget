@@ -107,7 +107,7 @@ export default function IncomeDetail() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="w-8 h-8 animate-spin text-emerald-600" />
+        <Loader2 className="w-8 h-8 animate-spin text-leaf-600" />
       </div>
     )
   }
@@ -116,7 +116,7 @@ export default function IncomeDetail() {
     return (
       <div className="text-center py-12">
         <p className="text-stone-500 mb-4">수입 내역을 찾을 수 없습니다</p>
-        <Link to="/income" className="text-emerald-600 hover:text-emerald-700">
+        <Link to="/income" className="text-leaf-600 hover:text-leaf-700">
           목록으로 돌아가기
         </Link>
       </div>
@@ -152,7 +152,7 @@ export default function IncomeDetail() {
               </button>
               <button
                 onClick={handleSave}
-                className="flex-1 sm:flex-none px-4 py-2 text-sm font-medium text-white bg-emerald-600 rounded-xl hover:bg-emerald-700 shadow-sm shadow-emerald-200 transition-colors"
+                className="flex-1 sm:flex-none px-4 py-2 text-sm font-medium text-white bg-leaf-600 rounded-xl hover:bg-leaf-700 shadow-sm shadow-leaf-200 transition-colors"
               >
                 저장
               </button>
@@ -161,7 +161,7 @@ export default function IncomeDetail() {
             <>
               <button
                 onClick={() => setIsEditing(true)}
-                className="flex-1 sm:flex-none px-4 py-2 text-sm font-medium text-emerald-700 bg-emerald-50 rounded-xl hover:bg-emerald-100 transition-colors"
+                className="flex-1 sm:flex-none px-4 py-2 text-sm font-medium text-leaf-700 bg-leaf-50 rounded-xl hover:bg-leaf-100 transition-colors"
               >
                 수정
               </button>
@@ -186,11 +186,11 @@ export default function IncomeDetail() {
               type="number"
               value={editForm.amount}
               onChange={(e) => setEditForm({ ...editForm, amount: Number(e.target.value) })}
-              className="w-full px-4 py-2 text-xl sm:text-2xl font-bold text-stone-900 border border-stone-300 rounded-xl focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500"
+              className="w-full px-4 py-2 text-xl sm:text-2xl font-bold text-stone-900 border border-stone-300 rounded-xl focus:ring-2 focus:ring-leaf-500/30 focus:border-leaf-500"
               placeholder="10000"
             />
           ) : (
-            <p className="text-2xl sm:text-3xl font-bold text-emerald-700">
+            <p className="text-2xl sm:text-3xl font-bold text-leaf-700">
               +{formatAmount(income.amount)}
             </p>
           )}
@@ -204,7 +204,7 @@ export default function IncomeDetail() {
               type="text"
               value={editForm.description}
               onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
-              className="w-full px-4 py-2 text-lg border border-stone-300 rounded-xl focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500"
+              className="w-full px-4 py-2 text-lg border border-stone-300 rounded-xl focus:ring-2 focus:ring-leaf-500/30 focus:border-leaf-500"
               placeholder="월급"
             />
           ) : (
@@ -224,7 +224,7 @@ export default function IncomeDetail() {
                   category_id: e.target.value ? Number(e.target.value) : null,
                 })
               }
-              className="w-full px-4 py-2 text-lg border border-stone-300 rounded-xl focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500"
+              className="w-full px-4 py-2 text-lg border border-stone-300 rounded-xl focus:ring-2 focus:ring-leaf-500/30 focus:border-leaf-500"
             >
               <option value="">미분류</option>
               {categories.map((cat) => (
@@ -246,7 +246,7 @@ export default function IncomeDetail() {
               type="date"
               value={editForm.date}
               onChange={(e) => setEditForm({ ...editForm, date: e.target.value })}
-              className="w-full px-4 py-2 text-lg border border-stone-300 rounded-xl focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500"
+              className="w-full px-4 py-2 text-lg border border-stone-300 rounded-xl focus:ring-2 focus:ring-leaf-500/30 focus:border-leaf-500"
             />
           ) : (
             <p className="text-lg text-stone-900">{formatDate(income.date)}</p>

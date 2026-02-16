@@ -283,18 +283,18 @@ export default function RecurringList() {
                   <tr key={r.id} className={`hover:bg-stone-50/50 ${!r.is_active ? 'opacity-50' : ''}`}>
                     <td className="px-5 py-3">
                       <div className="flex items-center gap-2">
-                        <span className={`w-2 h-2 rounded-full ${r.type === 'expense' ? 'bg-grape-500' : 'bg-emerald-500'}`} />
+                        <span className={`w-2 h-2 rounded-full ${r.type === 'expense' ? 'bg-grape-500' : 'bg-leaf-500'}`} />
                         <span className="font-medium text-stone-900">{r.description}</span>
                       </div>
                     </td>
-                    <td className={`px-5 py-3 text-right font-semibold ${r.type === 'expense' ? 'text-stone-900' : 'text-emerald-700'}`}>
+                    <td className={`px-5 py-3 text-right font-semibold ${r.type === 'expense' ? 'text-stone-900' : 'text-leaf-700'}`}>
                       {r.type === 'income' ? '+' : ''}{formatAmount(r.amount)}
                     </td>
                     <td className="px-5 py-3 text-stone-600">{formatFrequency(r)}</td>
                     <td className="px-5 py-3 text-stone-600">{r.next_due_date}</td>
                     <td className="px-5 py-3 text-center">
                       <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${
-                        r.is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-stone-100 text-stone-500'
+                        r.is_active ? 'bg-leaf-100 text-leaf-700' : 'bg-stone-100 text-stone-500'
                       }`}>
                         {r.is_active ? '활성' : '정지'}
                       </span>
@@ -324,10 +324,10 @@ export default function RecurringList() {
               <div key={r.id} className={`p-4 ${!r.is_active ? 'opacity-50' : ''}`}>
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-2 min-w-0">
-                    <span className={`w-2 h-2 rounded-full flex-shrink-0 ${r.type === 'expense' ? 'bg-grape-500' : 'bg-emerald-500'}`} />
+                    <span className={`w-2 h-2 rounded-full flex-shrink-0 ${r.type === 'expense' ? 'bg-grape-500' : 'bg-leaf-500'}`} />
                     <span className="font-medium text-stone-900 truncate">{r.description}</span>
                   </div>
-                  <span className={`font-semibold whitespace-nowrap ml-2 ${r.type === 'expense' ? 'text-stone-900' : 'text-emerald-700'}`}>
+                  <span className={`font-semibold whitespace-nowrap ml-2 ${r.type === 'expense' ? 'text-stone-900' : 'text-leaf-700'}`}>
                     {r.type === 'income' ? '+' : ''}{formatAmount(r.amount)}
                   </span>
                 </div>
@@ -385,7 +385,7 @@ export default function RecurringList() {
                       type="button"
                       onClick={() => setFormData({ ...formData, type: 'income', category_id: '' })}
                       className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
-                        formData.type === 'income' ? 'bg-emerald-100 text-emerald-800' : 'bg-stone-100 text-stone-600'
+                        formData.type === 'income' ? 'bg-leaf-100 text-leaf-800' : 'bg-stone-100 text-stone-600'
                       }`}
                     >
                       수입

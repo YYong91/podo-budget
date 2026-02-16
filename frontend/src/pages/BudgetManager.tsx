@@ -190,7 +190,7 @@ export default function BudgetManager() {
   const getProgressColor = (alert: BudgetAlert): string => {
     if (alert.is_exceeded) return 'bg-rose-500'
     if (alert.is_warning) return 'bg-yellow-500'
-    return 'bg-emerald-500'
+    return 'bg-leaf-500'
   }
 
   if (loading) {
@@ -237,7 +237,7 @@ export default function BudgetManager() {
                     ? 'bg-rose-50 border-rose-200'
                     : alert.is_warning
                     ? 'bg-yellow-50 border-yellow-200'
-                    : 'bg-emerald-50 border-emerald-200'
+                    : 'bg-leaf-50 border-leaf-200'
                 }`}
               >
                 <div className="flex items-center justify-between mb-2">
@@ -248,7 +248,7 @@ export default function BudgetManager() {
                         ? 'text-rose-600'
                         : alert.is_warning
                         ? 'text-yellow-700'
-                        : 'text-emerald-600'
+                        : 'text-leaf-600'
                     }`}
                   >
                     {alert.usage_percentage.toFixed(1)}%

@@ -74,7 +74,7 @@ export default function IncomeList() {
 
   const renderSortIcon = (field: SortField) => {
     if (sortField !== field) return <span className="text-stone-300 ml-1">⇅</span>
-    return <span className="text-emerald-600 ml-1">{sortDirection === 'asc' ? '▲' : '▼'}</span>
+    return <span className="text-leaf-600 ml-1">{sortDirection === 'asc' ? '▲' : '▼'}</span>
   }
 
   const sortedIncomes = useMemo(() => {
@@ -142,7 +142,7 @@ export default function IncomeList() {
         <h1 className="text-xl font-semibold text-stone-800">수입 목록</h1>
         <button
           onClick={() => navigate('/income/new')}
-          className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-emerald-600 rounded-xl hover:bg-emerald-700 shadow-sm shadow-emerald-200 active:scale-[0.98] transition-all"
+          className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-leaf-600 rounded-xl hover:bg-leaf-700 shadow-sm shadow-leaf-200 active:scale-[0.98] transition-all"
         >
           <PlusCircle className="w-4 h-4" />
           수입 등록
@@ -163,7 +163,7 @@ export default function IncomeList() {
                 setStartDate(e.target.value)
                 setPage(0)
               }}
-              className="w-full border border-stone-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500"
+              className="w-full border border-stone-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-leaf-500/30 focus:border-leaf-500"
             />
           </div>
           <div>
@@ -175,7 +175,7 @@ export default function IncomeList() {
                 setEndDate(e.target.value)
                 setPage(0)
               }}
-              className="w-full border border-stone-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500"
+              className="w-full border border-stone-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-leaf-500/30 focus:border-leaf-500"
             />
           </div>
           <div>
@@ -186,7 +186,7 @@ export default function IncomeList() {
                 setCategoryId(e.target.value ? Number(e.target.value) : undefined)
                 setPage(0)
               }}
-              className="w-full border border-stone-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500"
+              className="w-full border border-stone-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-leaf-500/30 focus:border-leaf-500"
             >
               <option value="">전체</option>
               {categories.map((cat) => (
@@ -205,7 +205,7 @@ export default function IncomeList() {
                   setMemberUserId(e.target.value ? Number(e.target.value) : undefined)
                   setPage(0)
                 }}
-                className="w-full border border-stone-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500"
+                className="w-full border border-stone-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-leaf-500/30 focus:border-leaf-500"
               >
                 <option value="">전체 멤버</option>
                 {members.map((m) => (
@@ -237,7 +237,7 @@ export default function IncomeList() {
       <div className="bg-white rounded-2xl shadow-sm border border-stone-200/60 overflow-hidden">
         {loading ? (
           <div className="flex items-center justify-center h-32">
-            <Loader2 className="w-6 h-6 animate-spin text-emerald-600" />
+            <Loader2 className="w-6 h-6 animate-spin text-leaf-600" />
           </div>
         ) : incomes.length > 0 ? (
           <div className="overflow-x-auto">
@@ -269,20 +269,20 @@ export default function IncomeList() {
               </thead>
               <tbody className="divide-y divide-stone-100">
                 {sortedIncomes.map((income) => (
-                  <tr key={income.id} className="hover:bg-emerald-50/50 transition-colors">
+                  <tr key={income.id} className="hover:bg-leaf-50/50 transition-colors">
                     <td className="px-4 py-3 text-sm text-stone-600 whitespace-nowrap">
                       {income.date.slice(0, 10).replace(/-/g, '.')}
                     </td>
                     <td className="px-4 py-3 max-w-[200px] sm:max-w-none">
                       <Link
                         to={`/income/${income.id}`}
-                        className="text-sm font-medium text-stone-900 hover:text-emerald-600 transition-colors block truncate"
+                        className="text-sm font-medium text-stone-900 hover:text-leaf-600 transition-colors block truncate"
                       >
                         {income.description}
                       </Link>
                     </td>
                     <td className="px-4 py-3 hidden sm:table-cell">
-                      <span className="inline-block bg-emerald-50 text-emerald-700 text-xs px-2 py-1 rounded-full">
+                      <span className="inline-block bg-leaf-50 text-leaf-700 text-xs px-2 py-1 rounded-full">
                         {getCategoryName(income.category_id)}
                       </span>
                     </td>
@@ -291,7 +291,7 @@ export default function IncomeList() {
                         <span className="text-xs text-stone-500">{getMemberName(income.user_id)}</span>
                       </td>
                     )}
-                    <td className="px-4 py-3 text-sm font-semibold text-emerald-700 text-right whitespace-nowrap">
+                    <td className="px-4 py-3 text-sm font-semibold text-leaf-700 text-right whitespace-nowrap">
                       +{formatAmount(income.amount)}
                     </td>
                   </tr>
