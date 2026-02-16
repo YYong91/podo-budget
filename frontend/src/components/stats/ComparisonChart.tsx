@@ -36,8 +36,8 @@ export default function ComparisonChart({ data }: ComparisonChartProps) {
   }
 
   return (
-    <div className="bg-white rounded-2xl border border-stone-200/60 shadow-sm p-4 sm:p-5">
-      <h3 className="text-base font-semibold text-stone-700 mb-4">기간 비교</h3>
+    <div className="bg-white rounded-2xl border border-warm-200/60 shadow-sm p-4 sm:p-5">
+      <h3 className="text-base font-semibold text-warm-700 mb-4">기간 비교</h3>
       <div className="h-[200px]">
         <Bar
           ref={chartRef}

@@ -44,9 +44,9 @@ function getRoleBadgeColor(role: string): string {
     case 'admin':
       return 'bg-blue-50 text-blue-700 border-blue-200'
     case 'member':
-      return 'bg-stone-50 text-stone-700 border-stone-200'
+      return 'bg-warm-50 text-warm-700 border-warm-200'
     default:
-      return 'bg-stone-50 text-stone-700 border-stone-200'
+      return 'bg-warm-50 text-warm-700 border-warm-200'
   }
 }
 
@@ -125,8 +125,8 @@ export default function HouseholdListPage() {
   if (error && households.length === 0) {
     return (
       <div className="space-y-6">
-        <h1 className="text-2xl font-bold text-stone-900">공유 가계부</h1>
-        <div className="bg-white rounded-2xl shadow-sm border border-stone-200">
+        <h1 className="text-2xl font-bold text-warm-900">공유 가계부</h1>
+        <div className="bg-white rounded-2xl shadow-sm border border-warm-200">
           <ErrorState onRetry={fetchHouseholds} />
         </div>
       </div>
@@ -138,8 +138,8 @@ export default function HouseholdListPage() {
       {/* 헤더 */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-stone-900">공유 가계부</h1>
-          <p className="text-sm text-stone-500 mt-1">
+          <h1 className="text-2xl font-bold text-warm-900">공유 가계부</h1>
+          <p className="text-sm text-warm-500 mt-1">
             가족이나 친구들과 함께 지출을 관리하세요
           </p>
         </div>
@@ -171,11 +171,11 @@ export default function HouseholdListPage() {
             <div
               key={household.id}
               onClick={() => handleCardClick(household.id)}
-              className="bg-white rounded-2xl shadow-sm border border-stone-200 p-5 hover:shadow-md hover:border-grape-300 transition-all cursor-pointer"
+              className="bg-white rounded-2xl shadow-sm border border-warm-200 p-5 hover:shadow-md hover:border-grape-300 transition-all cursor-pointer"
             >
               {/* 가구 이름 및 역할 */}
               <div className="flex items-start justify-between mb-3">
-                <h3 className="text-lg font-semibold text-stone-900">
+                <h3 className="text-lg font-semibold text-warm-900">
                   {household.name}
                 </h3>
                 <span
@@ -189,13 +189,13 @@ export default function HouseholdListPage() {
 
               {/* 설명 */}
               {household.description && (
-                <p className="text-sm text-stone-600 mb-4 line-clamp-2">
+                <p className="text-sm text-warm-600 mb-4 line-clamp-2">
                   {household.description}
                 </p>
               )}
 
               {/* 정보 */}
-              <div className="flex items-center justify-between text-xs text-stone-500 pt-3 border-t border-stone-100">
+              <div className="flex items-center justify-between text-xs text-warm-500 pt-3 border-t border-warm-100">
                 <div className="flex items-center gap-1">
                   <Users className="w-3.5 h-3.5" />
                   <span>{household.member_count}명</span>

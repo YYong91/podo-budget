@@ -79,13 +79,13 @@ export default function Layout() {
   const activeHousehold = households.find((h) => h.id === activeHouseholdId)
 
   return (
-    <div className="min-h-screen bg-stone-50">
+    <div className="min-h-screen bg-cream">
       {/* 헤더 */}
-      <header className="bg-white shadow-sm border-b border-stone-200 sticky top-0 z-30">
+      <header className="bg-white shadow-sm border-b border-warm-200 sticky top-0 z-30">
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button
-              className="md:hidden p-2 rounded-md hover:bg-stone-100"
+              className="md:hidden p-2 rounded-md hover:bg-warm-100"
               onClick={() => setSidebarOpen(!sidebarOpen)}
               aria-label="메뉴 열기"
             >
@@ -95,18 +95,18 @@ export default function Layout() {
               <Home className="w-5 h-5" />
               HomeNRich
             </Link>
-            <span className="text-xs text-stone-400 hidden sm:inline">가계부</span>
+            <span className="text-xs text-warm-400 hidden sm:inline">가계부</span>
           </div>
           <div className="flex items-center gap-3">
             {user && (
               <>
-                <span className="text-sm text-stone-600 hidden sm:inline">{user.username}</span>
+                <span className="text-sm text-warm-600 hidden sm:inline">{user.username}</span>
                 <button
                   onClick={() => {
                     logout()
                     navigate('/login')
                   }}
-                  className="text-sm text-stone-500 hover:text-stone-700 transition-colors"
+                  className="text-sm text-warm-500 hover:text-warm-700 transition-colors"
                 >
                   로그아웃
                 </button>
@@ -123,7 +123,7 @@ export default function Layout() {
         <aside
           className={`
             fixed md:sticky top-16 left-0 z-20 h-[calc(100vh-4rem)]
-            w-60 bg-stone-50 border-r border-stone-200 p-4
+            w-60 bg-cream border-r border-warm-200 p-4
             transition-transform duration-200 ease-in-out
             ${sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
           `}
@@ -140,7 +140,7 @@ export default function Layout() {
                 <span>가계부를 만들어주세요</span>
               </Link>
             ) : households.length === 1 ? (
-              <div className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm bg-stone-100 text-stone-700">
+              <div className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm bg-warm-100 text-warm-700">
                 <Home className="w-4 h-4" />
                 <span className="font-medium truncate">{activeHousehold?.name ?? '가구'}</span>
               </div>
@@ -151,16 +151,16 @@ export default function Layout() {
                     e.stopPropagation()
                     setHouseholdDropdownOpen(!householdDropdownOpen)
                   }}
-                  className="flex items-center justify-between w-full px-3 py-2 rounded-lg text-sm bg-stone-100 hover:bg-stone-200 text-stone-700 transition-colors"
+                  className="flex items-center justify-between w-full px-3 py-2 rounded-lg text-sm bg-warm-100 hover:bg-warm-200 text-warm-700 transition-colors"
                 >
                   <div className="flex items-center gap-2 min-w-0">
                     <Home className="w-4 h-4" />
                     <span className="font-medium truncate">{activeHousehold?.name ?? '가구 선택'}</span>
                   </div>
-                  <ChevronDown className="w-3.5 h-3.5 text-stone-400 ml-1 flex-shrink-0" />
+                  <ChevronDown className="w-3.5 h-3.5 text-warm-400 ml-1 flex-shrink-0" />
                 </button>
                 {householdDropdownOpen && (
-                  <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-stone-200 rounded-lg shadow-lg z-50 py-1">
+                  <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-warm-200 rounded-lg shadow-lg z-50 py-1">
                     {households.map((h) => (
                       <button
                         key={h.id}
@@ -168,8 +168,8 @@ export default function Layout() {
                           setActiveHouseholdId(h.id)
                           setHouseholdDropdownOpen(false)
                         }}
-                        className={`w-full text-left px-3 py-2 text-sm hover:bg-stone-100 transition-colors truncate ${
-                          h.id === activeHouseholdId ? 'text-grape-700 font-medium bg-grape-50' : 'text-stone-700'
+                        className={`w-full text-left px-3 py-2 text-sm hover:bg-warm-100 transition-colors truncate ${
+                          h.id === activeHouseholdId ? 'text-grape-700 font-medium bg-grape-50' : 'text-warm-700'
                         }`}
                       >
                         {h.name}
@@ -195,7 +195,7 @@ export default function Layout() {
                     transition-colors relative
                     ${isActive
                       ? 'bg-grape-50 text-grape-800 border-l-3 border-grape-500'
-                      : 'text-stone-600 hover:bg-stone-100 hover:text-stone-800'
+                      : 'text-warm-600 hover:bg-warm-100 hover:text-warm-800'
                     }
                   `}
                 >
@@ -221,7 +221,7 @@ export default function Layout() {
                   transition-colors relative
                   ${location.pathname === '/invitations'
                     ? 'bg-grape-50 text-grape-800 border-l-3 border-grape-500'
-                    : 'text-stone-600 hover:bg-stone-100 hover:text-stone-800'
+                    : 'text-warm-600 hover:bg-warm-100 hover:text-warm-800'
                   }
                 `}
               >

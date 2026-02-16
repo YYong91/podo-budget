@@ -102,19 +102,19 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-stone-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-sm border border-stone-200/60 w-full max-w-md p-8">
+    <div className="min-h-screen bg-warm-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl shadow-sm border border-warm-200/60 w-full max-w-md p-8">
         {/* 로고 */}
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-2 mb-1">
             <Home className="w-6 h-6 text-grape-600" />
             <h1 className="text-2xl font-bold text-grape-600">HomeNRich</h1>
           </div>
-          <p className="text-sm text-stone-500 mt-1">부부가 함께 쓰는 AI 가계부</p>
+          <p className="text-sm text-warm-500 mt-1">부부가 함께 쓰는 AI 가계부</p>
         </div>
 
         {/* 탭 */}
-        <div className="flex border-b border-stone-200 mb-6">
+        <div className="flex border-b border-warm-200 mb-6">
           <button
             type="button"
             onClick={() => {
@@ -127,7 +127,7 @@ export default function LoginPage() {
             className={`flex-1 py-2 text-sm font-medium transition-colors ${
               activeTab === 'login'
                 ? 'text-grape-600 border-b-2 border-grape-600'
-                : 'text-stone-500 hover:text-stone-700'
+                : 'text-warm-500 hover:text-warm-700'
             }`}
           >
             로그인
@@ -141,7 +141,7 @@ export default function LoginPage() {
             className={`flex-1 py-2 text-sm font-medium transition-colors ${
               activeTab === 'register'
                 ? 'text-grape-600 border-b-2 border-grape-600'
-                : 'text-stone-500 hover:text-stone-700'
+                : 'text-warm-500 hover:text-warm-700'
             }`}
           >
             회원가입
@@ -152,7 +152,7 @@ export default function LoginPage() {
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* 사용자명 입력 */}
           <div>
-            <label htmlFor="username" className="block text-sm font-medium text-stone-700 mb-1">
+            <label htmlFor="username" className="block text-sm font-medium text-warm-700 mb-1">
               사용자명
             </label>
             <input
@@ -161,7 +161,7 @@ export default function LoginPage() {
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               className={`w-full px-3 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500 ${
-                errors.username ? 'border-red-500' : 'border-stone-300'
+                errors.username ? 'border-red-500' : 'border-warm-300'
               }`}
               placeholder="사용자명 입력"
               disabled={loading}
@@ -173,7 +173,7 @@ export default function LoginPage() {
 
           {/* 비밀번호 입력 */}
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-stone-700 mb-1">
+            <label htmlFor="password" className="block text-sm font-medium text-warm-700 mb-1">
               비밀번호
             </label>
             <input
@@ -182,7 +182,7 @@ export default function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className={`w-full px-3 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500 ${
-                errors.password ? 'border-red-500' : 'border-stone-300'
+                errors.password ? 'border-red-500' : 'border-warm-300'
               }`}
               placeholder="비밀번호 입력"
               disabled={loading}
@@ -195,8 +195,8 @@ export default function LoginPage() {
           {/* 이메일 입력 (회원가입 시에만) */}
           {activeTab === 'register' && (
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-stone-700 mb-1">
-                이메일 <span className="text-stone-400">(선택)</span>
+              <label htmlFor="email" className="block text-sm font-medium text-warm-700 mb-1">
+                이메일 <span className="text-warm-400">(선택)</span>
               </label>
               <input
                 id="email"
@@ -204,7 +204,7 @@ export default function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className={`w-full px-3 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500 ${
-                  errors.email ? 'border-red-500' : 'border-stone-300'
+                  errors.email ? 'border-red-500' : 'border-warm-300'
                 }`}
                 placeholder="초대 받기에 사용됩니다"
                 disabled={loading}
@@ -224,10 +224,10 @@ export default function LoginPage() {
                   type="checkbox"
                   checked={termsAgreed}
                   onChange={(e) => setTermsAgreed(e.target.checked)}
-                  className="mt-0.5 h-4 w-4 text-grape-600 border-stone-300 rounded focus:ring-grape-500"
+                  className="mt-0.5 h-4 w-4 text-grape-600 border-warm-300 rounded focus:ring-grape-500"
                   disabled={loading}
                 />
-                <label htmlFor="terms" className="text-sm text-stone-700 flex-1">
+                <label htmlFor="terms" className="text-sm text-warm-700 flex-1">
                   <Link
                     to="/terms"
                     target="_blank"
@@ -245,10 +245,10 @@ export default function LoginPage() {
                   type="checkbox"
                   checked={privacyAgreed}
                   onChange={(e) => setPrivacyAgreed(e.target.checked)}
-                  className="mt-0.5 h-4 w-4 text-grape-600 border-stone-300 rounded focus:ring-grape-500"
+                  className="mt-0.5 h-4 w-4 text-grape-600 border-warm-300 rounded focus:ring-grape-500"
                   disabled={loading}
                 />
-                <label htmlFor="privacy" className="text-sm text-stone-700 flex-1">
+                <label htmlFor="privacy" className="text-sm text-warm-700 flex-1">
                   <Link
                     to="/privacy"
                     target="_blank"
@@ -267,7 +267,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading || (activeTab === 'register' && (!termsAgreed || !privacyAgreed))}
-            className="w-full py-2.5 bg-grape-600 text-white font-medium rounded-xl hover:bg-grape-700 shadow-sm shadow-grape-200 active:scale-[0.98] transition-all disabled:bg-stone-300 disabled:cursor-not-allowed"
+            className="w-full py-2.5 bg-grape-600 text-white font-medium rounded-xl hover:bg-grape-700 shadow-sm shadow-grape-200 active:scale-[0.98] transition-all disabled:bg-warm-300 disabled:cursor-not-allowed"
           >
             {loading ? (
               <span className="flex items-center justify-center gap-2">
@@ -281,11 +281,11 @@ export default function LoginPage() {
         </form>
 
         {/* 안내 메시지 */}
-        <div className="mt-6 text-center text-sm text-stone-500">
+        <div className="mt-6 text-center text-sm text-warm-500">
           {activeTab === 'login' ? (
             <>
               <p className="mb-2">
-                <Link to="/forgot-password" className="text-stone-500 hover:text-stone-700 text-xs">
+                <Link to="/forgot-password" className="text-warm-500 hover:text-warm-700 text-xs">
                   비밀번호를 잊으셨나요?
                 </Link>
               </p>

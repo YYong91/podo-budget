@@ -44,11 +44,11 @@ export default function EmptyState({
       <div className="w-16 h-16 rounded-full bg-grape-50 flex items-center justify-center mb-4">
         {icon ?? defaultIcon}
       </div>
-      <h3 className="text-lg font-semibold text-stone-900 mb-2 text-center">
+      <h3 className="text-lg font-semibold text-warm-900 mb-2 text-center">
         {title}
       </h3>
       {description && (
-        <p className="text-sm text-stone-500 mb-6 text-center max-w-md">
+        <p className="text-sm text-warm-500 mb-6 text-center max-w-md">
           {description}
         </p>
       )}
@@ -65,7 +65,7 @@ export default function EmptyState({
           {secondaryAction && (
             <button
               onClick={secondaryAction.onClick}
-              className="px-5 py-2.5 text-sm font-medium text-stone-700 bg-white border border-stone-300 hover:bg-stone-50 rounded-xl active:scale-[0.98] transition-all"
+              className="px-5 py-2.5 text-sm font-medium text-warm-700 bg-white border border-warm-300 hover:bg-warm-50 rounded-xl active:scale-[0.98] transition-all"
             >
               {secondaryAction.label}
             </button>

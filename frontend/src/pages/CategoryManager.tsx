@@ -133,8 +133,8 @@ export default function CategoryManager() {
   if (error) {
     return (
       <div className="space-y-6">
-        <h1 className="text-2xl font-bold text-stone-900">카테고리 관리</h1>
-        <div className="bg-white rounded-2xl shadow-sm border border-stone-200">
+        <h1 className="text-2xl font-bold text-warm-900">카테고리 관리</h1>
+        <div className="bg-white rounded-2xl shadow-sm border border-warm-200">
           <ErrorState onRetry={fetchCategories} />
         </div>
       </div>
@@ -145,7 +145,7 @@ export default function CategoryManager() {
     <div className="space-y-6">
       {/* 헤더 */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <h1 className="text-2xl font-bold text-stone-900">카테고리 관리</h1>
+        <h1 className="text-2xl font-bold text-warm-900">카테고리 관리</h1>
         <button
           onClick={() => setIsAdding(true)}
           className="w-full sm:w-auto px-4 py-2 text-sm font-medium text-white bg-grape-600 rounded-lg hover:bg-grape-700 transition-colors"
@@ -155,26 +155,26 @@ export default function CategoryManager() {
       </div>
 
       {/* 카테고리 목록 */}
-      <div className="bg-white rounded-2xl shadow-sm border border-stone-200 overflow-hidden">
+      <div className="bg-white rounded-2xl shadow-sm border border-warm-200 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
-              <tr className="border-b border-stone-200 bg-stone-50">
-                <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">
+              <tr className="border-b border-warm-200 bg-warm-50">
+                <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-warm-500 uppercase tracking-wider">
                   이름
                 </th>
-                <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider hidden md:table-cell">
+                <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-warm-500 uppercase tracking-wider hidden md:table-cell">
                   설명
                 </th>
-                <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider hidden sm:table-cell">
+                <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-warm-500 uppercase tracking-wider hidden sm:table-cell">
                   생성일
                 </th>
-                <th className="px-4 sm:px-6 py-3 text-right text-xs font-medium text-stone-500 uppercase tracking-wider">
+                <th className="px-4 sm:px-6 py-3 text-right text-xs font-medium text-warm-500 uppercase tracking-wider">
                   작업
                 </th>
               </tr>
             </thead>
-          <tbody className="divide-y divide-stone-100">
+          <tbody className="divide-y divide-warm-100">
             {/* 추가 폼 (isAdding일 때) */}
             {isAdding && (
               <tr className="bg-grape-50">
@@ -184,7 +184,7 @@ export default function CategoryManager() {
                     value={newName}
                     onChange={(e) => setNewName(e.target.value)}
                     placeholder="카테고리 이름"
-                    className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-grape-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-warm-300 rounded-lg focus:ring-2 focus:ring-grape-500 focus:border-transparent"
                     autoFocus
                   />
                 </td>
@@ -194,7 +194,7 @@ export default function CategoryManager() {
                     value={newDescription}
                     onChange={(e) => setNewDescription(e.target.value)}
                     placeholder="설명 (선택)"
-                    className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-grape-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-warm-300 rounded-lg focus:ring-2 focus:ring-grape-500 focus:border-transparent"
                   />
                 </td>
                 <td className="px-4 sm:px-6 py-4 hidden sm:table-cell"></td>
@@ -212,7 +212,7 @@ export default function CategoryManager() {
                         setNewName('')
                         setNewDescription('')
                       }}
-                      className="px-3 py-1.5 text-sm font-medium text-stone-700 bg-stone-100 rounded-lg hover:bg-stone-200 transition-colors"
+                      className="px-3 py-1.5 text-sm font-medium text-warm-700 bg-warm-100 rounded-lg hover:bg-warm-200 transition-colors"
                     >
                       취소
                     </button>
@@ -228,7 +228,7 @@ export default function CategoryManager() {
                 return (
                   <tr
                     key={category.id}
-                    className={isEditing ? 'bg-grape-50' : 'hover:bg-stone-50 transition-colors'}
+                    className={isEditing ? 'bg-grape-50' : 'hover:bg-warm-50 transition-colors'}
                   >
                     <td className="px-4 sm:px-6 py-4">
                       {isEditing ? (
@@ -238,16 +238,16 @@ export default function CategoryManager() {
                           onChange={(e) =>
                             setEditForm({ ...editForm, name: e.target.value })
                           }
-                          className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-grape-500 focus:border-transparent"
+                          className="w-full px-3 py-2 border border-warm-300 rounded-lg focus:ring-2 focus:ring-grape-500 focus:border-transparent"
                           autoFocus
                         />
                       ) : (
                         <div>
-                          <span className="font-medium text-stone-900">
+                          <span className="font-medium text-warm-900">
                             {category.name}
                           </span>
                           {/* 모바일에서만 설명 표시 */}
-                          <div className="md:hidden text-sm text-stone-600 mt-1">
+                          <div className="md:hidden text-sm text-warm-600 mt-1">
                             {category.description || '-'}
                           </div>
                         </div>
@@ -264,16 +264,16 @@ export default function CategoryManager() {
                               description: e.target.value,
                             })
                           }
-                          className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-grape-500 focus:border-transparent"
+                          className="w-full px-3 py-2 border border-warm-300 rounded-lg focus:ring-2 focus:ring-grape-500 focus:border-transparent"
                         />
                       ) : (
-                        <span className="text-sm text-stone-600">
+                        <span className="text-sm text-warm-600">
                           {category.description || '-'}
                         </span>
                       )}
                     </td>
                     <td className="px-4 sm:px-6 py-4 hidden sm:table-cell">
-                      <span className="text-sm text-stone-500">
+                      <span className="text-sm text-warm-500">
                         {category.created_at.slice(0, 10).replace(/-/g, '.')}
                       </span>
                     </td>
@@ -288,7 +288,7 @@ export default function CategoryManager() {
                           </button>
                           <button
                             onClick={() => setEditingId(null)}
-                            className="px-3 py-1.5 text-sm font-medium text-stone-700 bg-stone-100 rounded-lg hover:bg-stone-200 transition-colors"
+                            className="px-3 py-1.5 text-sm font-medium text-warm-700 bg-warm-100 rounded-lg hover:bg-warm-200 transition-colors"
                           >
                             취소
                           </button>
@@ -336,10 +336,10 @@ export default function CategoryManager() {
       {deleteTarget !== null && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6">
-            <h3 className="text-lg font-semibold text-stone-900 mb-2">
+            <h3 className="text-lg font-semibold text-warm-900 mb-2">
               카테고리 삭제
             </h3>
-            <p className="text-stone-600 mb-6">
+            <p className="text-warm-600 mb-6">
               정말로 이 카테고리를 삭제하시겠습니까?
               <br />
               <span className="text-sm text-rose-600">
@@ -349,7 +349,7 @@ export default function CategoryManager() {
             <div className="flex gap-3 justify-end">
               <button
                 onClick={() => setDeleteTarget(null)}
-                className="px-4 py-2 text-sm font-medium text-stone-700 bg-stone-100 rounded-lg hover:bg-stone-200 transition-colors"
+                className="px-4 py-2 text-sm font-medium text-warm-700 bg-warm-100 rounded-lg hover:bg-warm-200 transition-colors"
               >
                 취소
               </button>

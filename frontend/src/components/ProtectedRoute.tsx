@@ -18,10 +18,10 @@ export default function ProtectedRoute() {
   // 로딩 중일 때는 스피너 표시
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-stone-50">
+      <div className="min-h-screen flex items-center justify-center bg-warm-50">
         <div className="flex flex-col items-center gap-3">
           <Loader2 className="animate-spin w-10 h-10 text-grape-600" />
-          <p className="text-sm text-stone-500">로딩 중...</p>
+          <p className="text-sm text-warm-500">로딩 중...</p>
         </div>
       </div>
     )

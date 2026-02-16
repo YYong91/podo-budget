@@ -73,7 +73,7 @@ export default function IncomeList() {
   }
 
   const renderSortIcon = (field: SortField) => {
-    if (sortField !== field) return <span className="text-stone-300 ml-1">⇅</span>
+    if (sortField !== field) return <span className="text-warm-300 ml-1">⇅</span>
     return <span className="text-leaf-600 ml-1">{sortDirection === 'asc' ? '▲' : '▼'}</span>
   }
 
@@ -126,8 +126,8 @@ export default function IncomeList() {
   if (error) {
     return (
       <div className="space-y-6">
-        <h1 className="text-xl font-semibold text-stone-800">수입 목록</h1>
-        <div className="bg-white rounded-2xl shadow-sm border border-stone-200/60">
+        <h1 className="text-xl font-semibold text-warm-800">수입 목록</h1>
+        <div className="bg-white rounded-2xl shadow-sm border border-warm-200/60">
           <ErrorState onRetry={fetchIncomes} />
         </div>
       </div>
@@ -139,7 +139,7 @@ export default function IncomeList() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold text-stone-800">수입 목록</h1>
+        <h1 className="text-xl font-semibold text-warm-800">수입 목록</h1>
         <button
           onClick={() => navigate('/income/new')}
           className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-leaf-600 rounded-xl hover:bg-leaf-700 shadow-sm shadow-leaf-200 active:scale-[0.98] transition-all"
@@ -150,12 +150,12 @@ export default function IncomeList() {
       </div>
 
       {/* 필터 바 */}
-      <div className="bg-white rounded-2xl shadow-sm border border-stone-200/60 p-4">
+      <div className="bg-white rounded-2xl shadow-sm border border-warm-200/60 p-4">
         <div
           className={`grid grid-cols-1 sm:grid-cols-2 ${showMemberFilter ? 'lg:grid-cols-5' : 'lg:grid-cols-4'} gap-4`}
         >
           <div>
-            <label className="block text-xs text-stone-400 mb-1">시작일</label>
+            <label className="block text-xs text-warm-400 mb-1">시작일</label>
             <input
               type="date"
               value={startDate}
@@ -163,11 +163,11 @@ export default function IncomeList() {
                 setStartDate(e.target.value)
                 setPage(0)
               }}
-              className="w-full border border-stone-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-leaf-500/30 focus:border-leaf-500"
+              className="w-full border border-warm-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-leaf-500/30 focus:border-leaf-500"
             />
           </div>
           <div>
-            <label className="block text-xs text-stone-400 mb-1">종료일</label>
+            <label className="block text-xs text-warm-400 mb-1">종료일</label>
             <input
               type="date"
               value={endDate}
@@ -175,18 +175,18 @@ export default function IncomeList() {
                 setEndDate(e.target.value)
                 setPage(0)
               }}
-              className="w-full border border-stone-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-leaf-500/30 focus:border-leaf-500"
+              className="w-full border border-warm-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-leaf-500/30 focus:border-leaf-500"
             />
           </div>
           <div>
-            <label className="block text-xs text-stone-400 mb-1">카테고리</label>
+            <label className="block text-xs text-warm-400 mb-1">카테고리</label>
             <select
               value={categoryId ?? ''}
               onChange={(e) => {
                 setCategoryId(e.target.value ? Number(e.target.value) : undefined)
                 setPage(0)
               }}
-              className="w-full border border-stone-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-leaf-500/30 focus:border-leaf-500"
+              className="w-full border border-warm-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-leaf-500/30 focus:border-leaf-500"
             >
               <option value="">전체</option>
               {categories.map((cat) => (
@@ -198,14 +198,14 @@ export default function IncomeList() {
           </div>
           {showMemberFilter && (
             <div>
-              <label className="block text-xs text-stone-400 mb-1">멤버</label>
+              <label className="block text-xs text-warm-400 mb-1">멤버</label>
               <select
                 value={memberUserId ?? ''}
                 onChange={(e) => {
                   setMemberUserId(e.target.value ? Number(e.target.value) : undefined)
                   setPage(0)
                 }}
-                className="w-full border border-stone-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-leaf-500/30 focus:border-leaf-500"
+                className="w-full border border-warm-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-leaf-500/30 focus:border-leaf-500"
               >
                 <option value="">전체 멤버</option>
                 {members.map((m) => (
@@ -225,7 +225,7 @@ export default function IncomeList() {
                 setMemberUserId(undefined)
                 setPage(0)
               }}
-              className="w-full sm:w-auto px-4 py-2 text-sm text-stone-500 hover:text-stone-600 underline"
+              className="w-full sm:w-auto px-4 py-2 text-sm text-warm-500 hover:text-warm-600 underline"
             >
               필터 초기화
             </button>
@@ -234,7 +234,7 @@ export default function IncomeList() {
       </div>
 
       {/* 테이블 */}
-      <div className="bg-white rounded-2xl shadow-sm border border-stone-200/60 overflow-hidden">
+      <div className="bg-white rounded-2xl shadow-sm border border-warm-200/60 overflow-hidden">
         {loading ? (
           <div className="flex items-center justify-center h-32">
             <Loader2 className="w-6 h-6 animate-spin text-leaf-600" />
@@ -242,41 +242,41 @@ export default function IncomeList() {
         ) : incomes.length > 0 ? (
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-stone-50 border-b border-stone-200">
+              <thead className="bg-warm-50 border-b border-warm-200">
                 <tr>
                   <th
-                    className="text-left text-xs font-medium text-stone-400 uppercase px-4 py-3 cursor-pointer hover:bg-stone-100 select-none"
+                    className="text-left text-xs font-medium text-warm-400 uppercase px-4 py-3 cursor-pointer hover:bg-warm-100 select-none"
                     onClick={() => handleSort('date')}
                   >
                     <div className="flex items-center">날짜{renderSortIcon('date')}</div>
                   </th>
-                  <th className="text-left text-xs font-medium text-stone-400 uppercase px-4 py-3">내용</th>
-                  <th className="text-left text-xs font-medium text-stone-400 uppercase px-4 py-3 hidden sm:table-cell">
+                  <th className="text-left text-xs font-medium text-warm-400 uppercase px-4 py-3">내용</th>
+                  <th className="text-left text-xs font-medium text-warm-400 uppercase px-4 py-3 hidden sm:table-cell">
                     카테고리
                   </th>
                   {showMemberFilter && (
-                    <th className="text-left text-xs font-medium text-stone-400 uppercase px-4 py-3 hidden md:table-cell">
+                    <th className="text-left text-xs font-medium text-warm-400 uppercase px-4 py-3 hidden md:table-cell">
                       작성자
                     </th>
                   )}
                   <th
-                    className="text-right text-xs font-medium text-stone-400 uppercase px-4 py-3 cursor-pointer hover:bg-stone-100 select-none"
+                    className="text-right text-xs font-medium text-warm-400 uppercase px-4 py-3 cursor-pointer hover:bg-warm-100 select-none"
                     onClick={() => handleSort('amount')}
                   >
                     <div className="flex items-center justify-end">금액{renderSortIcon('amount')}</div>
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-stone-100">
+              <tbody className="divide-y divide-warm-100">
                 {sortedIncomes.map((income) => (
                   <tr key={income.id} className="hover:bg-leaf-50/50 transition-colors">
-                    <td className="px-4 py-3 text-sm text-stone-600 whitespace-nowrap">
+                    <td className="px-4 py-3 text-sm text-warm-600 whitespace-nowrap">
                       {income.date.slice(0, 10).replace(/-/g, '.')}
                     </td>
                     <td className="px-4 py-3 max-w-[200px] sm:max-w-none">
                       <Link
                         to={`/income/${income.id}`}
-                        className="text-sm font-medium text-stone-900 hover:text-leaf-600 transition-colors block truncate"
+                        className="text-sm font-medium text-warm-900 hover:text-leaf-600 transition-colors block truncate"
                       >
                         {income.description}
                       </Link>
@@ -288,7 +288,7 @@ export default function IncomeList() {
                     </td>
                     {showMemberFilter && (
                       <td className="px-4 py-3 hidden md:table-cell">
-                        <span className="text-xs text-stone-500">{getMemberName(income.user_id)}</span>
+                        <span className="text-xs text-warm-500">{getMemberName(income.user_id)}</span>
                       </td>
                     )}
                     <td className="px-4 py-3 text-sm font-semibold text-leaf-700 text-right whitespace-nowrap">
@@ -309,15 +309,15 @@ export default function IncomeList() {
         <button
           onClick={() => setPage((p) => Math.max(0, p - 1))}
           disabled={page === 0}
-          className="px-4 py-2 text-sm border border-stone-300 rounded-lg disabled:opacity-40 hover:bg-stone-50"
+          className="px-4 py-2 text-sm border border-warm-300 rounded-lg disabled:opacity-40 hover:bg-warm-50"
         >
           이전
         </button>
-        <span className="text-sm text-stone-500">페이지 {page + 1}</span>
+        <span className="text-sm text-warm-500">페이지 {page + 1}</span>
         <button
           onClick={() => setPage((p) => p + 1)}
           disabled={incomes.length < limit}
-          className="px-4 py-2 text-sm border border-stone-300 rounded-lg disabled:opacity-40 hover:bg-stone-50"
+          className="px-4 py-2 text-sm border border-warm-300 rounded-lg disabled:opacity-40 hover:bg-warm-50"
         >
           다음
         </button>

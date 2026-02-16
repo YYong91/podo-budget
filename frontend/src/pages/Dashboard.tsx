@@ -45,7 +45,7 @@ function StatsCards({ stats, incomeTotal }: { stats: MonthlyStats; incomeTotal?:
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-gradient-to-br from-grape-50 to-grape-100 rounded-2xl border border-grape-200/60 shadow-sm p-5 hover:shadow-md transition-shadow duration-200">
           <p className="text-sm text-grape-700/70">이번 달 총 지출</p>
-          <p className="text-2xl font-bold tracking-tight text-stone-900 mt-1">{formatAmount(total)}</p>
+          <p className="text-2xl font-bold tracking-tight text-warm-900 mt-1">{formatAmount(total)}</p>
         </div>
         <div className="bg-gradient-to-br from-leaf-50 to-leaf-100 rounded-2xl border border-leaf-200/60 shadow-sm p-5 hover:shadow-md transition-shadow duration-200">
           <p className="text-sm text-leaf-700/70">이번 달 총 수입</p>
@@ -57,9 +57,9 @@ function StatsCards({ stats, incomeTotal }: { stats: MonthlyStats; incomeTotal?:
             {netIncome >= 0 ? '+' : ''}{formatAmount(netIncome)}
           </p>
         </div>
-        <div className="bg-white rounded-2xl border border-stone-200/60 shadow-sm hover:shadow-md transition-shadow duration-200 p-5">
-          <p className="text-sm text-stone-500">일 평균 지출</p>
-          <p className="text-3xl font-bold text-stone-900 mt-1">
+        <div className="bg-white rounded-2xl border border-warm-200/60 shadow-sm hover:shadow-md transition-shadow duration-200 p-5">
+          <p className="text-sm text-warm-500">일 평균 지출</p>
+          <p className="text-3xl font-bold text-warm-900 mt-1">
             {dailyTrend.length > 0 ? formatAmount(Math.round(total / dailyTrend.length)) : '₩0'}
           </p>
         </div>
@@ -105,8 +105,8 @@ function ChartSection({ stats }: { stats: MonthlyStats }) {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       {/* 카테고리별 파이 차트 */}
-      <div className="bg-white rounded-2xl border border-stone-200/60 shadow-sm p-4 sm:p-5">
-        <h2 className="text-base font-semibold text-stone-700 mb-4">카테고리별 지출</h2>
+      <div className="bg-white rounded-2xl border border-warm-200/60 shadow-sm p-4 sm:p-5">
+        <h2 className="text-base font-semibold text-warm-700 mb-4">카테고리별 지출</h2>
         {byCategory.length > 0 ? (
           <div className="h-[250px] flex items-center justify-center">
             <Pie
@@ -128,14 +128,14 @@ function ChartSection({ stats }: { stats: MonthlyStats }) {
           </div>
         ) : (
           <div className="h-[250px] flex items-center justify-center">
-            <p className="text-sm text-stone-400">아직 카테고리별 데이터가 없습니다</p>
+            <p className="text-sm text-warm-400">아직 카테고리별 데이터가 없습니다</p>
           </div>
         )}
       </div>
 
       {/* 일별 트렌드 라인 차트 */}
-      <div className="bg-white rounded-2xl border border-stone-200/60 shadow-sm p-4 sm:p-5">
-        <h2 className="text-base font-semibold text-stone-700 mb-4">일별 지출 추이</h2>
+      <div className="bg-white rounded-2xl border border-warm-200/60 shadow-sm p-4 sm:p-5">
+        <h2 className="text-base font-semibold text-warm-700 mb-4">일별 지출 추이</h2>
         {dailyTrend.length > 0 ? (
           <div className="h-[250px]">
             <Line
@@ -169,7 +169,7 @@ function ChartSection({ stats }: { stats: MonthlyStats }) {
           </div>
         ) : (
           <div className="h-[250px] flex items-center justify-center">
-            <p className="text-sm text-stone-400">아직 일별 데이터가 없습니다</p>
+            <p className="text-sm text-warm-400">아직 일별 데이터가 없습니다</p>
           </div>
         )}
       </div>
@@ -180,15 +180,15 @@ function ChartSection({ stats }: { stats: MonthlyStats }) {
 /* 최근 지출 섹션 */
 function RecentExpenses({ expenses }: { expenses: Expense[] }) {
   return (
-    <div className="bg-white rounded-2xl border border-stone-200/60 shadow-sm p-5">
+    <div className="bg-white rounded-2xl border border-warm-200/60 shadow-sm p-5">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-base font-semibold text-stone-700">최근 지출</h2>
+        <h2 className="text-base font-semibold text-warm-700">최근 지출</h2>
         <Link to="/expenses" className="text-sm text-grape-600 hover:text-grape-700">
           전체 보기 →
         </Link>
       </div>
       {expenses.length > 0 ? (
-        <div className="divide-y divide-stone-100">
+        <div className="divide-y divide-warm-100">
           {expenses.map((expense) => (
             <Link
               key={expense.id}
@@ -196,10 +196,10 @@ function RecentExpenses({ expenses }: { expenses: Expense[] }) {
               className="flex items-center justify-between py-3 hover:bg-grape-50/50 -mx-2 px-2 rounded transition-colors"
             >
               <div className="min-w-0 flex-1">
-                <p className="font-medium text-stone-900 truncate">{expense.description}</p>
-                <p className="text-sm text-stone-500">{expense.date.slice(0, 10).replace(/-/g, '.')}</p>
+                <p className="font-medium text-warm-900 truncate">{expense.description}</p>
+                <p className="text-sm text-warm-500">{expense.date.slice(0, 10).replace(/-/g, '.')}</p>
               </div>
-              <p className="font-semibold text-stone-900 ml-4 whitespace-nowrap">{formatAmount(expense.amount)}</p>
+              <p className="font-semibold text-warm-900 ml-4 whitespace-nowrap">{formatAmount(expense.amount)}</p>
             </Link>
           ))}
         </div>
@@ -226,8 +226,8 @@ function PendingRecurring({
   if (items.length === 0) return null
 
   return (
-    <div className="bg-white rounded-2xl border border-stone-200/60 shadow-sm p-5">
-      <h2 className="text-base font-semibold text-stone-700 mb-3">오늘의 정기 거래</h2>
+    <div className="bg-white rounded-2xl border border-warm-200/60 shadow-sm p-5">
+      <h2 className="text-base font-semibold text-warm-700 mb-3">오늘의 정기 거래</h2>
       <div className="space-y-3">
         {items.map((r) => (
           <div
@@ -239,8 +239,8 @@ function PendingRecurring({
             }`}
           >
             <div className="min-w-0 flex-1">
-              <p className="font-medium text-stone-900 truncate">{r.description}</p>
-              <p className={`text-sm font-semibold ${r.type === 'expense' ? 'text-stone-700' : 'text-leaf-700'}`}>
+              <p className="font-medium text-warm-900 truncate">{r.description}</p>
+              <p className={`text-sm font-semibold ${r.type === 'expense' ? 'text-warm-700' : 'text-leaf-700'}`}>
                 {r.type === 'income' ? '+' : ''}{formatAmount(r.amount)}
               </p>
             </div>
@@ -257,7 +257,7 @@ function PendingRecurring({
               </button>
               <button
                 onClick={() => onSkip(r.id)}
-                className="px-3 py-1.5 rounded-lg text-xs font-medium bg-stone-100 text-stone-600 hover:bg-stone-200 transition-colors"
+                className="px-3 py-1.5 rounded-lg text-xs font-medium bg-warm-100 text-warm-600 hover:bg-warm-200 transition-colors"
               >
                 건너뛰기
               </button>
@@ -274,14 +274,14 @@ function RecentIncomes({ incomes }: { incomes: Income[] }) {
   if (incomes.length === 0) return null
 
   return (
-    <div className="bg-white rounded-2xl border border-stone-200/60 shadow-sm p-5">
+    <div className="bg-white rounded-2xl border border-warm-200/60 shadow-sm p-5">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-base font-semibold text-stone-700">최근 수입</h2>
+        <h2 className="text-base font-semibold text-warm-700">최근 수입</h2>
         <Link to="/income" className="text-sm text-leaf-600 hover:text-leaf-700">
           전체 보기 →
         </Link>
       </div>
-      <div className="divide-y divide-stone-100">
+      <div className="divide-y divide-warm-100">
         {incomes.map((income) => (
           <Link
             key={income.id}
@@ -289,8 +289,8 @@ function RecentIncomes({ incomes }: { incomes: Income[] }) {
             className="flex items-center justify-between py-3 hover:bg-leaf-50/50 -mx-2 px-2 rounded transition-colors"
           >
             <div className="min-w-0 flex-1">
-              <p className="font-medium text-stone-900 truncate">{income.description}</p>
-              <p className="text-sm text-stone-500">{income.date.slice(0, 10).replace(/-/g, '.')}</p>
+              <p className="font-medium text-warm-900 truncate">{income.description}</p>
+              <p className="text-sm text-warm-500">{income.date.slice(0, 10).replace(/-/g, '.')}</p>
             </div>
             <p className="font-semibold text-leaf-700 ml-4 whitespace-nowrap">+{formatAmount(income.amount)}</p>
           </Link>
@@ -400,8 +400,8 @@ export default function Dashboard() {
   if (error) {
     return (
       <div className="space-y-6">
-        <h1 className="text-xl font-semibold text-stone-800">대시보드</h1>
-        <div className="bg-white rounded-xl shadow-sm border border-stone-200/60">
+        <h1 className="text-xl font-semibold text-warm-800">대시보드</h1>
+        <div className="bg-white rounded-xl shadow-sm border border-warm-200/60">
           <ErrorState onRetry={fetchData} />
         </div>
       </div>
@@ -414,8 +414,8 @@ export default function Dashboard() {
   if (hasNoData && (!personalStats || personalStats.total === 0)) {
     return (
       <div className="space-y-6">
-        <h1 className="text-xl font-semibold text-stone-800">대시보드</h1>
-        <div className="bg-white rounded-xl shadow-sm border border-stone-200/60">
+        <h1 className="text-xl font-semibold text-warm-800">대시보드</h1>
+        <div className="bg-white rounded-xl shadow-sm border border-warm-200/60">
           <EmptyState
             title="아직 이번 달 지출 기록이 없어요"
             description="웹에서 직접 지출을 기록하거나, 텔레그램 봇을 연동하여 채팅으로 입력해보세요."
@@ -437,7 +437,7 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-xl font-semibold text-stone-800">
+      <h1 className="text-xl font-semibold text-warm-800">
         {activeHouseholdId ? '공유 가계부' : '대시보드'}
       </h1>
 
@@ -479,7 +479,7 @@ export default function Dashboard() {
         <div className="space-y-4">
           <button
             onClick={togglePersonal}
-            className="flex items-center gap-2 text-stone-700 hover:text-stone-900 transition-colors"
+            className="flex items-center gap-2 text-warm-700 hover:text-warm-900 transition-colors"
           >
             {personalExpanded ? (
               <ChevronUp className="w-5 h-5" />
@@ -487,7 +487,7 @@ export default function Dashboard() {
               <ChevronDown className="w-5 h-5" />
             )}
             <span className="text-lg font-semibold">내 개인 지출</span>
-            <span className="text-sm text-stone-500">
+            <span className="text-sm text-warm-500">
               {formatAmount(personalStats.total ?? 0)}
             </span>
           </button>

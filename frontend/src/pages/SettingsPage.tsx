@@ -58,30 +58,30 @@ export default function SettingsPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-stone-900">설정</h1>
+      <h1 className="text-2xl font-bold text-warm-900">설정</h1>
 
       {/* 사용자 정보 카드 */}
-      <div className="bg-white rounded-2xl shadow-sm border border-stone-200 p-6">
-        <h2 className="text-lg font-semibold text-stone-900 mb-4">계정 정보</h2>
+      <div className="bg-white rounded-2xl shadow-sm border border-warm-200 p-6">
+        <h2 className="text-lg font-semibold text-warm-900 mb-4">계정 정보</h2>
         <div className="space-y-3">
-          <div className="flex items-center justify-between py-2 border-b border-stone-100">
-            <span className="text-sm font-medium text-stone-600">사용자명</span>
-            <span className="text-sm text-stone-900">{user.username}</span>
+          <div className="flex items-center justify-between py-2 border-b border-warm-100">
+            <span className="text-sm font-medium text-warm-600">사용자명</span>
+            <span className="text-sm text-warm-900">{user.username}</span>
           </div>
-          <div className="flex items-center justify-between py-2 border-b border-stone-100">
-            <span className="text-sm font-medium text-stone-600">이메일</span>
-            <span className="text-sm text-stone-900">{user.email || '미등록'}</span>
+          <div className="flex items-center justify-between py-2 border-b border-warm-100">
+            <span className="text-sm font-medium text-warm-600">이메일</span>
+            <span className="text-sm text-warm-900">{user.email || '미등록'}</span>
           </div>
           <div className="flex items-center justify-between py-2">
-            <span className="text-sm font-medium text-stone-600">가입일</span>
-            <span className="text-sm text-stone-900">{formatDate(user.created_at)}</span>
+            <span className="text-sm font-medium text-warm-600">가입일</span>
+            <span className="text-sm text-warm-900">{formatDate(user.created_at)}</span>
           </div>
         </div>
       </div>
 
       {/* 계정 삭제 섹션 */}
-      <div className="bg-white rounded-2xl shadow-sm border border-stone-200 p-6">
-        <h2 className="text-lg font-semibold text-stone-900 mb-2">계정 삭제</h2>
+      <div className="bg-white rounded-2xl shadow-sm border border-warm-200 p-6">
+        <h2 className="text-lg font-semibold text-warm-900 mb-2">계정 삭제</h2>
         <div className="bg-rose-50 border border-rose-200 rounded-lg p-4 mb-4">
           <p className="text-sm text-rose-800 font-medium mb-2">⚠️ 주의사항</p>
           <p className="text-sm text-rose-700">
@@ -102,10 +102,10 @@ export default function SettingsPage() {
       {showDeleteModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6">
-            <h3 className="text-lg font-semibold text-stone-900 mb-4">
+            <h3 className="text-lg font-semibold text-warm-900 mb-4">
               정말 계정을 삭제하시겠습니까?
             </h3>
-            <p className="text-sm text-stone-600 mb-4">
+            <p className="text-sm text-warm-600 mb-4">
               계속하려면 사용자명 <strong>{user.username}</strong>을(를) 입력해주세요.
             </p>
             <input
@@ -113,7 +113,7 @@ export default function SettingsPage() {
               value={confirmUsername}
               onChange={(e) => setConfirmUsername(e.target.value)}
               placeholder="사용자명 입력"
-              className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500 mb-4"
+              className="w-full px-3 py-2 border border-warm-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500 mb-4"
               disabled={deleting}
             />
             <div className="flex gap-3">
@@ -123,14 +123,14 @@ export default function SettingsPage() {
                   setConfirmUsername('')
                 }}
                 disabled={deleting}
-                className="flex-1 px-4 py-2 text-sm font-medium text-stone-700 bg-white border border-stone-300 rounded-lg hover:bg-stone-50 transition-colors disabled:opacity-50"
+                className="flex-1 px-4 py-2 text-sm font-medium text-warm-700 bg-white border border-warm-300 rounded-lg hover:bg-warm-50 transition-colors disabled:opacity-50"
               >
                 취소
               </button>
               <button
                 onClick={handleDeleteAccount}
                 disabled={deleting || confirmUsername !== user.username}
-                className="flex-1 px-4 py-2 text-sm font-medium text-white bg-rose-600 rounded-lg hover:bg-rose-700 transition-colors disabled:bg-stone-300 disabled:cursor-not-allowed"
+                className="flex-1 px-4 py-2 text-sm font-medium text-white bg-rose-600 rounded-lg hover:bg-rose-700 transition-colors disabled:bg-warm-300 disabled:cursor-not-allowed"
               >
                 {deleting ? (
                   <span className="flex items-center justify-center gap-2">

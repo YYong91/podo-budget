@@ -118,7 +118,7 @@ describe('EmptyState', () => {
       render(<EmptyState title="테스트" secondaryAction={secondaryAction} />)
 
       const button = screen.getByRole('button', { name: '취소' })
-      expect(button).toHaveClass('bg-white', 'border-stone-300')
+      expect(button).toHaveClass('bg-white', 'border-warm-300')
     })
   })
 })

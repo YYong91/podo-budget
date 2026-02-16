@@ -76,7 +76,7 @@ export default function CreateHouseholdModal({
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6">
-        <h2 className="text-xl font-bold text-stone-900 mb-4">
+        <h2 className="text-xl font-bold text-warm-900 mb-4">
           새 가구 만들기
         </h2>
 
@@ -85,7 +85,7 @@ export default function CreateHouseholdModal({
           <div>
             <label
               htmlFor="name"
-              className="block text-sm font-medium text-stone-700 mb-1"
+              className="block text-sm font-medium text-warm-700 mb-1"
             >
               가구 이름 <span className="text-rose-500">*</span>
             </label>
@@ -94,7 +94,7 @@ export default function CreateHouseholdModal({
               type="text"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className="w-full px-3 py-2 border border-stone-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
+              className="w-full px-3 py-2 border border-warm-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
               placeholder="우리 가족"
               disabled={isLoading}
               required
@@ -105,7 +105,7 @@ export default function CreateHouseholdModal({
           <div>
             <label
               htmlFor="description"
-              className="block text-sm font-medium text-stone-700 mb-1"
+              className="block text-sm font-medium text-warm-700 mb-1"
             >
               설명 (선택)
             </label>
@@ -115,7 +115,7 @@ export default function CreateHouseholdModal({
               onChange={(e) =>
                 setFormData({ ...formData, description: e.target.value })
               }
-              className="w-full px-3 py-2 border border-stone-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500 resize-none"
+              className="w-full px-3 py-2 border border-warm-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500 resize-none"
               placeholder="가구에 대한 간단한 설명"
               rows={3}
               disabled={isLoading}
@@ -135,7 +135,7 @@ export default function CreateHouseholdModal({
               type="button"
               onClick={handleClose}
               disabled={isLoading}
-              className="flex-1 px-4 py-2 text-sm font-medium text-stone-700 bg-white border border-stone-300 rounded-lg hover:bg-stone-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 px-4 py-2 text-sm font-medium text-warm-700 bg-white border border-warm-300 rounded-lg hover:bg-warm-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               취소
             </button>

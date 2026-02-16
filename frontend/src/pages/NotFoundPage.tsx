@@ -3,11 +3,11 @@ import { Home, SearchX } from 'lucide-react'
 
 export default function NotFoundPage() {
   return (
-    <div className="min-h-screen bg-stone-50 flex items-center justify-center px-4">
+    <div className="min-h-screen bg-warm-50 flex items-center justify-center px-4">
       <div className="text-center max-w-md">
-        <SearchX className="w-16 h-16 text-stone-300 mx-auto mb-6" />
-        <h1 className="text-6xl font-bold text-stone-800 mb-2">404</h1>
-        <p className="text-lg text-stone-500 mb-8">
+        <SearchX className="w-16 h-16 text-warm-300 mx-auto mb-6" />
+        <h1 className="text-6xl font-bold text-warm-800 mb-2">404</h1>
+        <p className="text-lg text-warm-500 mb-8">
           페이지를 찾을 수 없습니다
         </p>
         <Link

@@ -30,21 +30,21 @@ export default function StatsSummaryCards({ total, count, trend, changePercentag
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
       <div className={`bg-gradient-to-br ${gradientClass} rounded-2xl border shadow-sm p-4 sm:p-5`}>
         <p className={`text-sm ${labelClass}`}>{totalLabel}</p>
-        <p className="text-xl sm:text-2xl font-bold tracking-tight text-stone-900 mt-1">{formatAmount(total)}</p>
+        <p className="text-xl sm:text-2xl font-bold tracking-tight text-warm-900 mt-1">{formatAmount(total)}</p>
       </div>
-      <div className="bg-white rounded-2xl border border-stone-200/60 shadow-sm p-4 sm:p-5">
-        <p className="text-sm text-stone-500">전기 대비</p>
+      <div className="bg-white rounded-2xl border border-warm-200/60 shadow-sm p-4 sm:p-5">
+        <p className="text-sm text-warm-500">전기 대비</p>
         <div className="mt-2">
           <ChangeIndicator percentage={changePercentage} />
         </div>
       </div>
-      <div className="bg-white rounded-2xl border border-stone-200/60 shadow-sm p-4 sm:p-5">
-        <p className="text-sm text-stone-500">건 수</p>
-        <p className="text-2xl sm:text-3xl font-bold text-stone-900 mt-1">{count}건</p>
+      <div className="bg-white rounded-2xl border border-warm-200/60 shadow-sm p-4 sm:p-5">
+        <p className="text-sm text-warm-500">건 수</p>
+        <p className="text-2xl sm:text-3xl font-bold text-warm-900 mt-1">{count}건</p>
       </div>
-      <div className="bg-white rounded-2xl border border-stone-200/60 shadow-sm p-4 sm:p-5">
-        <p className="text-sm text-stone-500">일 평균</p>
-        <p className="text-2xl sm:text-3xl font-bold text-stone-900 mt-1">{formatAmount(avgDaily)}</p>
+      <div className="bg-white rounded-2xl border border-warm-200/60 shadow-sm p-4 sm:p-5">
+        <p className="text-sm text-warm-500">일 평균</p>
+        <p className="text-2xl sm:text-3xl font-bold text-warm-900 mt-1">{formatAmount(avgDaily)}</p>
       </div>
     </div>
   )

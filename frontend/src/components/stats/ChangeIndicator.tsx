@@ -17,14 +17,14 @@ type ChangeLevel = {
 function getChangeLevel(pct: number): ChangeLevel {
   if (pct > 20) return { label: '많이 늘음', icon: '▲▲', colorClass: 'text-rose-600' }
   if (pct > 5) return { label: '조금 늘음', icon: '▲', colorClass: 'text-rose-400' }
-  if (pct >= -5) return { label: '보통', icon: '─', colorClass: 'text-stone-400' }
+  if (pct >= -5) return { label: '보통', icon: '─', colorClass: 'text-warm-400' }
   if (pct >= -20) return { label: '줄음', icon: '▼', colorClass: 'text-leaf-400' }
   return { label: '많이 줄음', icon: '▼▼', colorClass: 'text-leaf-600' }
 }
 
 export default function ChangeIndicator({ percentage, compact = false }: ChangeIndicatorProps) {
   if (percentage === null) {
-    return <span className="text-sm text-stone-300">비교 불가</span>
+    return <span className="text-sm text-warm-300">비교 불가</span>
   }
 
   const level = getChangeLevel(percentage)

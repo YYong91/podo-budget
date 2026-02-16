@@ -24,10 +24,10 @@ export default function TrendChart({ data, title = '지출 추이' }: TrendChart
 
   if (data.length === 0) {
     return (
-      <div className="bg-white rounded-2xl border border-stone-200/60 shadow-sm p-4 sm:p-5">
-        <h3 className="text-base font-semibold text-stone-700 mb-4">{title}</h3>
+      <div className="bg-white rounded-2xl border border-warm-200/60 shadow-sm p-4 sm:p-5">
+        <h3 className="text-base font-semibold text-warm-700 mb-4">{title}</h3>
         <div className="h-[250px] flex items-center justify-center">
-          <p className="text-sm text-stone-400">데이터가 없습니다</p>
+          <p className="text-sm text-warm-400">데이터가 없습니다</p>
         </div>
       </div>
     )
@@ -48,8 +48,8 @@ export default function TrendChart({ data, title = '지출 추이' }: TrendChart
   }
 
   return (
-    <div className="bg-white rounded-2xl border border-stone-200/60 shadow-sm p-4 sm:p-5">
-      <h3 className="text-base font-semibold text-stone-700 mb-4">{title}</h3>
+    <div className="bg-white rounded-2xl border border-warm-200/60 shadow-sm p-4 sm:p-5">
+      <h3 className="text-base font-semibold text-warm-700 mb-4">{title}</h3>
       <div className="h-[250px]">
         <Line
           ref={chartRef}

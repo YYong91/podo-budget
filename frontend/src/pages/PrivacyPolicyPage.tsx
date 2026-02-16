@@ -8,9 +8,9 @@ import { Link } from 'react-router-dom'
 
 export default function PrivacyPolicyPage() {
   return (
-    <div className="min-h-screen bg-stone-50">
+    <div className="min-h-screen bg-warm-50">
       {/* 헤더 */}
-      <header className="bg-white border-b border-stone-200 sticky top-0 z-10">
+      <header className="bg-white border-b border-warm-200 sticky top-0 z-10">
         <div className="max-w-4xl mx-auto px-4 py-4">
           <Link to="/login" className="text-xl font-bold text-grape-600">
             HomeNRich
@@ -20,14 +20,14 @@ export default function PrivacyPolicyPage() {
 
       {/* 본문 */}
       <main className="max-w-4xl mx-auto px-4 py-8">
-        <div className="bg-white rounded-2xl shadow-sm border border-stone-200 p-6 sm:p-8">
-          <h1 className="text-2xl sm:text-3xl font-bold text-stone-900 mb-6">
+        <div className="bg-white rounded-2xl shadow-sm border border-warm-200 p-6 sm:p-8">
+          <h1 className="text-2xl sm:text-3xl font-bold text-warm-900 mb-6">
             개인정보처리방침
           </h1>
 
-          <div className="prose prose-sm sm:prose max-w-none space-y-6 text-stone-700">
+          <div className="prose prose-sm sm:prose max-w-none space-y-6 text-warm-700">
             <section>
-              <h2 className="text-xl font-semibold text-stone-900 mb-3">1. 개인정보의 수집 항목 및 방법</h2>
+              <h2 className="text-xl font-semibold text-warm-900 mb-3">1. 개인정보의 수집 항목 및 방법</h2>
               <p className="mb-2">
                 HomeNRich(이하 "서비스")는 다음과 같은 개인정보를 수집합니다:
               </p>
@@ -41,7 +41,7 @@ export default function PrivacyPolicyPage() {
             </section>
 
             <section>
-              <h2 className="text-xl font-semibold text-stone-900 mb-3">2. 개인정보의 수집 및 이용 목적</h2>
+              <h2 className="text-xl font-semibold text-warm-900 mb-3">2. 개인정보의 수집 및 이용 목적</h2>
               <ul className="list-disc list-inside space-y-1 ml-4">
                 <li>회원 가입 및 본인 인증</li>
                 <li>가계부 서비스 제공(지출 기록, 분류, 조회, 통계)</li>
@@ -52,7 +52,7 @@ export default function PrivacyPolicyPage() {
             </section>
 
             <section>
-              <h2 className="text-xl font-semibold text-stone-900 mb-3">3. 개인정보의 제3자 제공</h2>
+              <h2 className="text-xl font-semibold text-warm-900 mb-3">3. 개인정보의 제3자 제공</h2>
               <p className="mb-2">
                 서비스는 AI 기반 자동 분류 및 인사이트 생성을 위해 다음과 같이 제3자에게 개인정보를 제공합니다:
               </p>
@@ -68,7 +68,7 @@ export default function PrivacyPolicyPage() {
             </section>
 
             <section>
-              <h2 className="text-xl font-semibold text-stone-900 mb-3">4. 개인정보의 보유 및 이용 기간</h2>
+              <h2 className="text-xl font-semibold text-warm-900 mb-3">4. 개인정보의 보유 및 이용 기간</h2>
               <ul className="list-disc list-inside space-y-1 ml-4">
                 <li><strong>회원 정보</strong>: 서비스 이용 기간 동안 보유</li>
                 <li><strong>지출 내역</strong>: 서비스 이용 기간 동안 보유</li>
@@ -77,7 +77,7 @@ export default function PrivacyPolicyPage() {
             </section>
 
             <section>
-              <h2 className="text-xl font-semibold text-stone-900 mb-3">5. 개인정보의 파기 절차 및 방법</h2>
+              <h2 className="text-xl font-semibold text-warm-900 mb-3">5. 개인정보의 파기 절차 및 방법</h2>
               <p className="mb-2">
                 사용자의 개인정보는 수집 및 이용 목적이 달성된 후 지체 없이 파기됩니다:
               </p>
@@ -88,7 +88,7 @@ export default function PrivacyPolicyPage() {
             </section>
 
             <section>
-              <h2 className="text-xl font-semibold text-stone-900 mb-3">6. 사용자 및 법정대리인의 권리</h2>
+              <h2 className="text-xl font-semibold text-warm-900 mb-3">6. 사용자 및 법정대리인의 권리</h2>
               <p className="mb-2">
                 사용자는 언제든지 다음과 같은 권리를 행사할 수 있습니다:
               </p>
@@ -100,7 +100,7 @@ export default function PrivacyPolicyPage() {
             </section>
 
             <section>
-              <h2 className="text-xl font-semibold text-stone-900 mb-3">7. 개인정보 보호책임자</h2>
+              <h2 className="text-xl font-semibold text-warm-900 mb-3">7. 개인정보 보호책임자</h2>
               <p>
                 서비스의 개인정보 보호책임자는 다음과 같습니다:
               </p>
@@ -114,7 +114,7 @@ export default function PrivacyPolicyPage() {
             </section>
 
             <section>
-              <h2 className="text-xl font-semibold text-stone-900 mb-3">8. 개인정보처리방침의 변경</h2>
+              <h2 className="text-xl font-semibold text-warm-900 mb-3">8. 개인정보처리방침의 변경</h2>
               <p>
                 본 개인정보처리방침은 법령 및 서비스 정책 변경에 따라 수정될 수 있으며, 변경 시 서비스 내 공지사항을 통해 안내합니다.
               </p>
@@ -125,7 +125,7 @@ export default function PrivacyPolicyPage() {
           </div>
 
           {/* 하단 버튼 */}
-          <div className="mt-8 pt-6 border-t border-stone-200 flex justify-center">
+          <div className="mt-8 pt-6 border-t border-warm-200 flex justify-center">
             <Link
               to="/login"
               className="px-6 py-2.5 text-sm font-medium text-grape-600 border border-grape-600 rounded-lg hover:bg-grape-50 transition-colors"

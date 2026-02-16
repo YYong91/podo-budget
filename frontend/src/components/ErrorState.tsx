@@ -28,10 +28,10 @@ export default function ErrorState({
       <div className="w-16 h-16 rounded-full bg-rose-50 flex items-center justify-center mb-4">
         <AlertTriangle className="w-8 h-8 text-rose-400" />
       </div>
-      <h3 className="text-lg font-semibold text-stone-900 mb-2 text-center">
+      <h3 className="text-lg font-semibold text-warm-900 mb-2 text-center">
         {title}
       </h3>
-      <p className="text-sm text-stone-500 mb-6 text-center max-w-md">
+      <p className="text-sm text-warm-500 mb-6 text-center max-w-md">
         {message}
       </p>
       {onRetry && (

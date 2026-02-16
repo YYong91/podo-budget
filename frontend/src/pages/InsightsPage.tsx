@@ -67,14 +67,14 @@ function renderMarkdown(text: string) {
   return text.split('\n').map((line, i) => {
     if (line.startsWith('## ')) {
       return (
-        <h3 key={i} className="text-lg font-semibold text-stone-900 mt-4 mb-2">
+        <h3 key={i} className="text-lg font-semibold text-warm-900 mt-4 mb-2">
           {line.replace('## ', '')}
         </h3>
       )
     }
     if (line.startsWith('- ')) {
       return (
-        <li key={i} className="ml-4 text-stone-700">
+        <li key={i} className="ml-4 text-warm-700">
           {renderBoldText(line.replace('- ', ''))}
         </li>
       )
@@ -83,7 +83,7 @@ function renderMarkdown(text: string) {
       return <div key={i} className="h-2" />
     }
     return (
-      <p key={i} className="text-stone-700 leading-relaxed">
+      <p key={i} className="text-warm-700 leading-relaxed">
         {renderBoldText(line)}
       </p>
     )
@@ -231,11 +231,11 @@ export default function InsightsPage() {
       {/* 헤더 */}
       <div className="flex items-center gap-2">
         <TrendingUp className="w-6 h-6 text-grape-600" />
-        <h1 className="text-2xl font-bold text-stone-900">리포트</h1>
+        <h1 className="text-2xl font-bold text-warm-900">리포트</h1>
       </div>
 
       {/* 탭 */}
-      <div className="flex gap-1 bg-stone-100 p-1 rounded-xl">
+      <div className="flex gap-1 bg-warm-100 p-1 rounded-xl">
         {TABS.map((tab) => (
           <button
             key={tab.id}
@@ -243,7 +243,7 @@ export default function InsightsPage() {
             className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
               activeTab === tab.id
                 ? 'bg-white text-grape-700 shadow-sm'
-                : 'text-stone-500 hover:text-stone-700'
+                : 'text-warm-500 hover:text-warm-700'
             }`}
           >
             {tab.icon}
@@ -256,13 +256,13 @@ export default function InsightsPage() {
       {activeTab !== 'ai' && (
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <PeriodNavigator label={getNavLabel()} onPrev={handlePrev} onNext={handleNext} />
-          <div className="flex gap-1 bg-stone-100 p-1 rounded-lg">
+          <div className="flex gap-1 bg-warm-100 p-1 rounded-lg">
             <button
               onClick={() => setDataType('expense')}
               className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
                 dataType === 'expense'
                   ? 'bg-white text-grape-700 shadow-sm'
-                  : 'text-stone-500 hover:text-stone-700'
+                  : 'text-warm-500 hover:text-warm-700'
               }`}
             >
               지출
@@ -272,7 +272,7 @@ export default function InsightsPage() {
               className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
                 dataType === 'income'
                   ? 'bg-white text-leaf-700 shadow-sm'
-                  : 'text-stone-500 hover:text-stone-700'
+                  : 'text-warm-500 hover:text-warm-700'
               }`}
             >
               수입
@@ -295,12 +295,12 @@ export default function InsightsPage() {
       {activeTab === 'ai' && (
         <>
           {/* 월 선택 및 생성 버튼 */}
-          <div className="bg-white rounded-2xl shadow-sm border border-stone-200 p-4 sm:p-6">
+          <div className="bg-white rounded-2xl shadow-sm border border-warm-200 p-4 sm:p-6">
             <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-end">
               <div className="flex-1 w-full">
                 <label
                   htmlFor="month-select"
-                  className="block text-sm font-medium text-stone-700 mb-2"
+                  className="block text-sm font-medium text-warm-700 mb-2"
                 >
                   분석할 월 선택
                 </label>
@@ -309,19 +309,19 @@ export default function InsightsPage() {
                   type="month"
                   value={selectedMonth}
                   onChange={(e) => setSelectedMonth(e.target.value)}
-                  className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
+                  className="w-full px-4 py-2 border border-warm-300 rounded-lg focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
                 />
               </div>
               <button
                 onClick={handleGenerate}
                 disabled={aiLoading}
-                className="w-full sm:w-auto px-6 py-2 text-sm font-medium text-white bg-grape-600 rounded-lg hover:bg-grape-700 disabled:bg-stone-400 disabled:cursor-not-allowed transition-colors whitespace-nowrap"
+                className="w-full sm:w-auto px-6 py-2 text-sm font-medium text-white bg-grape-600 rounded-lg hover:bg-grape-700 disabled:bg-warm-400 disabled:cursor-not-allowed transition-colors whitespace-nowrap"
               >
                 {aiLoading ? '생성 중...' : '인사이트 생성'}
               </button>
             </div>
 
-            <p className="text-sm text-stone-500 mt-3">
+            <p className="text-sm text-warm-500 mt-3">
               Claude API를 통해 해당 월의 지출 패턴을 분석하고 인사이트를
               제공합니다. (최대 30초 소요)
             </p>
@@ -329,10 +329,10 @@ export default function InsightsPage() {
 
           {/* 로딩 스피너 */}
           {aiLoading && (
-            <div className="bg-white rounded-2xl shadow-sm border border-stone-200 p-12">
+            <div className="bg-white rounded-2xl shadow-sm border border-warm-200 p-12">
               <div className="flex flex-col items-center gap-4">
                 <Loader2 className="animate-spin h-12 w-12 text-grape-600" />
-                <p className="text-stone-600">
+                <p className="text-warm-600">
                   AI가 당신의 지출을 분석하고 있습니다...
                 </p>
               </div>
@@ -343,20 +343,20 @@ export default function InsightsPage() {
           {!aiLoading && insights && (
             <div className="space-y-6">
               {/* 월별 요약 */}
-              <div className="bg-white rounded-2xl shadow-sm border border-stone-200 p-4 sm:p-6">
-                <h2 className="text-lg font-semibold text-stone-900 mb-4">
+              <div className="bg-white rounded-2xl shadow-sm border border-warm-200 p-4 sm:p-6">
+                <h2 className="text-lg font-semibold text-warm-900 mb-4">
                   {insights.month} 요약
                 </h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="bg-grape-50 rounded-lg p-4">
-                    <p className="text-sm text-stone-600 mb-1">총 지출</p>
+                    <p className="text-sm text-warm-600 mb-1">총 지출</p>
                     <p className="text-2xl font-bold text-grape-700">
                       {formatAmount(insights.total)}
                     </p>
                   </div>
-                  <div className="bg-stone-50 rounded-lg p-4">
-                    <p className="text-sm text-stone-600 mb-1">카테고리 수</p>
-                    <p className="text-2xl font-bold text-stone-700">
+                  <div className="bg-warm-50 rounded-lg p-4">
+                    <p className="text-sm text-warm-600 mb-1">카테고리 수</p>
+                    <p className="text-2xl font-bold text-warm-700">
                       {Object.keys(insights.by_category).length}개
                     </p>
                   </div>
@@ -364,8 +364,8 @@ export default function InsightsPage() {
               </div>
 
               {/* 카테고리별 금액 */}
-              <div className="bg-white rounded-2xl shadow-sm border border-stone-200 p-4 sm:p-6">
-                <h2 className="text-lg font-semibold text-stone-900 mb-4">
+              <div className="bg-white rounded-2xl shadow-sm border border-warm-200 p-4 sm:p-6">
+                <h2 className="text-lg font-semibold text-warm-900 mb-4">
                   카테고리별 지출
                 </h2>
                 <div className="space-y-3">
@@ -380,21 +380,21 @@ export default function InsightsPage() {
                         <div key={category} className="flex items-center gap-3">
                           <div className="flex-1">
                             <div className="flex justify-between items-center mb-1">
-                              <span className="text-sm font-medium text-stone-700">
+                              <span className="text-sm font-medium text-warm-700">
                                 {category}
                               </span>
-                              <span className="text-sm font-semibold text-stone-900">
+                              <span className="text-sm font-semibold text-warm-900">
                                 {formatAmount(amount)}
                               </span>
                             </div>
-                            <div className="w-full bg-stone-200 rounded-full h-2 overflow-hidden">
+                            <div className="w-full bg-warm-200 rounded-full h-2 overflow-hidden">
                               <div
                                 className="bg-grape-600 h-2 rounded-full transition-all"
                                 style={{ width: `${percentage}%` }}
                               />
                             </div>
                           </div>
-                          <span className="text-xs text-stone-500 w-12 text-right">
+                          <span className="text-xs text-warm-500 w-12 text-right">
                             {percentage}%
                           </span>
                         </div>
@@ -404,14 +404,14 @@ export default function InsightsPage() {
               </div>
 
               {/* AI 인사이트 */}
-              <div className="bg-white rounded-2xl shadow-sm border border-stone-200 p-4 sm:p-6">
+              <div className="bg-white rounded-2xl shadow-sm border border-warm-200 p-4 sm:p-6">
                 <div className="flex items-center gap-2 mb-4">
                   <TrendingUp className="w-5 h-5 text-grape-600" />
-                  <h2 className="text-lg font-semibold text-stone-900">
+                  <h2 className="text-lg font-semibold text-warm-900">
                     AI 분석
                   </h2>
                 </div>
-                <div className="prose prose-sm max-w-none text-stone-700 space-y-2">
+                <div className="prose prose-sm max-w-none text-warm-700 space-y-2">
                   {renderMarkdown(insights.insights)}
                 </div>
               </div>
@@ -420,7 +420,7 @@ export default function InsightsPage() {
 
           {/* 초기 상태 (아직 인사이트 생성 안 함) */}
           {!aiLoading && !insights && (
-            <div className="bg-white rounded-2xl shadow-sm border border-stone-200">
+            <div className="bg-white rounded-2xl shadow-sm border border-warm-200">
               <EmptyState
                 title="월을 선택하고 인사이트를 생성하세요"
                 description="AI가 당신의 지출 패턴을 분석하고 개인화된 조언을 제공합니다."

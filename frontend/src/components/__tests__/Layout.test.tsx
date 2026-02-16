@@ -86,7 +86,7 @@ describe('Layout', () => {
       renderLayout('/')
       const expenseLink = screen.getByRole('link', { name: /지출 목록/i })
       expect(expenseLink).not.toHaveClass('bg-grape-50')
-      expect(expenseLink).toHaveClass('text-stone-600')
+      expect(expenseLink).toHaveClass('text-warm-600')
     })
   })
 
