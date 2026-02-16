@@ -15,6 +15,7 @@ import { recurringApi } from '../api/recurring'
 import { useHouseholdStore } from '../stores/useHouseholdStore'
 import EmptyState from '../components/EmptyState'
 import ErrorState from '../components/ErrorState'
+import GrapeProgress from '../components/GrapeProgress'
 import { useToast } from '../hooks/useToast'
 import type { Expense, Income, MonthlyStats, RecurringTransaction, StatsResponse } from '../types'
 
@@ -443,6 +444,11 @@ export default function Dashboard() {
 
       {/* 메인 데이터 (가구 선택 시 가구, 미선택 시 개인) */}
       {stats && <StatsCards stats={stats} incomeTotal={incomeStats?.total} />}
+
+      {/* 포도알 성장 카드 */}
+      <GrapeProgress count={
+        (stats?.daily_trend?.filter(d => d.amount > 0).length ?? 0) + (incomeStats?.count ?? 0)
+      } />
 
       {/* 정기 거래 알림 */}
       <PendingRecurring
