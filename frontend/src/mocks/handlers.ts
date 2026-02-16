@@ -12,6 +12,7 @@ import {
   mockIncomeStats,
   mockMonthlyStats,
   mockInsights,
+  mockRecurringTransactions,
   mockStats,
   mockComparison,
 } from './fixtures'
@@ -201,6 +202,81 @@ export const handlers = [
     const income = mockIncomes.find((i) => i.id === Number(params.id))
     if (!income) return HttpResponse.json({ detail: 'Not found' }, { status: 404 })
     return HttpResponse.json(null, { status: 204 })
+  }),
+
+  // ==================== 정기 거래 API ====================
+
+  http.get(`${BASE_URL}/recurring`, ({ request }) => {
+    const url = new URL(request.url)
+    const type = url.searchParams.get('type')
+    let filtered = [...mockRecurringTransactions]
+    if (type) filtered = filtered.filter((r) => r.type === type)
+    return HttpResponse.json(filtered)
+  }),
+
+  http.get(`${BASE_URL}/recurring/pending`, () => {
+    return HttpResponse.json(mockRecurringTransactions.filter((r) => r.is_active))
+  }),
+
+  http.get(`${BASE_URL}/recurring/:id`, ({ params }) => {
+    const item = mockRecurringTransactions.find((r) => r.id === Number(params.id))
+    if (!item) return HttpResponse.json({ detail: 'Not found' }, { status: 404 })
+    return HttpResponse.json(item)
+  }),
+
+  http.post(`${BASE_URL}/recurring`, async ({ request }) => {
+    const body = (await request.json()) as Record<string, unknown>
+    const newItem = {
+      id: 99,
+      user_id: 1,
+      household_id: null,
+      type: body.type ?? 'expense',
+      amount: body.amount ?? 0,
+      description: body.description ?? '',
+      category_id: null,
+      frequency: body.frequency ?? 'monthly',
+      interval: body.interval ?? null,
+      day_of_month: body.day_of_month ?? null,
+      day_of_week: body.day_of_week ?? null,
+      month_of_year: body.month_of_year ?? null,
+      start_date: body.start_date ?? '2026-02-16',
+      end_date: null,
+      next_due_date: '2026-03-25',
+      is_active: true,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }
+    return HttpResponse.json(newItem, { status: 201 })
+  }),
+
+  http.put(`${BASE_URL}/recurring/:id`, async ({ params, request }) => {
+    const item = mockRecurringTransactions.find((r) => r.id === Number(params.id))
+    if (!item) return HttpResponse.json({ detail: 'Not found' }, { status: 404 })
+    const body = (await request.json()) as Record<string, unknown>
+    return HttpResponse.json({ ...item, ...body, updated_at: new Date().toISOString() })
+  }),
+
+  http.delete(`${BASE_URL}/recurring/:id`, ({ params }) => {
+    const item = mockRecurringTransactions.find((r) => r.id === Number(params.id))
+    if (!item) return HttpResponse.json({ detail: 'Not found' }, { status: 404 })
+    return HttpResponse.json(null, { status: 204 })
+  }),
+
+  http.post(`${BASE_URL}/recurring/:id/execute`, ({ params }) => {
+    const item = mockRecurringTransactions.find((r) => r.id === Number(params.id))
+    if (!item) return HttpResponse.json({ detail: 'Not found' }, { status: 404 })
+    return HttpResponse.json({
+      message: `${item.description} ${item.amount.toLocaleString()}원이 ${item.type === 'expense' ? '지출' : '수입'}으로 등록되었습니다`,
+      created_id: 100,
+      type: item.type,
+      next_due_date: '2026-03-25',
+    }, { status: 201 })
+  }),
+
+  http.post(`${BASE_URL}/recurring/:id/skip`, ({ params }) => {
+    const item = mockRecurringTransactions.find((r) => r.id === Number(params.id))
+    if (!item) return HttpResponse.json({ detail: 'Not found' }, { status: 404 })
+    return HttpResponse.json({ next_due_date: '2026-03-25' })
   }),
 
   // ==================== 카테고리 API ====================

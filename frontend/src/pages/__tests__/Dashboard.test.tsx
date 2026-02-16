@@ -4,7 +4,7 @@
  * 월별 통계, 차트, 최근 지출 목록, 로딩/에러 상태를 테스트한다.
  */
 
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import userEvent from '@testing-library/user-event'
@@ -12,6 +12,10 @@ import Dashboard from '../Dashboard'
 import { mockMonthlyStats, mockExpenses } from '../../mocks/fixtures'
 import { server } from '../../mocks/server'
 import { http, HttpResponse } from 'msw'
+
+vi.mock('../../hooks/useToast', () => ({
+  useToast: () => ({ addToast: vi.fn() }),
+}))
 
 /**
  * Dashboard를 라우터로 감싸서 렌더링

@@ -25,6 +25,7 @@ const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'))
 const IncomeList = lazy(() => import('./pages/IncomeList'))
 const IncomeForm = lazy(() => import('./pages/IncomeForm'))
 const IncomeDetail = lazy(() => import('./pages/IncomeDetail'))
+const RecurringList = lazy(() => import('./pages/RecurringList'))
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'))
 
 /* 로딩 스피너 */
@@ -58,6 +59,7 @@ function App() {
             <Route path="/income/:id" element={<IncomeDetail />} />
             <Route path="/insights" element={<InsightsPage />} />
             <Route path="/budgets" element={<BudgetManager />} />
+            <Route path="/recurring" element={<RecurringList />} />
             <Route path="/households" element={<HouseholdListPage />} />
             <Route path="/households/:id" element={<HouseholdDetailPage />} />
             <Route path="/invitations" element={<InvitationListPage />} />

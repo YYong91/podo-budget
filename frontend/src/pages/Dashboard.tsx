@@ -11,10 +11,12 @@ import { Chart as ChartJS, ArcElement, LineElement, PointElement, CategoryScale,
 import { Pie, Line } from 'react-chartjs-2'
 import { expenseApi } from '../api/expenses'
 import { incomeApi } from '../api/income'
+import { recurringApi } from '../api/recurring'
 import { useHouseholdStore } from '../stores/useHouseholdStore'
 import EmptyState from '../components/EmptyState'
 import ErrorState from '../components/ErrorState'
-import type { Expense, Income, MonthlyStats, StatsResponse } from '../types'
+import { useToast } from '../hooks/useToast'
+import type { Expense, Income, MonthlyStats, RecurringTransaction, StatsResponse } from '../types'
 
 ChartJS.register(ArcElement, LineElement, PointElement, CategoryScale, LinearScale, Filler, ChartTooltip, Legend)
 
@@ -211,6 +213,62 @@ function RecentExpenses({ expenses }: { expenses: Expense[] }) {
   )
 }
 
+/* 정기 거래 알림 카드 */
+function PendingRecurring({
+  items,
+  onExecute,
+  onSkip,
+}: {
+  items: RecurringTransaction[]
+  onExecute: (id: number) => void
+  onSkip: (id: number) => void
+}) {
+  if (items.length === 0) return null
+
+  return (
+    <div className="bg-white rounded-2xl border border-stone-200/60 shadow-sm p-5">
+      <h2 className="text-base font-semibold text-stone-700 mb-3">오늘의 정기 거래</h2>
+      <div className="space-y-3">
+        {items.map((r) => (
+          <div
+            key={r.id}
+            className={`flex items-center justify-between p-3 rounded-xl border-l-4 ${
+              r.type === 'expense'
+                ? 'border-l-amber-400 bg-amber-50/50'
+                : 'border-l-emerald-400 bg-emerald-50/50'
+            }`}
+          >
+            <div className="min-w-0 flex-1">
+              <p className="font-medium text-stone-900 truncate">{r.description}</p>
+              <p className={`text-sm font-semibold ${r.type === 'expense' ? 'text-stone-700' : 'text-emerald-700'}`}>
+                {r.type === 'income' ? '+' : ''}{formatAmount(r.amount)}
+              </p>
+            </div>
+            <div className="flex gap-2 ml-3">
+              <button
+                onClick={() => onExecute(r.id)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium text-white ${
+                  r.type === 'expense'
+                    ? 'bg-amber-600 hover:bg-amber-700'
+                    : 'bg-emerald-600 hover:bg-emerald-700'
+                } transition-colors`}
+              >
+                등록
+              </button>
+              <button
+                onClick={() => onSkip(r.id)}
+                className="px-3 py-1.5 rounded-lg text-xs font-medium bg-stone-100 text-stone-600 hover:bg-stone-200 transition-colors"
+              >
+                건너뛰기
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 /* 최근 수입 섹션 */
 function RecentIncomes({ incomes }: { incomes: Income[] }) {
   if (incomes.length === 0) return null
@@ -244,6 +302,7 @@ function RecentIncomes({ incomes }: { incomes: Income[] }) {
 
 export default function Dashboard() {
   const navigate = useNavigate()
+  const { addToast } = useToast()
   const activeHouseholdId = useHouseholdStore((s) => s.activeHouseholdId)
 
   // 공유(가구) 데이터
@@ -251,6 +310,7 @@ export default function Dashboard() {
   const [recentExpenses, setRecentExpenses] = useState<Expense[]>([])
   const [incomeStats, setIncomeStats] = useState<StatsResponse | null>(null)
   const [recentIncomes, setRecentIncomes] = useState<Income[]>([])
+  const [pendingRecurring, setPendingRecurring] = useState<RecurringTransaction[]>([])
 
   // 개인 데이터 (가구 선택 시에만 별도 로드)
   const [personalStats, setPersonalStats] = useState<MonthlyStats | null>(null)
@@ -278,20 +338,22 @@ export default function Dashboard() {
     try {
       const month = getCurrentMonth()
 
-      // 수입 통계 + 최근 수입 (에러 무시 - 수입이 없어도 대시보드 동작)
+      // 수입 통계 + 최근 수입 + 정기 거래 (에러 무시 - 없어도 대시보드 동작)
       const incomePromises = [
         incomeApi.getStats('monthly', undefined, activeHouseholdId ?? undefined).catch(() => null),
         incomeApi.getAll({ limit: 5, household_id: activeHouseholdId ?? undefined }).catch(() => ({ data: [] as Income[] })),
       ] as const
+      const pendingPromise = recurringApi.getPending(activeHouseholdId ?? undefined).catch(() => ({ data: [] as RecurringTransaction[] }))
 
       if (activeHouseholdId) {
         // 가구가 선택된 경우: 가구 데이터 + 개인 데이터 병렬 로드
-        const [householdStatsRes, householdExpensesRes, personalStatsRes, personalExpensesRes, incStatsRes, incListRes] = await Promise.all([
+        const [householdStatsRes, householdExpensesRes, personalStatsRes, personalExpensesRes, incStatsRes, incListRes, pendingRes] = await Promise.all([
           expenseApi.getMonthlyStats(month, activeHouseholdId),
           expenseApi.getAll({ limit: 5, household_id: activeHouseholdId }),
           expenseApi.getMonthlyStats(month),
           expenseApi.getAll({ limit: 5 }),
           ...incomePromises,
+          pendingPromise,
         ])
         setStats(householdStatsRes.data)
         setRecentExpenses(householdExpensesRes.data)
@@ -299,12 +361,14 @@ export default function Dashboard() {
         setPersonalExpenses(personalExpensesRes.data)
         setIncomeStats(incStatsRes?.data ?? null)
         setRecentIncomes(incListRes?.data ?? [])
+        setPendingRecurring(pendingRes?.data ?? [])
       } else {
         // 가구 미선택: 개인 데이터만
-        const [statsRes, expensesRes, incStatsRes, incListRes] = await Promise.all([
+        const [statsRes, expensesRes, incStatsRes, incListRes, pendingRes] = await Promise.all([
           expenseApi.getMonthlyStats(month),
           expenseApi.getAll({ limit: 5 }),
           ...incomePromises,
+          pendingPromise,
         ])
         setStats(statsRes.data)
         setRecentExpenses(expensesRes.data)
@@ -312,6 +376,7 @@ export default function Dashboard() {
         setPersonalExpenses([])
         setIncomeStats(incStatsRes?.data ?? null)
         setRecentIncomes(incListRes?.data ?? [])
+        setPendingRecurring(pendingRes?.data ?? [])
       }
     } catch {
       setError(true)
@@ -378,6 +443,31 @@ export default function Dashboard() {
 
       {/* 메인 데이터 (가구 선택 시 가구, 미선택 시 개인) */}
       {stats && <StatsCards stats={stats} incomeTotal={incomeStats?.total} />}
+
+      {/* 정기 거래 알림 */}
+      <PendingRecurring
+        items={pendingRecurring}
+        onExecute={async (id) => {
+          try {
+            const res = await recurringApi.execute(id)
+            addToast('success', res.data.message)
+            setPendingRecurring((prev) => prev.filter((r) => r.id !== id))
+            fetchData()
+          } catch {
+            addToast('error', '정기 거래 등록에 실패했습니다')
+          }
+        }}
+        onSkip={async (id) => {
+          try {
+            const res = await recurringApi.skip(id)
+            addToast('success', `다음 실행일: ${res.data.next_due_date}`)
+            setPendingRecurring((prev) => prev.filter((r) => r.id !== id))
+          } catch {
+            addToast('error', '건너뛰기에 실패했습니다')
+          }
+        }}
+      />
+
       {stats && <ChartSection stats={stats} />}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <RecentExpenses expenses={recentExpenses} />

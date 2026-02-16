@@ -4,7 +4,7 @@
  * API 응답을 모킹하기 위한 샘플 데이터를 정의한다.
  */
 
-import type { Expense, Income, Category, MonthlyStats, InsightsResponse, StatsResponse, ComparisonResponse } from '../types'
+import type { Expense, Income, Category, MonthlyStats, InsightsResponse, StatsResponse, ComparisonResponse, RecurringTransaction } from '../types'
 
 /**
  * 테스트용 카테고리 목록
@@ -202,6 +202,52 @@ export const mockIncomeStats: StatsResponse = {
     { label: '02/10', amount: 500000 },
   ],
 }
+
+/**
+ * 테스트용 정기 거래
+ */
+export const mockRecurringTransactions: RecurringTransaction[] = [
+  {
+    id: 1,
+    user_id: 1,
+    household_id: null,
+    type: 'expense',
+    amount: 17000,
+    description: '넷플릭스',
+    category_id: null,
+    frequency: 'monthly',
+    interval: null,
+    day_of_month: 25,
+    day_of_week: null,
+    month_of_year: null,
+    start_date: '2026-01-25',
+    end_date: null,
+    next_due_date: '2026-02-25',
+    is_active: true,
+    created_at: '2026-01-25T00:00:00Z',
+    updated_at: '2026-01-25T00:00:00Z',
+  },
+  {
+    id: 2,
+    user_id: 1,
+    household_id: null,
+    type: 'income',
+    amount: 3500000,
+    description: '급여',
+    category_id: null,
+    frequency: 'monthly',
+    interval: null,
+    day_of_month: 25,
+    day_of_week: null,
+    month_of_year: null,
+    start_date: '2026-01-25',
+    end_date: null,
+    next_due_date: '2026-02-25',
+    is_active: true,
+    created_at: '2026-01-25T00:00:00Z',
+    updated_at: '2026-01-25T00:00:00Z',
+  },
+]
 
 /**
  * 테스트용 인사이트 응답

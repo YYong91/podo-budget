@@ -190,6 +190,51 @@ export interface ComparisonResponse {
   by_category_comparison: CategoryChange[]
 }
 
+/* 정기 거래 관련 타입 */
+
+export interface RecurringTransaction {
+  id: number
+  user_id: number
+  household_id: number | null
+  type: 'expense' | 'income'
+  amount: number
+  description: string
+  category_id: number | null
+  frequency: 'monthly' | 'weekly' | 'yearly' | 'custom'
+  interval: number | null
+  day_of_month: number | null
+  day_of_week: number | null
+  month_of_year: number | null
+  start_date: string
+  end_date: string | null
+  next_due_date: string
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface RecurringTransactionCreate {
+  type: 'expense' | 'income'
+  amount: number
+  description: string
+  category_id?: number | null
+  frequency: 'monthly' | 'weekly' | 'yearly' | 'custom'
+  interval?: number | null
+  day_of_month?: number | null
+  day_of_week?: number | null
+  month_of_year?: number | null
+  start_date: string
+  end_date?: string | null
+  household_id?: number | null
+}
+
+export interface ExecuteResponse {
+  message: string
+  created_id: number
+  type: string
+  next_due_date: string
+}
+
 /* Household 관련 타입 */
 export type {
   Household,
