@@ -236,12 +236,13 @@ async def get_budget_alerts(
                 Expense.date <= end_date,
             )
         )
-        spent_amount = expense_result.scalar() or 0.0
+        spent_amount = float(expense_result.scalar() or 0)
 
         # 사용률 계산
-        usage_percentage = (spent_amount / budget.amount * 100) if budget.amount > 0 else 0
-        remaining_amount = budget.amount - spent_amount
-        is_exceeded = spent_amount > budget.amount
+        budget_amount = float(budget.amount)
+        usage_percentage = (spent_amount / budget_amount * 100) if budget_amount > 0 else 0
+        remaining_amount = budget_amount - spent_amount
+        is_exceeded = spent_amount > budget_amount
         is_warning = usage_percentage >= (budget.alert_threshold * 100)
 
         alerts.append(

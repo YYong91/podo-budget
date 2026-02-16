@@ -125,7 +125,7 @@ export const cancelInvitation = (householdId: number, invitationId: number) =>
  * @returns 내가 받은 초대 목록
  */
 export const getMyInvitations = () =>
-  apiClient.get<HouseholdInvitation[]>('/invitations/')
+  apiClient.get<HouseholdInvitation[]>('/invitations/my')
 
 /**
  * 초대 수락 API

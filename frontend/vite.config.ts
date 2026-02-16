@@ -66,7 +66,22 @@ export default defineConfig({
   ],
   server: {
     proxy: {
-      '/api': 'http://localhost:8000',
+      '/api': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+        configure: (proxy) => {
+          // FastAPI 307 리다이렉트의 Location을 상대경로로 변환
+          // → 브라우저가 같은 origin으로 리다이렉트하여 Authorization 헤더 유지
+          proxy.on('proxyRes', (proxyRes) => {
+            if (proxyRes.statusCode === 307 && proxyRes.headers.location) {
+              proxyRes.headers.location = proxyRes.headers.location.replace(
+                'http://localhost:8000',
+                '',
+              )
+            }
+          })
+        },
+      },
     },
   },
 })
