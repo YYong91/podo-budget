@@ -4,6 +4,7 @@ services:
   db:
     image: postgres:16-alpine
     container_name: homenrich-db
+    restart: unless-stopped
     environment:
       POSTGRES_USER: homenrich
       POSTGRES_PASSWORD: homenrich  # pragma: allowlist secret
@@ -23,6 +24,7 @@ services:
       context: .
       dockerfile: backend/Dockerfile
     container_name: homenrich-backend
+    restart: unless-stopped
     ports:
       - "8000:8000"
     volumes:
@@ -43,6 +45,7 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
     container_name: homenrich-frontend
+    restart: unless-stopped
     ports:
       - "3000:80"
     depends_on:
