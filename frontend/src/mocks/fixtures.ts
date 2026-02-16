@@ -13,18 +13,21 @@ export const mockCategories: Category[] = [
   {
     id: 1,
     name: '식비',
+    type: 'expense',
     description: '음식 및 식사',
     created_at: '2024-01-01T00:00:00Z',
   },
   {
     id: 2,
     name: '교통',
+    type: 'expense',
     description: '대중교통 및 택시',
     created_at: '2024-01-01T00:00:00Z',
   },
   {
     id: 3,
     name: '쇼핑',
+    type: 'both',
     description: null,
     created_at: '2024-01-01T00:00:00Z',
   },
@@ -128,6 +131,27 @@ export const mockComparison: ComparisonResponse = {
     { category: '쇼핑', current: 50000, previous: 40000, change_amount: 10000, change_percentage: 25.0 },
   ],
 }
+
+/**
+ * 테스트용 수입 카테고리 (type=income 또는 type=both인 카테고리 포함)
+ */
+export const mockIncomeCategoriesAll: Category[] = [
+  ...mockCategories,
+  {
+    id: 4,
+    name: '급여',
+    type: 'income',
+    description: '월급 및 급여',
+    created_at: '2024-01-01T00:00:00Z',
+  },
+  {
+    id: 5,
+    name: '부수입',
+    type: 'income',
+    description: '프리랜스 등 부수입',
+    created_at: '2024-01-01T00:00:00Z',
+  },
+]
 
 /**
  * 테스트용 수입 목록

@@ -16,6 +16,7 @@ export interface Expense {
 export interface Category {
   id: number
   name: string
+  type: 'expense' | 'income' | 'both'
   description: string | null
   created_at: string
 }

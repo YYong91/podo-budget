@@ -4,8 +4,8 @@
  */
 
 import { useEffect, useState, useMemo } from 'react'
-import { Link } from 'react-router-dom'
-import { Loader2 } from 'lucide-react'
+import { Link, useNavigate } from 'react-router-dom'
+import { Loader2, PlusCircle } from 'lucide-react'
 import { incomeApi } from '../api/income'
 import { categoryApi } from '../api/categories'
 import { useHouseholdStore } from '../stores/useHouseholdStore'
@@ -21,6 +21,7 @@ function formatAmount(amount: number): string {
 }
 
 export default function IncomeList() {
+  const navigate = useNavigate()
   const activeHouseholdId = useHouseholdStore((s) => s.activeHouseholdId)
   const currentHousehold = useHouseholdStore((s) => s.currentHousehold)
   const fetchHouseholdDetail = useHouseholdStore((s) => s.fetchHouseholdDetail)
@@ -137,7 +138,16 @@ export default function IncomeList() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-xl font-semibold text-stone-800">수입 목록</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-xl font-semibold text-stone-800">수입 목록</h1>
+        <button
+          onClick={() => navigate('/income/new')}
+          className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-emerald-600 rounded-xl hover:bg-emerald-700 shadow-sm shadow-emerald-200 active:scale-[0.98] transition-all"
+        >
+          <PlusCircle className="w-4 h-4" />
+          수입 등록
+        </button>
+      </div>
 
       {/* 필터 바 */}
       <div className="bg-white rounded-2xl shadow-sm border border-stone-200/60 p-4">

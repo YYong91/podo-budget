@@ -31,9 +31,9 @@ vi.mock('../../hooks/useToast', () => ({
  * 테스트용 카테고리 데이터
  */
 const mockCategories: Category[] = [
-  { id: 1, name: '식비', description: '음식 및 식사', created_at: '2024-01-01T00:00:00Z' },
-  { id: 2, name: '교통', description: '대중교통 및 택시', created_at: '2024-01-01T00:00:00Z' },
-  { id: 3, name: '쇼핑', description: null, created_at: '2024-01-01T00:00:00Z' },
+  { id: 1, name: '식비', type: 'expense', description: '음식 및 식사', created_at: '2024-01-01T00:00:00Z' },
+  { id: 2, name: '교통', type: 'expense', description: '대중교통 및 택시', created_at: '2024-01-01T00:00:00Z' },
+  { id: 3, name: '쇼핑', type: 'both', description: null, created_at: '2024-01-01T00:00:00Z' },
 ]
 
 /**

@@ -27,6 +27,7 @@ const navItems: { path: string; label: string; icon: LucideIcon }[] = [
   { path: '/expenses', label: '지출 목록', icon: Receipt },
   { path: '/expenses/new', label: '지출 입력', icon: PlusCircle },
   { path: '/income', label: '수입 목록', icon: Wallet },
+  { path: '/income/new', label: '수입 입력', icon: PlusCircle },
   { path: '/categories', label: '카테고리', icon: Tags },
   { path: '/budgets', label: '예산 관리', icon: PiggyBank },
   { path: '/insights', label: '리포트', icon: TrendingUp },
