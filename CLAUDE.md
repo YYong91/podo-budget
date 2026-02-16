@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-HomeNRich is a personal AI-powered expense tracker (가계부) where users input expenses in natural language (e.g., "오늘 점심에 김치찌개 8000원 먹었어") and an LLM automatically categorizes and stores them. Korean is the primary user-facing language.
+포도가계부(Podo Budget)는 AI 기반 가계부 앱으로, 자연어 입력(예: "오늘 점심에 김치찌개 8000원 먹었어")을 LLM이 자동 분류/저장합니다. 포도책방과 동일한 Grape 디자인 시스템을 사용하며, 거래 건수 기반 포도알 성장 메타포를 제공합니다. Korean is the primary user-facing language.
 
 ## Commands
 
@@ -77,13 +77,13 @@ frontend/src/
 ├── assets/        # Static assets
 ├── App.tsx        # React Router routes
 ├── main.tsx       # Entry point
-└── index.css      # Tailwind CSS v4 with custom Amber/Stone theme
+└── index.css      # Tailwind CSS v4 with Grape/Leaf/Warm/Cream theme (포도책방 공유)
 ```
 
 ### Frontend key patterns
 - **React 19** with TypeScript strict mode
 - **Vite 7** dev server with `/api` proxy to `http://localhost:8000`
-- **Tailwind CSS v4** with custom color palette and Korean font stack (Pretendard)
+- **Tailwind CSS v4** with Grape design system (grape/leaf/warm/cream) and Korean font stack (Pretendard)
 - **Axios** with response interceptor for error handling
 - **Recharts** for data visualization (PieChart, LineChart)
 - **React Router v7** with nested layout routing
@@ -138,6 +138,6 @@ Frontend: `frontend/.env.development`:
 ## Current State (2026-02-16)
 
 - **Backend**: 인증(비밀번호 재설정 포함), 지출 CRUD, **수입 CRUD + 통계**, 카테고리(type 필드), 예산, 인사이트, Household/초대 API 모두 구현됨. **정기 거래(RecurringTransaction) CRUD + execute/skip/pending API**. LLM 파싱(Anthropic/OpenAI) + 프리뷰 모드 + **수입/지출 자동 분류**. 자연어 컨텍스트 탐지. 멤버별 필터링. Telegram/Kakao 봇. Resend 이메일 발송. 금액 필드 Numeric(12,2). 테스트 389개.
-- **Frontend**: React 19 SPA. Amber/Stone 디자인 시스템(수입: Emerald). 자연어 입력 → 프리뷰 → 수정 → 확인 플로우. **수입 입력/목록/상세 페이지**. **정기 거래 관리 페이지 + 대시보드 알림 카드**. **대시보드 수입/순수익 카드**. **리포트 지출/수입 토글**. 비밀번호 재설정 페이지. 대시보드 통합 뷰 (공유 우선 + 개인 접기). 가구 전환 드롭다운. 멤버별 필터링. 테스트 416개 (전체 통과).
+- **Frontend**: React 19 SPA. **Grape 디자인 시스템(포도책방 공유)** — grape/leaf/warm/cream 컬러 + 포도알 성장 메타포(GrapeProgress). 자연어 입력 → 프리뷰 → 수정 → 확인 플로우. **수입 입력/목록/상세 페이지**. **정기 거래 관리 페이지 + 대시보드 알림 카드**. **대시보드 수입/순수익 카드 + 포도알 성장 카드**. **리포트 지출/수입 토글**. 비밀번호 재설정 페이지. 대시보드 통합 뷰 (공유 우선 + 개인 접기). 가구 전환 드롭다운. 멤버별 필터링. 테스트 421개 (전체 통과).
 - **Infrastructure**: Docker Compose로 PostgreSQL + Backend + Frontend 실행 가능.
 - **Phase 1**: 100%. **Phase 2**: 100%. **Phase 3**: 95% (봇 배포 제외). **Phase 4**: 85% (Sentry + CI/CD + Fly.io 설정 완료, 결제 활성화 후 배포).
