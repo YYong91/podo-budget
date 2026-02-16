@@ -89,7 +89,7 @@ export default function ExpenseList() {
       return <span className="text-stone-300 ml-1">⇅</span>
     }
     return (
-      <span className="text-amber-600 ml-1">
+      <span className="text-grape-600 ml-1">
         {sortDirection === 'asc' ? '▲' : '▼'}
       </span>
     )
@@ -184,7 +184,7 @@ export default function ExpenseList() {
               type="date"
               value={startDate}
               onChange={(e) => { setStartDate(e.target.value); setPage(0) }}
-              className="w-full border border-stone-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500"
+              className="w-full border border-stone-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
             />
           </div>
           <div>
@@ -193,7 +193,7 @@ export default function ExpenseList() {
               type="date"
               value={endDate}
               onChange={(e) => { setEndDate(e.target.value); setPage(0) }}
-              className="w-full border border-stone-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500"
+              className="w-full border border-stone-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
             />
           </div>
           <div>
@@ -201,7 +201,7 @@ export default function ExpenseList() {
             <select
               value={categoryId ?? ''}
               onChange={(e) => { setCategoryId(e.target.value ? Number(e.target.value) : undefined); setPage(0) }}
-              className="w-full border border-stone-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500"
+              className="w-full border border-stone-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
             >
               <option value="">전체</option>
               {categories.map((cat) => (
@@ -216,7 +216,7 @@ export default function ExpenseList() {
               <select
                 value={memberUserId ?? ''}
                 onChange={(e) => { setMemberUserId(e.target.value ? Number(e.target.value) : undefined); setPage(0) }}
-                className="w-full border border-stone-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500"
+                className="w-full border border-stone-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
               >
                 <option value="">전체 멤버</option>
                 {members.map((m) => (
@@ -240,7 +240,7 @@ export default function ExpenseList() {
       <div className="bg-white rounded-2xl shadow-sm border border-stone-200/60 overflow-hidden">
         {loading ? (
           <div className="flex items-center justify-center h-32">
-            <Loader2 className="w-6 h-6 animate-spin text-amber-600" />
+            <Loader2 className="w-6 h-6 animate-spin text-grape-600" />
           </div>
         ) : expenses.length > 0 ? (
           <div className="overflow-x-auto">
@@ -275,17 +275,17 @@ export default function ExpenseList() {
               </thead>
               <tbody className="divide-y divide-stone-100">
                 {sortedExpenses.map((expense) => (
-                  <tr key={expense.id} className="hover:bg-amber-50/50 transition-colors">
+                  <tr key={expense.id} className="hover:bg-grape-50/50 transition-colors">
                     <td className="px-4 py-3 text-sm text-stone-600 whitespace-nowrap">
                       {expense.date.slice(0, 10).replace(/-/g, '.')}
                     </td>
                     <td className="px-4 py-3 max-w-[200px] sm:max-w-none">
-                      <Link to={`/expenses/${expense.id}`} className="text-sm font-medium text-stone-900 hover:text-amber-600 transition-colors block truncate">
+                      <Link to={`/expenses/${expense.id}`} className="text-sm font-medium text-stone-900 hover:text-grape-600 transition-colors block truncate">
                         {expense.description}
                       </Link>
                     </td>
                     <td className="px-4 py-3 hidden sm:table-cell">
-                      <span className="inline-block bg-amber-50 text-amber-700 text-xs px-2 py-1 rounded-full">
+                      <span className="inline-block bg-grape-50 text-grape-700 text-xs px-2 py-1 rounded-full">
                         {getCategoryName(expense.category_id)}
                       </span>
                     </td>

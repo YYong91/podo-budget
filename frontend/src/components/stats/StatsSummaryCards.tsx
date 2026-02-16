@@ -12,19 +12,19 @@ interface StatsSummaryCardsProps {
   trend: TrendPoint[]
   changePercentage: number | null
   totalLabel?: string
-  accentColor?: 'amber' | 'emerald'
+  accentColor?: 'grape' | 'emerald'
 }
 
 function formatAmount(amount: number): string {
   return `₩${amount.toLocaleString('ko-KR')}`
 }
 
-export default function StatsSummaryCards({ total, count, trend, changePercentage, totalLabel = '총 지출', accentColor = 'amber' }: StatsSummaryCardsProps) {
+export default function StatsSummaryCards({ total, count, trend, changePercentage, totalLabel = '총 지출', accentColor = 'grape' }: StatsSummaryCardsProps) {
   const avgDaily = trend.length > 0 ? Math.round(total / trend.length) : 0
   const gradientClass = accentColor === 'emerald'
     ? 'from-emerald-50 to-green-50 border-emerald-200/60'
-    : 'from-amber-50 to-orange-50 border-amber-200/60'
-  const labelClass = accentColor === 'emerald' ? 'text-emerald-700/70' : 'text-amber-700/70'
+    : 'from-grape-50 to-grape-100 border-grape-200/60'
+  const labelClass = accentColor === 'emerald' ? 'text-emerald-700/70' : 'text-grape-700/70'
 
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">

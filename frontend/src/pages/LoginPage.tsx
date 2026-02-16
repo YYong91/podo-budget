@@ -107,8 +107,8 @@ export default function LoginPage() {
         {/* 로고 */}
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-2 mb-1">
-            <Home className="w-6 h-6 text-amber-600" />
-            <h1 className="text-2xl font-bold text-amber-600">HomeNRich</h1>
+            <Home className="w-6 h-6 text-grape-600" />
+            <h1 className="text-2xl font-bold text-grape-600">HomeNRich</h1>
           </div>
           <p className="text-sm text-stone-500 mt-1">부부가 함께 쓰는 AI 가계부</p>
         </div>
@@ -126,7 +126,7 @@ export default function LoginPage() {
             }}
             className={`flex-1 py-2 text-sm font-medium transition-colors ${
               activeTab === 'login'
-                ? 'text-amber-600 border-b-2 border-amber-600'
+                ? 'text-grape-600 border-b-2 border-grape-600'
                 : 'text-stone-500 hover:text-stone-700'
             }`}
           >
@@ -140,7 +140,7 @@ export default function LoginPage() {
             }}
             className={`flex-1 py-2 text-sm font-medium transition-colors ${
               activeTab === 'register'
-                ? 'text-amber-600 border-b-2 border-amber-600'
+                ? 'text-grape-600 border-b-2 border-grape-600'
                 : 'text-stone-500 hover:text-stone-700'
             }`}
           >
@@ -160,7 +160,7 @@ export default function LoginPage() {
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className={`w-full px-3 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500 ${
+              className={`w-full px-3 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500 ${
                 errors.username ? 'border-red-500' : 'border-stone-300'
               }`}
               placeholder="사용자명 입력"
@@ -181,7 +181,7 @@ export default function LoginPage() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className={`w-full px-3 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500 ${
+              className={`w-full px-3 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500 ${
                 errors.password ? 'border-red-500' : 'border-stone-300'
               }`}
               placeholder="비밀번호 입력"
@@ -203,7 +203,7 @@ export default function LoginPage() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className={`w-full px-3 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500 ${
+                className={`w-full px-3 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500 ${
                   errors.email ? 'border-red-500' : 'border-stone-300'
                 }`}
                 placeholder="초대 받기에 사용됩니다"
@@ -224,7 +224,7 @@ export default function LoginPage() {
                   type="checkbox"
                   checked={termsAgreed}
                   onChange={(e) => setTermsAgreed(e.target.checked)}
-                  className="mt-0.5 h-4 w-4 text-amber-600 border-stone-300 rounded focus:ring-amber-500"
+                  className="mt-0.5 h-4 w-4 text-grape-600 border-stone-300 rounded focus:ring-grape-500"
                   disabled={loading}
                 />
                 <label htmlFor="terms" className="text-sm text-stone-700 flex-1">
@@ -232,7 +232,7 @@ export default function LoginPage() {
                     to="/terms"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-amber-600 hover:text-amber-700 underline"
+                    className="text-grape-600 hover:text-grape-700 underline"
                   >
                     이용약관
                   </Link>
@@ -245,7 +245,7 @@ export default function LoginPage() {
                   type="checkbox"
                   checked={privacyAgreed}
                   onChange={(e) => setPrivacyAgreed(e.target.checked)}
-                  className="mt-0.5 h-4 w-4 text-amber-600 border-stone-300 rounded focus:ring-amber-500"
+                  className="mt-0.5 h-4 w-4 text-grape-600 border-stone-300 rounded focus:ring-grape-500"
                   disabled={loading}
                 />
                 <label htmlFor="privacy" className="text-sm text-stone-700 flex-1">
@@ -253,7 +253,7 @@ export default function LoginPage() {
                     to="/privacy"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-amber-600 hover:text-amber-700 underline"
+                    className="text-grape-600 hover:text-grape-700 underline"
                   >
                     개인정보처리방침
                   </Link>
@@ -267,7 +267,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading || (activeTab === 'register' && (!termsAgreed || !privacyAgreed))}
-            className="w-full py-2.5 bg-amber-600 text-white font-medium rounded-xl hover:bg-amber-700 shadow-sm shadow-amber-200 active:scale-[0.98] transition-all disabled:bg-stone-300 disabled:cursor-not-allowed"
+            className="w-full py-2.5 bg-grape-600 text-white font-medium rounded-xl hover:bg-grape-700 shadow-sm shadow-grape-200 active:scale-[0.98] transition-all disabled:bg-stone-300 disabled:cursor-not-allowed"
           >
             {loading ? (
               <span className="flex items-center justify-center gap-2">
@@ -294,7 +294,7 @@ export default function LoginPage() {
                 <button
                   type="button"
                   onClick={() => setActiveTab('register')}
-                  className="text-amber-600 hover:text-amber-700 font-medium"
+                  className="text-grape-600 hover:text-grape-700 font-medium"
                 >
                   회원가입
                 </button>
@@ -306,7 +306,7 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={() => setActiveTab('login')}
-                className="text-amber-600 hover:text-amber-700 font-medium"
+                className="text-grape-600 hover:text-grape-700 font-medium"
               >
                 로그인
               </button>

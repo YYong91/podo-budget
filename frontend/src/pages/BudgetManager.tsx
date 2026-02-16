@@ -196,7 +196,7 @@ export default function BudgetManager() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-600" />
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-grape-600" />
       </div>
     )
   }
@@ -215,7 +215,7 @@ export default function BudgetManager() {
         </div>
         <button
           onClick={handleAddClick}
-          className="px-4 py-2 text-sm font-medium text-white bg-amber-600 rounded-lg hover:bg-amber-700 transition-colors"
+          className="px-4 py-2 text-sm font-medium text-white bg-grape-600 rounded-lg hover:bg-grape-700 transition-colors"
         >
           + 예산 추가
         </button>
@@ -225,7 +225,7 @@ export default function BudgetManager() {
       {alerts.length > 0 && (
         <div className="bg-white rounded-2xl shadow-sm border border-stone-200 p-5">
           <div className="flex items-center gap-2 mb-4">
-            <Bell className="w-5 h-5 text-amber-600" />
+            <Bell className="w-5 h-5 text-grape-600" />
             <h2 className="text-lg font-semibold text-stone-900">예산 알림</h2>
           </div>
           <div className="space-y-3">
@@ -347,7 +347,7 @@ export default function BudgetManager() {
                     <td className="px-4 py-3 text-sm text-right">
                       <button
                         onClick={() => handleEditClick(budget)}
-                        className="text-amber-600 hover:text-amber-700 font-medium mr-3"
+                        className="text-grape-600 hover:text-grape-700 font-medium mr-3"
                       >
                         수정
                       </button>
@@ -384,7 +384,7 @@ export default function BudgetManager() {
                   id="category"
                   value={formData.category_id}
                   onChange={(e) => setFormData({ ...formData, category_id: e.target.value })}
-                  className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-grape-500"
                   required
                 >
                   <option value="">선택하세요</option>
@@ -408,7 +408,7 @@ export default function BudgetManager() {
                   step="1000"
                   value={formData.amount}
                   onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-                  className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-grape-500"
                   placeholder="0"
                   required
                 />
@@ -428,7 +428,7 @@ export default function BudgetManager() {
                       period: e.target.value as 'monthly' | 'weekly' | 'daily',
                     })
                   }
-                  className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-grape-500"
                 >
                   <option value="monthly">월간</option>
                   <option value="weekly">주간</option>
@@ -446,7 +446,7 @@ export default function BudgetManager() {
                   type="date"
                   value={formData.start_date}
                   onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
-                  className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-grape-500"
                 />
               </div>
 
@@ -460,7 +460,7 @@ export default function BudgetManager() {
                   type="date"
                   value={formData.end_date}
                   onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
-                  className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-grape-500"
                 />
               </div>
 
@@ -479,7 +479,7 @@ export default function BudgetManager() {
                   max="100"
                   value={formData.alert_threshold}
                   onChange={(e) => setFormData({ ...formData, alert_threshold: e.target.value })}
-                  className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-grape-500"
                   placeholder="80"
                 />
                 <p className="text-xs text-stone-500 mt-1">
@@ -498,7 +498,7 @@ export default function BudgetManager() {
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2 text-sm font-medium text-white bg-amber-600 rounded-lg hover:bg-amber-700 transition-colors"
+                  className="flex-1 px-4 py-2 text-sm font-medium text-white bg-grape-600 rounded-lg hover:bg-grape-700 transition-colors"
                 >
                   {editingBudget ? '수정' : '추가'}
                 </button>

@@ -154,7 +154,7 @@ export default function AcceptInvitationPage() {
           <button
             onClick={handleAccept}
             disabled={isProcessing}
-            className="w-full px-4 py-3 text-sm font-medium text-white bg-amber-600 rounded-lg hover:bg-amber-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full px-4 py-3 text-sm font-medium text-white bg-grape-600 rounded-lg hover:bg-grape-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isProcessing && action === 'accept' ? (
               <div className="flex items-center justify-center gap-2">

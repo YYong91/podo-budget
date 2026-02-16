@@ -20,7 +20,7 @@ import type { Expense, Income, MonthlyStats, RecurringTransaction, StatsResponse
 
 ChartJS.register(ArcElement, LineElement, PointElement, CategoryScale, LinearScale, Filler, ChartTooltip, Legend)
 
-const COLORS = ['#D97706', '#0EA5E9', '#10B981', '#F43F5E', '#8B5CF6', '#EC4899', '#06B6D4', '#78716C']
+const COLORS = ['#9333EA', '#0EA5E9', '#10B981', '#F43F5E', '#8B5CF6', '#EC4899', '#06B6D4', '#78716C']
 
 /* 금액 포맷 */
 function formatAmount(amount: number): string {
@@ -43,8 +43,8 @@ function StatsCards({ stats, incomeTotal }: { stats: MonthlyStats; incomeTotal?:
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl border border-amber-200/60 shadow-sm p-5 hover:shadow-md transition-shadow duration-200">
-          <p className="text-sm text-amber-700/70">이번 달 총 지출</p>
+        <div className="bg-gradient-to-br from-grape-50 to-grape-100 rounded-2xl border border-grape-200/60 shadow-sm p-5 hover:shadow-md transition-shadow duration-200">
+          <p className="text-sm text-grape-700/70">이번 달 총 지출</p>
           <p className="text-2xl font-bold tracking-tight text-stone-900 mt-1">{formatAmount(total)}</p>
         </div>
         <div className="bg-gradient-to-br from-emerald-50 to-green-50 rounded-2xl border border-emerald-200/60 shadow-sm p-5 hover:shadow-md transition-shadow duration-200">
@@ -91,11 +91,11 @@ function ChartSection({ stats }: { stats: MonthlyStats }) {
     datasets: [
       {
         data: dailyTrend.map((d) => d.amount),
-        borderColor: '#D97706',
-        backgroundColor: 'rgba(217, 119, 6, 0.1)',
+        borderColor: '#9333EA',
+        backgroundColor: 'rgba(147, 51, 234, 0.1)',
         borderWidth: 2,
         pointRadius: 3,
-        pointBackgroundColor: '#D97706',
+        pointBackgroundColor: '#9333EA',
         tension: 0.3,
         fill: true,
       },
@@ -183,7 +183,7 @@ function RecentExpenses({ expenses }: { expenses: Expense[] }) {
     <div className="bg-white rounded-2xl border border-stone-200/60 shadow-sm p-5">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-base font-semibold text-stone-700">최근 지출</h2>
-        <Link to="/expenses" className="text-sm text-amber-600 hover:text-amber-700">
+        <Link to="/expenses" className="text-sm text-grape-600 hover:text-grape-700">
           전체 보기 →
         </Link>
       </div>
@@ -193,7 +193,7 @@ function RecentExpenses({ expenses }: { expenses: Expense[] }) {
             <Link
               key={expense.id}
               to={`/expenses/${expense.id}`}
-              className="flex items-center justify-between py-3 hover:bg-amber-50/50 -mx-2 px-2 rounded transition-colors"
+              className="flex items-center justify-between py-3 hover:bg-grape-50/50 -mx-2 px-2 rounded transition-colors"
             >
               <div className="min-w-0 flex-1">
                 <p className="font-medium text-stone-900 truncate">{expense.description}</p>
@@ -234,7 +234,7 @@ function PendingRecurring({
             key={r.id}
             className={`flex items-center justify-between p-3 rounded-xl border-l-4 ${
               r.type === 'expense'
-                ? 'border-l-amber-400 bg-amber-50/50'
+                ? 'border-l-grape-400 bg-grape-50/50'
                 : 'border-l-emerald-400 bg-emerald-50/50'
             }`}
           >
@@ -249,7 +249,7 @@ function PendingRecurring({
                 onClick={() => onExecute(r.id)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-medium text-white ${
                   r.type === 'expense'
-                    ? 'bg-amber-600 hover:bg-amber-700'
+                    ? 'bg-grape-600 hover:bg-grape-700'
                     : 'bg-emerald-600 hover:bg-emerald-700'
                 } transition-colors`}
               >
@@ -392,7 +392,7 @@ export default function Dashboard() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="w-8 h-8 animate-spin text-amber-600" />
+        <Loader2 className="w-8 h-8 animate-spin text-grape-600" />
       </div>
     )
   }

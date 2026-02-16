@@ -32,7 +32,7 @@ const NotFoundPage = lazy(() => import('./pages/NotFoundPage'))
 function PageLoading() {
   return (
     <div className="flex items-center justify-center min-h-[50vh]">
-      <Loader2 className="w-8 h-8 text-amber-600 animate-spin" />
+      <Loader2 className="w-8 h-8 text-grape-600 animate-spin" />
     </div>
   )
 }

@@ -233,7 +233,7 @@ export default function HouseholdDetailPage() {
   if (isLoading && !currentHousehold) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-600" />
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-grape-600" />
       </div>
     )
   }
@@ -309,7 +309,7 @@ export default function HouseholdDetailPage() {
             onClick={() => setActiveTab('members')}
             className={`pb-3 px-1 text-sm font-medium border-b-2 transition-colors ${
               activeTab === 'members'
-                ? 'border-amber-600 text-amber-600'
+                ? 'border-grape-600 text-grape-600'
                 : 'border-transparent text-stone-500 hover:text-stone-700'
             }`}
           >
@@ -320,7 +320,7 @@ export default function HouseholdDetailPage() {
               onClick={() => setActiveTab('settings')}
               className={`pb-3 px-1 text-sm font-medium border-b-2 transition-colors ${
                 activeTab === 'settings'
-                  ? 'border-amber-600 text-amber-600'
+                  ? 'border-grape-600 text-grape-600'
                   : 'border-transparent text-stone-500 hover:text-stone-700'
               }`}
             >
@@ -338,7 +338,7 @@ export default function HouseholdDetailPage() {
             <div className="flex justify-end">
               <button
                 onClick={() => setShowInviteModal(true)}
-                className="px-4 py-2 text-sm font-medium text-white bg-amber-600 rounded-lg hover:bg-amber-700 transition-colors"
+                className="px-4 py-2 text-sm font-medium text-white bg-grape-600 rounded-lg hover:bg-grape-700 transition-colors"
               >
                 + 멤버 초대
               </button>
@@ -394,7 +394,7 @@ export default function HouseholdDetailPage() {
                                   e.target.value as MemberRole
                                 )
                               }
-                              className="text-sm px-2 py-1 border border-stone-300 rounded bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500"
+                              className="text-sm px-2 py-1 border border-stone-300 rounded bg-white focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
                             >
                               <option value="member">멤버</option>
                               <option value="admin">관리자</option>
@@ -465,7 +465,7 @@ export default function HouseholdDetailPage() {
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full px-3 py-2 border border-stone-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500"
+                  className="w-full px-3 py-2 border border-stone-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
                   disabled={!editMode}
                   required
                 />
@@ -484,7 +484,7 @@ export default function HouseholdDetailPage() {
                   onChange={(e) =>
                     setFormData({ ...formData, description: e.target.value })
                   }
-                  className="w-full px-3 py-2 border border-stone-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500 resize-none"
+                  className="w-full px-3 py-2 border border-stone-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500 resize-none"
                   rows={3}
                   disabled={!editMode}
                 />
@@ -508,7 +508,7 @@ export default function HouseholdDetailPage() {
                     </button>
                     <button
                       type="submit"
-                      className="px-4 py-2 text-sm font-medium text-white bg-amber-600 rounded-lg hover:bg-amber-700 transition-colors"
+                      className="px-4 py-2 text-sm font-medium text-white bg-grape-600 rounded-lg hover:bg-grape-700 transition-colors"
                     >
                       저장
                     </button>
@@ -517,7 +517,7 @@ export default function HouseholdDetailPage() {
                   <button
                     type="button"
                     onClick={() => setEditMode(true)}
-                    className="px-4 py-2 text-sm font-medium text-white bg-amber-600 rounded-lg hover:bg-amber-700 transition-colors"
+                    className="px-4 py-2 text-sm font-medium text-white bg-grape-600 rounded-lg hover:bg-grape-700 transition-colors"
                   >
                     수정
                   </button>

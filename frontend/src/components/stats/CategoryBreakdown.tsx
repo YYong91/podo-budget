@@ -44,7 +44,7 @@ export default function CategoryBreakdown({ categories, comparisons = [] }: Cate
               </div>
               <div className="w-full bg-stone-200 rounded-full h-2 overflow-hidden">
                 <div
-                  className="bg-amber-600 h-2 rounded-full transition-all"
+                  className="bg-grape-600 h-2 rounded-full transition-all"
                   style={{ width: `${cat.percentage}%` }}
                 />
               </div>

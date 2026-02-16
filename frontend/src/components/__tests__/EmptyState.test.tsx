@@ -110,7 +110,7 @@ describe('EmptyState', () => {
       render(<EmptyState title="테스트" action={action} />)
 
       const button = screen.getByRole('button', { name: '추가' })
-      expect(button).toHaveClass('bg-amber-600')
+      expect(button).toHaveClass('bg-grape-600')
     })
 
     it('보조 액션 버튼은 secondary 스타일을 가진다', () => {

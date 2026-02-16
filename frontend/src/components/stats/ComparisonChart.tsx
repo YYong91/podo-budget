@@ -28,7 +28,7 @@ export default function ComparisonChart({ data }: ComparisonChartProps) {
     datasets: [{
       data: data.map((d) => d.total),
       backgroundColor: data.map((_, i) =>
-        i === data.length - 1 ? '#D97706' : '#E7E5E4'
+        i === data.length - 1 ? '#9333EA' : '#E7E5E4'
       ),
       borderRadius: 8,
       barThickness: 40,

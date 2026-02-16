@@ -91,7 +91,7 @@ export default function Layout() {
             >
               <Menu className="w-5 h-5" />
             </button>
-            <Link to="/" className="flex items-center gap-2 text-lg font-bold text-amber-600">
+            <Link to="/" className="flex items-center gap-2 text-lg font-bold text-grape-600">
               <Home className="w-5 h-5" />
               HomeNRich
             </Link>
@@ -115,7 +115,7 @@ export default function Layout() {
           </div>
         </div>
         {/* Amber gradient 라인 */}
-        <div className="h-0.5 bg-gradient-to-r from-amber-400 via-amber-300 to-transparent" />
+        <div className="h-0.5 bg-gradient-to-r from-grape-400 via-grape-300 to-transparent" />
       </header>
 
       <div className="flex">
@@ -134,7 +134,7 @@ export default function Layout() {
               <Link
                 to="/households"
                 onClick={() => setSidebarOpen(false)}
-                className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm bg-amber-50 text-amber-700 hover:bg-amber-100 transition-colors"
+                className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm bg-grape-50 text-grape-700 hover:bg-grape-100 transition-colors"
               >
                 <Home className="w-4 h-4" />
                 <span>가계부를 만들어주세요</span>
@@ -169,7 +169,7 @@ export default function Layout() {
                           setHouseholdDropdownOpen(false)
                         }}
                         className={`w-full text-left px-3 py-2 text-sm hover:bg-stone-100 transition-colors truncate ${
-                          h.id === activeHouseholdId ? 'text-amber-700 font-medium bg-amber-50' : 'text-stone-700'
+                          h.id === activeHouseholdId ? 'text-grape-700 font-medium bg-grape-50' : 'text-stone-700'
                         }`}
                       >
                         {h.name}
@@ -194,7 +194,7 @@ export default function Layout() {
                     flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium
                     transition-colors relative
                     ${isActive
-                      ? 'bg-amber-50 text-amber-800 border-l-3 border-amber-500'
+                      ? 'bg-grape-50 text-grape-800 border-l-3 border-grape-500'
                       : 'text-stone-600 hover:bg-stone-100 hover:text-stone-800'
                     }
                   `}
@@ -220,7 +220,7 @@ export default function Layout() {
                   flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium
                   transition-colors relative
                   ${location.pathname === '/invitations'
-                    ? 'bg-amber-50 text-amber-800 border-l-3 border-amber-500'
+                    ? 'bg-grape-50 text-grape-800 border-l-3 border-grape-500'
                     : 'text-stone-600 hover:bg-stone-100 hover:text-stone-800'
                   }
                 `}

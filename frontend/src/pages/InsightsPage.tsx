@@ -134,7 +134,7 @@ function StatsTab({ period, dateStr, householdId, dataType }: { period: string; 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className={`w-8 h-8 animate-spin ${isIncome ? 'text-emerald-600' : 'text-amber-600'}`} />
+        <Loader2 className={`w-8 h-8 animate-spin ${isIncome ? 'text-emerald-600' : 'text-grape-600'}`} />
       </div>
     )
   }
@@ -152,7 +152,7 @@ function StatsTab({ period, dateStr, householdId, dataType }: { period: string; 
         trend={stats.trend}
         changePercentage={comparison?.change.percentage ?? null}
         totalLabel={isIncome ? '총 수입' : '총 지출'}
-        accentColor={isIncome ? 'emerald' : 'amber'}
+        accentColor={isIncome ? 'emerald' : 'grape'}
       />
       <TrendChart data={stats.trend} />
       {comparison && comparison.trend.length > 0 && (
@@ -230,7 +230,7 @@ export default function InsightsPage() {
     <div className="space-y-6">
       {/* 헤더 */}
       <div className="flex items-center gap-2">
-        <TrendingUp className="w-6 h-6 text-amber-600" />
+        <TrendingUp className="w-6 h-6 text-grape-600" />
         <h1 className="text-2xl font-bold text-stone-900">리포트</h1>
       </div>
 
@@ -242,7 +242,7 @@ export default function InsightsPage() {
             onClick={() => handleTabChange(tab.id)}
             className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
               activeTab === tab.id
-                ? 'bg-white text-amber-700 shadow-sm'
+                ? 'bg-white text-grape-700 shadow-sm'
                 : 'text-stone-500 hover:text-stone-700'
             }`}
           >
@@ -261,7 +261,7 @@ export default function InsightsPage() {
               onClick={() => setDataType('expense')}
               className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
                 dataType === 'expense'
-                  ? 'bg-white text-amber-700 shadow-sm'
+                  ? 'bg-white text-grape-700 shadow-sm'
                   : 'text-stone-500 hover:text-stone-700'
               }`}
             >
@@ -309,13 +309,13 @@ export default function InsightsPage() {
                   type="month"
                   value={selectedMonth}
                   onChange={(e) => setSelectedMonth(e.target.value)}
-                  className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500"
+                  className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
                 />
               </div>
               <button
                 onClick={handleGenerate}
                 disabled={aiLoading}
-                className="w-full sm:w-auto px-6 py-2 text-sm font-medium text-white bg-amber-600 rounded-lg hover:bg-amber-700 disabled:bg-stone-400 disabled:cursor-not-allowed transition-colors whitespace-nowrap"
+                className="w-full sm:w-auto px-6 py-2 text-sm font-medium text-white bg-grape-600 rounded-lg hover:bg-grape-700 disabled:bg-stone-400 disabled:cursor-not-allowed transition-colors whitespace-nowrap"
               >
                 {aiLoading ? '생성 중...' : '인사이트 생성'}
               </button>
@@ -331,7 +331,7 @@ export default function InsightsPage() {
           {aiLoading && (
             <div className="bg-white rounded-2xl shadow-sm border border-stone-200 p-12">
               <div className="flex flex-col items-center gap-4">
-                <Loader2 className="animate-spin h-12 w-12 text-amber-600" />
+                <Loader2 className="animate-spin h-12 w-12 text-grape-600" />
                 <p className="text-stone-600">
                   AI가 당신의 지출을 분석하고 있습니다...
                 </p>
@@ -348,9 +348,9 @@ export default function InsightsPage() {
                   {insights.month} 요약
                 </h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="bg-amber-50 rounded-lg p-4">
+                  <div className="bg-grape-50 rounded-lg p-4">
                     <p className="text-sm text-stone-600 mb-1">총 지출</p>
-                    <p className="text-2xl font-bold text-amber-700">
+                    <p className="text-2xl font-bold text-grape-700">
                       {formatAmount(insights.total)}
                     </p>
                   </div>
@@ -389,7 +389,7 @@ export default function InsightsPage() {
                             </div>
                             <div className="w-full bg-stone-200 rounded-full h-2 overflow-hidden">
                               <div
-                                className="bg-amber-600 h-2 rounded-full transition-all"
+                                className="bg-grape-600 h-2 rounded-full transition-all"
                                 style={{ width: `${percentage}%` }}
                               />
                             </div>
@@ -406,7 +406,7 @@ export default function InsightsPage() {
               {/* AI 인사이트 */}
               <div className="bg-white rounded-2xl shadow-sm border border-stone-200 p-4 sm:p-6">
                 <div className="flex items-center gap-2 mb-4">
-                  <TrendingUp className="w-5 h-5 text-amber-600" />
+                  <TrendingUp className="w-5 h-5 text-grape-600" />
                   <h2 className="text-lg font-semibold text-stone-900">
                     AI 분석
                   </h2>

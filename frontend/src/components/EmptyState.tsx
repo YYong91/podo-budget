@@ -37,11 +37,11 @@ export default function EmptyState({
   secondaryAction,
 }: EmptyStateProps) {
   // 기본 아이콘: Lucide Inbox
-  const defaultIcon = <Inbox className="w-8 h-8 text-amber-400" />
+  const defaultIcon = <Inbox className="w-8 h-8 text-grape-400" />
 
   return (
     <div className="flex flex-col items-center justify-center py-12 px-4">
-      <div className="w-16 h-16 rounded-full bg-amber-50 flex items-center justify-center mb-4">
+      <div className="w-16 h-16 rounded-full bg-grape-50 flex items-center justify-center mb-4">
         {icon ?? defaultIcon}
       </div>
       <h3 className="text-lg font-semibold text-stone-900 mb-2 text-center">
@@ -57,7 +57,7 @@ export default function EmptyState({
           {action && (
             <button
               onClick={action.onClick}
-              className="px-5 py-2.5 text-sm font-medium text-white bg-amber-600 hover:bg-amber-700 rounded-xl shadow-sm shadow-amber-200 active:scale-[0.98] transition-all"
+              className="px-5 py-2.5 text-sm font-medium text-white bg-grape-600 hover:bg-grape-700 rounded-xl shadow-sm shadow-grape-200 active:scale-[0.98] transition-all"
             >
               {action.label}
             </button>

@@ -107,7 +107,7 @@ export default function InviteMemberModal({
               type="email"
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              className="w-full px-3 py-2 border border-stone-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500"
+              className="w-full px-3 py-2 border border-stone-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
               placeholder="example@email.com"
               disabled={isLoading}
               required
@@ -131,7 +131,7 @@ export default function InviteMemberModal({
                   role: e.target.value as 'member' | 'admin',
                 })
               }
-              className="w-full px-3 py-2 border border-stone-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500"
+              className="w-full px-3 py-2 border border-stone-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
               disabled={isLoading}
             >
               <option value="member">멤버</option>
@@ -162,7 +162,7 @@ export default function InviteMemberModal({
             <button
               type="submit"
               disabled={isLoading}
-              className="flex-1 px-4 py-2 text-sm font-medium text-white bg-amber-600 rounded-lg hover:bg-amber-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 px-4 py-2 text-sm font-medium text-white bg-grape-600 rounded-lg hover:bg-grape-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? '초대 중...' : '초대'}
             </button>

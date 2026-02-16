@@ -37,7 +37,7 @@ export default function ErrorState({
       {onRetry && (
         <button
           onClick={onRetry}
-          className="px-5 py-2.5 text-sm font-medium text-white bg-amber-600 hover:bg-amber-700 rounded-xl shadow-sm shadow-amber-200 active:scale-[0.98] transition-all"
+          className="px-5 py-2.5 text-sm font-medium text-white bg-grape-600 hover:bg-grape-700 rounded-xl shadow-sm shadow-grape-200 active:scale-[0.98] transition-all"
         >
           다시 시도
         </button>

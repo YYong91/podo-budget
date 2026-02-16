@@ -35,8 +35,8 @@ export default function ForgotPasswordPage() {
         {/* 로고 */}
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-2 mb-1">
-            <Home className="w-6 h-6 text-amber-600" />
-            <h1 className="text-2xl font-bold text-amber-600">HomeNRich</h1>
+            <Home className="w-6 h-6 text-grape-600" />
+            <h1 className="text-2xl font-bold text-grape-600">HomeNRich</h1>
           </div>
           <p className="text-sm text-stone-500 mt-1">비밀번호 찾기</p>
         </div>
@@ -44,8 +44,8 @@ export default function ForgotPasswordPage() {
         {sent ? (
           /* 발송 완료 화면 */
           <div className="text-center">
-            <div className="mx-auto w-12 h-12 bg-amber-50 rounded-full flex items-center justify-center mb-4">
-              <Mail className="w-6 h-6 text-amber-600" />
+            <div className="mx-auto w-12 h-12 bg-grape-50 rounded-full flex items-center justify-center mb-4">
+              <Mail className="w-6 h-6 text-grape-600" />
             </div>
             <h2 className="text-lg font-semibold text-stone-800 mb-2">이메일을 확인하세요</h2>
             <p className="text-sm text-stone-500 mb-6">
@@ -54,7 +54,7 @@ export default function ForgotPasswordPage() {
             </p>
             <Link
               to="/login"
-              className="inline-flex items-center gap-1 text-sm text-amber-600 hover:text-amber-700 font-medium"
+              className="inline-flex items-center gap-1 text-sm text-grape-600 hover:text-grape-700 font-medium"
             >
               <ArrowLeft className="w-4 h-4" />
               로그인으로 돌아가기
@@ -76,7 +76,7 @@ export default function ForgotPasswordPage() {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-3 py-2 border border-stone-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500"
+                  className="w-full px-3 py-2 border border-stone-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
                   placeholder="example@email.com"
                   disabled={loading}
                 />
@@ -88,7 +88,7 @@ export default function ForgotPasswordPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-2.5 bg-amber-600 text-white font-medium rounded-xl hover:bg-amber-700 shadow-sm shadow-amber-200 active:scale-[0.98] transition-all disabled:bg-stone-300 disabled:cursor-not-allowed"
+                className="w-full py-2.5 bg-grape-600 text-white font-medium rounded-xl hover:bg-grape-700 shadow-sm shadow-grape-200 active:scale-[0.98] transition-all disabled:bg-stone-300 disabled:cursor-not-allowed"
               >
                 {loading ? (
                   <span className="flex items-center justify-center gap-2">

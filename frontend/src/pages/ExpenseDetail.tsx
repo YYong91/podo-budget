@@ -123,7 +123,7 @@ export default function ExpenseDetail() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="w-8 h-8 animate-spin text-amber-600" />
+        <Loader2 className="w-8 h-8 animate-spin text-grape-600" />
       </div>
     )
   }
@@ -132,7 +132,7 @@ export default function ExpenseDetail() {
     return (
       <div className="text-center py-12">
         <p className="text-stone-500 mb-4">지출 내역을 찾을 수 없습니다</p>
-        <Link to="/expenses" className="text-amber-600 hover:text-amber-700">
+        <Link to="/expenses" className="text-grape-600 hover:text-grape-700">
           목록으로 돌아가기
         </Link>
       </div>
@@ -169,7 +169,7 @@ export default function ExpenseDetail() {
               </button>
               <button
                 onClick={handleSave}
-                className="flex-1 sm:flex-none px-4 py-2 text-sm font-medium text-white bg-amber-600 rounded-xl hover:bg-amber-700 shadow-sm shadow-amber-200 transition-colors"
+                className="flex-1 sm:flex-none px-4 py-2 text-sm font-medium text-white bg-grape-600 rounded-xl hover:bg-grape-700 shadow-sm shadow-grape-200 transition-colors"
               >
                 저장
               </button>
@@ -178,7 +178,7 @@ export default function ExpenseDetail() {
             <>
               <button
                 onClick={() => setIsEditing(true)}
-                className="flex-1 sm:flex-none px-4 py-2 text-sm font-medium text-amber-700 bg-amber-50 rounded-xl hover:bg-amber-100 transition-colors"
+                className="flex-1 sm:flex-none px-4 py-2 text-sm font-medium text-grape-700 bg-grape-50 rounded-xl hover:bg-grape-100 transition-colors"
               >
                 수정
               </button>
@@ -207,7 +207,7 @@ export default function ExpenseDetail() {
               onChange={(e) =>
                 setEditForm({ ...editForm, amount: Number(e.target.value) })
               }
-              className="w-full px-4 py-2 text-xl sm:text-2xl font-bold text-stone-900 border border-stone-300 rounded-xl focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500"
+              className="w-full px-4 py-2 text-xl sm:text-2xl font-bold text-stone-900 border border-stone-300 rounded-xl focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
               placeholder="10000"
             />
           ) : (
@@ -229,7 +229,7 @@ export default function ExpenseDetail() {
               onChange={(e) =>
                 setEditForm({ ...editForm, description: e.target.value })
               }
-              className="w-full px-4 py-2 text-lg border border-stone-300 rounded-xl focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500"
+              className="w-full px-4 py-2 text-lg border border-stone-300 rounded-xl focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
               placeholder="김치찌개"
             />
           ) : (
@@ -251,7 +251,7 @@ export default function ExpenseDetail() {
                   category_id: e.target.value ? Number(e.target.value) : null,
                 })
               }
-              className="w-full px-4 py-2 text-lg border border-stone-300 rounded-xl focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500"
+              className="w-full px-4 py-2 text-lg border border-stone-300 rounded-xl focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
             >
               <option value="">미분류</option>
               {categories.map((cat) => (
@@ -277,7 +277,7 @@ export default function ExpenseDetail() {
               onChange={(e) =>
                 setEditForm({ ...editForm, date: e.target.value })
               }
-              className="w-full px-4 py-2 text-lg border border-stone-300 rounded-xl focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500"
+              className="w-full px-4 py-2 text-lg border border-stone-300 rounded-xl focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
             />
           ) : (
             <p className="text-lg text-stone-900">{formatDate(expense.date)}</p>

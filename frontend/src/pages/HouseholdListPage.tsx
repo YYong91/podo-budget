@@ -114,7 +114,7 @@ export default function HouseholdListPage() {
   if (isLoading && households.length === 0) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-600" />
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-grape-600" />
       </div>
     )
   }
@@ -145,7 +145,7 @@ export default function HouseholdListPage() {
         </div>
         <button
           onClick={() => setShowCreateModal(true)}
-          className="px-4 py-2 text-sm font-medium text-white bg-amber-600 rounded-lg hover:bg-amber-700 transition-colors"
+          className="px-4 py-2 text-sm font-medium text-white bg-grape-600 rounded-lg hover:bg-grape-700 transition-colors"
         >
           + 가구 만들기
         </button>
@@ -171,7 +171,7 @@ export default function HouseholdListPage() {
             <div
               key={household.id}
               onClick={() => handleCardClick(household.id)}
-              className="bg-white rounded-2xl shadow-sm border border-stone-200 p-5 hover:shadow-md hover:border-amber-300 transition-all cursor-pointer"
+              className="bg-white rounded-2xl shadow-sm border border-stone-200 p-5 hover:shadow-md hover:border-grape-300 transition-all cursor-pointer"
             >
               {/* 가구 이름 및 역할 */}
               <div className="flex items-start justify-between mb-3">

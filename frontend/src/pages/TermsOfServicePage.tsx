@@ -12,7 +12,7 @@ export default function TermsOfServicePage() {
       {/* 헤더 */}
       <header className="bg-white border-b border-stone-200 sticky top-0 z-10">
         <div className="max-w-4xl mx-auto px-4 py-4">
-          <Link to="/login" className="text-xl font-bold text-amber-600">
+          <Link to="/login" className="text-xl font-bold text-grape-600">
             HomeNRich
           </Link>
         </div>
@@ -155,7 +155,7 @@ export default function TermsOfServicePage() {
           <div className="mt-8 pt-6 border-t border-stone-200 flex justify-center">
             <Link
               to="/login"
-              className="px-6 py-2.5 text-sm font-medium text-amber-600 border border-amber-600 rounded-lg hover:bg-amber-50 transition-colors"
+              className="px-6 py-2.5 text-sm font-medium text-grape-600 border border-grape-600 rounded-lg hover:bg-grape-50 transition-colors"
             >
               ← 로그인으로 돌아가기
             </Link>

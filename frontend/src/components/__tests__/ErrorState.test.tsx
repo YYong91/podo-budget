@@ -84,7 +84,7 @@ describe('ErrorState', () => {
       render(<ErrorState onRetry={onRetry} />)
 
       const button = screen.getByRole('button', { name: '다시 시도' })
-      expect(button).toHaveClass('bg-amber-600', 'text-white')
+      expect(button).toHaveClass('bg-grape-600', 'text-white')
     })
   })
 })

@@ -12,7 +12,7 @@ export default function NotFoundPage() {
         </p>
         <Link
           to="/"
-          className="inline-flex items-center gap-2 bg-amber-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-amber-700 active:scale-[0.98] transition-all"
+          className="inline-flex items-center gap-2 bg-grape-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-grape-700 active:scale-[0.98] transition-all"
         >
           <Home className="w-5 h-5" />
           홈으로 돌아가기

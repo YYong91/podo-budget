@@ -124,7 +124,7 @@ export default function CategoryManager() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-600" />
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-grape-600" />
       </div>
     )
   }
@@ -148,7 +148,7 @@ export default function CategoryManager() {
         <h1 className="text-2xl font-bold text-stone-900">카테고리 관리</h1>
         <button
           onClick={() => setIsAdding(true)}
-          className="w-full sm:w-auto px-4 py-2 text-sm font-medium text-white bg-amber-600 rounded-lg hover:bg-amber-700 transition-colors"
+          className="w-full sm:w-auto px-4 py-2 text-sm font-medium text-white bg-grape-600 rounded-lg hover:bg-grape-700 transition-colors"
         >
           + 추가
         </button>
@@ -177,14 +177,14 @@ export default function CategoryManager() {
           <tbody className="divide-y divide-stone-100">
             {/* 추가 폼 (isAdding일 때) */}
             {isAdding && (
-              <tr className="bg-amber-50">
+              <tr className="bg-grape-50">
                 <td className="px-4 sm:px-6 py-4">
                   <input
                     type="text"
                     value={newName}
                     onChange={(e) => setNewName(e.target.value)}
                     placeholder="카테고리 이름"
-                    className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-grape-500 focus:border-transparent"
                     autoFocus
                   />
                 </td>
@@ -194,7 +194,7 @@ export default function CategoryManager() {
                     value={newDescription}
                     onChange={(e) => setNewDescription(e.target.value)}
                     placeholder="설명 (선택)"
-                    className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-grape-500 focus:border-transparent"
                   />
                 </td>
                 <td className="px-4 sm:px-6 py-4 hidden sm:table-cell"></td>
@@ -202,7 +202,7 @@ export default function CategoryManager() {
                   <div className="flex justify-end gap-2">
                     <button
                       onClick={handleAdd}
-                      className="px-3 py-1.5 text-sm font-medium text-white bg-amber-600 rounded-lg hover:bg-amber-700 transition-colors"
+                      className="px-3 py-1.5 text-sm font-medium text-white bg-grape-600 rounded-lg hover:bg-grape-700 transition-colors"
                     >
                       저장
                     </button>
@@ -228,7 +228,7 @@ export default function CategoryManager() {
                 return (
                   <tr
                     key={category.id}
-                    className={isEditing ? 'bg-amber-50' : 'hover:bg-stone-50 transition-colors'}
+                    className={isEditing ? 'bg-grape-50' : 'hover:bg-stone-50 transition-colors'}
                   >
                     <td className="px-4 sm:px-6 py-4">
                       {isEditing ? (
@@ -238,7 +238,7 @@ export default function CategoryManager() {
                           onChange={(e) =>
                             setEditForm({ ...editForm, name: e.target.value })
                           }
-                          className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                          className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-grape-500 focus:border-transparent"
                           autoFocus
                         />
                       ) : (
@@ -264,7 +264,7 @@ export default function CategoryManager() {
                               description: e.target.value,
                             })
                           }
-                          className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                          className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-grape-500 focus:border-transparent"
                         />
                       ) : (
                         <span className="text-sm text-stone-600">
@@ -282,7 +282,7 @@ export default function CategoryManager() {
                         <div className="flex justify-end gap-2">
                           <button
                             onClick={() => handleUpdate(category.id)}
-                            className="px-3 py-1.5 text-sm font-medium text-white bg-amber-600 rounded-lg hover:bg-amber-700 transition-colors"
+                            className="px-3 py-1.5 text-sm font-medium text-white bg-grape-600 rounded-lg hover:bg-grape-700 transition-colors"
                           >
                             저장
                           </button>
@@ -297,7 +297,7 @@ export default function CategoryManager() {
                         <div className="flex justify-end gap-2">
                           <button
                             onClick={() => startEdit(category)}
-                            className="px-3 py-1.5 text-sm font-medium text-amber-700 bg-amber-50 rounded-lg hover:bg-amber-100 transition-colors"
+                            className="px-3 py-1.5 text-sm font-medium text-grape-700 bg-grape-50 rounded-lg hover:bg-grape-100 transition-colors"
                           >
                             수정
                           </button>

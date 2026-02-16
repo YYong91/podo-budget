@@ -159,7 +159,7 @@ export default function InvitationListPage() {
   if (isLoading && myInvitations.length === 0) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-600" />
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-grape-600" />
       </div>
     )
   }
@@ -267,7 +267,7 @@ export default function InvitationListPage() {
                     <button
                       onClick={() => handleAccept(invitation.token!)}
                       disabled={isProcessing}
-                      className="flex-1 px-4 py-2 text-sm font-medium text-white bg-amber-600 rounded-lg hover:bg-amber-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="flex-1 px-4 py-2 text-sm font-medium text-white bg-grape-600 rounded-lg hover:bg-grape-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {isProcessing ? '처리 중...' : '수락'}
                     </button>

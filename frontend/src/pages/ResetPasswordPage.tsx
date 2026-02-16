@@ -50,8 +50,8 @@ export default function ResetPasswordPage() {
         {/* 로고 */}
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-2 mb-1">
-            <Home className="w-6 h-6 text-amber-600" />
-            <h1 className="text-2xl font-bold text-amber-600">HomeNRich</h1>
+            <Home className="w-6 h-6 text-grape-600" />
+            <h1 className="text-2xl font-bold text-grape-600">HomeNRich</h1>
           </div>
           <p className="text-sm text-stone-500 mt-1">비밀번호 재설정</p>
         </div>
@@ -68,7 +68,7 @@ export default function ResetPasswordPage() {
             </p>
             <Link
               to="/login"
-              className="inline-block w-full py-2.5 bg-amber-600 text-white font-medium rounded-xl hover:bg-amber-700 shadow-sm shadow-amber-200 active:scale-[0.98] transition-all text-center"
+              className="inline-block w-full py-2.5 bg-grape-600 text-white font-medium rounded-xl hover:bg-grape-700 shadow-sm shadow-grape-200 active:scale-[0.98] transition-all text-center"
             >
               로그인하기
             </Link>
@@ -85,7 +85,7 @@ export default function ResetPasswordPage() {
                 type="password"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
-                className="w-full px-3 py-2 border border-stone-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500"
+                className="w-full px-3 py-2 border border-stone-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
                 placeholder="8자 이상"
                 disabled={loading}
               />
@@ -100,7 +100,7 @@ export default function ResetPasswordPage() {
                 type="password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                className="w-full px-3 py-2 border border-stone-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500"
+                className="w-full px-3 py-2 border border-stone-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
                 placeholder="비밀번호를 다시 입력하세요"
                 disabled={loading}
               />
@@ -113,7 +113,7 @@ export default function ResetPasswordPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-2.5 bg-amber-600 text-white font-medium rounded-xl hover:bg-amber-700 shadow-sm shadow-amber-200 active:scale-[0.98] transition-all disabled:bg-stone-300 disabled:cursor-not-allowed"
+              className="w-full py-2.5 bg-grape-600 text-white font-medium rounded-xl hover:bg-grape-700 shadow-sm shadow-grape-200 active:scale-[0.98] transition-all disabled:bg-stone-300 disabled:cursor-not-allowed"
             >
               {loading ? (
                 <span className="flex items-center justify-center gap-2">
