@@ -37,14 +37,14 @@ async def lifespan(app: FastAPI):
     """
     import app.models  # noqa: F811, F401
 
-    # SECRET_KEY 검증 (작업 4)
-    if not settings.SECRET_KEY or settings.SECRET_KEY == "change-this-in-production":  # pragma: allowlist secret
+    # JWT_SECRET 검증 (podo-auth SSO 연동)
+    if settings.JWT_SECRET == "podo-jwt-secret-change-in-production":  # pragma: allowlist secret
         if not settings.DEBUG:
-            raise RuntimeError("프로덕션 환경에서 SECRET_KEY를 반드시 설정해야 합니다")
+            raise RuntimeError("프로덕션 환경에서 JWT_SECRET을 반드시 설정해야 합니다")
         else:
             import warnings
 
-            warnings.warn("SECRET_KEY가 설정되지 않았습니다. 프로덕션에서는 반드시 강력한 키를 설정하세요.", stacklevel=2)
+            warnings.warn("JWT_SECRET이 기본값입니다. 프로덕션에서는 podo-auth와 동일한 JWT_SECRET을 설정하세요.", stacklevel=2)
 
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)

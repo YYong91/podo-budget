@@ -11,10 +11,10 @@ async def test_create_income(db_session):
     """수입 레코드 생성 테스트"""
     from datetime import datetime
 
-    from app.core.auth import hash_password
+    # hash_password removed - use auth_user_id pattern
     from app.models.user import User
 
-    user = User(username="income_test_user", hashed_password=hash_password("pw123456"))  # pragma: allowlist secret
+    user = User(username="income_test_user", auth_user_id=None, hashed_password=None)  # pragma: allowlist secret
     db_session.add(user)
     await db_session.flush()
 
@@ -41,11 +41,11 @@ async def test_income_with_category(db_session):
     """카테고리가 있는 수입 테스트"""
     from datetime import datetime
 
-    from app.core.auth import hash_password
+    # hash_password removed - use auth_user_id pattern
     from app.models.category import Category
     from app.models.user import User
 
-    user = User(username="income_cat_user", hashed_password=hash_password("pw123456"))  # pragma: allowlist secret
+    user = User(username="income_cat_user", auth_user_id=None, hashed_password=None)  # pragma: allowlist secret
     db_session.add(user)
     await db_session.flush()
 
@@ -72,11 +72,11 @@ async def test_income_with_household(db_session):
     """가구 공유 수입 테스트"""
     from datetime import datetime
 
-    from app.core.auth import hash_password
+    # hash_password removed - use auth_user_id pattern
     from app.models.household import Household
     from app.models.user import User
 
-    user = User(username="income_hh_user", hashed_password=hash_password("pw123456"))  # pragma: allowlist secret
+    user = User(username="income_hh_user", auth_user_id=None, hashed_password=None)  # pragma: allowlist secret
     db_session.add(user)
     await db_session.flush()
 

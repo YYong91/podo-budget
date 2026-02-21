@@ -35,6 +35,8 @@ services:
       - ./backend/.env
     environment:
       - DATABASE_URL=postgresql+asyncpg://homenrich:homenrich@db:5432/homenrich
+      - JWT_SECRET=${JWT_SECRET:-podo-jwt-secret-change-in-production}
+      - AUTH_SERVER_URL=https://auth.podonest.com
     depends_on:
       db:
         condition: service_healthy
@@ -44,6 +46,9 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        - VITE_AUTH_URL=https://auth.podonest.com
+        - VITE_AUTH_CALLBACK_URL=https://budget.podonest.com/auth/callback
     container_name: homenrich-frontend
     restart: unless-stopped
     ports:

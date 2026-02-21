@@ -44,13 +44,14 @@ def get_user_identifier(request: Request) -> str:
         token = auth_header.replace("Bearer ", "")
 
         try:
-            # JWT 디코딩 및 username(sub) 추출
-            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[ALGORITHM])
-            username = payload.get("sub")
-
-            if username:
-                # 인증된 사용자는 username을 식별자로 사용
-                return f"user:{username}"
+            # podo-auth JWT 디코딩 및 사용자 ID(sub) 추출
+            payload = jwt.decode(token, settings.JWT_SECRET, algorithms=[ALGORITHM])
+            # podo-auth 발급 토큰만 허용
+            if payload.get("iss") == "podo-auth":
+                user_id = payload.get("sub")
+                if user_id:
+                    # 인증된 사용자는 auth_user_id를 식별자로 사용
+                    return f"user:{user_id}"
 
         except JWTError:
             # 토큰이 유효하지 않으면 IP로 폴백
