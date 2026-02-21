@@ -49,6 +49,7 @@ services:
       args:
         - VITE_AUTH_URL=https://auth.podonest.com
         - VITE_AUTH_CALLBACK_URL=https://budget.podonest.com/auth/callback
+        - VITE_BOOKSHELF_URL=https://bookshelf.podonest.com
     container_name: homenrich-frontend
     restart: unless-stopped
     ports:

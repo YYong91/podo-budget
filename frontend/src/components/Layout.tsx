@@ -23,6 +23,8 @@ import {
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
+const BOOKSHELF_URL = import.meta.env.VITE_BOOKSHELF_URL || "http://localhost:5173";
+
 const navItems: { path: string; label: string; icon: LucideIcon }[] = [
   { path: '/', label: '대시보드', icon: LayoutDashboard },
   { path: '/expenses', label: '지출 목록', icon: Receipt },
@@ -234,9 +236,16 @@ export default function Layout() {
             )}
           </nav>
 
-          {/* 사이드바 하단 - 태그라인 */}
+          {/* 사이드바 하단 - 서비스 링크 + 태그라인 */}
           <div className="mt-auto pt-4 border-t border-warm-200 text-sm text-warm-500">
-            <div className="flex items-center gap-2 px-3">
+            <a
+              href={BOOKSHELF_URL}
+              className="flex items-center gap-2 px-3 py-2 rounded-lg hover:text-grape-600 hover:bg-grape-50 transition-colors"
+            >
+              <span>📚</span>
+              <span>포도책방</span>
+            </a>
+            <div className="flex items-center gap-2 px-3 mt-1">
               <span>🍇</span>
               <span>포도알처럼 하나씩</span>
             </div>
