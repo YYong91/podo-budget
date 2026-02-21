@@ -128,7 +128,7 @@ const householdHandlers = [
   http.delete(`${BASE_URL}/households/:householdId/invitations/:invitationId`, () =>
     new HttpResponse(null, { status: 204 })
   ),
-  http.get(`${BASE_URL}/invitations/`, () =>
+  http.get(`${BASE_URL}/invitations/my`, () =>
     HttpResponse.json([mockInvitation])
   ),
   http.post(`${BASE_URL}/invitations/:token/accept`, () =>
