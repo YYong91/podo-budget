@@ -1,4 +1,4 @@
-# HomeNRich
+# Podo Budget (포도가계부)
 
 > 채팅하듯 말하면 알아서 정리되는 AI 가계부 앱
 
@@ -48,7 +48,7 @@
 1. 저장소 클론
 ```bash
 git clone <repository-url>
-cd homenrich
+cd podobudget
 ```
 
 2. 환경 변수 설정
@@ -99,7 +99,7 @@ uvicorn app.main:app --reload
 ## 프로젝트 구조
 
 ```
-homenrich/
+podobudget/
 ├── backend/
 │   ├── app/
 │   │   ├── api/           # API 라우터
@@ -159,37 +159,19 @@ LLM_PROVIDER=local
 
 ## 배포 (Production)
 
-### 빠른 시작 (5분 배포)
+Docker Compose로 홈 서버에서 실행하고, Cloudflare Tunnel로 외부 노출합니다.
 
 ```bash
-# 1. Fly CLI 설치 및 로그인
-brew install flyctl
-flyctl auth login
-
-# 2. 자동 배포 스크립트 실행
-chmod +x scripts/deploy-*.sh
-./scripts/deploy-init.sh      # Backend + DB
-cd frontend && ../scripts/deploy-frontend.sh  # Frontend
-
-# 3. 접속
-open https://homenrich-frontend.fly.dev
+docker compose up -d
 ```
 
-**무료 티어**: Fly.io 무료 플랫폼 활용 (3개 앱, 3GB DB)
-**월 예상 비용**: $0~5 (LLM API 비용만)
+| 서비스 | URL |
+|--------|-----|
+| 웹 | http://localhost:3000 |
+| API | http://localhost:8000 |
+| 운영 URL | https://budget.podonest.com |
 
-### 상세 가이드
-
-- **빠른 배포**: `QUICKSTART.md`
-- **전체 배포 가이드**: `DEPLOYMENT.md`
-- **인프라 아키텍처 & 비용**: `INFRASTRUCTURE.md`
-- **보안 설정**: `SECURITY.md`
-
-### CI/CD
-
-GitHub Actions가 자동으로 설정되어 있습니다:
-- `main` 브랜치 push → 자동 배포 (Production)
-- PR 생성 → 테스트 실행 (Staging)
+Cloudflare Tunnel 설정으로 `budget.podonest.com`이 localhost:3000으로 라우팅됩니다.
 
 ---
 
