@@ -91,7 +91,7 @@ jobs:
       - uses: superfly/flyctl-actions/setup-flyctl@master
 
       - name: Deploy Backend
-        run: flyctl deploy --remote-only --config backend/fly.toml
+        run: flyctl deploy --remote-only --config backend/fly.toml --dockerfile backend/Dockerfile
 
   deploy-frontend:
     name: Deploy Frontend to Cloudflare Pages
