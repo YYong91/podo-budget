@@ -52,6 +52,7 @@ export default function Layout() {
 
   // 라우트 변경 시 모바일 사이드바 닫기
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSidebarOpen(false)
   }, [location.pathname])
 
