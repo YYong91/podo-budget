@@ -7,7 +7,6 @@
 - SSO 인증: podo-auth 스타일 JWT 토큰으로 테스트 (Shadow User 패턴)
 """
 
-import asyncio
 from collections.abc import AsyncGenerator
 from datetime import UTC, datetime, timedelta
 from unittest.mock import AsyncMock, patch
@@ -70,17 +69,6 @@ def _disable_rate_limit():
     limiter.enabled = False
     yield
     limiter.enabled = True
-
-
-@pytest.fixture(scope="session")
-def event_loop():
-    """
-    세션 스코프의 이벤트 루프 생성
-    pytest-asyncio가 세션 스코프 fixture를 지원하도록 설정
-    """
-    loop = asyncio.get_event_loop_policy().new_event_loop()
-    yield loop
-    loop.close()
 
 
 @pytest_asyncio.fixture(scope="function")
