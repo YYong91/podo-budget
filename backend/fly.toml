@@ -1,7 +1,7 @@
 # Fly.io 배포 설정 - Backend
 # 문서: https://fly.io/docs/reference/configuration/
 
-app = "homenrich-backend"
+app = "podo-budget-backend"
 primary_region = "nrt"  # 도쿄 (Tokyo Narita)
 
 # 자동 중지 방지 (무료 티어에서는 비활성 시 중지됨)
