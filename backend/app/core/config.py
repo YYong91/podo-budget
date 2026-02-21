@@ -8,7 +8,12 @@ LLMProviderType = Literal["openai", "anthropic", "google", "local"]
 class Settings(BaseSettings):
     APP_NAME: str = "HomeNRich"
     DEBUG: bool = True
-    SECRET_KEY: str = ""  # 프로덕션에서는 반드시 설정 필요 (lifespan에서 검증)
+    SECRET_KEY: str = ""  # 레거시 호환성 유지 (lifespan에서 검증)
+
+    # podo-auth SSO 연동
+    JWT_SECRET: str = "podo-jwt-secret-change-in-production"  # pragma: allowlist secret
+    JWT_ALGORITHM: str = "HS256"
+    AUTH_SERVER_URL: str = "https://auth.podonest.com"
 
     # Database
     DATABASE_URL: str = "postgresql+asyncpg://homenrich:homenrich@localhost:5432/homenrich"  # pragma: allowlist secret
