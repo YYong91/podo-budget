@@ -1,7 +1,7 @@
 """Rate Limit 유틸리티 단위 테스트
 
 get_user_identifier 함수의 다양한 시나리오를 테스트합니다:
-- 유효한 JWT 토큰 → username 반환
+- 유효한 podo-auth JWT 토큰 → auth_user_id 반환
 - 유효하지 않은 토큰 → IP 폴백
 - 토큰 없음 → IP 폴백
 - X-Forwarded-For 헤더 → 첫 번째 IP 사용
@@ -9,8 +9,8 @@ get_user_identifier 함수의 다양한 시나리오를 테스트합니다:
 
 from unittest.mock import MagicMock
 
-from app.core.auth import create_access_token
 from app.core.rate_limit import get_user_identifier
+from tests.conftest import TEST_AUTH_USER_ID_1, create_test_token
 
 
 def _make_request(
@@ -31,13 +31,13 @@ def _make_request(
     return request
 
 
-def test_valid_jwt_returns_username():
-    """유효한 JWT 토큰이 있으면 user:{username} 반환"""
-    token = create_access_token(data={"sub": "testuser"})
+def test_valid_jwt_returns_user_id():
+    """유효한 podo-auth JWT 토큰이 있으면 user:{auth_user_id} 반환"""
+    token = create_test_token(auth_user_id=TEST_AUTH_USER_ID_1, email="test@example.com")
     request = _make_request(auth_header=f"Bearer {token}")
 
     result = get_user_identifier(request)
-    assert result == "user:testuser"
+    assert result == f"user:{TEST_AUTH_USER_ID_1}"
 
 
 def test_invalid_jwt_falls_back_to_ip():
@@ -82,9 +82,21 @@ def test_no_client_returns_unknown():
     assert result == "ip:unknown"
 
 
-def test_jwt_without_sub_claim():
-    """JWT에 sub 클레임이 없으면 IP로 폴백"""
-    token = create_access_token(data={})  # sub 없는 토큰
+def test_non_podo_auth_token_falls_back_to_ip():
+    """iss가 podo-auth가 아닌 토큰은 IP로 폴백"""
+    from datetime import UTC, datetime, timedelta
+
+    from jose import jwt
+
+    from app.core.config import settings
+
+    # iss 없는 토큰
+    payload = {
+        "sub": str(TEST_AUTH_USER_ID_1),
+        "email": "test@example.com",
+        "exp": datetime.now(UTC) + timedelta(days=7),
+    }
+    token = jwt.encode(payload, settings.JWT_SECRET, algorithm=settings.JWT_ALGORITHM)
     request = _make_request(auth_header=f"Bearer {token}")
 
     result = get_user_identifier(request)

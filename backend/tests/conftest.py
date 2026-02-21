@@ -4,18 +4,21 @@
 - 테스트 DB: SQLite + aiosqlite (PostgreSQL 의존성 제거)
 - LLM 서비스: Mock으로 대체
 - AsyncClient: 통합/E2E 테스트용 HTTP 클라이언트
+- SSO 인증: podo-auth 스타일 JWT 토큰으로 테스트 (Shadow User 패턴)
 """
 
 import asyncio
 from collections.abc import AsyncGenerator
+from datetime import UTC, datetime, timedelta
 from unittest.mock import AsyncMock, patch
 
 import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
+from jose import jwt
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
-from app.core.auth import create_access_token, hash_password
+from app.core.config import settings
 from app.core.database import Base, get_db
 from app.core.rate_limit import limiter
 from app.main import app
@@ -31,6 +34,34 @@ TestSessionLocal = async_sessionmaker(
     class_=AsyncSession,
     expire_on_commit=False,
 )
+
+# 테스트용 auth_user_id 값 (podo-auth TSID 시뮬레이션)
+TEST_AUTH_USER_ID_1 = 1000000000001
+TEST_AUTH_USER_ID_2 = 1000000000002
+
+
+def create_test_token(auth_user_id: int, email: str = "test@example.com", name: str = "테스터") -> str:
+    """테스트용 podo-auth 스타일 JWT 토큰 생성
+
+    podo-auth가 발급하는 형식의 JWT를 생성하여 Shadow User 인증 플로우를 테스트합니다.
+
+    Args:
+        auth_user_id: podo-auth 사용자 ID (TSID BigInteger)
+        email: 사용자 이메일
+        name: 사용자 이름
+
+    Returns:
+        podo-auth 형식의 JWT 토큰
+    """
+    expire = datetime.now(UTC) + timedelta(days=7)
+    payload = {
+        "sub": str(auth_user_id),
+        "email": email,
+        "name": name,
+        "iss": "podo-auth",
+        "exp": expire,
+    }
+    return jwt.encode(payload, settings.JWT_SECRET, algorithm=settings.JWT_ALGORITHM)
 
 
 @pytest.fixture(autouse=True)
@@ -73,17 +104,18 @@ async def db_session() -> AsyncGenerator[AsyncSession, None]:
 
 @pytest_asyncio.fixture
 async def test_user(db_session: AsyncSession) -> User:
-    """테스트용 사용자 생성
+    """테스트용 사용자 생성 (Shadow User 패턴)
 
-    기본 테스트 사용자를 생성하고 반환합니다.
-    username: testuser, password: testpass123  # pragma: allowlist secret
+    podo-auth SSO로 최초 로그인한 사용자처럼 auth_user_id가 설정된 사용자를 생성합니다.
 
     Returns:
         생성된 User 객체
     """
     user = User(
+        auth_user_id=TEST_AUTH_USER_ID_1,
         username="testuser",
-        hashed_password=hash_password("testpass123"),  # pragma: allowlist secret
+        email="test@example.com",
+        hashed_password=None,  # SSO 유저는 로컬 패스워드 없음
         is_active=True,
     )
     db_session.add(user)
@@ -96,15 +128,14 @@ async def test_user(db_session: AsyncSession) -> User:
 async def test_user2(db_session: AsyncSession) -> User:
     """두 번째 테스트용 사용자 생성 (데이터 격리 테스트용)
 
-    데이터 격리 테스트를 위한 두 번째 사용자를 생성합니다.
-    username: testuser2, password: testpass456  # pragma: allowlist secret
-
     Returns:
         생성된 User 객체
     """
     user = User(
+        auth_user_id=TEST_AUTH_USER_ID_2,
         username="testuser2",
-        hashed_password=hash_password("testpass456"),  # pragma: allowlist secret
+        email="test2@example.com",
+        hashed_password=None,
         is_active=True,
     )
     db_session.add(user)
@@ -115,32 +146,36 @@ async def test_user2(db_session: AsyncSession) -> User:
 
 @pytest_asyncio.fixture
 async def auth_token(test_user: User) -> str:
-    """테스트용 JWT 토큰 생성
-
-    test_user를 위한 유효한 JWT 토큰을 생성합니다.
+    """테스트용 podo-auth 스타일 JWT 토큰 생성
 
     Args:
         test_user: 테스트용 사용자
 
     Returns:
-        JWT 액세스 토큰
+        podo-auth 형식의 JWT 액세스 토큰
     """
-    return create_access_token(data={"sub": test_user.username})
+    return create_test_token(
+        auth_user_id=test_user.auth_user_id,
+        email=test_user.email,
+        name=test_user.username,
+    )
 
 
 @pytest_asyncio.fixture
 async def auth_token2(test_user2: User) -> str:
     """두 번째 사용자용 JWT 토큰 생성
 
-    test_user2를 위한 유효한 JWT 토큰을 생성합니다.
-
     Args:
         test_user2: 두 번째 테스트용 사용자
 
     Returns:
-        JWT 액세스 토큰
+        podo-auth 형식의 JWT 액세스 토큰
     """
-    return create_access_token(data={"sub": test_user2.username})
+    return create_test_token(
+        auth_user_id=test_user2.auth_user_id,
+        email=test_user2.email,
+        name=test_user2.username,
+    )
 
 
 @pytest_asyncio.fixture

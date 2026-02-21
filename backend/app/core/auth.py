@@ -21,12 +21,12 @@ from app.core.config import settings
 from app.core.database import get_db
 from app.models.user import User
 
-# HTTPBearer 스키마 (Authorization: Bearer <token>)
-security = HTTPBearer()
+# HTTPBearer 스키마 (auto_error=False → 토큰 없을 때 None 반환, 직접 401 처리)
+security = HTTPBearer(auto_error=False)
 
 
 async def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
+    credentials: HTTPAuthorizationCredentials | None = Depends(security),
     db: AsyncSession = Depends(get_db),
 ) -> User:
     """podo-auth JWT에서 로컬 Shadow User 추출 (의존성 주입용)
@@ -46,6 +46,9 @@ async def get_current_user(
         detail="인증 정보가 유효하지 않습니다",
         headers={"WWW-Authenticate": "Bearer"},
     )
+
+    if not credentials:
+        raise credentials_exception
 
     try:
         token = credentials.credentials

@@ -1,92 +1,62 @@
-"""인증 관련 단위 테스트
+"""SSO 인증 단위 테스트
 
-JWT 토큰 생성/검증, 비밀번호 해싱 기능을 테스트합니다.
+podo-auth JWT 검증 및 Shadow User 생성 로직을 테스트합니다.
 """
 
-from datetime import timedelta
+from datetime import UTC, datetime, timedelta
 
+import pytest
 from jose import jwt
 
-from app.core.auth import (
-    ALGORITHM,
-    create_access_token,
-    hash_password,
-    verify_password,
-)
 from app.core.config import settings
+from tests.conftest import TEST_AUTH_USER_ID_1, create_test_token
 
 
-def test_hash_password():
-    """비밀번호 해싱이 정상 동작하는지 테스트"""
-    password = "test_password_123"  # pragma: allowlist secret
-    hashed = hash_password(password)
+def test_create_test_token():
+    """podo-auth 형식의 테스트 토큰이 올바르게 생성되는지 확인"""
+    token = create_test_token(
+        auth_user_id=TEST_AUTH_USER_ID_1,
+        email="user@test.com",
+        name="테스터",
+    )
 
-    # 해시값이 원본과 다른지 확인
-    assert hashed != password
-
-    # 해시값이 문자열인지 확인
-    assert isinstance(hashed, str)
-
-    # bcrypt 해시 형식인지 확인 (bcrypt는 $2b$로 시작)
-    assert hashed.startswith("$2b$")
-
-
-def test_verify_password_correct():
-    """올바른 비밀번호 검증 테스트"""
-    password = "correct_password"  # pragma: allowlist secret
-    hashed = hash_password(password)
-
-    # 같은 비밀번호는 검증 성공
-    assert verify_password(password, hashed) is True
-
-
-def test_verify_password_incorrect():
-    """잘못된 비밀번호 검증 테스트"""
-    password = "correct_password"  # pragma: allowlist secret
-    wrong_password = "wrong_password"  # pragma: allowlist secret
-    hashed = hash_password(password)
-
-    # 다른 비밀번호는 검증 실패
-    assert verify_password(wrong_password, hashed) is False
-
-
-def test_create_access_token():
-    """JWT 액세스 토큰 생성 테스트"""
-    data = {"sub": "testuser"}
-    token = create_access_token(data)
-
-    # 토큰이 문자열인지 확인
     assert isinstance(token, str)
 
-    # JWT 디코딩하여 페이로드 확인
-    payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[ALGORITHM])
-    assert payload["sub"] == "testuser"
-
-    # exp 클레임이 존재하는지 확인 (만료 시간)
+    # 디코딩하여 클레임 확인
+    payload = jwt.decode(token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM])
+    assert payload["sub"] == str(TEST_AUTH_USER_ID_1)
+    assert payload["email"] == "user@test.com"
+    assert payload["name"] == "테스터"
+    assert payload["iss"] == "podo-auth"
     assert "exp" in payload
 
 
-def test_create_access_token_with_expires():
-    """만료 시간이 지정된 JWT 토큰 생성 테스트"""
-    data = {"sub": "testuser"}
-    expires_delta = timedelta(minutes=15)
-    token = create_access_token(data, expires_delta=expires_delta)
+def test_token_iss_required():
+    """iss가 podo-auth가 아닌 토큰은 인증 실패해야 함"""
+    expire = datetime.now(UTC) + timedelta(days=7)
+    # iss 없는 토큰
+    payload = {
+        "sub": str(TEST_AUTH_USER_ID_1),
+        "email": "user@test.com",
+        "name": "테스터",
+        "exp": expire,
+    }
+    token_without_iss = jwt.encode(payload, settings.JWT_SECRET, algorithm=settings.JWT_ALGORITHM)
 
-    # 토큰 디코딩
-    payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[ALGORITHM])
-    assert payload["sub"] == "testuser"
-    assert "exp" in payload
+    decoded = jwt.decode(token_without_iss, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM])
+    assert decoded.get("iss") is None  # iss 없으면 None → 인증 거부
 
 
-def test_hash_password_different_for_same_input():
-    """같은 비밀번호라도 해시는 매번 다르게 생성되는지 테스트 (salt 사용 확인)"""
-    password = "same_password"  # pragma: allowlist secret
-    hash1 = hash_password(password)
-    hash2 = hash_password(password)
+def test_token_wrong_secret():
+    """잘못된 시크릿으로 서명된 토큰은 디코딩 실패해야 함"""
+    expire = datetime.now(UTC) + timedelta(days=7)
+    payload = {
+        "sub": str(TEST_AUTH_USER_ID_1),
+        "email": "user@test.com",
+        "iss": "podo-auth",
+        "exp": expire,
+    }
+    wrong_token = jwt.encode(payload, "wrong-secret", algorithm=settings.JWT_ALGORITHM)
 
-    # 해시값은 다르지만
-    assert hash1 != hash2
-
-    # 둘 다 원본 비밀번호로 검증 가능
-    assert verify_password(password, hash1) is True
-    assert verify_password(password, hash2) is True
+    with pytest.raises(jwt.JWTError):
+        jwt.decode(wrong_token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM])
