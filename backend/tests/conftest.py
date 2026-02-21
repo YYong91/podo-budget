@@ -7,6 +7,7 @@
 - SSO 인증: podo-auth 스타일 JWT 토큰으로 테스트 (Shadow User 패턴)
 """
 
+import asyncio
 from collections.abc import AsyncGenerator
 from datetime import UTC, datetime, timedelta
 from unittest.mock import AsyncMock, patch
@@ -16,6 +17,7 @@ import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 from jose import jwt
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.pool import StaticPool
 
 from app.core.config import settings
 from app.core.database import Base, get_db
@@ -23,16 +25,33 @@ from app.core.rate_limit import limiter
 from app.main import app
 from app.models.user import User
 
-# 테스트용 SQLite 데이터베이스 URL
+# 테스트용 SQLite 데이터베이스 URL (in-memory, StaticPool로 연결 공유)
 TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
 
 # 테스트용 비동기 엔진 및 세션
-test_engine = create_async_engine(TEST_DATABASE_URL, echo=False)
+test_engine = create_async_engine(
+    TEST_DATABASE_URL,
+    echo=False,
+    poolclass=StaticPool,
+)
 TestSessionLocal = async_sessionmaker(
     test_engine,
     class_=AsyncSession,
     expire_on_commit=False,
 )
+
+
+def pytest_sessionfinish(session, exitstatus):
+    """테스트 세션 종료 시 비동기 엔진 정리 (Linux CI hang 방지)"""
+    from app.core.database import engine as production_engine
+
+    loop = asyncio.new_event_loop()
+    try:
+        loop.run_until_complete(test_engine.dispose())
+        loop.run_until_complete(production_engine.dispose())
+    finally:
+        loop.close()
+
 
 # 테스트용 auth_user_id 값 (podo-auth TSID 시뮬레이션)
 TEST_AUTH_USER_ID_1 = 1000000000001
