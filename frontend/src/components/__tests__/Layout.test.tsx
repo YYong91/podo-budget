@@ -50,14 +50,10 @@ function renderLayout(initialPath = '/') {
 
 describe('Layout', () => {
   describe('헤더 렌더링', () => {
-    it('헤더에 로고를 표시한다', () => {
+    it('로고를 표시한다', () => {
       renderLayout()
-      expect(screen.getByText(/포도가계부/)).toBeInTheDocument()
-    })
-
-    it('헤더에 부제목을 표시한다', () => {
-      renderLayout()
-      expect(screen.getByText('AI 가계부')).toBeInTheDocument()
+      // 모바일 헤더 + 데스크톱 사이드바 타이틀 두 곳에 표시됨
+      expect(screen.getAllByText(/포도가계부/).length).toBeGreaterThan(0)
     })
 
     it('모바일 메뉴 버튼을 표시한다', () => {

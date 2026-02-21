@@ -1,29 +1,18 @@
-/* 메인 레이아웃 - 헤더 + 사이드바 + 콘텐츠 */
+/* 메인 레이아웃 - 사이드바 전용 (포도책방 통일 디자인) */
 
 import type { } from 'react'
 import { useState, useEffect } from 'react'
-import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { Link, Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useHouseholdStore } from '../stores/useHouseholdStore'
 import {
-  LayoutDashboard,
-  Receipt,
-  Wallet,
-  PlusCircle,
-  Tags,
-  PiggyBank,
-  Repeat,
-  TrendingUp,
-  Users,
-  Settings as SettingsIcon,
-  Mail,
-  Home,
-  Menu,
-  ChevronDown,
+  LayoutDashboard, Receipt, Wallet, PlusCircle, Tags,
+  PiggyBank, Repeat, TrendingUp, Users, Settings as SettingsIcon,
+  Mail, Home, Menu, X, ChevronDown,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
-const BOOKSHELF_URL = import.meta.env.VITE_BOOKSHELF_URL || "http://localhost:5173";
+const BOOKSHELF_URL = import.meta.env.VITE_BOOKSHELF_URL || 'http://localhost:5173'
 
 const navItems: { path: string; label: string; icon: LucideIcon }[] = [
   { path: '/', label: '대시보드', icon: LayoutDashboard },
@@ -43,28 +32,17 @@ export default function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [householdDropdownOpen, setHouseholdDropdownOpen] = useState(false)
   const location = useLocation()
-  const navigate = useNavigate()
   const { user, logout } = useAuth()
   const {
-    households,
-    activeHouseholdId,
-    myInvitations,
-    fetchHouseholds,
-    fetchMyInvitations,
-    setActiveHouseholdId,
+    households, activeHouseholdId, myInvitations,
+    fetchHouseholds, fetchMyInvitations, setActiveHouseholdId,
   } = useHouseholdStore()
 
-  // 컴포넌트 마운트 시 가구 목록 + 초대 목록 조회
   useEffect(() => {
-    fetchHouseholds().catch(() => {
-      // 가구 목록 조회 실패해도 앱 동작에는 지장 없음
-    })
-    fetchMyInvitations().catch(() => {
-      // 뱃지 표시 실패해도 앱 동작에는 지장 없음
-    })
+    fetchHouseholds().catch(() => {})
+    fetchMyInvitations().catch(() => {})
   }, [fetchHouseholds, fetchMyInvitations])
 
-  // 드롭다운 외부 클릭 시 닫기
   useEffect(() => {
     if (!householdDropdownOpen) return
     const handleClick = () => setHouseholdDropdownOpen(false)
@@ -72,70 +50,56 @@ export default function Layout() {
     return () => document.removeEventListener('click', handleClick)
   }, [householdDropdownOpen])
 
-  // pending 상태인 초대 개수
-  const pendingInvitationCount = myInvitations.filter(
-    (inv) => inv.status === 'pending'
-  ).length
+  // 라우트 변경 시 모바일 사이드바 닫기
+  useEffect(() => {
+    setSidebarOpen(false)
+  }, [location.pathname])
 
-  // 현재 활성 가구 이름
-  const activeHousehold = households.find((h) => h.id === activeHouseholdId)
+  const pendingInvitationCount = myInvitations.filter(inv => inv.status === 'pending').length
+  const activeHousehold = households.find(h => h.id === activeHouseholdId)
 
   return (
     <div className="min-h-screen bg-cream">
-      {/* 헤더 */}
-      <header className="bg-white shadow-sm border-b border-warm-200 sticky top-0 z-30">
-        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <button
-              className="md:hidden p-2 rounded-md hover:bg-warm-100"
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-              aria-label="메뉴 열기"
-            >
-              <Menu className="w-5 h-5" />
-            </button>
-            <Link to="/" className="flex items-center gap-2 text-lg font-bold text-grape-700">
-              🍇
-              포도가계부
-            </Link>
-            <span className="text-xs text-warm-400 hidden sm:inline">AI 가계부</span>
-          </div>
-          <div className="flex items-center gap-3">
-            {user && (
-              <>
-                <span className="text-sm text-warm-600 hidden sm:inline">{user.username}</span>
-                <button
-                  onClick={() => {
-                    logout()
-                    navigate('/login')
-                  }}
-                  className="text-sm text-warm-500 hover:text-warm-700 transition-colors"
-                >
-                  로그아웃
-                </button>
-              </>
-            )}
-          </div>
-        </div>
-        {/* Amber gradient 라인 */}
-        <div className="h-0.5 bg-gradient-to-r from-grape-400 via-grape-300 to-transparent" />
+      {/* 모바일 전용 미니 헤더 (48px) */}
+      <header className="md:hidden bg-white border-b border-warm-200 sticky top-0 z-30 h-12 flex items-center px-4 gap-3">
+        <button
+          onClick={() => setSidebarOpen(true)}
+          className="p-1.5 rounded-md hover:bg-warm-100"
+          aria-label="메뉴 열기"
+        >
+          <Menu className="w-5 h-5 text-warm-600" />
+        </button>
+        <Link to="/" className="font-bold text-grape-700">🍇 포도가계부</Link>
       </header>
 
       <div className="flex">
-        {/* 사이드바 (데스크톱: 항상 표시, 모바일: 토글) */}
+        {/* 사이드바 */}
         <aside
           className={`
-            fixed md:sticky top-16 left-0 z-20 h-[calc(100vh-4rem)]
+            fixed z-20 h-[calc(100vh-3rem)] md:h-screen
+            top-12 md:top-0 md:sticky left-0
             w-60 bg-cream border-r border-warm-200 p-4 flex flex-col
             transition-transform duration-200 ease-in-out
             ${sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
           `}
         >
+          {/* 데스크톱 앱 타이틀 */}
+          <div className="hidden md:block mb-4">
+            <Link to="/" className="text-xl font-bold text-grape-700">🍇 포도가계부</Link>
+          </div>
+
+          {/* 모바일 닫기 버튼 */}
+          <div className="md:hidden flex justify-end mb-2">
+            <button onClick={() => setSidebarOpen(false)} className="p-1.5 rounded-md hover:bg-warm-100">
+              <X className="w-4 h-4 text-warm-500" />
+            </button>
+          </div>
+
           {/* 가구 선택 드롭다운 */}
           <div className="mb-4">
             {households.length === 0 ? (
               <Link
                 to="/households"
-                onClick={() => setSidebarOpen(false)}
                 className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm bg-grape-50 text-grape-700 hover:bg-grape-100 transition-colors"
               >
                 <Home className="w-4 h-4" />
@@ -149,10 +113,7 @@ export default function Layout() {
             ) : (
               <div className="relative">
                 <button
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    setHouseholdDropdownOpen(!householdDropdownOpen)
-                  }}
+                  onClick={e => { e.stopPropagation(); setHouseholdDropdownOpen(!householdDropdownOpen) }}
                   className="flex items-center justify-between w-full px-3 py-2 rounded-lg text-sm bg-warm-100 hover:bg-warm-200 text-warm-700 transition-colors"
                 >
                   <div className="flex items-center gap-2 min-w-0">
@@ -163,13 +124,10 @@ export default function Layout() {
                 </button>
                 {householdDropdownOpen && (
                   <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-warm-200 rounded-lg shadow-lg z-50 py-1">
-                    {households.map((h) => (
+                    {households.map(h => (
                       <button
                         key={h.id}
-                        onClick={() => {
-                          setActiveHouseholdId(h.id)
-                          setHouseholdDropdownOpen(false)
-                        }}
+                        onClick={() => { setActiveHouseholdId(h.id); setHouseholdDropdownOpen(false) }}
                         className={`w-full text-left px-3 py-2 text-sm hover:bg-warm-100 transition-colors truncate ${
                           h.id === activeHouseholdId ? 'text-grape-700 font-medium bg-grape-50' : 'text-warm-700'
                         }`}
@@ -183,15 +141,15 @@ export default function Layout() {
             )}
           </div>
 
-          <nav className="space-y-1">
-            {navItems.map((item) => {
+          {/* 네비게이션 */}
+          <nav className="space-y-1 flex-1 overflow-y-auto">
+            {navItems.map(item => {
               const isActive = location.pathname === item.path
               const Icon = item.icon
               return (
                 <Link
                   key={item.path}
                   to={item.path}
-                  onClick={() => setSidebarOpen(false)}
                   className={`
                     flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium
                     transition-colors relative
@@ -203,7 +161,6 @@ export default function Layout() {
                 >
                   <Icon className="w-[18px] h-[18px]" />
                   {item.label}
-                  {/* 공유 가계부 메뉴에 초대 뱃지 표시 */}
                   {item.path === '/households' && pendingInvitationCount > 0 && (
                     <span className="ml-auto bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full min-w-[20px] text-center">
                       {pendingInvitationCount}
@@ -212,12 +169,9 @@ export default function Layout() {
                 </Link>
               )
             })}
-
-            {/* 받은 초대 링크 (초대가 있을 때만 표시) */}
             {pendingInvitationCount > 0 && (
               <Link
                 to="/invitations"
-                onClick={() => setSidebarOpen(false)}
                 className={`
                   flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium
                   transition-colors relative
@@ -236,16 +190,27 @@ export default function Layout() {
             )}
           </nav>
 
-          {/* 사이드바 하단 - 서비스 링크 + 태그라인 */}
-          <div className="mt-auto pt-4 border-t border-warm-200 text-sm text-warm-500">
+          {/* 사이드바 하단 — 유저 정보 + 서비스 링크 */}
+          <div className="mt-4 pt-4 border-t border-warm-200 text-sm space-y-1">
+            {user && (
+              <div className="px-3 py-2 text-warm-600 font-medium truncate">
+                {user.username}
+              </div>
+            )}
+            <button
+              onClick={logout}
+              className="flex w-full items-center gap-2 px-3 py-2 rounded-lg text-warm-500 hover:text-grape-600 hover:bg-grape-50 transition-colors"
+            >
+              로그아웃
+            </button>
             <a
               href={BOOKSHELF_URL}
-              className="flex items-center gap-2 px-3 py-2 rounded-lg hover:text-grape-600 hover:bg-grape-50 transition-colors"
+              className="flex items-center gap-2 px-3 py-2 rounded-lg text-warm-500 hover:text-grape-600 hover:bg-grape-50 transition-colors"
             >
               <span>📚</span>
               <span>포도책방</span>
             </a>
-            <div className="flex items-center gap-2 px-3 mt-1">
+            <div className="flex items-center gap-2 px-3 py-2 text-warm-400">
               <span>🍇</span>
               <span>포도알처럼 하나씩</span>
             </div>
