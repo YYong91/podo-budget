@@ -2,12 +2,6 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
-# 시스템 의존성 설치
-RUN apt-get update && apt-get install -y \
-    gcc \
-    postgresql-client \
-    && rm -rf /var/lib/apt/lists/*
-
 # uv 설치
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
@@ -19,6 +13,9 @@ COPY pyproject.toml uv.lock ./
 
 # 의존성 설치 (dev 제외)
 RUN uv sync --no-dev --no-install-project
+
+# SQLite 데이터 디렉토리 생성
+RUN mkdir -p /app/data
 
 EXPOSE 8000
 

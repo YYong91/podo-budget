@@ -15,6 +15,7 @@ primary_region = "nrt"  # 도쿄 (Tokyo Narita)
   PORT = "8000"
   APP_NAME = "HomeNRich"
   DEBUG = "False"
+  DATABASE_URL = "sqlite+aiosqlite:////app/data/db.sqlite3"
 
 [http_service]
   internal_port = 8000
@@ -39,6 +40,10 @@ primary_region = "nrt"  # 도쿄 (Tokyo Narita)
   cpu_kind = "shared"
   cpus = 1
   memory_mb = 512
+
+[[mounts]]
+  source = "budget_data"
+  destination = "/app/data"
 
 # 유료 플랜 전환 시 (고성능 필요하면)
 # [[vm]]

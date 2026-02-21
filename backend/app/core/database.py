@@ -1,34 +1,27 @@
-import ssl
-
+from sqlalchemy import event
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import declarative_base
 
 from app.core.config import settings
 
-# URL에서 asyncpg가 이해하지 못하는 쿼리 파라미터 정리
-db_url = settings.DATABASE_URL.split("?")[0]
-
-# SSL 설정: 외부 DB(Supabase 등)는 SSL 필요, Fly.io 내부는 불필요
-connect_args: dict = {}
-if settings.DATABASE_SSL:
-    ssl_ctx = ssl.create_default_context()
-    connect_args["ssl"] = ssl_ctx
-else:
-    connect_args["ssl"] = False
-
 engine = create_async_engine(
-    db_url,
+    settings.DATABASE_URL,
     echo=settings.DEBUG,
     future=True,
-    connect_args=connect_args,
+    connect_args={"check_same_thread": False} if "sqlite" in settings.DATABASE_URL else {},
 )
 
-AsyncSessionLocal = async_sessionmaker(
-    engine,
-    class_=AsyncSession,
-    expire_on_commit=False,
-)
+if "sqlite" in settings.DATABASE_URL:
 
+    @event.listens_for(engine.sync_engine, "connect")
+    def set_sqlite_pragmas(dbapi_connection, connection_record):
+        cursor = dbapi_connection.cursor()
+        cursor.execute("PRAGMA journal_mode=WAL")
+        cursor.execute("PRAGMA synchronous=NORMAL")
+        cursor.close()
+
+
+AsyncSessionLocal = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 Base = declarative_base()
 
 

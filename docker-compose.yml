@@ -1,24 +1,6 @@
 version: '3.8'
 
 services:
-  db:
-    image: postgres:16-alpine
-    container_name: homenrich-db
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: homenrich
-      POSTGRES_PASSWORD: homenrich  # pragma: allowlist secret
-      POSTGRES_DB: homenrich
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U homenrich"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
   backend:
     build:
       context: .
@@ -31,15 +13,13 @@ services:
       - ./backend:/app
       - ./pyproject.toml:/app/pyproject.toml
       - ./uv.lock:/app/uv.lock
+      - ./data:/app/data
     env_file:
       - ./backend/.env
     environment:
-      - DATABASE_URL=postgresql+asyncpg://homenrich:homenrich@db:5432/homenrich
+      - DATABASE_URL=sqlite+aiosqlite:////app/data/db.sqlite3
       - JWT_SECRET=${JWT_SECRET:-podo-jwt-secret-change-in-production}
       - AUTH_SERVER_URL=https://auth.podonest.com
-    depends_on:
-      db:
-        condition: service_healthy
     command: uv run uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
   frontend:
@@ -58,4 +38,4 @@ services:
       - backend
 
 volumes:
-  postgres_data:
+  data:

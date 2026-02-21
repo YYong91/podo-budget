@@ -10,21 +10,6 @@ jobs:
     name: Test Backend
     runs-on: ubuntu-latest
 
-    services:
-      postgres:
-        image: postgres:16-alpine
-        env:
-          POSTGRES_USER: test
-          POSTGRES_PASSWORD: test  # pragma: allowlist secret
-          POSTGRES_DB: test
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
     steps:
       - uses: actions/checkout@v4
 
@@ -46,13 +31,11 @@ jobs:
 
       - name: Run tests
         env:
-          DATABASE_URL: postgresql+asyncpg://test:test@localhost:5432/test  # pragma: allowlist secret
+          DATABASE_URL: sqlite+aiosqlite:///./test.db
           SECRET_KEY: test-secret-key  # pragma: allowlist secret
           LLM_PROVIDER: anthropic
           ANTHROPIC_API_KEY: test-key  # pragma: allowlist secret
-        run: |
-          cd backend
-          uv run pytest tests/
+        run: PYTHONPATH=backend uv run pytest backend/tests/
 
   test-frontend:
     name: Test Frontend
@@ -95,21 +78,6 @@ jobs:
     needs: [test-backend, test-frontend]
     runs-on: ubuntu-latest
 
-    services:
-      postgres:
-        image: postgres:16-alpine
-        env:
-          POSTGRES_USER: test
-          POSTGRES_PASSWORD: test  # pragma: allowlist secret
-          POSTGRES_DB: test
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
     steps:
       - uses: actions/checkout@v4
 
@@ -135,14 +103,13 @@ jobs:
 
       - name: Start backend
         env:
-          DATABASE_URL: postgresql+asyncpg://test:test@localhost:5432/test  # pragma: allowlist secret
+          DATABASE_URL: sqlite+aiosqlite:///./e2e_test.db
           SECRET_KEY: test-secret-key  # pragma: allowlist secret
           LLM_PROVIDER: anthropic
           ANTHROPIC_API_KEY: test-key  # pragma: allowlist secret
           DEBUG: "true"
         run: |
-          cd backend
-          uv run uvicorn app.main:app --host 0.0.0.0 --port 8000 &
+          PYTHONPATH=backend uv run uvicorn app.main:app --host 0.0.0.0 --port 8000 &
           # 최대 30초 대기 (DB 테이블 생성 포함)
           for i in $(seq 1 30); do
             if curl -sf http://localhost:8000/health > /dev/null 2>&1; then

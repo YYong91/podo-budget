@@ -13,21 +13,6 @@ jobs:
     name: Test Backend
     runs-on: ubuntu-latest
 
-    services:
-      postgres:
-        image: postgres:16-alpine
-        env:
-          POSTGRES_USER: test
-          POSTGRES_PASSWORD: test  # pragma: allowlist secret
-          POSTGRES_DB: test
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
     steps:
       - uses: actions/checkout@v4
 
@@ -49,7 +34,7 @@ jobs:
 
       - name: Run tests
         env:
-          DATABASE_URL: postgresql+asyncpg://test:test@localhost:5432/test  # pragma: allowlist secret
+          DATABASE_URL: sqlite+aiosqlite:///./test.db
           SECRET_KEY: test-secret-key  # pragma: allowlist secret
           LLM_PROVIDER: anthropic
           ANTHROPIC_API_KEY: test-key  # pragma: allowlist secret
@@ -90,6 +75,9 @@ jobs:
           npm run build
         env:
           VITE_API_URL: /api
+          VITE_AUTH_URL: ${{ secrets.VITE_AUTH_URL }}
+          VITE_AUTH_CALLBACK_URL: ${{ secrets.VITE_AUTH_CALLBACK_URL }}
+          VITE_BOOKSHELF_URL: ${{ secrets.VITE_BOOKSHELF_URL }}
 
   deploy-backend:
     name: Deploy Backend to Fly.io
@@ -105,17 +93,42 @@ jobs:
         run: flyctl deploy --remote-only --config backend/fly.toml
 
   deploy-frontend:
-    name: Deploy Frontend to Fly.io
+    name: Deploy Frontend to Cloudflare Pages
     needs: [test-frontend]
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4
 
-      - uses: superfly/flyctl-actions/setup-flyctl@master
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
 
-      - name: Deploy Frontend
-        run: flyctl deploy --remote-only --config frontend/fly.toml
+      - name: Install dependencies
+        run: |
+          cd frontend
+          npm ci
+
+      - name: Build
+        run: |
+          cd frontend
+          npm run build
         env:
+          VITE_API_URL: ${{ secrets.VITE_API_URL }}
+          VITE_AUTH_URL: ${{ secrets.VITE_AUTH_URL }}
+          VITE_AUTH_CALLBACK_URL: ${{ secrets.VITE_AUTH_CALLBACK_URL }}
+          VITE_BOOKSHELF_URL: ${{ secrets.VITE_BOOKSHELF_URL }}
           VITE_SENTRY_DSN: ${{ secrets.VITE_SENTRY_DSN }}
           VITE_SENTRY_ENVIRONMENT: production
+
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/pages-action@v1
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          projectName: podo-budget
+          directory: frontend/dist
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}

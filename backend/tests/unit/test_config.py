@@ -21,7 +21,7 @@ def test_settings_default_values():
         assert settings.DEBUG is True
         assert settings.SECRET_KEY == ""  # 프로덕션에서는 반드시 설정 필요
         assert settings.LLM_PROVIDER == "anthropic"
-        assert "postgresql+asyncpg" in settings.DATABASE_URL
+        assert "sqlite+aiosqlite" in settings.DATABASE_URL
 
 
 def test_settings_from_env():
@@ -83,9 +83,8 @@ def test_database_url_default():
     """DATABASE_URL 기본값 검증"""
     with patch.dict("os.environ", {}, clear=True):
         settings = Settings(_env_file=None)
-        assert "postgresql+asyncpg" in settings.DATABASE_URL
-        assert "homenrich" in settings.DATABASE_URL
-        assert "5432" in settings.DATABASE_URL
+        assert "sqlite+aiosqlite" in settings.DATABASE_URL
+        assert "db.sqlite3" in settings.DATABASE_URL
 
 
 def test_sentry_dsn_default_empty():

@@ -47,9 +47,9 @@ def upgrade() -> None:
         sa.Column("start_date", sa.Date(), nullable=False),
         sa.Column("end_date", sa.Date(), nullable=True),
         sa.Column("next_due_date", sa.Date(), nullable=False),
-        sa.Column("is_active", sa.Boolean(), nullable=False, server_default=sa.text("true")),
-        sa.Column("created_at", sa.DateTime(), server_default=sa.func.now()),
-        sa.Column("updated_at", sa.DateTime(), server_default=sa.func.now()),
+        sa.Column("is_active", sa.Boolean(), nullable=False, server_default=sa.text("1")),
+        sa.Column("created_at", sa.DateTime(), server_default=sa.text("CURRENT_TIMESTAMP")),
+        sa.Column("updated_at", sa.DateTime(), server_default=sa.text("CURRENT_TIMESTAMP")),
     )
 
     # 인덱스 생성
