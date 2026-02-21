@@ -1,12 +1,12 @@
 /**
  * @file AuthContext.tsx
- * @description 인증 상태 관리 Context
- * 로그인/로그아웃, 토큰 저장, axios interceptor를 통한 자동 인증 헤더 추가를 제공한다.
+ * @description podo-auth SSO 기반 인증 상태 관리 Context
+ * 토큰은 podo-auth 콜백에서 localStorage에 저장되며, 이 컨텍스트는 읽기만 한다.
  */
 
 import { createContext, useContext, useState, useEffect } from 'react'
 import type { ReactNode } from 'react'
-import type { User, LoginRequest, RegisterRequest } from '../types'
+import type { User } from '../types'
 import authApi from '../api/auth'
 import apiClient from '../api/client'
 
@@ -15,22 +15,7 @@ interface AuthContextType {
   user: User | null
   /** 로딩 상태 */
   loading: boolean
-  /**
-   * 로그인 함수
-   * @param data - 사용자명과 비밀번호
-   * @throws API 에러 시 throw
-   */
-  login: (data: LoginRequest) => Promise<void>
-  /**
-   * 회원가입 함수
-   * @param data - 사용자명과 비밀번호
-   * @throws API 에러 시 throw
-   */
-  register: (data: RegisterRequest) => Promise<void>
-  /**
-   * 로그아웃 함수
-   * localStorage의 토큰을 제거하고 user를 null로 설정한다
-   */
+  /** 로그아웃 함수 — localStorage 클리어 후 podo-auth로 리다이렉트 */
   logout: () => void
 }
 
@@ -46,7 +31,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
 
-  // axios interceptor: Authorization 헤더 자동 추가
+  // axios interceptor: Authorization 헤더 자동 추가 및 401 처리
   useEffect(() => {
     const token = localStorage.getItem(TOKEN_KEY)
     if (token) {
@@ -56,24 +41,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // 요청 인터셉터: 토큰이 있으면 자동으로 헤더에 추가
     const requestInterceptor = apiClient.interceptors.request.use(
       (config) => {
-        const token = localStorage.getItem(TOKEN_KEY)
-        if (token) {
-          config.headers.Authorization = `Bearer ${token}`
+        const t = localStorage.getItem(TOKEN_KEY)
+        if (t) {
+          config.headers.Authorization = `Bearer ${t}`
         }
         return config
       },
       (error) => Promise.reject(error)
     )
 
-    // 응답 인터셉터: 401 에러 시 자동 로그아웃
+    // 응답 인터셉터: 401 에러 시 podo-auth 로그인 페이지로 리다이렉트
     const responseInterceptor = apiClient.interceptors.response.use(
       (response) => response,
       (error) => {
         if (error.response?.status === 401) {
-          // 인증 실패 시 토큰 제거 및 로그아웃
           localStorage.removeItem(TOKEN_KEY)
           setUser(null)
           delete apiClient.defaults.headers.common['Authorization']
+          const authUrl = import.meta.env.VITE_AUTH_URL || 'https://auth.podonest.com'
+          const callbackUrl = import.meta.env.VITE_AUTH_CALLBACK_URL || `${window.location.origin}/auth/callback`
+          window.location.href = `${authUrl}/login?redirect_uri=${encodeURIComponent(callbackUrl)}`
         }
         return Promise.reject(error)
       }
@@ -97,8 +84,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         const response = await authApi.getCurrentUser()
         setUser(response.data)
-      } catch (error) {
-        console.error('Failed to load user:', error)
+      } catch {
+        // 401 응답 시 인터셉터에서 처리됨
         localStorage.removeItem(TOKEN_KEY)
         delete apiClient.defaults.headers.common['Authorization']
       } finally {
@@ -109,33 +96,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     initAuth()
   }, [])
 
-  const login = async (data: LoginRequest) => {
-    const response = await authApi.login(data)
-    const { access_token } = response.data
-
-    // 토큰 저장
-    localStorage.setItem(TOKEN_KEY, access_token)
-    apiClient.defaults.headers.common['Authorization'] = `Bearer ${access_token}`
-
-    // 사용자 정보 조회
-    const userResponse = await authApi.getCurrentUser()
-    setUser(userResponse.data)
-  }
-
-  const register = async (data: RegisterRequest) => {
-    await authApi.register(data)
-    // 회원가입 후 자동 로그인
-    await login({ email: data.email, password: data.password })
-  }
-
   const logout = () => {
     localStorage.removeItem(TOKEN_KEY)
     delete apiClient.defaults.headers.common['Authorization']
     setUser(null)
+    const authUrl = import.meta.env.VITE_AUTH_URL || 'https://auth.podonest.com'
+    window.location.href = `${authUrl}/login`
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, loading, logout }}>
       {children}
     </AuthContext.Provider>
   )
@@ -143,9 +113,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 /**
  * useAuth 커스텀 훅
- * 컴포넌트에서 인증 기능을 사용하기 위한 훅
  * @throws AuthProvider 외부에서 사용 시 에러 발생
- * @returns user, loading, login, register, logout 함수를 포함한 객체
  */
 export function useAuth() {
   const context = useContext(AuthContext)
