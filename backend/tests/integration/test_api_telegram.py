@@ -703,3 +703,63 @@ async def test_webhook_accepts_valid_secret(client, db_session, mock_telegram_se
             headers={"X-Telegram-Bot-Api-Secret-Token": "my-secret-token"},
         )
         assert response.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_link_by_code_success(client, db_session, mock_telegram_send):
+    """유효한 코드로 연동 성공"""
+    from datetime import UTC, datetime, timedelta
+
+    from app.models.user import User
+
+    web_user = User(
+        username="webuser",
+        email="web@test.com",
+        telegram_link_code="ABC123",
+        telegram_link_code_expires_at=datetime.now(UTC) + timedelta(minutes=10),
+    )
+    db_session.add(web_user)
+    await db_session.commit()
+
+    chat_id = 99999
+    payload = {"message": {"chat": {"id": chat_id}, "text": "/link ABC123", "from": {"id": chat_id}}}
+    response = await client.post("/api/telegram/webhook", json=payload)
+    assert response.status_code == 200
+    mock_telegram_send.assert_called_once()
+    msg = mock_telegram_send.call_args[0][1]
+    assert "연동" in msg or "완료" in msg
+
+
+@pytest.mark.asyncio
+async def test_link_by_code_expired(client, db_session, mock_telegram_send):
+    """만료된 코드로 연동 시 실패 메시지"""
+    from datetime import UTC, datetime, timedelta
+
+    from app.models.user import User
+
+    web_user = User(
+        username="webuser2",
+        email="web2@test.com",
+        telegram_link_code="EXP999",
+        telegram_link_code_expires_at=datetime.now(UTC) - timedelta(minutes=1),
+    )
+    db_session.add(web_user)
+    await db_session.commit()
+
+    chat_id = 88888
+    payload = {"message": {"chat": {"id": chat_id}, "text": "/link EXP999", "from": {"id": chat_id}}}
+    response = await client.post("/api/telegram/webhook", json=payload)
+    assert response.status_code == 200
+    msg = mock_telegram_send.call_args[0][1]
+    assert "만료" in msg or "유효하지" in msg
+
+
+@pytest.mark.asyncio
+async def test_link_by_invalid_code(client, db_session, mock_telegram_send):
+    """존재하지 않는 코드로 연동 시 실패 메시지"""
+    chat_id = 77777
+    payload = {"message": {"chat": {"id": chat_id}, "text": "/link XXXXXX", "from": {"id": chat_id}}}
+    response = await client.post("/api/telegram/webhook", json=payload)
+    assert response.status_code == 200
+    msg = mock_telegram_send.call_args[0][1]
+    assert "유효하지" in msg or "찾을 수 없" in msg
