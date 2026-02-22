@@ -86,10 +86,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         const response = await authApi.getCurrentUser()
         setUser(response.data)
-      } catch {
-        // 401 응답 시 인터셉터에서 처리됨
-        localStorage.removeItem(TOKEN_KEY)
-        delete apiClient.defaults.headers.common['Authorization']
+      } catch (err: unknown) {
+        const status = (err as { response?: { status?: number } })?.response?.status
+        if (status === 401) {
+          // 401은 인터셉터에서도 처리되지만 여기서도 정리
+          localStorage.removeItem(TOKEN_KEY)
+          delete apiClient.defaults.headers.common['Authorization']
+        }
+        // 네트워크 에러(백엔드 일시 중지 등)는 토큰 유지 — 무한 리다이렉트 방지
       } finally {
         setLoading(false)
       }
