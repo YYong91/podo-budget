@@ -44,6 +44,8 @@ export default defineConfig({
         ],
       },
       workbox: {
+        // 캐시 이름 버전 업 → 구 SW 캐시(로그인 페이지 포함) 강제 제거
+        cacheId: 'podo-budget-v2',
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
         runtimeCaching: [
           {
