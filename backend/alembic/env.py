@@ -76,9 +76,10 @@ def do_run_migrations(connection: Connection) -> None:
 async def run_async_migrations() -> None:
     """
     비동기 엔진을 생성하고 마이그레이션을 실행합니다.
+    async_engine_from_config는 asyncpg/aiosqlite URL이 필요하므로 원본 URL 사용.
     """
     configuration = config.get_section(config.config_ini_section, {})
-    configuration["sqlalchemy.url"] = get_url()
+    configuration["sqlalchemy.url"] = settings.DATABASE_URL
 
     connectable = async_engine_from_config(
         configuration,
