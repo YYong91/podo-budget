@@ -11,6 +11,9 @@ primary_region = "nrt"  # 도쿄 (Tokyo Narita)
 
 [build]
 
+[deploy]
+  release_command = "uv run alembic upgrade head"
+
 [env]
   PORT = "8000"
   APP_NAME = "HomeNRich"
