@@ -29,14 +29,16 @@ def upgrade() -> None:
     op.create_unique_constraint("uq_users_auth_user_id", "users", ["auth_user_id"])
     op.create_index("ix_users_auth_user_id", "users", ["auth_user_id"])
 
-    # hashed_password를 nullable로 변경 (SSO 유저는 로컬 패스워드 없음)
-    op.alter_column("users", "hashed_password", nullable=True)
+    # hashed_password를 nullable로 변경 (SSO 유저는 로컬 패스워드 없음, SQLite batch mode 필요)
+    with op.batch_alter_table("users") as batch_op:
+        batch_op.alter_column("hashed_password", nullable=True)
 
 
 def downgrade() -> None:
-    # hashed_password를 다시 not null로 변경 (빈 문자열로 채워야 할 수 있음)
-    op.alter_column("users", "hashed_password", nullable=False)
+    # hashed_password를 다시 not null로 변경
+    with op.batch_alter_table("users") as batch_op:
+        batch_op.alter_column("hashed_password", nullable=False)
+        batch_op.drop_constraint("uq_users_auth_user_id", type_="unique")
 
     op.drop_index("ix_users_auth_user_id", table_name="users")
-    op.drop_constraint("uq_users_auth_user_id", "users", type_="unique")
     op.drop_column("users", "auth_user_id")

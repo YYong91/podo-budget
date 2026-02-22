@@ -24,71 +24,73 @@ def upgrade() -> None:
     op.create_index("ix_expenses_household_date", "expenses", ["household_id", "date"])
     op.create_index("ix_expenses_user_date", "expenses", ["user_id", "date"])
 
-    # FK CASCADE 정비: expenses.household_id
-    op.drop_constraint("expenses_household_id_fkey", "expenses", type_="foreignkey")
-    op.create_foreign_key(
-        "expenses_household_id_fkey",
-        "expenses",
-        "households",
-        ["household_id"],
-        ["id"],
-        ondelete="SET NULL",
-    )
+    # FK CASCADE 정비: SQLite는 named FK constraint 미지원 → PostgreSQL만 실행
+    bind = op.get_bind()
+    if bind.dialect.name != "sqlite":
+        op.drop_constraint("expenses_household_id_fkey", "expenses", type_="foreignkey")
+        op.create_foreign_key(
+            "expenses_household_id_fkey",
+            "expenses",
+            "households",
+            ["household_id"],
+            ["id"],
+            ondelete="SET NULL",
+        )
 
-    # FK CASCADE 정비: categories.household_id
-    op.drop_constraint("categories_household_id_fkey", "categories", type_="foreignkey")
-    op.create_foreign_key(
-        "categories_household_id_fkey",
-        "categories",
-        "households",
-        ["household_id"],
-        ["id"],
-        ondelete="SET NULL",
-    )
+        op.drop_constraint("categories_household_id_fkey", "categories", type_="foreignkey")
+        op.create_foreign_key(
+            "categories_household_id_fkey",
+            "categories",
+            "households",
+            ["household_id"],
+            ["id"],
+            ondelete="SET NULL",
+        )
 
-    # FK CASCADE 정비: budgets.household_id
-    op.drop_constraint("budgets_household_id_fkey", "budgets", type_="foreignkey")
-    op.create_foreign_key(
-        "budgets_household_id_fkey",
-        "budgets",
-        "households",
-        ["household_id"],
-        ["id"],
-        ondelete="SET NULL",
-    )
+        op.drop_constraint("budgets_household_id_fkey", "budgets", type_="foreignkey")
+        op.create_foreign_key(
+            "budgets_household_id_fkey",
+            "budgets",
+            "households",
+            ["household_id"],
+            ["id"],
+            ondelete="SET NULL",
+        )
 
 
 def downgrade() -> None:
-    # FK CASCADE 롤백
-    op.drop_constraint("budgets_household_id_fkey", "budgets", type_="foreignkey")
-    op.create_foreign_key(
-        "budgets_household_id_fkey",
-        "budgets",
-        "households",
-        ["household_id"],
-        ["id"],
-    )
-
-    op.drop_constraint("categories_household_id_fkey", "categories", type_="foreignkey")
-    op.create_foreign_key(
-        "categories_household_id_fkey",
-        "categories",
-        "households",
-        ["household_id"],
-        ["id"],
-    )
-
-    op.drop_constraint("expenses_household_id_fkey", "expenses", type_="foreignkey")
-    op.create_foreign_key(
-        "expenses_household_id_fkey",
-        "expenses",
-        "households",
-        ["household_id"],
-        ["id"],
-    )
-
     # 인덱스 롤백
     op.drop_index("ix_expenses_user_date", "expenses")
     op.drop_index("ix_expenses_household_date", "expenses")
     op.drop_index("ix_expenses_category_id", "expenses")
     op.drop_index("ix_expenses_date", "expenses")
+
+    # FK CASCADE 롤백: SQLite는 named FK constraint 미지원 → PostgreSQL만 실행
+    bind = op.get_bind()
+    if bind.dialect.name != "sqlite":
+        op.drop_constraint("budgets_household_id_fkey", "budgets", type_="foreignkey")
+        op.create_foreign_key(
+            "budgets_household_id_fkey",
+            "budgets",
+            "households",
+            ["household_id"],
+            ["id"],
+        )
+
+        op.drop_constraint("categories_household_id_fkey", "categories", type_="foreignkey")
+        op.create_foreign_key(
+            "categories_household_id_fkey",
+            "categories",
+            "households",
+            ["household_id"],
+            ["id"],
+        )
+
+        op.drop_constraint("expenses_household_id_fkey", "expenses", type_="foreignkey")
+        op.create_foreign_key(
+            "expenses_household_id_fkey",
+            "expenses",
+            "households",
+            ["household_id"],
+            ["id"],
+        )

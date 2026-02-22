@@ -32,6 +32,7 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     op.drop_index("ix_users_telegram_link_code", table_name="users")
-    op.drop_constraint("uq_users_telegram_link_code", "users", type_="unique")
+    with op.batch_alter_table("users") as batch_op:
+        batch_op.drop_constraint("uq_users_telegram_link_code", type_="unique")
     op.drop_column("users", "telegram_link_code_expires_at")
     op.drop_column("users", "telegram_link_code")

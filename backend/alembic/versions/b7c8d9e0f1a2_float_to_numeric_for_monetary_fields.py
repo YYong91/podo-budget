@@ -20,40 +20,40 @@ depends_on = None
 
 
 def upgrade() -> None:
-    # expenses.amount: Float → Numeric(12, 2)
-    op.alter_column(
-        "expenses",
-        "amount",
-        existing_type=sa.Float(),
-        type_=sa.Numeric(precision=12, scale=2),
-        existing_nullable=False,
-    )
+    # expenses.amount: Float → Numeric(12, 2) (SQLite batch mode 필요)
+    with op.batch_alter_table("expenses") as batch_op:
+        batch_op.alter_column(
+            "amount",
+            existing_type=sa.Float(),
+            type_=sa.Numeric(precision=12, scale=2),
+            existing_nullable=False,
+        )
 
     # budgets.amount: Float → Numeric(12, 2)
-    op.alter_column(
-        "budgets",
-        "amount",
-        existing_type=sa.Float(),
-        type_=sa.Numeric(precision=12, scale=2),
-        existing_nullable=False,
-    )
+    with op.batch_alter_table("budgets") as batch_op:
+        batch_op.alter_column(
+            "amount",
+            existing_type=sa.Float(),
+            type_=sa.Numeric(precision=12, scale=2),
+            existing_nullable=False,
+        )
 
 
 def downgrade() -> None:
     # budgets.amount: Numeric(12, 2) → Float
-    op.alter_column(
-        "budgets",
-        "amount",
-        existing_type=sa.Numeric(precision=12, scale=2),
-        type_=sa.Float(),
-        existing_nullable=False,
-    )
+    with op.batch_alter_table("budgets") as batch_op:
+        batch_op.alter_column(
+            "amount",
+            existing_type=sa.Numeric(precision=12, scale=2),
+            type_=sa.Float(),
+            existing_nullable=False,
+        )
 
     # expenses.amount: Numeric(12, 2) → Float
-    op.alter_column(
-        "expenses",
-        "amount",
-        existing_type=sa.Numeric(precision=12, scale=2),
-        type_=sa.Float(),
-        existing_nullable=False,
-    )
+    with op.batch_alter_table("expenses") as batch_op:
+        batch_op.alter_column(
+            "amount",
+            existing_type=sa.Numeric(precision=12, scale=2),
+            type_=sa.Float(),
+            existing_nullable=False,
+        )
