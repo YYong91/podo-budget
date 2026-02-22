@@ -19,7 +19,7 @@ def format_unknown_input(raw_input: str) -> str:
 def format_help_message() -> str:
     """도움말 메시지"""
     return (
-        "📖 HomeNRich 사용 가이드\n\n"
+        "📖 포도가계부 사용 가이드\n\n"
         "🗣️ 자연어로 입력하세요:\n"
         '· "점심에 김치찌개 8000원"\n'
         '· "스타벅스 아메리카노 4500원"\n'
@@ -33,14 +33,15 @@ def format_help_message() -> str:
         "/help - 도움말\n"
         "/start - 시작하기\n"
         "/report - 이번 달 지출 요약\n"
-        "/budget - 예산 현황"
+        "/budget - 예산 현황\n"
+        "/link 코드 - 웹 계정 연동 (설정 페이지에서 코드 발급)"
     )
 
 
 def format_welcome_message() -> str:
     """최초 시작 메시지"""
     return (
-        "🎉 HomeNRich에 오신 걸 환영합니다!\n\n"
+        "🍇 포도가계부에 오신 걸 환영합니다!\n\n"
         "AI가 알아서 정리해주는 똑똑한 가계부예요.\n"
         "카톡 보내듯 편하게 지출을 입력하면\n"
         "자동으로 카테고리를 분류하고 저장해드립니다.\n\n"
@@ -48,7 +49,22 @@ def format_welcome_message() -> str:
         '"점심에 김치찌개 8000원"\n'
         '"스타벅스 아메리카노 4500원"\n'
         '"택시비 2만원"\n\n'
+        "🔗 웹 계정 연동:\n"
+        "설정 페이지에서 코드를 발급받아\n"
+        "/link 코드 를 입력하면 연동됩니다.\n\n"
         "지금 바로 시작해볼까요?"
+    )
+
+
+def format_link_usage_message() -> str:
+    """연동 코드 사용법 안내"""
+    return (
+        "🔗 텔레그램 계정 연동\n\n"
+        "1. 포도가계부 웹사이트에서 로그인\n"
+        "2. 설정 → 텔레그램 연동 → 코드 발급\n"
+        "3. 아래 형식으로 입력:\n\n"
+        "/link ABC123\n\n"
+        "⏰ 코드는 15분 후 만료됩니다."
     )
 
 
