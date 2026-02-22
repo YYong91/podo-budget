@@ -26,11 +26,11 @@ def upgrade() -> None:
         "users",
         sa.Column("auth_user_id", sa.BigInteger(), nullable=True),
     )
-    op.create_unique_constraint("uq_users_auth_user_id", "users", ["auth_user_id"])
     op.create_index("ix_users_auth_user_id", "users", ["auth_user_id"])
 
-    # hashed_password를 nullable로 변경 (SSO 유저는 로컬 패스워드 없음, SQLite batch mode 필요)
+    # unique constraint + hashed_password nullable 변경 (SQLite batch mode 필요)
     with op.batch_alter_table("users") as batch_op:
+        batch_op.create_unique_constraint("uq_users_auth_user_id", ["auth_user_id"])
         batch_op.alter_column("hashed_password", nullable=True)
 
 

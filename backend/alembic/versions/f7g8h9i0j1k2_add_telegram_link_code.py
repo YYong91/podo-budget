@@ -26,8 +26,10 @@ def upgrade() -> None:
         "users",
         sa.Column("telegram_link_code_expires_at", sa.DateTime(timezone=True), nullable=True),
     )
-    op.create_unique_constraint("uq_users_telegram_link_code", "users", ["telegram_link_code"])
     op.create_index("ix_users_telegram_link_code", "users", ["telegram_link_code"])
+    # unique constraint는 SQLite batch mode 필요
+    with op.batch_alter_table("users") as batch_op:
+        batch_op.create_unique_constraint("uq_users_telegram_link_code", ["telegram_link_code"])
 
 
 def downgrade() -> None:
