@@ -18,6 +18,10 @@ export default function ProtectedRoute() {
 
   useEffect(() => {
     if (!loading && !user) {
+      sessionStorage.setItem(
+        'intended_path',
+        window.location.pathname + window.location.search
+      )
       const authUrl = import.meta.env.VITE_AUTH_URL || 'https://auth.podonest.com'
       const callbackUrl = import.meta.env.VITE_AUTH_CALLBACK_URL || `${window.location.origin}/auth/callback`
       window.location.href = `${authUrl}/login?redirect_uri=${encodeURIComponent(callbackUrl)}`

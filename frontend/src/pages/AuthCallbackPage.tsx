@@ -17,7 +17,9 @@ export default function AuthCallbackPage() {
     if (token) {
       localStorage.setItem('auth_token', token)
     }
-    navigate('/', { replace: true })
+    const intendedPath = sessionStorage.getItem('intended_path') || '/'
+    sessionStorage.removeItem('intended_path')
+    navigate(intendedPath, { replace: true })
   }, [searchParams, navigate])
 
   return (
