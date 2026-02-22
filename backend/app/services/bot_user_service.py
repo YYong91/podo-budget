@@ -108,28 +108,3 @@ async def link_telegram_account_by_code(db: AsyncSession, code: str, telegram_ch
 
     logger.info(f"텔레그램 코드 연동 완료: user_id={user.id} ← chat_id={telegram_chat_id}")
     return True, f"✅ 연동 완료! 이제 이 채팅의 지출이 '{user.username}' 계정에 기록됩니다."
-
-
-async def link_telegram_account(db: AsyncSession, username: str, password: str, telegram_chat_id: str) -> User | None:
-    """Telegram 계정을 기존 웹 계정에 연동
-
-    Args:
-        db: 데이터베이스 세션
-        username: 웹 계정 사용자명
-        password: 웹 계정 비밀번호
-        telegram_chat_id: Telegram chat ID
-
-    Returns:
-        연동 성공 시 User 객체, 실패 시 None
-    """
-    result = await db.execute(select(User).where(User.username == username))
-    user = result.scalar_one_or_none()
-
-    if not user or not pwd_context.verify(password, user.hashed_password):
-        return None
-
-    user.telegram_chat_id = telegram_chat_id
-    await db.commit()
-    await db.refresh(user)
-    logger.info(f"Telegram 연동 완료: {username} ← chat_id={telegram_chat_id}")
-    return user

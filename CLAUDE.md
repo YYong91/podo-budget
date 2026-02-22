@@ -71,7 +71,7 @@ backend/app/
 frontend/src/
 ├── api/           # Axios API clients (expenses, income, recurring, categories, insights)
 ├── components/    # Reusable components (Layout with sidebar navigation)
-├── pages/         # Page components (Dashboard, ExpenseList, ExpenseDetail, IncomeList, IncomeDetail, IncomeForm, RecurringList, CategoryManager, InsightsPage, ForgotPasswordPage, ResetPasswordPage)
+├── pages/         # Page components (Dashboard, ExpenseList, ExpenseDetail, IncomeList, IncomeDetail, IncomeForm, RecurringList, CategoryManager, InsightsPage, AuthCallbackPage)
 ├── hooks/         # Custom hooks (empty — not yet implemented)
 ├── types/         # TypeScript type definitions (Expense, Category, MonthlyStats, etc.)
 ├── assets/        # Static assets

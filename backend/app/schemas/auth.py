@@ -1,44 +1,12 @@
 """인증 관련 Pydantic 스키마
 
-JWT 인증에 사용되는 요청/응답 DTO들입니다.
+podo-auth SSO 연동 후 사용되는 응답 DTO들입니다.
+자체 로그인/회원가입은 podo-auth에서 처리하므로 요청 스키마가 없습니다.
 """
 
 from datetime import datetime
 
-from pydantic import BaseModel, EmailStr, Field
-
-
-class UserCreate(BaseModel):
-    """회원가입 요청 스키마
-
-    Attributes:
-        username: 닉네임 (1-50자)
-        password: 비밀번호 (8자 이상)
-        email: 이메일 주소 (필수, 로그인에 사용)
-    """
-
-    username: str = Field(..., min_length=1, max_length=50, description="닉네임")
-    password: str = Field(..., min_length=8, description="비밀번호 (8자 이상)")
-    email: EmailStr = Field(..., description="이메일 (로그인에 사용)")
-
-
-class LoginRequest(BaseModel):
-    """로그인 요청 스키마"""
-
-    email: EmailStr = Field(..., description="이메일")
-    password: str = Field(..., description="비밀번호")
-
-
-class TokenResponse(BaseModel):
-    """JWT 토큰 응답 스키마
-
-    Attributes:
-        access_token: JWT 액세스 토큰 (Bearer 방식으로 사용)
-        token_type: 토큰 타입 (항상 "bearer")
-    """
-
-    access_token: str = Field(..., description="JWT 액세스 토큰")
-    token_type: str = Field(default="bearer", description="토큰 타입")
+from pydantic import BaseModel
 
 
 class UserResponse(BaseModel):
@@ -56,19 +24,6 @@ class UserResponse(BaseModel):
 
     class Config:
         from_attributes = True  # SQLAlchemy 모델을 Pydantic으로 변환 허용
-
-
-class ForgotPasswordRequest(BaseModel):
-    """비밀번호 찾기 요청 스키마"""
-
-    email: EmailStr = Field(..., description="등록된 이메일 주소")
-
-
-class ResetPasswordRequest(BaseModel):
-    """비밀번호 재설정 요청 스키마"""
-
-    token: str = Field(..., description="비밀번호 재설정 토큰")
-    new_password: str = Field(..., min_length=8, description="새 비밀번호 (8자 이상)")
 
 
 class MessageResponse(BaseModel):
