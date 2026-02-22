@@ -65,6 +65,51 @@ async def get_or_create_bot_user(db: AsyncSession, platform: str, platform_user_
     return user
 
 
+async def link_telegram_account_by_code(db: AsyncSession, code: str, telegram_chat_id: str) -> tuple[bool, str]:
+    """코드로 텔레그램 계정을 웹 계정에 연동한다.
+
+    Args:
+        db: 데이터베이스 세션
+        code: 웹에서 발급된 단기 연동 코드
+        telegram_chat_id: 연동할 Telegram chat ID
+
+    Returns:
+        (success: bool, message: str)
+    """
+    from datetime import UTC, datetime
+
+    now = datetime.now(UTC)
+
+    # 코드로 사용자 조회
+    result = await db.execute(select(User).where(User.telegram_link_code == code))
+    user = result.scalar_one_or_none()
+
+    if user is None:
+        return False, "❌ 유효하지 않은 코드입니다. 웹에서 새 코드를 발급해주세요."
+
+    # 만료 확인
+    if user.telegram_link_code_expires_at is None or user.telegram_link_code_expires_at < now:
+        user.telegram_link_code = None
+        user.telegram_link_code_expires_at = None
+        await db.commit()
+        return False, "⏰ 코드가 만료되었습니다. 웹에서 새 코드를 발급해주세요."
+
+    # 이미 다른 계정에 연동된 chat_id인지 확인
+    existing = await db.execute(select(User).where(User.telegram_chat_id == telegram_chat_id))
+    existing_user = existing.scalar_one_or_none()
+    if existing_user and existing_user.id != user.id:
+        return False, "⚠️ 이 텔레그램 계정은 이미 다른 웹 계정에 연동되어 있습니다."
+
+    # 연동 설정 후 코드 삭제
+    user.telegram_chat_id = telegram_chat_id
+    user.telegram_link_code = None
+    user.telegram_link_code_expires_at = None
+    await db.commit()
+
+    logger.info(f"텔레그램 코드 연동 완료: user_id={user.id} ← chat_id={telegram_chat_id}")
+    return True, f"✅ 연동 완료! 이제 이 채팅의 지출이 '{user.username}' 계정에 기록됩니다."
+
+
 async def link_telegram_account(db: AsyncSession, username: str, password: str, telegram_chat_id: str) -> User | None:
     """Telegram 계정을 기존 웹 계정에 연동
 

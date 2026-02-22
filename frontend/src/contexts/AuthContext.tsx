@@ -17,6 +17,8 @@ interface AuthContextType {
   loading: boolean
   /** 로그아웃 함수 — localStorage 클리어 후 podo-auth로 리다이렉트 */
   logout: () => void
+  /** 사용자 정보 새로고침 (텔레그램 연동 상태 변경 후 호출) */
+  refreshUser: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -104,8 +106,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     window.location.href = `${authUrl}/login`
   }
 
+  const refreshUser = async () => {
+    try {
+      const response = await authApi.getCurrentUser()
+      setUser(response.data)
+    } catch {
+      // 무시 (인터셉터에서 401 처리)
+    }
+  }
+
   return (
-    <AuthContext.Provider value={{ user, loading, logout }}>
+    <AuthContext.Provider value={{ user, loading, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   )

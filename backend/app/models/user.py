@@ -33,6 +33,8 @@ class User(Base):
     hashed_password = Column(String, nullable=True)  # SSO 유저는 로컬 패스워드 없음
     is_active = Column(Boolean, default=True, nullable=False)
     telegram_chat_id = Column(String, unique=True, index=True, nullable=True)  # Telegram 연동용
+    telegram_link_code = Column(String(8), unique=True, index=True, nullable=True)  # 단기 연동 코드
+    telegram_link_code_expires_at = Column(DateTime(timezone=True), nullable=True)  # 만료 시각
     created_at = Column(DateTime, default=func.now(), nullable=False)
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now(), nullable=False)
 

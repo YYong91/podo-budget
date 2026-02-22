@@ -1,30 +1,65 @@
 /**
  * @file SettingsPage.tsx
- * @description 설정 페이지 - 사용자 정보 표시 및 계정 삭제 기능
- * 사용자의 계정 정보를 표시하고, 계정을 영구 삭제할 수 있는 기능을 제공한다.
+ * @description 설정 페이지 - 계정 정보 및 텔레그램 연동
  */
 
+import { useState } from 'react'
+import toast from 'react-hot-toast'
+import { generateTelegramLinkCode, unlinkTelegram } from '../api/telegram'
 import { useAuth } from '../contexts/AuthContext'
 
 export default function SettingsPage() {
-  const { user } = useAuth()
+  const { user, refreshUser } = useAuth()
+  const [linkCode, setLinkCode] = useState<{ code: string; expires_at: string } | null>(null)
+  const [loadingCode, setLoadingCode] = useState(false)
+  const [loadingUnlink, setLoadingUnlink] = useState(false)
 
-  /**
-   * 날짜 포맷 (YYYY.MM.DD)
-   */
-  const formatDate = (dateStr: string): string => {
-    return dateStr.slice(0, 10).replace(/-/g, '.')
+  const formatDate = (dateStr: string): string => dateStr.slice(0, 10).replace(/-/g, '.')
+
+  const handleGenerateCode = async () => {
+    setLoadingCode(true)
+    try {
+      const data = await generateTelegramLinkCode()
+      setLinkCode(data)
+    } catch {
+      toast.error('코드 발급에 실패했습니다.')
+    } finally {
+      setLoadingCode(false)
+    }
   }
 
-  if (!user) {
-    return null
+  const handleUnlink = async () => {
+    if (!confirm('텔레그램 연동을 해제할까요?')) return
+    setLoadingUnlink(true)
+    try {
+      await unlinkTelegram()
+      toast.success('텔레그램 연동이 해제되었습니다.')
+      await refreshUser()
+      setLinkCode(null)
+    } catch {
+      toast.error('연동 해제에 실패했습니다.')
+    } finally {
+      setLoadingUnlink(false)
+    }
   }
+
+  const handleCopyCode = async () => {
+    if (!linkCode) return
+    await navigator.clipboard.writeText(`/link ${linkCode.code}`)
+    toast.success('복사되었습니다!')
+  }
+
+  if (!user) return null
+
+  const expiresAt = linkCode
+    ? new Date(linkCode.expires_at).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
+    : null
 
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold text-warm-900">설정</h1>
 
-      {/* 사용자 정보 카드 */}
+      {/* 계정 정보 */}
       <div className="bg-white rounded-2xl shadow-sm border border-warm-200 p-6">
         <h2 className="text-lg font-semibold text-warm-900 mb-4">계정 정보</h2>
         <div className="space-y-3">
@@ -41,6 +76,61 @@ export default function SettingsPage() {
             <span className="text-sm text-warm-900">{formatDate(user.created_at)}</span>
           </div>
         </div>
+      </div>
+
+      {/* 텔레그램 연동 */}
+      <div className="bg-white rounded-2xl shadow-sm border border-warm-200 p-6">
+        <h2 className="text-lg font-semibold text-warm-900 mb-1">텔레그램 연동</h2>
+        <p className="text-sm text-warm-500 mb-4">
+          텔레그램 봇에서 자연어로 지출을 입력할 수 있습니다.
+        </p>
+
+        {user.is_telegram_linked ? (
+          /* 연동 상태 */
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-leaf-600 font-medium">✅ 연동됨</span>
+            <button
+              onClick={handleUnlink}
+              disabled={loadingUnlink}
+              className="text-sm text-warm-500 hover:text-red-500 underline disabled:opacity-50"
+            >
+              {loadingUnlink ? '해제 중...' : '연동 해제'}
+            </button>
+          </div>
+        ) : (
+          /* 미연동 상태 */
+          <div className="space-y-3">
+            {linkCode ? (
+              <div className="bg-grape-50 rounded-xl p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="font-mono text-2xl font-bold text-grape-700 tracking-widest">
+                    {linkCode.code}
+                  </span>
+                  <button
+                    onClick={handleCopyCode}
+                    className="text-xs text-grape-600 border border-grape-300 rounded-lg px-3 py-1 hover:bg-grape-100"
+                  >
+                    /link {linkCode.code} 복사
+                  </button>
+                </div>
+                <p className="text-xs text-warm-500">⏰ {expiresAt}까지 유효</p>
+                <p className="text-sm text-warm-600">
+                  텔레그램 봇에서 위 코드를 입력하세요:
+                  <br />
+                  <span className="font-mono text-grape-700">/link {linkCode.code}</span>
+                </p>
+              </div>
+            ) : (
+              <button
+                onClick={handleGenerateCode}
+                disabled={loadingCode}
+                className="w-full py-2.5 rounded-xl bg-grape-600 text-white text-sm font-medium hover:bg-grape-700 disabled:opacity-50"
+              >
+                {loadingCode ? '발급 중...' : '연동 코드 발급'}
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       {/* 계정 관리 안내 */}

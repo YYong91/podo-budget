@@ -52,6 +52,7 @@ class UserResponse(BaseModel):
     email: str | None
     is_active: bool
     created_at: datetime
+    is_telegram_linked: bool = False  # 텔레그램 연동 여부
 
     class Config:
         from_attributes = True  # SQLAlchemy 모델을 Pydantic으로 변환 허용
@@ -74,3 +75,10 @@ class MessageResponse(BaseModel):
     """간단한 메시지 응답 스키마"""
 
     message: str
+
+
+class TelegramLinkCodeResponse(BaseModel):
+    """텔레그램 연동 코드 응답"""
+
+    code: str
+    expires_at: datetime
