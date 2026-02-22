@@ -82,6 +82,7 @@ export interface User {
   email: string | null
   is_active: boolean
   created_at: string
+  is_telegram_linked: boolean
 }
 
 export interface LoginRequest {
