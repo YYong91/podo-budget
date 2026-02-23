@@ -23,13 +23,9 @@ primary_region = "nrt"  # 도쿄 (Tokyo Narita)
 [http_service]
   internal_port = 8000
   force_https = true
-  auto_stop_machines = true  # 무료 티어: 비활성 시 자동 중지
+  auto_stop_machines = false  # 자동 중지 비활성화 — 콜드 스타트 무한 리다이렉트 방지
   auto_start_machines = true
-  min_machines_running = 0   # 무료 티어: 사용 안 할 때 0대
-
-  # 유료 플랜 전환 시 변경
-  # min_machines_running = 1
-  # auto_stop_machines = false
+  min_machines_running = 1    # 항상 1대 유지
 
   [[http_service.checks]]
     grace_period = "10s"

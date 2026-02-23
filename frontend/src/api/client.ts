@@ -5,7 +5,7 @@ import { captureException } from '../utils/sentry'
 
 const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_URL || '/api',
-  timeout: 10000,
+  timeout: 30000, // Fly.io 콜드 스타트 대기 시간 고려 (10s → 30s)
   headers: { 'Content-Type': 'application/json' },
 })
 

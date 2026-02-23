@@ -44,25 +44,11 @@ export default defineConfig({
         ],
       },
       workbox: {
-        // 캐시 이름 버전 업 → 구 SW 캐시(로그인 페이지 포함) 강제 제거
-        cacheId: 'podo-budget-v2',
+        // 캐시 이름 버전 업 → 구 SW 캐시 강제 제거 (API 캐시 제거 포함)
+        cacheId: 'podo-budget-v3',
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
-        runtimeCaching: [
-          {
-            urlPattern: /^https?:\/\/.*\/api\/.*/i,
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'api-cache',
-              expiration: {
-                maxEntries: 100,
-                maxAgeSeconds: 60 * 60 * 24,
-              },
-              cacheableResponse: {
-                statuses: [0, 200],
-              },
-            },
-          },
-        ],
+        // API 응답 캐시 제거: 인증 토큰 만료 후에도 캐시된 응답이 반환되는 문제 방지
+        runtimeCaching: [],
       },
     }),
   ],
