@@ -8,11 +8,12 @@ import { useHouseholdStore } from '../stores/useHouseholdStore'
 import {
   LayoutDashboard, Receipt, Wallet, PlusCircle, Tags,
   PiggyBank, Repeat, TrendingUp, Users, Settings as SettingsIcon,
-  Mail, Home, Menu, X, ChevronDown,
+  Mail, Home, Menu, X, ChevronDown, LogOut,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
 const BOOKSHELF_URL = import.meta.env.VITE_BOOKSHELF_URL || 'http://localhost:5173'
+const AUTH_URL = import.meta.env.VITE_AUTH_URL || 'https://auth.podonest.com'
 
 const navItems: { path: string; label: string; icon: LucideIcon }[] = [
   { path: '/', label: '대시보드', icon: LayoutDashboard },
@@ -194,16 +195,25 @@ export default function Layout() {
           {/* 사이드바 하단 — 유저 정보 + 서비스 링크 */}
           <div className="mt-4 pt-4 border-t border-warm-200 text-sm space-y-1">
             {user && (
-              <div className="px-3 py-2 text-warm-600 font-medium truncate">
-                {user.username}
+              <div className="flex items-center gap-1 px-3 py-1.5">
+                <a
+                  href={AUTH_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-1 text-sm font-medium text-warm-600 hover:text-grape-600 truncate"
+                  title="계정 관리"
+                >
+                  {user.username}
+                </a>
+                <button
+                  onClick={logout}
+                  className="p-1.5 rounded-md text-warm-400 hover:text-grape-600 hover:bg-grape-50 transition-colors"
+                  title="로그아웃"
+                >
+                  <LogOut size={14} />
+                </button>
               </div>
             )}
-            <button
-              onClick={logout}
-              className="flex w-full items-center gap-2 px-3 py-2 rounded-lg text-warm-500 hover:text-grape-600 hover:bg-grape-50 transition-colors"
-            >
-              로그아웃
-            </button>
             <a
               href={BOOKSHELF_URL}
               className="flex items-center gap-2 px-3 py-2 rounded-lg text-warm-500 hover:text-grape-600 hover:bg-grape-50 transition-colors"
