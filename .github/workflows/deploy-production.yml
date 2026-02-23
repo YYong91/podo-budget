@@ -84,6 +84,8 @@ jobs:
     name: Deploy Backend to Fly.io
     needs: [test-backend]
     runs-on: ubuntu-latest
+    outputs:
+      failure_reason: ${{ steps.on-failure.outputs.reason }}
 
     steps:
       - uses: actions/checkout@v4
@@ -91,7 +93,14 @@ jobs:
       - uses: superfly/flyctl-actions/setup-flyctl@master
 
       - name: Deploy Backend
-        run: flyctl deploy --remote-only --config backend/fly.toml --dockerfile backend/Dockerfile
+        run: flyctl deploy --remote-only --config backend/fly.toml --dockerfile backend/Dockerfile 2>&1 | tee /tmp/deploy.log
+
+      - name: On failure
+        id: on-failure
+        if: failure()
+        run: |
+          REASON=$(grep -iE "error|failed" /tmp/deploy.log 2>/dev/null | tail -3 | sed 's/\x1b\[[0-9;]*m//g' | tr '\n' ' ' | cut -c1-300)
+          echo "reason=${REASON:-Fly.io 배포 실패}" >> $GITHUB_OUTPUT
 
   deploy-frontend:
     name: Deploy Frontend to Cloudflare Pages
@@ -100,6 +109,8 @@ jobs:
     permissions:
       contents: read
       deployments: write
+    outputs:
+      failure_reason: ${{ steps.on-failure.outputs.reason }}
 
     steps:
       - uses: actions/checkout@v4
@@ -129,14 +140,23 @@ jobs:
           VITE_SENTRY_ENVIRONMENT: production
 
       - name: Deploy to Cloudflare Pages
-        uses: cloudflare/pages-action@v1
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          projectName: podo-budget
-          directory: frontend/dist
-          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
-          wranglerVersion: '3'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          npx wrangler@3 pages deploy frontend/dist \
+            --project-name=podo-budget \
+            --commit-message="Deploy ${{ github.sha }}" \
+            --commit-hash="${{ github.sha }}" \
+            --branch="main" \
+            2>&1 | tee /tmp/deploy.log
+
+      - name: On failure
+        id: on-failure
+        if: failure()
+        run: |
+          REASON=$(grep -iE "error|failed" /tmp/deploy.log 2>/dev/null | tail -3 | sed 's/\x1b\[[0-9;]*m//g' | tr '\n' ' ' | cut -c1-300)
+          echo "reason=${REASON:-Cloudflare Pages 배포 실패}" >> $GITHUB_OUTPUT
 
   notify:
     name: Notify Deployment
@@ -150,6 +170,8 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           BACKEND_STATUS: ${{ needs.deploy-backend.result }}
           FRONTEND_STATUS: ${{ needs.deploy-frontend.result }}
+          BACKEND_FAILURE: ${{ needs.deploy-backend.outputs.failure_reason }}
+          FRONTEND_FAILURE: ${{ needs.deploy-frontend.outputs.failure_reason }}
           COMMIT_MSG: ${{ github.event.head_commit.message || 'Manual trigger' }}
           REPO: ${{ github.repository }}
           RUN_ID: ${{ github.run_id }}
@@ -162,6 +184,14 @@ jobs:
             STATUS_LINE="⏭️ ${PROJECT} 테스트 실패로 배포 건너뜀"
           else
             STATUS_LINE="❌ ${PROJECT} 배포 실패 (backend: ${BACKEND_STATUS}, frontend: ${FRONTEND_STATUS})"
+            if [ -n "$BACKEND_FAILURE" ]; then
+              STATUS_LINE="${STATUS_LINE}
+🔴 Backend: ${BACKEND_FAILURE}"
+            fi
+            if [ -n "$FRONTEND_FAILURE" ]; then
+              STATUS_LINE="${STATUS_LINE}
+🔴 Frontend: ${FRONTEND_FAILURE}"
+            fi
           fi
 
           KST_TIME="$(TZ=Asia/Seoul date '+%Y-%m-%d %H:%M KST')"
