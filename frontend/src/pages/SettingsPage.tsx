@@ -8,6 +8,8 @@ import toast from 'react-hot-toast'
 import { generateTelegramLinkCode, unlinkTelegram } from '../api/telegram'
 import { useAuth } from '../contexts/AuthContext'
 
+const AUTH_URL = import.meta.env.VITE_AUTH_URL || 'https://auth.podonest.com'
+
 export default function SettingsPage() {
   const { user, refreshUser } = useAuth()
   const [linkCode, setLinkCode] = useState<{ code: string; expires_at: string } | null>(null)
@@ -82,9 +84,10 @@ export default function SettingsPage() {
       <div className="bg-white rounded-2xl shadow-sm border border-warm-200 p-6">
         <h2 className="text-lg font-semibold text-warm-900 mb-1">텔레그램 연동</h2>
         <p className="text-sm text-warm-500 mb-4">
-          텔레그램 봇에서 자연어로 지출을 바로 입력할 수 있습니다.
+          텔레그램 봇에서 자연어로 지출/수입을 바로 입력할 수 있습니다.
           <br />
           예: <span className="font-mono text-warm-700">"오늘 점심 김치찌개 8000원"</span>
+          <span className="font-mono text-warm-700">, "월급 320만원 받았어"</span>
         </p>
 
         {user.is_telegram_linked ? (
@@ -108,17 +111,27 @@ export default function SettingsPage() {
               <ol className="space-y-2 text-sm text-warm-700">
                 <li className="flex gap-2">
                   <span className="flex-shrink-0 w-5 h-5 rounded-full bg-grape-100 text-grape-700 text-xs font-bold flex items-center justify-center">1</span>
-                  <span>아래 <strong>연동 코드 발급</strong> 버튼을 누르세요</span>
+                  <span>텔레그램 앱에서 <span className="font-mono bg-warm-100 px-1 rounded">@podo_budget_bot</span>을 검색하거나 <a href="https://t.me/podo_budget_bot" target="_blank" rel="noopener noreferrer" className="text-grape-600 underline">t.me/podo_budget_bot</a> 으로 접속하세요</span>
                 </li>
                 <li className="flex gap-2">
                   <span className="flex-shrink-0 w-5 h-5 rounded-full bg-grape-100 text-grape-700 text-xs font-bold flex items-center justify-center">2</span>
-                  <span>텔레그램에서 포도가계부 봇을 검색하고 <span className="font-mono bg-warm-100 px-1 rounded">/start</span>를 입력하세요</span>
+                  <span>봇에서 <span className="font-mono bg-warm-100 px-1 rounded">/start</span>를 입력해 시작하세요</span>
                 </li>
                 <li className="flex gap-2">
                   <span className="flex-shrink-0 w-5 h-5 rounded-full bg-grape-100 text-grape-700 text-xs font-bold flex items-center justify-center">3</span>
+                  <span>아래 <strong>연동 코드 발급</strong> 버튼을 눌러 코드를 받으세요 (15분 유효)</span>
+                </li>
+                <li className="flex gap-2">
+                  <span className="flex-shrink-0 w-5 h-5 rounded-full bg-grape-100 text-grape-700 text-xs font-bold flex items-center justify-center">4</span>
                   <span>봇에 <span className="font-mono bg-warm-100 px-1 rounded">/link 발급된코드</span>를 입력하면 연동 완료!</span>
                 </li>
               </ol>
+              <div className="mt-3 bg-grape-50 rounded-lg p-3 text-xs text-warm-600 space-y-1">
+                <p className="font-semibold text-warm-700">연동 후 이런 게 가능해요</p>
+                <p>• <span className="font-mono">"오늘 점심 8000원"</span> → AI가 자동으로 카테고리 분류</p>
+                <p>• <span className="font-mono">"어제 교통비 3회 각 1500원"</span> → 여러 건 한 번에 입력</p>
+                <p>• <span className="font-mono">"이번 달 얼마 썼어?"</span> → 지출 현황 조회</p>
+              </div>
             </div>
 
             {linkCode ? (
@@ -157,9 +170,17 @@ export default function SettingsPage() {
       {/* 계정 관리 안내 */}
       <div className="bg-white rounded-2xl shadow-sm border border-warm-200 p-6">
         <h2 className="text-lg font-semibold text-warm-900 mb-2">계정 관리</h2>
-        <p className="text-sm text-warm-600">
-          계정 삭제 등 계정 관련 설정은 포도 통합 계정(podo-auth)에서 관리합니다.
+        <p className="text-sm text-warm-600 mb-4">
+          비밀번호 변경, 계정 삭제 등은 포도 통합 계정에서 관리합니다.
         </p>
+        <a
+          href={AUTH_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-grape-300 text-grape-700 text-sm font-medium hover:bg-grape-50 transition-colors"
+        >
+          포도 통합 계정 관리 →
+        </a>
       </div>
     </div>
   )

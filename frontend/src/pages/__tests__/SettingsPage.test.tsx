@@ -76,7 +76,7 @@ describe('SettingsPage', () => {
 
     it('podo-auth 안내 문구를 표시한다', () => {
       renderSettingsPage()
-      expect(screen.getByText(/포도 통합 계정/)).toBeInTheDocument()
+      expect(screen.getAllByText(/포도 통합 계정/).length).toBeGreaterThan(0)
     })
   })
 })
