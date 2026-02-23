@@ -207,12 +207,10 @@ jobs:
           else
             STATUS_LINE="❌ ${PROJECT} 배포 실패 (backend: ${BACKEND_STATUS}, frontend: ${FRONTEND_STATUS})"
             if [ -n "$BACKEND_FAILURE" ]; then
-              STATUS_LINE="${STATUS_LINE}
-🔴 Backend: ${BACKEND_FAILURE}"
+              STATUS_LINE="${STATUS_LINE}"$'\n'"🔴 Backend: ${BACKEND_FAILURE}"
             fi
             if [ -n "$FRONTEND_FAILURE" ]; then
-              STATUS_LINE="${STATUS_LINE}
-🔴 Frontend: ${FRONTEND_FAILURE}"
+              STATUS_LINE="${STATUS_LINE}"$'\n'"🔴 Frontend: ${FRONTEND_FAILURE}"
             fi
           fi
 
