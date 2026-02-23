@@ -211,10 +211,6 @@ export default function Layout() {
               <span>📚</span>
               <span>포도책장</span>
             </a>
-            <div className="flex items-center gap-2 px-3 py-2 text-warm-400">
-              <span>🍇</span>
-              <span>포도알처럼 하나씩</span>
-            </div>
           </div>
         </aside>
 

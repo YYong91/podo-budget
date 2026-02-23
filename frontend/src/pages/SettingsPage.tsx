@@ -82,7 +82,9 @@ export default function SettingsPage() {
       <div className="bg-white rounded-2xl shadow-sm border border-warm-200 p-6">
         <h2 className="text-lg font-semibold text-warm-900 mb-1">텔레그램 연동</h2>
         <p className="text-sm text-warm-500 mb-4">
-          텔레그램 봇에서 자연어로 지출을 입력할 수 있습니다.
+          텔레그램 봇에서 자연어로 지출을 바로 입력할 수 있습니다.
+          <br />
+          예: <span className="font-mono text-warm-700">"오늘 점심 김치찌개 8000원"</span>
         </p>
 
         {user.is_telegram_linked ? (
@@ -99,9 +101,29 @@ export default function SettingsPage() {
           </div>
         ) : (
           /* 미연동 상태 */
-          <div className="space-y-3">
+          <div className="space-y-4">
+            {/* 연동 방법 안내 */}
+            <div className="bg-warm-50 rounded-xl p-4 space-y-2">
+              <p className="text-xs font-semibold text-warm-600 uppercase tracking-wide">연동 방법</p>
+              <ol className="space-y-2 text-sm text-warm-700">
+                <li className="flex gap-2">
+                  <span className="flex-shrink-0 w-5 h-5 rounded-full bg-grape-100 text-grape-700 text-xs font-bold flex items-center justify-center">1</span>
+                  <span>아래 <strong>연동 코드 발급</strong> 버튼을 누르세요</span>
+                </li>
+                <li className="flex gap-2">
+                  <span className="flex-shrink-0 w-5 h-5 rounded-full bg-grape-100 text-grape-700 text-xs font-bold flex items-center justify-center">2</span>
+                  <span>텔레그램에서 포도가계부 봇을 검색하고 <span className="font-mono bg-warm-100 px-1 rounded">/start</span>를 입력하세요</span>
+                </li>
+                <li className="flex gap-2">
+                  <span className="flex-shrink-0 w-5 h-5 rounded-full bg-grape-100 text-grape-700 text-xs font-bold flex items-center justify-center">3</span>
+                  <span>봇에 <span className="font-mono bg-warm-100 px-1 rounded">/link 발급된코드</span>를 입력하면 연동 완료!</span>
+                </li>
+              </ol>
+            </div>
+
             {linkCode ? (
               <div className="bg-grape-50 rounded-xl p-4 space-y-3">
+                <p className="text-xs font-semibold text-warm-600 uppercase tracking-wide">발급된 연동 코드</p>
                 <div className="flex items-center justify-between">
                   <span className="font-mono text-2xl font-bold text-grape-700 tracking-widest">
                     {linkCode.code}
@@ -113,12 +135,11 @@ export default function SettingsPage() {
                     /link {linkCode.code} 복사
                   </button>
                 </div>
-                <p className="text-xs text-warm-500">⏰ {expiresAt}까지 유효</p>
-                <p className="text-sm text-warm-600">
-                  텔레그램 봇에서 위 코드를 입력하세요:
-                  <br />
-                  <span className="font-mono text-grape-700">/link {linkCode.code}</span>
-                </p>
+                <p className="text-xs text-warm-500">⏰ {expiresAt}까지 유효 (만료 전 입력하세요)</p>
+                <div className="bg-white rounded-lg p-3 border border-grape-200">
+                  <p className="text-xs text-warm-500 mb-1">텔레그램 봇에 아래 명령어를 입력하세요:</p>
+                  <p className="font-mono text-sm text-grape-700 font-bold">/link {linkCode.code}</p>
+                </div>
               </div>
             ) : (
               <button
