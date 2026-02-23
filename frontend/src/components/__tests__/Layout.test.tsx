@@ -75,7 +75,7 @@ describe('Layout', () => {
     it('현재 경로에 해당하는 네비게이션 항목에 active 스타일을 적용한다', () => {
       renderLayout('/')
       const dashboardLink = screen.getByRole('link', { name: /대시보드/i })
-      expect(dashboardLink).toHaveClass('bg-grape-50', 'text-grape-800')
+      expect(dashboardLink).toHaveClass('bg-grape-50', 'text-grape-700')
     })
 
     it('다른 경로의 네비게이션 항목에는 active 스타일이 없다', () => {
