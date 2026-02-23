@@ -107,7 +107,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     delete apiClient.defaults.headers.common['Authorization']
     setUser(null)
     const authUrl = import.meta.env.VITE_AUTH_URL || 'https://auth.podonest.com'
-    window.location.href = `${authUrl}/login`
+    window.location.href = `${authUrl}/logout`
   }
 
   const refreshUser = async () => {
