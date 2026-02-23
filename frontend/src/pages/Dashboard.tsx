@@ -401,7 +401,7 @@ export default function Dashboard() {
   if (error) {
     return (
       <div className="space-y-6">
-        <h1 className="text-xl font-semibold text-warm-800">대시보드</h1>
+        <h1 className="text-xl font-bold text-grape-700">대시보드</h1>
         <div className="bg-white rounded-xl shadow-sm border border-warm-200/60">
           <ErrorState onRetry={fetchData} />
         </div>
@@ -415,7 +415,7 @@ export default function Dashboard() {
   if (hasNoData && (!personalStats || personalStats.total === 0)) {
     return (
       <div className="space-y-6">
-        <h1 className="text-xl font-semibold text-warm-800">대시보드</h1>
+        <h1 className="text-xl font-bold text-grape-700">대시보드</h1>
         <div className="bg-white rounded-xl shadow-sm border border-warm-200/60">
           <EmptyState
             title="아직 이번 달 지출 기록이 없어요"
@@ -438,7 +438,7 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-xl font-semibold text-warm-800">
+      <h1 className="text-xl font-bold text-grape-700">
         {activeHouseholdId ? '공유 가계부' : '대시보드'}
       </h1>
 

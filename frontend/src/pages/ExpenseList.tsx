@@ -160,7 +160,7 @@ export default function ExpenseList() {
   if (error) {
     return (
       <div className="space-y-6">
-        <h1 className="text-xl font-semibold text-warm-800">지출 목록</h1>
+        <h1 className="text-xl font-bold text-grape-700">지출 목록</h1>
         <div className="bg-white rounded-2xl shadow-sm border border-warm-200/60">
           <ErrorState onRetry={fetchExpenses} />
         </div>
@@ -173,7 +173,7 @@ export default function ExpenseList() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-xl font-semibold text-warm-800">지출 목록</h1>
+      <h1 className="text-xl font-bold text-grape-700">지출 목록</h1>
 
       {/* 필터 바 */}
       <div className="bg-white rounded-2xl shadow-sm border border-warm-200/60 p-4">

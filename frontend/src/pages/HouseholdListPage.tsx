@@ -125,7 +125,7 @@ export default function HouseholdListPage() {
   if (error && households.length === 0) {
     return (
       <div className="space-y-6">
-        <h1 className="text-2xl font-bold text-warm-900">공유 가계부</h1>
+        <h1 className="text-xl font-bold text-grape-700">공유 가계부</h1>
         <div className="bg-white rounded-2xl shadow-sm border border-warm-200">
           <ErrorState onRetry={fetchHouseholds} />
         </div>
@@ -138,7 +138,7 @@ export default function HouseholdListPage() {
       {/* 헤더 */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-warm-900">공유 가계부</h1>
+          <h1 className="text-xl font-bold text-grape-700">공유 가계부</h1>
           <p className="text-sm text-warm-500 mt-1">
             가족이나 친구들과 함께 지출을 관리하세요
           </p>

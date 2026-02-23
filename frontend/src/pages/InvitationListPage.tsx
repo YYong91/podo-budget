@@ -170,7 +170,7 @@ export default function InvitationListPage() {
   if (error && myInvitations.length === 0) {
     return (
       <div className="space-y-6">
-        <h1 className="text-2xl font-bold text-warm-900">받은 초대</h1>
+        <h1 className="text-xl font-bold text-grape-700">받은 초대</h1>
         <div className="bg-white rounded-2xl shadow-sm border border-warm-200">
           <ErrorState onRetry={fetchMyInvitations} />
         </div>
@@ -192,7 +192,7 @@ export default function InvitationListPage() {
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
-          <h1 className="text-2xl font-bold text-warm-900">받은 초대</h1>
+          <h1 className="text-xl font-bold text-grape-700">받은 초대</h1>
         </div>
         <p className="text-sm text-warm-500 mt-1">
           다른 사람이 보낸 가구 초대를 확인하고 수락하세요

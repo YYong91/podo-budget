@@ -138,7 +138,7 @@ export default function IncomeDetail() {
           >
             <ArrowLeft className="w-5 h-5 text-warm-600" />
           </Link>
-          <h1 className="text-xl font-semibold text-warm-800">수입 상세</h1>
+          <h1 className="text-xl font-bold text-grape-700">수입 상세</h1>
         </div>
 
         <div className="flex gap-2 justify-end">

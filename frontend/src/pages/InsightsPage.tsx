@@ -231,7 +231,7 @@ export default function InsightsPage() {
       {/* 헤더 */}
       <div className="flex items-center gap-2">
         <TrendingUp className="w-6 h-6 text-grape-600" />
-        <h1 className="text-2xl font-bold text-warm-900">리포트</h1>
+        <h1 className="text-xl font-bold text-grape-700">리포트</h1>
       </div>
 
       {/* 탭 */}

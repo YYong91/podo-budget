@@ -210,7 +210,7 @@ export default function BudgetManager() {
       {/* 헤더 */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-warm-900">예산 관리</h1>
+          <h1 className="text-xl font-bold text-grape-700">예산 관리</h1>
           <p className="text-sm text-warm-500 mt-1">카테고리별 예산을 설정하고 지출 현황을 확인하세요</p>
         </div>
         <button

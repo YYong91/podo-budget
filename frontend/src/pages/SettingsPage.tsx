@@ -59,7 +59,7 @@ export default function SettingsPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-warm-900">설정</h1>
+      <h1 className="text-xl font-bold text-grape-700">설정</h1>
 
       {/* 계정 정보 */}
       <div className="bg-white rounded-2xl shadow-sm border border-warm-200 p-6">

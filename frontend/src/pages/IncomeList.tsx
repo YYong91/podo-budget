@@ -126,7 +126,7 @@ export default function IncomeList() {
   if (error) {
     return (
       <div className="space-y-6">
-        <h1 className="text-xl font-semibold text-warm-800">수입 목록</h1>
+        <h1 className="text-xl font-bold text-grape-700">수입 목록</h1>
         <div className="bg-white rounded-2xl shadow-sm border border-warm-200/60">
           <ErrorState onRetry={fetchIncomes} />
         </div>
@@ -139,7 +139,7 @@ export default function IncomeList() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold text-warm-800">수입 목록</h1>
+        <h1 className="text-xl font-bold text-grape-700">수입 목록</h1>
         <button
           onClick={() => navigate('/income/new')}
           className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-leaf-600 rounded-xl hover:bg-leaf-700 shadow-sm shadow-leaf-200 active:scale-[0.98] transition-all"

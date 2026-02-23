@@ -87,7 +87,7 @@ export default function Layout() {
         >
           {/* 데스크톱 앱 타이틀 */}
           <div className="hidden md:block mb-4">
-            <Link to="/" className="text-xl font-bold text-grape-700">🍇 포도가계부</Link>
+            <Link to="/" className="text-2xl font-bold text-grape-700">🍇 포도가계부</Link>
           </div>
 
           {/* 모바일 닫기 버튼 */}

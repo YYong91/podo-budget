@@ -244,7 +244,7 @@ export default function HouseholdDetailPage() {
   if (error && !currentHousehold) {
     return (
       <div className="space-y-6">
-        <h1 className="text-2xl font-bold text-warm-900">가구 정보</h1>
+        <h1 className="text-xl font-bold text-grape-700">가구 정보</h1>
         <div className="bg-white rounded-2xl shadow-sm border border-warm-200">
           <ErrorState onRetry={() => id && fetchHouseholdDetail(Number(id))} />
         </div>
@@ -283,7 +283,7 @@ export default function HouseholdDetailPage() {
             >
               <ArrowLeft className="w-5 h-5" />
             </button>
-            <h1 className="text-2xl font-bold text-warm-900">
+            <h1 className="text-xl font-bold text-grape-700">
               {currentHousehold.name}
             </h1>
             <span

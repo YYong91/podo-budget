@@ -155,7 +155,7 @@ export default function ExpenseDetail() {
           >
             <ArrowLeft className="w-5 h-5 text-warm-600" />
           </Link>
-          <h1 className="text-xl font-semibold text-warm-800">지출 상세</h1>
+          <h1 className="text-xl font-bold text-grape-700">지출 상세</h1>
         </div>
 
         <div className="flex gap-2 justify-end">

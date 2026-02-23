@@ -211,7 +211,7 @@ export default function RecurringList() {
   if (error) {
     return (
       <div className="space-y-6">
-        <h1 className="text-xl font-semibold text-warm-800">정기 거래</h1>
+        <h1 className="text-xl font-bold text-grape-700">정기 거래</h1>
         <div className="bg-white rounded-2xl shadow-sm border border-warm-200/60">
           <ErrorState onRetry={loadData} />
         </div>
@@ -223,7 +223,7 @@ export default function RecurringList() {
     <div className="space-y-6">
       {/* 헤더 */}
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold text-warm-800">정기 거래</h1>
+        <h1 className="text-xl font-bold text-grape-700">정기 거래</h1>
         <button
           onClick={openAdd}
           className="flex items-center gap-1.5 px-4 py-2 bg-grape-600 text-white rounded-xl text-sm font-medium shadow-sm hover:bg-grape-700 transition-colors"

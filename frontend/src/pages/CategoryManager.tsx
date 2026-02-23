@@ -133,7 +133,7 @@ export default function CategoryManager() {
   if (error) {
     return (
       <div className="space-y-6">
-        <h1 className="text-2xl font-bold text-warm-900">카테고리 관리</h1>
+        <h1 className="text-xl font-bold text-grape-700">카테고리 관리</h1>
         <div className="bg-white rounded-2xl shadow-sm border border-warm-200">
           <ErrorState onRetry={fetchCategories} />
         </div>
@@ -145,7 +145,7 @@ export default function CategoryManager() {
     <div className="space-y-6">
       {/* 헤더 */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <h1 className="text-2xl font-bold text-warm-900">카테고리 관리</h1>
+        <h1 className="text-xl font-bold text-grape-700">카테고리 관리</h1>
         <button
           onClick={() => setIsAdding(true)}
           className="w-full sm:w-auto px-4 py-2 text-sm font-medium text-white bg-grape-600 rounded-lg hover:bg-grape-700 transition-colors"

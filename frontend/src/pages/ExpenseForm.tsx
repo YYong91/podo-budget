@@ -204,7 +204,7 @@ export default function ExpenseForm() {
         >
           <ArrowLeft className="w-5 h-5 text-warm-600" />
         </Link>
-        <h1 className="text-xl font-semibold text-warm-800">지출 입력</h1>
+        <h1 className="text-xl font-bold text-grape-700">지출 입력</h1>
       </div>
 
       {/* 모드 전환 탭 */}
