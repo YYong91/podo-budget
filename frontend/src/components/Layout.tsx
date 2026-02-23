@@ -155,7 +155,7 @@ export default function Layout() {
                     flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium
                     transition-colors relative
                     ${isActive
-                      ? 'bg-grape-50 text-grape-800 border-l-3 border-grape-500'
+                      ? 'bg-grape-50 text-grape-700 border-l-3 border-grape-500'
                       : 'text-warm-600 hover:bg-warm-100 hover:text-warm-800'
                     }
                   `}
@@ -177,7 +177,7 @@ export default function Layout() {
                   flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium
                   transition-colors relative
                   ${location.pathname === '/invitations'
-                    ? 'bg-grape-50 text-grape-800 border-l-3 border-grape-500'
+                    ? 'bg-grape-50 text-grape-700 border-l-3 border-grape-500'
                     : 'text-warm-600 hover:bg-warm-100 hover:text-warm-800'
                   }
                 `}
@@ -209,7 +209,7 @@ export default function Layout() {
               className="flex items-center gap-2 px-3 py-2 rounded-lg text-warm-500 hover:text-grape-600 hover:bg-grape-50 transition-colors"
             >
               <span>📚</span>
-              <span>포도책방</span>
+              <span>포도책장</span>
             </a>
             <div className="flex items-center gap-2 px-3 py-2 text-warm-400">
               <span>🍇</span>
