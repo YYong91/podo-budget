@@ -1,26 +1,23 @@
 /**
  * @file AuthCallbackPage.tsx
  * @description podo-auth SSO 콜백 페이지
- * URL의 ?token= 파라미터에서 JWT 토큰을 추출하여 localStorage에 저장하고 홈으로 이동한다.
+ * 쿠키 기반 SSO: podo-auth가 .podonest.com 쿠키를 이미 설정함
+ * URL ?token= 파라미터 방식 제거됨
  */
 
 import { useEffect } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { Loader2 } from 'lucide-react'
 
 export default function AuthCallbackPage() {
-  const [searchParams] = useSearchParams()
   const navigate = useNavigate()
 
   useEffect(() => {
-    const token = searchParams.get('token')
-    if (token) {
-      localStorage.setItem('auth_token', token)
-    }
+    // 쿠키 기반 SSO: 별도 토큰 처리 불필요
     const intendedPath = sessionStorage.getItem('intended_path') || '/'
     sessionStorage.removeItem('intended_path')
     navigate(intendedPath, { replace: true })
-  }, [searchParams, navigate])
+  }, [navigate])
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-warm-50">

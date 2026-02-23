@@ -1,7 +1,7 @@
 /**
  * @file AuthContext.tsx
  * @description podo-auth SSO 기반 인증 상태 관리 Context
- * 토큰은 podo-auth 콜백에서 localStorage에 저장되며, 이 컨텍스트는 읽기만 한다.
+ * 쿠키 기반 SSO: podo_access_token 쿠키에서 토큰을 읽음 (.podonest.com 도메인 공유)
  */
 
 import { createContext, useContext, useState, useEffect } from 'react'
@@ -15,7 +15,7 @@ interface AuthContextType {
   user: User | null
   /** 로딩 상태 */
   loading: boolean
-  /** 로그아웃 함수 — localStorage 클리어 후 podo-auth로 리다이렉트 */
+  /** 로그아웃 함수 — 쿠키 클리어 후 podo-auth로 리다이렉트 */
   logout: () => void
   /** 사용자 정보 새로고침 (텔레그램 연동 상태 변경 후 호출) */
   refreshUser: () => Promise<void>
@@ -23,7 +23,10 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-const TOKEN_KEY = 'auth_token'
+function getCookieToken(): string | null {
+  const match = document.cookie.match(/(?:^|; )podo_access_token=([^;]+)/)
+  return match ? match[1] : null
+}
 
 /**
  * AuthContext Provider 컴포넌트
@@ -35,15 +38,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // axios interceptor: Authorization 헤더 자동 추가 및 401 처리
   useEffect(() => {
-    const token = localStorage.getItem(TOKEN_KEY)
+    const token = getCookieToken()
     if (token) {
       apiClient.defaults.headers.common['Authorization'] = `Bearer ${token}`
     }
 
-    // 요청 인터셉터: 토큰이 있으면 자동으로 헤더에 추가
+    // 요청 인터셉터: 쿠키에서 토큰을 읽어 자동으로 헤더에 추가
     const requestInterceptor = apiClient.interceptors.request.use(
       (config) => {
-        const t = localStorage.getItem(TOKEN_KEY)
+        const t = getCookieToken()
         if (t) {
           config.headers.Authorization = `Bearer ${t}`
         }
@@ -57,7 +60,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       (response) => response,
       (error) => {
         if (error.response?.status === 401) {
-          localStorage.removeItem(TOKEN_KEY)
           setUser(null)
           delete apiClient.defaults.headers.common['Authorization']
           const authUrl = import.meta.env.VITE_AUTH_URL || 'https://auth.podonest.com'
@@ -74,10 +76,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  // 초기 로드 시 토큰이 있으면 사용자 정보 조회
+  // 초기 로드 시 쿠키에 토큰이 있으면 사용자 정보 조회
   useEffect(() => {
     const initAuth = async () => {
-      const token = localStorage.getItem(TOKEN_KEY)
+      const token = getCookieToken()
       if (!token) {
         setLoading(false)
         return
@@ -90,7 +92,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const status = (err as { response?: { status?: number } })?.response?.status
         if (status === 401) {
           // 401은 인터셉터에서도 처리되지만 여기서도 정리
-          localStorage.removeItem(TOKEN_KEY)
           delete apiClient.defaults.headers.common['Authorization']
         }
         // 네트워크 에러(백엔드 일시 중지 등)는 토큰 유지 — 무한 리다이렉트 방지
@@ -103,9 +104,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const logout = () => {
-    localStorage.removeItem(TOKEN_KEY)
-    delete apiClient.defaults.headers.common['Authorization']
     setUser(null)
+    delete apiClient.defaults.headers.common['Authorization']
     const authUrl = import.meta.env.VITE_AUTH_URL || 'https://auth.podonest.com'
     window.location.href = `${authUrl}/logout`
   }

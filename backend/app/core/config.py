@@ -47,7 +47,7 @@ class Settings(BaseSettings):
     SENTRY_ENVIRONMENT: str = "development"
 
     # CORS — 허용할 프론트엔드 오리진 (쉼표로 구분)
-    CORS_ORIGINS: str = "http://localhost:5173,http://localhost:3000"
+    CORS_ORIGINS: str = "http://localhost:5173,https://budget.podonest.com"
 
     # Email (Resend) — 빈 문자열이면 이메일 발송 비활성화
     RESEND_API_KEY: str = ""

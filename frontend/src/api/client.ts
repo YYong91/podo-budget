@@ -9,6 +9,23 @@ const apiClient = axios.create({
   headers: { 'Content-Type': 'application/json' },
 })
 
+function getCookieToken(): string | null {
+  const match = document.cookie.match(/(?:^|; )podo_access_token=([^;]+)/)
+  return match ? match[1] : null
+}
+
+// 요청 인터셉터: 쿠키에서 토큰을 읽어 Authorization 헤더에 자동 추가
+apiClient.interceptors.request.use(
+  (config) => {
+    const token = getCookieToken()
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`
+    }
+    return config
+  },
+  (error) => Promise.reject(error)
+)
+
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {

@@ -9,8 +9,10 @@ import { Outlet } from 'react-router-dom'
 import { Loader2 } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 
-// AuthContext와 동일한 키 사용
-const TOKEN_KEY = 'auth_token'
+function getCookieToken(): string | null {
+  const match = document.cookie.match(/(?:^|; )podo_access_token=([^;]+)/)
+  return match ? match[1] : null
+}
 
 /**
  * ProtectedRoute 컴포넌트
@@ -21,7 +23,7 @@ export default function ProtectedRoute() {
 
   useEffect(() => {
     if (!loading && !user) {
-      const hasToken = !!localStorage.getItem(TOKEN_KEY)
+      const hasToken = !!getCookieToken()
       if (!hasToken) {
         // 토큰 없음: auth로 리다이렉트
         sessionStorage.setItem(
@@ -54,7 +56,7 @@ export default function ProtectedRoute() {
   }
 
   if (!user) {
-    const hasToken = !!localStorage.getItem(TOKEN_KEY)
+    const hasToken = !!getCookieToken()
     if (hasToken) {
       // 토큰은 있지만 백엔드 일시 중지 — 연결 대기 UI
       return (
