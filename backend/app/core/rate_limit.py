@@ -7,8 +7,9 @@ Clean Architecture의 Infrastructure 계층에 해당하며,
 JWT 토큰에서 사용자 ID를 추출하여 사용자별 제한을 적용합니다.
 """
 
+import jwt as pyjwt
 from fastapi import Request
-from jose import JWTError, jwt
+from jwt.exceptions import PyJWTError
 from slowapi import Limiter
 
 from app.core.config import settings
@@ -45,7 +46,7 @@ def get_user_identifier(request: Request) -> str:
 
         try:
             # podo-auth JWT 디코딩 및 사용자 ID(sub) 추출
-            payload = jwt.decode(token, settings.JWT_SECRET, algorithms=[ALGORITHM])
+            payload = pyjwt.decode(token, settings.JWT_SECRET, algorithms=[ALGORITHM])
             # podo-auth 발급 토큰만 허용
             if payload.get("iss") == "podo-auth":
                 user_id = payload.get("sub")
@@ -53,7 +54,7 @@ def get_user_identifier(request: Request) -> str:
                     # 인증된 사용자는 auth_user_id를 식별자로 사용
                     return f"user:{user_id}"
 
-        except JWTError:
+        except PyJWTError:
             # 토큰이 유효하지 않으면 IP로 폴백
             pass
 

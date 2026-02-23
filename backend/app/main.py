@@ -116,10 +116,7 @@ app.include_router(recurring.router, prefix="/api/recurring", tags=["recurring"]
 
 @app.get("/")
 async def root():
-    return {
-        "message": "Welcome to HomeNRich API",
-        "docs": "/docs",
-    }
+    return {"message": "Welcome to HomeNRich API"}
 
 
 @app.get("/health")

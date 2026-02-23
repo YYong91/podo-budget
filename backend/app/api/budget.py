@@ -71,7 +71,7 @@ async def create_budget(
     if not category:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"카테고리 ID {budget_data.category_id}를 찾을 수 없습니다",
+            detail="카테고리를 찾을 수 없습니다",
         )
 
     # 종료일 검증 (종료일이 있는 경우 시작일보다 이후여야 함)
@@ -131,7 +131,7 @@ async def update_budget(
     if not budget:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"예산 ID {budget_id}를 찾을 수 없습니다",
+            detail="예산을 찾을 수 없습니다",
         )
 
     # 제공된 필드만 업데이트
@@ -176,7 +176,7 @@ async def delete_budget(
     if not budget:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"예산 ID {budget_id}를 찾을 수 없습니다",
+            detail="예산을 찾을 수 없습니다",
         )
 
     await db.delete(budget)

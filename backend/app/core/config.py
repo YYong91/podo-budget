@@ -7,7 +7,7 @@ LLMProviderType = Literal["openai", "anthropic", "google", "local"]
 
 class Settings(BaseSettings):
     APP_NAME: str = "HomeNRich"
-    DEBUG: bool = True
+    DEBUG: bool = False
     SECRET_KEY: str = ""  # 레거시 호환성 유지 (lifespan에서 검증)
 
     # podo-auth SSO 연동

@@ -11,9 +11,10 @@ podo-auth에서 발급된 JWT를 검증하고, 로컬 users 테이블의 Shadow 
   5. 기존 FK 관계는 users.id (Integer)로 그대로 유지
 """
 
+import jwt as pyjwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from jose import JWTError, jwt
+from jwt.exceptions import PyJWTError
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -52,7 +53,7 @@ async def get_current_user(
 
     try:
         token = credentials.credentials
-        payload = jwt.decode(token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM])
+        payload = pyjwt.decode(token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM])
 
         # podo-auth 발급 토큰인지 검증
         if payload.get("iss") != "podo-auth":
@@ -67,7 +68,7 @@ async def get_current_user(
 
         auth_user_id = int(auth_user_id_str)
 
-    except (JWTError, ValueError) as err:
+    except (PyJWTError, ValueError) as err:
         raise credentials_exception from err
 
     # 1단계: auth_user_id로 기존 Shadow User 조회

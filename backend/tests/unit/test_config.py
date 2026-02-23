@@ -18,7 +18,7 @@ def test_settings_default_values():
         settings = Settings(_env_file=None)
 
         assert settings.APP_NAME == "HomeNRich"
-        assert settings.DEBUG is True
+        assert settings.DEBUG is False
         assert settings.SECRET_KEY == ""  # 프로덕션에서는 반드시 설정 필요
         assert settings.LLM_PROVIDER == "anthropic"
         assert "sqlite+aiosqlite" in settings.DATABASE_URL

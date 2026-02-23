@@ -29,7 +29,6 @@ async def test_root_endpoint(client):
     assert response.status_code == 200
     data = response.json()
     assert "HomeNRich" in data["message"]
-    assert data["docs"] == "/docs"
 
 
 @pytest.mark.asyncio
