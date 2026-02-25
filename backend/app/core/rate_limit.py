@@ -7,9 +7,9 @@ Clean Architecture의 Infrastructure 계층에 해당하며,
 JWT 토큰에서 사용자 ID를 추출하여 사용자별 제한을 적용합니다.
 """
 
-import jwt as pyjwt
 from fastapi import Request
-from jwt.exceptions import PyJWTError
+from jose import JWTError
+from jose import jwt as pyjwt
 from slowapi import Limiter
 
 from app.core.config import settings
@@ -54,7 +54,7 @@ def get_user_identifier(request: Request) -> str:
                     # 인증된 사용자는 auth_user_id를 식별자로 사용
                     return f"user:{user_id}"
 
-        except PyJWTError:
+        except JWTError:
             # 토큰이 유효하지 않으면 IP로 폴백
             pass
 
