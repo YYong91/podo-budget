@@ -275,14 +275,19 @@ export default function ExpenseList() {
               </thead>
               <tbody className="divide-y divide-warm-100">
                 {sortedExpenses.map((expense) => (
-                  <tr key={expense.id} className="hover:bg-grape-50/50 transition-colors">
+                  <tr key={expense.id} className={`hover:bg-grape-50/50 transition-colors ${expense.exclude_from_stats ? 'opacity-50' : ''}`}>
                     <td className="px-4 py-3 text-sm text-warm-600 whitespace-nowrap">
                       {expense.date.slice(0, 10).replace(/-/g, '.')}
                     </td>
                     <td className="px-4 py-3 max-w-[200px] sm:max-w-none">
-                      <Link to={`/expenses/${expense.id}`} className="text-sm font-medium text-warm-900 hover:text-grape-600 transition-colors block truncate">
-                        {expense.description}
-                      </Link>
+                      <div className="flex items-center gap-2">
+                        <Link to={`/expenses/${expense.id}`} className="text-sm font-medium text-warm-900 hover:text-grape-600 transition-colors block truncate">
+                          {expense.description}
+                        </Link>
+                        {expense.exclude_from_stats && (
+                          <span className="shrink-0 text-xs bg-warm-100 text-warm-500 px-1.5 py-0.5 rounded-full">통계제외</span>
+                        )}
+                      </div>
                     </td>
                     <td className="px-4 py-3 hidden sm:table-cell">
                       <span className="inline-block bg-grape-50 text-grape-700 text-xs px-2 py-1 rounded-full">

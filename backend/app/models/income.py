@@ -5,7 +5,7 @@ user_id를 통해 각 사용자의 수입을 격리하며,
 household_id가 있는 경우 해당 가구의 공유 수입으로 기록됩니다.
 """
 
-from sqlalchemy import Column, DateTime, ForeignKey, Index, Integer, Numeric, String, Text
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Index, Integer, Numeric, String, Text
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
@@ -44,6 +44,7 @@ class Income(Base):
     category_id = Column(Integer, ForeignKey("categories.id", ondelete="SET NULL"), nullable=True)
     raw_input = Column(Text, nullable=True)
     memo = Column(Text, nullable=True)  # 선택적 메모
+    exclude_from_stats = Column(Boolean, nullable=False, default=False)  # 통계 제외 여부 (저축, 퇴직금 등 비정형 대규모 거래용)
     date = Column(DateTime, nullable=False, default=func.now())
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())

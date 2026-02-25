@@ -44,6 +44,7 @@ export default function ExpenseDetail() {
     category_id: null as number | null,
     date: '',
     memo: '',
+    exclude_from_stats: false,
   })
 
   useEffect(() => {
@@ -65,6 +66,7 @@ export default function ExpenseDetail() {
           category_id: expenseRes.data.category_id,
           date: expenseRes.data.date.slice(0, 10), // YYYY-MM-DD
           memo: expenseRes.data.memo ?? '',
+          exclude_from_stats: expenseRes.data.exclude_from_stats ?? false,
         })
       } catch {
         addToast('error', '지출 내역을 불러오는데 실패했습니다')
@@ -99,6 +101,7 @@ export default function ExpenseDetail() {
         // date input은 YYYY-MM-DD 형식이므로 datetime으로 변환
         date: editForm.date.includes('T') ? editForm.date : `${editForm.date}T00:00:00`,
         memo: editForm.memo.trim() || undefined,
+        exclude_from_stats: editForm.exclude_from_stats,
       })
       setExpense(updated.data)
       setIsEditing(false)
@@ -306,6 +309,30 @@ export default function ExpenseDetail() {
             <p className="text-lg text-warm-900">{expense.memo}</p>
           ) : (
             <p className="text-lg text-warm-400">-</p>
+          )}
+        </div>
+
+        {/* 통계 제외 */}
+        <div>
+          <label className="block text-sm font-medium text-warm-500 mb-2">
+            통계 제외
+          </label>
+          {isEditing ? (
+            <label className="flex items-center gap-3 cursor-pointer select-none">
+              <div className="relative">
+                <input
+                  type="checkbox"
+                  checked={editForm.exclude_from_stats}
+                  onChange={(e) => setEditForm({ ...editForm, exclude_from_stats: e.target.checked })}
+                  className="sr-only"
+                />
+                <div className={`w-10 h-6 rounded-full transition-colors ${editForm.exclude_from_stats ? 'bg-warm-400' : 'bg-warm-200'}`} />
+                <div className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${editForm.exclude_from_stats ? 'translate-x-4' : ''}`} />
+              </div>
+              <span className="text-sm text-warm-700">차트/통계에서 제외</span>
+            </label>
+          ) : (
+            <p className="text-lg text-warm-900">{expense.exclude_from_stats ? '제외됨' : '-'}</p>
           )}
         </div>
 

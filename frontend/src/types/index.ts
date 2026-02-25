@@ -9,6 +9,7 @@ export interface Expense {
   memo: string | null
   household_id: number | null
   user_id: number | null
+  exclude_from_stats: boolean
   date: string
   created_at: string
   updated_at: string
@@ -48,6 +49,7 @@ export interface Income {
   memo: string | null
   household_id: number | null
   user_id: number
+  exclude_from_stats: boolean
   date: string
   created_at: string
   updated_at: string

@@ -30,6 +30,7 @@ class IncomeCreate(IncomeBase):
     raw_input: str | None = None
     memo: str | None = None
     household_id: int | None = None
+    exclude_from_stats: bool = False
 
 
 class IncomeUpdate(BaseModel):
@@ -38,6 +39,7 @@ class IncomeUpdate(BaseModel):
     category_id: int | None = None
     date: datetime | None = None
     memo: str | None = None
+    exclude_from_stats: bool | None = None
 
 
 class IncomeResponse(IncomeBase):
@@ -46,6 +48,7 @@ class IncomeResponse(IncomeBase):
     memo: str | None = None
     household_id: int | None = None
     user_id: int
+    exclude_from_stats: bool = False
     created_at: datetime
     updated_at: datetime
 

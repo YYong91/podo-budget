@@ -45,6 +45,7 @@ export default function ExpenseForm() {
     category_id: '',
     date: new Date().toISOString().slice(0, 10),
     memo: '',
+    exclude_from_stats: false,
   })
 
   useEffect(() => {
@@ -186,6 +187,7 @@ export default function ExpenseForm() {
         date: formData.date.includes('T') ? formData.date : `${formData.date}T00:00:00`,
         household_id: activeHouseholdId,
         memo: formData.memo.trim() || undefined,
+        exclude_from_stats: formData.exclude_from_stats,
       })
       addToast('success', '🍇 포도알 +1! 지출이 저장되었습니다')
       setTimeout(() => navigate('/expenses'), 500)
@@ -465,6 +467,25 @@ export default function ExpenseForm() {
               disabled={loading}
             />
           </div>
+
+          {/* 통계 제외 */}
+          <label className="flex items-center gap-3 cursor-pointer select-none">
+            <div className="relative">
+              <input
+                type="checkbox"
+                checked={formData.exclude_from_stats}
+                onChange={(e) => setFormData({ ...formData, exclude_from_stats: e.target.checked })}
+                className="sr-only"
+                disabled={loading}
+              />
+              <div className={`w-10 h-6 rounded-full transition-colors ${formData.exclude_from_stats ? 'bg-warm-400' : 'bg-warm-200'}`} />
+              <div className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${formData.exclude_from_stats ? 'translate-x-4' : ''}`} />
+            </div>
+            <div>
+              <span className="text-sm font-medium text-warm-700">통계에서 제외</span>
+              <p className="text-xs text-warm-400">저축, 퇴직금 등 비정형 거래를 차트/통계에서 제외합니다</p>
+            </div>
+          </label>
 
           {/* 제출 버튼 */}
           <div className="flex gap-3 pt-2">

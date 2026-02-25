@@ -187,7 +187,8 @@ async def get_stats(
     if household_id is not None:
         await get_household_member(household_id, current_user, db)
     scope_filter = _build_scope_filter(household_id, current_user)
-    base_where = [scope_filter, Expense.date >= start_dt, Expense.date <= end_dt]
+    stats_filter = Expense.exclude_from_stats == False  # noqa: E712
+    base_where = [scope_filter, stats_filter, Expense.date >= start_dt, Expense.date <= end_dt]
 
     # 총합 + 건수
     total_result = await db.execute(
@@ -232,7 +233,9 @@ async def get_stats(
             m_start = datetime(ref_date.year, m, 1)
             _, m_last = monthrange(ref_date.year, m)
             m_end = datetime(ref_date.year, m, m_last, 23, 59, 59)
-            r = await db.execute(select(func.coalesce(func.sum(Expense.amount), 0)).where(scope_filter, Expense.date >= m_start, Expense.date <= m_end))
+            r = await db.execute(
+                select(func.coalesce(func.sum(Expense.amount), 0)).where(scope_filter, stats_filter, Expense.date >= m_start, Expense.date <= m_end)
+            )
             trend.append(TrendPoint(label=f"{m}월", amount=float(r.scalar())))
     else:
         # 일별
@@ -285,11 +288,15 @@ async def get_stats_comparison(
         await get_household_member(household_id, current_user, db)
     scope_filter = _build_scope_filter(household_id, current_user)
 
+    excl_filter = Expense.exclude_from_stats == False  # noqa: E712
+
     async def _month_total(year: int, month: int) -> float:
         m_start = datetime(year, month, 1)
         _, m_last = monthrange(year, month)
         m_end = datetime(year, month, m_last, 23, 59, 59)
-        r = await db.execute(select(func.coalesce(func.sum(Expense.amount), 0)).where(scope_filter, Expense.date >= m_start, Expense.date <= m_end))
+        r = await db.execute(
+            select(func.coalesce(func.sum(Expense.amount), 0)).where(scope_filter, excl_filter, Expense.date >= m_start, Expense.date <= m_end)
+        )
         return float(r.scalar())
 
     async def _month_by_category(year: int, month: int) -> dict[str, float]:
@@ -299,7 +306,7 @@ async def get_stats_comparison(
         r = await db.execute(
             select(Category.name, func.sum(Expense.amount).label("amount"))
             .join(Category, Expense.category_id == Category.id, isouter=True)
-            .where(scope_filter, Expense.date >= m_start, Expense.date <= m_end)
+            .where(scope_filter, excl_filter, Expense.date >= m_start, Expense.date <= m_end)
             .group_by(Category.name)
         )
         return {row.name or "미분류": float(row.amount) for row in r.all()}
@@ -411,15 +418,19 @@ async def get_monthly_stats(
     else:
         scope_filter = Expense.user_id == current_user.id
 
+    excl_filter = Expense.exclude_from_stats == False  # noqa: E712
+
     # 총합
-    total_result = await db.execute(select(func.coalesce(func.sum(Expense.amount), 0)).where(scope_filter, Expense.date >= start, Expense.date < end))
+    total_result = await db.execute(
+        select(func.coalesce(func.sum(Expense.amount), 0)).where(scope_filter, excl_filter, Expense.date >= start, Expense.date < end)
+    )
     total = total_result.scalar()
 
     # 카테고리별 합계
     category_result = await db.execute(
         select(Category.name, func.sum(Expense.amount).label("amount"))
         .join(Category, Expense.category_id == Category.id, isouter=True)
-        .where(scope_filter, Expense.date >= start, Expense.date < end)
+        .where(scope_filter, excl_filter, Expense.date >= start, Expense.date < end)
         .group_by(Category.name)
         .order_by(func.sum(Expense.amount).desc())
     )
@@ -429,7 +440,7 @@ async def get_monthly_stats(
     day_col = func.date(Expense.date).label("day")
     daily_result = await db.execute(
         select(day_col, func.sum(Expense.amount).label("amount"))
-        .where(scope_filter, Expense.date >= start, Expense.date < end)
+        .where(scope_filter, excl_filter, Expense.date >= start, Expense.date < end)
         .group_by(day_col)
         .order_by(day_col)
     )

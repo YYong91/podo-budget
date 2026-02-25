@@ -269,17 +269,22 @@ export default function IncomeList() {
               </thead>
               <tbody className="divide-y divide-warm-100">
                 {sortedIncomes.map((income) => (
-                  <tr key={income.id} className="hover:bg-leaf-50/50 transition-colors">
+                  <tr key={income.id} className={`hover:bg-leaf-50/50 transition-colors ${income.exclude_from_stats ? 'opacity-50' : ''}`}>
                     <td className="px-4 py-3 text-sm text-warm-600 whitespace-nowrap">
                       {income.date.slice(0, 10).replace(/-/g, '.')}
                     </td>
                     <td className="px-4 py-3 max-w-[200px] sm:max-w-none">
-                      <Link
-                        to={`/income/${income.id}`}
-                        className="text-sm font-medium text-warm-900 hover:text-leaf-600 transition-colors block truncate"
-                      >
-                        {income.description}
-                      </Link>
+                      <div className="flex items-center gap-2">
+                        <Link
+                          to={`/income/${income.id}`}
+                          className="text-sm font-medium text-warm-900 hover:text-leaf-600 transition-colors block truncate"
+                        >
+                          {income.description}
+                        </Link>
+                        {income.exclude_from_stats && (
+                          <span className="shrink-0 text-xs bg-warm-100 text-warm-500 px-1.5 py-0.5 rounded-full">통계제외</span>
+                        )}
+                      </div>
                     </td>
                     <td className="px-4 py-3 hidden sm:table-cell">
                       <span className="inline-block bg-leaf-50 text-leaf-700 text-xs px-2 py-1 rounded-full">

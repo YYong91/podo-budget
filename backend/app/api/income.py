@@ -141,7 +141,8 @@ async def get_income_stats(
     if household_id is not None:
         await get_household_member(household_id, current_user, db)
     scope_filter = _build_income_scope_filter(household_id, current_user)
-    base_where = [scope_filter, Income.date >= start_dt, Income.date <= end_dt]
+    stats_filter = Income.exclude_from_stats == False  # noqa: E712
+    base_where = [scope_filter, stats_filter, Income.date >= start_dt, Income.date <= end_dt]
 
     # 총합/건수
     total_result = await db.execute(select(func.coalesce(func.sum(Income.amount), 0), func.count(Income.id)).where(*base_where))
@@ -176,7 +177,9 @@ async def get_income_stats(
             m_start = datetime(ref_date.year, m, 1)
             _, m_last = monthrange(ref_date.year, m)
             m_end = datetime(ref_date.year, m, m_last, 23, 59, 59)
-            r = await db.execute(select(func.coalesce(func.sum(Income.amount), 0)).where(scope_filter, Income.date >= m_start, Income.date <= m_end))
+            r = await db.execute(
+                select(func.coalesce(func.sum(Income.amount), 0)).where(scope_filter, stats_filter, Income.date >= m_start, Income.date <= m_end)
+            )
             trend.append(TrendPoint(label=f"{m}월", amount=float(r.scalar())))
     else:
         day_col = func.date(Income.date).label("day")

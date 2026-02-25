@@ -36,6 +36,7 @@ export default function IncomeDetail() {
     category_id: null as number | null,
     date: '',
     memo: '',
+    exclude_from_stats: false,
   })
 
   useEffect(() => {
@@ -56,6 +57,7 @@ export default function IncomeDetail() {
           category_id: incomeRes.data.category_id,
           date: incomeRes.data.date.slice(0, 10),
           memo: incomeRes.data.memo ?? '',
+          exclude_from_stats: incomeRes.data.exclude_from_stats ?? false,
         })
       } catch {
         addToast('error', '수입 내역을 불러오는데 실패했습니다')
@@ -86,6 +88,7 @@ export default function IncomeDetail() {
         category_id: editForm.category_id,
         date: editForm.date.includes('T') ? editForm.date : `${editForm.date}T00:00:00`,
         memo: editForm.memo.trim() || undefined,
+        exclude_from_stats: editForm.exclude_from_stats,
       })
       setIncome(updated.data)
       setIsEditing(false)
@@ -271,6 +274,28 @@ export default function IncomeDetail() {
             <p className="text-lg text-warm-900">{income.memo}</p>
           ) : (
             <p className="text-lg text-warm-400">-</p>
+          )}
+        </div>
+
+        {/* 통계 제외 */}
+        <div>
+          <label className="block text-sm font-medium text-warm-500 mb-2">통계 제외</label>
+          {isEditing ? (
+            <label className="flex items-center gap-3 cursor-pointer select-none">
+              <div className="relative">
+                <input
+                  type="checkbox"
+                  checked={editForm.exclude_from_stats}
+                  onChange={(e) => setEditForm({ ...editForm, exclude_from_stats: e.target.checked })}
+                  className="sr-only"
+                />
+                <div className={`w-10 h-6 rounded-full transition-colors ${editForm.exclude_from_stats ? 'bg-warm-400' : 'bg-warm-200'}`} />
+                <div className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${editForm.exclude_from_stats ? 'translate-x-4' : ''}`} />
+              </div>
+              <span className="text-sm text-warm-700">차트/통계에서 제외</span>
+            </label>
+          ) : (
+            <p className="text-lg text-warm-900">{income.exclude_from_stats ? '제외됨' : '-'}</p>
           )}
         </div>
 

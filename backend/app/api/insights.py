@@ -52,25 +52,30 @@ async def generate_insights(
     start = datetime(year, mon, 1)
     end = datetime(year + 1, 1, 1) if mon == 12 else datetime(year, mon + 1, 1)
 
-    # 사용자 필터 조건
+    # 사용자 필터 조건 (통계 제외 거래는 인사이트에서도 제외)
     user_filter = Expense.user_id == current_user.id
+    excl_filter = Expense.exclude_from_stats == False  # noqa: E712
 
     # 총합
-    total_result = await db.execute(select(func.coalesce(func.sum(Expense.amount), 0)).where(user_filter, Expense.date >= start, Expense.date < end))
+    total_result = await db.execute(
+        select(func.coalesce(func.sum(Expense.amount), 0)).where(user_filter, excl_filter, Expense.date >= start, Expense.date < end)
+    )
     total = float(total_result.scalar())
 
     # 카테고리별 합계
     cat_result = await db.execute(
         select(Category.name, func.sum(Expense.amount).label("amount"))
         .join(Category, Expense.category_id == Category.id, isouter=True)
-        .where(user_filter, Expense.date >= start, Expense.date < end)
+        .where(user_filter, excl_filter, Expense.date >= start, Expense.date < end)
         .group_by(Category.name)
         .order_by(func.sum(Expense.amount).desc())
     )
     by_category = {row.name or "미분류": float(row.amount) for row in cat_result.all()}
 
     # 최근 지출 내역 (상위 20건)
-    recent_result = await db.execute(select(Expense).where(user_filter, Expense.date >= start, Expense.date < end).order_by(Expense.amount.desc()).limit(20))
+    recent_result = await db.execute(
+        select(Expense).where(user_filter, excl_filter, Expense.date >= start, Expense.date < end).order_by(Expense.amount.desc()).limit(20)
+    )
     top_expenses = [
         {
             "amount": float(e.amount),

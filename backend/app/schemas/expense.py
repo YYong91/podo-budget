@@ -31,6 +31,7 @@ class ExpenseCreate(ExpenseBase):
     raw_input: str | None = None
     memo: str | None = None
     household_id: int | None = None
+    exclude_from_stats: bool = False
 
 
 class ExpenseUpdate(BaseModel):
@@ -39,6 +40,7 @@ class ExpenseUpdate(BaseModel):
     category_id: int | None = None
     date: datetime | None = None
     memo: str | None = None
+    exclude_from_stats: bool | None = None
 
 
 class ExpenseResponse(ExpenseBase):
@@ -47,6 +49,7 @@ class ExpenseResponse(ExpenseBase):
     memo: str | None = None
     household_id: int | None = None
     user_id: int | None = None
+    exclude_from_stats: bool = False
     created_at: datetime
     updated_at: datetime
 
