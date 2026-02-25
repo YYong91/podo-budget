@@ -341,3 +341,65 @@ async def test_create_expense_with_date_only_format(authenticated_client, test_u
     assert data["amount"] == 11680
     # 날짜가 올바르게 저장되었는지 확인
     assert "2026-02-11" in data["date"]
+
+
+# ──────────────────────────────────────────────
+# memo 필드 테스트 (TST-MEMO)
+# memo 컬럼이 DB 스키마에 누락되면 지출 목록 조회 전체가 500 오류가 되므로
+# 기본 CRUD와 memo 필드를 함께 검증하는 회귀 테스트를 추가합니다.
+# ──────────────────────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_create_expense_with_memo(authenticated_client, test_user: User, db_session):
+    """memo 필드 포함 지출 생성 — memo 컬럼 스키마 존재 회귀 테스트
+
+    배경:
+    - memo 컬럼이 Expense 모델에 추가됐지만 프로덕션 DB에 마이그레이션 미적용 시
+      GET /api/expenses/ 전체가 500 DATABASE_ERROR 오류 발생 (컬럼 누락)
+    - 이 테스트는 memo 컬럼이 정상적으로 존재하고 저장/조회 가능함을 확인한다.
+    """
+    payload = {
+        "amount": 15000,
+        "description": "주유",
+        "date": "2026-02-15T10:00:00",
+        "memo": "주유소 할인 카드 사용",
+    }
+    response = await authenticated_client.post("/api/expenses/", json=payload)
+    assert response.status_code == 201
+    data = response.json()
+    assert data["memo"] == "주유소 할인 카드 사용"
+
+
+@pytest.mark.asyncio
+async def test_create_expense_without_memo(authenticated_client, test_user: User, db_session):
+    """memo 없이 지출 생성 — memo는 선택 필드"""
+    payload = {
+        "amount": 3000,
+        "description": "버스",
+        "date": "2026-02-15T08:00:00",
+    }
+    response = await authenticated_client.post("/api/expenses/", json=payload)
+    assert response.status_code == 201
+    data = response.json()
+    assert data.get("memo") is None
+
+
+@pytest.mark.asyncio
+async def test_get_expenses_list_includes_memo(authenticated_client, test_user: User, db_session):
+    """지출 목록 조회 시 memo 필드 포함 — memo 컬럼 누락이면 500이 되는 회귀 시나리오"""
+    expense = Expense(
+        user_id=test_user.id,
+        amount=8000,
+        description="치킨",
+        date=datetime(2026, 2, 20),
+        memo="배달 앱 쿠폰 사용",
+    )
+    db_session.add(expense)
+    await db_session.commit()
+
+    response = await authenticated_client.get("/api/expenses/")
+    assert response.status_code == 200
+    items = response.json()
+    assert len(items) == 1
+    assert items[0]["memo"] == "배달 앱 쿠폰 사용"

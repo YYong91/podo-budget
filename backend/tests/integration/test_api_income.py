@@ -1,5 +1,7 @@
 """수입 CRUD API 통합 테스트"""
 
+from datetime import datetime
+
 import pytest
 from sqlalchemy import select
 
@@ -226,3 +228,46 @@ async def test_create_income_with_date_only_format(authenticated_client, test_us
     assert data["description"] == "2월 월급"
     assert data["amount"] == 3500000
     assert "2026-02-01" in data["date"]
+
+
+# ──────────────────────────────────────────────
+# memo 필드 테스트 (TST-MEMO)
+# ──────────────────────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_create_income_with_memo(authenticated_client, test_user: User, db_session):
+    """memo 필드 포함 수입 생성 — memo 컬럼 스키마 존재 회귀 테스트
+
+    배경: memo 컬럼이 incomes 테이블에 없으면 수입 목록 조회 전체가 500 오류.
+    """
+    payload = {
+        "amount": 500000,
+        "description": "프리랜서 수입",
+        "date": "2026-02-20T00:00:00",
+        "memo": "디자인 외주 작업비",
+    }
+    response = await authenticated_client.post("/api/income/", json=payload)
+    assert response.status_code == 201
+    data = response.json()
+    assert data["memo"] == "디자인 외주 작업비"
+
+
+@pytest.mark.asyncio
+async def test_get_income_list_includes_memo(authenticated_client, test_user: User, db_session):
+    """수입 목록 조회 시 memo 필드 포함 — memo 컬럼 누락 회귀 시나리오"""
+    income = Income(
+        user_id=test_user.id,
+        amount=3500000,
+        description="3월 월급",
+        date=datetime(2026, 3, 1),
+        memo="성과급 포함",
+    )
+    db_session.add(income)
+    await db_session.commit()
+
+    response = await authenticated_client.get("/api/income/")
+    assert response.status_code == 200
+    items = response.json()
+    assert len(items) == 1
+    assert items[0]["memo"] == "성과급 포함"
