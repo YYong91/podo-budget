@@ -69,14 +69,25 @@ function StatsCards({ stats, incomeTotal }: { stats: MonthlyStats; incomeTotal?:
   )
 }
 
+/** Y축 눈금 한국어 표기 */
+function formatAxisAmount(v: number): string {
+  const n = Number(v)
+  if (n >= 100_000_000) return `${(n / 100_000_000).toFixed(0)}억`
+  if (n >= 10_000) return `${Math.round(n / 10_000)}만원`
+  if (n >= 1_000) return `${Math.round(n / 1_000)}천원`
+  return `${n}원`
+}
+
 /* 차트 섹션 */
 function ChartSection({ stats }: { stats: MonthlyStats }) {
   const byCategory = stats.by_category ?? []
   const dailyTrend = stats.daily_trend ?? []
   const pieRef = useRef<ChartJS<'pie'>>(null)
   const lineRef = useRef<ChartJS<'line'>>(null)
-  // 숨겨진 카테고리 인덱스 추적 (범례 토글용)
+  // 숨겨진 카테고리 인덱스 추적 (파이 차트 범례 토글용)
   const [hiddenIndices, setHiddenIndices] = useState<Set<number>>(new Set())
+  // 일별 추이 라인 숨기기/보이기
+  const [lineHidden, setLineHidden] = useState(false)
 
   const totalAmount = byCategory.reduce((sum, c) => sum + c.amount, 0)
 
@@ -94,6 +105,15 @@ function ChartSection({ stats }: { stats: MonthlyStats }) {
     chart.update()
   }
 
+  const handleLineLegendClick = () => {
+    const chart = lineRef.current
+    if (!chart) return
+    const next = !lineHidden
+    chart.setDatasetVisibility(0, !next)
+    chart.update()
+    setLineHidden(next)
+  }
+
   const pieData = {
     labels: byCategory.map((c) => c.category),
     datasets: [
@@ -109,6 +129,7 @@ function ChartSection({ stats }: { stats: MonthlyStats }) {
     labels: dailyTrend.map((d) => d.date.slice(5)),
     datasets: [
       {
+        label: '일별 지출',
         data: dailyTrend.map((d) => d.amount),
         borderColor: '#9333EA',
         backgroundColor: 'rgba(147, 51, 234, 0.1)',
@@ -184,38 +205,52 @@ function ChartSection({ stats }: { stats: MonthlyStats }) {
 
       {/* 일별 트렌드 라인 차트 */}
       <div className="bg-white rounded-2xl border border-warm-200/60 shadow-sm p-4 sm:p-5">
-        <h2 className="text-base font-semibold text-warm-700 mb-4">일별 지출 추이</h2>
+        <h2 className="text-base font-semibold text-warm-700 mb-3">일별 지출 추이</h2>
         {dailyTrend.length > 0 ? (
-          <div className="h-[250px]">
-            <Line
-              ref={lineRef}
-              data={lineData}
-              options={{
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                  legend: { display: false },
-                  tooltip: {
-                    callbacks: {
-                      label: (ctx) => formatAmount(ctx.parsed.y ?? 0),
+          <>
+            {/* 범례 — 클릭으로 라인 숨기기/보이기 */}
+            <div className="flex items-center gap-3 mb-3">
+              <button
+                onClick={handleLineLegendClick}
+                className={`flex items-center gap-1.5 text-sm rounded-lg px-2 py-1 transition-all hover:bg-warm-50 ${
+                  lineHidden ? 'opacity-35' : 'opacity-100'
+                }`}
+              >
+                <span className="w-8 h-0.5 bg-grape-500 rounded-full inline-block" />
+                <span className="text-warm-600">일별 지출</span>
+              </button>
+            </div>
+            <div className="h-[230px]">
+              <Line
+                ref={lineRef}
+                data={lineData}
+                options={{
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                      callbacks: {
+                        label: (ctx) => formatAmount(ctx.parsed.y ?? 0),
+                      },
                     },
                   },
-                },
-                scales: {
-                  x: {
-                    ticks: { font: { size: 11 } },
-                    grid: { display: false },
-                  },
-                  y: {
-                    ticks: {
-                      font: { size: 11 },
-                      callback: (v) => `${(Number(v) / 1000).toFixed(0)}k`,
+                  scales: {
+                    x: {
+                      ticks: { font: { size: 11 } },
+                      grid: { display: false },
+                    },
+                    y: {
+                      ticks: {
+                        font: { size: 11 },
+                        callback: (v) => formatAxisAmount(Number(v)),
+                      },
                     },
                   },
-                },
-              }}
-            />
-          </div>
+                }}
+              />
+            </div>
+          </>
         ) : (
           <div className="h-[250px] flex items-center justify-center">
             <p className="text-sm text-warm-400">아직 일별 데이터가 없습니다</p>
