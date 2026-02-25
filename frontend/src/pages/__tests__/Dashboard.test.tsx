@@ -137,9 +137,10 @@ describe('Dashboard', () => {
     it('최근 지출 목록을 표시한다', async () => {
       renderDashboard()
       await waitFor(() => {
-        // 첫 번째 지출 항목
+        // 첫 번째 지출 항목 (금액은 범례에도 표시될 수 있으므로 getAllByText 사용)
         expect(screen.getByText(mockExpenses[0].description)).toBeInTheDocument()
-        expect(screen.getByText(`₩${mockExpenses[0].amount.toLocaleString('ko-KR')}`)).toBeInTheDocument()
+        const amountEls = screen.getAllByText(`₩${mockExpenses[0].amount.toLocaleString('ko-KR')}`)
+        expect(amountEls.length).toBeGreaterThan(0)
       })
     })
 

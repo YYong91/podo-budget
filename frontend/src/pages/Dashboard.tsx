@@ -75,6 +75,24 @@ function ChartSection({ stats }: { stats: MonthlyStats }) {
   const dailyTrend = stats.daily_trend ?? []
   const pieRef = useRef<ChartJS<'pie'>>(null)
   const lineRef = useRef<ChartJS<'line'>>(null)
+  // 숨겨진 카테고리 인덱스 추적 (범례 토글용)
+  const [hiddenIndices, setHiddenIndices] = useState<Set<number>>(new Set())
+
+  const totalAmount = byCategory.reduce((sum, c) => sum + c.amount, 0)
+
+  const handleLegendClick = (index: number) => {
+    const chart = pieRef.current
+    if (!chart) return
+    chart.toggleDataVisibility(index)
+    const isNowVisible = chart.getDataVisibility(index)
+    setHiddenIndices((prev) => {
+      const next = new Set(prev)
+      if (!isNowVisible) next.add(index)
+      else next.delete(index)
+      return next
+    })
+    chart.update()
+  }
 
   const pieData = {
     labels: byCategory.map((c) => c.category),
@@ -109,23 +127,53 @@ function ChartSection({ stats }: { stats: MonthlyStats }) {
       <div className="bg-white rounded-2xl border border-warm-200/60 shadow-sm p-4 sm:p-5">
         <h2 className="text-base font-semibold text-warm-700 mb-4">카테고리별 지출</h2>
         {byCategory.length > 0 ? (
-          <div className="h-[250px] flex items-center justify-center">
-            <Pie
-              ref={pieRef}
-              data={pieData}
-              options={{
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                  legend: { display: false },
-                  tooltip: {
-                    callbacks: {
-                      label: (ctx) => `${ctx.label} ${formatAmount(ctx.parsed)}`,
+          <div>
+            <div className="h-[200px] flex items-center justify-center">
+              <Pie
+                ref={pieRef}
+                data={pieData}
+                options={{
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                      callbacks: {
+                        label: (ctx) => {
+                          const value = ctx.parsed
+                          const pct = totalAmount > 0 ? ((value / totalAmount) * 100).toFixed(1) : '0.0'
+                          return ` ${ctx.label}: ${formatAmount(value)} (${pct}%)`
+                        },
+                      },
                     },
                   },
-                },
-              }}
-            />
+                }}
+              />
+            </div>
+            {/* 커스텀 범례 — 클릭으로 카테고리 숨기기/보이기 */}
+            <div className="mt-3 space-y-1">
+              {byCategory.map((c, i) => {
+                const pct = totalAmount > 0 ? ((c.amount / totalAmount) * 100).toFixed(1) : '0.0'
+                const isHidden = hiddenIndices.has(i)
+                return (
+                  <button
+                    key={c.category}
+                    onClick={() => handleLegendClick(i)}
+                    className={`flex items-center gap-2 w-full text-left text-sm rounded-lg px-2 py-1.5 transition-all hover:bg-warm-50 ${
+                      isHidden ? 'opacity-35' : 'opacity-100'
+                    }`}
+                  >
+                    <span
+                      className="w-3 h-3 rounded-full flex-shrink-0"
+                      style={{ backgroundColor: COLORS[i % COLORS.length] }}
+                    />
+                    <span className="flex-1 min-w-0 truncate text-warm-700">{c.category}</span>
+                    <span className="font-semibold text-warm-800 tabular-nums">{pct}%</span>
+                    <span className="text-warm-400 text-xs whitespace-nowrap tabular-nums">{formatAmount(c.amount)}</span>
+                  </button>
+                )
+              })}
+            </div>
           </div>
         ) : (
           <div className="h-[250px] flex items-center justify-center">
