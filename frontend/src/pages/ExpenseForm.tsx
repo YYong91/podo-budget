@@ -6,9 +6,9 @@
  * 2. 폼 입력 모드: 금액, 설명, 카테고리 등을 직접 입력
  */
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, Camera } from 'lucide-react'
 import { useToast } from '../hooks/useToast'
 import { expenseApi } from '../api/expenses'
 import { categoryApi } from '../api/categories'
@@ -16,7 +16,7 @@ import { chatApi } from '../api/chat'
 import { useHouseholdStore } from '../stores/useHouseholdStore'
 import type { Category, ParsedExpenseItem } from '../types'
 
-type InputMode = 'natural' | 'form'
+type InputMode = 'natural' | 'form' | 'ocr'
 
 /** 프리뷰 카드에서 편집 가능한 항목 */
 interface EditableExpense extends ParsedExpenseItem {
@@ -36,6 +36,10 @@ export default function ExpenseForm() {
   const [naturalInput, setNaturalInput] = useState('')
   const [previewItems, setPreviewItems] = useState<EditableExpense[] | null>(null)
   const [rawInput, setRawInput] = useState('')
+
+  // OCR 상태
+  const [ocrPreview, setOcrPreview] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   // 폼 입력 상태
   const [categories, setCategories] = useState<Category[]>([])
@@ -156,6 +160,42 @@ export default function ExpenseForm() {
   }
 
   /**
+   * OCR: 파일 선택 시 자동 업로드 및 파싱
+   */
+  const handleOcrFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    // 로컬 미리보기 생성
+    const url = URL.createObjectURL(file)
+    setOcrPreview(url)
+
+    setLoading(true)
+    try {
+      const res = await expenseApi.parseImage(file, activeHouseholdId)
+      if (res.data.parsed_expenses && res.data.parsed_expenses.length > 0) {
+        const editables: EditableExpense[] = res.data.parsed_expenses.map((item) => ({
+          ...item,
+          category_id: findCategoryId(item.category),
+        }))
+        setPreviewItems(editables)
+        setRawInput(`[OCR] ${file.name}`)
+      } else {
+        addToast('info', res.data.message || '결제 정보를 인식하지 못했습니다')
+        setOcrPreview(null)
+      }
+    } catch (error: unknown) {
+      const errorMsg = (error as { response?: { data?: { detail?: string } } }).response?.data?.detail || 'OCR 처리에 실패했습니다'
+      addToast('error', errorMsg)
+      setOcrPreview(null)
+    } finally {
+      setLoading(false)
+      // 같은 파일 재선택 허용
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }
+
+  /**
    * 폼 입력 제출
    */
   const handleFormSubmit = async (e: React.FormEvent) => {
@@ -217,19 +257,19 @@ export default function ExpenseForm() {
         <button
           onClick={() => { setMode('natural'); setPreviewItems(null) }}
           className={`
-            flex-1 px-4 py-3 text-sm font-medium rounded-lg transition-all
+            flex-1 px-3 py-2.5 text-sm font-medium rounded-lg transition-all
             ${mode === 'natural'
               ? 'bg-grape-600 text-white shadow-sm shadow-grape-200'
               : 'text-warm-600 hover:bg-warm-50'
             }
           `}
         >
-          자연어 입력
+          자연어
         </button>
         <button
           onClick={() => { setMode('form'); setPreviewItems(null) }}
           className={`
-            flex-1 px-4 py-3 text-sm font-medium rounded-lg transition-all
+            flex-1 px-3 py-2.5 text-sm font-medium rounded-lg transition-all
             ${mode === 'form'
               ? 'bg-grape-600 text-white shadow-sm shadow-grape-200'
               : 'text-warm-600 hover:bg-warm-50'
@@ -237,6 +277,19 @@ export default function ExpenseForm() {
           `}
         >
           직접 입력
+        </button>
+        <button
+          onClick={() => { setMode('ocr'); setPreviewItems(null); setOcrPreview(null) }}
+          className={`
+            flex-1 px-3 py-2.5 text-sm font-medium rounded-lg transition-all flex items-center justify-center gap-1.5
+            ${mode === 'ocr'
+              ? 'bg-grape-600 text-white shadow-sm shadow-grape-200'
+              : 'text-warm-600 hover:bg-warm-50'
+            }
+          `}
+        >
+          <Camera className="w-4 h-4" />
+          이미지
         </button>
       </div>
 
@@ -268,6 +321,183 @@ export default function ExpenseForm() {
             {loading ? '분석 중...' : '분석하기'}
           </button>
         </form>
+      )}
+
+      {/* OCR 입력 모드 */}
+      {mode === 'ocr' && !previewItems && (
+        <div className="bg-white rounded-2xl shadow-sm border border-warm-200/60 p-6 space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-warm-700 mb-2">
+              결제 화면 이미지 인식
+            </label>
+            <p className="text-xs text-warm-400 mb-4">
+              토스, 카카오페이, 카드사 앱 결제 화면이나 영수증 사진을 업로드하면 AI가 자동으로 금액과 가맹점을 인식합니다.
+            </p>
+
+            {/* 이미지 미리보기 */}
+            {ocrPreview && (
+              <div className="mb-4 rounded-xl overflow-hidden border border-warm-200">
+                <img src={ocrPreview} alt="업로드된 이미지" className="w-full max-h-64 object-contain bg-warm-50" />
+              </div>
+            )}
+
+            {/* 업로드 버튼 영역 */}
+            <div
+              className="border-2 border-dashed border-warm-300 rounded-xl p-8 text-center cursor-pointer hover:border-grape-400 hover:bg-grape-50/30 transition-all"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <Camera className="w-10 h-10 text-warm-300 mx-auto mb-3" />
+              <p className="text-sm font-medium text-warm-600">
+                {loading ? '인식 중...' : '이미지 선택 / 카메라 촬영'}
+              </p>
+              <p className="text-xs text-warm-400 mt-1">
+                JPG, PNG, WEBP · 최대 10MB
+              </p>
+            </div>
+
+            {/* 숨겨진 파일 input (모바일: 카메라 또는 갤러리) */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              className="sr-only"
+              onChange={handleOcrFileSelect}
+              disabled={loading}
+            />
+          </div>
+
+          {/* 갤러리에서 선택 버튼 (capture 없이 별도 제공) */}
+          <button
+            type="button"
+            disabled={loading}
+            onClick={() => {
+              if (fileInputRef.current) {
+                fileInputRef.current.removeAttribute('capture')
+                fileInputRef.current.click()
+                // 클릭 후 capture 복원
+                requestAnimationFrame(() => {
+                  if (fileInputRef.current) fileInputRef.current.setAttribute('capture', 'environment')
+                })
+              }
+            }}
+            className="w-full px-4 py-3 text-sm font-medium text-grape-700 border border-grape-300 bg-grape-50 rounded-xl hover:bg-grape-100 transition-colors disabled:opacity-50"
+          >
+            갤러리에서 선택
+          </button>
+        </div>
+      )}
+
+      {/* 파싱 결과 프리뷰 카드 (OCR 모드) */}
+      {mode === 'ocr' && previewItems && (
+        <div className="space-y-4">
+          {/* OCR 원본 이미지 */}
+          {ocrPreview && (
+            <div className="bg-white rounded-2xl border border-warm-200/60 overflow-hidden">
+              <img src={ocrPreview} alt="인식된 이미지" className="w-full max-h-40 object-contain bg-warm-50" />
+            </div>
+          )}
+
+          <div className="bg-grape-50 border border-grape-200 rounded-2xl p-4">
+            <p className="text-sm text-grape-800 font-medium">
+              {previewItems.length}건의 지출을 인식했습니다. 내용을 확인하고 수정한 뒤 저장하세요.
+            </p>
+          </div>
+
+          {previewItems.map((item, index) => (
+            <div key={index} className="bg-white rounded-2xl shadow-sm border border-warm-200/60 border-l-4 border-l-grape-400 p-5 space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-warm-500">지출 #{index + 1}</span>
+                {previewItems.length > 1 && (
+                  <button
+                    onClick={() => removePreviewItem(index)}
+                    className="text-sm text-rose-500 hover:text-rose-700 transition-colors"
+                  >
+                    삭제
+                  </button>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs text-warm-500 mb-1">금액</label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-warm-500 text-sm">₩</span>
+                    <input
+                      type="number"
+                      value={item.amount}
+                      onChange={(e) => updatePreviewItem(index, 'amount', Number(e.target.value))}
+                      className="w-full pl-7 pr-3 py-2 border border-warm-300 rounded-xl text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
+                      min="1"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs text-warm-500 mb-1">날짜</label>
+                  <input
+                    type="date"
+                    value={item.date.slice(0, 10)}
+                    onChange={(e) => updatePreviewItem(index, 'date', e.target.value)}
+                    className="w-full px-3 py-2 border border-warm-300 rounded-xl text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs text-warm-500 mb-1">설명</label>
+                  <input
+                    type="text"
+                    value={item.description}
+                    onChange={(e) => updatePreviewItem(index, 'description', e.target.value)}
+                    className="w-full px-3 py-2 border border-warm-300 rounded-xl text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs text-warm-500 mb-1">카테고리</label>
+                  <select
+                    value={item.category_id ?? ''}
+                    onChange={(e) => updatePreviewItem(index, 'category_id', e.target.value ? Number(e.target.value) : null)}
+                    className="w-full px-3 py-2 border border-warm-300 rounded-xl text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
+                  >
+                    <option value="">미분류 ({item.category})</option>
+                    {categories.map((cat) => (
+                      <option key={cat.id} value={cat.id}>{cat.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="sm:col-span-2">
+                  <label className="block text-xs text-warm-500 mb-1">메모 (선택)</label>
+                  <input
+                    type="text"
+                    value={item.memo ?? ''}
+                    onChange={(e) => updatePreviewItem(index, 'memo', e.target.value)}
+                    placeholder="추가 메모 입력"
+                    className="w-full px-3 py-2 border border-warm-300 rounded-xl text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
+                  />
+                </div>
+              </div>
+            </div>
+          ))}
+
+          <div className="flex gap-3">
+            <button
+              onClick={() => { setPreviewItems(null); setOcrPreview(null) }}
+              className="flex-1 px-4 py-3 text-sm font-medium text-warm-700 bg-warm-100 rounded-xl hover:bg-warm-200 transition-colors"
+              disabled={loading}
+            >
+              다시 선택
+            </button>
+            <button
+              onClick={handleConfirmSave}
+              disabled={loading}
+              className="flex-1 px-4 py-3 text-sm font-medium text-white bg-grape-600 rounded-xl hover:bg-grape-700 shadow-sm shadow-grape-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+            >
+              {loading ? '저장 중...' : `${previewItems.length}건 저장하기`}
+            </button>
+          </div>
+        </div>
       )}
 
       {/* 파싱 결과 프리뷰 카드 */}

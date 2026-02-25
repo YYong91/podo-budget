@@ -12,7 +12,7 @@
 from calendar import monthrange
 from datetime import date, datetime, timedelta
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -21,6 +21,7 @@ from app.core.auth import get_current_user
 from app.core.database import get_db
 from app.models.expense import Expense
 from app.models.user import User
+from app.schemas.chat import ChatResponse, ParsedExpenseItem
 from app.schemas.expense import (
     CategoryChange,
     CategoryStats,
@@ -34,6 +35,7 @@ from app.schemas.expense import (
     StatsResponse,
     TrendPoint,
 )
+from app.services.llm_service import get_llm_provider
 
 router = APIRouter()
 
@@ -452,6 +454,90 @@ async def get_monthly_stats(
         "by_category": by_category,
         "daily_trend": daily_trend,
     }
+
+
+@router.post("/ocr", response_model=ChatResponse)
+async def parse_expense_image(
+    file: UploadFile = File(...),
+    household_id: int | None = Query(None),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """결제 스크린샷/영수증 이미지 OCR로 지출 파싱 (프리뷰 전용)
+
+    이미지를 Claude Vision API로 분석하여 지출 정보를 추출합니다.
+    저장하지 않고 파싱 결과만 반환합니다 (chat preview와 동일한 형식).
+    """
+    # 이미지 파일 타입 검증
+    ALLOWED_TYPES = {"image/jpeg", "image/png", "image/gif", "image/webp"}
+    if file.content_type not in ALLOWED_TYPES:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="이미지 파일만 업로드 가능합니다 (jpeg, png, gif, webp)",
+        )
+
+    # 파일 크기 검증 (10MB 제한)
+    MAX_SIZE = 10 * 1024 * 1024
+    image_bytes = await file.read()
+    if len(image_bytes) > MAX_SIZE:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="파일 크기는 10MB 이하여야 합니다",
+        )
+
+    # 가구 멤버 검증 (household_id가 있는 경우)
+    if household_id is not None:
+        await get_household_member(household_id, current_user, db)
+
+    # OCR 프로바이더로 이미지 파싱 (anthropic 기본값)
+    try:
+        llm = get_llm_provider("ocr")
+        parsed = await llm.parse_image(image_bytes, file.content_type)
+    except NotImplementedError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_501_NOT_IMPLEMENTED,
+            detail="현재 설정된 LLM 프로바이더는 이미지 OCR을 지원하지 않습니다",
+        ) from exc
+
+    # 에러 응답 처리
+    if isinstance(parsed, dict) and "error" in parsed:
+        return ChatResponse(
+            message=parsed["error"],
+            parsed_expenses=None,
+            parsed_items=None,
+            expenses_created=None,
+            incomes_created=None,
+            insights=None,
+        )
+
+    # 파싱 결과를 ParsedExpenseItem 리스트로 변환
+    from datetime import datetime
+
+    items = [parsed] if isinstance(parsed, dict) else parsed
+    parsed_items = [
+        ParsedExpenseItem(
+            amount=item["amount"],
+            description=item.get("description", ""),
+            category=item.get("category", "기타"),
+            date=item.get("date", datetime.now().strftime("%Y-%m-%d")),
+            memo=item.get("memo", ""),
+            household_id=household_id,
+            type=item.get("type", "expense"),
+        )
+        for item in items
+    ]
+
+    count = len(parsed_items)
+    total = sum(item.amount for item in parsed_items)
+
+    return ChatResponse(
+        message=f"{count}건의 지출을 인식했습니다 (총 ₩{total:,.0f}). 확인 후 저장해주세요.",
+        parsed_expenses=parsed_items,
+        parsed_items=parsed_items,
+        expenses_created=None,
+        incomes_created=None,
+        insights=None,
+    )
 
 
 @router.get("/{expense_id}", response_model=ExpenseResponse)

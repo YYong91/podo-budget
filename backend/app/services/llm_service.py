@@ -45,6 +45,16 @@ class LLMProvider(ABC):
         pass
 
     @abstractmethod
+    async def parse_image(self, image_bytes: bytes, media_type: str) -> dict[str, Any] | list[dict[str, Any]]:
+        """이미지에서 지출 정보 추출 (OCR)
+
+        Returns:
+            단일 지출: dict (에러 포함 가능)
+            여러 지출: list[dict]
+        """
+        pass
+
+    @abstractmethod
     async def generate_insights(self, expenses_data: dict[str, Any]) -> str:
         """지출 데이터를 분석하여 인사이트 생성"""
         pass
@@ -122,6 +132,73 @@ class AnthropicProvider(LLMProvider):
                     return {"error": f"LLM 서비스 오류: {str(e)}"}
 
         return {"error": "알 수 없는 오류가 발생했습니다"}
+
+    async def parse_image(self, image_bytes: bytes, media_type: str) -> dict[str, Any] | list[dict[str, Any]]:
+        """Claude Vision으로 결제 스크린샷/영수증 이미지를 파싱"""
+        import base64
+
+        from app.services.prompts import get_ocr_expense_prompt
+
+        image_data = base64.b64encode(image_bytes).decode("utf-8")
+
+        try:
+            response = await self.client.messages.create(
+                model=self.model,
+                max_tokens=512,
+                system=get_ocr_expense_prompt(),
+                messages=[
+                    {
+                        "role": "user",
+                        "content": [
+                            {
+                                "type": "image",
+                                "source": {
+                                    "type": "base64",
+                                    "media_type": media_type,
+                                    "data": image_data,
+                                },
+                            },
+                            {
+                                "type": "text",
+                                "text": "이 이미지에서 결제 정보를 추출해주세요.",
+                            },
+                        ],
+                    }
+                ],
+            )
+
+            text = response.content[0].text.strip()
+
+            # ```json ... ``` 블록이 있으면 내부만 추출
+            if "```json" in text:
+                text = text.split("```json")[1].split("```")[0].strip()
+            elif "```" in text:
+                text = text.split("```")[1].split("```")[0].strip()
+
+            parsed = json.loads(text)
+
+            if isinstance(parsed, dict):
+                if "error" in parsed:
+                    return parsed
+                if "amount" not in parsed or parsed["amount"] is None:
+                    return {"error": "금액을 찾을 수 없습니다"}
+                return parsed
+
+            elif isinstance(parsed, list):
+                for item in parsed:
+                    if not isinstance(item, dict) or "amount" not in item:
+                        return {"error": "잘못된 형식입니다"}
+                return parsed
+
+            else:
+                return {"error": "잘못된 형식입니다"}
+
+        except json.JSONDecodeError:
+            logger.warning(f"OCR JSON 파싱 실패: {text}")
+            return {"error": "응답을 파싱할 수 없습니다"}
+        except Exception as e:
+            logger.error(f"Claude Vision OCR 실패: {e}")
+            return {"error": f"이미지 인식 오류: {str(e)}"}
 
     async def generate_insights(self, expenses_data: dict[str, Any]) -> str:
         """지출 데이터를 분석하여 인사이트 Markdown 텍스트 생성"""
@@ -225,6 +302,9 @@ class OpenAIProvider(LLMProvider):
 
         return {"error": "알 수 없는 오류가 발생했습니다"}
 
+    async def parse_image(self, image_bytes: bytes, media_type: str) -> dict[str, Any] | list[dict[str, Any]]:
+        raise NotImplementedError("OpenAI 프로바이더는 이미지 OCR을 지원하지 않습니다")
+
     async def generate_insights(self, expenses_data: dict[str, Any]) -> str:
         """지출 데이터를 분석하여 인사이트 Markdown 텍스트 생성"""
         from app.services.prompts import INSIGHTS_SYSTEM_PROMPT
@@ -257,6 +337,9 @@ class GoogleProvider(LLMProvider):
     async def parse_expense(self, user_input: str) -> dict[str, Any] | list[dict[str, Any]]:
         raise NotImplementedError("Google Gemini 프로바이더는 아직 구현되지 않았습니다")
 
+    async def parse_image(self, image_bytes: bytes, media_type: str) -> dict[str, Any] | list[dict[str, Any]]:
+        raise NotImplementedError("Google Gemini 프로바이더는 이미지 OCR을 지원하지 않습니다")
+
     async def generate_insights(self, expenses_data: dict[str, Any]) -> str:
         raise NotImplementedError("Google Gemini 프로바이더는 아직 구현되지 않았습니다")
 
@@ -267,6 +350,9 @@ class LocalLLMProvider(LLMProvider):
 
     async def parse_expense(self, user_input: str) -> dict[str, Any] | list[dict[str, Any]]:
         raise NotImplementedError("로컬 LLM 프로바이더는 아직 구현되지 않았습니다")
+
+    async def parse_image(self, image_bytes: bytes, media_type: str) -> dict[str, Any] | list[dict[str, Any]]:
+        raise NotImplementedError("로컬 LLM 프로바이더는 이미지 OCR을 지원하지 않습니다")
 
     async def generate_insights(self, expenses_data: dict[str, Any]) -> str:
         raise NotImplementedError("로컬 LLM 프로바이더는 아직 구현되지 않았습니다")

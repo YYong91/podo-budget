@@ -1,7 +1,7 @@
 /* 지출 API */
 
 import apiClient from './client'
-import type { Expense, MonthlyStats } from '../types'
+import type { ChatResponse, Expense, MonthlyStats } from '../types'
 
 interface GetExpensesParams {
   skip?: number
@@ -33,4 +33,13 @@ export const expenseApi = {
     apiClient.get<MonthlyStats>('/expenses/stats/monthly', {
       params: { month, ...(householdId != null && { household_id: householdId }) },
     }),
+
+  parseImage: (file: File, householdId?: number | null) => {
+    const formData = new FormData()
+    formData.append('file', file)
+    return apiClient.post<ChatResponse>('/expenses/ocr', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      params: householdId != null ? { household_id: householdId } : undefined,
+    })
+  },
 }
