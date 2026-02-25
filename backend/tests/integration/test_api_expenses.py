@@ -306,3 +306,38 @@ async def test_create_expense_zero_amount(authenticated_client, test_user: User,
     }
     response = await authenticated_client.post("/api/expenses/", json=payload)
     assert response.status_code == 422
+
+
+# ──────────────────────────────────────────────
+# 날짜 형식 호환성 테스트 (TST-DATE)
+# 프론트엔드는 date input (YYYY-MM-DD) 값을 직접 전송하는 경우가 있음
+# Pydantic v2는 기본적으로 날짜만 있는 문자열(YYYY-MM-DD)을 datetime으로 파싱하지 못함
+# ──────────────────────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_create_expense_with_date_only_format(authenticated_client, test_user: User, db_session):
+    """YYYY-MM-DD 형식(시간 없는 날짜)으로 지출 생성 — 프론트엔드 LLM 프리뷰 저장 플로우
+
+    재현 시나리오:
+    1. 사용자가 자연어로 입력: "2월11일 전기차충전 11680원"
+    2. LLM이 date: "2026-02-11" (YYYY-MM-DD) 반환
+    3. 프론트엔드가 handleConfirmSave에서 item.date를 그대로 전송
+    4. 백엔드 ExpenseCreate.date: datetime이 "2026-02-11" 파싱 실패 → 422
+
+    기존 테스트에서 걸러지지 않은 이유:
+    - test_create_expense는 항상 "YYYY-MM-DDTHH:MM:SS" 형식 사용
+    - LLM이 반환하는 YYYY-MM-DD 형식에 대한 테스트가 없었음
+    """
+    payload = {
+        "amount": 11680,
+        "description": "전기차충전",
+        "date": "2026-02-11",  # LLM이 반환하는 형식 — 시간 없는 날짜
+    }
+    response = await authenticated_client.post("/api/expenses/", json=payload)
+    assert response.status_code == 201, "YYYY-MM-DD 형식 날짜로 지출 생성이 실패함. " "ExpenseCreate.date 필드가 날짜만 있는 문자열을 허용해야 합니다."
+    data = response.json()
+    assert data["description"] == "전기차충전"
+    assert data["amount"] == 11680
+    # 날짜가 올바르게 저장되었는지 확인
+    assert "2026-02-11" in data["date"]

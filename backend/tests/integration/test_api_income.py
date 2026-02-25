@@ -193,3 +193,36 @@ async def test_delete_other_user_income(authenticated_client, test_user2: User, 
 
     response = await authenticated_client.delete(f"/api/income/{income.id}")
     assert response.status_code == 404
+
+
+# ──────────────────────────────────────────────
+# 날짜 형식 호환성 테스트 (TST-DATE)
+# 프론트엔드 LLM 프리뷰 저장 시 YYYY-MM-DD 형식으로 전송됨
+# ──────────────────────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_create_income_with_date_only_format(authenticated_client, test_user: User, db_session):
+    """YYYY-MM-DD 형식(시간 없는 날짜)으로 수입 생성 — 프론트엔드 LLM 프리뷰 저장 플로우
+
+    재현 시나리오:
+    1. 사용자가 자연어로 입력: "이번 달 월급 350만원"
+    2. LLM이 date: "2026-02-01" (YYYY-MM-DD) 반환
+    3. 프론트엔드가 handleConfirmSave에서 item.date를 그대로 POST /api/income/ 에 전송
+    4. 백엔드 IncomeCreate.date: datetime이 "2026-02-01" 파싱 실패 → 422
+
+    기존 테스트에서 걸러지지 않은 이유:
+    - test_create_income은 항상 "YYYY-MM-DDTHH:MM:SS" 형식 사용
+    - LLM이 반환하는 YYYY-MM-DD 형식에 대한 테스트가 없었음
+    """
+    payload = {
+        "amount": 3500000,
+        "description": "2월 월급",
+        "date": "2026-02-01",  # LLM이 반환하는 형식 — 시간 없는 날짜
+    }
+    response = await authenticated_client.post("/api/income/", json=payload)
+    assert response.status_code == 201, "YYYY-MM-DD 형식 날짜로 수입 생성이 실패함. " "IncomeCreate.date 필드가 날짜만 있는 문자열을 허용해야 합니다."
+    data = response.json()
+    assert data["description"] == "2월 월급"
+    assert data["amount"] == 3500000
+    assert "2026-02-01" in data["date"]
