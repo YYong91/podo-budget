@@ -214,3 +214,75 @@ class TestComparisonAPI:
         """weekly는 비교 미지원"""
         response = await authenticated_client.get("/api/expenses/stats/comparison?period=weekly&date=2026-02-15")
         assert response.status_code == 422
+
+
+class TestExcludeFromStats:
+    """exclude_from_stats 플래그 동작 검증"""
+
+    @pytest.mark.asyncio
+    async def test_excluded_expense_not_in_monthly_stats(self, authenticated_client, test_user, db_session):
+        """통계 제외 플래그가 설정된 지출은 월간 통계에서 제외된다.
+
+        배경: 저축, 퇴직금 등 비정형 대규모 거래를 통계에서 제외하기 위해
+        exclude_from_stats 필드를 추가했다. 이 테스트는 해당 필드가 설정된
+        지출이 실제로 통계 집계에서 빠지는지 검증한다.
+        """
+        # 일반 지출 (통계 포함)
+        normal = Expense(user_id=test_user.id, amount=10000, description="식비", date=datetime(2026, 2, 10), exclude_from_stats=False)
+        # 통계 제외 지출 (예: 저축)
+        excluded = Expense(user_id=test_user.id, amount=5000000, description="적금", date=datetime(2026, 2, 15), exclude_from_stats=True)
+        db_session.add_all([normal, excluded])
+        await db_session.commit()
+
+        response = await authenticated_client.get("/api/expenses/stats?period=monthly&date=2026-02-15")
+        assert response.status_code == 200
+
+        data = response.json()
+        # 통계에는 일반 지출 10000원만 포함되어야 함
+        assert data["total"] == 10000.0
+        assert data["count"] == 1
+
+    @pytest.mark.asyncio
+    async def test_excluded_expense_still_in_list(self, authenticated_client, test_user, db_session):
+        """통계 제외 플래그가 설정된 지출도 목록에서는 정상 조회된다."""
+        excluded = Expense(user_id=test_user.id, amount=5000000, description="퇴직금", date=datetime(2026, 2, 15), exclude_from_stats=True)
+        db_session.add(excluded)
+        await db_session.commit()
+
+        response = await authenticated_client.get("/api/expenses/")
+        assert response.status_code == 200
+
+        items = response.json()
+        assert len(items) == 1
+        assert items[0]["description"] == "퇴직금"
+        assert items[0]["exclude_from_stats"] is True
+
+    @pytest.mark.asyncio
+    async def test_create_expense_with_exclude_flag(self, authenticated_client, test_user, db_session):
+        """지출 생성 시 exclude_from_stats 플래그를 설정할 수 있다."""
+        payload = {
+            "amount": 3000000,
+            "description": "비상금 저축",
+            "date": "2026-02-20T00:00:00",
+            "exclude_from_stats": True,
+        }
+
+        response = await authenticated_client.post("/api/expenses/", json=payload)
+        assert response.status_code == 201
+
+        data = response.json()
+        assert data["exclude_from_stats"] is True
+
+    @pytest.mark.asyncio
+    async def test_excluded_expense_not_in_monthly_endpoint(self, authenticated_client, test_user, db_session):
+        """GET /api/expenses/stats/monthly 에서도 통계 제외 거래가 빠진다."""
+        normal = Expense(user_id=test_user.id, amount=8000, description="점심", date=datetime(2026, 2, 5), exclude_from_stats=False)
+        excluded = Expense(user_id=test_user.id, amount=1000000, description="저축", date=datetime(2026, 2, 10), exclude_from_stats=True)
+        db_session.add_all([normal, excluded])
+        await db_session.commit()
+
+        response = await authenticated_client.get("/api/expenses/stats/monthly?month=2026-02")
+        assert response.status_code == 200
+
+        data = response.json()
+        assert data["total"] == 8000.0
