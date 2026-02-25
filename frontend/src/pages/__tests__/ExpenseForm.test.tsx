@@ -94,7 +94,7 @@ describe('ExpenseForm', () => {
       renderExpenseForm()
 
       await user.click(screen.getByText('직접 입력'))
-      await user.click(screen.getByText('자연어 입력'))
+      await user.click(screen.getByText('자연어'))
 
       await waitFor(() => {
         expect(screen.getByText('자연어로 지출 입력하기')).toBeInTheDocument()
