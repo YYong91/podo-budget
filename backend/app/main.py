@@ -29,12 +29,14 @@ async def lifespan(app: FastAPI):
 
     시작 시:
     - 모든 모델 임포트로 SQLAlchemy 메타데이터 초기화
-    - 데이터베이스 테이블 생성
+    - Alembic 마이그레이션 실행 (신규 설치: 전체 스키마 생성, 기존: 증분 적용)
     - SECRET_KEY 검증 (프로덕션 환경에서 필수)
 
     종료 시:
     - 리소스 정리 (현재는 없음)
     """
+    import subprocess
+
     import app.models  # noqa: F811, F401
 
     # JWT_SECRET 검증 (podo-auth SSO 연동)
@@ -46,8 +48,28 @@ async def lifespan(app: FastAPI):
 
             warnings.warn("JWT_SECRET이 기본값입니다. 프로덕션에서는 podo-auth와 동일한 JWT_SECRET을 설정하세요.", stacklevel=2)
 
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    # Alembic 마이그레이션 실행 — create_all 대신 사용해 기존 DB에도 스키마 변경 적용
+    import logging
+    import pathlib
+    import sys
+
+    logger = logging.getLogger(__name__)
+    # alembic.ini는 app 패키지의 부모 디렉토리에 위치 (backend/ 또는 컨테이너의 /app/)
+    alembic_dir = pathlib.Path(__file__).parent.parent
+
+    result = subprocess.run(
+        [sys.executable, "-m", "alembic", "upgrade", "head"],
+        capture_output=True,
+        text=True,
+        cwd=str(alembic_dir),
+    )
+    if result.returncode != 0:
+        # 마이그레이션 실패 시 로그 출력 후 fallback으로 create_all 실행
+        logger.error("Alembic 마이그레이션 실패, create_all로 폴백: %s", result.stderr)
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+    else:
+        logger.info("Alembic 마이그레이션 완료: %s", result.stdout)
     yield
 
 
