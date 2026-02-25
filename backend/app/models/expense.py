@@ -43,6 +43,7 @@ class Expense(Base):
     description = Column(String, nullable=False)
     category_id = Column(Integer, ForeignKey("categories.id"), nullable=True)
     raw_input = Column(Text, nullable=True)  # 사용자가 입력한 원본 텍스트
+    memo = Column(Text, nullable=True)  # 선택적 메모
     date = Column(DateTime, nullable=False, default=func.now())
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())

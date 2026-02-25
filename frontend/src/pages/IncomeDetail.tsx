@@ -35,6 +35,7 @@ export default function IncomeDetail() {
     description: '',
     category_id: null as number | null,
     date: '',
+    memo: '',
   })
 
   useEffect(() => {
@@ -54,6 +55,7 @@ export default function IncomeDetail() {
           description: incomeRes.data.description,
           category_id: incomeRes.data.category_id,
           date: incomeRes.data.date.slice(0, 10),
+          memo: incomeRes.data.memo ?? '',
         })
       } catch {
         addToast('error', '수입 내역을 불러오는데 실패했습니다')
@@ -83,6 +85,7 @@ export default function IncomeDetail() {
         description: editForm.description.trim(),
         category_id: editForm.category_id,
         date: editForm.date.includes('T') ? editForm.date : `${editForm.date}T00:00:00`,
+        memo: editForm.memo.trim() || undefined,
       })
       setIncome(updated.data)
       setIsEditing(false)
@@ -250,6 +253,24 @@ export default function IncomeDetail() {
             />
           ) : (
             <p className="text-lg text-warm-900">{formatDate(income.date)}</p>
+          )}
+        </div>
+
+        {/* 메모 */}
+        <div>
+          <label className="block text-sm font-medium text-warm-500 mb-2">메모</label>
+          {isEditing ? (
+            <input
+              type="text"
+              value={editForm.memo}
+              onChange={(e) => setEditForm({ ...editForm, memo: e.target.value })}
+              placeholder="추가 메모 (선택)"
+              className="w-full px-4 py-2 text-lg border border-warm-300 rounded-xl focus:ring-2 focus:ring-leaf-500/30 focus:border-leaf-500"
+            />
+          ) : income.memo ? (
+            <p className="text-lg text-warm-900">{income.memo}</p>
+          ) : (
+            <p className="text-lg text-warm-400">-</p>
           )}
         </div>
 

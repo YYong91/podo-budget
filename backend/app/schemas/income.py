@@ -14,6 +14,7 @@ class IncomeBase(BaseModel):
 
 class IncomeCreate(IncomeBase):
     raw_input: str | None = None
+    memo: str | None = None
     household_id: int | None = None
 
 
@@ -22,11 +23,13 @@ class IncomeUpdate(BaseModel):
     description: str | None = None
     category_id: int | None = None
     date: datetime | None = None
+    memo: str | None = None
 
 
 class IncomeResponse(IncomeBase):
     id: int
     raw_input: str | None = None
+    memo: str | None = None
     household_id: int | None = None
     user_id: int
     created_at: datetime

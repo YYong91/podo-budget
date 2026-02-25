@@ -110,9 +110,11 @@ export default function ExpenseForm() {
           amount: item.amount,
           description: item.description,
           category_id: item.category_id,
-          date: item.date,
+          // date input은 YYYY-MM-DD 형식이므로 datetime으로 변환 (Pydantic v2는 날짜 전용 문자열 거부)
+          date: item.date.includes('T') ? item.date : `${item.date}T00:00:00`,
           household_id: activeHouseholdId,
           raw_input: rawInput,
+          memo: item.memo || undefined,
         })
         savedCount++
       }
@@ -183,6 +185,7 @@ export default function ExpenseForm() {
         // date input은 YYYY-MM-DD 형식이므로 datetime으로 변환
         date: formData.date.includes('T') ? formData.date : `${formData.date}T00:00:00`,
         household_id: activeHouseholdId,
+        memo: formData.memo.trim() || undefined,
       })
       addToast('success', '🍇 포도알 +1! 지출이 저장되었습니다')
       setTimeout(() => navigate('/expenses'), 500)
@@ -340,6 +343,18 @@ export default function ExpenseForm() {
                     ))}
                   </select>
                 </div>
+
+                {/* 메모 (선택) */}
+                <div className="sm:col-span-2">
+                  <label className="block text-xs text-warm-500 mb-1">메모 (선택)</label>
+                  <input
+                    type="text"
+                    value={item.memo ?? ''}
+                    onChange={(e) => updatePreviewItem(index, 'memo', e.target.value)}
+                    placeholder="추가 메모 입력"
+                    className="w-full px-3 py-2 border border-warm-300 rounded-xl text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
+                  />
+                </div>
               </div>
             </div>
           ))}
@@ -431,6 +446,21 @@ export default function ExpenseForm() {
               type="date"
               value={formData.date}
               onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+              className="w-full px-4 py-3 border border-warm-300 rounded-xl focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
+              disabled={loading}
+            />
+          </div>
+
+          {/* 메모 (선택) */}
+          <div>
+            <label className="block text-sm font-medium text-warm-700 mb-2">
+              메모
+            </label>
+            <input
+              type="text"
+              value={formData.memo}
+              onChange={(e) => setFormData({ ...formData, memo: e.target.value })}
+              placeholder="추가 메모 (선택)"
               className="w-full px-4 py-3 border border-warm-300 rounded-xl focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
               disabled={loading}
             />

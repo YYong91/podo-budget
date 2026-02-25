@@ -185,6 +185,7 @@ async def chat(
                 description=item.get("description", chat_request.message),
                 category_id=category.id,
                 raw_input=chat_request.message,
+                memo=memo if memo else None,
                 date=datetime.fromisoformat(item.get("date", datetime.now().isoformat())),
             )
             db.add(record)
@@ -197,6 +198,7 @@ async def chat(
                 description=item.get("description", chat_request.message),
                 category_id=category.id,
                 raw_input=chat_request.message,
+                memo=memo if memo else None,
                 date=datetime.fromisoformat(item.get("date", datetime.now().isoformat())),
             )
             db.add(record)

@@ -6,6 +6,7 @@ export interface Expense {
   description: string
   category_id: number | null
   raw_input: string | null
+  memo: string | null
   household_id: number | null
   user_id: number | null
   date: string
@@ -44,6 +45,7 @@ export interface Income {
   description: string
   category_id: number | null
   raw_input: string | null
+  memo: string | null
   household_id: number | null
   user_id: number
   date: string

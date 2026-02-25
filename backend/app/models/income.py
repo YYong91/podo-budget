@@ -43,6 +43,7 @@ class Income(Base):
     description = Column(String, nullable=False)
     category_id = Column(Integer, ForeignKey("categories.id", ondelete="SET NULL"), nullable=True)
     raw_input = Column(Text, nullable=True)
+    memo = Column(Text, nullable=True)  # 선택적 메모
     date = Column(DateTime, nullable=False, default=func.now())
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())

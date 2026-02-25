@@ -43,6 +43,7 @@ export default function ExpenseDetail() {
     description: '',
     category_id: null as number | null,
     date: '',
+    memo: '',
   })
 
   useEffect(() => {
@@ -63,6 +64,7 @@ export default function ExpenseDetail() {
           description: expenseRes.data.description,
           category_id: expenseRes.data.category_id,
           date: expenseRes.data.date.slice(0, 10), // YYYY-MM-DD
+          memo: expenseRes.data.memo ?? '',
         })
       } catch {
         addToast('error', '지출 내역을 불러오는데 실패했습니다')
@@ -96,6 +98,7 @@ export default function ExpenseDetail() {
         category_id: editForm.category_id,
         // date input은 YYYY-MM-DD 형식이므로 datetime으로 변환
         date: editForm.date.includes('T') ? editForm.date : `${editForm.date}T00:00:00`,
+        memo: editForm.memo.trim() || undefined,
       })
       setExpense(updated.data)
       setIsEditing(false)
@@ -281,6 +284,28 @@ export default function ExpenseDetail() {
             />
           ) : (
             <p className="text-lg text-warm-900">{formatDate(expense.date)}</p>
+          )}
+        </div>
+
+        {/* 메모 */}
+        <div>
+          <label className="block text-sm font-medium text-warm-500 mb-2">
+            메모
+          </label>
+          {isEditing ? (
+            <input
+              type="text"
+              value={editForm.memo}
+              onChange={(e) =>
+                setEditForm({ ...editForm, memo: e.target.value })
+              }
+              placeholder="추가 메모 (선택)"
+              className="w-full px-4 py-2 text-lg border border-warm-300 rounded-xl focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
+            />
+          ) : expense.memo ? (
+            <p className="text-lg text-warm-900">{expense.memo}</p>
+          ) : (
+            <p className="text-lg text-warm-400">-</p>
           )}
         </div>
 
