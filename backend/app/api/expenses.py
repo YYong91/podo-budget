@@ -70,8 +70,8 @@ async def create_expense(
 async def get_expenses(
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
-    start_date: datetime | None = None,
-    end_date: datetime | None = None,
+    start_date: str | None = Query(None, description="시작일 YYYY-MM-DD 또는 YYYY-MM-DDTHH:MM:SS"),
+    end_date: str | None = Query(None, description="종료일 YYYY-MM-DD 또는 YYYY-MM-DDTHH:MM:SS"),
     category_id: int | None = None,
     household_id: int | None = None,
     member_user_id: int | None = Query(None, description="가구 내 특정 멤버의 지출만 조회"),
@@ -95,11 +95,16 @@ async def get_expenses(
         # 하위 호환: 본인 지출만 조회
         query = select(Expense).where(Expense.user_id == current_user.id)
 
-    # 필터 적용
+    # 필터 적용 (YYYY-MM-DD 또는 YYYY-MM-DDTHH:MM:SS 모두 허용)
     if start_date:
-        query = query.where(Expense.date >= start_date)
+        start_dt = datetime.fromisoformat(start_date)
+        query = query.where(Expense.date >= start_dt)
     if end_date:
-        query = query.where(Expense.date <= end_date)
+        end_dt = datetime.fromisoformat(end_date)
+        # 날짜만 입력된 경우 (YYYY-MM-DD) 해당 날짜 23:59:59까지 포함
+        if len(end_date) == 10:
+            end_dt = end_dt.replace(hour=23, minute=59, second=59)
+        query = query.where(Expense.date <= end_dt)
     if category_id is not None:
         query = query.where(Expense.category_id == category_id)
 

@@ -100,6 +100,24 @@ async def test_get_expenses_filter_by_date(authenticated_client, test_user: User
 
 
 @pytest.mark.asyncio
+async def test_get_expenses_filter_by_date_only_format(authenticated_client, test_user: User, db_session):
+    """지출 목록 날짜 필터링 — YYYY-MM-DD 형식 (프론트엔드 date input 출력 형식)"""
+    expense1 = Expense(user_id=test_user.id, amount=5000, description="1월 지출", date=datetime(2026, 1, 15))
+    expense2 = Expense(user_id=test_user.id, amount=8000, description="2월 지출", date=datetime(2026, 2, 15))
+    expense3 = Expense(user_id=test_user.id, amount=3000, description="3월 지출", date=datetime(2026, 3, 15))
+    db_session.add_all([expense1, expense2, expense3])
+    await db_session.commit()
+
+    # HTML date input이 보내는 YYYY-MM-DD 형식으로 요청
+    response = await authenticated_client.get("/api/expenses/?start_date=2026-02-01&end_date=2026-02-28")
+    assert response.status_code == 200
+
+    data = response.json()
+    assert len(data) == 1
+    assert data[0]["description"] == "2월 지출"
+
+
+@pytest.mark.asyncio
 async def test_get_expenses_filter_by_category(authenticated_client, test_user: User, db_session):
     """지출 목록 카테고리 필터링 테스트"""
     cat1 = Category(user_id=test_user.id, name="식비")
