@@ -65,17 +65,38 @@ function renderBoldText(text: string): React.ReactNode[] {
 
 function renderMarkdown(text: string) {
   return text.split('\n').map((line, i) => {
+    if (line.startsWith('### ')) {
+      return (
+        <h4 key={i} className="text-base font-semibold text-warm-900 mt-3 mb-1">
+          {renderBoldText(line.slice(4))}
+        </h4>
+      )
+    }
     if (line.startsWith('## ')) {
       return (
         <h3 key={i} className="text-lg font-semibold text-warm-900 mt-4 mb-2">
-          {line.replace('## ', '')}
+          {renderBoldText(line.slice(3))}
         </h3>
       )
     }
-    if (line.startsWith('- ')) {
+    if (line.startsWith('# ')) {
+      return (
+        <h2 key={i} className="text-xl font-bold text-warm-900 mt-4 mb-2">
+          {renderBoldText(line.slice(2))}
+        </h2>
+      )
+    }
+    if (line.startsWith('- ') || line.startsWith('* ')) {
       return (
         <li key={i} className="ml-4 text-warm-700">
-          {renderBoldText(line.replace('- ', ''))}
+          {renderBoldText(line.slice(2))}
+        </li>
+      )
+    }
+    if (/^\d+\. /.test(line)) {
+      return (
+        <li key={i} className="ml-4 text-warm-700 list-decimal">
+          {renderBoldText(line.replace(/^\d+\. /, ''))}
         </li>
       )
     }
