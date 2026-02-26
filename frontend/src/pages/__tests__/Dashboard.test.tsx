@@ -32,9 +32,7 @@ describe('Dashboard', () => {
   describe('로딩 상태', () => {
     it('데이터 로드 중에는 로딩 스피너를 표시한다', () => {
       renderDashboard()
-      // 로딩 스피너는 animate-spin 클래스를 가진 div로 렌더링됨
-      const spinner = document.querySelector('.animate-spin')
-      expect(spinner).toBeInTheDocument()
+      expect(screen.getByRole('status')).toBeInTheDocument()
     })
   })
 

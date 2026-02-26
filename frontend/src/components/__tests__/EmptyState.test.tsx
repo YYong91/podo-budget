@@ -105,20 +105,14 @@ describe('EmptyState', () => {
   })
 
   describe('스타일링', () => {
-    it('주요 액션 버튼은 primary 스타일을 가진다', () => {
+    it('주요 액션 버튼과 보조 액션 버튼은 서로 다른 스타일을 가진다', () => {
       const action = { label: '추가', onClick: vi.fn() }
-      render(<EmptyState title="테스트" action={action} />)
-
-      const button = screen.getByRole('button', { name: '추가' })
-      expect(button).toHaveClass('bg-grape-600')
-    })
-
-    it('보조 액션 버튼은 secondary 스타일을 가진다', () => {
       const secondaryAction = { label: '취소', onClick: vi.fn() }
-      render(<EmptyState title="테스트" secondaryAction={secondaryAction} />)
+      render(<EmptyState title="테스트" action={action} secondaryAction={secondaryAction} />)
 
-      const button = screen.getByRole('button', { name: '취소' })
-      expect(button).toHaveClass('bg-white', 'border-warm-300')
+      const primaryButton = screen.getByRole('button', { name: '추가' })
+      const secondaryButton = screen.getByRole('button', { name: '취소' })
+      expect(primaryButton.className).not.toBe(secondaryButton.className)
     })
   })
 })

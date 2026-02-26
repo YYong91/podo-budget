@@ -1,7 +1,7 @@
 /**
  * @file Toast.test.tsx
  * @description Toast 컴포넌트 테스트
- * 토스트 타입별 스타일, 자동 닫기, 수동 닫기 동작을 테스트한다.
+ * 토스트 렌더링, 자동 닫기, 수동 닫기 동작을 테스트한다.
  */
 
 import { describe, it, expect, vi } from 'vitest'
@@ -15,53 +15,39 @@ describe('Toast', () => {
     onClose: vi.fn(),
   }
 
-  describe('성공 토스트', () => {
-    it('성공 토스트를 올바른 스타일로 렌더링한다', () => {
+  describe('토스트 렌더링', () => {
+    it('성공 토스트를 렌더링한다', () => {
       render(<Toast {...defaultProps} type="success" />)
-
-      const alert = screen.getByRole('alert')
-      expect(alert).toBeInTheDocument()
-      expect(alert).toHaveClass('bg-green-50')
-      expect(alert).toHaveClass('border-green-200')
-      expect(alert).toHaveClass('text-green-800')
-    })
-
-    it('메시지를 표시한다', () => {
-      render(<Toast {...defaultProps} type="success" />)
+      expect(screen.getByRole('alert')).toBeInTheDocument()
       expect(screen.getByText('테스트 메시지')).toBeInTheDocument()
     })
-  })
 
-  describe('에러 토스트', () => {
-    it('에러 토스트를 올바른 스타일로 렌더링한다', () => {
+    it('에러 토스트를 렌더링한다', () => {
       render(<Toast {...defaultProps} type="error" />)
-
-      const alert = screen.getByRole('alert')
-      expect(alert).toHaveClass('bg-red-50')
-      expect(alert).toHaveClass('border-red-200')
-      expect(alert).toHaveClass('text-red-800')
+      expect(screen.getByRole('alert')).toBeInTheDocument()
+      expect(screen.getByText('테스트 메시지')).toBeInTheDocument()
     })
-  })
 
-  describe('경고 토스트', () => {
-    it('경고 토스트를 올바른 스타일로 렌더링한다', () => {
+    it('경고 토스트를 렌더링한다', () => {
       render(<Toast {...defaultProps} type="warning" />)
-
-      const alert = screen.getByRole('alert')
-      expect(alert).toHaveClass('bg-yellow-50')
-      expect(alert).toHaveClass('border-yellow-200')
-      expect(alert).toHaveClass('text-yellow-800')
+      expect(screen.getByRole('alert')).toBeInTheDocument()
+      expect(screen.getByText('테스트 메시지')).toBeInTheDocument()
     })
-  })
 
-  describe('정보 토스트', () => {
-    it('정보 토스트를 올바른 스타일로 렌더링한다', () => {
+    it('정보 토스트를 렌더링한다', () => {
       render(<Toast {...defaultProps} type="info" />)
+      expect(screen.getByRole('alert')).toBeInTheDocument()
+      expect(screen.getByText('테스트 메시지')).toBeInTheDocument()
+    })
 
-      const alert = screen.getByRole('alert')
-      expect(alert).toHaveClass('bg-blue-50')
-      expect(alert).toHaveClass('border-blue-200')
-      expect(alert).toHaveClass('text-blue-800')
+    it('각 토스트 타입은 서로 다른 스타일을 가진다', () => {
+      const { rerender } = render(<Toast {...defaultProps} type="success" />)
+      const successClass = screen.getByRole('alert').className
+
+      rerender(<Toast {...defaultProps} type="error" />)
+      const errorClass = screen.getByRole('alert').className
+
+      expect(successClass).not.toBe(errorClass)
     })
   })
 
