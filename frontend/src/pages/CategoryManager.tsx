@@ -29,6 +29,9 @@ export default function CategoryManager() {
   // 삭제 확인 모달
   const [deleteTarget, setDeleteTarget] = useState<number | null>(null)
 
+  // 순서 변경 중
+  const [reordering, setReordering] = useState(false)
+
   useEffect(() => {
     fetchCategories()
   }, [])
@@ -121,6 +124,33 @@ export default function CategoryManager() {
     }
   }
 
+  /**
+   * 카테고리 순서 이동
+   */
+  const handleMove = async (index: number, direction: 'up' | 'down') => {
+    const targetIndex = direction === 'up' ? index - 1 : index + 1
+    if (targetIndex < 0 || targetIndex >= categories.length) return
+
+    // 낙관적 업데이트
+    const newCategories = [...categories]
+    const [moved] = newCategories.splice(index, 1)
+    newCategories.splice(targetIndex, 0, moved)
+    setCategories(newCategories)
+
+    // 서버에 순서 저장
+    setReordering(true)
+    try {
+      const res = await categoryApi.reorder(newCategories.map((c) => c.id))
+      setCategories(res.data)
+    } catch {
+      // 실패 시 원래 목록 복원
+      fetchCategories()
+      addToast('error', '순서 변경에 실패했습니다')
+    } finally {
+      setReordering(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -160,6 +190,9 @@ export default function CategoryManager() {
           <table className="w-full">
             <thead>
               <tr className="border-b border-warm-200 bg-warm-50">
+                <th className="px-2 sm:px-3 py-3 text-center text-xs font-medium text-warm-500 uppercase tracking-wider w-16">
+                  순서
+                </th>
                 <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-warm-500 uppercase tracking-wider">
                   이름
                 </th>
@@ -178,6 +211,7 @@ export default function CategoryManager() {
             {/* 추가 폼 (isAdding일 때) */}
             {isAdding && (
               <tr className="bg-grape-50">
+                <td className="px-2 sm:px-3 py-4"></td>
                 <td className="px-4 sm:px-6 py-4">
                   <input
                     type="text"
@@ -223,13 +257,37 @@ export default function CategoryManager() {
 
             {/* 카테고리 목록 */}
             {categories.length > 0 ? (
-              categories.map((category) => {
+              categories.map((category, index) => {
                 const isEditing = editingId === category.id
                 return (
                   <tr
                     key={category.id}
                     className={isEditing ? 'bg-grape-50' : 'hover:bg-warm-50 transition-colors'}
                   >
+                    <td className="px-2 sm:px-3 py-4">
+                      <div className="flex flex-col items-center gap-0.5">
+                        <button
+                          onClick={() => handleMove(index, 'up')}
+                          disabled={index === 0 || reordering}
+                          className="p-0.5 text-warm-400 hover:text-grape-600 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                          aria-label={`${category.name} 위로 이동`}
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z" clipRule="evenodd" />
+                          </svg>
+                        </button>
+                        <button
+                          onClick={() => handleMove(index, 'down')}
+                          disabled={index === categories.length - 1 || reordering}
+                          className="p-0.5 text-warm-400 hover:text-grape-600 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                          aria-label={`${category.name} 아래로 이동`}
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                          </svg>
+                        </button>
+                      </div>
+                    </td>
                     <td className="px-4 sm:px-6 py-4">
                       {isEditing ? (
                         <input
@@ -315,7 +373,7 @@ export default function CategoryManager() {
               })
             ) : (
               <tr>
-                <td colSpan={4}>
+                <td colSpan={5}>
                   <EmptyState
                     title="아직 카테고리가 없습니다"
                     description="새 카테고리를 추가하여 지출을 체계적으로 관리해보세요."

@@ -20,6 +20,12 @@ class CategoryUpdate(BaseModel):
     type: str | None = None
 
 
+class CategoryReorderRequest(BaseModel):
+    """카테고리 순서 변경 요청 - 순서대로 정렬된 카테고리 ID 목록"""
+
+    category_ids: list[int]
+
+
 class CategoryResponse(CategoryBase):
     id: int
     type: str = "expense"

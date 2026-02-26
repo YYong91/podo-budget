@@ -15,4 +15,7 @@ export const categoryApi = {
 
   delete: (id: number) =>
     apiClient.delete(`/categories/${id}`),
+
+  reorder: (categoryIds: number[]) =>
+    apiClient.put<Category[]>('/categories/reorder', { category_ids: categoryIds }),
 }

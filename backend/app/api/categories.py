@@ -13,7 +13,7 @@ from app.core.auth import get_current_user
 from app.core.database import get_db
 from app.models.category import Category
 from app.models.user import User
-from app.schemas.category import CategoryCreate, CategoryResponse, CategoryUpdate
+from app.schemas.category import CategoryCreate, CategoryReorderRequest, CategoryResponse, CategoryUpdate
 
 router = APIRouter()
 
@@ -79,6 +79,58 @@ async def create_category(
     await db.commit()
     await db.refresh(db_category)
     return db_category
+
+
+@router.put("/reorder", response_model=list[CategoryResponse])
+async def reorder_categories(
+    request: CategoryReorderRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """카테고리 순서 변경
+
+    전달받은 category_ids 순서대로 sort_order를 설정합니다.
+    첫 번째 ID가 가장 높은 sort_order를 받아 목록 최상단에 표시됩니다.
+    시스템 카테고리와 사용자 카테고리 모두 순서 변경 가능합니다.
+
+    Args:
+        request: 순서대로 정렬된 카테고리 ID 목록
+        current_user: 현재 인증된 사용자
+        db: 데이터베이스 세션
+
+    Returns:
+        순서가 업데이트된 전체 카테고리 목록
+    """
+    # 사용자가 접근 가능한 카테고리 조회
+    result = await db.execute(
+        select(Category).where(
+            or_(Category.user_id == None, Category.user_id == current_user.id)  # noqa: E711
+        )
+    )
+    accessible = {cat.id: cat for cat in result.scalars().all()}
+
+    # 전달된 ID가 모두 접근 가능한지 확인
+    for cat_id in request.category_ids:
+        if cat_id not in accessible:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"카테고리 ID {cat_id}에 접근할 수 없습니다",
+            )
+
+    # sort_order 업데이트 (첫 번째가 가장 높은 값)
+    total = len(request.category_ids)
+    for idx, cat_id in enumerate(request.category_ids):
+        accessible[cat_id].sort_order = total - idx
+
+    await db.commit()
+
+    # 업데이트된 목록 반환
+    result = await db.execute(
+        select(Category)
+        .where(or_(Category.user_id == None, Category.user_id == current_user.id))  # noqa: E711
+        .order_by(Category.sort_order.desc(), Category.name)
+    )
+    return result.scalars().all()
 
 
 @router.put("/{category_id}", response_model=CategoryResponse)

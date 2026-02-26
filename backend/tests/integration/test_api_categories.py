@@ -4,6 +4,7 @@
 - GET /api/categories/ - 카테고리 목록 조회
 - POST /api/categories/ - 카테고리 생성
 - PUT /api/categories/{id} - 카테고리 수정
+- PUT /api/categories/reorder - 카테고리 순서 변경
 - DELETE /api/categories/{id} - 카테고리 삭제
 
 모든 엔드포인트는 JWT 인증이 필요합니다.
@@ -192,3 +193,35 @@ async def test_category_cascade_with_expenses(authenticated_client, test_user: U
     # 카테고리 삭제 시도
     response = await authenticated_client.delete(f"/api/categories/{category.id}")
     assert response.status_code in [204, 400, 409, 500]
+
+
+@pytest.mark.asyncio
+async def test_reorder_categories(authenticated_client, test_user: User, db_session):
+    """카테고리 순서 변경 API 테스트"""
+    cat1 = Category(user_id=test_user.id, name="식비")
+    cat2 = Category(user_id=test_user.id, name="교통비")
+    cat3 = Category(user_id=test_user.id, name="문화생활")
+    db_session.add_all([cat1, cat2, cat3])
+    await db_session.commit()
+    await db_session.refresh(cat1)
+    await db_session.refresh(cat2)
+    await db_session.refresh(cat3)
+
+    # 교통비 → 문화생활 → 식비 순서로 변경
+    new_order = [cat2.id, cat3.id, cat1.id]
+    response = await authenticated_client.put("/api/categories/reorder", json={"category_ids": new_order})
+    assert response.status_code == 200
+
+    data = response.json()
+    names = [item["name"] for item in data]
+    assert names[0] == "교통비"
+    assert names[1] == "문화생활"
+    assert names[2] == "식비"
+
+
+@pytest.mark.asyncio
+async def test_reorder_categories_invalid_id(authenticated_client, test_user: User, db_session):
+    """존재하지 않는 카테고리 ID로 순서 변경 시 400"""
+    response = await authenticated_client.put("/api/categories/reorder", json={"category_ids": [9999]})
+    assert response.status_code == 400
+    assert "접근할 수 없습니다" in response.json()["detail"]

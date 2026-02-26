@@ -20,6 +20,7 @@ export interface Category {
   name: string
   type: 'expense' | 'income' | 'both'
   description: string | null
+  sort_order: number
   created_at: string
 }
 
