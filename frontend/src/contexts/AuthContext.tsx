@@ -24,8 +24,15 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 function getCookieToken(): string | null {
-  const match = document.cookie.match(/(?:^|; )podo_access_token=([^;]+)/)
-  return match ? match[1] : null
+  // 1. 쿠키 우선 (Chrome/Android 등)
+  const cookieMatch = document.cookie.match(/(?:^|; )podo_access_token=([^;]+)/)
+  if (cookieMatch) return cookieMatch[1]
+  // 2. localStorage 폴백 (iOS Safari ITP가 JS 쿠키를 삭제하는 경우)
+  try {
+    return localStorage.getItem('podo_access_token')
+  } catch {
+    return null
+  }
 }
 
 /**
@@ -106,6 +113,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = () => {
     setUser(null)
     delete apiClient.defaults.headers.common['Authorization']
+    try { localStorage.removeItem('podo_access_token') } catch {}
     const authUrl = import.meta.env.VITE_AUTH_URL || 'https://auth.podonest.com'
     window.location.href = `${authUrl}/logout`
   }

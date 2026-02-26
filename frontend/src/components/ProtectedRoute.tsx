@@ -10,8 +10,13 @@ import { Loader2 } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 
 function getCookieToken(): string | null {
-  const match = document.cookie.match(/(?:^|; )podo_access_token=([^;]+)/)
-  return match ? match[1] : null
+  const cookieMatch = document.cookie.match(/(?:^|; )podo_access_token=([^;]+)/)
+  if (cookieMatch) return cookieMatch[1]
+  try {
+    return localStorage.getItem('podo_access_token')
+  } catch {
+    return null
+  }
 }
 
 /**
