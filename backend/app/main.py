@@ -72,21 +72,24 @@ async def lifespan(app: FastAPI):
         logger.info("Alembic 마이그레이션 완료: %s", result.stdout)
 
     # sort_order=0인 카테고리를 실제 사용 횟수(지출+수입)로 초기화
-    # Alembic 마이그레이션이 실패(로컬 SQLite)해도 create_all 이후 동작
+    # 테이블이 아직 없는 경우(신규 DB + Alembic cwd 불일치) 무시
     from sqlalchemy import text
 
-    async with engine.begin() as conn:
-        await conn.execute(
-            text("""
-                UPDATE categories
-                SET sort_order = (
-                    SELECT COUNT(*) FROM expenses WHERE expenses.category_id = categories.id
-                ) + (
-                    SELECT COUNT(*) FROM incomes WHERE incomes.category_id = categories.id
-                )
-                WHERE sort_order = 0
-            """)
-        )
+    try:
+        async with engine.begin() as conn:
+            await conn.execute(
+                text("""
+                    UPDATE categories
+                    SET sort_order = (
+                        SELECT COUNT(*) FROM expenses WHERE expenses.category_id = categories.id
+                    ) + (
+                        SELECT COUNT(*) FROM incomes WHERE incomes.category_id = categories.id
+                    )
+                    WHERE sort_order = 0
+                """)
+            )
+    except Exception as exc:
+        logger.warning("sort_order 초기화 건너뜀 (테이블 미존재 가능): %s", exc)
 
     yield
 
