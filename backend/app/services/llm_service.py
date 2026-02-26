@@ -80,10 +80,15 @@ class AnthropicProvider(LLMProvider):
             try:
                 response = await self.client.messages.create(
                     model=self.model,
-                    max_tokens=512,  # 여러 지출 처리를 위해 토큰 증가
+                    max_tokens=2048,  # 다수 항목(15+) 파싱 시 JSON 중간 절단 방지
                     system=get_expense_parser_prompt(),
                     messages=[{"role": "user", "content": user_input}],
                 )
+
+                # 토큰 한도 초과 감지 — JSON이 중간에 잘린 경우
+                if response.stop_reason == "max_tokens":
+                    logger.warning(f"max_tokens 초과: 응답이 잘렸습니다. 입력 길이={len(user_input)}")
+                    return {"error": "입력이 너무 길어 처리할 수 없습니다. 날짜별로 나누어 입력해주세요."}
 
                 # 텍스트 응답에서 JSON 추출
                 text = response.content[0].text.strip()
@@ -247,12 +252,17 @@ class OpenAIProvider(LLMProvider):
             try:
                 response = await self.client.chat.completions.create(
                     model=self.model,
-                    max_tokens=512,  # 여러 지출 처리를 위해 토큰 증가
+                    max_tokens=2048,  # 다수 항목(15+) 파싱 시 JSON 중간 절단 방지
                     messages=[
                         {"role": "system", "content": get_expense_parser_prompt()},
                         {"role": "user", "content": user_input},
                     ],
                 )
+
+                # 토큰 한도 초과 감지
+                if response.choices[0].finish_reason == "length":
+                    logger.warning(f"max_tokens 초과: 응답이 잘렸습니다. 입력 길이={len(user_input)}")
+                    return {"error": "입력이 너무 길어 처리할 수 없습니다. 날짜별로 나누어 입력해주세요."}
 
                 # 텍스트 응답에서 JSON 추출
                 text = response.choices[0].message.content.strip()
