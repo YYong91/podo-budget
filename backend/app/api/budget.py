@@ -4,7 +4,7 @@
 사용자별로 예산 데이터를 격리하여 관리합니다.
 """
 
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import extract, func, or_, select
@@ -134,13 +134,23 @@ async def get_budget_alerts(
     now = datetime.now()
 
     for budget in budgets:
-        # 예산 기간 내의 지출 집계
-        # 종료일이 없으면 현재까지, 있으면 종료일까지
-        end_date = budget.end_date if budget.end_date else now
-
         # 예산이 아직 시작되지 않았으면 스킵
         if budget.start_date > now:
             continue
+
+        # period에 따른 현재 집계 기간 계산
+        # monthly: 이번 달 1일 ~ 지금
+        # weekly: 이번 주 월요일 ~ 지금
+        # daily: 오늘 자정 ~ 지금
+        if budget.period == "monthly":
+            period_start = datetime(now.year, now.month, 1)
+        elif budget.period == "weekly":
+            days_since_monday = now.weekday()  # 0=월요일
+            period_start = datetime(now.year, now.month, now.day) - timedelta(days=days_since_monday)
+        else:  # daily
+            period_start = datetime(now.year, now.month, now.day)
+
+        period_end = now
 
         # 카테고리 정보 조회
         category_result = await db.execute(select(Category).where(Category.id == budget.category_id))
@@ -148,13 +158,13 @@ async def get_budget_alerts(
         if not category:
             continue
 
-        # 해당 카테고리의 기간 내 지출 합계 (사용자 필터 추가)
+        # 해당 카테고리의 현재 기간 내 지출 합계
         expense_result = await db.execute(
             select(func.sum(Expense.amount)).where(
                 Expense.user_id == current_user.id,
                 Expense.category_id == budget.category_id,
-                Expense.date >= budget.start_date,
-                Expense.date <= end_date,
+                Expense.date >= period_start,
+                Expense.date <= period_end,
             )
         )
         spent_amount = float(expense_result.scalar() or 0)
