@@ -35,8 +35,18 @@ DEFAULT_MODELS: dict[str, str] = {
 
 class LLMProvider(ABC):
     @abstractmethod
-    async def parse_expense(self, user_input: str) -> dict[str, Any] | list[dict[str, Any]]:
+    async def parse_expense(
+        self,
+        user_input: str,
+        categories: list[str] | None = None,
+        history_hints: dict[str, Any] | None = None,
+    ) -> dict[str, Any] | list[dict[str, Any]]:
         """사용자 입력을 파싱하여 지출 정보 추출
+
+        Args:
+            user_input: 사용자가 입력한 자연어 텍스트
+            categories: 사용자의 카테고리 이름 목록 (프롬프트에 주입)
+            history_hints: 과거 거래 패턴 dict (설명→카테고리, 프롬프트에 주입)
 
         Returns:
             단일 지출: dict (에러 포함 가능)
@@ -67,11 +77,17 @@ class AnthropicProvider(LLMProvider):
         self.client = anthropic.AsyncAnthropic(api_key=settings.ANTHROPIC_API_KEY)
         self.model = model or DEFAULT_MODELS["anthropic"]
 
-    async def parse_expense(self, user_input: str) -> dict[str, Any] | list[dict[str, Any]]:
+    async def parse_expense(
+        self,
+        user_input: str,
+        categories: list[str] | None = None,
+        history_hints: dict[str, Any] | None = None,
+    ) -> dict[str, Any] | list[dict[str, Any]]:
         """Claude API로 자연어 지출 입력을 구조화된 데이터로 변환
 
         단일 지출 또는 여러 지출을 파싱합니다.
         여러 지출인 경우 리스트로 반환합니다.
+        categories와 history_hints가 있으면 프롬프트에 주입하여 정확도를 높입니다.
         """
         from app.services.prompts import get_expense_parser_prompt
 
@@ -81,7 +97,7 @@ class AnthropicProvider(LLMProvider):
                 response = await self.client.messages.create(
                     model=self.model,
                     max_tokens=8192,  # Haiku 최대값 — 월간 40건+ 파싱 대응
-                    system=get_expense_parser_prompt(),
+                    system=get_expense_parser_prompt(categories=categories, history_hints=history_hints),
                     messages=[{"role": "user", "content": user_input}],
                 )
 
@@ -239,11 +255,17 @@ class OpenAIProvider(LLMProvider):
         self.client = openai.AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
         self.model = model or DEFAULT_MODELS["openai"]
 
-    async def parse_expense(self, user_input: str) -> dict[str, Any] | list[dict[str, Any]]:
+    async def parse_expense(
+        self,
+        user_input: str,
+        categories: list[str] | None = None,
+        history_hints: dict[str, Any] | None = None,
+    ) -> dict[str, Any] | list[dict[str, Any]]:
         """OpenAI API로 자연어 지출 입력을 구조화된 데이터로 변환
 
         단일 지출 또는 여러 지출을 파싱합니다.
         여러 지출인 경우 리스트로 반환합니다.
+        categories와 history_hints가 있으면 프롬프트에 주입하여 정확도를 높입니다.
         """
         from app.services.prompts import get_expense_parser_prompt
 
@@ -254,7 +276,7 @@ class OpenAIProvider(LLMProvider):
                     model=self.model,
                     max_tokens=8192,  # Haiku 최대값 — 월간 40건+ 파싱 대응
                     messages=[
-                        {"role": "system", "content": get_expense_parser_prompt()},
+                        {"role": "system", "content": get_expense_parser_prompt(categories=categories, history_hints=history_hints)},
                         {"role": "user", "content": user_input},
                     ],
                 )
@@ -344,7 +366,12 @@ class GoogleProvider(LLMProvider):
         self.model = model or DEFAULT_MODELS["google"]
         self.api_key = settings.GOOGLE_API_KEY
 
-    async def parse_expense(self, user_input: str) -> dict[str, Any] | list[dict[str, Any]]:
+    async def parse_expense(
+        self,
+        user_input: str,
+        categories: list[str] | None = None,
+        history_hints: dict[str, Any] | None = None,
+    ) -> dict[str, Any] | list[dict[str, Any]]:
         raise NotImplementedError("Google Gemini 프로바이더는 아직 구현되지 않았습니다")
 
     async def parse_image(self, image_bytes: bytes, media_type: str) -> dict[str, Any] | list[dict[str, Any]]:
@@ -358,7 +385,12 @@ class LocalLLMProvider(LLMProvider):
     def __init__(self, model: str = ""):
         self.model = model or DEFAULT_MODELS["local"]
 
-    async def parse_expense(self, user_input: str) -> dict[str, Any] | list[dict[str, Any]]:
+    async def parse_expense(
+        self,
+        user_input: str,
+        categories: list[str] | None = None,
+        history_hints: dict[str, Any] | None = None,
+    ) -> dict[str, Any] | list[dict[str, Any]]:
         raise NotImplementedError("로컬 LLM 프로바이더는 아직 구현되지 않았습니다")
 
     async def parse_image(self, image_bytes: bytes, media_type: str) -> dict[str, Any] | list[dict[str, Any]]:

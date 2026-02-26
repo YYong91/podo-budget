@@ -147,14 +147,39 @@ EXPENSE_PARSER_SYSTEM_PROMPT = """당신은 한국어 가계부 입력을 분석
 ```"""
 
 
-def get_expense_parser_prompt() -> str:
-    """오늘 날짜를 삽입한 시스템 프롬프트 반환"""
+def get_expense_parser_prompt(
+    categories: list[str] | None = None,
+    history_hints: dict[str, str] | None = None,
+) -> str:
+    """오늘 날짜 및 사용자 컨텍스트를 삽입한 시스템 프롬프트 반환
+
+    Args:
+        categories: 사용자의 카테고리 이름 목록. 제공 시 하드코딩 목록 대신 이 목록 우선 사용.
+        history_hints: 과거 거래 패턴 dict (설명 → 카테고리). 제공 시 프롬프트에 주입.
+    """
     today = date.today()
     yesterday = today - timedelta(days=1)
-    return EXPENSE_PARSER_SYSTEM_PROMPT.format(
+    prompt = EXPENSE_PARSER_SYSTEM_PROMPT.format(
         today=today.isoformat(),
         yesterday=yesterday.isoformat(),
     )
+
+    # 사용자 카테고리 목록 주입 (기존 하드코딩보다 우선)
+    if categories:
+        cats = ", ".join(categories)
+        prompt += (
+            f"\n\n## 사용자 카테고리 목록 (최우선 적용)\n"
+            f"아래 목록에서 가장 적합한 카테고리를 선택하세요. **목록에 있는 이름을 그대로** 사용합니다:\n"
+            f"{cats}\n"
+            f"목록에 없는 경우에만 새 카테고리 이름을 사용하세요."
+        )
+
+    # 히스토리 기반 패턴 주입 (유사 거래 카테고리 추론)
+    if history_hints:
+        pairs = "\n".join(f'- "{desc}" → {cat}' for desc, cat in list(history_hints.items())[:20])
+        prompt += f"\n\n## 과거 거래 패턴 (히스토리 기반)\n" f"아래 패턴을 참고하여 카테고리를 결정하세요 (유사한 설명은 같은 카테고리 사용):\n" f"{pairs}"
+
+    return prompt
 
 
 # OCR 이미지 파싱용 시스템 프롬프트

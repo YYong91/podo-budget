@@ -30,6 +30,7 @@ from app.models.user import User
 from app.schemas.chat import ChatRequest, ChatResponse, ParsedExpenseItem
 from app.schemas.expense import ExpenseResponse
 from app.schemas.income import IncomeResponse
+from app.services.category_hint_service import get_category_hints, get_user_categories
 from app.services.category_service import get_or_create_category
 from app.services.exchange_rate import get_exchange_rate
 from app.services.expense_context_detector import resolve_household_id
@@ -100,8 +101,16 @@ async def chat(
 
     llm = get_llm_provider("parse")
 
+    # 카테고리 목록 + 히스토리 패턴 로드 (LLM 프롬프트에 주입하여 정확도 향상)
+    user_categories = await get_user_categories(db, current_user.id)
+    history_hints = await get_category_hints(db, current_user.id, household_id)
+
     # LLM으로 사용자 입력 파싱
-    parsed = await llm.parse_expense(chat_request.message)
+    parsed = await llm.parse_expense(
+        chat_request.message,
+        categories=user_categories or None,
+        history_hints=history_hints or None,
+    )
 
     # 파싱 실패 처리
     if isinstance(parsed, dict) and "error" in parsed:
