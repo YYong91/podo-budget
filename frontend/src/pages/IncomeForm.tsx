@@ -170,6 +170,27 @@ export default function IncomeForm() {
     }
   }
 
+  /** 폼 입력 모드에서 새 카테고리 즉시 생성 후 적용 */
+  const handleCreateCategoryForForm = async () => {
+    const name = newCategoryName.trim()
+    if (!name) return
+    setCreatingCategory(true)
+    try {
+      const res = await categoryApi.create({ name })
+      const newCat = res.data
+      setCategories((prev) => [...prev, newCat])
+      setFormData((prev) => ({ ...prev, category_id: String(newCat.id) }))
+      setShowNewCategoryFor(null)
+      setNewCategoryName('')
+      addToast('success', `"${name}" 카테고리가 추가되었습니다`)
+    } catch (error: unknown) {
+      const errorMsg = (error as { response?: { data?: { detail?: string } } }).response?.data?.detail || '카테고리 생성에 실패했습니다'
+      addToast('error', errorMsg)
+    } finally {
+      setCreatingCategory(false)
+    }
+  }
+
   /** 프리뷰 카드에서 새 카테고리 즉시 생성 후 적용 */
   const handleCreateCategory = async (index: number) => {
     const name = newCategoryName.trim()
@@ -513,6 +534,42 @@ export default function IncomeForm() {
                 </option>
               ))}
             </select>
+            {showNewCategoryFor === -1 ? (
+              <div className="flex gap-1.5 mt-2">
+                <input
+                  type="text"
+                  value={newCategoryName}
+                  onChange={(e) => setNewCategoryName(e.target.value)}
+                  placeholder="새 카테고리 이름"
+                  className="flex-1 px-3 py-2 border border-leaf-300 rounded-lg text-sm focus:ring-2 focus:ring-leaf-500/30 focus:border-leaf-500"
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleCreateCategoryForForm() } }}
+                  autoFocus
+                />
+                <button
+                  type="button"
+                  onClick={handleCreateCategoryForForm}
+                  disabled={creatingCategory || !newCategoryName.trim()}
+                  className="px-3 py-2 text-sm font-medium text-white bg-leaf-600 rounded-lg hover:bg-leaf-700 disabled:opacity-50"
+                >
+                  {creatingCategory ? '...' : '추가'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setShowNewCategoryFor(null); setNewCategoryName('') }}
+                  className="px-3 py-2 text-sm font-medium text-warm-600 bg-warm-100 rounded-lg hover:bg-warm-200"
+                >
+                  취소
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => { setShowNewCategoryFor(-1); setNewCategoryName('') }}
+                className="mt-2 text-sm text-leaf-600 hover:text-leaf-800 font-medium"
+              >
+                + 새 카테고리
+              </button>
+            )}
           </div>
 
           {/* 날짜 (기본 오늘) */}
