@@ -113,7 +113,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = () => {
     setUser(null)
     delete apiClient.defaults.headers.common['Authorization']
-    try { localStorage.removeItem('podo_access_token') } catch {}
+    try { localStorage.removeItem('podo_access_token') } catch { /* localStorage 미지원 환경 무시 */ }
     const authUrl = import.meta.env.VITE_AUTH_URL || 'https://auth.podonest.com'
     window.location.href = `${authUrl}/logout`
   }
