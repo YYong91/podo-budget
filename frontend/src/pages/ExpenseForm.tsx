@@ -43,6 +43,10 @@ export default function ExpenseForm() {
 
   // 폼 입력 상태
   const [categories, setCategories] = useState<Category[]>([])
+  // 프리뷰 카드 인라인 카테고리 추가 상태
+  const [showNewCategoryFor, setShowNewCategoryFor] = useState<number | null>(null)
+  const [newCategoryName, setNewCategoryName] = useState('')
+  const [creatingCategory, setCreatingCategory] = useState(false)
   const [formData, setFormData] = useState({
     amount: '',
     description: '',
@@ -156,6 +160,27 @@ export default function ExpenseForm() {
       setPreviewItems(null)
     } else {
       setPreviewItems(updated)
+    }
+  }
+
+  /** 프리뷰 카드에서 새 카테고리 즉시 생성 후 적용 */
+  const handleCreateCategory = async (index: number) => {
+    const name = newCategoryName.trim()
+    if (!name) return
+    setCreatingCategory(true)
+    try {
+      const res = await categoryApi.create({ name })
+      const newCat = res.data
+      setCategories((prev) => [...prev, newCat].sort((a, b) => a.name.localeCompare(b.name)))
+      updatePreviewItem(index, 'category_id', newCat.id)
+      setShowNewCategoryFor(null)
+      setNewCategoryName('')
+      addToast('success', `"${name}" 카테고리가 추가되었습니다`)
+    } catch (error: unknown) {
+      const errorMsg = (error as { response?: { data?: { detail?: string } } }).response?.data?.detail || '카테고리 생성에 실패했습니다'
+      addToast('error', errorMsg)
+    } finally {
+      setCreatingCategory(false)
     }
   }
 
@@ -465,6 +490,42 @@ export default function ExpenseForm() {
                       <option key={cat.id} value={cat.id}>{cat.name}</option>
                     ))}
                   </select>
+                  {showNewCategoryFor === index ? (
+                    <div className="flex gap-1.5 mt-1.5">
+                      <input
+                        type="text"
+                        value={newCategoryName}
+                        onChange={(e) => setNewCategoryName(e.target.value)}
+                        placeholder="새 카테고리 이름"
+                        className="flex-1 px-2 py-1.5 border border-grape-300 rounded-lg text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
+                        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleCreateCategory(index) } }}
+                        autoFocus
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleCreateCategory(index)}
+                        disabled={creatingCategory || !newCategoryName.trim()}
+                        className="px-2.5 py-1.5 text-xs font-medium text-white bg-grape-600 rounded-lg hover:bg-grape-700 disabled:opacity-50"
+                      >
+                        {creatingCategory ? '...' : '추가'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setShowNewCategoryFor(null); setNewCategoryName('') }}
+                        className="px-2.5 py-1.5 text-xs font-medium text-warm-600 bg-warm-100 rounded-lg hover:bg-warm-200"
+                      >
+                        취소
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => { setShowNewCategoryFor(index); setNewCategoryName('') }}
+                      className="mt-1.5 text-xs text-grape-600 hover:text-grape-800 font-medium"
+                    >
+                      + 새 카테고리
+                    </button>
+                  )}
                 </div>
 
                 <div className="sm:col-span-2">
@@ -574,6 +635,42 @@ export default function ExpenseForm() {
                       <option key={cat.id} value={cat.id}>{cat.name}</option>
                     ))}
                   </select>
+                  {showNewCategoryFor === index ? (
+                    <div className="flex gap-1.5 mt-1.5">
+                      <input
+                        type="text"
+                        value={newCategoryName}
+                        onChange={(e) => setNewCategoryName(e.target.value)}
+                        placeholder="새 카테고리 이름"
+                        className="flex-1 px-2 py-1.5 border border-grape-300 rounded-lg text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
+                        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleCreateCategory(index) } }}
+                        autoFocus
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleCreateCategory(index)}
+                        disabled={creatingCategory || !newCategoryName.trim()}
+                        className="px-2.5 py-1.5 text-xs font-medium text-white bg-grape-600 rounded-lg hover:bg-grape-700 disabled:opacity-50"
+                      >
+                        {creatingCategory ? '...' : '추가'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setShowNewCategoryFor(null); setNewCategoryName('') }}
+                        className="px-2.5 py-1.5 text-xs font-medium text-warm-600 bg-warm-100 rounded-lg hover:bg-warm-200"
+                      >
+                        취소
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => { setShowNewCategoryFor(index); setNewCategoryName('') }}
+                      className="mt-1.5 text-xs text-grape-600 hover:text-grape-800 font-medium"
+                    >
+                      + 새 카테고리
+                    </button>
+                  )}
                 </div>
 
                 {/* 메모 (선택) */}
