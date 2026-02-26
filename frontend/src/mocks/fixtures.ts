@@ -15,6 +15,7 @@ export const mockCategories: Category[] = [
     name: '식비',
     type: 'expense',
     description: '음식 및 식사',
+    sort_order: 3,
     created_at: '2024-01-01T00:00:00Z',
   },
   {
@@ -22,6 +23,7 @@ export const mockCategories: Category[] = [
     name: '교통',
     type: 'expense',
     description: '대중교통 및 택시',
+    sort_order: 2,
     created_at: '2024-01-01T00:00:00Z',
   },
   {
@@ -29,6 +31,7 @@ export const mockCategories: Category[] = [
     name: '쇼핑',
     type: 'both',
     description: null,
+    sort_order: 1,
     created_at: '2024-01-01T00:00:00Z',
   },
 ]
@@ -148,6 +151,7 @@ export const mockIncomeCategoriesAll: Category[] = [
     name: '급여',
     type: 'income',
     description: '월급 및 급여',
+    sort_order: 0,
     created_at: '2024-01-01T00:00:00Z',
   },
   {
@@ -155,6 +159,7 @@ export const mockIncomeCategoriesAll: Category[] = [
     name: '부수입',
     type: 'income',
     description: '프리랜스 등 부수입',
+    sort_order: 0,
     created_at: '2024-01-01T00:00:00Z',
   },
 ]
