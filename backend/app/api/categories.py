@@ -37,7 +37,7 @@ async def get_categories(
     result = await db.execute(
         select(Category)
         .where(or_(Category.user_id == None, Category.user_id == current_user.id))  # noqa: E711
-        .order_by(Category.name)
+        .order_by(Category.sort_order.desc(), Category.name)
     )
     return result.scalars().all()
 

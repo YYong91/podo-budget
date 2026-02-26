@@ -6,7 +6,7 @@
 - household_id가 있음: 가구 공유 카테고리
 """
 
-from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, UniqueConstraint
+from sqlalchemy import BigInteger, Column, DateTime, ForeignKey, Integer, String, UniqueConstraint
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
@@ -34,6 +34,7 @@ class Category(Base):
     name = Column(String, nullable=False)
     description = Column(String, nullable=True)
     type = Column(String(10), nullable=False, default="expense")  # expense | income | both
+    sort_order = Column(BigInteger, nullable=False, default=0, server_default="0")  # 사용 횟수 기반 정렬 (높을수록 앞)
     created_at = Column(DateTime, default=func.now())
 
     # Relationships
