@@ -70,6 +70,24 @@ async def lifespan(app: FastAPI):
             await conn.run_sync(Base.metadata.create_all)
     else:
         logger.info("Alembic 마이그레이션 완료: %s", result.stdout)
+
+    # sort_order=0인 카테고리를 실제 사용 횟수(지출+수입)로 초기화
+    # Alembic 마이그레이션이 실패(로컬 SQLite)해도 create_all 이후 동작
+    from sqlalchemy import text
+
+    async with engine.begin() as conn:
+        await conn.execute(
+            text("""
+                UPDATE categories
+                SET sort_order = (
+                    SELECT COUNT(*) FROM expenses WHERE expenses.category_id = categories.id
+                ) + (
+                    SELECT COUNT(*) FROM incomes WHERE incomes.category_id = categories.id
+                )
+                WHERE sort_order = 0
+            """)
+        )
+
     yield
 
 

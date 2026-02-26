@@ -178,7 +178,7 @@ export default function IncomeForm() {
     try {
       const res = await categoryApi.create({ name })
       const newCat = res.data
-      setCategories((prev) => [...prev, newCat].sort((a, b) => a.name.localeCompare(b.name)))
+      setCategories((prev) => [...prev, newCat])
       updatePreviewItem(index, 'category_id', newCat.id)
       setShowNewCategoryFor(null)
       setNewCategoryName('')
