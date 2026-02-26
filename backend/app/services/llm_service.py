@@ -80,7 +80,7 @@ class AnthropicProvider(LLMProvider):
             try:
                 response = await self.client.messages.create(
                     model=self.model,
-                    max_tokens=2048,  # 다수 항목(15+) 파싱 시 JSON 중간 절단 방지
+                    max_tokens=8192,  # Haiku 최대값 — 월간 40건+ 파싱 대응
                     system=get_expense_parser_prompt(),
                     messages=[{"role": "user", "content": user_input}],
                 )
@@ -252,7 +252,7 @@ class OpenAIProvider(LLMProvider):
             try:
                 response = await self.client.chat.completions.create(
                     model=self.model,
-                    max_tokens=2048,  # 다수 항목(15+) 파싱 시 JSON 중간 절단 방지
+                    max_tokens=8192,  # Haiku 최대값 — 월간 40건+ 파싱 대응
                     messages=[
                         {"role": "system", "content": get_expense_parser_prompt()},
                         {"role": "user", "content": user_input},

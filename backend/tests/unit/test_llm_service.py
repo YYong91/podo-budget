@@ -347,7 +347,7 @@ async def test_anthropic_parse_expense_max_tokens_exceeded():
 
 @pytest.mark.asyncio
 async def test_anthropic_parse_expense_large_input():
-    """다수 항목(13건) 파싱 — max_tokens=2048으로 정상 처리"""
+    """다수 항목(13건) 파싱 — max_tokens=8192으로 정상 처리"""
     large_list = [
         {"amount": 11680, "category": "교통비", "description": "전기차충전", "date": "2026-02-11", "memo": ""},
         {"amount": 18100, "category": "식비", "description": "쿠팡이츠", "date": "2026-02-12", "memo": ""},
@@ -391,6 +391,6 @@ async def test_anthropic_parse_expense_large_input():
             assert result[0]["date"] == "2026-02-11"
             assert result[1]["date"] == "2026-02-12"  # 날짜 상속
 
-            # max_tokens=2048로 호출됐는지 검증
+            # max_tokens=8192(Haiku 최대)로 호출됐는지 검증
             call_kwargs = mock_client.messages.create.call_args[1]
-            assert call_kwargs["max_tokens"] == 2048
+            assert call_kwargs["max_tokens"] == 8192
