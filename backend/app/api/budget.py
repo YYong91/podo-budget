@@ -99,88 +99,9 @@ async def create_budget(
     return new_budget
 
 
-@router.put("/{budget_id}", response_model=BudgetResponse)
-async def update_budget(
-    budget_id: int,
-    budget_data: BudgetUpdate,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
-):
-    """예산 수정
-
-    현재 로그인한 사용자의 예산만 수정할 수 있습니다.
-    제공된 필드만 수정됩니다.
-
-    Args:
-        budget_id: 예산 ID
-        budget_data: 수정할 필드들
-        current_user: 현재 인증된 사용자
-        db: 데이터베이스 세션
-
-    Returns:
-        수정된 예산 정보
-
-    Raises:
-        HTTPException 404: 예산을 찾을 수 없거나 소유자가 아닌 경우
-        HTTPException 400: 종료일이 시작일보다 이른 경우
-    """
-    # 예산 조회 (소유자 확인 포함)
-    result = await db.execute(select(Budget).where(Budget.id == budget_id, Budget.user_id == current_user.id))
-    budget = result.scalar_one_or_none()
-
-    if not budget:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="예산을 찾을 수 없습니다",
-        )
-
-    # 제공된 필드만 업데이트
-    update_data = budget_data.model_dump(exclude_unset=True)
-    for field, value in update_data.items():
-        setattr(budget, field, value)
-
-    # 종료일 검증
-    if budget.end_date and budget.end_date < budget.start_date:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="종료일은 시작일 이후여야 합니다",
-        )
-
-    await db.commit()
-    await db.refresh(budget)
-
-    return budget
-
-
-@router.delete("/{budget_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_budget(
-    budget_id: int,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
-):
-    """예산 삭제
-
-    현재 로그인한 사용자의 예산만 삭제할 수 있습니다.
-
-    Args:
-        budget_id: 예산 ID
-        current_user: 현재 인증된 사용자
-        db: 데이터베이스 세션
-
-    Raises:
-        HTTPException 404: 예산을 찾을 수 없거나 소유자가 아닌 경우
-    """
-    result = await db.execute(select(Budget).where(Budget.id == budget_id, Budget.user_id == current_user.id))
-    budget = result.scalar_one_or_none()
-
-    if not budget:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="예산을 찾을 수 없습니다",
-        )
-
-    await db.delete(budget)
-    await db.commit()
+# NOTE: 고정 경로 엔드포인트(alerts, category-overview)를 반드시 /{budget_id} 앞에 정의해야 함.
+# FastAPI 0.109 (Starlette 0.35)에서는 /{budget_id} partial match 후 탐색을 멈춰
+# 뒤에 정의된 고정 경로가 Method Not Allowed를 반환하는 버그가 있음.
 
 
 @router.get("/alerts", response_model=list[BudgetAlert])
@@ -358,3 +279,87 @@ async def get_category_overview(
         )
 
     return overview
+
+
+@router.put("/{budget_id}", response_model=BudgetResponse)
+async def update_budget(
+    budget_id: int,
+    budget_data: BudgetUpdate,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """예산 수정
+
+    현재 로그인한 사용자의 예산만 수정할 수 있습니다.
+    제공된 필드만 수정됩니다.
+
+    Args:
+        budget_id: 예산 ID
+        budget_data: 수정할 필드들
+        current_user: 현재 인증된 사용자
+        db: 데이터베이스 세션
+
+    Returns:
+        수정된 예산 정보
+
+    Raises:
+        HTTPException 404: 예산을 찾을 수 없거나 소유자가 아닌 경우
+        HTTPException 400: 종료일이 시작일보다 이른 경우
+    """
+    # 예산 조회 (소유자 확인 포함)
+    result = await db.execute(select(Budget).where(Budget.id == budget_id, Budget.user_id == current_user.id))
+    budget = result.scalar_one_or_none()
+
+    if not budget:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="예산을 찾을 수 없습니다",
+        )
+
+    # 제공된 필드만 업데이트
+    update_data = budget_data.model_dump(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(budget, field, value)
+
+    # 종료일 검증
+    if budget.end_date and budget.end_date < budget.start_date:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="종료일은 시작일 이후여야 합니다",
+        )
+
+    await db.commit()
+    await db.refresh(budget)
+
+    return budget
+
+
+@router.delete("/{budget_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_budget(
+    budget_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """예산 삭제
+
+    현재 로그인한 사용자의 예산만 삭제할 수 있습니다.
+
+    Args:
+        budget_id: 예산 ID
+        current_user: 현재 인증된 사용자
+        db: 데이터베이스 세션
+
+    Raises:
+        HTTPException 404: 예산을 찾을 수 없거나 소유자가 아닌 경우
+    """
+    result = await db.execute(select(Budget).where(Budget.id == budget_id, Budget.user_id == current_user.id))
+    budget = result.scalar_one_or_none()
+
+    if not budget:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="예산을 찾을 수 없습니다",
+        )
+
+    await db.delete(budget)
+    await db.commit()
