@@ -1,57 +1,54 @@
 /**
  * @file BudgetManager.tsx
  * @description 예산 관리 페이지
- * 카테고리별 예산 설정, 지출 현황 조회, 초과/경고 알림 표시 기능을 제공한다.
+ * 카테고리 전체 목록을 한 화면에 표시하고, 각 카테고리 옆에 예산 금액을 바로 입력할 수 있다.
+ * 참고용으로 카테고리별 최근 3개월 실제 지출액을 표시한다.
  */
 
 import { useState, useEffect } from 'react'
 import { Bell, AlertTriangle } from 'lucide-react'
 import { useToast } from '../hooks/useToast'
 import budgetApi from '../api/budgets'
-import { categoryApi } from '../api/categories'
 import EmptyState from '../components/EmptyState'
 import ErrorState from '../components/ErrorState'
-import type { Budget, BudgetAlert, Category, BudgetCreateRequest } from '../types'
+import type { BudgetAlert, CategoryBudgetOverview } from '../types'
 
 export default function BudgetManager() {
   const { addToast } = useToast()
 
-  const [budgets, setBudgets] = useState<Budget[]>([])
+  const [overview, setOverview] = useState<CategoryBudgetOverview[]>([])
   const [alerts, setAlerts] = useState<BudgetAlert[]>([])
-  const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  const [showModal, setShowModal] = useState(false)
-  const [editingBudget, setEditingBudget] = useState<Budget | null>(null)
-
-  // 폼 상태
-  const [formData, setFormData] = useState({
-    category_id: '',
-    amount: '',
-    period: 'monthly' as 'monthly' | 'weekly' | 'daily',
-    start_date: new Date().toISOString().slice(0, 10),
-    end_date: '',
-    alert_threshold: '80',
-  })
+  // 카테고리별 로컬 입력 상태 { [categoryId]: 금액 문자열 }
+  const [localAmounts, setLocalAmounts] = useState<Record<number, string>>({})
+  // 저장 중인 카테고리 ID 집합
+  const [savingIds, setSavingIds] = useState<Set<number>>(new Set())
 
   /**
-   * 데이터 로드
+   * 데이터 로드 — 카테고리 개요와 알림을 동시에 가져온다
    */
   const loadData = async () => {
     try {
       setLoading(true)
       setError(null)
 
-      const [budgetsRes, alertsRes, categoriesRes] = await Promise.all([
-        budgetApi.getBudgets(),
+      const [overviewRes, alertsRes] = await Promise.all([
+        budgetApi.getCategoryOverview(),
         budgetApi.getBudgetAlerts(),
-        categoryApi.getAll(),
       ])
 
-      setBudgets(budgetsRes.data)
+      setOverview(overviewRes.data)
       setAlerts(alertsRes.data)
-      setCategories(categoriesRes.data)
+
+      // 현재 예산 금액으로 로컬 상태 초기화
+      const amounts: Record<number, string> = {}
+      overviewRes.data.forEach((cat) => {
+        amounts[cat.category_id] =
+          cat.current_budget_amount != null ? String(cat.current_budget_amount) : ''
+      })
+      setLocalAmounts(amounts)
     } catch (err) {
       console.error('Failed to load data:', err)
       setError('데이터를 불러오는데 실패했습니다')
@@ -65,124 +62,72 @@ export default function BudgetManager() {
   }, [])
 
   /**
-   * 예산 추가 모달 열기
+   * 입력값 변경 핸들러
    */
-  const handleAddClick = () => {
-    setEditingBudget(null)
-    setFormData({
-      category_id: '',
-      amount: '',
-      period: 'monthly',
-      start_date: new Date().toISOString().slice(0, 10),
-      end_date: '',
-      alert_threshold: '80',
-    })
-    setShowModal(true)
+  const handleAmountChange = (categoryId: number, value: string) => {
+    setLocalAmounts((prev) => ({ ...prev, [categoryId]: value }))
   }
 
   /**
-   * 예산 수정 모달 열기
+   * 현재 예산과 로컬 입력값이 다른지 확인
    */
-  const handleEditClick = (budget: Budget) => {
-    setEditingBudget(budget)
-    setFormData({
-      category_id: String(budget.category_id),
-      amount: String(budget.amount),
-      period: budget.period,
-      start_date: budget.start_date,
-      end_date: budget.end_date || '',
-      alert_threshold: String(budget.alert_threshold || 80),
-    })
-    setShowModal(true)
+  const isDirty = (item: CategoryBudgetOverview): boolean => {
+    const current =
+      item.current_budget_amount != null ? String(item.current_budget_amount) : ''
+    const local = localAmounts[item.category_id] ?? ''
+    return current !== local
   }
 
   /**
-   * 폼 제출 핸들러
+   * 예산 저장 핸들러
+   * - 빈 값: 기존 예산 삭제
+   * - 기존 예산 있음: 금액 수정
+   * - 기존 예산 없음: 새로 생성 (월간, 오늘부터, 알림 80% 기본값)
    */
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleSave = async (item: CategoryBudgetOverview) => {
+    const amountStr = localAmounts[item.category_id] ?? ''
+    const numAmount = Number(amountStr)
 
-    if (!formData.category_id || !formData.amount) {
-      addToast('error', '카테고리와 금액은 필수입니다')
-      return
-    }
-
+    setSavingIds((prev) => new Set([...prev, item.category_id]))
     try {
-      const data: BudgetCreateRequest = {
-        category_id: Number(formData.category_id),
-        amount: Number(formData.amount),
-        period: formData.period,
-        start_date: formData.start_date,
-        ...(formData.end_date && { end_date: formData.end_date }),
-        ...(formData.alert_threshold && { alert_threshold: Number(formData.alert_threshold) }),
-      }
-
-      if (editingBudget) {
-        await budgetApi.updateBudget(editingBudget.id, data)
-        addToast('success', '예산이 수정되었습니다')
+      if (!amountStr || numAmount <= 0) {
+        // 빈 값이면 기존 예산 삭제
+        if (item.current_budget_id) {
+          await budgetApi.deleteBudget(item.current_budget_id)
+          addToast('success', '예산이 삭제되었습니다')
+        }
+      } else if (item.current_budget_id) {
+        // 기존 예산 수정
+        await budgetApi.updateBudget(item.current_budget_id, { amount: numAmount })
+        addToast('success', '예산이 저장되었습니다')
       } else {
-        await budgetApi.createBudget(data)
-        addToast('success', '예산이 추가되었습니다')
+        // 새 예산 생성 — 월간, 오늘부터, 알림 80% 기본값
+        await budgetApi.createBudget({
+          category_id: item.category_id,
+          amount: numAmount,
+          period: 'monthly',
+          start_date: new Date().toISOString(),
+        })
+        addToast('success', '예산이 저장되었습니다')
       }
-
-      setShowModal(false)
-      loadData()
+      await loadData()
     } catch (err) {
       console.error('Failed to save budget:', err)
       addToast('error', '예산 저장에 실패했습니다')
+    } finally {
+      setSavingIds((prev) => {
+        const next = new Set(prev)
+        next.delete(item.category_id)
+        return next
+      })
     }
-  }
-
-  /**
-   * 예산 삭제 핸들러
-   */
-  const handleDelete = async (id: number) => {
-    if (!confirm('정말 이 예산을 삭제하시겠습니까?')) {
-      return
-    }
-
-    try {
-      await budgetApi.deleteBudget(id)
-      addToast('success', '예산이 삭제되었습니다')
-      loadData()
-    } catch (err) {
-      console.error('Failed to delete budget:', err)
-      addToast('error', '예산 삭제에 실패했습니다')
-    }
-  }
-
-  /**
-   * 카테고리 이름 조회
-   */
-  const getCategoryName = (categoryId: number): string => {
-    return categories.find((c) => c.id === categoryId)?.name || '알 수 없음'
   }
 
   /**
    * 금액 포맷팅
    */
-  const formatAmount = (amount: number): string => {
-    return `₩${amount.toLocaleString('ko-KR')}`
-  }
-
-  /**
-   * 날짜 포맷팅
-   */
-  const formatDate = (dateStr: string): string => {
-    return dateStr.slice(0, 10).replace(/-/g, '.')
-  }
-
-  /**
-   * 기간 한글 변환
-   */
-  const formatPeriod = (period: string): string => {
-    const map: Record<string, string> = {
-      monthly: '월간',
-      weekly: '주간',
-      daily: '일간',
-    }
-    return map[period] || period
-  }
+  const formatAmount = (amount: number): string =>
+    `₩${amount.toLocaleString('ko-KR')}`
 
   /**
    * 프로그레스바 색상 결정
@@ -208,17 +153,11 @@ export default function BudgetManager() {
   return (
     <div className="space-y-6">
       {/* 헤더 */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-grape-700">예산 관리</h1>
-          <p className="text-sm text-warm-500 mt-1">카테고리별 예산을 설정하고 지출 현황을 확인하세요</p>
-        </div>
-        <button
-          onClick={handleAddClick}
-          className="px-4 py-2 text-sm font-medium text-white bg-grape-600 rounded-lg hover:bg-grape-700 transition-colors"
-        >
-          + 예산 추가
-        </button>
+      <div>
+        <h1 className="text-xl font-bold text-grape-700">예산 관리</h1>
+        <p className="text-sm text-warm-500 mt-1">
+          카테고리별 예산을 한 번에 설정하세요
+        </p>
       </div>
 
       {/* 알림 카드 */}
@@ -284,226 +223,69 @@ export default function BudgetManager() {
         </div>
       )}
 
-      {/* 예산 목록 */}
-      {budgets.length === 0 ? (
+      {/* 카테고리별 예산 인라인 편집 */}
+      {overview.length === 0 ? (
         <EmptyState
-          title="아직 설정된 예산이 없습니다"
-          description="예산을 추가하여 지출을 계획하고 관리해보세요"
-          action={{
-            label: '예산 추가하기',
-            onClick: handleAddClick,
-          }}
+          title="등록된 카테고리가 없습니다"
+          description="카테고리 관리 페이지에서 카테고리를 먼저 추가해주세요"
         />
       ) : (
         <div className="bg-white rounded-2xl shadow-sm border border-warm-200 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-warm-50 border-b border-warm-200">
-                <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-warm-500 uppercase tracking-wider">
-                    카테고리
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-warm-500 uppercase tracking-wider">
-                    금액
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-warm-500 uppercase tracking-wider">
-                    기간
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-warm-500 uppercase tracking-wider">
-                    시작일
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-warm-500 uppercase tracking-wider">
-                    종료일
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-warm-500 uppercase tracking-wider">
-                    알림 임계값
-                  </th>
-                  <th className="px-4 py-3 text-right text-xs font-medium text-warm-500 uppercase tracking-wider">
-                    작업
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-warm-200">
-                {budgets.map((budget) => (
-                  <tr key={budget.id} className="hover:bg-warm-50">
-                    <td className="px-4 py-3 text-sm font-medium text-warm-900">
-                      {getCategoryName(budget.category_id)}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-warm-900">
-                      {formatAmount(budget.amount)}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-warm-600">
-                      {formatPeriod(budget.period)}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-warm-600">
-                      {formatDate(budget.start_date)}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-warm-600">
-                      {budget.end_date ? formatDate(budget.end_date) : '-'}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-warm-600">
-                      {budget.alert_threshold ? `${budget.alert_threshold}%` : '-'}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-right">
-                      <button
-                        onClick={() => handleEditClick(budget)}
-                        className="text-grape-600 hover:text-grape-700 font-medium mr-3"
-                      >
-                        수정
-                      </button>
-                      <button
-                        onClick={() => handleDelete(budget.id)}
-                        className="text-rose-600 hover:text-rose-700 font-medium"
-                      >
-                        삭제
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="px-5 py-4 border-b border-warm-100">
+            <h2 className="text-base font-semibold text-warm-900">카테고리별 예산</h2>
+            <p className="text-xs text-warm-400 mt-0.5">
+              금액을 입력 후 저장 버튼을 누르세요 · 비우면 예산 삭제
+            </p>
           </div>
-        </div>
-      )}
+          <div className="divide-y divide-warm-100">
+            {overview.map((item) => (
+              <div key={item.category_id} className="px-5 py-4">
+                <div className="flex items-center gap-3">
+                  {/* 카테고리 이름 */}
+                  <span className="w-14 font-medium text-warm-900 shrink-0 text-sm truncate">
+                    {item.category_name}
+                  </span>
 
-      {/* 예산 추가/수정 모달 */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6">
-            <h2 className="text-xl font-bold text-warm-900 mb-4">
-              {editingBudget ? '예산 수정' : '예산 추가'}
-            </h2>
+                  {/* 최근 3개월 지출 — 데스크톱 */}
+                  <div className="flex-1 text-xs text-warm-400 min-w-0">
+                    {item.monthly_spending.length > 0 ? (
+                      <span>
+                        {item.monthly_spending
+                          .slice(0, 3)
+                          .map((s) => `${s.month}월 ${s.amount.toLocaleString('ko-KR')}원`)
+                          .join(' / ')}
+                      </span>
+                    ) : (
+                      <span className="text-warm-300">지출 내역 없음</span>
+                    )}
+                  </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {/* 카테고리 선택 */}
-              <div>
-                <label htmlFor="category" className="block text-sm font-medium text-warm-700 mb-1">
-                  카테고리 *
-                </label>
-                <select
-                  id="category"
-                  value={formData.category_id}
-                  onChange={(e) => setFormData({ ...formData, category_id: e.target.value })}
-                  className="w-full px-3 py-2 border border-warm-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-grape-500"
-                  required
-                >
-                  <option value="">선택하세요</option>
-                  {categories.map((cat) => (
-                    <option key={cat.id} value={cat.id}>
-                      {cat.name}
-                    </option>
-                  ))}
-                </select>
+                  {/* 예산 입력 + 저장 버튼 */}
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <input
+                      type="number"
+                      min="0"
+                      step="1000"
+                      value={localAmounts[item.category_id] ?? ''}
+                      onChange={(e) => handleAmountChange(item.category_id, e.target.value)}
+                      className="w-28 px-2 py-1.5 text-sm border border-warm-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-grape-500 text-right"
+                      placeholder="예산 없음"
+                      aria-label={`${item.category_name} 예산`}
+                    />
+                    <span className="text-xs text-warm-500 shrink-0">원</span>
+                    {isDirty(item) && (
+                      <button
+                        onClick={() => handleSave(item)}
+                        disabled={savingIds.has(item.category_id)}
+                        className="px-3 py-1.5 text-xs font-medium text-white bg-grape-600 rounded-lg hover:bg-grape-700 disabled:opacity-50 transition-colors whitespace-nowrap"
+                      >
+                        {savingIds.has(item.category_id) ? '저장 중...' : '저장'}
+                      </button>
+                    )}
+                  </div>
+                </div>
               </div>
-
-              {/* 금액 입력 */}
-              <div>
-                <label htmlFor="amount" className="block text-sm font-medium text-warm-700 mb-1">
-                  금액 *
-                </label>
-                <input
-                  id="amount"
-                  type="number"
-                  min="0"
-                  step="1000"
-                  value={formData.amount}
-                  onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-                  className="w-full px-3 py-2 border border-warm-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-grape-500"
-                  placeholder="0"
-                  required
-                />
-              </div>
-
-              {/* 기간 선택 */}
-              <div>
-                <label htmlFor="period" className="block text-sm font-medium text-warm-700 mb-1">
-                  기간
-                </label>
-                <select
-                  id="period"
-                  value={formData.period}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      period: e.target.value as 'monthly' | 'weekly' | 'daily',
-                    })
-                  }
-                  className="w-full px-3 py-2 border border-warm-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-grape-500"
-                >
-                  <option value="monthly">월간</option>
-                  <option value="weekly">주간</option>
-                  <option value="daily">일간</option>
-                </select>
-              </div>
-
-              {/* 시작일 */}
-              <div>
-                <label htmlFor="start_date" className="block text-sm font-medium text-warm-700 mb-1">
-                  시작일
-                </label>
-                <input
-                  id="start_date"
-                  type="date"
-                  value={formData.start_date}
-                  onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
-                  className="w-full px-3 py-2 border border-warm-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-grape-500"
-                />
-              </div>
-
-              {/* 종료일 */}
-              <div>
-                <label htmlFor="end_date" className="block text-sm font-medium text-warm-700 mb-1">
-                  종료일 (선택)
-                </label>
-                <input
-                  id="end_date"
-                  type="date"
-                  value={formData.end_date}
-                  onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
-                  className="w-full px-3 py-2 border border-warm-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-grape-500"
-                />
-              </div>
-
-              {/* 알림 임계값 */}
-              <div>
-                <label
-                  htmlFor="alert_threshold"
-                  className="block text-sm font-medium text-warm-700 mb-1"
-                >
-                  알림 임계값 (%)
-                </label>
-                <input
-                  id="alert_threshold"
-                  type="number"
-                  min="0"
-                  max="100"
-                  value={formData.alert_threshold}
-                  onChange={(e) => setFormData({ ...formData, alert_threshold: e.target.value })}
-                  className="w-full px-3 py-2 border border-warm-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-grape-500"
-                  placeholder="80"
-                />
-                <p className="text-xs text-warm-500 mt-1">
-                  예산의 이 비율을 초과하면 경고를 표시합니다
-                </p>
-              </div>
-
-              {/* 버튼 */}
-              <div className="flex gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setShowModal(false)}
-                  className="flex-1 px-4 py-2 text-sm font-medium text-warm-700 bg-white border border-warm-300 rounded-lg hover:bg-warm-50 transition-colors"
-                >
-                  취소
-                </button>
-                <button
-                  type="submit"
-                  className="flex-1 px-4 py-2 text-sm font-medium text-white bg-grape-600 rounded-lg hover:bg-grape-700 transition-colors"
-                >
-                  {editingBudget ? '수정' : '추가'}
-                </button>
-              </div>
-            </form>
+            ))}
           </div>
         </div>
       )}

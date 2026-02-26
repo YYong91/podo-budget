@@ -146,6 +146,21 @@ export interface BudgetAlert {
   is_warning: boolean
 }
 
+export interface MonthlySpending {
+  year: number
+  month: number
+  amount: number
+}
+
+export interface CategoryBudgetOverview {
+  category_id: number
+  category_name: string
+  monthly_spending: MonthlySpending[]
+  current_budget_id: number | null
+  current_budget_amount: number | null
+  alert_threshold: number | null
+}
+
 /* 통계 관련 타입 */
 
 export interface CategoryStats {

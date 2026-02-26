@@ -4,7 +4,7 @@
  * 예산 CRUD 및 알림 조회 기능을 제공한다.
  */
 
-import type { Budget, BudgetCreateRequest, BudgetUpdateRequest, BudgetAlert } from '../types'
+import type { Budget, BudgetCreateRequest, BudgetUpdateRequest, BudgetAlert, CategoryBudgetOverview } from '../types'
 import apiClient from './client'
 
 /**
@@ -45,12 +45,21 @@ export const deleteBudget = (id: number) =>
 export const getBudgetAlerts = () =>
   apiClient.get<BudgetAlert[]>('/budgets/alerts')
 
+/**
+ * 카테고리별 예산 개요 조회 API
+ * 전체 카테고리 + 최근 3개월 지출 + 현재 예산 정보를 반환한다
+ * @returns 카테고리별 예산 개요 목록
+ */
+export const getCategoryOverview = () =>
+  apiClient.get<CategoryBudgetOverview[]>('/budgets/category-overview')
+
 const budgetApi = {
   getBudgets,
   createBudget,
   updateBudget,
   deleteBudget,
   getBudgetAlerts,
+  getCategoryOverview,
 }
 
 export default budgetApi

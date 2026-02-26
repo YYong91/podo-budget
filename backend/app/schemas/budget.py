@@ -59,6 +59,34 @@ class BudgetResponse(BaseModel):
         from_attributes = True
 
 
+class MonthlySpending(BaseModel):
+    """월별 지출 집계"""
+
+    year: int
+    month: int
+    amount: float
+
+
+class CategoryBudgetOverview(BaseModel):
+    """카테고리별 예산 개요 — 인라인 예산 편집 화면용
+
+    Attributes:
+        category_id: 카테고리 ID
+        category_name: 카테고리 이름
+        monthly_spending: 최근 3개월 지출 (최신순)
+        current_budget_id: 현재 예산 ID (없으면 None)
+        current_budget_amount: 현재 예산 금액 (없으면 None)
+        alert_threshold: 알림 임계값 0~1 (없으면 None)
+    """
+
+    category_id: int
+    category_name: str
+    monthly_spending: list[MonthlySpending]
+    current_budget_id: int | None = None
+    current_budget_amount: float | None = None
+    alert_threshold: float | None = None
+
+
 class BudgetAlert(BaseModel):
     """예산 초과/경고 알림 스키마
 

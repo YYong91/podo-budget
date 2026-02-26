@@ -1,7 +1,7 @@
 /**
  * @file BudgetManager.test.tsx
  * @description BudgetManager 예산 관리 페이지 테스트
- * 예산 목록, 알림, 추가 모달, 에러/빈 상태를 테스트한다.
+ * 카테고리 개요 로드, 인라인 예산 편집, 알림, 에러/빈 상태를 테스트한다.
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
@@ -10,7 +10,7 @@ import userEvent from '@testing-library/user-event'
 import BudgetManager from '../BudgetManager'
 import { server } from '../../mocks/server'
 import { http, HttpResponse } from 'msw'
-import type { Budget, BudgetAlert, Category } from '../../types'
+import type { BudgetAlert, CategoryBudgetOverview } from '../../types'
 
 /**
  * addToast 모킹 함수
@@ -28,39 +28,28 @@ vi.mock('../../hooks/useToast', () => ({
 }))
 
 /**
- * 테스트용 카테고리 데이터
+ * 테스트용 카테고리 개요 데이터
  */
-const mockCategories: Category[] = [
-  { id: 1, name: '식비', type: 'expense', description: '음식 및 식사', created_at: '2024-01-01T00:00:00Z' },
-  { id: 2, name: '교통', type: 'expense', description: '대중교통 및 택시', created_at: '2024-01-01T00:00:00Z' },
-  { id: 3, name: '쇼핑', type: 'both', description: null, created_at: '2024-01-01T00:00:00Z' },
-]
-
-/**
- * 테스트용 예산 데이터
- */
-const mockBudgets: Budget[] = [
+const mockOverview: CategoryBudgetOverview[] = [
   {
-    id: 1,
     category_id: 1,
-    amount: 300000,
-    period: 'monthly',
-    start_date: '2024-01-01',
-    end_date: null,
-    alert_threshold: 80,
-    created_at: '2024-01-01T00:00:00Z',
-    updated_at: '2024-01-01T00:00:00Z',
+    category_name: '식비',
+    monthly_spending: [
+      { year: 2024, month: 1, amount: 195000 },
+      { year: 2023, month: 12, amount: 210000 },
+      { year: 2023, month: 11, amount: 180000 },
+    ],
+    current_budget_id: 1,
+    current_budget_amount: 300000,
+    alert_threshold: 0.8,
   },
   {
-    id: 2,
     category_id: 2,
-    amount: 100000,
-    period: 'monthly',
-    start_date: '2024-01-01',
-    end_date: '2024-12-31',
-    alert_threshold: 90,
-    created_at: '2024-01-01T00:00:00Z',
-    updated_at: '2024-01-01T00:00:00Z',
+    category_name: '교통',
+    monthly_spending: [{ year: 2024, month: 1, amount: 50000 }],
+    current_budget_id: null,
+    current_budget_amount: null,
+    alert_threshold: null,
   },
 ]
 
@@ -97,9 +86,8 @@ const mockAlerts: BudgetAlert[] = [
  */
 function setupSuccessHandlers() {
   server.use(
-    http.get('/api/budgets/', () => HttpResponse.json(mockBudgets)),
+    http.get('/api/budgets/category-overview', () => HttpResponse.json(mockOverview)),
     http.get('/api/budgets/alerts', () => HttpResponse.json(mockAlerts)),
-    http.get('/api/categories', () => HttpResponse.json(mockCategories)),
   )
 }
 
@@ -108,9 +96,8 @@ function setupSuccessHandlers() {
  */
 function setupEmptyHandlers() {
   server.use(
-    http.get('/api/budgets/', () => HttpResponse.json([])),
+    http.get('/api/budgets/category-overview', () => HttpResponse.json([])),
     http.get('/api/budgets/alerts', () => HttpResponse.json([])),
-    http.get('/api/categories', () => HttpResponse.json(mockCategories)),
   )
 }
 
@@ -119,13 +106,10 @@ function setupEmptyHandlers() {
  */
 function setupErrorHandlers() {
   server.use(
-    http.get('/api/budgets/', () =>
+    http.get('/api/budgets/category-overview', () =>
       HttpResponse.json({ detail: 'Server error' }, { status: 500 })
     ),
     http.get('/api/budgets/alerts', () =>
-      HttpResponse.json({ detail: 'Server error' }, { status: 500 })
-    ),
-    http.get('/api/categories', () =>
       HttpResponse.json({ detail: 'Server error' }, { status: 500 })
     ),
   )
@@ -163,78 +147,206 @@ describe('BudgetManager', () => {
       })
     })
 
-    it('예산 추가 버튼을 표시한다', async () => {
+    it('카테고리 목록을 표시한다', async () => {
       setupSuccessHandlers()
       renderBudgetManager()
 
       await waitFor(() => {
-        expect(screen.getByRole('button', { name: /예산 추가/ })).toBeInTheDocument()
-      })
-    })
-
-    it('예산 테이블에 카테고리 이름을 표시한다', async () => {
-      setupSuccessHandlers()
-      renderBudgetManager()
-
-      await waitFor(() => {
-        // 테이블 내 카테고리 이름이 표시되는지 확인
-        // 알림 카드에도 "식비", "교통"이 나타나므로 getAllByText 사용
         expect(screen.getAllByText('식비').length).toBeGreaterThan(0)
         expect(screen.getAllByText('교통').length).toBeGreaterThan(0)
       })
     })
 
-    it('예산 테이블에 금액을 포맷팅하여 표시한다', async () => {
+    it('카테고리별 최근 지출 내역을 표시한다', async () => {
       setupSuccessHandlers()
       renderBudgetManager()
 
       await waitFor(() => {
-        // 테이블 또는 알림에서 금액 확인
-        expect(screen.getAllByText(/₩300,000/).length).toBeGreaterThan(0)
-        expect(screen.getAllByText(/₩100,000/).length).toBeGreaterThan(0)
+        // 식비 최근 1월 195,000원
+        expect(screen.getByText(/1월.*195,000원/)).toBeInTheDocument()
       })
     })
 
-    it('예산 테이블에 기간을 한글로 표시한다', async () => {
+    it('예산이 있는 카테고리의 입력 필드에 금액이 표시된다', async () => {
       setupSuccessHandlers()
       renderBudgetManager()
 
       await waitFor(() => {
-        expect(screen.getAllByText('월간').length).toBeGreaterThan(0)
+        const input = screen.getByLabelText('식비 예산')
+        expect(input).toHaveValue(300000)
       })
     })
 
-    it('예산 테이블에 시작일을 표시한다', async () => {
+    it('예산이 없는 카테고리의 입력 필드는 비어있다', async () => {
       setupSuccessHandlers()
       renderBudgetManager()
 
       await waitFor(() => {
-        // 날짜 포맷: 2024.01.01
-        expect(screen.getAllByText('2024.01.01').length).toBeGreaterThan(0)
+        const input = screen.getByLabelText('교통 예산')
+        expect(input).toHaveValue(null)
       })
     })
 
-    it('예산 테이블에 종료일을 표시하거나 없으면 "-"을 표시한다', async () => {
+    it('초기 로드 시 저장 버튼이 표시되지 않는다', async () => {
       setupSuccessHandlers()
       renderBudgetManager()
 
       await waitFor(() => {
-        // 첫 번째 예산: end_date null → "-"
-        // 두 번째 예산: 2024-12-31 → "2024.12.31"
-        expect(screen.getByText('2024.12.31')).toBeInTheDocument()
+        expect(screen.getByRole('heading', { name: '예산 관리' })).toBeInTheDocument()
       })
+
+      expect(screen.queryByRole('button', { name: '저장' })).not.toBeInTheDocument()
+    })
+  })
+
+  describe('인라인 예산 편집', () => {
+    it('금액 변경 시 저장 버튼이 나타난다', async () => {
+      setupSuccessHandlers()
+      const user = userEvent.setup()
+      renderBudgetManager()
+
+      await waitFor(() => {
+        expect(screen.getByLabelText('교통 예산')).toBeInTheDocument()
+      })
+
+      const input = screen.getByLabelText('교통 예산')
+      await user.type(input, '50000')
+
+      expect(screen.getByRole('button', { name: '저장' })).toBeInTheDocument()
     })
 
-    it('각 예산에 수정/삭제 버튼을 표시한다', async () => {
+    it('기존 금액과 같은 값으로 되돌리면 저장 버튼이 사라진다', async () => {
       setupSuccessHandlers()
+      const user = userEvent.setup()
       renderBudgetManager()
 
       await waitFor(() => {
-        const editButtons = screen.getAllByRole('button', { name: '수정' })
-        const deleteButtons = screen.getAllByRole('button', { name: '삭제' })
-        expect(editButtons.length).toBe(mockBudgets.length)
-        expect(deleteButtons.length).toBe(mockBudgets.length)
+        expect(screen.getByLabelText('식비 예산')).toBeInTheDocument()
       })
+
+      const input = screen.getByLabelText('식비 예산')
+      // 값 변경 후 원래 값으로 복원
+      await user.clear(input)
+      await user.type(input, '999000')
+      expect(screen.getByRole('button', { name: '저장' })).toBeInTheDocument()
+
+      await user.clear(input)
+      await user.type(input, '300000')
+      expect(screen.queryByRole('button', { name: '저장' })).not.toBeInTheDocument()
+    })
+
+    it('새 예산 저장 시 POST API를 호출한다', async () => {
+      setupSuccessHandlers()
+      const user = userEvent.setup()
+
+      let postCalled = false
+      server.use(
+        http.post('/api/budgets/', () => {
+          postCalled = true
+          return HttpResponse.json(
+            {
+              id: 10,
+              category_id: 2,
+              amount: 50000,
+              period: 'monthly',
+              start_date: '2024-01-01T00:00:00Z',
+              end_date: null,
+              alert_threshold: 0.8,
+              created_at: '2024-01-01T00:00:00Z',
+              updated_at: '2024-01-01T00:00:00Z',
+            },
+            { status: 201 }
+          )
+        }),
+      )
+
+      renderBudgetManager()
+
+      await waitFor(() => {
+        expect(screen.getByLabelText('교통 예산')).toBeInTheDocument()
+      })
+
+      const input = screen.getByLabelText('교통 예산')
+      await user.type(input, '50000')
+
+      const saveButton = screen.getByRole('button', { name: '저장' })
+      await user.click(saveButton)
+
+      await waitFor(() => {
+        expect(postCalled).toBe(true)
+      })
+      expect(mockAddToast).toHaveBeenCalledWith('success', '예산이 저장되었습니다')
+    })
+
+    it('기존 예산 수정 시 PUT API를 호출한다', async () => {
+      setupSuccessHandlers()
+      const user = userEvent.setup()
+
+      let putCalled = false
+      server.use(
+        http.put('/api/budgets/1', () => {
+          putCalled = true
+          return HttpResponse.json({
+            id: 1,
+            category_id: 1,
+            amount: 400000,
+            period: 'monthly',
+            start_date: '2024-01-01T00:00:00Z',
+            end_date: null,
+            alert_threshold: 0.8,
+            created_at: '2024-01-01T00:00:00Z',
+            updated_at: '2024-01-01T00:00:00Z',
+          })
+        }),
+      )
+
+      renderBudgetManager()
+
+      await waitFor(() => {
+        expect(screen.getByLabelText('식비 예산')).toBeInTheDocument()
+      })
+
+      const input = screen.getByLabelText('식비 예산')
+      await user.clear(input)
+      await user.type(input, '400000')
+
+      const saveButton = screen.getByRole('button', { name: '저장' })
+      await user.click(saveButton)
+
+      await waitFor(() => {
+        expect(putCalled).toBe(true)
+      })
+      expect(mockAddToast).toHaveBeenCalledWith('success', '예산이 저장되었습니다')
+    })
+
+    it('입력을 비우고 저장하면 기존 예산을 삭제한다', async () => {
+      setupSuccessHandlers()
+      const user = userEvent.setup()
+
+      let deleteCalled = false
+      server.use(
+        http.delete('/api/budgets/1', () => {
+          deleteCalled = true
+          return new HttpResponse(null, { status: 204 })
+        }),
+      )
+
+      renderBudgetManager()
+
+      await waitFor(() => {
+        expect(screen.getByLabelText('식비 예산')).toBeInTheDocument()
+      })
+
+      const input = screen.getByLabelText('식비 예산')
+      await user.clear(input)
+
+      const saveButton = screen.getByRole('button', { name: '저장' })
+      await user.click(saveButton)
+
+      await waitFor(() => {
+        expect(deleteCalled).toBe(true)
+      })
+      expect(mockAddToast).toHaveBeenCalledWith('success', '예산이 삭제되었습니다')
     })
   })
 
@@ -286,9 +398,8 @@ describe('BudgetManager', () => {
 
     it('알림이 없으면 알림 섹션을 표시하지 않는다', async () => {
       server.use(
-        http.get('/api/budgets/', () => HttpResponse.json(mockBudgets)),
+        http.get('/api/budgets/category-overview', () => HttpResponse.json(mockOverview)),
         http.get('/api/budgets/alerts', () => HttpResponse.json([])),
-        http.get('/api/categories', () => HttpResponse.json(mockCategories)),
       )
 
       renderBudgetManager()
@@ -301,99 +412,13 @@ describe('BudgetManager', () => {
     })
   })
 
-  describe('예산 추가 모달', () => {
-    it('"+ 예산 추가" 버튼을 클릭하면 추가 모달이 열린다', async () => {
-      setupSuccessHandlers()
-      const user = userEvent.setup()
-      renderBudgetManager()
-
-      await waitFor(() => {
-        expect(screen.getByRole('button', { name: /예산 추가/ })).toBeInTheDocument()
-      })
-
-      const addButton = screen.getByRole('button', { name: /예산 추가/ })
-      await user.click(addButton)
-
-      await waitFor(() => {
-        expect(screen.getByRole('heading', { name: '예산 추가' })).toBeInTheDocument()
-      })
-    })
-
-    it('추가 모달에 카테고리 선택, 금액, 기간 필드가 있다', async () => {
-      setupSuccessHandlers()
-      const user = userEvent.setup()
-      renderBudgetManager()
-
-      await waitFor(() => {
-        expect(screen.getByRole('button', { name: /예산 추가/ })).toBeInTheDocument()
-      })
-
-      await user.click(screen.getByRole('button', { name: /예산 추가/ }))
-
-      await waitFor(() => {
-        expect(screen.getByLabelText(/카테고리/)).toBeInTheDocument()
-        expect(screen.getByLabelText(/금액/)).toBeInTheDocument()
-        expect(screen.getByLabelText('기간')).toBeInTheDocument()
-        expect(screen.getByLabelText('시작일')).toBeInTheDocument()
-      })
-    })
-
-    it('취소 버튼을 클릭하면 모달이 닫힌다', async () => {
-      setupSuccessHandlers()
-      const user = userEvent.setup()
-      renderBudgetManager()
-
-      await waitFor(() => {
-        expect(screen.getByRole('button', { name: /예산 추가/ })).toBeInTheDocument()
-      })
-
-      await user.click(screen.getByRole('button', { name: /예산 추가/ }))
-
-      await waitFor(() => {
-        expect(screen.getByRole('heading', { name: '예산 추가' })).toBeInTheDocument()
-      })
-
-      const cancelButton = screen.getByRole('button', { name: '취소' })
-      await user.click(cancelButton)
-
-      await waitFor(() => {
-        expect(screen.queryByRole('heading', { name: '예산 추가' })).not.toBeInTheDocument()
-      })
-    })
-  })
-
   describe('빈 상태', () => {
-    it('예산이 없으면 빈 상태 메시지를 표시한다', async () => {
+    it('카테고리가 없으면 빈 상태 메시지를 표시한다', async () => {
       setupEmptyHandlers()
       renderBudgetManager()
 
       await waitFor(() => {
-        expect(screen.getByText('아직 설정된 예산이 없습니다')).toBeInTheDocument()
-      })
-    })
-
-    it('빈 상태에서 "예산 추가하기" 버튼을 표시한다', async () => {
-      setupEmptyHandlers()
-      renderBudgetManager()
-
-      await waitFor(() => {
-        expect(screen.getByRole('button', { name: '예산 추가하기' })).toBeInTheDocument()
-      })
-    })
-
-    it('빈 상태의 "예산 추가하기" 버튼을 클릭하면 모달이 열린다', async () => {
-      setupEmptyHandlers()
-      const user = userEvent.setup()
-      renderBudgetManager()
-
-      await waitFor(() => {
-        expect(screen.getByRole('button', { name: '예산 추가하기' })).toBeInTheDocument()
-      })
-
-      await user.click(screen.getByRole('button', { name: '예산 추가하기' }))
-
-      await waitFor(() => {
-        expect(screen.getByRole('heading', { name: '예산 추가' })).toBeInTheDocument()
+        expect(screen.getByText('등록된 카테고리가 없습니다')).toBeInTheDocument()
       })
     })
   })

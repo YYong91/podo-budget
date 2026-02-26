@@ -7,7 +7,7 @@
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import func, select
+from sqlalchemy import extract, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.auth import get_current_user
@@ -16,7 +16,7 @@ from app.models.budget import Budget
 from app.models.category import Category
 from app.models.expense import Expense
 from app.models.user import User
-from app.schemas.budget import BudgetAlert, BudgetCreate, BudgetResponse, BudgetUpdate
+from app.schemas.budget import BudgetAlert, BudgetCreate, BudgetResponse, BudgetUpdate, CategoryBudgetOverview, MonthlySpending
 
 router = APIRouter()
 
@@ -263,3 +263,98 @@ async def get_budget_alerts(
     alerts.sort(key=lambda x: (not x.is_exceeded, not x.is_warning, -x.usage_percentage))
 
     return alerts
+
+
+@router.get("/category-overview", response_model=list[CategoryBudgetOverview])
+async def get_category_overview(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """카테고리별 예산 개요 조회 — 인라인 예산 편집 화면용
+
+    모든 지출 카테고리와 함께 최근 3개월 지출액, 현재 예산 정보를 반환합니다.
+
+    Returns:
+        카테고리별 예산 개요 (카테고리명 오름차순)
+    """
+    now = datetime.now()
+
+    # 최근 3개월 시작일 계산 (현재 월 포함 3개월)
+    start_month = now.month - 2
+    start_year = now.year
+    while start_month <= 0:
+        start_month += 12
+        start_year -= 1
+    start_date = datetime(start_year, start_month, 1)
+
+    # 지출/공통 카테고리 전체 조회
+    categories_result = await db.execute(select(Category).where(Category.type.in_(["expense", "both"])).order_by(Category.name))
+    categories = categories_result.scalars().all()
+
+    # 현재 활성 예산 조회 (카테고리별 최신 1개)
+    budgets_result = await db.execute(
+        select(Budget)
+        .where(
+            Budget.user_id == current_user.id,
+            Budget.start_date <= now,
+            or_(Budget.end_date.is_(None), Budget.end_date >= now),
+        )
+        .order_by(Budget.created_at.desc())
+    )
+    budgets = budgets_result.scalars().all()
+
+    # 카테고리별 현재 예산 매핑 (가장 최근 예산 하나만)
+    budget_map: dict[int, Budget] = {}
+    for budget in budgets:
+        if budget.category_id not in budget_map:
+            budget_map[budget.category_id] = budget
+
+    # 최근 3개월 카테고리별 월별 지출 집계
+    spending_result = await db.execute(
+        select(
+            Expense.category_id,
+            extract("year", Expense.date).label("year"),
+            extract("month", Expense.date).label("month"),
+            func.sum(Expense.amount).label("amount"),
+        )
+        .where(
+            Expense.user_id == current_user.id,
+            Expense.date >= start_date,
+            Expense.amount > 0,
+        )
+        .group_by(
+            Expense.category_id,
+            extract("year", Expense.date),
+            extract("month", Expense.date),
+        )
+    )
+    spending_rows = spending_result.all()
+
+    # 카테고리별 월별 지출 매핑
+    spending_map: dict[int, list[MonthlySpending]] = {}
+    for row in spending_rows:
+        cat_id = int(row.category_id)
+        if cat_id not in spending_map:
+            spending_map[cat_id] = []
+        spending_map[cat_id].append(MonthlySpending(year=int(row.year), month=int(row.month), amount=float(row.amount)))
+
+    # 최신순 정렬
+    for cat_id in spending_map:
+        spending_map[cat_id].sort(key=lambda x: (x.year, x.month), reverse=True)
+
+    # 결과 조합
+    overview = []
+    for cat in categories:
+        budget = budget_map.get(cat.id)
+        overview.append(
+            CategoryBudgetOverview(
+                category_id=cat.id,
+                category_name=cat.name,
+                monthly_spending=spending_map.get(cat.id, []),
+                current_budget_id=budget.id if budget else None,
+                current_budget_amount=float(budget.amount) if budget else None,
+                alert_threshold=float(budget.alert_threshold) if budget else None,
+            )
+        )
+
+    return overview
