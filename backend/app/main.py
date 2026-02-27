@@ -50,6 +50,7 @@ async def lifespan(app: FastAPI):
 
     # Alembic 마이그레이션 실행 — create_all 대신 사용해 기존 DB에도 스키마 변경 적용
     import logging
+    import os
     import pathlib
     import sys
 
@@ -57,11 +58,22 @@ async def lifespan(app: FastAPI):
     # alembic.ini는 app 패키지의 부모 디렉토리에 위치 (backend/ 또는 컨테이너의 /app/)
     alembic_dir = pathlib.Path(__file__).parent.parent
 
+    # SQLite 상대 경로를 절대 경로로 변환하여 Alembic subprocess에 전달
+    # Alembic은 cwd=backend/에서 실행되므로, 상대 경로가 앱과 다른 DB 파일을 가리키는 문제 방지
+    subprocess_env = os.environ.copy()
+    db_url = settings.DATABASE_URL
+    if "sqlite" in db_url:
+        prefix, db_path = db_url.split(":///", 1)
+        if not db_path.startswith("/"):
+            abs_path = str(pathlib.Path(db_path).resolve())
+            subprocess_env["DATABASE_URL"] = f"{prefix}:///{abs_path}"
+
     result = subprocess.run(
         [sys.executable, "-m", "alembic", "upgrade", "head"],
         capture_output=True,
         text=True,
         cwd=str(alembic_dir),
+        env=subprocess_env,
     )
     if result.returncode != 0:
         # 마이그레이션 실패 시 로그 출력 후 fallback으로 create_all 실행
@@ -72,24 +84,20 @@ async def lifespan(app: FastAPI):
         logger.info("Alembic 마이그레이션 완료: %s", result.stdout)
 
     # sort_order=0인 카테고리를 실제 사용 횟수(지출+수입)로 초기화
-    # 테이블이 아직 없는 경우(신규 DB + Alembic cwd 불일치) 무시
     from sqlalchemy import text
 
-    try:
-        async with engine.begin() as conn:
-            await conn.execute(
-                text("""
-                    UPDATE categories
-                    SET sort_order = (
-                        SELECT COUNT(*) FROM expenses WHERE expenses.category_id = categories.id
-                    ) + (
-                        SELECT COUNT(*) FROM incomes WHERE incomes.category_id = categories.id
-                    )
-                    WHERE sort_order = 0
-                """)
-            )
-    except Exception as exc:
-        logger.warning("sort_order 초기화 건너뜀 (테이블 미존재 가능): %s", exc)
+    async with engine.begin() as conn:
+        await conn.execute(
+            text("""
+                UPDATE categories
+                SET sort_order = (
+                    SELECT COUNT(*) FROM expenses WHERE expenses.category_id = categories.id
+                ) + (
+                    SELECT COUNT(*) FROM incomes WHERE incomes.category_id = categories.id
+                )
+                WHERE sort_order = 0
+            """)
+        )
 
     yield
 
