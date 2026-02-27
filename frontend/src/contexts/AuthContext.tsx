@@ -10,6 +10,21 @@ import type { User } from '../types'
 import authApi from '../api/auth'
 import apiClient from '../api/client'
 
+/** 리다이렉트 루프 방지: 최근 리다이렉트 시각을 기록하고 쿨다운 내 재시도 차단 */
+const AUTH_REDIRECT_COOLDOWN_MS = 10_000
+function canRedirectToAuth(): boolean {
+  try {
+    const last = sessionStorage.getItem('last_auth_redirect')
+    if (last && Date.now() - Number(last) < AUTH_REDIRECT_COOLDOWN_MS) {
+      return false
+    }
+  } catch { /* sessionStorage 접근 불가 시 허용 */ }
+  return true
+}
+function markAuthRedirect(): void {
+  try { sessionStorage.setItem('last_auth_redirect', String(Date.now())) } catch { /* 무시 */ }
+}
+
 interface AuthContextType {
   /** 현재 로그인한 사용자 정보 (null이면 미로그인) */
   user: User | null
@@ -69,6 +84,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (error.response?.status === 401) {
           setUser(null)
           delete apiClient.defaults.headers.common['Authorization']
+          // 만료/무효 토큰 localStorage에서도 제거 — 무한 루프 방지
+          try { localStorage.removeItem('podo_access_token') } catch { /* 무시 */ }
+
+          // 리다이렉트 루프 방지: 쿨다운 내 재시도 차단
+          if (!canRedirectToAuth()) {
+            console.warn('[Auth] 리다이렉트 루프 감지 — auth 리다이렉트 중단')
+            return Promise.reject(error)
+          }
+          markAuthRedirect()
+
           const authUrl = import.meta.env.VITE_AUTH_URL || 'https://auth.podonest.com'
           const callbackUrl = import.meta.env.VITE_AUTH_CALLBACK_URL || `${window.location.origin}/auth/callback`
           window.location.href = `${authUrl}/login?redirect_uri=${encodeURIComponent(callbackUrl)}`
@@ -100,6 +125,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (status === 401) {
           // 401은 인터셉터에서도 처리되지만 여기서도 정리
           delete apiClient.defaults.headers.common['Authorization']
+          try { localStorage.removeItem('podo_access_token') } catch { /* 무시 */ }
         }
         // 네트워크 에러(백엔드 일시 중지 등)는 토큰 유지 — 무한 리다이렉트 방지
       } finally {
