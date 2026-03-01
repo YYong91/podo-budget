@@ -101,6 +101,30 @@ describe('InsightsPage', () => {
       })
     })
 
+    it('월간 이전 버튼 클릭 시 정확히 한 달 이전으로 이동한다', async () => {
+      const user = userEvent.setup()
+      renderInsightsPage()
+
+      await waitFor(() => {
+        expect(screen.getByText('총 지출')).toBeInTheDocument()
+      })
+
+      // 현재 표시된 연/월 파악
+      const now = new Date()
+      const currentYear = now.getFullYear()
+      const currentMonth = now.getMonth() + 1 // 1-based
+
+      expect(screen.getByText(`${currentYear}년 ${currentMonth}월`)).toBeInTheDocument()
+
+      // 이전 버튼 클릭
+      await user.click(screen.getByLabelText('이전 기간'))
+
+      // 정확히 1달 이전으로 이동해야 함 (UTC 오프셋으로 2달 이전으로 건너뛰면 안 됨)
+      const prevYear = currentMonth === 1 ? currentYear - 1 : currentYear
+      const prevMonth = currentMonth === 1 ? 12 : currentMonth - 1
+      expect(screen.getByText(`${prevYear}년 ${prevMonth}월`)).toBeInTheDocument()
+    })
+
     it('통계 API 실패 시 에러 토스트를 표시한다', async () => {
       const toastSpy = vi.spyOn(toast, 'error')
       server.use(
