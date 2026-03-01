@@ -15,11 +15,10 @@ import Layout from '../Layout'
  */
 vi.mock('../../contexts/AuthContext', () => ({
   useAuth: () => ({
-    user: { id: 1, username: 'testuser', email: null, is_active: true, created_at: '2024-01-01' },
+    user: { id: 1, username: 'testuser', email: null, is_active: true, created_at: '2024-01-01', is_telegram_linked: false },
+    isAuthenticated: true,
     logout: vi.fn(),
     loading: false,
-    login: vi.fn(),
-    register: vi.fn(),
   }),
 }))
 

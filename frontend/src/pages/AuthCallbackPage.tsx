@@ -1,9 +1,9 @@
 /**
  * @file AuthCallbackPage.tsx
  * @description podo-auth SSO 콜백 페이지
- * 쿠키 기반 SSO + iOS Safari ITP 우회:
- * - 쿠키: 데스크톱/Android Chrome 등 사용
- * - localStorage: iOS Safari ITP가 JS 쿠키를 삭제하는 경우 폴백
+ * podo-bookshelf 와 동일한 패턴:
+ * - ?token= → localStorage 저장 후 URL 정리 (history.replaceState)
+ * - navigate() 로 이동 (AuthContext가 token을 동기적으로 읽으므로 hard reload 불필요)
  */
 
 import { useEffect } from 'react'
@@ -17,26 +17,18 @@ export default function AuthCallbackPage() {
     // iOS Safari ITP 우회: URL ?token= → localStorage 저장
     const params = new URLSearchParams(window.location.search)
     const urlToken = params.get('token')
-
-    const intendedPath = sessionStorage.getItem('intended_path') || '/'
-    sessionStorage.removeItem('intended_path')
-
     if (urlToken) {
       try {
         localStorage.setItem('podo_access_token', urlToken)
       } catch {
         // private browsing 등 localStorage 접근 불가 시 무시
       }
-      // localStorage 저장 후 하드 리다이렉트:
-      // client-side navigate()를 쓰면 이미 마운트된 AuthContext가 initAuth()를
-      // 재실행하지 않아 user=null로 남아 무한 리다이렉트 루프 발생 (모바일 Safari).
-      // window.location.replace()로 풀 페이지 로드를 강제해 AuthContext가
-      // localStorage 토큰을 읽어 정상 초기화되도록 한다.
-      window.location.replace(intendedPath)
-      return
+      // URL에서 토큰 제거 (브라우저 히스토리에 토큰 남기지 않음)
+      window.history.replaceState({}, '', window.location.pathname)
     }
 
-    // 쿠키 기반 (데스크톱/Android): client-side navigate로 충분
+    const intendedPath = sessionStorage.getItem('intended_path') || '/'
+    sessionStorage.removeItem('intended_path')
     navigate(intendedPath, { replace: true })
   }, [navigate])
 

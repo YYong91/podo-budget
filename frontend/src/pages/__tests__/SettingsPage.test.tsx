@@ -18,8 +18,11 @@ vi.mock('../../contexts/AuthContext', () => ({
       email: 'test@test.com',
       is_active: true,
       created_at: '2024-01-15T00:00:00Z',
+      is_telegram_linked: false,
     },
+    isAuthenticated: true,
     loading: false,
+    refreshUser: vi.fn(),
   }),
 }))
 
