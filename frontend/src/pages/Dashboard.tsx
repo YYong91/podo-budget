@@ -117,19 +117,21 @@ function ChartSection({ stats, prevMonthsStats }: { stats: MonthlyStats; prevMon
     }
   }, [])
 
-  // 현재 달 누적 지출 (미래 날짜는 null)
+  // 현재 달 누적 지출 (미래 날짜는 null) — reduce로 뮤테이션 없이 계산
   const cumulativeData = useMemo(() => {
     const dailyMap = new Map(dailyTrend.map(d => [parseInt(d.date.slice(8)), d.amount]))
-    let sum = 0
-    return allDayLabels.map((_, i) => {
+    const daily = allDayLabels.map((_, i) => {
       const dayNum = i + 1
       if (dayNum > today) return null
-      sum += dailyMap.get(dayNum) ?? 0
-      return sum
+      return dailyMap.get(dayNum) ?? 0
+    })
+    return daily.map((val, i) => {
+      if (val === null) return null
+      return daily.slice(0, i + 1).reduce<number>((acc, v) => acc + (v ?? 0), 0)
     })
   }, [dailyTrend, allDayLabels, today])
 
-  // 이전 3개월 누적 평균 (각 달의 말일까지 전체 표시)
+  // 이전 3개월 누적 평균 (각 달의 말일까지 전체 표시) — reduce로 뮤테이션 없이 계산
   const avgCumulativeData = useMemo(() => {
     if (!prevMonthsStats || prevMonthsStats.length === 0) return null
     return allDayLabels.map((_, i) => {
@@ -138,11 +140,10 @@ function ChartSection({ stats, prevMonthsStats }: { stats: MonthlyStats; prevMon
         const [py, pm] = monthStats.month.split('-').map(Number)
         const daysInPrev = new Date(py, pm, 0).getDate()
         const dailyMap = new Map(monthStats.daily_trend.map(d => [parseInt(d.date.slice(8)), d.amount]))
-        let sum = 0
-        for (let d = 1; d <= Math.min(dayNum, daysInPrev); d++) {
-          sum += dailyMap.get(d) ?? 0
-        }
-        return sum
+        return Array.from(
+          { length: Math.min(dayNum, daysInPrev) },
+          (_, d) => dailyMap.get(d + 1) ?? 0
+        ).reduce((acc, v) => acc + v, 0)
       })
       return Math.round(cumulatives.reduce((a, b) => a + b, 0) / cumulatives.length)
     })

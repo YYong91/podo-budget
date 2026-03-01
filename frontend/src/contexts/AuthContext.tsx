@@ -86,9 +86,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return stored
   })
 
-  // tokenRef: 렌더마다 동기적으로 미러링 (useEffect 없이)
+  // tokenRef: 최신 token을 동기적으로 미러링
   // Safari Private 모드에서 localStorage/쿠키 모두 차단되어도 in-memory 토큰으로 Authorization 헤더 설정
   const tokenRef = useRef<string | null>(token)
+  // eslint-disable-next-line react-hooks/refs
   tokenRef.current = token
 
   // userProfile: API에서 비동기 로드
