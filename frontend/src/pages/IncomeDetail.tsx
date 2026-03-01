@@ -332,6 +332,7 @@ export default function IncomeDetail() {
           description={income.description}
           category_id={income.category_id}
           categories={categories}
+          initialDate={income.date}
           onClose={() => setShowRecurringModal(false)}
           onSuccess={() => setShowRecurringModal(false)}
         />

@@ -17,6 +17,7 @@ interface Props {
   description: string
   category_id: number | null
   categories: Category[]
+  initialDate: string
   onClose: () => void
   onSuccess: () => void
 }
@@ -27,15 +28,19 @@ export default function RegisterRecurringModal({
   description,
   category_id,
   categories,
+  initialDate,
   onClose,
   onSuccess,
 }: Props) {
   const { addToast } = useToast()
   const activeHouseholdId = useHouseholdStore((s) => s.activeHouseholdId)
 
+  // 거래 날짜에서 일(day) 추출 — "2026-01-01T00:00:00" 또는 "2026-01-01" 모두 처리
+  const dayOfMonth = String(Number(initialDate.slice(8, 10)))
+
   const [formData, setFormData] = useState({
     frequency: 'monthly' as 'monthly' | 'weekly' | 'yearly' | 'custom',
-    day_of_month: '25',
+    day_of_month: dayOfMonth,
     day_of_week: '0',
     month_of_year: '1',
     interval: '14',
@@ -142,15 +147,18 @@ export default function RegisterRecurringModal({
           {/* 빈도별 추가 필드 */}
           {(formData.frequency === 'monthly' || formData.frequency === 'yearly') && (
             <div>
-              <label className="block text-sm font-medium text-warm-700 mb-1">실행일</label>
-              <input
-                type="number"
-                value={formData.day_of_month}
-                onChange={(e) => setFormData({ ...formData, day_of_month: e.target.value })}
-                min="1"
-                max="31"
-                className="w-full px-3 py-2 rounded-lg border border-warm-300 text-sm focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
-              />
+              <label className="block text-sm font-medium text-warm-700 mb-1">반복 날짜</label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  value={formData.day_of_month}
+                  onChange={(e) => setFormData({ ...formData, day_of_month: e.target.value })}
+                  min="1"
+                  max="31"
+                  className="w-24 px-3 py-2 rounded-lg border border-warm-300 text-sm focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
+                />
+                <span className="text-sm text-warm-600">일</span>
+              </div>
             </div>
           )}
 
@@ -186,14 +194,17 @@ export default function RegisterRecurringModal({
 
           {formData.frequency === 'custom' && (
             <div>
-              <label className="block text-sm font-medium text-warm-700 mb-1">반복 간격 (일)</label>
-              <input
-                type="number"
-                value={formData.interval}
-                onChange={(e) => setFormData({ ...formData, interval: e.target.value })}
-                min="1"
-                className="w-full px-3 py-2 rounded-lg border border-warm-300 text-sm focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
-              />
+              <label className="block text-sm font-medium text-warm-700 mb-1">반복 간격</label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  value={formData.interval}
+                  onChange={(e) => setFormData({ ...formData, interval: e.target.value })}
+                  min="1"
+                  className="w-24 px-3 py-2 rounded-lg border border-warm-300 text-sm focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
+                />
+                <span className="text-sm text-warm-600">일마다</span>
+              </div>
             </div>
           )}
 

@@ -371,6 +371,7 @@ export default function ExpenseDetail() {
           description={expense.description}
           category_id={expense.category_id}
           categories={categories}
+          initialDate={expense.date}
           onClose={() => setShowRecurringModal(false)}
           onSuccess={() => setShowRecurringModal(false)}
         />
