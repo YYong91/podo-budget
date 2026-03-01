@@ -112,6 +112,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const t = tokenRef.current ?? getCookieToken()
         if (t) {
           config.headers.Authorization = `Bearer ${t}`
+        } else {
+          // 토큰 없이 요청 — 디버깅용 (Safari ITP/Private 모드 추적)
+          console.warn('[podo-auth] 요청 토큰 없음:', config.url, {
+            tokenRef: tokenRef.current,
+            cookie: !!document.cookie.match(/podo_access_token/),
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            ls: (() => { try { return localStorage.getItem('podo_access_token') ? 'ok' : 'null' } catch { return 'blocked' } })(),
+          })
         }
         return config
       },
@@ -125,6 +133,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       (response) => response,
       (error) => {
         if (error.response?.status === 401) {
+          console.error('[podo-auth] 401 발생:', {
+            url: error.config?.url,
+            hasAuthHeader: !!error.config?.headers?.Authorization,
+            authHeaderSnippet: String(error.config?.headers?.Authorization ?? '').substring(0, 30),
+          })
           try { localStorage.removeItem('podo_access_token') } catch { /* 무시 */ }
           setToken(null)
           // user는 token=null 파생으로 자동 null
@@ -180,8 +193,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const setTokenFromCallback = useCallback((newToken: string) => {
     try {
       localStorage.setItem('podo_access_token', newToken)
-    } catch {
-      // private browsing 등 localStorage 미지원 환경 무시
+      console.log('[podo-auth] 콜백 토큰 localStorage 저장 완료')
+    } catch (e) {
+      console.warn('[podo-auth] 콜백 토큰 localStorage 저장 실패 (Private 모드?):', (e as Error)?.name)
     }
     setToken(newToken)
   }, []) // setToken은 React가 안정적 참조를 보장하므로 deps 불필요

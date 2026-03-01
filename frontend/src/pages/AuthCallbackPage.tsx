@@ -33,7 +33,10 @@ export default function AuthCallbackPage() {
   // Effect 1: mount 시 토큰 설정 (urlToken이 없으면 쿠키 기반이므로 스킵)
   useEffect(() => {
     if (urlToken) {
+      console.log('[podo-auth] AuthCallback Effect1: setTokenFromCallback 호출')
       setTokenFromCallback(urlToken)
+    } else {
+      console.log('[podo-auth] AuthCallback Effect1: urlToken 없음 (쿠키 기반 Chrome)')
     }
   }, [urlToken, setTokenFromCallback])
 
@@ -41,6 +44,7 @@ export default function AuthCallbackPage() {
   // - urlToken 없음(Chrome): isAuthenticated가 이미 true → 즉시 navigate
   // - urlToken 있음(Safari): setTokenFromCallback 후 상태 업데이트 완료 → navigate
   useEffect(() => {
+    console.log('[podo-auth] AuthCallback Effect2:', { urlToken: !!urlToken, isAuthenticated, intendedPath })
     if (!urlToken || isAuthenticated) {
       navigate(intendedPath, { replace: true })
     }
