@@ -44,14 +44,14 @@ function StatsCards({ stats, incomeTotal }: { stats: MonthlyStats; incomeTotal?:
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-gradient-to-br from-grape-50 to-grape-100 rounded-2xl border border-grape-200/60 shadow-sm p-5 hover:shadow-md transition-shadow duration-200">
+        <Link to="/expenses" className="block bg-gradient-to-br from-grape-50 to-grape-100 rounded-2xl border border-grape-200/60 shadow-sm p-5 hover:shadow-md transition-shadow duration-200 cursor-pointer">
           <p className="text-sm text-grape-700/70">이번 달 총 지출</p>
           <p className="text-2xl font-bold tracking-tight text-warm-900 mt-1">{formatAmount(total)}</p>
-        </div>
-        <div className="bg-gradient-to-br from-leaf-50 to-leaf-100 rounded-2xl border border-leaf-200/60 shadow-sm p-5 hover:shadow-md transition-shadow duration-200">
+        </Link>
+        <Link to="/income" className="block bg-gradient-to-br from-leaf-50 to-leaf-100 rounded-2xl border border-leaf-200/60 shadow-sm p-5 hover:shadow-md transition-shadow duration-200 cursor-pointer">
           <p className="text-sm text-leaf-700/70">이번 달 총 수입</p>
           <p className="text-2xl font-bold tracking-tight text-leaf-700 mt-1">+{formatAmount(income)}</p>
-        </div>
+        </Link>
         <div className={`bg-gradient-to-br ${netIncome >= 0 ? 'from-blue-50 to-sky-50 border-blue-200/60' : 'from-rose-50 to-red-50 border-rose-200/60'} rounded-2xl border shadow-sm p-5 hover:shadow-md transition-shadow duration-200`}>
           <p className={`text-sm ${netIncome >= 0 ? 'text-blue-700/70' : 'text-rose-700/70'}`}>순수익</p>
           <p className={`text-2xl font-bold tracking-tight mt-1 ${netIncome >= 0 ? 'text-blue-700' : 'text-rose-700'}`}>
