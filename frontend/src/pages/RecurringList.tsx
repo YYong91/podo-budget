@@ -5,7 +5,7 @@
  */
 
 import { useState, useEffect } from 'react'
-import { Loader2, Plus, Pencil, Trash2, Pause, Play, X } from 'lucide-react'
+import { Loader2, Plus, Pencil, Trash2, Pause, Play, X, Zap } from 'lucide-react'
 import { useToast } from '../hooks/useToast'
 import { recurringApi } from '../api/recurring'
 import { categoryApi } from '../api/categories'
@@ -192,6 +192,17 @@ export default function RecurringList() {
     }
   }
 
+  /* 바로 등록 (즉시 실행) */
+  const handleExecute = async (r: RecurringTransaction) => {
+    try {
+      await recurringApi.execute(r.id)
+      addToast('success', `${r.description} 등록되었습니다`)
+      loadData()
+    } catch {
+      addToast('error', '등록에 실패했습니다')
+    }
+  }
+
   /* 일시정지/재개 */
   const toggleActive = async (r: RecurringTransaction) => {
     try {
@@ -301,6 +312,11 @@ export default function RecurringList() {
                     </td>
                     <td className="px-5 py-3">
                       <div className="flex items-center justify-end gap-1">
+                        {r.is_active && (
+                          <button onClick={() => handleExecute(r)} className="p-1.5 rounded-md hover:bg-leaf-50 text-warm-500 hover:text-leaf-600" title="바로 등록">
+                            <Zap className="w-4 h-4" />
+                          </button>
+                        )}
                         <button onClick={() => toggleActive(r)} className="p-1.5 rounded-md hover:bg-warm-100 text-warm-500" title={r.is_active ? '일시정지' : '재개'}>
                           {r.is_active ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
                         </button>
@@ -337,6 +353,11 @@ export default function RecurringList() {
                     <span>다음: {r.next_due_date}</span>
                   </div>
                   <div className="flex items-center gap-1">
+                    {r.is_active && (
+                      <button onClick={() => handleExecute(r)} className="p-1 text-warm-400 hover:text-leaf-600" title="바로 등록">
+                        <Zap className="w-4 h-4" />
+                      </button>
+                    )}
                     <button onClick={() => toggleActive(r)} className="p-1 text-warm-400">
                       {r.is_active ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
                     </button>

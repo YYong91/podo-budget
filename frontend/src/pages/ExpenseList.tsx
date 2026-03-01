@@ -357,6 +357,9 @@ export default function ExpenseList() {
                         <Link to={`/expenses/${expense.id}`} className="text-sm font-medium text-warm-900 hover:text-grape-600 transition-colors block truncate">
                           {expense.description}
                         </Link>
+                        {expense.raw_input?.startsWith('[정기]') && (
+                          <span className="shrink-0 text-xs bg-warm-200 text-warm-600 px-1.5 py-0.5 rounded-full">정기</span>
+                        )}
                         {expense.exclude_from_stats && (
                           <span className="shrink-0 text-xs bg-warm-100 text-warm-500 px-1.5 py-0.5 rounded-full">통계제외</span>
                         )}
