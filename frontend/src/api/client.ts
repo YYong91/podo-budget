@@ -10,11 +10,16 @@ const apiClient = axios.create({
 })
 
 function getCookieToken(): string | null {
+  // 1. 쿠키 우선 (Chrome/Android 등)
   const match = document.cookie.match(/(?:^|; )podo_access_token=([^;]+)/)
-  return match ? match[1] : null
+  if (match) return match[1]
+  // 2. localStorage 폴백 (Safari ITP로 쿠키 공유 불가 시)
+  try { return localStorage.getItem('podo_access_token') } catch { return null }
 }
 
-// 요청 인터셉터: 쿠키에서 토큰을 읽어 Authorization 헤더에 자동 추가
+// 요청 인터셉터: 쿠키/localStorage에서 토큰을 읽어 Authorization 헤더에 자동 추가
+// 참고: AuthContext에도 동일 인터셉터가 등록되며 LIFO로 먼저 실행됨
+//       AuthContext 인터셉터는 tokenRef(in-memory)를 우선 사용 → Safari Private 모드 대응
 apiClient.interceptors.request.use(
   (config) => {
     const token = getCookieToken()
