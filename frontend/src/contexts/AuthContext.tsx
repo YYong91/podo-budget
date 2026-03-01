@@ -7,10 +7,10 @@
  * - isAuthenticated = !!token (API 호출 없이 즉시 결정)
  * - user 프로필은 별도로 비동기 로드 (username, telegram 상태 등)
  *
- * 이전 패턴의 문제:
- * - /auth/me API 호출 결과가 user 상태를 결정 → 네트워크 오류 시 user=null
- * - ProtectedRoute가 user=null+hasToken=true 상태를 "서버 연결 중"으로 처리
- * - 3초 reload 타이머가 반복되며 무한 리다이렉트 루프 발생
+ * react-hooks/set-state-in-effect (v7 규칙) 대응:
+ * - effect body에서 동기 setState 호출 금지
+ * - user/loading은 token과 loadedToken에서 파생(derived)
+ * - 모든 setState는 비동기 콜백(.then, .catch) 내부에서만 호출
  */
 
 import { createContext, useContext, useMemo, useState, useEffect } from 'react'
@@ -76,22 +76,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return stored
   })
 
-  // user 프로필: API에서 비동기 로드 (인증 결정에는 영향 없음)
-  const [user, setUser] = useState<User | null>(null)
-  const [loading, setLoading] = useState(false)
+  // userProfile: API에서 비동기 로드
+  const [userProfile, setUserProfile] = useState<User | null>(null)
 
-  // isAuthenticated: token 유무로 즉시 결정 (API 호출 없음)
+  // loadedToken: 프로필을 성공/실패로 fetch한 토큰을 기록
+  // loading = !!token && token !== loadedToken (derived, 동기 setState 불필요)
+  const [loadedToken, setLoadedToken] = useState<string | null>(null)
+
+  // 파생 상태 — setState 없이 즉시 계산
   const isAuthenticated = useMemo(() => !!token, [token])
+  const user: User | null = token ? userProfile : null   // token=null이면 user=null (derived)
+  const loading: boolean = !!token && token !== loadedToken
 
-  // axios interceptor: Authorization 헤더 자동 추가 및 401 처리
+  // axios interceptors: mount 시 1회 등록 (request: 토큰 헤더 자동 추가, response: 401 처리)
   useEffect(() => {
-    if (token) {
-      apiClient.defaults.headers.common['Authorization'] = `Bearer ${token}`
-    } else {
-      delete apiClient.defaults.headers.common['Authorization']
-    }
-
-    // 요청 인터셉터: 쿠키/localStorage에서 토큰을 읽어 자동으로 헤더에 추가
     const requestInterceptor = apiClient.interceptors.request.use(
       (config) => {
         const t = getCookieToken()
@@ -103,14 +101,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       (error) => Promise.reject(error)
     )
 
-    // 응답 인터셉터: 401 에러 시 토큰 클리어 (ProtectedRoute가 리다이렉트 처리)
+    // 401: 토큰 클리어 → ProtectedRoute가 리다이렉트 처리 (이전: 여기서 직접 redirect)
     const responseInterceptor = apiClient.interceptors.response.use(
       (response) => response,
       (error) => {
         if (error.response?.status === 401) {
           clearCookieToken()
           setToken(null)
-          setUser(null)
+          // user는 token=null 파생으로 자동 null
         }
         return Promise.reject(error)
       }
@@ -120,25 +118,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       apiClient.interceptors.request.eject(requestInterceptor)
       apiClient.interceptors.response.eject(responseInterceptor)
     }
-  }, [token])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // 토큰이 있을 때 사용자 프로필 로드 (인증 결정과 분리)
+  // 사용자 프로필 로드 — effect body에 동기 setState 없음 (react-hooks/set-state-in-effect 대응)
+  // token이 없거나 이미 로드된 경우 스킵, setState는 .then/.catch 콜백에서만 호출
   useEffect(() => {
-    if (!token) {
-      setUser(null)
-      setLoading(false)
-      return
-    }
+    if (!token) return
+    if (token === loadedToken) return
 
-    setLoading(true)
+    let active = true
     authApi.getCurrentUser()
-      .then((response) => setUser(response.data))
-      .catch(() => {
-        // 프로필 로드 실패는 인증 상태에 영향 없음
-        // 401은 위 interceptor에서 처리 (setToken(null))
+      .then((response) => {
+        if (active) {
+          setUserProfile(response.data)
+          setLoadedToken(token)
+        }
       })
-      .finally(() => setLoading(false))
-  }, [token])
+      .catch(() => {
+        // 프로필 로드 실패 시에도 loadedToken을 갱신해 loading 상태를 해제
+        // 401은 interceptor에서 처리되어 setToken(null)이 호출됨
+        if (active) setLoadedToken(token)
+      })
+    return () => { active = false }
+  }, [token, loadedToken])
 
   // 주기적으로 토큰 만료 체크 (5분마다, podo-bookshelf 패턴)
   useEffect(() => {
@@ -146,7 +148,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const current = getCookieToken()
       if (!current || isTokenExpired(current)) {
         setToken(null)
-        setUser(null)
       } else if (current !== token) {
         setToken(current)
       }
@@ -157,16 +158,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = () => {
     setToken(null)
-    setUser(null)
     clearCookieToken()
     const authUrl = import.meta.env.VITE_AUTH_URL || 'https://auth.podonest.com'
     window.location.href = `${authUrl}/logout`
   }
 
   const refreshUser = async () => {
+    if (!token) return
     try {
       const response = await authApi.getCurrentUser()
-      setUser(response.data)
+      setUserProfile(response.data)
     } catch {
       // 무시 (interceptor에서 401 처리)
     }
