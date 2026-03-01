@@ -6,18 +6,21 @@
  * budget.podonest.com에서 읽지 못하는 경우가 있음 (Chrome은 정상).
  *
  * 처리 방식:
- * - ?token= 있음: localStorage 저장 후 window.location.replace() (하드 리로드)
- *   → AuthProvider가 새로 마운트되어 localStorage 토큰을 읽어 정상 초기화
- *   → navigate()를 쓰면 AuthProvider 재마운트 없이 token=null 상태 유지 → 루프 발생
+ * - ?token= 있음: setTokenFromCallback()으로 AuthProvider 상태를 직접 업데이트
+ *   → localStorage 저장 + React state 즉시 반영 → navigate()로 충분
+ *   → (이전 방식) window.location.replace() 하드 리로드는 Safari bfcache 또는
+ *     구 서비스 워커 캐시 문제로 이전 token=null 상태를 복원해 무한 루프 유발
  * - ?token= 없음: 쿠키가 읽히는 환경(Chrome 등) → navigate()로 충분
  */
 
 import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Loader2 } from 'lucide-react'
+import { useAuth } from '../contexts/AuthContext'
 
 export default function AuthCallbackPage() {
   const navigate = useNavigate()
+  const { setTokenFromCallback } = useAuth()
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
@@ -27,20 +30,13 @@ export default function AuthCallbackPage() {
     sessionStorage.removeItem('intended_path')
 
     if (urlToken) {
-      try {
-        localStorage.setItem('podo_access_token', urlToken)
-      } catch {
-        // private browsing 등 localStorage 접근 불가 시 무시
-      }
-      // 하드 리로드: AuthProvider가 새로 마운트되어 localStorage 토큰을 읽음
-      // navigate()는 AuthProvider를 재마운트하지 않아 token=null 상태가 유지되므로 사용 불가
-      window.location.replace(intendedPath)
-      return
+      // AuthProvider 상태를 직접 업데이트 (localStorage 저장 + setToken)
+      // → 하드 리로드 없이 isAuthenticated가 즉시 true로 전환됨
+      setTokenFromCallback(urlToken)
     }
 
-    // 쿠키 기반 (Chrome 등): getCookieToken()이 동기적으로 쿠키를 찾으므로 navigate()로 충분
     navigate(intendedPath, { replace: true })
-  }, [navigate])
+  }, [navigate, setTokenFromCallback])
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-warm-50">

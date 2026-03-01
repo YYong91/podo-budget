@@ -13,7 +13,7 @@
  * - 모든 setState는 비동기 콜백(.then, .catch) 내부에서만 호출
  */
 
-import { createContext, useContext, useMemo, useState, useEffect } from 'react'
+import { createContext, useContext, useMemo, useState, useEffect, useCallback } from 'react'
 import type { ReactNode } from 'react'
 import type { User } from '../types'
 import authApi from '../api/auth'
@@ -30,6 +30,12 @@ interface AuthContextType {
   logout: () => void
   /** 사용자 정보 새로고침 (텔레그램 연동 상태 변경 후 호출) */
   refreshUser: () => Promise<void>
+  /**
+   * SSO 콜백에서 받은 토큰을 AuthProvider 상태에 직접 반영
+   * - window.location.replace() 하드 리로드 없이 token 상태를 즉시 업데이트
+   * - Safari bfcache / 구 서비스 워커 캐시 문제를 근본적으로 회피
+   */
+  setTokenFromCallback: (token: string) => void
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -156,6 +162,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => clearInterval(interval)
   }, [token])
 
+  // SSO 콜백 전용: 하드 리로드 없이 token 상태를 직접 업데이트
+  // useCallback으로 안정적 참조 보장 → AuthCallbackPage useEffect deps에 포함 가능
+  const setTokenFromCallback = useCallback((newToken: string) => {
+    try {
+      localStorage.setItem('podo_access_token', newToken)
+    } catch {
+      // private browsing 등 localStorage 미지원 환경 무시
+    }
+    setToken(newToken)
+  }, []) // setToken은 React가 안정적 참조를 보장하므로 deps 불필요
+
   const logout = () => {
     setToken(null)
     clearCookieToken()
@@ -174,7 +191,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated, loading, logout, refreshUser }}>
+    <AuthContext.Provider value={{ user, isAuthenticated, loading, logout, refreshUser, setTokenFromCallback }}>
       {children}
     </AuthContext.Provider>
   )
