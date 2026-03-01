@@ -4,7 +4,7 @@
  * 가구가 선택된 경우 공유 지출을 먼저 보여주고, 개인 지출은 접기 가능한 섹션으로 표시한다.
  */
 
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Loader2, ChevronDown, ChevronUp } from 'lucide-react'
 import { Chart as ChartJS, ArcElement, LineElement, PointElement, CategoryScale, LinearScale, Filler, Tooltip as ChartTooltip, Legend } from 'chart.js'
@@ -32,6 +32,19 @@ function formatAmount(amount: number): string {
 function getCurrentMonth(): string {
   const now = new Date()
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+}
+
+/* 현재 월 기준 N개월 이전 월 목록 반환 */
+function getPreviousMonths(currentMonth: string, count: number): string[] {
+  const [year, month] = currentMonth.split('-').map(Number)
+  const result: string[] = []
+  for (let i = 1; i <= count; i++) {
+    let m = month - i
+    let y = year
+    while (m <= 0) { m += 12; y-- }
+    result.push(`${y}-${String(m).padStart(2, '0')}`)
+  }
+  return result
 }
 
 /* 통계 카드 섹션 */
@@ -79,7 +92,7 @@ function formatAxisAmount(v: number): string {
 }
 
 /* 차트 섹션 */
-function ChartSection({ stats }: { stats: MonthlyStats }) {
+function ChartSection({ stats, prevMonthsStats }: { stats: MonthlyStats; prevMonthsStats?: MonthlyStats[] }) {
   const byCategory = stats.by_category ?? []
   const dailyTrend = stats.daily_trend ?? []
   const pieRef = useRef<ChartJS<'pie'>>(null)
@@ -88,6 +101,19 @@ function ChartSection({ stats }: { stats: MonthlyStats }) {
   const [hiddenIndices, setHiddenIndices] = useState<Set<number>>(new Set())
   // 일별 추이 라인 숨기기/보이기
   const [lineHidden, setLineHidden] = useState(false)
+
+  // 이전 3개월 일별 평균 계산 (day-of-month 기준 정렬)
+  const avgData = useMemo(() => {
+    if (!prevMonthsStats || prevMonthsStats.length === 0) return null
+    return dailyTrend.map(d => {
+      const day = d.date.slice(8) // "01", "02", ...
+      const amounts = prevMonthsStats.flatMap(s =>
+        s.daily_trend.filter(p => p.date.slice(8) === day).map(p => p.amount)
+      )
+      if (amounts.length === 0) return null
+      return Math.round(amounts.reduce((a, b) => a + b, 0) / amounts.length)
+    })
+  }, [prevMonthsStats, dailyTrend])
 
   const totalAmount = byCategory.reduce((sum, c) => sum + c.amount, 0)
 
@@ -129,7 +155,7 @@ function ChartSection({ stats }: { stats: MonthlyStats }) {
     labels: dailyTrend.map((d) => d.date.slice(5)),
     datasets: [
       {
-        label: '일별 지출',
+        label: '이번 달 지출',
         data: dailyTrend.map((d) => d.amount),
         borderColor: '#9333EA',
         backgroundColor: 'rgba(147, 51, 234, 0.1)',
@@ -139,6 +165,17 @@ function ChartSection({ stats }: { stats: MonthlyStats }) {
         tension: 0.3,
         fill: true,
       },
+      ...(avgData ? [{
+        label: '3개월 평균',
+        data: avgData,
+        borderColor: 'rgba(147, 51, 234, 0.35)',
+        backgroundColor: 'transparent',
+        borderWidth: 1.5,
+        borderDash: [5, 4],
+        pointRadius: 0,
+        tension: 0.3,
+        fill: false,
+      }] : []),
     ],
   }
 
@@ -217,8 +254,14 @@ function ChartSection({ stats }: { stats: MonthlyStats }) {
                 }`}
               >
                 <span className="w-8 h-0.5 bg-grape-500 rounded-full inline-block" />
-                <span className="text-warm-600">일별 지출</span>
+                <span className="text-warm-600">이번 달 지출</span>
               </button>
+              {avgData && (
+                <div className="flex items-center gap-1.5 text-sm px-2 py-1 opacity-60">
+                  <span className="w-8 h-px inline-block" style={{ backgroundImage: 'repeating-linear-gradient(to right, rgba(147,51,234,0.5) 0, rgba(147,51,234,0.5) 5px, transparent 5px, transparent 9px)' }} />
+                  <span className="text-warm-500">3개월 평균</span>
+                </div>
+              )}
             </div>
             <div className="h-[230px]">
               <Line
@@ -400,6 +443,9 @@ export default function Dashboard() {
   const [personalStats, setPersonalStats] = useState<MonthlyStats | null>(null)
   const [personalExpenses, setPersonalExpenses] = useState<Expense[]>([])
 
+  // 일별 추이 3개월 평균용 이전 달 통계
+  const [prevMonthsStats, setPrevMonthsStats] = useState<MonthlyStats[]>([])
+
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
 
@@ -421,6 +467,13 @@ export default function Dashboard() {
     setError(false)
     try {
       const month = getCurrentMonth()
+
+      // 이전 3개월 통계 (평균 라인용) — 메인 데이터와 병렬 시작
+      const prevMonthsPromise = Promise.all(
+        getPreviousMonths(month, 3).map(m =>
+          expenseApi.getMonthlyStats(m, activeHouseholdId ?? undefined).catch(() => null)
+        )
+      )
 
       // 수입 통계 + 최근 수입 + 정기 거래 (에러 무시 - 없어도 대시보드 동작)
       const incomePromises = [
@@ -462,6 +515,10 @@ export default function Dashboard() {
         setRecentIncomes(incListRes?.data ?? [])
         setPendingRecurring(pendingRes?.data ?? [])
       }
+
+      // 이전 달 통계 처리 (이미 병렬로 실행 중)
+      const prevResults = await prevMonthsPromise
+      setPrevMonthsStats(prevResults.filter(Boolean).map(r => r!.data))
     } catch {
       setError(true)
     } finally {
@@ -557,7 +614,7 @@ export default function Dashboard() {
         }}
       />
 
-      {stats && <ChartSection stats={stats} />}
+      {stats && <ChartSection stats={stats} prevMonthsStats={prevMonthsStats} />}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <RecentExpenses expenses={recentExpenses} />
         <RecentIncomes incomes={recentIncomes} />
