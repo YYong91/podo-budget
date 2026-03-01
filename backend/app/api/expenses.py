@@ -292,19 +292,21 @@ async def get_stats_comparison(
 
     excl_filter = Expense.exclude_from_stats == False  # noqa: E712
 
-    async def _month_total(year: int, month: int) -> float:
+    async def _month_total(year: int, month: int, end_day: int | None = None) -> float:
         m_start = datetime(year, month, 1)
         _, m_last = monthrange(year, month)
-        m_end = datetime(year, month, m_last, 23, 59, 59)
+        actual_end = min(end_day, m_last) if end_day is not None else m_last
+        m_end = datetime(year, month, actual_end, 23, 59, 59)
         r = await db.execute(
             select(func.coalesce(func.sum(Expense.amount), 0)).where(scope_filter, excl_filter, Expense.date >= m_start, Expense.date <= m_end)
         )
         return float(r.scalar())
 
-    async def _month_by_category(year: int, month: int) -> dict[str, float]:
+    async def _month_by_category(year: int, month: int, end_day: int | None = None) -> dict[str, float]:
         m_start = datetime(year, month, 1)
         _, m_last = monthrange(year, month)
-        m_end = datetime(year, month, m_last, 23, 59, 59)
+        actual_end = min(end_day, m_last) if end_day is not None else m_last
+        m_end = datetime(year, month, actual_end, 23, 59, 59)
         r = await db.execute(
             select(Category.name, func.sum(Expense.amount).label("amount"))
             .join(Category, Expense.category_id == Category.id, isouter=True)
@@ -318,13 +320,24 @@ async def get_stats_comparison(
         prev_m = cur_m - 1 if cur_m > 1 else 12
         prev_y = cur_y if cur_m > 1 else cur_y - 1
 
-        current_total = await _month_total(cur_y, cur_m)
-        previous_total = await _month_total(prev_y, prev_m)
+        # 진행 중인 달이면 오늘까지만 비교 (전기 대비 동일 경과일 기준)
+        today = date_type.today()
+        is_current_month = cur_y == today.year and cur_m == today.month
+        end_day = today.day if is_current_month else None
 
-        current_label = f"{cur_y}년 {cur_m}월"
-        previous_label = f"{prev_y}년 {prev_m}월"
+        current_total = await _month_total(cur_y, cur_m, end_day)
+        previous_total = await _month_total(prev_y, prev_m, end_day)
 
-        # N개월 트렌드 (현재 월 포함 과거 N개월)
+        if is_current_month:
+            _, prev_last = monthrange(prev_y, prev_m)
+            prev_end_day = min(today.day, prev_last)
+            current_label = f"{cur_y}년 {cur_m}월 ({today.day}일까지)"
+            previous_label = f"{prev_y}년 {prev_m}월 ({prev_end_day}일까지)"
+        else:
+            current_label = f"{cur_y}년 {cur_m}월"
+            previous_label = f"{prev_y}년 {prev_m}월"
+
+        # N개월 트렌드 (현재 월 포함 과거 N개월) — 트렌드는 전체 달 기준 유지
         trend_data: list[PeriodTotal] = []
         y, m = cur_y, cur_m
         # months-1 만큼 뒤로
@@ -342,9 +355,9 @@ async def get_stats_comparison(
                 m = 1
                 y += 1
 
-        # 카테고리별 비교
-        cur_cats = await _month_by_category(cur_y, cur_m)
-        prev_cats = await _month_by_category(prev_y, prev_m)
+        # 카테고리별 비교 (동일 end_day 적용)
+        cur_cats = await _month_by_category(cur_y, cur_m, end_day)
+        prev_cats = await _month_by_category(prev_y, prev_m, end_day)
         all_cats = set(cur_cats.keys()) | set(prev_cats.keys())
         by_cat_comparison = []
         for cat in sorted(all_cats):
