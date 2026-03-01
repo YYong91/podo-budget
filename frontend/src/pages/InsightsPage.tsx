@@ -31,7 +31,10 @@ const TABS: { id: TabType; label: string; icon: React.ReactNode }[] = [
 // ── 날짜 유틸 ──
 
 function toDateStr(d: Date): string {
-  return d.toISOString().slice(0, 10)
+  const year = d.getFullYear()
+  const month = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
 }
 
 function shiftDate(dateStr: string, tab: TabType, direction: number): string {
