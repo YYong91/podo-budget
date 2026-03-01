@@ -59,6 +59,24 @@ describe('Dashboard', () => {
       })
     })
 
+    it('이번 달 총 지출 카드를 클릭하면 지출 목록으로 이동한다', async () => {
+      renderDashboard()
+      await waitFor(() => {
+        const links = screen.getAllByRole('link')
+        const expenseCard = links.find(l => l.textContent?.includes('이번 달 총 지출'))
+        expect(expenseCard).toHaveAttribute('href', '/expenses')
+      })
+    })
+
+    it('이번 달 총 수입 카드를 클릭하면 수입 목록으로 이동한다', async () => {
+      renderDashboard()
+      await waitFor(() => {
+        const links = screen.getAllByRole('link')
+        const incomeCard = links.find(l => l.textContent?.includes('이번 달 총 수입'))
+        expect(incomeCard).toHaveAttribute('href', '/income')
+      })
+    })
+
     it('순수익을 표시한다', async () => {
       renderDashboard()
       await waitFor(() => {
