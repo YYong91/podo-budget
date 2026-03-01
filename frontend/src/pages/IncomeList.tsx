@@ -4,7 +4,7 @@
  */
 
 import { useEffect, useState, useMemo } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { Loader2, PlusCircle } from 'lucide-react'
 import { incomeApi } from '../api/income'
 import { categoryApi } from '../api/categories'
@@ -84,16 +84,40 @@ export default function IncomeList() {
   const [members, setMembers] = useState<HouseholdMember[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
-  const [page, setPage] = useState(0)
   const limit = 20
 
-  const [startDate, setStartDate] = useState('')
-  const [endDate, setEndDate] = useState('')
-  const [categoryId, setCategoryId] = useState<number | undefined>()
-  const [memberUserId, setMemberUserId] = useState<number | undefined>()
+  /* URL 쿼리 파라미터로 필터/페이지 상태 관리 (뒤로가기 시 복원) */
+  const [searchParams, setSearchParams] = useSearchParams()
+  const page = parseInt(searchParams.get('page') ?? '0', 10)
+  const startDate = searchParams.get('start') ?? ''
+  const endDate = searchParams.get('end') ?? ''
+  const categoryId = searchParams.get('cat') ? Number(searchParams.get('cat')) : undefined
+  const memberUserId = searchParams.get('member') ? Number(searchParams.get('member')) : undefined
 
-  const [sortField, setSortField] = useState<SortField>('date')
-  const [sortDirection, setSortDirection] = useState<SortDirection>('desc')
+  /* 정렬 상태 (클라이언트 사이드 — URL에 반영) */
+  const sortField = (searchParams.get('sort') ?? 'date') as SortField
+  const sortDirection = (searchParams.get('dir') ?? 'desc') as SortDirection
+
+  /** URL 파라미터 업데이트 헬퍼 */
+  function setParams(updates: Record<string, string | null>) {
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev)
+        for (const [key, value] of Object.entries(updates)) {
+          if (value === null || value === '') next.delete(key)
+          else next.set(key, value)
+        }
+        return next
+      },
+      { replace: true }
+    )
+  }
+
+  function setPage(newPage: number) { setParams({ page: newPage === 0 ? null : String(newPage) }) }
+  function setStartDate(val: string) { setParams({ start: val || null, page: null }) }
+  function setEndDate(val: string) { setParams({ end: val || null, page: null }) }
+  function setCategoryId(val: number | undefined) { setParams({ cat: val != null ? String(val) : null, page: null }) }
+  function setMemberUserId(val: number | undefined) { setParams({ member: val != null ? String(val) : null, page: null }) }
 
   async function fetchIncomes() {
     setLoading(true)
@@ -118,10 +142,9 @@ export default function IncomeList() {
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
-      setSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'))
+      setParams({ sort: field, dir: sortDirection === 'asc' ? 'desc' : 'asc', page: null })
     } else {
-      setSortField(field)
-      setSortDirection('desc')
+      setParams({ sort: field, dir: 'desc', page: null })
     }
   }
 
@@ -212,7 +235,7 @@ export default function IncomeList() {
             return (
               <button
                 key={preset.label}
-                onClick={() => { setStartDate(range.start); setEndDate(range.end); setPage(0) }}
+                onClick={() => setParams({ start: range.start, end: range.end, page: null })}
                 className={`px-3 py-1 text-xs rounded-full border transition-colors ${
                   isActive
                     ? 'bg-leaf-100 text-leaf-700 border-leaf-300 font-medium'
@@ -232,10 +255,7 @@ export default function IncomeList() {
             <input
               type="date"
               value={startDate}
-              onChange={(e) => {
-                setStartDate(e.target.value)
-                setPage(0)
-              }}
+              onChange={(e) => setStartDate(e.target.value)}
               className="w-full border border-warm-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-leaf-500/30 focus:border-leaf-500"
             />
           </div>
@@ -244,10 +264,7 @@ export default function IncomeList() {
             <input
               type="date"
               value={endDate}
-              onChange={(e) => {
-                setEndDate(e.target.value)
-                setPage(0)
-              }}
+              onChange={(e) => setEndDate(e.target.value)}
               className="w-full border border-warm-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-leaf-500/30 focus:border-leaf-500"
             />
           </div>
@@ -255,10 +272,7 @@ export default function IncomeList() {
             <label className="block text-xs text-warm-400 mb-1">카테고리</label>
             <select
               value={categoryId ?? ''}
-              onChange={(e) => {
-                setCategoryId(e.target.value ? Number(e.target.value) : undefined)
-                setPage(0)
-              }}
+              onChange={(e) => setCategoryId(e.target.value ? Number(e.target.value) : undefined)}
               className="w-full border border-warm-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-leaf-500/30 focus:border-leaf-500"
             >
               <option value="">전체</option>
@@ -274,10 +288,7 @@ export default function IncomeList() {
               <label className="block text-xs text-warm-400 mb-1">멤버</label>
               <select
                 value={memberUserId ?? ''}
-                onChange={(e) => {
-                  setMemberUserId(e.target.value ? Number(e.target.value) : undefined)
-                  setPage(0)
-                }}
+                onChange={(e) => setMemberUserId(e.target.value ? Number(e.target.value) : undefined)}
                 className="w-full border border-warm-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-leaf-500/30 focus:border-leaf-500"
               >
                 <option value="">전체 멤버</option>
@@ -291,13 +302,7 @@ export default function IncomeList() {
           )}
           <div className="flex items-end">
             <button
-              onClick={() => {
-                setStartDate('')
-                setEndDate('')
-                setCategoryId(undefined)
-                setMemberUserId(undefined)
-                setPage(0)
-              }}
+              onClick={() => setParams({ start: null, end: null, cat: null, member: null, page: null })}
               className="w-full sm:w-auto px-4 py-2 text-sm text-warm-500 hover:text-warm-600 underline"
             >
               필터 초기화
@@ -388,7 +393,7 @@ export default function IncomeList() {
       {/* 페이지네이션 */}
       <div className="flex items-center justify-between">
         <button
-          onClick={() => setPage((p) => Math.max(0, p - 1))}
+          onClick={() => setPage(Math.max(0, page - 1))}
           disabled={page === 0}
           className="px-4 py-2 text-sm border border-warm-300 rounded-lg disabled:opacity-40 hover:bg-warm-50"
         >
@@ -396,7 +401,7 @@ export default function IncomeList() {
         </button>
         <span className="text-sm text-warm-500">페이지 {page + 1}</span>
         <button
-          onClick={() => setPage((p) => p + 1)}
+          onClick={() => setPage(page + 1)}
           disabled={incomes.length < limit}
           className="px-4 py-2 text-sm border border-warm-300 rounded-lg disabled:opacity-40 hover:bg-warm-50"
         >

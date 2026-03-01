@@ -81,3 +81,6 @@ TASK.md
 # Git worktrees
 .worktrees/
 backend/scripts/reset_and_import.py
+
+# Auto Claude data directory
+.auto-claude/

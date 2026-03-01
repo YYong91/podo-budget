@@ -5,7 +5,7 @@
  */
 
 import { useEffect, useState, useMemo } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { Loader2 } from 'lucide-react'
 import { expenseApi } from '../api/expenses'
 import { categoryApi } from '../api/categories'
@@ -85,18 +85,40 @@ export default function ExpenseList() {
   const [members, setMembers] = useState<HouseholdMember[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
-  const [page, setPage] = useState(0)
   const limit = 20
 
-  /* 필터 상태 */
-  const [startDate, setStartDate] = useState('')
-  const [endDate, setEndDate] = useState('')
-  const [categoryId, setCategoryId] = useState<number | undefined>()
-  const [memberUserId, setMemberUserId] = useState<number | undefined>()
+  /* URL 쿼리 파라미터로 필터/페이지 상태 관리 (뒤로가기 시 복원) */
+  const [searchParams, setSearchParams] = useSearchParams()
+  const page = parseInt(searchParams.get('page') ?? '0', 10)
+  const startDate = searchParams.get('start') ?? ''
+  const endDate = searchParams.get('end') ?? ''
+  const categoryId = searchParams.get('cat') ? Number(searchParams.get('cat')) : undefined
+  const memberUserId = searchParams.get('member') ? Number(searchParams.get('member')) : undefined
 
-  /* 정렬 상태 */
-  const [sortField, setSortField] = useState<SortField>('date')
-  const [sortDirection, setSortDirection] = useState<SortDirection>('desc')
+  /* 정렬 상태 (클라이언트 사이드 — URL에 반영) */
+  const sortField = (searchParams.get('sort') ?? 'date') as SortField
+  const sortDirection = (searchParams.get('dir') ?? 'desc') as SortDirection
+
+  /** URL 파라미터 업데이트 헬퍼 (기존 파라미터 유지, replace로 히스토리 오염 방지) */
+  function setParams(updates: Record<string, string | null>) {
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev)
+        for (const [key, value] of Object.entries(updates)) {
+          if (value === null || value === '') next.delete(key)
+          else next.set(key, value)
+        }
+        return next
+      },
+      { replace: true }
+    )
+  }
+
+  function setPage(newPage: number) { setParams({ page: newPage === 0 ? null : String(newPage) }) }
+  function setStartDate(val: string) { setParams({ start: val || null, page: null }) }
+  function setEndDate(val: string) { setParams({ end: val || null, page: null }) }
+  function setCategoryId(val: number | undefined) { setParams({ cat: val != null ? String(val) : null, page: null }) }
+  function setMemberUserId(val: number | undefined) { setParams({ member: val != null ? String(val) : null, page: null }) }
 
   /**
    * 지출 목록 조회
@@ -127,10 +149,9 @@ export default function ExpenseList() {
    */
   const handleSort = (field: SortField) => {
     if (sortField === field) {
-      setSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'))
+      setParams({ dir: sortDirection === 'asc' ? 'desc' : 'asc' })
     } else {
-      setSortField(field)
-      setSortDirection('desc')
+      setParams({ sort: field, dir: 'desc' })
     }
   }
 
@@ -176,8 +197,9 @@ export default function ExpenseList() {
       fetchHouseholdDetail(activeHouseholdId).catch(() => {})
     } else {
       setMembers([])
-      setMemberUserId(undefined)
+      setParams({ member: null })
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeHouseholdId, fetchHouseholdDetail])
 
   // currentHousehold 변경 시 멤버 목록 동기화
@@ -238,7 +260,7 @@ export default function ExpenseList() {
             return (
               <button
                 key={preset.label}
-                onClick={() => { setStartDate(range.start); setEndDate(range.end); setPage(0) }}
+                onClick={() => setParams({ start: range.start, end: range.end, page: null })}
                 className={`px-3 py-1 text-xs rounded-full border transition-colors ${
                   isActive
                     ? 'bg-grape-100 text-grape-700 border-grape-300 font-medium'
@@ -256,7 +278,7 @@ export default function ExpenseList() {
             <input
               type="date"
               value={startDate}
-              onChange={(e) => { setStartDate(e.target.value); setPage(0) }}
+              onChange={(e) => setStartDate(e.target.value)}
               className="w-full border border-warm-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
             />
           </div>
@@ -265,7 +287,7 @@ export default function ExpenseList() {
             <input
               type="date"
               value={endDate}
-              onChange={(e) => { setEndDate(e.target.value); setPage(0) }}
+              onChange={(e) => setEndDate(e.target.value)}
               className="w-full border border-warm-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
             />
           </div>
@@ -273,7 +295,7 @@ export default function ExpenseList() {
             <label className="block text-xs text-warm-400 mb-1">카테고리</label>
             <select
               value={categoryId ?? ''}
-              onChange={(e) => { setCategoryId(e.target.value ? Number(e.target.value) : undefined); setPage(0) }}
+              onChange={(e) => setCategoryId(e.target.value ? Number(e.target.value) : undefined)}
               className="w-full border border-warm-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
             >
               <option value="">전체</option>
@@ -288,7 +310,7 @@ export default function ExpenseList() {
               <label className="block text-xs text-warm-400 mb-1">멤버</label>
               <select
                 value={memberUserId ?? ''}
-                onChange={(e) => { setMemberUserId(e.target.value ? Number(e.target.value) : undefined); setPage(0) }}
+                onChange={(e) => setMemberUserId(e.target.value ? Number(e.target.value) : undefined)}
                 className="w-full border border-warm-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
               >
                 <option value="">전체 멤버</option>
@@ -300,7 +322,7 @@ export default function ExpenseList() {
           )}
           <div className="flex items-end">
             <button
-              onClick={() => { setStartDate(''); setEndDate(''); setCategoryId(undefined); setMemberUserId(undefined); setPage(0) }}
+              onClick={() => setParams({ start: null, end: null, cat: null, member: null, page: null })}
               className="w-full sm:w-auto px-4 py-2 text-sm text-warm-500 hover:text-warm-600 underline"
             >
               필터 초기화
@@ -396,7 +418,7 @@ export default function ExpenseList() {
       {/* 페이지네이션 */}
       <div className="flex items-center justify-between">
         <button
-          onClick={() => setPage((p) => Math.max(0, p - 1))}
+          onClick={() => setPage(Math.max(0, page - 1))}
           disabled={page === 0}
           className="px-4 py-2 text-sm border border-warm-300 rounded-lg disabled:opacity-40 hover:bg-warm-50"
         >
@@ -404,7 +426,7 @@ export default function ExpenseList() {
         </button>
         <span className="text-sm text-warm-500">페이지 {page + 1}</span>
         <button
-          onClick={() => setPage((p) => p + 1)}
+          onClick={() => setPage(page + 1)}
           disabled={expenses.length < limit}
           className="px-4 py-2 text-sm border border-warm-300 rounded-lg disabled:opacity-40 hover:bg-warm-50"
         >

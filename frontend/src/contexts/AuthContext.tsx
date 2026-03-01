@@ -11,9 +11,13 @@
  * - effect body에서 동기 setState 호출 금지
  * - user/loading은 token과 loadedToken에서 파생(derived)
  * - 모든 setState는 비동기 콜백(.then, .catch) 내부에서만 호출
+ *
+ * Safari Private 모드 대응:
+ * - tokenRef: 렌더마다 동기적으로 token 미러링 → localStorage/쿠키 없어도 Authorization 헤더 설정
+ * - 401 인터셉터: Domain 쿠키 삭제 금지 → auth.podonest.com 세션 보호 (무한 루프 방지)
  */
 
-import { createContext, useContext, useMemo, useState, useEffect, useCallback } from 'react'
+import { createContext, useContext, useMemo, useState, useEffect, useCallback, useRef } from 'react'
 import type { ReactNode } from 'react'
 import type { User } from '../types'
 import authApi from '../api/auth'
@@ -82,6 +86,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return stored
   })
 
+  // tokenRef: 렌더마다 동기적으로 미러링 (useEffect 없이)
+  // Safari Private 모드에서 localStorage/쿠키 모두 차단되어도 in-memory 토큰으로 Authorization 헤더 설정
+  const tokenRef = useRef<string | null>(token)
+  tokenRef.current = token
+
   // userProfile: API에서 비동기 로드
   const [userProfile, setUserProfile] = useState<User | null>(null)
 
@@ -98,7 +107,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const requestInterceptor = apiClient.interceptors.request.use(
       (config) => {
-        const t = getCookieToken()
+        // tokenRef.current 우선: Safari Private 모드 등 cookie/localStorage 모두 차단된 환경 대응
+        const t = tokenRef.current ?? getCookieToken()
         if (t) {
           config.headers.Authorization = `Bearer ${t}`
         }
@@ -107,12 +117,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       (error) => Promise.reject(error)
     )
 
-    // 401: 토큰 클리어 → ProtectedRoute가 리다이렉트 처리 (이전: 여기서 직접 redirect)
+    // 401: 토큰 클리어 → ProtectedRoute가 리다이렉트 처리
+    // 주의: clearCookieToken()으로 .podonest.com 도메인 쿠키 삭제 금지
+    //   → budget.podonest.com에서 삭제 시 auth.podonest.com 세션까지 파괴 → 무한 루프
     const responseInterceptor = apiClient.interceptors.response.use(
       (response) => response,
       (error) => {
         if (error.response?.status === 401) {
-          clearCookieToken()
+          try { localStorage.removeItem('podo_access_token') } catch { /* 무시 */ }
           setToken(null)
           // user는 token=null 파생으로 자동 null
         }
