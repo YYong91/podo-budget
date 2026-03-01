@@ -130,6 +130,37 @@ describe('ExpenseList', () => {
       })
     })
 
+    it('이번달 버튼을 클릭하면 날짜 필터가 이번달 범위로 설정된다', async () => {
+      const user = userEvent.setup()
+      renderExpenseList()
+
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: '이번달' })).toBeInTheDocument()
+      })
+
+      await user.click(screen.getByRole('button', { name: '이번달' }))
+
+      // 이번달 1일이 시작일로 설정됨 (로컬 타임존 기준)
+      const today = new Date()
+      const expectedStart = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-01`
+      await waitFor(() => {
+        const inputs = document.querySelectorAll('input[type="date"]')
+        expect(inputs[0]).toHaveValue(expectedStart)
+        expect((inputs[1] as HTMLInputElement).value).not.toBe('')
+      })
+    })
+
+    it('날짜 프리셋 버튼이 4개 표시된다', async () => {
+      renderExpenseList()
+
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: '이번주' })).toBeInTheDocument()
+        expect(screen.getByRole('button', { name: '지난주' })).toBeInTheDocument()
+        expect(screen.getByRole('button', { name: '이번달' })).toBeInTheDocument()
+        expect(screen.getByRole('button', { name: '저번달' })).toBeInTheDocument()
+      })
+    })
+
     it('필터 초기화 버튼을 클릭하면 모든 필터가 리셋된다', async () => {
       const user = userEvent.setup()
       renderExpenseList()
