@@ -22,6 +22,56 @@ function formatAmount(amount: number): string {
   return `₩${amount.toLocaleString('ko-KR')}`
 }
 
+/** 날짜를 YYYY-MM-DD 문자열로 변환 */
+function toDateString(date: Date): string {
+  return date.toISOString().slice(0, 10)
+}
+
+/** 빠른 날짜 선택 프리셋 */
+const DATE_PRESETS = [
+  {
+    label: '이번주',
+    getRange: () => {
+      const today = new Date()
+      const day = today.getDay()
+      const diff = day === 0 ? -6 : 1 - day
+      const monday = new Date(today)
+      monday.setDate(today.getDate() + diff)
+      return { start: toDateString(monday), end: toDateString(today) }
+    },
+  },
+  {
+    label: '지난주',
+    getRange: () => {
+      const today = new Date()
+      const day = today.getDay()
+      const diff = day === 0 ? -6 : 1 - day
+      const monday = new Date(today)
+      monday.setDate(today.getDate() + diff - 7)
+      const sunday = new Date(monday)
+      sunday.setDate(monday.getDate() + 6)
+      return { start: toDateString(monday), end: toDateString(sunday) }
+    },
+  },
+  {
+    label: '이번달',
+    getRange: () => {
+      const today = new Date()
+      const start = new Date(today.getFullYear(), today.getMonth(), 1)
+      return { start: toDateString(start), end: toDateString(today) }
+    },
+  },
+  {
+    label: '저번달',
+    getRange: () => {
+      const today = new Date()
+      const start = new Date(today.getFullYear(), today.getMonth() - 1, 1)
+      const end = new Date(today.getFullYear(), today.getMonth(), 0)
+      return { start: toDateString(start), end: toDateString(end) }
+    },
+  },
+]
+
 export default function ExpenseList() {
   const activeHouseholdId = useHouseholdStore((s) => s.activeHouseholdId)
   const currentHousehold = useHouseholdStore((s) => s.currentHousehold)
@@ -177,6 +227,26 @@ export default function ExpenseList() {
 
       {/* 필터 바 */}
       <div className="bg-white rounded-2xl shadow-sm border border-warm-200/60 p-4">
+        {/* 빠른 날짜 선택 */}
+        <div className="flex flex-wrap gap-2 mb-4">
+          {DATE_PRESETS.map((preset) => {
+            const range = preset.getRange()
+            const isActive = startDate === range.start && endDate === range.end
+            return (
+              <button
+                key={preset.label}
+                onClick={() => { setStartDate(range.start); setEndDate(range.end); setPage(0) }}
+                className={`px-3 py-1 text-xs rounded-full border transition-colors ${
+                  isActive
+                    ? 'bg-grape-100 text-grape-700 border-grape-300 font-medium'
+                    : 'bg-white text-warm-600 border-warm-200 hover:bg-warm-50'
+                }`}
+              >
+                {preset.label}
+              </button>
+            )
+          })}
+        </div>
         <div className={`grid grid-cols-1 sm:grid-cols-2 ${showMemberFilter ? 'lg:grid-cols-5' : 'lg:grid-cols-4'} gap-4`}>
           <div>
             <label className="block text-xs text-warm-400 mb-1">시작일</label>
