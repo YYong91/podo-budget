@@ -3,10 +3,11 @@
  * @description 예산 관리 페이지
  * 카테고리 전체 목록을 한 화면에 표시하고, 각 카테고리 옆에 예산 금액을 바로 입력할 수 있다.
  * 참고용으로 카테고리별 최근 3개월 실제 지출액을 표시한다.
+ * 월 총 예산을 설정하면 카테고리별 배분 비율과 여유예산을 확인할 수 있다.
  */
 
-import { useState, useEffect } from 'react'
-import { Bell, AlertTriangle } from 'lucide-react'
+import { useState, useEffect, useMemo } from 'react'
+import { BarChart3, AlertTriangle, Wallet } from 'lucide-react'
 import { useToast } from '../hooks/useToast'
 import budgetApi from '../api/budgets'
 import EmptyState from '../components/EmptyState'
@@ -26,21 +27,31 @@ export default function BudgetManager() {
   // 저장 중인 카테고리 ID 집합
   const [savingIds, setSavingIds] = useState<Set<number>>(new Set())
 
+  // 월 총 예산
+  const [totalBudget, setTotalBudget] = useState<number | null>(null)
+  const [localTotalBudget, setLocalTotalBudget] = useState<string>('')
+  const [savingTotal, setSavingTotal] = useState(false)
+
   /**
-   * 데이터 로드 — 카테고리 개요와 알림을 동시에 가져온다
+   * 데이터 로드 — 카테고리 개요, 알림, 월 총 예산을 동시에 가져온다
    */
   const loadData = async () => {
     try {
       setLoading(true)
       setError(null)
 
-      const [overviewRes, alertsRes] = await Promise.all([
+      const [overviewRes, alertsRes, totalRes] = await Promise.all([
         budgetApi.getCategoryOverview(),
         budgetApi.getBudgetAlerts(),
+        budgetApi.getTotalBudget(),
       ])
 
       setOverview(overviewRes.data)
       setAlerts(alertsRes.data)
+      setTotalBudget(totalRes.data.total_monthly_budget)
+      setLocalTotalBudget(
+        totalRes.data.total_monthly_budget != null ? String(totalRes.data.total_monthly_budget) : ''
+      )
 
       // 현재 예산 금액으로 로컬 상태 초기화
       const amounts: Record<number, string> = {}
@@ -62,6 +73,25 @@ export default function BudgetManager() {
   }, [])
 
   /**
+   * 카테고리별 예산 합계 (로컬 입력 기준)
+   */
+  const allocatedTotal = useMemo(() => {
+    return Object.values(localAmounts).reduce((sum, val) => {
+      const num = Number(val)
+      return sum + (num > 0 ? num : 0)
+    }, 0)
+  }, [localAmounts])
+
+  /**
+   * 여유예산 (총 예산 - 배분된 예산)
+   */
+  const remainingBudget = useMemo(() => {
+    const total = Number(localTotalBudget)
+    if (!total || total <= 0) return null
+    return total - allocatedTotal
+  }, [localTotalBudget, allocatedTotal])
+
+  /**
    * 입력값 변경 핸들러
    */
   const handleAmountChange = (categoryId: number, value: string) => {
@@ -76,6 +106,33 @@ export default function BudgetManager() {
       item.current_budget_amount != null ? String(item.current_budget_amount) : ''
     const local = localAmounts[item.category_id] ?? ''
     return current !== local
+  }
+
+  /**
+   * 월 총 예산이 변경되었는지 확인
+   */
+  const isTotalDirty = (): boolean => {
+    const current = totalBudget != null ? String(totalBudget) : ''
+    return current !== localTotalBudget
+  }
+
+  /**
+   * 월 총 예산 저장
+   */
+  const handleSaveTotal = async () => {
+    setSavingTotal(true)
+    try {
+      const num = Number(localTotalBudget)
+      const amount = localTotalBudget && num > 0 ? num : null
+      const res = await budgetApi.updateTotalBudget(amount)
+      setTotalBudget(res.data.total_monthly_budget)
+      addToast('success', '월 총 예산이 저장되었습니다')
+    } catch (err) {
+      console.error('Failed to save total budget:', err)
+      addToast('error', '월 총 예산 저장에 실패했습니다')
+    } finally {
+      setSavingTotal(false)
+    }
   }
 
   /**
@@ -138,6 +195,17 @@ export default function BudgetManager() {
     return 'bg-leaf-500'
   }
 
+  /**
+   * 카테고리별 총 예산 대비 비율 계산
+   */
+  const getCategoryPercent = (categoryId: number): number | null => {
+    const total = Number(localTotalBudget)
+    if (!total || total <= 0) return null
+    const amount = Number(localAmounts[categoryId] ?? 0)
+    if (amount <= 0) return null
+    return (amount / total) * 100
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -150,6 +218,10 @@ export default function BudgetManager() {
     return <ErrorState message={error} onRetry={loadData} />
   }
 
+  const totalNum = Number(localTotalBudget)
+  const hasTotalBudget = localTotalBudget && totalNum > 0
+  const allocationPercent = hasTotalBudget ? (allocatedTotal / totalNum) * 100 : 0
+
   return (
     <div className="space-y-6">
       {/* 헤더 */}
@@ -160,12 +232,63 @@ export default function BudgetManager() {
         </p>
       </div>
 
-      {/* 알림 카드 */}
+      {/* 월 총 예산 카드 */}
+      <div className="bg-white rounded-2xl shadow-sm border border-warm-200 p-5">
+        <div className="flex items-center gap-2 mb-4">
+          <Wallet className="w-5 h-5 text-grape-600" />
+          <h2 className="text-lg font-semibold text-warm-900">월 총 예산</h2>
+        </div>
+        <div className="flex items-center gap-2">
+          <input
+            type="number"
+            min="0"
+            step="10000"
+            value={localTotalBudget}
+            onChange={(e) => setLocalTotalBudget(e.target.value)}
+            className="w-44 px-3 py-2 text-sm border border-warm-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-grape-500 text-right"
+            placeholder="미설정"
+            aria-label="월 총 예산"
+          />
+          <span className="text-sm text-warm-500">원</span>
+          {isTotalDirty() && (
+            <button
+              onClick={handleSaveTotal}
+              disabled={savingTotal}
+              className="px-3 py-2 text-xs font-medium text-white bg-grape-600 rounded-lg hover:bg-grape-700 disabled:opacity-50 transition-colors whitespace-nowrap"
+            >
+              {savingTotal ? '저장 중...' : '저장'}
+            </button>
+          )}
+        </div>
+        {/* 배분 현황 */}
+        {hasTotalBudget && (
+          <div className="mt-4 space-y-2">
+            <div className="w-full bg-warm-200 rounded-full h-3">
+              <div
+                className={`h-3 rounded-full transition-all ${
+                  allocationPercent > 100 ? 'bg-rose-500' : 'bg-grape-500'
+                }`}
+                style={{ width: `${Math.min(allocationPercent, 100)}%` }}
+              />
+            </div>
+            <div className="flex justify-between text-xs text-warm-600">
+              <span>
+                배분: {formatAmount(allocatedTotal)} / {formatAmount(totalNum)} ({allocationPercent.toFixed(1)}%)
+              </span>
+              <span className={remainingBudget != null && remainingBudget < 0 ? 'text-rose-600 font-semibold' : ''}>
+                여유: {remainingBudget != null ? formatAmount(remainingBudget) : '-'}
+              </span>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* 예산 현황 카드 */}
       {alerts.length > 0 && (
         <div className="bg-white rounded-2xl shadow-sm border border-warm-200 p-5">
           <div className="flex items-center gap-2 mb-4">
-            <Bell className="w-5 h-5 text-grape-600" />
-            <h2 className="text-lg font-semibold text-warm-900">예산 알림</h2>
+            <BarChart3 className="w-5 h-5 text-grape-600" />
+            <h2 className="text-lg font-semibold text-warm-900">예산 현황</h2>
           </div>
           <div className="space-y-3">
             {alerts.map((alert) => (
@@ -238,54 +361,64 @@ export default function BudgetManager() {
             </p>
           </div>
           <div className="divide-y divide-warm-100">
-            {overview.map((item) => (
-              <div key={item.category_id} className="px-5 py-4">
-                <div className="flex items-center gap-3">
-                  {/* 카테고리 이름 */}
-                  <span className="w-14 font-medium text-warm-900 shrink-0 text-sm truncate">
-                    {item.category_name}
-                  </span>
+            {overview.map((item) => {
+              const pct = getCategoryPercent(item.category_id)
+              return (
+                <div key={item.category_id} className="px-5 py-4">
+                  <div className="flex items-center gap-3">
+                    {/* 카테고리 이름 */}
+                    <span className="w-14 font-medium text-warm-900 shrink-0 text-sm truncate">
+                      {item.category_name}
+                    </span>
 
-                  {/* 최근 3개월 지출 — 데스크톱 */}
-                  <div className="flex-1 text-xs text-warm-400 min-w-0">
-                    {item.monthly_spending.length > 0 ? (
-                      <span>
-                        {item.monthly_spending
-                          .slice(0, 3)
-                          .map((s) => `${s.month}월 ${s.amount.toLocaleString('ko-KR')}원`)
-                          .join(' / ')}
+                    {/* 최근 3개월 지출 — 데스크톱 */}
+                    <div className="flex-1 text-xs text-warm-400 min-w-0">
+                      {item.monthly_spending.length > 0 ? (
+                        <span>
+                          {item.monthly_spending
+                            .slice(0, 3)
+                            .map((s) => `${s.month}월 ${s.amount.toLocaleString('ko-KR')}원`)
+                            .join(' / ')}
+                        </span>
+                      ) : (
+                        <span className="text-warm-300">지출 내역 없음</span>
+                      )}
+                    </div>
+
+                    {/* 비율 표시 */}
+                    {pct != null && (
+                      <span className="text-xs text-grape-500 font-medium shrink-0 w-12 text-right">
+                        {pct.toFixed(1)}%
                       </span>
-                    ) : (
-                      <span className="text-warm-300">지출 내역 없음</span>
                     )}
-                  </div>
 
-                  {/* 예산 입력 + 저장 버튼 */}
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    <input
-                      type="number"
-                      min="0"
-                      step="1000"
-                      value={localAmounts[item.category_id] ?? ''}
-                      onChange={(e) => handleAmountChange(item.category_id, e.target.value)}
-                      className="w-28 px-2 py-1.5 text-sm border border-warm-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-grape-500 text-right"
-                      placeholder="예산 없음"
-                      aria-label={`${item.category_name} 예산`}
-                    />
-                    <span className="text-xs text-warm-500 shrink-0">원</span>
-                    {isDirty(item) && (
-                      <button
-                        onClick={() => handleSave(item)}
-                        disabled={savingIds.has(item.category_id)}
-                        className="px-3 py-1.5 text-xs font-medium text-white bg-grape-600 rounded-lg hover:bg-grape-700 disabled:opacity-50 transition-colors whitespace-nowrap"
-                      >
-                        {savingIds.has(item.category_id) ? '저장 중...' : '저장'}
-                      </button>
-                    )}
+                    {/* 예산 입력 + 저장 버튼 */}
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <input
+                        type="number"
+                        min="0"
+                        step="1000"
+                        value={localAmounts[item.category_id] ?? ''}
+                        onChange={(e) => handleAmountChange(item.category_id, e.target.value)}
+                        className="w-28 px-2 py-1.5 text-sm border border-warm-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-grape-500 text-right"
+                        placeholder="예산 없음"
+                        aria-label={`${item.category_name} 예산`}
+                      />
+                      <span className="text-xs text-warm-500 shrink-0">원</span>
+                      {isDirty(item) && (
+                        <button
+                          onClick={() => handleSave(item)}
+                          disabled={savingIds.has(item.category_id)}
+                          className="px-3 py-1.5 text-xs font-medium text-white bg-grape-600 rounded-lg hover:bg-grape-700 disabled:opacity-50 transition-colors whitespace-nowrap"
+                        >
+                          {savingIds.has(item.category_id) ? '저장 중...' : '저장'}
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </div>
       )}

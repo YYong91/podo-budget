@@ -42,7 +42,7 @@ export default function TermsOfServicePage() {
                 <li>자연어 입력을 통한 지출 기록 및 자동 분류</li>
                 <li>카테고리별 지출 관리 및 통계</li>
                 <li>월별 지출 인사이트 생성(AI 기반)</li>
-                <li>예산 설정 및 알림</li>
+                <li>예산 설정 및 현황 조회</li>
                 <li>공유 가계부 기능(가족, 친구 등과 함께 사용)</li>
                 <li>텔레그램 봇 연동(선택)</li>
               </ul>

@@ -4,7 +4,7 @@
 각 사용자는 개인 지출 데이터를 가지며, 가구(Household)에 속하여 공유 데이터를 관리할 수 있습니다.
 """
 
-from sqlalchemy import BigInteger, Boolean, Column, DateTime, Integer, String
+from sqlalchemy import BigInteger, Boolean, Column, DateTime, Integer, Numeric, String
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
@@ -35,6 +35,7 @@ class User(Base):
     telegram_chat_id = Column(String, unique=True, index=True, nullable=True)  # Telegram 연동용
     telegram_link_code = Column(String(8), unique=True, index=True, nullable=True)  # 단기 연동 코드
     telegram_link_code_expires_at = Column(DateTime(timezone=True), nullable=True)  # 만료 시각
+    total_monthly_budget = Column(Numeric(12, 2), nullable=True)  # 월 총 예산
     created_at = Column(DateTime, default=func.now(), nullable=False)
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now(), nullable=False)
 

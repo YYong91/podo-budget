@@ -87,6 +87,18 @@ class CategoryBudgetOverview(BaseModel):
     alert_threshold: float | None = None
 
 
+class TotalBudgetUpdate(BaseModel):
+    """월 총 예산 수정 요청 스키마"""
+
+    amount: float | None = Field(None, ge=0, description="월 총 예산 금액 (None이면 삭제)")
+
+
+class TotalBudgetResponse(BaseModel):
+    """월 총 예산 응답 스키마"""
+
+    total_monthly_budget: float | None = Field(None, description="월 총 예산 금액")
+
+
 class BudgetAlert(BaseModel):
     """예산 초과/경고 알림 스키마
 

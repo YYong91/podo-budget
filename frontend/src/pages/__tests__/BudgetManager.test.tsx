@@ -1,7 +1,7 @@
 /**
  * @file BudgetManager.test.tsx
  * @description BudgetManager 예산 관리 페이지 테스트
- * 카테고리 개요 로드, 인라인 예산 편집, 알림, 에러/빈 상태를 테스트한다.
+ * 카테고리 개요 로드, 인라인 예산 편집, 현황, 월 총 예산, 에러/빈 상태를 테스트한다.
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
@@ -54,7 +54,7 @@ const mockOverview: CategoryBudgetOverview[] = [
 ]
 
 /**
- * 테스트용 예산 알림 데이터
+ * 테스트용 예산 현황 데이터
  */
 const mockAlerts: BudgetAlert[] = [
   {
@@ -84,10 +84,13 @@ const mockAlerts: BudgetAlert[] = [
 /**
  * MSW 핸들러 설정: 정상 데이터 반환
  */
-function setupSuccessHandlers() {
+function setupSuccessHandlers(totalBudget: number | null = null) {
   server.use(
     http.get('/api/budgets/category-overview', () => HttpResponse.json(mockOverview)),
     http.get('/api/budgets/alerts', () => HttpResponse.json(mockAlerts)),
+    http.get('/api/budgets/total-budget', () =>
+      HttpResponse.json({ total_monthly_budget: totalBudget })
+    ),
   )
 }
 
@@ -98,6 +101,9 @@ function setupEmptyHandlers() {
   server.use(
     http.get('/api/budgets/category-overview', () => HttpResponse.json([])),
     http.get('/api/budgets/alerts', () => HttpResponse.json([])),
+    http.get('/api/budgets/total-budget', () =>
+      HttpResponse.json({ total_monthly_budget: null })
+    ),
   )
 }
 
@@ -110,6 +116,9 @@ function setupErrorHandlers() {
       HttpResponse.json({ detail: 'Server error' }, { status: 500 })
     ),
     http.get('/api/budgets/alerts', () =>
+      HttpResponse.json({ detail: 'Server error' }, { status: 500 })
+    ),
+    http.get('/api/budgets/total-budget', () =>
       HttpResponse.json({ detail: 'Server error' }, { status: 500 })
     ),
   )
@@ -350,8 +359,8 @@ describe('BudgetManager', () => {
     })
   })
 
-  describe('예산 알림', () => {
-    it('경고 알림의 사용률을 표시한다', async () => {
+  describe('예산 현황', () => {
+    it('경고 현황의 사용률을 표시한다', async () => {
       setupSuccessHandlers()
       renderBudgetManager()
 
@@ -360,7 +369,7 @@ describe('BudgetManager', () => {
       })
     })
 
-    it('초과 알림의 사용률을 표시한다', async () => {
+    it('초과 현황의 사용률을 표시한다', async () => {
       setupSuccessHandlers()
       renderBudgetManager()
 
@@ -387,19 +396,22 @@ describe('BudgetManager', () => {
       })
     })
 
-    it('예산 알림 섹션 제목을 표시한다', async () => {
+    it('예산 현황 섹션 제목을 표시한다', async () => {
       setupSuccessHandlers()
       renderBudgetManager()
 
       await waitFor(() => {
-        expect(screen.getByText('예산 알림')).toBeInTheDocument()
+        expect(screen.getByText('예산 현황')).toBeInTheDocument()
       })
     })
 
-    it('알림이 없으면 알림 섹션을 표시하지 않는다', async () => {
+    it('현황이 없으면 현황 섹션을 표시하지 않는다', async () => {
       server.use(
         http.get('/api/budgets/category-overview', () => HttpResponse.json(mockOverview)),
         http.get('/api/budgets/alerts', () => HttpResponse.json([])),
+        http.get('/api/budgets/total-budget', () =>
+          HttpResponse.json({ total_monthly_budget: null })
+        ),
       )
 
       renderBudgetManager()
@@ -408,7 +420,49 @@ describe('BudgetManager', () => {
         expect(screen.getByText('예산 관리')).toBeInTheDocument()
       })
 
-      expect(screen.queryByText('예산 알림')).not.toBeInTheDocument()
+      expect(screen.queryByText('예산 현황')).not.toBeInTheDocument()
+    })
+  })
+
+  describe('월 총 예산', () => {
+    it('월 총 예산 입력 필드를 표시한다', async () => {
+      setupSuccessHandlers()
+      renderBudgetManager()
+
+      await waitFor(() => {
+        expect(screen.getByLabelText('월 총 예산')).toBeInTheDocument()
+      })
+    })
+
+    it('저장된 월 총 예산 금액을 표시한다', async () => {
+      setupSuccessHandlers(3000000)
+      renderBudgetManager()
+
+      await waitFor(() => {
+        const input = screen.getByLabelText('월 총 예산')
+        expect(input).toHaveValue(3000000)
+      })
+    })
+
+    it('월 총 예산 설정 시 배분 현황을 표시한다', async () => {
+      setupSuccessHandlers(3000000)
+      renderBudgetManager()
+
+      await waitFor(() => {
+        // 식비 300,000 배분됨 → 배분: ₩300,000 / ₩3,000,000
+        expect(screen.getByText(/배분:/)).toBeInTheDocument()
+        expect(screen.getByText(/여유:/)).toBeInTheDocument()
+      })
+    })
+
+    it('카테고리별 비율을 표시한다', async () => {
+      setupSuccessHandlers(3000000)
+      renderBudgetManager()
+
+      await waitFor(() => {
+        // 식비 300,000 / 3,000,000 = 10.0%
+        expect(screen.getByText('10.0%')).toBeInTheDocument()
+      })
     })
   })
 

@@ -16,7 +16,16 @@ from app.models.budget import Budget
 from app.models.category import Category
 from app.models.expense import Expense
 from app.models.user import User
-from app.schemas.budget import BudgetAlert, BudgetCreate, BudgetResponse, BudgetUpdate, CategoryBudgetOverview, MonthlySpending
+from app.schemas.budget import (
+    BudgetAlert,
+    BudgetCreate,
+    BudgetResponse,
+    BudgetUpdate,
+    CategoryBudgetOverview,
+    MonthlySpending,
+    TotalBudgetResponse,
+    TotalBudgetUpdate,
+)
 
 router = APIRouter()
 
@@ -99,7 +108,32 @@ async def create_budget(
     return new_budget
 
 
-# NOTE: 고정 경로 엔드포인트(alerts, category-overview)를 반드시 /{budget_id} 앞에 정의해야 함.
+@router.get("/total-budget", response_model=TotalBudgetResponse)
+async def get_total_budget(
+    current_user: User = Depends(get_current_user),
+):
+    """월 총 예산 조회"""
+    return TotalBudgetResponse(
+        total_monthly_budget=float(current_user.total_monthly_budget) if current_user.total_monthly_budget is not None else None,
+    )
+
+
+@router.put("/total-budget", response_model=TotalBudgetResponse)
+async def update_total_budget(
+    data: TotalBudgetUpdate,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """월 총 예산 수정"""
+    current_user.total_monthly_budget = data.amount
+    await db.commit()
+    await db.refresh(current_user)
+    return TotalBudgetResponse(
+        total_monthly_budget=float(current_user.total_monthly_budget) if current_user.total_monthly_budget is not None else None,
+    )
+
+
+# NOTE: 고정 경로 엔드포인트(alerts, category-overview, total-budget)를 반드시 /{budget_id} 앞에 정의해야 함.
 # FastAPI 0.109 (Starlette 0.35)에서는 /{budget_id} partial match 후 탐색을 멈춰
 # 뒤에 정의된 고정 경로가 Method Not Allowed를 반환하는 버그가 있음.
 

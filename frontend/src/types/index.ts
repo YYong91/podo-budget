@@ -162,6 +162,10 @@ export interface CategoryBudgetOverview {
   alert_threshold: number | null
 }
 
+export interface TotalBudgetResponse {
+  total_monthly_budget: number | null
+}
+
 /* 통계 관련 타입 */
 
 export interface CategoryStats {
