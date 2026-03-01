@@ -330,6 +330,37 @@ export const handlers = [
     return HttpResponse.json(null, { status: 204 })
   }),
 
+  // ==================== 예산 API ====================
+
+  /**
+   * GET /api/budgets/monthly-stats - 월별 예산 대비 지출 통계
+   */
+  http.get(`${BASE_URL}/budgets/monthly-stats`, () => {
+    return HttpResponse.json({
+      month: '2026-03',
+      total_budget: 500000,
+      total_spent: 320000,
+      categories: [
+        {
+          category_name: '식비',
+          budget_amount: 300000,
+          spent_amount: 220000,
+          remaining_amount: 80000,
+          usage_percentage: 73.3,
+          is_exceeded: false,
+        },
+        {
+          category_name: '교통비',
+          budget_amount: 200000,
+          spent_amount: 100000,
+          remaining_amount: 100000,
+          usage_percentage: 50.0,
+          is_exceeded: false,
+        },
+      ],
+    })
+  }),
+
   // ==================== 인사이트 API ====================
 
   /**

@@ -166,6 +166,22 @@ export interface TotalBudgetResponse {
   total_monthly_budget: number | null
 }
 
+export interface BudgetMonthlyCategoryStats {
+  category_name: string
+  budget_amount: number
+  spent_amount: number
+  remaining_amount: number
+  usage_percentage: number
+  is_exceeded: boolean
+}
+
+export interface BudgetMonthlyStatsResponse {
+  month: string
+  total_budget: number | null
+  total_spent: number
+  categories: BudgetMonthlyCategoryStats[]
+}
+
 /* 통계 관련 타입 */
 
 export interface CategoryStats {

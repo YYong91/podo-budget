@@ -4,7 +4,7 @@
  * 예산 CRUD 및 알림 조회 기능을 제공한다.
  */
 
-import type { Budget, BudgetCreateRequest, BudgetUpdateRequest, BudgetAlert, CategoryBudgetOverview, TotalBudgetResponse } from '../types'
+import type { Budget, BudgetCreateRequest, BudgetUpdateRequest, BudgetAlert, BudgetMonthlyStatsResponse, CategoryBudgetOverview, TotalBudgetResponse } from '../types'
 import apiClient from './client'
 
 /**
@@ -65,6 +65,13 @@ export const getTotalBudget = () =>
 export const updateTotalBudget = (amount: number | null) =>
   apiClient.put<TotalBudgetResponse>('/budgets/total-budget', { amount })
 
+/**
+ * 월별 예산 대비 지출 통계 API
+ * @param month - YYYY-MM 형식의 월
+ */
+export const getMonthlyStats = (month: string) =>
+  apiClient.get<BudgetMonthlyStatsResponse>(`/budgets/monthly-stats`, { params: { month } })
+
 const budgetApi = {
   getBudgets,
   createBudget,
@@ -74,6 +81,7 @@ const budgetApi = {
   getCategoryOverview,
   getTotalBudget,
   updateTotalBudget,
+  getMonthlyStats,
 }
 
 export default budgetApi

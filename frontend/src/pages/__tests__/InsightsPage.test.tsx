@@ -139,6 +139,34 @@ describe('InsightsPage', () => {
     })
   })
 
+  describe('예산 대비 지출 섹션', () => {
+    it('월간 지출 탭에서 예산 대비 지출 섹션이 표시된다', async () => {
+      renderInsightsPage()
+      await waitFor(() => {
+        expect(screen.getByTestId('budget-vs-actual')).toBeInTheDocument()
+      })
+    })
+
+    it('예산 대비 지출 제목과 카테고리 정보가 표시된다', async () => {
+      renderInsightsPage()
+      await waitFor(() => {
+        expect(screen.getByText('예산 대비 지출')).toBeInTheDocument()
+      })
+    })
+
+    it('수입 토글 시 예산 대비 지출 섹션이 숨겨진다', async () => {
+      const user = userEvent.setup()
+      renderInsightsPage()
+      await waitFor(() => {
+        expect(screen.getByText('총 지출')).toBeInTheDocument()
+      })
+      await user.click(screen.getByRole('button', { name: '수입' }))
+      await waitFor(() => {
+        expect(screen.queryByTestId('budget-vs-actual')).not.toBeInTheDocument()
+      })
+    })
+  })
+
   describe('지출/수입 토글', () => {
     it('기본값은 지출이다', async () => {
       renderInsightsPage()

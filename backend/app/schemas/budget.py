@@ -99,6 +99,26 @@ class TotalBudgetResponse(BaseModel):
     total_monthly_budget: float | None = Field(None, description="월 총 예산 금액")
 
 
+class BudgetMonthlyCategoryStats(BaseModel):
+    """월별 카테고리 예산 대비 지출 통계"""
+
+    category_name: str
+    budget_amount: float
+    spent_amount: float
+    remaining_amount: float
+    usage_percentage: float
+    is_exceeded: bool
+
+
+class BudgetMonthlyStatsResponse(BaseModel):
+    """월별 예산 대비 지출 통계 응답"""
+
+    month: str
+    total_budget: float | None
+    total_spent: float
+    categories: list[BudgetMonthlyCategoryStats]
+
+
 class BudgetAlert(BaseModel):
     """예산 초과/경고 알림 스키마
 

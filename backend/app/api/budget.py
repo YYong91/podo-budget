@@ -6,7 +6,7 @@
 
 from datetime import datetime, timedelta
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import extract, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -19,6 +19,8 @@ from app.models.user import User
 from app.schemas.budget import (
     BudgetAlert,
     BudgetCreate,
+    BudgetMonthlyCategoryStats,
+    BudgetMonthlyStatsResponse,
     BudgetResponse,
     BudgetUpdate,
     CategoryBudgetOverview,
@@ -133,7 +135,7 @@ async def update_total_budget(
     )
 
 
-# NOTE: 고정 경로 엔드포인트(alerts, category-overview, total-budget)를 반드시 /{budget_id} 앞에 정의해야 함.
+# NOTE: 고정 경로 엔드포인트(alerts, category-overview, monthly-stats, total-budget)를 반드시 /{budget_id} 앞에 정의해야 함.
 # FastAPI 0.109 (Starlette 0.35)에서는 /{budget_id} partial match 후 탐색을 멈춰
 # 뒤에 정의된 고정 경로가 Method Not Allowed를 반환하는 버그가 있음.
 
@@ -323,6 +325,115 @@ async def get_category_overview(
         )
 
     return overview
+
+
+@router.get("/monthly-stats", response_model=BudgetMonthlyStatsResponse)
+async def get_monthly_stats(
+    month: str = Query(..., description="YYYY-MM 형식", pattern=r"^\d{4}-\d{2}$"),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """월별 예산 대비 실제 지출 통계 조회
+
+    특정 월의 카테고리별 예산과 실제 지출을 비교하여 반환합니다.
+    예산이 설정된 카테고리만 포함됩니다.
+
+    Args:
+        month: 조회할 월 (YYYY-MM 형식)
+        current_user: 현재 인증된 사용자
+        db: 데이터베이스 세션
+
+    Returns:
+        월별 예산 대비 지출 통계
+    """
+    year, mon = map(int, month.split("-"))
+    start = datetime(year, mon, 1)
+    end = datetime(year + 1, 1, 1) if mon == 12 else datetime(year, mon + 1, 1)
+
+    # 현재 활성 예산 조회
+    budgets_result = await db.execute(
+        select(Budget)
+        .where(
+            Budget.user_id == current_user.id,
+            Budget.period == "monthly",
+            Budget.start_date <= start,
+            or_(Budget.end_date.is_(None), Budget.end_date >= start),
+        )
+        .order_by(Budget.created_at.desc())
+    )
+    budgets = budgets_result.scalars().all()
+
+    # 카테고리별 최신 예산 하나씩 선택
+    budget_map: dict[int, Budget] = {}
+    for budget in budgets:
+        if budget.category_id not in budget_map:
+            budget_map[budget.category_id] = budget
+
+    if not budget_map:
+        return BudgetMonthlyStatsResponse(
+            month=month,
+            total_budget=float(current_user.total_monthly_budget) if current_user.total_monthly_budget else None,
+            total_spent=0.0,
+            categories=[],
+        )
+
+    # 카테고리 정보 일괄 조회
+    category_ids = list(budget_map.keys())
+    categories_result = await db.execute(select(Category).where(Category.id.in_(category_ids)))
+    category_map = {c.id: c for c in categories_result.scalars().all()}
+
+    # 해당 월 카테고리별 지출 집계
+    spending_result = await db.execute(
+        select(Expense.category_id, func.sum(Expense.amount).label("total"))
+        .where(
+            Expense.user_id == current_user.id,
+            Expense.date >= start,
+            Expense.date < end,
+            Expense.exclude_from_stats == False,  # noqa: E712
+        )
+        .group_by(Expense.category_id)
+    )
+    spending_map: dict[int, float] = {row.category_id: float(row.total) for row in spending_result.all()}
+
+    # 결과 조합
+    categories = []
+    total_budget_sum = 0.0
+    total_spent_sum = 0.0
+
+    for cat_id, budget in budget_map.items():
+        cat = category_map.get(cat_id)
+        if not cat:
+            continue
+        budget_amount = float(budget.amount)
+        spent_amount = spending_map.get(cat_id, 0.0)
+        remaining_amount = budget_amount - spent_amount
+        usage_percentage = (spent_amount / budget_amount * 100) if budget_amount > 0 else 0.0
+
+        total_budget_sum += budget_amount
+        total_spent_sum += spent_amount
+
+        categories.append(
+            BudgetMonthlyCategoryStats(
+                category_name=cat.name,
+                budget_amount=budget_amount,
+                spent_amount=spent_amount,
+                remaining_amount=remaining_amount,
+                usage_percentage=usage_percentage,
+                is_exceeded=spent_amount > budget_amount,
+            )
+        )
+
+    # 사용률 높은 순 정렬
+    categories.sort(key=lambda x: -x.usage_percentage)
+
+    total_budget = float(current_user.total_monthly_budget) if current_user.total_monthly_budget else total_budget_sum or None
+
+    return BudgetMonthlyStatsResponse(
+        month=month,
+        total_budget=total_budget,
+        total_spent=total_spent_sum,
+        categories=categories,
+    )
 
 
 @router.put("/{budget_id}", response_model=BudgetResponse)

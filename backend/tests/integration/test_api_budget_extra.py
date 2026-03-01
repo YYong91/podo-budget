@@ -5,6 +5,7 @@
 - 다른 사용자 예산 수정/삭제 IDOR 방지
 - 예산 알림 - 미래 시작 예산 스킵
 - 예산 알림 - 카테고리 없는 예산 스킵
+- 월별 예산 대비 지출 통계 조회
 """
 
 from datetime import datetime, timedelta
@@ -15,6 +16,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.budget import Budget
 from app.models.category import Category
+from app.models.expense import Expense
 from app.models.user import User
 
 
@@ -137,3 +139,108 @@ async def test_budget_alerts_future_budget_skipped(authenticated_client: AsyncCl
     data = response.json()
     # 미래 시작 예산은 알림 목록에 없어야 함
     assert len(data) == 0
+
+
+@pytest.mark.asyncio
+async def test_monthly_stats_empty(authenticated_client: AsyncClient, test_user: User):
+    """예산 없을 때 monthly-stats는 빈 카테고리 반환"""
+    response = await authenticated_client.get("/api/budgets/monthly-stats?month=2026-03")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["month"] == "2026-03"
+    assert data["categories"] == []
+    assert data["total_spent"] == 0.0
+
+
+@pytest.mark.asyncio
+async def test_monthly_stats_with_budget_and_expenses(
+    authenticated_client: AsyncClient,
+    test_user: User,
+    db_session: AsyncSession,
+):
+    """예산 및 지출이 있을 때 월별 통계 정상 반환"""
+    category = Category(user_id=test_user.id, name="식비")
+    db_session.add(category)
+    await db_session.commit()
+    await db_session.refresh(category)
+
+    # 2026-03에 활성 예산 생성
+    budget = Budget(
+        user_id=test_user.id,
+        category_id=category.id,
+        amount=300000,
+        period="monthly",
+        start_date=datetime(2026, 1, 1),
+    )
+    db_session.add(budget)
+
+    # 2026-03 지출 추가
+    expense = Expense(
+        user_id=test_user.id,
+        category_id=category.id,
+        amount=150000,
+        description="식비 테스트",
+        date=datetime(2026, 3, 15),
+    )
+    db_session.add(expense)
+    await db_session.commit()
+
+    response = await authenticated_client.get("/api/budgets/monthly-stats?month=2026-03")
+    assert response.status_code == 200
+    data = response.json()
+
+    assert data["month"] == "2026-03"
+    assert len(data["categories"]) == 1
+    cat = data["categories"][0]
+    assert cat["category_name"] == "식비"
+    assert cat["budget_amount"] == 300000
+    assert cat["spent_amount"] == 150000
+    assert cat["remaining_amount"] == 150000
+    assert cat["usage_percentage"] == 50.0
+    assert cat["is_exceeded"] is False
+
+
+@pytest.mark.asyncio
+async def test_monthly_stats_exceeded(
+    authenticated_client: AsyncClient,
+    test_user: User,
+    db_session: AsyncSession,
+):
+    """지출이 예산 초과 시 is_exceeded=True"""
+    category = Category(user_id=test_user.id, name="외식비")
+    db_session.add(category)
+    await db_session.commit()
+    await db_session.refresh(category)
+
+    budget = Budget(
+        user_id=test_user.id,
+        category_id=category.id,
+        amount=100000,
+        period="monthly",
+        start_date=datetime(2026, 1, 1),
+    )
+    db_session.add(budget)
+
+    expense = Expense(
+        user_id=test_user.id,
+        category_id=category.id,
+        amount=150000,
+        description="외식 초과",
+        date=datetime(2026, 3, 10),
+    )
+    db_session.add(expense)
+    await db_session.commit()
+
+    response = await authenticated_client.get("/api/budgets/monthly-stats?month=2026-03")
+    assert response.status_code == 200
+    data = response.json()
+    cat = data["categories"][0]
+    assert cat["is_exceeded"] is True
+    assert cat["usage_percentage"] == 150.0
+
+
+@pytest.mark.asyncio
+async def test_monthly_stats_invalid_month_format(authenticated_client: AsyncClient, test_user: User):
+    """잘못된 월 형식으로 요청 시 422"""
+    response = await authenticated_client.get("/api/budgets/monthly-stats?month=2026/03")
+    assert response.status_code == 422

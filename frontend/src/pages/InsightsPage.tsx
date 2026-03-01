@@ -5,10 +5,11 @@
  */
 
 import { useEffect, useState, useCallback } from 'react'
-import { TrendingUp, BarChart3, Calendar, CalendarDays, Loader2, Sparkles } from 'lucide-react'
+import { TrendingUp, BarChart3, Calendar, CalendarDays, Loader2, Sparkles, Wallet } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { insightsApi, statsApi } from '../api/insights'
 import { incomeApi } from '../api/income'
+import { getMonthlyStats } from '../api/budgets'
 import { useHouseholdStore } from '../stores/useHouseholdStore'
 import EmptyState from '../components/EmptyState'
 import PeriodNavigator from '../components/stats/PeriodNavigator'
@@ -16,7 +17,7 @@ import StatsSummaryCards from '../components/stats/StatsSummaryCards'
 import TrendChart from '../components/stats/TrendChart'
 import ComparisonChart from '../components/stats/ComparisonChart'
 import CategoryBreakdown from '../components/stats/CategoryBreakdown'
-import type { InsightsResponse, StatsResponse, ComparisonResponse } from '../types'
+import type { BudgetMonthlyStatsResponse, InsightsResponse, StatsResponse, ComparisonResponse } from '../types'
 
 type TabType = 'weekly' | 'monthly' | 'yearly' | 'ai'
 type DataType = 'expense' | 'income'
@@ -118,6 +119,103 @@ function formatAmount(amount: number): string {
   return `₩${amount.toLocaleString('ko-KR')}`
 }
 
+// ── 예산 대비 지출 섹션 (월간 전용) ──
+
+function BudgetVsActual({ month }: { month: string }) {
+  const [budgetStats, setBudgetStats] = useState<BudgetMonthlyStatsResponse | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    let cancelled = false
+    async function fetchBudgetStats() {
+      setLoading(true)
+      try {
+        const res = await getMonthlyStats(month)
+        if (!cancelled) setBudgetStats(res.data)
+      } catch {
+        // 예산 데이터 없음은 조용히 처리
+        if (!cancelled) setBudgetStats(null)
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }
+    fetchBudgetStats()
+    return () => { cancelled = true }
+  }, [month])
+
+  if (loading) return null
+  if (!budgetStats || budgetStats.categories.length === 0) return null
+
+  const totalBudget = budgetStats.total_budget
+  const totalSpent = budgetStats.total_spent
+  const totalUsage = totalBudget && totalBudget > 0 ? (totalSpent / totalBudget) * 100 : null
+
+  return (
+    <div className="bg-white rounded-2xl shadow-sm border border-warm-200 p-4 sm:p-6" data-testid="budget-vs-actual">
+      <div className="flex items-center gap-2 mb-4">
+        <Wallet className="w-5 h-5 text-grape-600" />
+        <h2 className="text-base font-semibold text-warm-900">예산 대비 지출</h2>
+      </div>
+
+      {/* 총 예산 요약 */}
+      {totalBudget != null && (
+        <div className="mb-4 p-3 bg-warm-50 rounded-xl">
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-sm text-warm-600">이번 달 총 예산</span>
+            <span className="text-sm font-semibold text-warm-900">{formatAmount(totalBudget)}</span>
+          </div>
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-sm text-warm-600">총 지출</span>
+            <span className={`text-sm font-semibold ${totalSpent > totalBudget ? 'text-red-600' : 'text-warm-900'}`}>
+              {formatAmount(totalSpent)}
+            </span>
+          </div>
+          {totalUsage != null && (
+            <div>
+              <div className="w-full bg-warm-200 rounded-full h-2 overflow-hidden">
+                <div
+                  className={`h-2 rounded-full transition-all ${totalUsage > 100 ? 'bg-red-500' : totalUsage >= 80 ? 'bg-amber-500' : 'bg-grape-500'}`}
+                  style={{ width: `${Math.min(totalUsage, 100)}%` }}
+                />
+              </div>
+              <p className="text-xs text-warm-500 mt-1 text-right">{totalUsage.toFixed(1)}% 사용</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 카테고리별 예산 사용 현황 */}
+      <div className="space-y-3">
+        {budgetStats.categories.map((cat) => (
+          <div key={cat.category_name}>
+            <div className="flex justify-between items-center mb-1">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-warm-800">{cat.category_name}</span>
+                {cat.is_exceeded && (
+                  <span className="text-xs px-1.5 py-0.5 bg-red-100 text-red-600 rounded-full">초과</span>
+                )}
+              </div>
+              <div className="text-right">
+                <span className={`text-sm font-semibold ${cat.is_exceeded ? 'text-red-600' : 'text-warm-900'}`}>
+                  {formatAmount(cat.spent_amount)}
+                </span>
+                <span className="text-xs text-warm-400"> / {formatAmount(cat.budget_amount)}</span>
+              </div>
+            </div>
+            <div className="w-full bg-warm-200 rounded-full h-1.5 overflow-hidden">
+              <div
+                className={`h-1.5 rounded-full transition-all ${cat.is_exceeded ? 'bg-red-500' : cat.usage_percentage >= 80 ? 'bg-amber-500' : 'bg-grape-500'}`}
+                style={{ width: `${Math.min(cat.usage_percentage, 100)}%` }}
+              />
+            </div>
+            <p className="text-xs text-warm-400 mt-0.5 text-right">{cat.usage_percentage.toFixed(1)}%</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 // ── 통계 탭 컴포넌트 ──
 
 function StatsTab({ period, dateStr, householdId, dataType }: { period: string; dateStr: string; householdId: number | undefined; dataType: DataType }) {
@@ -125,6 +223,10 @@ function StatsTab({ period, dateStr, householdId, dataType }: { period: string; 
   const [comparison, setComparison] = useState<ComparisonResponse | null>(null)
   const [loading, setLoading] = useState(true)
   const isIncome = dataType === 'income'
+
+  // 월간 탭에서 사용할 YYYY-MM 형식
+  const d = new Date(dateStr + 'T00:00:00')
+  const monthStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
 
   useEffect(() => {
     let cancelled = false
@@ -186,6 +288,10 @@ function StatsTab({ period, dateStr, householdId, dataType }: { period: string; 
         categories={stats.by_category}
         comparisons={comparison?.by_category_comparison}
       />
+      {/* 월간 지출 탭에서만 예산 대비 사용 현황 표시 */}
+      {period === 'monthly' && !isIncome && (
+        <BudgetVsActual month={monthStr} />
+      )}
     </div>
   )
 }
