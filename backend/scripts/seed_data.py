@@ -40,6 +40,7 @@ CATEGORIES = [
     {"name": "구독서비스", "type": "expense"},
     {"name": "교육", "type": "expense"},
     {"name": "반려동물", "type": "expense"},
+    {"name": "기타", "type": "expense"},
     # 수입 카테고리
     {"name": "급여", "type": "income"},
     {"name": "부수입", "type": "income"},
