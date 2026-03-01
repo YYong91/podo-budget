@@ -231,7 +231,7 @@ class AnthropicProvider(LLMProvider):
 
             response = await self.client.messages.create(
                 model=self.model,
-                max_tokens=1024,
+                max_tokens=2048,
                 system=INSIGHTS_SYSTEM_PROMPT,
                 messages=[
                     {
@@ -240,6 +240,9 @@ class AnthropicProvider(LLMProvider):
                     }
                 ],
             )
+
+            if response.stop_reason == "max_tokens":
+                logger.warning("인사이트 생성: max_tokens 초과로 응답이 잘렸습니다.")
 
             return response.content[0].text
 
@@ -347,12 +350,15 @@ class OpenAIProvider(LLMProvider):
 
             response = await self.client.chat.completions.create(
                 model=self.model,
-                max_tokens=1024,
+                max_tokens=2048,
                 messages=[
                     {"role": "system", "content": INSIGHTS_SYSTEM_PROMPT},
                     {"role": "user", "content": f"다음 지출 데이터를 분석해주세요:\n\n{data_text}"},
                 ],
             )
+
+            if response.choices[0].finish_reason == "length":
+                logger.warning("인사이트 생성: max_tokens 초과로 응답이 잘렸습니다.")
 
             return response.choices[0].message.content
 
