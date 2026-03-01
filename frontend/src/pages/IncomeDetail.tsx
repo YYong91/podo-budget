@@ -9,6 +9,7 @@ import { ArrowLeft, Loader2 } from 'lucide-react'
 import { useToast } from '../hooks/useToast'
 import { incomeApi } from '../api/income'
 import { categoryApi } from '../api/categories'
+import RegisterRecurringModal from '../components/RegisterRecurringModal'
 import type { Income, Category } from '../types'
 
 function formatAmount(amount: number): string {
@@ -29,6 +30,7 @@ export default function IncomeDetail() {
   const [loading, setLoading] = useState(true)
   const [isEditing, setIsEditing] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [showRecurringModal, setShowRecurringModal] = useState(false)
 
   const [editForm, setEditForm] = useState({
     amount: 0,
@@ -165,6 +167,12 @@ export default function IncomeDetail() {
             </>
           ) : (
             <>
+              <button
+                onClick={() => setShowRecurringModal(true)}
+                className="flex-1 sm:flex-none px-4 py-2 text-sm font-medium text-warm-700 bg-warm-100 rounded-xl hover:bg-warm-200 transition-colors"
+              >
+                정기거래 등록
+              </button>
               <button
                 onClick={() => setIsEditing(true)}
                 className="flex-1 sm:flex-none px-4 py-2 text-sm font-medium text-leaf-700 bg-leaf-50 rounded-xl hover:bg-leaf-100 transition-colors"
@@ -315,6 +323,19 @@ export default function IncomeDetail() {
           <span>수정: {formatDate(income.updated_at)}</span>
         </div>
       </div>
+
+      {/* 정기거래 등록 모달 */}
+      {showRecurringModal && income && (
+        <RegisterRecurringModal
+          type="income"
+          amount={income.amount}
+          description={income.description}
+          category_id={income.category_id}
+          categories={categories}
+          onClose={() => setShowRecurringModal(false)}
+          onSuccess={() => setShowRecurringModal(false)}
+        />
+      )}
 
       {/* 삭제 확인 모달 */}
       {showDeleteModal && (
