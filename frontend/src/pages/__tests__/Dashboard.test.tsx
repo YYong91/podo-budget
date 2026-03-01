@@ -102,10 +102,10 @@ describe('Dashboard', () => {
       })
     })
 
-    it('일별 지출 추이 차트 제목을 표시한다', async () => {
+    it('월간 누적 지출 추이 차트 제목을 표시한다', async () => {
       renderDashboard()
       await waitFor(() => {
-        expect(screen.getByText('일별 지출 추이')).toBeInTheDocument()
+        expect(screen.getByText('월간 누적 지출 추이')).toBeInTheDocument()
       })
     })
 

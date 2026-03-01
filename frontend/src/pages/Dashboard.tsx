@@ -102,18 +102,51 @@ function ChartSection({ stats, prevMonthsStats }: { stats: MonthlyStats; prevMon
   // 일별 추이 라인 숨기기/보이기
   const [lineHidden, setLineHidden] = useState(false)
 
-  // 이전 3개월 일별 평균 계산 (day-of-month 기준 정렬)
-  const avgData = useMemo(() => {
-    if (!prevMonthsStats || prevMonthsStats.length === 0) return null
-    return dailyTrend.map(d => {
-      const day = d.date.slice(8) // "01", "02", ...
-      const amounts = prevMonthsStats.flatMap(s =>
-        s.daily_trend.filter(p => p.date.slice(8) === day).map(p => p.amount)
-      )
-      if (amounts.length === 0) return null
-      return Math.round(amounts.reduce((a, b) => a + b, 0) / amounts.length)
+  // 현재 월의 모든 날짜 레이블 (01~말일) + 오늘 날짜
+  const { allDayLabels, today } = useMemo(() => {
+    const now = new Date()
+    const y = now.getFullYear()
+    const m = now.getMonth() + 1
+    const daysInMonth = new Date(y, m, 0).getDate()
+    const mm = String(m).padStart(2, '0')
+    return {
+      allDayLabels: Array.from({ length: daysInMonth }, (_, i) =>
+        `${mm}-${String(i + 1).padStart(2, '0')}`
+      ),
+      today: now.getDate(),
+    }
+  }, [])
+
+  // 현재 달 누적 지출 (미래 날짜는 null)
+  const cumulativeData = useMemo(() => {
+    const dailyMap = new Map(dailyTrend.map(d => [parseInt(d.date.slice(8)), d.amount]))
+    let sum = 0
+    return allDayLabels.map((_, i) => {
+      const dayNum = i + 1
+      if (dayNum > today) return null
+      sum += dailyMap.get(dayNum) ?? 0
+      return sum
     })
-  }, [prevMonthsStats, dailyTrend])
+  }, [dailyTrend, allDayLabels, today])
+
+  // 이전 3개월 누적 평균 (각 달의 말일까지 전체 표시)
+  const avgCumulativeData = useMemo(() => {
+    if (!prevMonthsStats || prevMonthsStats.length === 0) return null
+    return allDayLabels.map((_, i) => {
+      const dayNum = i + 1
+      const cumulatives = prevMonthsStats.map(monthStats => {
+        const [py, pm] = monthStats.month.split('-').map(Number)
+        const daysInPrev = new Date(py, pm, 0).getDate()
+        const dailyMap = new Map(monthStats.daily_trend.map(d => [parseInt(d.date.slice(8)), d.amount]))
+        let sum = 0
+        for (let d = 1; d <= Math.min(dayNum, daysInPrev); d++) {
+          sum += dailyMap.get(d) ?? 0
+        }
+        return sum
+      })
+      return Math.round(cumulatives.reduce((a, b) => a + b, 0) / cumulatives.length)
+    })
+  }, [prevMonthsStats, allDayLabels])
 
   const totalAmount = byCategory.reduce((sum, c) => sum + c.amount, 0)
 
@@ -152,22 +185,23 @@ function ChartSection({ stats, prevMonthsStats }: { stats: MonthlyStats; prevMon
   }
 
   const lineData = {
-    labels: dailyTrend.map((d) => d.date.slice(5)),
+    labels: allDayLabels,
     datasets: [
       {
-        label: '이번 달 지출',
-        data: dailyTrend.map((d) => d.amount),
+        label: '이번 달 누적',
+        data: cumulativeData,
         borderColor: '#9333EA',
         backgroundColor: 'rgba(147, 51, 234, 0.1)',
         borderWidth: 2,
-        pointRadius: 3,
+        pointRadius: 2,
         pointBackgroundColor: '#9333EA',
         tension: 0.3,
         fill: true,
+        spanGaps: false,
       },
-      ...(avgData ? [{
+      ...(avgCumulativeData ? [{
         label: '3개월 평균',
-        data: avgData,
+        data: avgCumulativeData,
         borderColor: 'rgba(147, 51, 234, 0.35)',
         backgroundColor: 'transparent',
         borderWidth: 1.5,
@@ -240,9 +274,9 @@ function ChartSection({ stats, prevMonthsStats }: { stats: MonthlyStats; prevMon
         )}
       </div>
 
-      {/* 일별 트렌드 라인 차트 */}
+      {/* 월간 누적 지출 추이 라인 차트 */}
       <div className="bg-white rounded-2xl border border-warm-200/60 shadow-sm p-4 sm:p-5">
-        <h2 className="text-base font-semibold text-warm-700 mb-3">일별 지출 추이</h2>
+        <h2 className="text-base font-semibold text-warm-700 mb-3">월간 누적 지출 추이</h2>
         {dailyTrend.length > 0 ? (
           <>
             {/* 범례 — 클릭으로 라인 숨기기/보이기 */}
@@ -254,9 +288,9 @@ function ChartSection({ stats, prevMonthsStats }: { stats: MonthlyStats; prevMon
                 }`}
               >
                 <span className="w-8 h-0.5 bg-grape-500 rounded-full inline-block" />
-                <span className="text-warm-600">이번 달 지출</span>
+                <span className="text-warm-600">이번 달 누적</span>
               </button>
-              {avgData && (
+              {avgCumulativeData && (
                 <div className="flex items-center gap-1.5 text-sm px-2 py-1 opacity-60">
                   <span className="w-8 h-px inline-block" style={{ backgroundImage: 'repeating-linear-gradient(to right, rgba(147,51,234,0.5) 0, rgba(147,51,234,0.5) 5px, transparent 5px, transparent 9px)' }} />
                   <span className="text-warm-500">3개월 평균</span>
@@ -296,7 +330,7 @@ function ChartSection({ stats, prevMonthsStats }: { stats: MonthlyStats; prevMon
           </>
         ) : (
           <div className="h-[250px] flex items-center justify-center">
-            <p className="text-sm text-warm-400">아직 일별 데이터가 없습니다</p>
+            <p className="text-sm text-warm-400">아직 이번 달 지출 데이터가 없습니다</p>
           </div>
         )}
       </div>
