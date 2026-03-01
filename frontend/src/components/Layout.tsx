@@ -12,7 +12,6 @@ import {
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
-const BOOKSHELF_URL = import.meta.env.VITE_BOOKSHELF_URL || 'http://localhost:5173'
 const AUTH_URL = import.meta.env.VITE_AUTH_URL || 'https://auth.podonest.com'
 
 const navItems: { path: string; label: string; icon: LucideIcon }[] = [
@@ -108,7 +107,7 @@ export default function Layout() {
                 <span>가계부를 만들어주세요</span>
               </Link>
             ) : households.length === 1 ? (
-              <div className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm bg-warm-100 text-warm-700">
+              <div className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm bg-grape-50 text-grape-700">
                 <Home className="w-4 h-4" />
                 <span className="font-medium truncate">{activeHousehold?.name ?? '가구'}</span>
               </div>
@@ -116,7 +115,7 @@ export default function Layout() {
               <div className="relative">
                 <button
                   onClick={e => { e.stopPropagation(); setHouseholdDropdownOpen(!householdDropdownOpen) }}
-                  className="flex items-center justify-between w-full px-3 py-2 rounded-lg text-sm bg-warm-100 hover:bg-warm-200 text-warm-700 transition-colors"
+                  className="flex items-center justify-between w-full px-3 py-2 rounded-lg text-sm bg-grape-50 hover:bg-grape-100 text-grape-700 transition-colors"
                 >
                   <div className="flex items-center gap-2 min-w-0">
                     <Home className="w-4 h-4" />
@@ -215,13 +214,6 @@ export default function Layout() {
                 </button>
               </div>
             )}
-            <a
-              href={BOOKSHELF_URL}
-              className="flex items-center gap-2 px-3 py-2 rounded-lg text-warm-500 hover:text-grape-600 hover:bg-grape-50 transition-colors"
-            >
-              <span>📚</span>
-              <span>포도책장</span>
-            </a>
           </div>
         </aside>
 
