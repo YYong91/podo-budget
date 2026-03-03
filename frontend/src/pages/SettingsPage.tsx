@@ -47,8 +47,12 @@ export default function SettingsPage() {
 
   const handleCopyCode = async () => {
     if (!linkCode) return
-    await navigator.clipboard.writeText(`/link ${linkCode.code}`)
-    toast.success('복사되었습니다!')
+    try {
+      await navigator.clipboard.writeText(`/link ${linkCode.code}`)
+      toast.success('복사되었습니다!')
+    } catch {
+      toast.error('자동 복사 실패 — 아래 명령어를 직접 복사해주세요')
+    }
   }
 
   if (!user) return null
@@ -149,9 +153,21 @@ export default function SettingsPage() {
                   </button>
                 </div>
                 <p className="text-xs text-warm-500">⏰ {expiresAt}까지 유효 (만료 전 입력하세요)</p>
-                <div className="bg-white rounded-lg p-3 border border-grape-200">
-                  <p className="text-xs text-warm-500 mb-1">텔레그램 봇에 아래 명령어를 입력하세요:</p>
-                  <p className="font-mono text-sm text-grape-700 font-bold">/link {linkCode.code}</p>
+                <div
+                  className="bg-white rounded-lg p-3 border border-grape-200 cursor-pointer active:bg-grape-50"
+                  onClick={(e) => {
+                    const el = e.currentTarget.querySelector('p.selectable')
+                    if (el && window.getSelection) {
+                      const range = document.createRange()
+                      range.selectNodeContents(el)
+                      const sel = window.getSelection()
+                      sel?.removeAllRanges()
+                      sel?.addRange(range)
+                    }
+                  }}
+                >
+                  <p className="text-xs text-warm-500 mb-1">텔레그램 봇에 아래 명령어를 입력하세요: (탭하면 선택됩니다)</p>
+                  <p className="selectable font-mono text-sm text-grape-700 font-bold select-all">/link {linkCode.code}</p>
                 </div>
               </div>
             ) : (

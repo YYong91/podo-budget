@@ -12,6 +12,7 @@ import string
 from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, Depends
+from sqlalchemy import update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.auth import get_current_user
@@ -56,8 +57,8 @@ async def generate_telegram_link_code(
     """
     code = "".join(secrets.choice(string.ascii_uppercase + string.digits) for _ in range(6))
     expires_at = datetime.now(UTC) + timedelta(minutes=15)
-    current_user.telegram_link_code = code
-    current_user.telegram_link_code_expires_at = expires_at
+    # ORM 객체 트래킹 의존 없이 명시적 UPDATE 사용 (세션 상태와 무관하게 안전)
+    await db.execute(update(User).where(User.id == current_user.id).values(telegram_link_code=code, telegram_link_code_expires_at=expires_at))
     await db.commit()
     return TelegramLinkCodeResponse(code=code, expires_at=expires_at)
 
@@ -74,8 +75,6 @@ async def unlink_telegram(
     Returns:
         성공 메시지
     """
-    current_user.telegram_chat_id = None
-    current_user.telegram_link_code = None
-    current_user.telegram_link_code_expires_at = None
+    await db.execute(update(User).where(User.id == current_user.id).values(telegram_chat_id=None, telegram_link_code=None, telegram_link_code_expires_at=None))
     await db.commit()
     return MessageResponse(message="텔레그램 연동이 해제되었습니다.")
