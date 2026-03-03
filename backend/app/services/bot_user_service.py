@@ -10,9 +10,11 @@ import logging
 import secrets
 
 from passlib.context import CryptContext
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.models.expense import Expense
+from app.models.income import Income
 from app.models.user import User
 
 logger = logging.getLogger(__name__)
@@ -104,7 +106,53 @@ async def link_telegram_account_by_code(db: AsyncSession, code: str, telegram_ch
     user.telegram_chat_id = telegram_chat_id
     user.telegram_link_code = None
     user.telegram_link_code_expires_at = None
+
+    # 기존 봇 유저 지출/수입을 웹 계정으로 이관
+    migrated_count = await _migrate_bot_user_data(db, telegram_chat_id, web_user=user)
+
     await db.commit()
 
     logger.info(f"텔레그램 코드 연동 완료: user_id={user.id} ← chat_id={telegram_chat_id}")
-    return True, f"✅ 연동 완료! 이제 이 채팅의 지출이 '{user.username}' 계정에 기록됩니다."
+    suffix = f" (이전 지출 {migrated_count}건 이관됨)" if migrated_count > 0 else ""
+    return True, f"✅ 연동 완료! 이제 이 채팅의 지출이 '{user.username}' 계정에 기록됩니다.{suffix}"
+
+
+async def _migrate_bot_user_data(db: AsyncSession, telegram_chat_id: str, web_user: "User") -> int:
+    """기존 봇 유저의 지출/수입을 연동된 웹 계정으로 이관한다.
+
+    봇 유저(telegram_{chat_id})가 연동 전에 저장한 데이터를
+    웹 계정으로 옮겨 앱에서 볼 수 있게 합니다.
+
+    Args:
+        db: 데이터베이스 세션
+        telegram_chat_id: Telegram chat ID (문자열)
+        web_user: 연동할 웹 User 객체
+
+    Returns:
+        이관된 지출 건수
+    """
+    from app.api.dependencies import get_user_active_household_id
+
+    bot_username = f"telegram_{telegram_chat_id}"
+    result = await db.execute(select(User).where(User.username == bot_username))
+    bot_user = result.scalar_one_or_none()
+
+    if bot_user is None:
+        return 0  # 봇 유저 없으면 이관 불필요
+
+    # 웹 유저의 활성 가구 ID 조회
+    household_id = await get_user_active_household_id(web_user, db)
+
+    # 봇 유저의 지출을 웹 유저 + 가구로 이관
+    expense_result = await db.execute(
+        update(Expense).where(Expense.user_id == bot_user.id).values(user_id=web_user.id, household_id=household_id).returning(Expense.id)
+    )
+    migrated_count = len(expense_result.fetchall())
+
+    # 봇 유저의 수입도 이관
+    await db.execute(update(Income).where(Income.user_id == bot_user.id).values(user_id=web_user.id, household_id=household_id))
+
+    if migrated_count > 0:
+        logger.info(f"봇 유저 데이터 이관: {bot_username} → user_id={web_user.id}, {migrated_count}건")
+
+    return migrated_count

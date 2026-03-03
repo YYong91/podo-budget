@@ -135,6 +135,18 @@ async def telegram_webhook(request: Request, db: AsyncSession = Depends(get_db))
         await send_telegram_message(chat_id, message)
         return {"ok": True}
 
+    # 연동 확인: 가구에 속하지 않은 봇 사용자는 저장 불가
+    if active_household_id is None and bot_user.username and bot_user.username.startswith("telegram_"):
+        await send_telegram_message(
+            chat_id,
+            "⚠️ 포도가계부 계정 연동이 필요해요!\n\n"
+            "웹 설정 페이지(budget.podonest.com)에서\n"
+            "텔레그램 연동 코드를 발급받아\n"
+            "`/link 코드` 형식으로 입력해주세요.\n\n"
+            "연동 후 지출을 기록하면 앱에서 바로 확인할 수 있어요.",
+        )
+        return {"ok": True}
+
     # LLM으로 지출 파싱
     try:
         llm = get_llm_provider("parse")

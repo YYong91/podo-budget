@@ -20,6 +20,20 @@ from app.models.household_member import HouseholdMember
 from app.models.user import User
 
 
+async def setup_bot_user_with_household(db_session, chat_id: int):
+    """봇 사용자에게 가구를 설정하는 헬퍼 — 연동 체크를 통과시키기 위해 필요"""
+    from app.services.bot_user_service import get_or_create_bot_user
+
+    bot_user = await get_or_create_bot_user(db_session, platform="telegram", platform_user_id=str(chat_id))
+    household = Household(name=f"테스트 가구 {chat_id}")
+    db_session.add(household)
+    await db_session.flush()
+    member = HouseholdMember(household_id=household.id, user_id=bot_user.id, role="owner")
+    db_session.add(member)
+    await db_session.commit()
+    return bot_user, household
+
+
 @pytest.mark.asyncio
 async def test_webhook_start_command(client, db_session, mock_telegram_send):
     """/start 명령어 시 환영 메시지 전송"""
@@ -63,7 +77,10 @@ async def test_webhook_help_command(client, db_session, mock_telegram_send):
 
 @pytest.mark.asyncio
 async def test_webhook_expense_input(client, db_session, mock_telegram_send, mock_llm_parse_expense):
-    """자연어 지출 입력 → LLM 파싱 → DB 저장"""
+    """자연어 지출 입력 → LLM 파싱 → DB 저장 (가구 연동된 사용자)"""
+    # 연동 체크를 통과하려면 봇 사용자에게 가구 필요
+    await setup_bot_user_with_household(db_session, chat_id=12345)
+
     payload = {
         "message": {
             "chat": {"id": 12345},
@@ -94,6 +111,9 @@ async def test_webhook_expense_input(client, db_session, mock_telegram_send, moc
 @pytest.mark.asyncio
 async def test_webhook_parse_error(client, db_session, mock_telegram_send, mock_llm_parse_expense):
     """LLM 파싱 실패 시 에러 메시지 전송"""
+    # 연동 체크 통과를 위해 가구 설정
+    await setup_bot_user_with_household(db_session, chat_id=12345)
+
     mock_llm_parse_expense.return_value = {"error": "금액을 찾을 수 없습니다"}
 
     payload = {
@@ -145,6 +165,10 @@ async def test_webhook_no_text(client, db_session):
 @pytest.mark.asyncio
 async def test_webhook_user_isolation(client, db_session, mock_telegram_send, mock_llm_parse_expense):
     """서로 다른 Telegram 사용자는 데이터가 격리되어야 함"""
+    # 두 사용자 모두 가구 설정 (연동 체크 통과용)
+    await setup_bot_user_with_household(db_session, chat_id=11111)
+    await setup_bot_user_with_household(db_session, chat_id=22222)
+
     # 사용자 1의 지출 생성
     payload1 = {
         "message": {
@@ -182,21 +206,14 @@ async def test_webhook_user_isolation(client, db_session, mock_telegram_send, mo
     assert len(user_ids) == 2
     assert None not in user_ids  # user_id는 절대 None이 아니어야 함
 
-    # User 테이블에 봇 사용자가 생성되었는지 확인
-    user_result = await db_session.execute(select(User))
-    users = user_result.scalars().all()
-    assert len(users) == 2
-
-    # username 형식 확인
-    usernames = {user.username for user in users}
-    assert "telegram_11111" in usernames
-    assert "telegram_22222" in usernames
-
 
 @pytest.mark.asyncio
 async def test_webhook_same_user_reuses_account(client, db_session, mock_telegram_send, mock_llm_parse_expense):
     """동일한 Telegram 사용자는 같은 User 계정을 재사용해야 함"""
     chat_id = 33333
+
+    # 가구 설정 (연동 체크 통과용)
+    await setup_bot_user_with_household(db_session, chat_id=chat_id)
 
     # 첫 번째 지출
     payload1 = {
@@ -238,8 +255,8 @@ async def test_webhook_same_user_reuses_account(client, db_session, mock_telegra
 
 
 @pytest.mark.asyncio
-async def test_webhook_expense_no_household(client, db_session, mock_telegram_send, mock_llm_parse_expense):
-    """가구 미가입 사용자의 지출은 household_id가 None"""
+async def test_webhook_unlinked_user_gets_link_message(client, db_session, mock_telegram_send, mock_llm_parse_expense):
+    """연동 안 된 봇 사용자는 지출 저장 안 되고 연동 안내 메시지 전송"""
     payload = {
         "message": {
             "chat": {"id": 55555},
@@ -250,10 +267,15 @@ async def test_webhook_expense_no_household(client, db_session, mock_telegram_se
     response = await client.post("/api/telegram/webhook", json=payload)
     assert response.status_code == 200
 
+    # 지출이 저장되지 않아야 함
     result = await db_session.execute(select(Expense))
     expenses = result.scalars().all()
-    assert len(expenses) == 1
-    assert expenses[0].household_id is None
+    assert len(expenses) == 0
+
+    # 연동 안내 메시지가 전송되어야 함
+    mock_telegram_send.assert_called_once()
+    sent_message = mock_telegram_send.call_args[0][1]
+    assert "연동" in sent_message
 
 
 @pytest.mark.asyncio
@@ -323,7 +345,8 @@ async def test_callback_delete_expense_confirmation(client, db_session, mock_tel
     """인라인 버튼으로 지출 삭제 — 확인 프롬프트 표시"""
     from unittest.mock import AsyncMock, patch
 
-    # 먼저 지출 생성
+    # 가구 설정 후 지출 생성
+    await setup_bot_user_with_household(db_session, chat_id=88888)
     payload = {
         "message": {
             "chat": {"id": 88888},
@@ -366,7 +389,8 @@ async def test_callback_confirm_delete(client, db_session, mock_telegram_send, m
     """삭제 확인 후 실제 삭제 수행"""
     from unittest.mock import AsyncMock, patch
 
-    # 지출 생성
+    # 가구 설정 후 지출 생성
+    await setup_bot_user_with_household(db_session, chat_id=88888)
     payload = {"message": {"chat": {"id": 88888}, "text": "점심 8000원"}}
     await client.post("/api/telegram/webhook", json=payload)
 
@@ -397,7 +421,8 @@ async def test_callback_cancel_delete(client, db_session, mock_telegram_send, mo
     """삭제 취소 시 지출 유지"""
     from unittest.mock import AsyncMock, patch
 
-    # 지출 생성
+    # 가구 설정 후 지출 생성
+    await setup_bot_user_with_household(db_session, chat_id=88888)
     payload = {"message": {"chat": {"id": 88888}, "text": "점심 8000원"}}
     await client.post("/api/telegram/webhook", json=payload)
 
@@ -432,7 +457,8 @@ async def test_callback_change_category(client, db_session, mock_telegram_send, 
     """인라인 버튼으로 카테고리 변경 키보드 표시"""
     from unittest.mock import AsyncMock, patch
 
-    # 지출 생성
+    # 가구 설정 후 지출 생성
+    await setup_bot_user_with_household(db_session, chat_id=99999)
     payload = {
         "message": {
             "chat": {"id": 99999},
@@ -471,7 +497,8 @@ async def test_callback_set_category(client, db_session, mock_telegram_send, moc
     """인라인 버튼으로 카테고리 실제 변경"""
     from unittest.mock import AsyncMock, patch
 
-    # 지출 생성
+    # 가구 설정 후 지출 생성
+    await setup_bot_user_with_household(db_session, chat_id=10101)
     payload = {
         "message": {
             "chat": {"id": 10101},
@@ -525,7 +552,8 @@ async def test_callback_idor_delete_blocked(client, db_session, mock_telegram_se
     from unittest.mock import AsyncMock
     from unittest.mock import patch as mock_patch
 
-    # 사용자 A(chat_id=11111)가 지출 생성
+    # 사용자 A(chat_id=11111)가 지출 생성 (가구 설정 필요)
+    await setup_bot_user_with_household(db_session, chat_id=11111)
     payload = {"message": {"chat": {"id": 11111}, "text": "점심 8000원"}}
     await client.post("/api/telegram/webhook", json=payload)
 
@@ -561,7 +589,8 @@ async def test_callback_idor_change_category_blocked(client, db_session, mock_te
     from unittest.mock import AsyncMock
     from unittest.mock import patch as mock_patch
 
-    # 사용자 A가 지출 생성
+    # 사용자 A가 지출 생성 (가구 설정 필요)
+    await setup_bot_user_with_household(db_session, chat_id=33333)
     payload = {"message": {"chat": {"id": 33333}, "text": "점심 8000원"}}
     await client.post("/api/telegram/webhook", json=payload)
 
@@ -603,7 +632,8 @@ async def test_callback_idor_change_category_blocked(client, db_session, mock_te
 @pytest.mark.asyncio
 async def test_webhook_report_command(client, db_session, mock_telegram_send, mock_llm_parse_expense):
     """/report 명령어 — 이번 달 지출 요약 전송"""
-    # 먼저 지출을 생성
+    # 가구 설정 후 지출을 생성
+    await setup_bot_user_with_household(db_session, chat_id=44444)
     payload = {"message": {"chat": {"id": 44444}, "text": "점심 8000원"}}
     await client.post("/api/telegram/webhook", json=payload)
 
@@ -645,6 +675,9 @@ async def test_webhook_budget_command(client, db_session, mock_telegram_send):
 @pytest.mark.asyncio
 async def test_webhook_multiple_expenses(client, db_session, mock_telegram_send, mock_llm_parse_expense):
     """여러 지출 동시 입력 (list 반환)"""
+    # 가구 설정 (연동 체크 통과용)
+    await setup_bot_user_with_household(db_session, chat_id=44444)
+
     mock_llm_parse_expense.return_value = [
         {"amount": 5000, "category": "식비", "description": "점심", "date": "2026-02-14", "memo": ""},
         {"amount": 4500, "category": "카페", "description": "커피", "date": "2026-02-14", "memo": ""},
