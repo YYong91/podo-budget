@@ -25,7 +25,7 @@ import apiClient from './client'
  * @returns Household 목록
  */
 export const getHouseholds = () =>
-  apiClient.get<Household[]>('/households/')
+  apiClient.get<Household[]>('/households')
 
 /**
  * Household 상세 정보 조회 API
@@ -41,7 +41,7 @@ export const getHouseholdDetail = (id: number) =>
  * @returns 생성된 Household 정보
  */
 export const createHousehold = (data: CreateHouseholdDto) =>
-  apiClient.post<Household>('/households/', data)
+  apiClient.post<Household>('/households', data)
 
 /**
  * Household 수정 API

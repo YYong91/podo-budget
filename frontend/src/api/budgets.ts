@@ -12,7 +12,7 @@ import apiClient from './client'
  * @returns 예산 목록
  */
 export const getBudgets = () =>
-  apiClient.get<Budget[]>('/budgets/')
+  apiClient.get<Budget[]>('/budgets')
 
 /**
  * 예산 생성 API
@@ -20,7 +20,7 @@ export const getBudgets = () =>
  * @returns 생성된 예산 정보
  */
 export const createBudget = (data: BudgetCreateRequest) =>
-  apiClient.post<Budget>('/budgets/', data)
+  apiClient.post<Budget>('/budgets', data)
 
 /**
  * 예산 수정 API
