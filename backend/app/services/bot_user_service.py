@@ -10,7 +10,7 @@ import logging
 import secrets
 
 from passlib.context import CryptContext
-from sqlalchemy import select, update
+from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.expense import Expense
@@ -143,11 +143,12 @@ async def _migrate_bot_user_data(db: AsyncSession, telegram_chat_id: str, web_us
     # 웹 유저의 활성 가구 ID 조회
     household_id = await get_user_active_household_id(web_user, db)
 
+    # 이관할 지출 건수 먼저 조회 (RETURNING 대신 count 사용 — SQLite 호환)
+    count_result = await db.execute(select(func.count()).where(Expense.user_id == bot_user.id))
+    migrated_count = count_result.scalar() or 0
+
     # 봇 유저의 지출을 웹 유저 + 가구로 이관
-    expense_result = await db.execute(
-        update(Expense).where(Expense.user_id == bot_user.id).values(user_id=web_user.id, household_id=household_id).returning(Expense.id)
-    )
-    migrated_count = len(expense_result.fetchall())
+    await db.execute(update(Expense).where(Expense.user_id == bot_user.id).values(user_id=web_user.id, household_id=household_id))
 
     # 봇 유저의 수입도 이관
     await db.execute(update(Income).where(Income.user_id == bot_user.id).values(user_id=web_user.id, household_id=household_id))
