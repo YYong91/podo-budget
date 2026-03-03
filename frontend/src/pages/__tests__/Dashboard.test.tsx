@@ -4,8 +4,8 @@
  * 월별 통계, 차트, 최근 지출 목록, 로딩/에러 상태를 테스트한다.
  */
 
-import { describe, it, expect, vi } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { render, screen, waitFor, fireEvent } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import userEvent from '@testing-library/user-event'
 import Dashboard from '../Dashboard'
@@ -16,6 +16,12 @@ import { http, HttpResponse } from 'msw'
 vi.mock('../../hooks/useToast', () => ({
   useToast: () => ({ addToast: vi.fn() }),
 }))
+
+const mockNavigate = vi.fn()
+vi.mock('react-router-dom', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('react-router-dom')>()
+  return { ...actual, useNavigate: () => mockNavigate }
+})
 
 /**
  * Dashboard를 라우터로 감싸서 렌더링
@@ -29,6 +35,79 @@ function renderDashboard() {
 }
 
 describe('Dashboard', () => {
+  beforeEach(() => {
+    mockNavigate.mockClear()
+  })
+
+  describe('빠른 입력 버튼', () => {
+    it('지출 입력 버튼을 표시한다', async () => {
+      renderDashboard()
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: /지출 입력/i })).toBeInTheDocument()
+      })
+    })
+
+    it('수입 입력 버튼을 표시한다', async () => {
+      renderDashboard()
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: /수입 입력/i })).toBeInTheDocument()
+      })
+    })
+
+    it('지출 입력 버튼 클릭 시 /expenses/new로 이동한다', async () => {
+      const user = userEvent.setup()
+      renderDashboard()
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: /지출 입력/i })).toBeInTheDocument()
+      })
+      await user.click(screen.getAllByRole('button', { name: /지출 입력/i })[0])
+      expect(mockNavigate).toHaveBeenCalledWith('/expenses/new')
+    })
+
+    it('수입 입력 버튼 클릭 시 /income/new로 이동한다', async () => {
+      const user = userEvent.setup()
+      renderDashboard()
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: /수입 입력/i })).toBeInTheDocument()
+      })
+      await user.click(screen.getAllByRole('button', { name: /수입 입력/i })[0])
+      expect(mockNavigate).toHaveBeenCalledWith('/income/new')
+    })
+  })
+
+  describe('키보드 단축키', () => {
+    it('e 키를 누르면 /expenses/new로 이동한다', async () => {
+      renderDashboard()
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: /지출 입력/i })).toBeInTheDocument()
+      })
+      fireEvent.keyDown(document, { key: 'e' })
+      expect(mockNavigate).toHaveBeenCalledWith('/expenses/new')
+    })
+
+    it('i 키를 누르면 /income/new로 이동한다', async () => {
+      renderDashboard()
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: /수입 입력/i })).toBeInTheDocument()
+      })
+      fireEvent.keyDown(document, { key: 'i' })
+      expect(mockNavigate).toHaveBeenCalledWith('/income/new')
+    })
+
+    it('input 필드에 포커스된 경우 키보드 단축키가 동작하지 않는다', async () => {
+      renderDashboard()
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: /지출 입력/i })).toBeInTheDocument()
+      })
+      const input = document.createElement('input')
+      document.body.appendChild(input)
+      input.focus()
+      fireEvent.keyDown(input, { key: 'e' })
+      expect(mockNavigate).not.toHaveBeenCalledWith('/expenses/new')
+      document.body.removeChild(input)
+    })
+  })
+
   describe('로딩 상태', () => {
     it('데이터 로드 중에는 로딩 스피너를 표시한다', () => {
       renderDashboard()

@@ -467,6 +467,24 @@ export default function Dashboard() {
   const { addToast } = useToast()
   const activeHouseholdId = useHouseholdStore((s) => s.activeHouseholdId)
 
+  // 키보드 단축키: e → 지출 입력, i → 수입 입력
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      // 입력 필드에 포커스된 경우 무시
+      const tag = (e.target as HTMLElement).tagName
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(tag)) return
+      if ((e.target as HTMLElement).isContentEditable) return
+
+      if (e.key === 'e' || e.key === 'E') {
+        navigate('/expenses/new')
+      } else if (e.key === 'i' || e.key === 'I') {
+        navigate('/income/new')
+      }
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [navigate])
+
   // 공유(가구) 데이터
   const [stats, setStats] = useState<MonthlyStats | null>(null)
   const [recentExpenses, setRecentExpenses] = useState<Expense[]>([])
@@ -576,7 +594,25 @@ export default function Dashboard() {
   if (error) {
     return (
       <div className="space-y-6">
-        <h1 className="text-xl font-bold text-grape-700">대시보드</h1>
+        <div className="flex items-center justify-between">
+          <h1 className="text-xl font-bold text-grape-700">대시보드</h1>
+          <div className="flex gap-2">
+            <button
+              onClick={() => navigate('/expenses/new')}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-grape-600 hover:bg-grape-700 text-white text-sm font-medium transition-colors"
+            >
+              지출 입력
+              <kbd className="hidden sm:inline-block text-xs bg-grape-500/60 rounded px-1 py-0.5 leading-none">E</kbd>
+            </button>
+            <button
+              onClick={() => navigate('/income/new')}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-leaf-600 hover:bg-leaf-700 text-white text-sm font-medium transition-colors"
+            >
+              수입 입력
+              <kbd className="hidden sm:inline-block text-xs bg-leaf-500/60 rounded px-1 py-0.5 leading-none">I</kbd>
+            </button>
+          </div>
+        </div>
         <div className="bg-white rounded-xl shadow-sm border border-warm-200/60">
           <ErrorState onRetry={fetchData} />
         </div>
@@ -590,7 +626,25 @@ export default function Dashboard() {
   if (hasNoData && (!personalStats || personalStats.total === 0)) {
     return (
       <div className="space-y-6">
-        <h1 className="text-xl font-bold text-grape-700">대시보드</h1>
+        <div className="flex items-center justify-between">
+          <h1 className="text-xl font-bold text-grape-700">대시보드</h1>
+          <div className="flex gap-2">
+            <button
+              onClick={() => navigate('/expenses/new')}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-grape-600 hover:bg-grape-700 text-white text-sm font-medium transition-colors"
+            >
+              지출 입력
+              <kbd className="hidden sm:inline-block text-xs bg-grape-500/60 rounded px-1 py-0.5 leading-none">E</kbd>
+            </button>
+            <button
+              onClick={() => navigate('/income/new')}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-leaf-600 hover:bg-leaf-700 text-white text-sm font-medium transition-colors"
+            >
+              수입 입력
+              <kbd className="hidden sm:inline-block text-xs bg-leaf-500/60 rounded px-1 py-0.5 leading-none">I</kbd>
+            </button>
+          </div>
+        </div>
         <div className="bg-white rounded-xl shadow-sm border border-warm-200/60">
           <EmptyState
             title="아직 이번 달 지출 기록이 없어요"
@@ -613,9 +667,27 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-xl font-bold text-grape-700">
-        {activeHouseholdId ? '공유 가계부' : '대시보드'}
-      </h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-xl font-bold text-grape-700">
+          {activeHouseholdId ? '공유 가계부' : '대시보드'}
+        </h1>
+        <div className="flex gap-2">
+          <button
+            onClick={() => navigate('/expenses/new')}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-grape-600 hover:bg-grape-700 text-white text-sm font-medium transition-colors"
+          >
+            지출 입력
+            <kbd className="hidden sm:inline-block text-xs bg-grape-500/60 rounded px-1 py-0.5 leading-none">E</kbd>
+          </button>
+          <button
+            onClick={() => navigate('/income/new')}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-leaf-600 hover:bg-leaf-700 text-white text-sm font-medium transition-colors"
+          >
+            수입 입력
+            <kbd className="hidden sm:inline-block text-xs bg-leaf-500/60 rounded px-1 py-0.5 leading-none">I</kbd>
+          </button>
+        </div>
+      </div>
 
       {/* 메인 데이터 (가구 선택 시 가구, 미선택 시 개인) */}
       {stats && <StatsCards stats={stats} incomeTotal={incomeStats?.total} />}
