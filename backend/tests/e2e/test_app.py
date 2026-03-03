@@ -43,7 +43,7 @@ async def test_full_expense_workflow(authenticated_client, test_user: User, db_s
         "date": "2026-02-11",
         "memo": "",
     }
-    response1 = await authenticated_client.post("/api/chat/", json={"message": "점심 김치찌개 8000원"})
+    response1 = await authenticated_client.post("/api/chat", json={"message": "점심 김치찌개 8000원"})
     assert response1.status_code == 201
     assert "기록되었습니다" in response1.json()["message"]
 
@@ -55,7 +55,7 @@ async def test_full_expense_workflow(authenticated_client, test_user: User, db_s
         "date": "2026-02-15",
         "memo": "",
     }
-    response2 = await authenticated_client.post("/api/chat/", json={"message": "택시 15000원"})
+    response2 = await authenticated_client.post("/api/chat", json={"message": "택시 15000원"})
     assert response2.status_code == 201
 
     # 3. 세 번째 지출 입력 (같은 카테고리)
@@ -66,17 +66,17 @@ async def test_full_expense_workflow(authenticated_client, test_user: User, db_s
         "date": "2026-02-20",
         "memo": "",
     }
-    response3 = await authenticated_client.post("/api/chat/", json={"message": "저녁 비빔밥 12000원"})
+    response3 = await authenticated_client.post("/api/chat", json={"message": "저녁 비빔밥 12000원"})
     assert response3.status_code == 201
 
     # 4. 지출 목록 조회
-    response_list = await authenticated_client.get("/api/expenses/")
+    response_list = await authenticated_client.get("/api/expenses")
     assert response_list.status_code == 200
     expenses = response_list.json()
     assert len(expenses) == 3
 
     # 5. 카테고리 목록 조회 (자동 생성된 2개)
-    response_categories = await authenticated_client.get("/api/categories/")
+    response_categories = await authenticated_client.get("/api/categories")
     assert response_categories.status_code == 200
     categories = response_categories.json()
     assert len(categories) == 2
@@ -121,7 +121,7 @@ async def test_full_expense_workflow(authenticated_client, test_user: User, db_s
     assert response_delete.status_code == 204
 
     # 11. 삭제 후 목록 재조회
-    response_list_after = await authenticated_client.get("/api/expenses/")
+    response_list_after = await authenticated_client.get("/api/expenses")
     expenses_after = response_list_after.json()
     assert len(expenses_after) == 2
 
@@ -131,17 +131,17 @@ async def test_category_management_workflow(authenticated_client, test_user: Use
     """카테고리 관리 워크플로우"""
 
     # 1. 빈 카테고리 목록
-    response_empty = await authenticated_client.get("/api/categories/")
+    response_empty = await authenticated_client.get("/api/categories")
     assert response_empty.status_code == 200
     assert len(response_empty.json()) == 0
 
     # 2. 카테고리 생성
-    response_create = await authenticated_client.post("/api/categories/", json={"name": "식비", "description": "음식 관련"})
+    response_create = await authenticated_client.post("/api/categories", json={"name": "식비", "description": "음식 관련"})
     assert response_create.status_code == 201
     category_id = response_create.json()["id"]
 
     # 3. 카테고리 목록 조회
-    response_list = await authenticated_client.get("/api/categories/")
+    response_list = await authenticated_client.get("/api/categories")
     assert len(response_list.json()) == 1
 
     # 4. 카테고리 수정
@@ -154,7 +154,7 @@ async def test_category_management_workflow(authenticated_client, test_user: Use
     assert response_delete.status_code == 204
 
     # 6. 삭제 후 목록 재조회
-    response_after = await authenticated_client.get("/api/categories/")
+    response_after = await authenticated_client.get("/api/categories")
     assert len(response_after.json()) == 0
 
 
@@ -181,21 +181,21 @@ async def test_expense_filtering_workflow(authenticated_client, test_user: User,
     await db_session.commit()
 
     # 1. 전체 조회
-    response_all = await authenticated_client.get("/api/expenses/")
+    response_all = await authenticated_client.get("/api/expenses")
     assert len(response_all.json()) == 4
 
     # 2. 날짜 필터링 (2월만)
-    response_feb = await authenticated_client.get("/api/expenses/?start_date=2026-02-01T00:00:00&end_date=2026-02-28T23:59:59")
+    response_feb = await authenticated_client.get("/api/expenses?start_date=2026-02-01T00:00:00&end_date=2026-02-28T23:59:59")
     feb_expenses = response_feb.json()
     assert len(feb_expenses) == 2
 
     # 3. 카테고리 필터링 (식비만)
-    response_food = await authenticated_client.get(f"/api/expenses/?category_id={cat1.id}")
+    response_food = await authenticated_client.get(f"/api/expenses?category_id={cat1.id}")
     food_expenses = response_food.json()
     assert len(food_expenses) == 3
 
     # 4. 날짜 + 카테고리 필터링 (2월 식비)
-    response_feb_food = await authenticated_client.get(f"/api/expenses/?start_date=2026-02-01T00:00:00&end_date=2026-02-28T23:59:59&category_id={cat1.id}")
+    response_feb_food = await authenticated_client.get(f"/api/expenses?start_date=2026-02-01T00:00:00&end_date=2026-02-28T23:59:59&category_id={cat1.id}")
     feb_food_expenses = response_feb_food.json()
     assert len(feb_food_expenses) == 1
     assert feb_food_expenses[0]["description"] == "2월 식비"
@@ -210,14 +210,14 @@ async def test_error_handling_workflow(authenticated_client, test_user: User, db
     assert response_404.status_code == 404
 
     # 2. 중복 카테고리 생성
-    await authenticated_client.post("/api/categories/", json={"name": "식비"})
-    response_duplicate = await authenticated_client.post("/api/categories/", json={"name": "식비"})
+    await authenticated_client.post("/api/categories", json={"name": "식비"})
+    response_duplicate = await authenticated_client.post("/api/categories", json={"name": "식비"})
     assert response_duplicate.status_code == 400
     assert "이미 존재" in response_duplicate.json()["detail"]
 
     # 3. LLM 파싱 실패
     mock_llm_parse_expense.return_value = {"error": "금액을 찾을 수 없습니다"}
-    response_parse_fail = await authenticated_client.post("/api/chat/", json={"message": "텍스트만"})
+    response_parse_fail = await authenticated_client.post("/api/chat", json={"message": "텍스트만"})
     assert response_parse_fail.status_code == 201
     assert "금액을 찾을 수 없습니다" in response_parse_fail.json()["message"]
 
@@ -235,17 +235,17 @@ async def test_pagination_workflow(authenticated_client, test_user: User, db_ses
     await db_session.commit()
 
     # 1. 첫 페이지 (기본 limit=20)
-    response_page1 = await authenticated_client.get("/api/expenses/?skip=0&limit=20")
+    response_page1 = await authenticated_client.get("/api/expenses?skip=0&limit=20")
     page1 = response_page1.json()
     assert len(page1) == 20
 
     # 2. 두 번째 페이지
-    response_page2 = await authenticated_client.get("/api/expenses/?skip=20&limit=20")
+    response_page2 = await authenticated_client.get("/api/expenses?skip=20&limit=20")
     page2 = response_page2.json()
     assert len(page2) == 10
 
     # 3. limit 초과 시
-    response_max = await authenticated_client.get("/api/expenses/?limit=200")
+    response_max = await authenticated_client.get("/api/expenses?limit=200")
     assert response_max.status_code in [200, 422]
 
 
@@ -259,7 +259,7 @@ async def test_data_persistence_workflow(authenticated_client, test_user: User, 
         "category_id": None,
         "date": "2026-02-11T12:00:00",
     }
-    response_create = await authenticated_client.post("/api/expenses/", json=payload)
+    response_create = await authenticated_client.post("/api/expenses", json=payload)
     assert response_create.status_code == 201
     expense_id = response_create.json()["id"]
 

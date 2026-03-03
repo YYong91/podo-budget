@@ -31,14 +31,14 @@ async def test_expense_data_isolation_list(
     await db_session.commit()
 
     # User1으로 조회 → User1의 지출만 보임
-    response1 = await authenticated_client.get("/api/expenses/")
+    response1 = await authenticated_client.get("/api/expenses")
     assert response1.status_code == 200
     data1 = response1.json()
     assert len(data1) == 1
     assert data1[0]["description"] == "User1 지출"
 
     # User2로 조회 → User2의 지출만 보임
-    response2 = await authenticated_client2.get("/api/expenses/")
+    response2 = await authenticated_client2.get("/api/expenses")
     assert response2.status_code == 200
     data2 = response2.json()
     assert len(data2) == 1
@@ -124,7 +124,7 @@ async def test_category_data_isolation(
     await db_session.commit()
 
     # User1으로 조회 → 시스템 + User1 카테고리만 보임
-    response1 = await authenticated_client.get("/api/categories/")
+    response1 = await authenticated_client.get("/api/categories")
     assert response1.status_code == 200
     data1 = response1.json()
     assert len(data1) == 2
@@ -132,7 +132,7 @@ async def test_category_data_isolation(
     assert names1 == {"시스템카테고리", "User1 개인카테고리"}
 
     # User2로 조회 → 시스템 + User2 카테고리만 보임
-    response2 = await authenticated_client2.get("/api/categories/")
+    response2 = await authenticated_client2.get("/api/categories")
     assert response2.status_code == 200
     data2 = response2.json()
     assert len(data2) == 2
@@ -197,7 +197,7 @@ async def test_budget_data_isolation(
     """예산 조회 시 자신의 예산만 보임"""
     # API를 통해 카테고리와 예산 생성 (간단하게)
     # User1의 카테고리 생성
-    cat1_response = await authenticated_client.post("/api/categories/", json={"name": "User1 카테고리"})
+    cat1_response = await authenticated_client.post("/api/categories", json={"name": "User1 카테고리"})
     assert cat1_response.status_code == 201
     cat1_id = cat1_response.json()["id"]
 
@@ -208,13 +208,13 @@ async def test_budget_data_isolation(
         "period": "monthly",
         "start_date": "2026-02-01T00:00:00",
     }
-    budget1_response = await authenticated_client.post("/api/budgets/", json=budget1_payload)
+    budget1_response = await authenticated_client.post("/api/budgets", json=budget1_payload)
     if budget1_response.status_code != 201:
         print(f"Budget creation failed: {budget1_response.status_code}, {budget1_response.json()}")
     assert budget1_response.status_code == 201
 
     # User2의 카테고리 생성
-    cat2_response = await authenticated_client2.post("/api/categories/", json={"name": "User2 카테고리"})
+    cat2_response = await authenticated_client2.post("/api/categories", json={"name": "User2 카테고리"})
     assert cat2_response.status_code == 201
     cat2_id = cat2_response.json()["id"]
 
@@ -225,18 +225,18 @@ async def test_budget_data_isolation(
         "period": "monthly",
         "start_date": "2026-02-01T00:00:00",
     }
-    budget2_response = await authenticated_client2.post("/api/budgets/", json=budget2_payload)
+    budget2_response = await authenticated_client2.post("/api/budgets", json=budget2_payload)
     assert budget2_response.status_code == 201
 
     # User1으로 조회 → User1의 예산만 보임
-    response1 = await authenticated_client.get("/api/budgets/")
+    response1 = await authenticated_client.get("/api/budgets")
     assert response1.status_code == 200
     data1 = response1.json()
     assert len(data1) == 1
     assert data1[0]["amount"] == 100000
 
     # User2로 조회 → User2의 예산만 보임
-    response2 = await authenticated_client2.get("/api/budgets/")
+    response2 = await authenticated_client2.get("/api/budgets")
     assert response2.status_code == 200
     data2 = response2.json()
     assert len(data2) == 1
@@ -253,7 +253,7 @@ async def test_budget_cannot_modify_others(
 ):
     """다른 사용자의 예산 수정/삭제 불가"""
     # User2의 카테고리와 예산 생성 (API 사용)
-    cat2_response = await authenticated_client2.post("/api/categories/", json={"name": "User2 예산카테고리"})
+    cat2_response = await authenticated_client2.post("/api/categories", json={"name": "User2 예산카테고리"})
     assert cat2_response.status_code == 201
     cat2_id = cat2_response.json()["id"]
 
@@ -263,7 +263,7 @@ async def test_budget_cannot_modify_others(
         "period": "monthly",
         "start_date": "2026-02-01T00:00:00",
     }
-    budget2_response = await authenticated_client2.post("/api/budgets/", json=budget2_payload)
+    budget2_response = await authenticated_client2.post("/api/budgets", json=budget2_payload)
     assert budget2_response.status_code == 201
     budget2_id = budget2_response.json()["id"]
 

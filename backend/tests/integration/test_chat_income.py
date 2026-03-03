@@ -19,7 +19,7 @@ async def test_chat_income_preview(authenticated_client, mock_llm_parse_expense)
         "type": "income",
     }
 
-    response = await authenticated_client.post("/api/chat/", json={"message": "월급 350만원 들어왔어", "preview": True})
+    response = await authenticated_client.post("/api/chat", json={"message": "월급 350만원 들어왔어", "preview": True})
     assert response.status_code == 201
     data = response.json()
     assert data["parsed_items"] is not None
@@ -40,7 +40,7 @@ async def test_chat_income_save(authenticated_client, test_user: User, db_sessio
         "type": "income",
     }
 
-    response = await authenticated_client.post("/api/chat/", json={"message": "월급 350만원"})
+    response = await authenticated_client.post("/api/chat", json={"message": "월급 350만원"})
     assert response.status_code == 201
     data = response.json()
     assert "수입" in data["message"] or "기록" in data["message"]
@@ -63,7 +63,7 @@ async def test_chat_expense_still_works(authenticated_client, test_user: User, d
         "memo": "",
     }
 
-    response = await authenticated_client.post("/api/chat/", json={"message": "점심 김치찌개 8000원"})
+    response = await authenticated_client.post("/api/chat", json={"message": "점심 김치찌개 8000원"})
     assert response.status_code == 201
 
     # Expense 테이블에 저장 확인 (type 필드 없으면 지출)

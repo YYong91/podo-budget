@@ -34,7 +34,7 @@ async def test_chat_multiple_expenses(authenticated_client, test_user: User, db_
     ]
 
     payload = {"message": "점심 5천원, 커피 4500원"}
-    response = await authenticated_client.post("/api/chat/", json=payload)
+    response = await authenticated_client.post("/api/chat", json=payload)
 
     assert response.status_code == 201
     data = response.json()
@@ -72,7 +72,7 @@ async def test_chat_preview_multiple_expenses(authenticated_client, test_user: U
     ]
 
     payload = {"message": "저녁 1만원, 커피 3천원", "preview": True}
-    response = await authenticated_client.post("/api/chat/", json=payload)
+    response = await authenticated_client.post("/api/chat", json=payload)
 
     assert response.status_code == 201
     data = response.json()
@@ -95,7 +95,7 @@ async def test_chat_invalid_llm_response(authenticated_client, test_user: User, 
     mock_llm_parse_expense.return_value = "invalid response"
 
     payload = {"message": "테스트 입력"}
-    response = await authenticated_client.post("/api/chat/", json=payload)
+    response = await authenticated_client.post("/api/chat", json=payload)
 
     assert response.status_code == 201
     data = response.json()

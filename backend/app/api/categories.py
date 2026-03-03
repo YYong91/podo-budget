@@ -18,7 +18,7 @@ from app.schemas.category import CategoryCreate, CategoryReorderRequest, Categor
 router = APIRouter()
 
 
-@router.get("/", response_model=list[CategoryResponse])
+@router.get("", response_model=list[CategoryResponse])
 async def get_categories(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
@@ -42,7 +42,7 @@ async def get_categories(
     return result.scalars().all()
 
 
-@router.post("/", response_model=CategoryResponse, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=CategoryResponse, status_code=status.HTTP_201_CREATED)
 async def create_category(
     category: CategoryCreate,
     current_user: User = Depends(get_current_user),

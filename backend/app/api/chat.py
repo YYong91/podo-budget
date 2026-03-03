@@ -74,7 +74,7 @@ async def _to_parsed_items(parsed: dict | list, household_id: int | None = None)
     return result
 
 
-@router.post("/", response_model=ChatResponse, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=ChatResponse, status_code=status.HTTP_201_CREATED)
 @limiter.limit("10/minute")
 async def chat(
     request: Request,

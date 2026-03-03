@@ -32,7 +32,7 @@ async def test_create_expense(authenticated_client, test_user: User, db_session)
         "raw_input": "점심 8000원",
     }
 
-    response = await authenticated_client.post("/api/expenses/", json=payload)
+    response = await authenticated_client.post("/api/expenses", json=payload)
     assert response.status_code == 201
 
     data = response.json()
@@ -45,7 +45,7 @@ async def test_create_expense(authenticated_client, test_user: User, db_session)
 @pytest.mark.asyncio
 async def test_get_expenses_empty(authenticated_client, test_user: User, db_session):
     """지출 목록 조회 (데이터 없음)"""
-    response = await authenticated_client.get("/api/expenses/")
+    response = await authenticated_client.get("/api/expenses")
     assert response.status_code == 200
     assert response.json() == []
 
@@ -58,7 +58,7 @@ async def test_get_expenses_list(authenticated_client, test_user: User, db_sessi
     db_session.add_all([expense1, expense2])
     await db_session.commit()
 
-    response = await authenticated_client.get("/api/expenses/")
+    response = await authenticated_client.get("/api/expenses")
     assert response.status_code == 200
 
     data = response.json()
@@ -75,7 +75,7 @@ async def test_get_expenses_pagination(authenticated_client, test_user: User, db
         db_session.add(expense)
     await db_session.commit()
 
-    response = await authenticated_client.get("/api/expenses/?skip=2&limit=2")
+    response = await authenticated_client.get("/api/expenses?skip=2&limit=2")
     assert response.status_code == 200
 
     data = response.json()
@@ -91,7 +91,7 @@ async def test_get_expenses_filter_by_date(authenticated_client, test_user: User
     db_session.add_all([expense1, expense2, expense3])
     await db_session.commit()
 
-    response = await authenticated_client.get("/api/expenses/?start_date=2026-02-01T00:00:00&end_date=2026-02-28T23:59:59")
+    response = await authenticated_client.get("/api/expenses?start_date=2026-02-01T00:00:00&end_date=2026-02-28T23:59:59")
     assert response.status_code == 200
 
     data = response.json()
@@ -109,7 +109,7 @@ async def test_get_expenses_filter_by_date_only_format(authenticated_client, tes
     await db_session.commit()
 
     # HTML date input이 보내는 YYYY-MM-DD 형식으로 요청
-    response = await authenticated_client.get("/api/expenses/?start_date=2026-02-01&end_date=2026-02-28")
+    response = await authenticated_client.get("/api/expenses?start_date=2026-02-01&end_date=2026-02-28")
     assert response.status_code == 200
 
     data = response.json()
@@ -132,7 +132,7 @@ async def test_get_expenses_filter_by_category(authenticated_client, test_user: 
     db_session.add_all([expense1, expense2])
     await db_session.commit()
 
-    response = await authenticated_client.get(f"/api/expenses/?category_id={cat1.id}")
+    response = await authenticated_client.get(f"/api/expenses?category_id={cat1.id}")
     assert response.status_code == 200
 
     data = response.json()
@@ -286,7 +286,7 @@ async def test_create_expense_negative_amount(authenticated_client, test_user: U
         "category_id": category.id,
         "date": "2026-02-14T12:00:00",
     }
-    response = await authenticated_client.post("/api/expenses/", json=payload)
+    response = await authenticated_client.post("/api/expenses", json=payload)
     assert response.status_code == 422
 
 
@@ -304,7 +304,7 @@ async def test_create_expense_zero_amount(authenticated_client, test_user: User,
         "category_id": category.id,
         "date": "2026-02-14T12:00:00",
     }
-    response = await authenticated_client.post("/api/expenses/", json=payload)
+    response = await authenticated_client.post("/api/expenses", json=payload)
     assert response.status_code == 422
 
 
@@ -334,7 +334,7 @@ async def test_create_expense_with_date_only_format(authenticated_client, test_u
         "description": "전기차충전",
         "date": "2026-02-11",  # LLM이 반환하는 형식 — 시간 없는 날짜
     }
-    response = await authenticated_client.post("/api/expenses/", json=payload)
+    response = await authenticated_client.post("/api/expenses", json=payload)
     assert response.status_code == 201, "YYYY-MM-DD 형식 날짜로 지출 생성이 실패함. " "ExpenseCreate.date 필드가 날짜만 있는 문자열을 허용해야 합니다."
     data = response.json()
     assert data["description"] == "전기차충전"
@@ -365,7 +365,7 @@ async def test_create_expense_with_memo(authenticated_client, test_user: User, d
         "date": "2026-02-15T10:00:00",
         "memo": "주유소 할인 카드 사용",
     }
-    response = await authenticated_client.post("/api/expenses/", json=payload)
+    response = await authenticated_client.post("/api/expenses", json=payload)
     assert response.status_code == 201
     data = response.json()
     assert data["memo"] == "주유소 할인 카드 사용"
@@ -379,7 +379,7 @@ async def test_create_expense_without_memo(authenticated_client, test_user: User
         "description": "버스",
         "date": "2026-02-15T08:00:00",
     }
-    response = await authenticated_client.post("/api/expenses/", json=payload)
+    response = await authenticated_client.post("/api/expenses", json=payload)
     assert response.status_code == 201
     data = response.json()
     assert data.get("memo") is None
@@ -398,7 +398,7 @@ async def test_get_expenses_list_includes_memo(authenticated_client, test_user: 
     db_session.add(expense)
     await db_session.commit()
 
-    response = await authenticated_client.get("/api/expenses/")
+    response = await authenticated_client.get("/api/expenses")
     assert response.status_code == 200
     items = response.json()
     assert len(items) == 1

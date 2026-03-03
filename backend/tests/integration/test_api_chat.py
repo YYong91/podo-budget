@@ -33,7 +33,7 @@ async def test_chat_parse_expense_success(authenticated_client, test_user: User,
     }
 
     payload = {"message": "점심에 김치찌개 8000원"}
-    response = await authenticated_client.post("/api/chat/", json=payload)
+    response = await authenticated_client.post("/api/chat", json=payload)
 
     assert response.status_code == 201
 
@@ -77,7 +77,7 @@ async def test_chat_parse_expense_with_existing_category(authenticated_client, t
     }
 
     payload = {"message": "택시 15000원"}
-    response = await authenticated_client.post("/api/chat/", json=payload)
+    response = await authenticated_client.post("/api/chat", json=payload)
 
     assert response.status_code == 201
 
@@ -94,7 +94,7 @@ async def test_chat_parse_expense_error(authenticated_client, test_user: User, d
     mock_llm_parse_expense.return_value = {"error": "금액을 찾을 수 없습니다"}
 
     payload = {"message": "그냥 텍스트"}
-    response = await authenticated_client.post("/api/chat/", json=payload)
+    response = await authenticated_client.post("/api/chat", json=payload)
 
     assert response.status_code == 201
 
@@ -121,7 +121,7 @@ async def test_chat_with_date_parsing(authenticated_client, test_user: User, db_
     }
 
     payload = {"message": "어제 택시 15000원 회식 후"}
-    response = await authenticated_client.post("/api/chat/", json=payload)
+    response = await authenticated_client.post("/api/chat", json=payload)
 
     assert response.status_code == 201
 
@@ -148,7 +148,7 @@ async def test_chat_with_memo(authenticated_client, test_user: User, db_session,
     }
 
     payload = {"message": "넷플릭스 13500 월 구독료"}
-    response = await authenticated_client.post("/api/chat/", json=payload)
+    response = await authenticated_client.post("/api/chat", json=payload)
 
     assert response.status_code == 201
     assert response.json()["expenses_created"] is not None
@@ -165,7 +165,7 @@ async def test_chat_category_default_to_other(authenticated_client, test_user: U
     }
 
     payload = {"message": "5000원 사용"}
-    response = await authenticated_client.post("/api/chat/", json=payload)
+    response = await authenticated_client.post("/api/chat", json=payload)
 
     assert response.status_code == 201
 
@@ -187,7 +187,7 @@ async def test_chat_large_amount_formatting(authenticated_client, test_user: Use
     }
 
     payload = {"message": "노트북 150만원"}
-    response = await authenticated_client.post("/api/chat/", json=payload)
+    response = await authenticated_client.post("/api/chat", json=payload)
 
     assert response.status_code == 201
 
@@ -206,7 +206,7 @@ async def test_chat_without_description(authenticated_client, test_user: User, d
     }
 
     payload = {"message": "3000원 지출"}
-    response = await authenticated_client.post("/api/chat/", json=payload)
+    response = await authenticated_client.post("/api/chat", json=payload)
 
     assert response.status_code == 201
 
@@ -234,7 +234,7 @@ async def test_chat_preview_mode_returns_parsed_items(authenticated_client, test
     }
 
     payload = {"message": "점심 김치찌개 8000원", "preview": True}
-    response = await authenticated_client.post("/api/chat/", json=payload)
+    response = await authenticated_client.post("/api/chat", json=payload)
 
     assert response.status_code == 201
 
@@ -273,7 +273,7 @@ async def test_chat_preview_includes_household_id(authenticated_client, test_use
     }
 
     payload = {"message": "우리 저녁 5만원", "preview": True}
-    response = await authenticated_client.post("/api/chat/", json=payload)
+    response = await authenticated_client.post("/api/chat", json=payload)
 
     assert response.status_code == 201
     data = response.json()
@@ -308,7 +308,7 @@ async def test_chat_shared_keyword_sets_household_id(authenticated_client, test_
     }
 
     payload = {"message": "우리 가족 외식 8만원"}
-    response = await authenticated_client.post("/api/chat/", json=payload)
+    response = await authenticated_client.post("/api/chat", json=payload)
 
     assert response.status_code == 201
 
@@ -340,7 +340,7 @@ async def test_chat_personal_keyword_no_household_id(authenticated_client, test_
     }
 
     payload = {"message": "내 커피 5000원"}
-    response = await authenticated_client.post("/api/chat/", json=payload)
+    response = await authenticated_client.post("/api/chat", json=payload)
 
     assert response.status_code == 201
 
@@ -371,7 +371,7 @@ async def test_chat_explicit_household_id_overrides_context(authenticated_client
 
     # '내' 키워드인데 household_id를 명시적으로 지정
     payload = {"message": "내 점심 10000원", "household_id": household.id}
-    response = await authenticated_client.post("/api/chat/", json=payload)
+    response = await authenticated_client.post("/api/chat", json=payload)
 
     assert response.status_code == 201
 
@@ -392,7 +392,7 @@ async def test_chat_no_household_defaults_to_personal(authenticated_client, test
     }
 
     payload = {"message": "아메리카노 3000원"}
-    response = await authenticated_client.post("/api/chat/", json=payload)
+    response = await authenticated_client.post("/api/chat", json=payload)
 
     assert response.status_code == 201
 

@@ -249,7 +249,7 @@ class TestExcludeFromStats:
         db_session.add(excluded)
         await db_session.commit()
 
-        response = await authenticated_client.get("/api/expenses/")
+        response = await authenticated_client.get("/api/expenses")
         assert response.status_code == 200
 
         items = response.json()
@@ -267,7 +267,7 @@ class TestExcludeFromStats:
             "exclude_from_stats": True,
         }
 
-        response = await authenticated_client.post("/api/expenses/", json=payload)
+        response = await authenticated_client.post("/api/expenses", json=payload)
         assert response.status_code == 201
 
         data = response.json()

@@ -23,7 +23,7 @@ from app.models.user import User
 @pytest.mark.asyncio
 async def test_get_categories_empty(authenticated_client, test_user: User, db_session):
     """카테고리 목록 조회 (데이터 없음)"""
-    response = await authenticated_client.get("/api/categories/")
+    response = await authenticated_client.get("/api/categories")
     assert response.status_code == 200
     assert response.json() == []
 
@@ -37,7 +37,7 @@ async def test_get_categories_list(authenticated_client, test_user: User, db_ses
     db_session.add_all([cat1, cat2, cat3])
     await db_session.commit()
 
-    response = await authenticated_client.get("/api/categories/")
+    response = await authenticated_client.get("/api/categories")
     assert response.status_code == 200
 
     data = response.json()
@@ -52,7 +52,7 @@ async def test_create_category(authenticated_client, test_user: User, db_session
     """카테고리 생성 API 테스트"""
     payload = {"name": "식비", "description": "음식 관련 지출"}
 
-    response = await authenticated_client.post("/api/categories/", json=payload)
+    response = await authenticated_client.post("/api/categories", json=payload)
     assert response.status_code == 201
 
     data = response.json()
@@ -72,7 +72,7 @@ async def test_create_category_without_description(authenticated_client, test_us
     """description 없이 카테고리 생성"""
     payload = {"name": "교통비"}
 
-    response = await authenticated_client.post("/api/categories/", json=payload)
+    response = await authenticated_client.post("/api/categories", json=payload)
     assert response.status_code == 201
 
     data = response.json()
@@ -90,7 +90,7 @@ async def test_create_category_duplicate_name(authenticated_client, test_user: U
 
     # 같은 이름으로 생성 시도
     payload = {"name": "식비", "description": "새 카테고리"}
-    response = await authenticated_client.post("/api/categories/", json=payload)
+    response = await authenticated_client.post("/api/categories", json=payload)
 
     assert response.status_code == 400
     assert "이미 존재하는" in response.json()["detail"]

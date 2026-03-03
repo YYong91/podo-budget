@@ -18,7 +18,7 @@ from app.models.user import User
 @pytest.mark.asyncio
 async def test_get_budgets_empty(authenticated_client: AsyncClient, test_user: User):
     """예산 목록 조회 - 빈 목록 테스트"""
-    response = await authenticated_client.get("/api/budgets/")
+    response = await authenticated_client.get("/api/budgets")
 
     assert response.status_code == 200
     assert response.json() == []
@@ -34,7 +34,7 @@ async def test_create_budget_success(authenticated_client: AsyncClient, test_use
 
     start_date = datetime.now()
     response = await authenticated_client.post(
-        "/api/budgets/",
+        "/api/budgets",
         json={
             "category_id": category.id,
             "amount": 300000,
@@ -58,7 +58,7 @@ async def test_create_budget_success(authenticated_client: AsyncClient, test_use
 async def test_create_budget_nonexistent_category(authenticated_client: AsyncClient, test_user: User):
     """존재하지 않는 카테고리로 예산 생성 시도 테스트"""
     response = await authenticated_client.post(
-        "/api/budgets/",
+        "/api/budgets",
         json={
             "category_id": 99999,
             "amount": 100000,
@@ -83,7 +83,7 @@ async def test_create_budget_invalid_dates(authenticated_client: AsyncClient, te
     end_date = start_date - timedelta(days=1)
 
     response = await authenticated_client.post(
-        "/api/budgets/",
+        "/api/budgets",
         json={
             "category_id": category.id,
             "amount": 100000,
@@ -116,7 +116,7 @@ async def test_get_budgets_list(authenticated_client: AsyncClient, test_user: Us
     db_session.add(budget)
     await db_session.commit()
 
-    response = await authenticated_client.get("/api/budgets/")
+    response = await authenticated_client.get("/api/budgets")
 
     assert response.status_code == 200
     data = response.json()

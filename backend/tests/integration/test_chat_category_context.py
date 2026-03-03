@@ -36,7 +36,7 @@ async def test_chat_passes_categories_to_llm(
     }
 
     payload = {"message": "2월11일 전기차충전 11680원"}
-    response = await authenticated_client.post("/api/chat/", json=payload)
+    response = await authenticated_client.post("/api/chat", json=payload)
 
     assert response.status_code == 201
 
@@ -82,7 +82,7 @@ async def test_chat_passes_history_hints_to_llm(
     }
 
     payload = {"message": "쿠팡이츠 13000원"}
-    response = await authenticated_client.post("/api/chat/", json=payload)
+    response = await authenticated_client.post("/api/chat", json=payload)
 
     assert response.status_code == 201
 
@@ -112,7 +112,7 @@ async def test_chat_no_categories_passes_none(
     }
 
     payload = {"message": "점심 5천원"}
-    response = await authenticated_client.post("/api/chat/", json=payload)
+    response = await authenticated_client.post("/api/chat", json=payload)
 
     assert response.status_code == 201
 

@@ -43,7 +43,7 @@ router = APIRouter()
 # ===== Household CRUD =====
 
 
-@router.post("/", response_model=HouseholdResponse, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=HouseholdResponse, status_code=status.HTTP_201_CREATED)
 async def create_household(
     household_data: HouseholdCreate,
     current_user: User = Depends(get_current_user),
@@ -96,7 +96,7 @@ async def create_household(
     )
 
 
-@router.get("/", response_model=list[HouseholdResponse])
+@router.get("", response_model=list[HouseholdResponse])
 async def list_households(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),

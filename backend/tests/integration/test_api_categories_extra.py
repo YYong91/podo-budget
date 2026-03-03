@@ -94,7 +94,7 @@ async def test_get_categories_includes_system_and_user(authenticated_client: Asy
 
     await db_session.commit()
 
-    response = await authenticated_client.get("/api/categories/")
+    response = await authenticated_client.get("/api/categories")
     assert response.status_code == 200
 
     data = response.json()

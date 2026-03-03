@@ -32,7 +32,7 @@ async def test_create_household_성공(authenticated_client: AsyncClient):
     - 가구를 생성하고 생성자가 자동으로 owner가 되는지 확인
     """
     response = await authenticated_client.post(
-        "/api/households/",
+        "/api/households",
         json={
             "name": "테스트 가구",
             "description": "테스트용 가구입니다",
@@ -57,27 +57,27 @@ async def test_list_households_내가_속한_가구만_조회(authenticated_clie
     """
     # 사용자1이 가구 생성
     response1 = await authenticated_client.post(
-        "/api/households/",
+        "/api/households",
         json={"name": "가구1"},
     )
     assert response1.status_code == 201
 
     # 사용자2가 가구 생성
     response2 = await authenticated_client2.post(
-        "/api/households/",
+        "/api/households",
         json={"name": "가구2"},
     )
     assert response2.status_code == 201
 
     # 사용자1 가구 목록 조회 (가구1만 보임)
-    response = await authenticated_client.get("/api/households/")
+    response = await authenticated_client.get("/api/households")
     assert response.status_code == 200
     data = response.json()
     assert len(data) == 1
     assert data[0]["name"] == "가구1"
 
     # 사용자2 가구 목록 조회 (가구2만 보임)
-    response = await authenticated_client2.get("/api/households/")
+    response = await authenticated_client2.get("/api/households")
     assert response.status_code == 200
     data = response.json()
     assert len(data) == 1
@@ -92,7 +92,7 @@ async def test_get_household_상세_조회_성공(authenticated_client: AsyncCli
     """
     # 가구 생성
     create_response = await authenticated_client.post(
-        "/api/households/",
+        "/api/households",
         json={"name": "상세 조회 테스트"},
     )
     household_id = create_response.json()["id"]
@@ -116,7 +116,7 @@ async def test_get_household_권한_없는_사용자는_조회_불가(authentica
     """
     # 사용자1이 가구 생성
     create_response = await authenticated_client.post(
-        "/api/households/",
+        "/api/households",
         json={"name": "비공개 가구"},
     )
     household_id = create_response.json()["id"]
@@ -135,7 +135,7 @@ async def test_update_household_admin이_수정_가능(authenticated_client: Asy
     """
     # 가구 생성
     create_response = await authenticated_client.post(
-        "/api/households/",
+        "/api/households",
         json={"name": "원래 이름"},
     )
     household_id = create_response.json()["id"]
@@ -163,7 +163,7 @@ async def test_delete_household_owner만_삭제_가능(authenticated_client: Asy
     """
     # 가구 생성
     create_response = await authenticated_client.post(
-        "/api/households/",
+        "/api/households",
         json={"name": "삭제 테스트"},
     )
     household_id = create_response.json()["id"]
@@ -179,7 +179,7 @@ async def test_delete_household_owner만_삭제_가능(authenticated_client: Asy
     assert household.deleted_at is not None
 
     # 삭제된 가구는 목록에 표시되지 않음
-    list_response = await authenticated_client.get("/api/households/")
+    list_response = await authenticated_client.get("/api/households")
     assert len(list_response.json()) == 0
 
 
@@ -206,7 +206,7 @@ async def test_update_member_role_owner가_역할_변경(
     """
     # 1. 사용자1이 가구 생성 (owner)
     create_response = await authenticated_client.post(
-        "/api/households/",
+        "/api/households",
         json={"name": "역할 변경 테스트"},
     )
     household_id = create_response.json()["id"]
@@ -235,7 +235,7 @@ async def test_update_member_role_자기_자신은_변경_불가(authenticated_c
     """
     # 가구 생성
     create_response = await authenticated_client.post(
-        "/api/households/",
+        "/api/households",
         json={"name": "자기 역할 변경 테스트"},
     )
     household_id = create_response.json()["id"]
@@ -259,7 +259,7 @@ async def test_remove_member_admin이_멤버_추방(
     """
     # 1. 가구 생성
     create_response = await authenticated_client.post(
-        "/api/households/",
+        "/api/households",
         json={"name": "멤버 추방 테스트"},
     )
     household_id = create_response.json()["id"]
@@ -290,7 +290,7 @@ async def test_remove_member_owner는_추방_불가(
     """
     # 1. 가구 생성 (사용자1 = owner)
     create_response = await authenticated_client.post(
-        "/api/households/",
+        "/api/households",
         json={"name": "owner 추방 테스트"},
     )
     household_id = create_response.json()["id"]
@@ -316,7 +316,7 @@ async def test_leave_household_일반_멤버_탈퇴(
     """
     # 1. 가구 생성
     create_response = await authenticated_client.post(
-        "/api/households/",
+        "/api/households",
         json={"name": "탈퇴 테스트"},
     )
     household_id = create_response.json()["id"]
@@ -344,7 +344,7 @@ async def test_leave_household_owner_탈퇴_시_역할_양도(
     """
     # 1. 가구 생성 (사용자1 = owner)
     create_response = await authenticated_client.post(
-        "/api/households/",
+        "/api/households",
         json={"name": "owner 탈퇴 테스트"},
     )
     household_id = create_response.json()["id"]
@@ -376,7 +376,7 @@ async def test_leave_household_마지막_멤버는_탈퇴_불가(authenticated_c
     """
     # 가구 생성 (혼자)
     create_response = await authenticated_client.post(
-        "/api/households/",
+        "/api/households",
         json={"name": "혼자 남은 가구"},
     )
     household_id = create_response.json()["id"]
@@ -398,7 +398,7 @@ async def test_create_invitation_성공(authenticated_client: AsyncClient):
     """
     # 가구 생성
     create_response = await authenticated_client.post(
-        "/api/households/",
+        "/api/households",
         json={"name": "초대 테스트"},
     )
     household_id = create_response.json()["id"]
@@ -427,7 +427,7 @@ async def test_create_invitation_중복_초대_불가(authenticated_client: Asyn
     """
     # 가구 생성
     create_response = await authenticated_client.post(
-        "/api/households/",
+        "/api/households",
         json={"name": "중복 초대 테스트"},
     )
     household_id = create_response.json()["id"]
@@ -455,7 +455,7 @@ async def test_create_invitation_owner_역할로는_초대_불가(authenticated_
     """
     # 가구 생성
     create_response = await authenticated_client.post(
-        "/api/households/",
+        "/api/households",
         json={"name": "owner 초대 테스트"},
     )
     household_id = create_response.json()["id"]
@@ -477,7 +477,7 @@ async def test_list_invitations_가구의_초대_목록_조회(authenticated_cli
     """
     # 가구 생성
     create_response = await authenticated_client.post(
-        "/api/households/",
+        "/api/households",
         json={"name": "초대 목록 테스트"},
     )
     household_id = create_response.json()["id"]
@@ -508,7 +508,7 @@ async def test_cancel_invitation_admin이_초대_취소(authenticated_client: As
     """
     # 가구 생성
     create_response = await authenticated_client.post(
-        "/api/households/",
+        "/api/households",
         json={"name": "초대 취소 테스트"},
     )
     household_id = create_response.json()["id"]
@@ -548,7 +548,7 @@ async def test_list_my_invitations_내가_받은_초대_조회(
 
     # 사용자1이 가구 생성 및 사용자2 초대
     create_response = await authenticated_client.post(
-        "/api/households/",
+        "/api/households",
         json={"name": "내 초대 테스트"},
     )
     household_id = create_response.json()["id"]
@@ -584,7 +584,7 @@ async def test_accept_invitation_초대_수락_성공(
 
     # 사용자1이 가구 생성 및 초대
     create_response = await authenticated_client.post(
-        "/api/households/",
+        "/api/households",
         json={"name": "초대 수락 테스트"},
     )
     household_id = create_response.json()["id"]
@@ -624,7 +624,7 @@ async def test_accept_invitation_이미_멤버인_경우_에러(authenticated_cl
 
     # 가구 생성 (사용자1은 이미 owner)
     create_response = await authenticated_client.post(
-        "/api/households/",
+        "/api/households",
         json={"name": "중복 멤버 테스트"},
     )
     household_id = create_response.json()["id"]
@@ -666,7 +666,7 @@ async def test_reject_invitation_초대_거절_성공(
 
     # 사용자1이 가구 생성 및 초대
     create_response = await authenticated_client.post(
-        "/api/households/",
+        "/api/households",
         json={"name": "초대 거절 테스트"},
     )
     household_id = create_response.json()["id"]
@@ -795,7 +795,7 @@ async def test_update_household_member는_수정_불가(
     """
     # 가구 생성 (사용자1 = owner)
     create_response = await authenticated_client.post(
-        "/api/households/",
+        "/api/households",
         json={"name": "권한 테스트"},
     )
     household_id = create_response.json()["id"]
@@ -824,7 +824,7 @@ async def test_create_invitation_member는_초대_불가(
     """
     # 가구 생성 (사용자1 = owner)
     create_response = await authenticated_client.post(
-        "/api/households/",
+        "/api/households",
         json={"name": "초대 권한 테스트"},
     )
     household_id = create_response.json()["id"]
@@ -853,7 +853,7 @@ async def test_remove_member_member는_추방_불가(
     """
     # 가구 생성 (사용자1 = owner)
     create_response = await authenticated_client.post(
-        "/api/households/",
+        "/api/households",
         json={"name": "추방 권한 테스트"},
     )
     household_id = create_response.json()["id"]
@@ -878,7 +878,7 @@ async def test_remove_member_member는_추방_불가(
 async def test_rejoin_household_after_leave(authenticated_client, authenticated_client2, test_user, test_user2, db_session):
     """탈퇴 후 재초대 수락 시 정상 재가입 (UniqueConstraint 회피)"""
     # 1. 가구 생성 (사용자1 = owner)
-    response = await authenticated_client.post("/api/households/", json={"name": "재가입 테스트"})
+    response = await authenticated_client.post("/api/households", json={"name": "재가입 테스트"})
     assert response.status_code == 201
     household_id = response.json()["id"]
 

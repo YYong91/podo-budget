@@ -44,7 +44,7 @@ def _weekly_payload(**overrides):
 @pytest.mark.asyncio
 async def test_create_monthly(authenticated_client, test_user: User):
     """monthly 정기 거래 생성"""
-    response = await authenticated_client.post("/api/recurring/", json=_monthly_payload())
+    response = await authenticated_client.post("/api/recurring", json=_monthly_payload())
     assert response.status_code == 201
 
     data = response.json()
@@ -60,7 +60,7 @@ async def test_create_monthly(authenticated_client, test_user: User):
 @pytest.mark.asyncio
 async def test_create_weekly(authenticated_client):
     """weekly 정기 거래 생성"""
-    response = await authenticated_client.post("/api/recurring/", json=_weekly_payload())
+    response = await authenticated_client.post("/api/recurring", json=_weekly_payload())
     assert response.status_code == 201
 
     data = response.json()
@@ -80,7 +80,7 @@ async def test_create_yearly(authenticated_client):
         "month_of_year": 1,
         "start_date": "2026-01-01",
     }
-    response = await authenticated_client.post("/api/recurring/", json=payload)
+    response = await authenticated_client.post("/api/recurring", json=payload)
     assert response.status_code == 201
     assert response.json()["next_due_date"] == "2026-01-01"
 
@@ -96,7 +96,7 @@ async def test_create_custom(authenticated_client):
         "interval": 14,
         "start_date": "2026-02-16",
     }
-    response = await authenticated_client.post("/api/recurring/", json=payload)
+    response = await authenticated_client.post("/api/recurring", json=payload)
     assert response.status_code == 201
     assert response.json()["next_due_date"] == "2026-02-16"
 
@@ -104,10 +104,10 @@ async def test_create_custom(authenticated_client):
 @pytest.mark.asyncio
 async def test_get_recurring_list(authenticated_client):
     """정기 거래 목록 조회"""
-    await authenticated_client.post("/api/recurring/", json=_monthly_payload())
-    await authenticated_client.post("/api/recurring/", json=_weekly_payload())
+    await authenticated_client.post("/api/recurring", json=_monthly_payload())
+    await authenticated_client.post("/api/recurring", json=_weekly_payload())
 
-    response = await authenticated_client.get("/api/recurring/")
+    response = await authenticated_client.get("/api/recurring")
     assert response.status_code == 200
     assert len(response.json()) == 2
 
@@ -115,7 +115,7 @@ async def test_get_recurring_list(authenticated_client):
 @pytest.mark.asyncio
 async def test_get_recurring_detail(authenticated_client):
     """정기 거래 상세 조회"""
-    create_resp = await authenticated_client.post("/api/recurring/", json=_monthly_payload())
+    create_resp = await authenticated_client.post("/api/recurring", json=_monthly_payload())
     rec_id = create_resp.json()["id"]
 
     response = await authenticated_client.get(f"/api/recurring/{rec_id}")
@@ -126,7 +126,7 @@ async def test_get_recurring_detail(authenticated_client):
 @pytest.mark.asyncio
 async def test_update_recurring(authenticated_client):
     """정기 거래 수정"""
-    create_resp = await authenticated_client.post("/api/recurring/", json=_monthly_payload())
+    create_resp = await authenticated_client.post("/api/recurring", json=_monthly_payload())
     rec_id = create_resp.json()["id"]
 
     response = await authenticated_client.put(
@@ -142,7 +142,7 @@ async def test_update_recurring(authenticated_client):
 @pytest.mark.asyncio
 async def test_delete_recurring(authenticated_client):
     """정기 거래 삭제"""
-    create_resp = await authenticated_client.post("/api/recurring/", json=_monthly_payload())
+    create_resp = await authenticated_client.post("/api/recurring", json=_monthly_payload())
     rec_id = create_resp.json()["id"]
 
     response = await authenticated_client.delete(f"/api/recurring/{rec_id}")
@@ -161,7 +161,7 @@ async def test_monthly_without_day_of_month(authenticated_client):
     """monthly인데 day_of_month 없으면 422"""
     payload = _monthly_payload(day_of_month=None)
     del payload["day_of_month"]
-    response = await authenticated_client.post("/api/recurring/", json=payload)
+    response = await authenticated_client.post("/api/recurring", json=payload)
     assert response.status_code == 422
 
 
@@ -175,7 +175,7 @@ async def test_weekly_without_day_of_week(authenticated_client):
         "frequency": "weekly",
         "start_date": "2026-02-01",
     }
-    response = await authenticated_client.post("/api/recurring/", json=payload)
+    response = await authenticated_client.post("/api/recurring", json=payload)
     assert response.status_code == 422
 
 
@@ -190,7 +190,7 @@ async def test_yearly_without_month_of_year(authenticated_client):
         "day_of_month": 1,
         "start_date": "2026-02-01",
     }
-    response = await authenticated_client.post("/api/recurring/", json=payload)
+    response = await authenticated_client.post("/api/recurring", json=payload)
     assert response.status_code == 422
 
 
@@ -204,7 +204,7 @@ async def test_custom_without_interval(authenticated_client):
         "frequency": "custom",
         "start_date": "2026-02-01",
     }
-    response = await authenticated_client.post("/api/recurring/", json=payload)
+    response = await authenticated_client.post("/api/recurring", json=payload)
     assert response.status_code == 422
 
 
@@ -214,10 +214,10 @@ async def test_custom_without_interval(authenticated_client):
 @pytest.mark.asyncio
 async def test_filter_by_expense_type(authenticated_client):
     """expense 타입만 필터링"""
-    await authenticated_client.post("/api/recurring/", json=_monthly_payload())
-    await authenticated_client.post("/api/recurring/", json=_weekly_payload())  # income
+    await authenticated_client.post("/api/recurring", json=_monthly_payload())
+    await authenticated_client.post("/api/recurring", json=_weekly_payload())  # income
 
-    response = await authenticated_client.get("/api/recurring/?type=expense")
+    response = await authenticated_client.get("/api/recurring?type=expense")
     assert response.status_code == 200
     data = response.json()
     assert len(data) == 1
@@ -227,10 +227,10 @@ async def test_filter_by_expense_type(authenticated_client):
 @pytest.mark.asyncio
 async def test_filter_by_income_type(authenticated_client):
     """income 타입만 필터링"""
-    await authenticated_client.post("/api/recurring/", json=_monthly_payload())
-    await authenticated_client.post("/api/recurring/", json=_weekly_payload())  # income
+    await authenticated_client.post("/api/recurring", json=_monthly_payload())
+    await authenticated_client.post("/api/recurring", json=_weekly_payload())  # income
 
-    response = await authenticated_client.get("/api/recurring/?type=income")
+    response = await authenticated_client.get("/api/recurring?type=income")
     assert response.status_code == 200
     data = response.json()
     assert len(data) == 1

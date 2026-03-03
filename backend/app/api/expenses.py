@@ -40,7 +40,7 @@ from app.services.llm_service import get_llm_provider
 router = APIRouter()
 
 
-@router.post("/", response_model=ExpenseResponse, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=ExpenseResponse, status_code=status.HTTP_201_CREATED)
 async def create_expense(
     expense: ExpenseCreate,
     current_user: User = Depends(get_current_user),
@@ -68,7 +68,7 @@ async def create_expense(
     return db_expense
 
 
-@router.get("/", response_model=list[ExpenseResponse])
+@router.get("", response_model=list[ExpenseResponse])
 async def get_expenses(
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),

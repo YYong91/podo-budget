@@ -28,7 +28,7 @@ from app.schemas.income import IncomeCreate, IncomeResponse, IncomeUpdate
 router = APIRouter()
 
 
-@router.post("/", response_model=IncomeResponse, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=IncomeResponse, status_code=status.HTTP_201_CREATED)
 async def create_income(
     income: IncomeCreate,
     current_user: User = Depends(get_current_user),
@@ -50,7 +50,7 @@ async def create_income(
     return db_income
 
 
-@router.get("/", response_model=list[IncomeResponse])
+@router.get("", response_model=list[IncomeResponse])
 async def get_incomes(
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),

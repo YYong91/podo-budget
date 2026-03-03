@@ -32,7 +32,7 @@ from app.schemas.budget import (
 router = APIRouter()
 
 
-@router.get("/", response_model=list[BudgetResponse])
+@router.get("", response_model=list[BudgetResponse])
 async def get_budgets(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
@@ -53,7 +53,7 @@ async def get_budgets(
     return budgets
 
 
-@router.post("/", response_model=BudgetResponse, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=BudgetResponse, status_code=status.HTTP_201_CREATED)
 async def create_budget(
     budget_data: BudgetCreate,
     current_user: User = Depends(get_current_user),

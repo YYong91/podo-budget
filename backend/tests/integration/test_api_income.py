@@ -19,7 +19,7 @@ async def test_create_income(authenticated_client, test_user: User, db_session):
         "date": "2026-02-01T09:00:00",
         "raw_input": "월급 350만원",
     }
-    response = await authenticated_client.post("/api/income/", json=payload)
+    response = await authenticated_client.post("/api/income", json=payload)
     assert response.status_code == 201
 
     data = response.json()
@@ -41,7 +41,7 @@ async def test_create_income_invalid_amount(authenticated_client):
         "description": "무효",
         "date": "2026-02-01T00:00:00",
     }
-    response = await authenticated_client.post("/api/income/", json=payload)
+    response = await authenticated_client.post("/api/income", json=payload)
     assert response.status_code == 422
 
 
@@ -61,7 +61,7 @@ async def test_get_incomes(authenticated_client, test_user: User, db_session):
         )
     await db_session.commit()
 
-    response = await authenticated_client.get("/api/income/")
+    response = await authenticated_client.get("/api/income")
     assert response.status_code == 200
     data = response.json()
     assert len(data) == 3
@@ -76,7 +76,7 @@ async def test_get_incomes_with_date_filter(authenticated_client, test_user: Use
     db_session.add(Income(user_id=test_user.id, amount=200000, description="2월 수입", date=datetime(2026, 2, 15)))
     await db_session.commit()
 
-    response = await authenticated_client.get("/api/income/?start_date=2026-02-01T00:00:00&end_date=2026-02-28T23:59:59")
+    response = await authenticated_client.get("/api/income?start_date=2026-02-01T00:00:00&end_date=2026-02-28T23:59:59")
     assert response.status_code == 200
     data = response.json()
     assert len(data) == 1
@@ -92,11 +92,11 @@ async def test_get_incomes_pagination(authenticated_client, test_user: User, db_
         db_session.add(Income(user_id=test_user.id, amount=100000, description=f"수입 {i}", date=datetime(2026, 2, 1)))
     await db_session.commit()
 
-    response = await authenticated_client.get("/api/income/?skip=0&limit=2")
+    response = await authenticated_client.get("/api/income?skip=0&limit=2")
     assert response.status_code == 200
     assert len(response.json()) == 2
 
-    response = await authenticated_client.get("/api/income/?skip=2&limit=2")
+    response = await authenticated_client.get("/api/income?skip=2&limit=2")
     assert len(response.json()) == 2
 
 
@@ -222,7 +222,7 @@ async def test_create_income_with_date_only_format(authenticated_client, test_us
         "description": "2월 월급",
         "date": "2026-02-01",  # LLM이 반환하는 형식 — 시간 없는 날짜
     }
-    response = await authenticated_client.post("/api/income/", json=payload)
+    response = await authenticated_client.post("/api/income", json=payload)
     assert response.status_code == 201, "YYYY-MM-DD 형식 날짜로 수입 생성이 실패함. " "IncomeCreate.date 필드가 날짜만 있는 문자열을 허용해야 합니다."
     data = response.json()
     assert data["description"] == "2월 월급"
@@ -247,7 +247,7 @@ async def test_create_income_with_memo(authenticated_client, test_user: User, db
         "date": "2026-02-20T00:00:00",
         "memo": "디자인 외주 작업비",
     }
-    response = await authenticated_client.post("/api/income/", json=payload)
+    response = await authenticated_client.post("/api/income", json=payload)
     assert response.status_code == 201
     data = response.json()
     assert data["memo"] == "디자인 외주 작업비"
@@ -266,7 +266,7 @@ async def test_get_income_list_includes_memo(authenticated_client, test_user: Us
     db_session.add(income)
     await db_session.commit()
 
-    response = await authenticated_client.get("/api/income/")
+    response = await authenticated_client.get("/api/income")
     assert response.status_code == 200
     items = response.json()
     assert len(items) == 1

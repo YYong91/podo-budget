@@ -31,7 +31,7 @@ from app.services.recurring_service import (
 router = APIRouter()
 
 
-@router.post("/", response_model=RecurringTransactionResponse, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=RecurringTransactionResponse, status_code=status.HTTP_201_CREATED)
 async def create_recurring(
     data: RecurringTransactionCreate,
     current_user: User = Depends(get_current_user),
@@ -75,7 +75,7 @@ async def create_recurring(
     return recurring
 
 
-@router.get("/", response_model=list[RecurringTransactionResponse])
+@router.get("", response_model=list[RecurringTransactionResponse])
 async def get_recurring_list(
     type: str | None = Query(None, pattern="^(expense|income)$"),
     household_id: int | None = None,
