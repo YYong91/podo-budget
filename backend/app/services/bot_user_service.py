@@ -89,8 +89,11 @@ async def link_telegram_account_by_code(db: AsyncSession, code: str, telegram_ch
     if user is None:
         return False, "❌ 유효하지 않은 코드입니다. 웹에서 새 코드를 발급해주세요."
 
-    # 만료 확인
-    if user.telegram_link_code_expires_at is None or user.telegram_link_code_expires_at < now:
+    # 만료 확인 (SQLite는 naive datetime 반환 → UTC로 간주하여 비교)
+    expires_at = user.telegram_link_code_expires_at
+    if expires_at is not None and expires_at.tzinfo is None:
+        expires_at = expires_at.replace(tzinfo=UTC)
+    if expires_at is None or expires_at < now:
         user.telegram_link_code = None
         user.telegram_link_code_expires_at = None
         await db.commit()
@@ -102,14 +105,13 @@ async def link_telegram_account_by_code(db: AsyncSession, code: str, telegram_ch
     if existing_user and existing_user.id != user.id:
         return False, "⚠️ 이 텔레그램 계정은 이미 다른 웹 계정에 연동되어 있습니다."
 
-    # 연동 설정 후 코드 삭제
-    user.telegram_chat_id = telegram_chat_id
-    user.telegram_link_code = None
-    user.telegram_link_code_expires_at = None
-
     # 기존 봇 유저 지출/수입을 웹 계정으로 이관
     migrated_count = await _migrate_bot_user_data(db, telegram_chat_id, web_user=user)
 
+    # 연동 설정 후 코드 삭제 (명시적 UPDATE)
+    await db.execute(
+        update(User).where(User.id == user.id).values(telegram_chat_id=telegram_chat_id, telegram_link_code=None, telegram_link_code_expires_at=None)
+    )
     await db.commit()
 
     logger.info(f"텔레그램 코드 연동 완료: user_id={user.id} ← chat_id={telegram_chat_id}")

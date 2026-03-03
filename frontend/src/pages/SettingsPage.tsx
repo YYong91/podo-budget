@@ -115,7 +115,7 @@ export default function SettingsPage() {
               <ol className="space-y-2 text-sm text-warm-700">
                 <li className="flex gap-2">
                   <span className="flex-shrink-0 w-5 h-5 rounded-full bg-grape-100 text-grape-700 text-xs font-bold flex items-center justify-center">1</span>
-                  <span>텔레그램 앱에서 <span className="font-mono bg-warm-100 px-1 rounded">@podo_budget_bot</span>을 검색하거나 <a href="https://t.me/podo_budget_bot" target="_blank" rel="noopener noreferrer" className="text-grape-600 underline">t.me/podo_budget_bot</a> 으로 접속하세요</span>
+                  <span>텔레그램 앱에서 <span className="font-mono bg-warm-100 px-1 rounded">@homenrich_bot</span>을 검색하거나 <a href="https://t.me/homenrich_bot" target="_blank" rel="noopener noreferrer" className="text-grape-600 underline">t.me/homenrich_bot</a> 으로 접속하세요</span>
                 </li>
                 <li className="flex gap-2">
                   <span className="flex-shrink-0 w-5 h-5 rounded-full bg-grape-100 text-grape-700 text-xs font-bold flex items-center justify-center">2</span>
