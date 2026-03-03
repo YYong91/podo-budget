@@ -334,6 +334,15 @@ describe('ExpenseList', () => {
     })
   })
 
+  describe('지출 등록 버튼', () => {
+    it('지출 등록 버튼을 표시한다', async () => {
+      renderExpenseList()
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: /지출 등록/i })).toBeInTheDocument()
+      })
+    })
+  })
+
   describe('링크', () => {
     it('지출 항목을 클릭하면 상세 페이지로 이동한다', async () => {
       renderExpenseList()

@@ -5,8 +5,8 @@
  */
 
 import { useEffect, useState, useMemo } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
-import { Loader2 } from 'lucide-react'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { Loader2, PlusCircle } from 'lucide-react'
 import { expenseApi } from '../api/expenses'
 import { categoryApi } from '../api/categories'
 import { useHouseholdStore } from '../stores/useHouseholdStore'
@@ -76,6 +76,7 @@ const DATE_PRESETS = [
 ]
 
 export default function ExpenseList() {
+  const navigate = useNavigate()
   const activeHouseholdId = useHouseholdStore((s) => s.activeHouseholdId)
   const currentHousehold = useHouseholdStore((s) => s.currentHousehold)
   const fetchHouseholdDetail = useHouseholdStore((s) => s.fetchHouseholdDetail)
@@ -248,7 +249,16 @@ export default function ExpenseList() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-xl font-bold text-grape-700">지출 목록</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-xl font-bold text-grape-700">지출 목록</h1>
+        <button
+          onClick={() => navigate('/expenses/new')}
+          className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-grape-600 rounded-xl hover:bg-grape-700 shadow-sm shadow-grape-200 active:scale-[0.98] transition-all"
+        >
+          <PlusCircle className="w-4 h-4" />
+          지출 등록
+        </button>
+      </div>
 
       {/* 필터 바 */}
       <div className="bg-white rounded-2xl shadow-sm border border-warm-200/60 p-4">
