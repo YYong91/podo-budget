@@ -250,7 +250,7 @@ describe('BudgetManager', () => {
 
       let postCalled = false
       server.use(
-        http.post('/api/budgets/', () => {
+        http.post('/api/budgets', () => {
           postCalled = true
           return HttpResponse.json(
             {

@@ -57,10 +57,10 @@ const budgetHandlers = [
   http.get(`${BASE_URL}/budgets/alerts`, () =>
     HttpResponse.json(mockAlerts)
   ),
-  http.get(`${BASE_URL}/budgets/`, () =>
+  http.get(`${BASE_URL}/budgets`, () =>
     HttpResponse.json(mockBudgets)
   ),
-  http.post(`${BASE_URL}/budgets/`, async ({ request }) => {
+  http.post(`${BASE_URL}/budgets`, async ({ request }) => {
     const body = await request.json() as Record<string, unknown>
     const newBudget = {
       id: 3,

@@ -68,7 +68,7 @@ const mockInvitation = {
 
 // 핸들러 정의
 const householdHandlers = [
-  http.get(`${BASE_URL}/households/`, () =>
+  http.get(`${BASE_URL}/households`, () =>
     HttpResponse.json(mockHouseholds)
   ),
   http.get(`${BASE_URL}/households/:id`, ({ params }) => {
@@ -77,7 +77,7 @@ const householdHandlers = [
     }
     return HttpResponse.json({ detail: 'Not found' }, { status: 404 })
   }),
-  http.post(`${BASE_URL}/households/`, async ({ request }) => {
+  http.post(`${BASE_URL}/households`, async ({ request }) => {
     const body = await request.json() as Record<string, unknown>
     const newHousehold = {
       id: 3,
