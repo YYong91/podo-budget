@@ -216,7 +216,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []) // setToken은 React가 안정적 참조를 보장하므로 deps 불필요
 
   const logout = () => {
-    setToken(null)
     clearCookieToken()
     const authUrl = import.meta.env.VITE_AUTH_URL || 'https://auth.podonest.com'
     window.location.href = `${authUrl}/logout`
