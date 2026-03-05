@@ -188,6 +188,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => clearInterval(interval)
   }, [token])
 
+  // BFCache 대응: iOS Safari에서 뒤로가기로 페이지 복원 시 토큰 재검증
+  // persisted=true이면 React state가 이전 상태로 복원됨 → 쿠키/localStorage와 동기화
+  useEffect(() => {
+    const handlePageShow = (e: PageTransitionEvent) => {
+      if (e.persisted) {
+        const current = getCookieToken()
+        if (!current || isTokenExpired(current)) {
+          setToken(null)
+        }
+      }
+    }
+    window.addEventListener('pageshow', handlePageShow)
+    return () => window.removeEventListener('pageshow', handlePageShow)
+  }, [])
+
   // SSO 콜백 전용: 하드 리로드 없이 token 상태를 직접 업데이트
   // useCallback으로 안정적 참조 보장 → AuthCallbackPage useEffect deps에 포함 가능
   const setTokenFromCallback = useCallback((newToken: string) => {
