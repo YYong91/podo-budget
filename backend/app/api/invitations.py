@@ -74,6 +74,9 @@ async def list_my_invitations(
         inviter_result = await db.execute(inviter_query)
         inviter = inviter_result.scalar_one()
 
+        # pending 상태인 초대에는 토큰 포함 (수락/거절에 필요)
+        # 이 엔드포인트는 인증 필요이고 본인 초대만 반환하므로 안전
+        include_token = inv.status == "pending"
         response_list.append(
             InvitationResponse(
                 id=inv.id,
@@ -86,7 +89,7 @@ async def list_my_invitations(
                 expires_at=inv.expires_at,
                 created_at=inv.created_at,
                 responded_at=inv.responded_at,
-                token=None,  # 목록 조회 시에는 토큰 미포함
+                token=inv.token if include_token else None,
             )
         )
 

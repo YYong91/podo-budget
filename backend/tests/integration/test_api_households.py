@@ -565,6 +565,7 @@ async def test_list_my_invitations_내가_받은_초대_조회(
     assert len(data) == 1
     assert data[0]["invitee_email"] == "test2@example.com"
     assert data[0]["status"] == "pending"
+    assert data[0]["token"] is not None  # 수락/거절을 위해 pending 초대에는 토큰 포함
 
 
 @pytest.mark.asyncio
