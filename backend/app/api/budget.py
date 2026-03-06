@@ -1,7 +1,8 @@
 """예산 관리 API 라우트
 
 예산 설정, 조회, 수정, 삭제 및 예산 초과 알림 기능을 제공합니다.
-사용자별로 예산 데이터를 격리하여 관리합니다.
+household_id가 있으면 가구 공유 예산, 없으면 개인 예산으로 처리합니다.
+expenses/recurring과 동일한 household 패턴을 따릅니다.
 """
 
 from datetime import datetime, timedelta
@@ -10,6 +11,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import extract, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.dependencies import get_household_member, get_user_active_household_id
 from app.core.auth import get_current_user
 from app.core.database import get_db
 from app.models.budget import Budget
@@ -32,25 +34,36 @@ from app.schemas.budget import (
 router = APIRouter()
 
 
+def _budget_scope_filter(household_id: int | None, current_user: User):
+    """예산 조회 범위 필터 — household_id가 있으면 가구, 없으면 개인"""
+    if household_id is not None:
+        return Budget.household_id == household_id
+    return Budget.user_id == current_user.id
+
+
+def _expense_scope_filter(household_id: int | None, current_user: User):
+    """지출 조회 범위 필터 — household_id가 있으면 가구, 없으면 개인"""
+    if household_id is not None:
+        return Expense.household_id == household_id
+    return Expense.user_id == current_user.id
+
+
 @router.get("", response_model=list[BudgetResponse])
 async def get_budgets(
+    household_id: int | None = Query(None, description="가구 ID (없으면 개인 예산)"),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     """전체 예산 목록 조회
 
-    현재 로그인한 사용자의 예산만 반환합니다.
-
-    Args:
-        current_user: 현재 인증된 사용자
-        db: 데이터베이스 세션
-
-    Returns:
-        예산 목록 (생성일 역순)
+    household_id가 있으면 가구 공유 예산, 없으면 개인 예산을 반환합니다.
     """
-    result = await db.execute(select(Budget).where(Budget.user_id == current_user.id).order_by(Budget.created_at.desc()))
-    budgets = result.scalars().all()
-    return budgets
+    if household_id is not None:
+        await get_household_member(household_id, current_user, db)
+
+    scope_filter = _budget_scope_filter(household_id, current_user)
+    result = await db.execute(select(Budget).where(scope_filter).order_by(Budget.created_at.desc()))
+    return result.scalars().all()
 
 
 @router.post("", response_model=BudgetResponse, status_code=status.HTTP_201_CREATED)
@@ -61,40 +74,29 @@ async def create_budget(
 ):
     """예산 생성
 
-    현재 사용자의 예산을 생성합니다.
-    user_id는 자동으로 현재 로그인한 사용자로 설정됩니다.
-
-    Args:
-        budget_data: 예산 생성 정보
-        current_user: 현재 인증된 사용자
-        db: 데이터베이스 세션
-
-    Returns:
-        생성된 예산 정보
-
-    Raises:
-        HTTPException 404: 카테고리가 존재하지 않는 경우
-        HTTPException 400: 종료일이 시작일보다 이른 경우
+    household_id가 지정되면 가구 공유 예산으로, 없으면 활성 가구를 자동 감지합니다.
+    가구가 없으면 개인 예산으로 생성됩니다.
     """
+    # household_id 결정: 요청에서 받거나 활성 가구 자동 감지
+    household_id = budget_data.household_id
+    if household_id is None:
+        household_id = await get_user_active_household_id(current_user, db)
+
+    if household_id is not None:
+        await get_household_member(household_id, current_user, db)
+
     # 카테고리 존재 여부 확인
     result = await db.execute(select(Category).where(Category.id == budget_data.category_id))
-    category = result.scalar_one_or_none()
-    if not category:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="카테고리를 찾을 수 없습니다",
-        )
+    if not result.scalar_one_or_none():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="카테고리를 찾을 수 없습니다")
 
-    # 종료일 검증 (종료일이 있는 경우 시작일보다 이후여야 함)
+    # 종료일 검증
     if budget_data.end_date and budget_data.end_date < budget_data.start_date:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="종료일은 시작일 이후여야 합니다",
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="종료일은 시작일 이후여야 합니다")
 
-    # Budget 생성
     new_budget = Budget(
         user_id=current_user.id,
+        household_id=household_id,
         category_id=budget_data.category_id,
         amount=budget_data.amount,
         period=budget_data.period,
@@ -102,11 +104,9 @@ async def create_budget(
         end_date=budget_data.end_date,
         alert_threshold=budget_data.alert_threshold,
     )
-
     db.add(new_budget)
     await db.commit()
     await db.refresh(new_budget)
-
     return new_budget
 
 
@@ -114,7 +114,7 @@ async def create_budget(
 async def get_total_budget(
     current_user: User = Depends(get_current_user),
 ):
-    """월 총 예산 조회"""
+    """월 총 예산 조회 (개인 설정)"""
     return TotalBudgetResponse(
         total_monthly_budget=float(current_user.total_monthly_budget) if current_user.total_monthly_budget is not None else None,
     )
@@ -126,7 +126,7 @@ async def update_total_budget(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """월 총 예산 수정"""
+    """월 총 예산 수정 (개인 설정)"""
     current_user.total_monthly_budget = data.amount
     await db.commit()
     await db.refresh(current_user)
@@ -142,42 +142,31 @@ async def update_total_budget(
 
 @router.get("/alerts", response_model=list[BudgetAlert])
 async def get_budget_alerts(
+    household_id: int | None = Query(None, description="가구 ID (없으면 개인 예산)"),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     """예산 초과/경고 알림 조회
 
-    현재 로그인한 사용자의 예산 알림만 조회합니다.
-    각 카테고리별로 설정된 예산과 현재까지의 지출을 비교하여
-    예산 초과 또는 경고 임계값 도달 여부를 알려줍니다.
-
-    예산 기간(period) 내의 지출만 집계됩니다.
-    - monthly: 시작일~종료일 또는 현재까지
-    - weekly, daily: 마찬가지로 기간 내 지출 집계
-
-    Args:
-        current_user: 현재 인증된 사용자
-        db: 데이터베이스 세션
-
-    Returns:
-        예산 알림 목록 (초과/경고 있는 것 우선, 사용률 높은 순)
+    household_id가 있으면 가구 공유 예산 알림, 없으면 개인 예산 알림을 조회합니다.
+    각 카테고리별로 설정된 예산과 현재까지의 지출을 비교합니다.
     """
-    # 현재 사용자의 활성 예산 조회
-    result = await db.execute(select(Budget).where(Budget.user_id == current_user.id))
+    if household_id is not None:
+        await get_household_member(household_id, current_user, db)
+
+    budget_scope = _budget_scope_filter(household_id, current_user)
+    expense_scope = _expense_scope_filter(household_id, current_user)
+
+    result = await db.execute(select(Budget).where(budget_scope))
     budgets = result.scalars().all()
 
     alerts = []
     now = datetime.now()
 
     for budget in budgets:
-        # 예산이 아직 시작되지 않았으면 스킵
         if budget.start_date > now:
             continue
 
-        # period에 따른 현재 집계 기간 계산
-        # monthly: 이번 달 1일 ~ 지금
-        # weekly: 이번 주 월요일 ~ 지금
-        # daily: 오늘 자정 ~ 지금
         if budget.period == "monthly":
             period_start = datetime(now.year, now.month, 1)
         elif budget.period == "weekly":
@@ -186,26 +175,21 @@ async def get_budget_alerts(
         else:  # daily
             period_start = datetime(now.year, now.month, now.day)
 
-        period_end = now
-
-        # 카테고리 정보 조회
         category_result = await db.execute(select(Category).where(Category.id == budget.category_id))
         category = category_result.scalar_one_or_none()
         if not category:
             continue
 
-        # 해당 카테고리의 현재 기간 내 지출 합계
         expense_result = await db.execute(
             select(func.sum(Expense.amount)).where(
-                Expense.user_id == current_user.id,
+                expense_scope,
                 Expense.category_id == budget.category_id,
                 Expense.date >= period_start,
-                Expense.date <= period_end,
+                Expense.date <= now,
             )
         )
         spent_amount = float(expense_result.scalar() or 0)
 
-        # 사용률 계산
         budget_amount = float(budget.amount)
         usage_percentage = (spent_amount / budget_amount * 100) if budget_amount > 0 else 0
         remaining_amount = budget_amount - spent_amount
@@ -226,24 +210,27 @@ async def get_budget_alerts(
             )
         )
 
-    # 초과/경고 우선, 사용률 높은 순으로 정렬
     alerts.sort(key=lambda x: (not x.is_exceeded, not x.is_warning, -x.usage_percentage))
-
     return alerts
 
 
 @router.get("/category-overview", response_model=list[CategoryBudgetOverview])
 async def get_category_overview(
+    household_id: int | None = Query(None, description="가구 ID (없으면 개인 예산)"),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     """카테고리별 예산 개요 조회 — 인라인 예산 편집 화면용
 
+    household_id가 있으면 가구 공유 예산 개요, 없으면 개인 예산 개요를 반환합니다.
     모든 지출 카테고리와 함께 최근 3개월 지출액, 현재 예산 정보를 반환합니다.
-
-    Returns:
-        카테고리별 예산 개요 (카테고리명 오름차순)
     """
+    if household_id is not None:
+        await get_household_member(household_id, current_user, db)
+
+    budget_scope = _budget_scope_filter(household_id, current_user)
+    expense_scope = _expense_scope_filter(household_id, current_user)
+
     now = datetime.now()
 
     # 최근 3개월 시작일 계산 (현재 월 포함 3개월)
@@ -265,11 +252,11 @@ async def get_category_overview(
     )
     categories = categories_result.scalars().all()
 
-    # 현재 활성 예산 조회 (카테고리별 최신 1개)
+    # 현재 활성 예산 조회
     budgets_result = await db.execute(
         select(Budget)
         .where(
-            Budget.user_id == current_user.id,
+            budget_scope,
             Budget.start_date <= now,
             or_(Budget.end_date.is_(None), Budget.end_date >= now),
         )
@@ -292,7 +279,7 @@ async def get_category_overview(
             func.sum(Expense.amount).label("amount"),
         )
         .where(
-            Expense.user_id == current_user.id,
+            expense_scope,
             Expense.date >= start_date,
             Expense.amount > 0,
             Expense.category_id.isnot(None),  # 카테고리 미설정 지출 제외
@@ -338,22 +325,21 @@ async def get_category_overview(
 @router.get("/monthly-stats", response_model=BudgetMonthlyStatsResponse)
 async def get_monthly_stats(
     month: str = Query(..., description="YYYY-MM 형식", pattern=r"^\d{4}-\d{2}$"),
+    household_id: int | None = Query(None, description="가구 ID (없으면 개인 예산)"),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     """월별 예산 대비 실제 지출 통계 조회
 
-    특정 월의 카테고리별 예산과 실제 지출을 비교하여 반환합니다.
+    household_id가 있으면 가구 공유 예산 통계, 없으면 개인 예산 통계를 반환합니다.
     예산이 설정된 카테고리만 포함됩니다.
-
-    Args:
-        month: 조회할 월 (YYYY-MM 형식)
-        current_user: 현재 인증된 사용자
-        db: 데이터베이스 세션
-
-    Returns:
-        월별 예산 대비 지출 통계
     """
+    if household_id is not None:
+        await get_household_member(household_id, current_user, db)
+
+    budget_scope = _budget_scope_filter(household_id, current_user)
+    expense_scope = _expense_scope_filter(household_id, current_user)
+
     year, mon = map(int, month.split("-"))
     start = datetime(year, mon, 1)
     end = datetime(year + 1, 1, 1) if mon == 12 else datetime(year, mon + 1, 1)
@@ -362,7 +348,7 @@ async def get_monthly_stats(
     budgets_result = await db.execute(
         select(Budget)
         .where(
-            Budget.user_id == current_user.id,
+            budget_scope,
             Budget.period == "monthly",
             Budget.start_date <= start,
             or_(Budget.end_date.is_(None), Budget.end_date >= start),
@@ -394,7 +380,7 @@ async def get_monthly_stats(
     spending_result = await db.execute(
         select(Expense.category_id, func.sum(Expense.amount).label("total"))
         .where(
-            Expense.user_id == current_user.id,
+            expense_scope,
             Expense.date >= start,
             Expense.date < end,
             Expense.exclude_from_stats == False,  # noqa: E712
@@ -431,7 +417,6 @@ async def get_monthly_stats(
             )
         )
 
-    # 사용률 높은 순 정렬
     categories.sort(key=lambda x: -x.usage_percentage)
 
     total_budget = float(current_user.total_monthly_budget) if current_user.total_monthly_budget else total_budget_sum or None
@@ -453,47 +438,29 @@ async def update_budget(
 ):
     """예산 수정
 
-    현재 로그인한 사용자의 예산만 수정할 수 있습니다.
-    제공된 필드만 수정됩니다.
-
-    Args:
-        budget_id: 예산 ID
-        budget_data: 수정할 필드들
-        current_user: 현재 인증된 사용자
-        db: 데이터베이스 세션
-
-    Returns:
-        수정된 예산 정보
-
-    Raises:
-        HTTPException 404: 예산을 찾을 수 없거나 소유자가 아닌 경우
-        HTTPException 400: 종료일이 시작일보다 이른 경우
+    가구 예산이면 가구 멤버 권한 확인, 개인 예산이면 소유자 확인 후 수정합니다.
     """
-    # 예산 조회 (소유자 확인 포함)
-    result = await db.execute(select(Budget).where(Budget.id == budget_id, Budget.user_id == current_user.id))
+    result = await db.execute(select(Budget).where(Budget.id == budget_id))
     budget = result.scalar_one_or_none()
 
     if not budget:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="예산을 찾을 수 없습니다",
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="예산을 찾을 수 없습니다")
 
-    # 제공된 필드만 업데이트
+    # 접근 권한 확인
+    if budget.household_id is not None:
+        await get_household_member(budget.household_id, current_user, db)
+    elif budget.user_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="예산을 찾을 수 없습니다")
+
     update_data = budget_data.model_dump(exclude_unset=True)
     for field, value in update_data.items():
         setattr(budget, field, value)
 
-    # 종료일 검증
     if budget.end_date and budget.end_date < budget.start_date:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="종료일은 시작일 이후여야 합니다",
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="종료일은 시작일 이후여야 합니다")
 
     await db.commit()
     await db.refresh(budget)
-
     return budget
 
 
@@ -505,24 +472,19 @@ async def delete_budget(
 ):
     """예산 삭제
 
-    현재 로그인한 사용자의 예산만 삭제할 수 있습니다.
-
-    Args:
-        budget_id: 예산 ID
-        current_user: 현재 인증된 사용자
-        db: 데이터베이스 세션
-
-    Raises:
-        HTTPException 404: 예산을 찾을 수 없거나 소유자가 아닌 경우
+    가구 예산이면 가구 멤버 권한 확인, 개인 예산이면 소유자 확인 후 삭제합니다.
     """
-    result = await db.execute(select(Budget).where(Budget.id == budget_id, Budget.user_id == current_user.id))
+    result = await db.execute(select(Budget).where(Budget.id == budget_id))
     budget = result.scalar_one_or_none()
 
     if not budget:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="예산을 찾을 수 없습니다",
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="예산을 찾을 수 없습니다")
+
+    # 접근 권한 확인
+    if budget.household_id is not None:
+        await get_household_member(budget.household_id, current_user, db)
+    elif budget.user_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="예산을 찾을 수 없습니다")
 
     await db.delete(budget)
     await db.commit()

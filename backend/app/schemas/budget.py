@@ -13,6 +13,7 @@ class BudgetCreate(BaseModel):
     """예산 생성 요청 스키마
 
     Attributes:
+        household_id: 가구 ID (None이면 활성 가구 자동 감지, 가구 없으면 개인 예산)
         category_id: 예산을 설정할 카테고리 ID
         amount: 예산 금액
         period: 예산 기간 (monthly: 월간, weekly: 주간, daily: 일간)
@@ -21,6 +22,7 @@ class BudgetCreate(BaseModel):
         alert_threshold: 알림 임계값 (0.0~1.0, 기본 0.8 = 80% 도달 시 알림)
     """
 
+    household_id: int | None = Field(None, description="가구 ID (None이면 활성 가구 자동 감지)")
     category_id: int = Field(..., description="카테고리 ID")
     amount: float = Field(..., gt=0, description="예산 금액 (양수)")
     period: Literal["monthly", "weekly", "daily"] = Field(..., description="예산 기간")
