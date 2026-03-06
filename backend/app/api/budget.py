@@ -288,6 +288,7 @@ async def get_category_overview(
             Expense.user_id == current_user.id,
             Expense.date >= start_date,
             Expense.amount > 0,
+            Expense.category_id.isnot(None),  # 카테고리 미설정 지출 제외
         )
         .group_by(
             Expense.category_id,
