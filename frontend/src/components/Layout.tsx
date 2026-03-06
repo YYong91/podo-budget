@@ -8,7 +8,7 @@ import { useHouseholdStore } from '../stores/useHouseholdStore'
 import {
   LayoutDashboard, Receipt, Wallet, PlusCircle, Tags,
   PiggyBank, Repeat, TrendingUp, Users, Settings as SettingsIcon,
-  Mail, Home, Menu, X, ChevronDown, LogOut,
+  Mail, Home, Menu, X, ChevronDown, LogOut, Landmark,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
@@ -24,6 +24,7 @@ const navItems: { path: string; label: string; icon: LucideIcon }[] = [
   { path: '/budgets', label: '예산 관리', icon: PiggyBank },
   { path: '/recurring', label: '반복 거래', icon: Repeat },
   { path: '/insights', label: '리포트', icon: TrendingUp },
+  { path: '/assets', label: '자산 관리', icon: Landmark },
   { path: '/households', label: '공유 가계부', icon: Users },
   { path: '/settings', label: '설정', icon: SettingsIcon },
 ]

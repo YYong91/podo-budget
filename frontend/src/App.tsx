@@ -25,6 +25,8 @@ const IncomeForm = lazy(() => import('./pages/IncomeForm'))
 const IncomeDetail = lazy(() => import('./pages/IncomeDetail'))
 const RecurringList = lazy(() => import('./pages/RecurringList'))
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'))
+const AssetDashboard = lazy(() => import('./pages/AssetDashboard'))
+const AssetForm = lazy(() => import('./pages/AssetForm'))
 
 /* 로딩 스피너 */
 function PageLoading() {
@@ -62,6 +64,8 @@ function App() {
             <Route path="/invitations" element={<InvitationListPage />} />
             <Route path="/invitations/accept" element={<AcceptInvitationPage />} />
             <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/assets" element={<AssetDashboard />} />
+            <Route path="/assets/new" element={<AssetForm />} />
           </Route>
         </Route>
         <Route path="*" element={<NotFoundPage />} />

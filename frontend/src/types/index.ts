@@ -1,5 +1,71 @@
 /* 공통 타입 정의 */
 
+export type AssetType = 'stock_kr' | 'stock_us' | 'crypto' | 'deposit' | 'real_estate' | 'other' | 'loan'
+
+export interface Asset {
+  id: number
+  household_id: number | null
+  created_by: number
+  name: string
+  type: AssetType
+  is_liability: boolean
+  ticker: string | null
+  quantity: number | null
+  avg_buy_price: number | null
+  manual_value: number | null
+  interest_rate: number | null
+  maturity_date: string | null
+  repayment_type: string | null
+  monthly_payment: number | null
+  memo: string | null
+  created_at: string
+  updated_at: string
+  // 시세 정보
+  current_price: number | null
+  current_value: number | null
+  profit_loss: number | null
+  profit_loss_pct: number | null
+}
+
+export interface AssetSummary {
+  total_assets: number
+  total_liabilities: number
+  net_worth: number
+  breakdown: Record<string, number>
+  total_profit_loss: number
+  total_profit_loss_pct: number | null
+}
+
+export interface AssetSnapshot {
+  snapshot_date: string
+  total_assets: number
+  total_liabilities: number
+  net_worth: number
+  breakdown: Record<string, number> | null
+}
+
+export interface AssetSearchResult {
+  ticker: string
+  name: string
+  market: string
+}
+
+export interface CreateAssetParams {
+  name: string
+  type: string
+  is_liability?: boolean
+  ticker?: string | null
+  quantity?: number | null
+  avg_buy_price?: number | null
+  manual_value?: number | null
+  interest_rate?: number | null
+  maturity_date?: string | null
+  repayment_type?: string | null
+  monthly_payment?: number | null
+  memo?: string | null
+  household_id?: number | null
+}
+
 export interface Expense {
   id: number
   amount: number
