@@ -48,6 +48,12 @@ async def lifespan(app: FastAPI):
 
             warnings.warn("JWT_SECRET이 기본값입니다. 프로덕션에서는 podo-auth와 동일한 JWT_SECRET을 설정하세요.", stacklevel=2)
 
+    # Telegram 봇 웹훅 시크릿 미설정 경고
+    if settings.TELEGRAM_BOT_TOKEN and not settings.TELEGRAM_WEBHOOK_SECRET:
+        import warnings
+
+        warnings.warn("TELEGRAM_WEBHOOK_SECRET이 설정되지 않았습니다. 웹훅 엔드포인트가 인증 없이 열려 있습니다.", stacklevel=2)
+
     # Alembic 마이그레이션 실행 — create_all 대신 사용해 기존 DB에도 스키마 변경 적용
     import logging
     import pathlib

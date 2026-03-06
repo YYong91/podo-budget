@@ -118,9 +118,12 @@ async def reorder_categories(
             )
 
     # sort_order 업데이트 (첫 번째가 가장 높은 값)
+    # 시스템 카테고리(user_id=None)는 글로벌 공유이므로 순서 변경 불가 — 개인 카테고리만 업데이트
     total = len(request.category_ids)
     for idx, cat_id in enumerate(request.category_ids):
-        accessible[cat_id].sort_order = total - idx
+        cat = accessible[cat_id]
+        if cat.user_id is not None:
+            cat.sort_order = total - idx
 
     await db.commit()
 
