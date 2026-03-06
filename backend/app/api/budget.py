@@ -254,8 +254,15 @@ async def get_category_overview(
         start_year -= 1
     start_date = datetime(start_year, start_month, 1)
 
-    # 지출/공통 카테고리 전체 조회
-    categories_result = await db.execute(select(Category).where(Category.type.in_(["expense", "both"])).order_by(Category.name))
+    # 지출/공통 카테고리 조회 — 시스템 카테고리(user_id=None) + 현재 유저의 개인 카테고리만
+    categories_result = await db.execute(
+        select(Category)
+        .where(
+            Category.type.in_(["expense", "both"]),
+            or_(Category.user_id.is_(None), Category.user_id == current_user.id),
+        )
+        .order_by(Category.name)
+    )
     categories = categories_result.scalars().all()
 
     # 현재 활성 예산 조회 (카테고리별 최신 1개)
