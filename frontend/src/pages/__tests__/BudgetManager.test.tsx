@@ -449,9 +449,9 @@ describe('BudgetManager', () => {
       renderBudgetManager()
 
       await waitFor(() => {
-        // 식비 300,000 배분됨 → 배분: ₩300,000 / ₩3,000,000
-        expect(screen.getByText(/배분:/)).toBeInTheDocument()
-        expect(screen.getByText(/여유:/)).toBeInTheDocument()
+        // 식비 300,000 배분됨 → 배정: ₩300,000 / ₩3,000,000
+        expect(screen.getByText(/배정:/)).toBeInTheDocument()
+        expect(screen.getByText(/남은 예산:/)).toBeInTheDocument()
       })
     })
 

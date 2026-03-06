@@ -81,7 +81,7 @@ export default function RegisterRecurringModal({
         payload.interval = Number(formData.interval)
       }
       await recurringApi.create(payload)
-      addToast('success', '정기거래로 등록되었습니다')
+      addToast('success', '반복 거래로 등록되었습니다')
       onSuccess()
     } catch {
       addToast('error', '등록에 실패했습니다')
@@ -94,7 +94,7 @@ export default function RegisterRecurringModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-5 border-b border-warm-100">
-          <h2 className="text-lg font-semibold text-warm-800">정기거래 등록</h2>
+          <h2 className="text-lg font-semibold text-warm-800">반복 거래 등록</h2>
           <button onClick={onClose} className="p-1 rounded-md hover:bg-warm-100">
             <X className="w-5 h-5 text-warm-500" />
           </button>
@@ -179,7 +179,7 @@ export default function RegisterRecurringModal({
 
           {formData.frequency === 'yearly' && (
             <div>
-              <label className="block text-sm font-medium text-warm-700 mb-1">실행 월</label>
+              <label className="block text-sm font-medium text-warm-700 mb-1">반복 월</label>
               <select
                 value={formData.month_of_year}
                 onChange={(e) => setFormData({ ...formData, month_of_year: e.target.value })}
@@ -194,7 +194,7 @@ export default function RegisterRecurringModal({
 
           {formData.frequency === 'custom' && (
             <div>
-              <label className="block text-sm font-medium text-warm-700 mb-1">반복 간격</label>
+              <label className="block text-sm font-medium text-warm-700 mb-1">반복 주기</label>
               <div className="flex items-center gap-2">
                 <input
                   type="number"
@@ -235,7 +235,7 @@ export default function RegisterRecurringModal({
             disabled={submitting}
             className="w-full py-2.5 bg-grape-600 text-white rounded-xl text-sm font-medium shadow-sm hover:bg-grape-700 transition-colors disabled:opacity-50"
           >
-            {submitting ? '등록 중...' : '정기거래 등록'}
+            {submitting ? '등록 중...' : '반복 거래 등록'}
           </button>
         </form>
       </div>

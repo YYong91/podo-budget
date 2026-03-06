@@ -280,7 +280,7 @@ export default function IncomeForm() {
             }
           `}
         >
-          자연어 입력
+          간편 입력
         </button>
         <button
           onClick={() => { setMode('form'); setPreviewItems(null) }}
@@ -301,7 +301,7 @@ export default function IncomeForm() {
         <form onSubmit={handlePreview} className="bg-white rounded-2xl shadow-sm border border-warm-200/60 p-6 space-y-4">
           <div>
             <label className="block text-sm font-medium text-warm-700 mb-2">
-              자연어로 수입 입력하기
+              말하듯이 수입 입력하기
             </label>
             <textarea
               value={naturalInput}
@@ -312,7 +312,7 @@ export default function IncomeForm() {
               disabled={loading}
             />
             <p className="mt-2 text-xs text-warm-400">
-              수입 내용을 자연스럽게 입력하면 AI가 자동으로 분석합니다. 결과를 확인한 뒤 저장됩니다.
+              수입 내용을 편하게 입력하면 AI가 자동으로 분석합니다. 결과를 확인한 뒤 저장됩니다.
             </p>
           </div>
 

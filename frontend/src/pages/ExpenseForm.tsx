@@ -310,7 +310,7 @@ export default function ExpenseForm() {
             }
           `}
         >
-          자연어
+          간편 입력
         </button>
         <button
           onClick={() => { setMode('form'); setPreviewItems(null) }}
@@ -344,7 +344,7 @@ export default function ExpenseForm() {
         <form onSubmit={handlePreview} className="bg-white rounded-2xl shadow-sm border border-warm-200/60 p-6 space-y-4">
           <div>
             <label className="block text-sm font-medium text-warm-700 mb-2">
-              자연어로 지출 입력하기
+              말하듯이 지출 입력하기
             </label>
             <textarea
               value={naturalInput}
@@ -355,7 +355,7 @@ export default function ExpenseForm() {
               disabled={loading}
             />
             <p className="mt-2 text-xs text-warm-400">
-              날짜, 내용, 금액을 자연스럽게 입력하면 AI가 자동으로 분석합니다. 결과를 확인한 뒤 저장됩니다.
+              날짜, 내용, 금액을 편하게 입력하면 AI가 자동으로 분석합니다. 결과를 확인한 뒤 저장됩니다.
             </p>
           </div>
 

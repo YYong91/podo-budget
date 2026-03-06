@@ -21,10 +21,10 @@ function renderRecurringList() {
 describe('RecurringList', () => {
   it('페이지 제목을 표시한다', () => {
     renderRecurringList()
-    expect(screen.getByText('정기 거래')).toBeInTheDocument()
+    expect(screen.getByText('반복 거래')).toBeInTheDocument()
   })
 
-  it('정기 거래 목록을 표시한다', async () => {
+  it('반복 거래 목록을 표시한다', async () => {
     renderRecurringList()
     await waitFor(() => {
       expect(screen.getAllByText('넷플릭스').length).toBeGreaterThan(0)
@@ -77,7 +77,7 @@ describe('RecurringList', () => {
     server.use(http.get('/api/recurring', () => HttpResponse.json([])))
     renderRecurringList()
     await waitFor(() => {
-      expect(screen.getByText(/등록된 정기 거래가 없습니다/)).toBeInTheDocument()
+      expect(screen.getByText(/등록된 반복 거래가 없습니다/)).toBeInTheDocument()
     })
   })
 
@@ -98,13 +98,13 @@ describe('RecurringList', () => {
     const user = userEvent.setup()
     renderRecurringList()
     await user.click(screen.getByText('추가'))
-    expect(screen.getByText('정기 거래 추가')).toBeInTheDocument()
+    expect(screen.getByText('반복 거래 추가')).toBeInTheDocument()
   })
 
   it('활성/정지 상태 뱃지를 표시한다', async () => {
     renderRecurringList()
     await waitFor(() => {
-      const badges = screen.getAllByText('활성')
+      const badges = screen.getAllByText('사용 중')
       expect(badges.length).toBeGreaterThan(0)
     })
   })

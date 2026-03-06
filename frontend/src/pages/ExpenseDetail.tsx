@@ -188,7 +188,7 @@ export default function ExpenseDetail() {
                 onClick={() => setShowRecurringModal(true)}
                 className="flex-1 sm:flex-none px-4 py-2 text-sm font-medium text-warm-700 bg-warm-100 rounded-xl hover:bg-warm-200 transition-colors"
               >
-                정기거래 등록
+                반복 거래 등록
               </button>
               <button
                 onClick={() => setIsEditing(true)}

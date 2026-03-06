@@ -58,7 +58,7 @@ export default function PrivacyPolicyPage() {
               </p>
               <ul className="list-disc list-inside space-y-1 ml-4">
                 <li><strong>제공받는 자</strong>: Anthropic, OpenAI 등 AI 서비스 제공자</li>
-                <li><strong>제공 항목</strong>: 사용자가 입력한 자연어 지출 텍스트(예: "오늘 점심에 김치찌개 8000원 먹었어")</li>
+                <li><strong>제공 항목</strong>: 사용자가 입력한 지출 텍스트(예: "오늘 점심에 김치찌개 8000원 먹었어")</li>
                 <li><strong>제공 목적</strong>: 지출 내역 자동 파싱(금액, 카테고리, 날짜 추출) 및 월별 지출 인사이트 생성</li>
                 <li><strong>보유 기간</strong>: 각 제3자의 개인정보처리방침에 따름</li>
               </ul>

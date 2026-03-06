@@ -72,7 +72,7 @@ describe('ExpenseForm', () => {
     it('자연어 입력 모드가 기본 활성화된다', async () => {
       renderExpenseForm()
       await waitFor(() => {
-        expect(screen.getByText('자연어로 지출 입력하기')).toBeInTheDocument()
+        expect(screen.getByText('말하듯이 지출 입력하기')).toBeInTheDocument()
       })
     })
   })
@@ -94,10 +94,10 @@ describe('ExpenseForm', () => {
       renderExpenseForm()
 
       await user.click(screen.getByText('직접 입력'))
-      await user.click(screen.getByText('자연어'))
+      await user.click(screen.getByText('간편 입력'))
 
       await waitFor(() => {
-        expect(screen.getByText('자연어로 지출 입력하기')).toBeInTheDocument()
+        expect(screen.getByText('말하듯이 지출 입력하기')).toBeInTheDocument()
       })
     })
   })
@@ -418,7 +418,7 @@ describe('ExpenseForm', () => {
       await user.click(screen.getByText('다시 입력'))
 
       await waitFor(() => {
-        expect(screen.getByText('자연어로 지출 입력하기')).toBeInTheDocument()
+        expect(screen.getByText('말하듯이 지출 입력하기')).toBeInTheDocument()
         expect(screen.queryByText(/1건 저장하기/)).not.toBeInTheDocument()
       })
     })

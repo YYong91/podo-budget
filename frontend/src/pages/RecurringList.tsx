@@ -1,6 +1,6 @@
 /**
  * @file RecurringList.tsx
- * @description 정기 거래 관리 페이지
+ * @description 반복 거래 관리 페이지
  * 정기 지출/수입 목록 조회, 추가, 수정, 삭제, 일시정지/재개 기능을 제공한다.
  */
 
@@ -144,7 +144,7 @@ export default function RecurringList() {
           category_id: formData.category_id ? Number(formData.category_id) : null,
           end_date: formData.end_date || null,
         })
-        addToast('success', '정기 거래가 수정되었습니다')
+        addToast('success', '반복 거래가 수정되었습니다')
       } else {
         const payload: RecurringTransactionCreate = {
           type: formData.type,
@@ -169,7 +169,7 @@ export default function RecurringList() {
           payload.interval = Number(formData.interval)
         }
         await recurringApi.create(payload)
-        addToast('success', '정기 거래가 추가되었습니다')
+        addToast('success', '반복 거래가 추가되었습니다')
       }
       setShowModal(false)
       loadData()
@@ -185,7 +185,7 @@ export default function RecurringList() {
     if (!confirm('정말 삭제하시겠습니까?')) return
     try {
       await recurringApi.delete(id)
-      addToast('success', '정기 거래가 삭제되었습니다')
+      addToast('success', '반복 거래가 삭제되었습니다')
       loadData()
     } catch {
       addToast('error', '삭제에 실패했습니다')
@@ -207,7 +207,7 @@ export default function RecurringList() {
   const toggleActive = async (r: RecurringTransaction) => {
     try {
       await recurringApi.update(r.id, { is_active: !r.is_active })
-      addToast('success', r.is_active ? '일시정지되었습니다' : '재개되었습니다')
+      addToast('success', r.is_active ? '중지되었습니다' : '다시 시작되었습니다')
       loadData()
     } catch {
       addToast('error', '변경에 실패했습니다')
@@ -222,7 +222,7 @@ export default function RecurringList() {
   if (error) {
     return (
       <div className="space-y-6">
-        <h1 className="text-xl font-bold text-grape-700">정기 거래</h1>
+        <h1 className="text-xl font-bold text-grape-700">반복 거래</h1>
         <div className="bg-white rounded-2xl shadow-sm border border-warm-200/60">
           <ErrorState onRetry={loadData} />
         </div>
@@ -234,7 +234,7 @@ export default function RecurringList() {
     <div className="space-y-6">
       {/* 헤더 */}
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold text-grape-700">정기 거래</h1>
+        <h1 className="text-xl font-bold text-grape-700">반복 거래</h1>
         <button
           onClick={openAdd}
           className="flex items-center gap-1.5 px-4 py-2 bg-grape-600 text-white rounded-xl text-sm font-medium shadow-sm hover:bg-grape-700 transition-colors"
@@ -269,9 +269,9 @@ export default function RecurringList() {
       ) : items.length === 0 ? (
         <div className="bg-white rounded-2xl shadow-sm border border-warm-200/60">
           <EmptyState
-            title="등록된 정기 거래가 없습니다"
+            title="등록된 반복 거래가 없습니다"
             description="매월 반복되는 지출이나 수입을 등록하면 자동으로 알려드립니다."
-            action={{ label: '정기 거래 추가', onClick: openAdd }}
+            action={{ label: '반복 거래 추가', onClick: openAdd }}
           />
         </div>
       ) : (
@@ -284,7 +284,7 @@ export default function RecurringList() {
                   <th className="text-left px-5 py-3 text-warm-500 font-medium">설명</th>
                   <th className="text-right px-5 py-3 text-warm-500 font-medium">금액</th>
                   <th className="text-left px-5 py-3 text-warm-500 font-medium">빈도</th>
-                  <th className="text-left px-5 py-3 text-warm-500 font-medium">다음 실행일</th>
+                  <th className="text-left px-5 py-3 text-warm-500 font-medium">다음 예정일</th>
                   <th className="text-center px-5 py-3 text-warm-500 font-medium">상태</th>
                   <th className="text-right px-5 py-3 text-warm-500 font-medium">작업</th>
                 </tr>
@@ -307,7 +307,7 @@ export default function RecurringList() {
                       <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${
                         r.is_active ? 'bg-leaf-100 text-leaf-700' : 'bg-warm-100 text-warm-500'
                       }`}>
-                        {r.is_active ? '활성' : '정지'}
+                        {r.is_active ? '사용 중' : '중지'}
                       </span>
                     </td>
                     <td className="px-5 py-3">
@@ -317,7 +317,7 @@ export default function RecurringList() {
                             <Zap className="w-4 h-4" />
                           </button>
                         )}
-                        <button onClick={() => toggleActive(r)} className="p-1.5 rounded-md hover:bg-warm-100 text-warm-500" title={r.is_active ? '일시정지' : '재개'}>
+                        <button onClick={() => toggleActive(r)} className="p-1.5 rounded-md hover:bg-warm-100 text-warm-500" title={r.is_active ? '중지' : '다시 시작'}>
                           {r.is_active ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
                         </button>
                         <button onClick={() => openEdit(r)} className="p-1.5 rounded-md hover:bg-warm-100 text-warm-500" title="수정">
@@ -381,7 +381,7 @@ export default function RecurringList() {
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-5 border-b border-warm-100">
               <h2 className="text-lg font-semibold text-warm-800">
-                {editingId ? '정기 거래 수정' : '정기 거래 추가'}
+                {editingId ? '반복 거래 수정' : '반복 거래 추가'}
               </h2>
               <button onClick={() => setShowModal(false)} className="p-1 rounded-md hover:bg-warm-100">
                 <X className="w-5 h-5 text-warm-500" />
@@ -475,7 +475,7 @@ export default function RecurringList() {
                   {/* 빈도별 추가 필드 */}
                   {(formData.frequency === 'monthly' || formData.frequency === 'yearly') && (
                     <div>
-                      <label className="block text-sm font-medium text-warm-700 mb-1">실행일</label>
+                      <label className="block text-sm font-medium text-warm-700 mb-1">반복일</label>
                       <input
                         type="number"
                         value={formData.day_of_month}
@@ -504,7 +504,7 @@ export default function RecurringList() {
 
                   {formData.frequency === 'yearly' && (
                     <div>
-                      <label className="block text-sm font-medium text-warm-700 mb-1">실행 월</label>
+                      <label className="block text-sm font-medium text-warm-700 mb-1">반복 월</label>
                       <select
                         value={formData.month_of_year}
                         onChange={(e) => setFormData({ ...formData, month_of_year: e.target.value })}
@@ -519,7 +519,7 @@ export default function RecurringList() {
 
                   {formData.frequency === 'custom' && (
                     <div>
-                      <label className="block text-sm font-medium text-warm-700 mb-1">반복 간격 (일)</label>
+                      <label className="block text-sm font-medium text-warm-700 mb-1">반복 주기 (일)</label>
                       <input
                         type="number"
                         value={formData.interval}

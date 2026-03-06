@@ -88,7 +88,7 @@ export default function SettingsPage() {
       <div className="bg-white rounded-2xl shadow-sm border border-warm-200 p-6">
         <h2 className="text-lg font-semibold text-warm-900 mb-1">텔레그램 연동</h2>
         <p className="text-sm text-warm-500 mb-4">
-          텔레그램 봇에서 자연어로 지출/수입을 바로 입력할 수 있습니다.
+          텔레그램 봇에서 말하듯이 지출/수입을 바로 입력할 수 있습니다.
           <br />
           예: <span className="font-mono text-warm-700">"오늘 점심 김치찌개 8000원"</span>
           <span className="font-mono text-warm-700">, "월급 320만원 받았어"</span>

@@ -1,7 +1,7 @@
 /**
  * @file IncomeForm.test.tsx
  * @description IncomeForm 수입 입력 페이지 테스트
- * 자연어 입력 모드, 폼 입력 모드, 카테고리 필터링을 테스트한다.
+ * 간편 입력 모드, 폼 입력 모드, 카테고리 필터링을 테스트한다.
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
@@ -63,10 +63,10 @@ describe('IncomeForm', () => {
       })
     })
 
-    it('자연어 입력 모드가 기본 활성화되어 있다', async () => {
+    it('간편 입력 모드가 기본 활성화되어 있다', async () => {
       renderIncomeForm()
       await waitFor(() => {
-        expect(screen.getByText('자연어로 수입 입력하기')).toBeInTheDocument()
+        expect(screen.getByText('말하듯이 수입 입력하기')).toBeInTheDocument()
       })
     })
 
@@ -92,15 +92,15 @@ describe('IncomeForm', () => {
       })
     })
 
-    it('자연어 입력 버튼 클릭 시 자연어 모드로 전환된다', async () => {
+    it('간편 입력 버튼 클릭 시 자연어 모드로 전환된다', async () => {
       const user = userEvent.setup()
       renderIncomeForm()
 
       await user.click(screen.getByText('직접 입력'))
-      await user.click(screen.getByText('자연어 입력'))
+      await user.click(screen.getByText('간편 입력'))
 
       await waitFor(() => {
-        expect(screen.getByText('자연어로 수입 입력하기')).toBeInTheDocument()
+        expect(screen.getByText('말하듯이 수입 입력하기')).toBeInTheDocument()
       })
     })
   })
@@ -205,7 +205,7 @@ describe('IncomeForm', () => {
     })
   })
 
-  describe('자연어 입력 모드', () => {
+  describe('간편 입력 모드', () => {
     it('입력이 없으면 분석하기 버튼이 비활성화된다', async () => {
       renderIncomeForm()
 
@@ -334,7 +334,7 @@ describe('IncomeForm', () => {
       await user.click(screen.getByText('다시 입력'))
       await waitFor(() => {
         expect(screen.queryByText(/1건의 수입을 인식했습니다/)).not.toBeInTheDocument()
-        expect(screen.getByText('자연어로 수입 입력하기')).toBeInTheDocument()
+        expect(screen.getByText('말하듯이 수입 입력하기')).toBeInTheDocument()
       })
     })
 

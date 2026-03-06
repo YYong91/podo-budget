@@ -39,7 +39,7 @@ export default function TermsOfServicePage() {
                 서비스는 다음과 같은 기능을 제공합니다:
               </p>
               <ul className="list-disc list-inside space-y-1 ml-4">
-                <li>자연어 입력을 통한 지출 기록 및 자동 분류</li>
+                <li>간편 입력을 통한 지출 기록 및 자동 분류</li>
                 <li>카테고리별 지출 관리 및 통계</li>
                 <li>월별 지출 인사이트 생성(AI 기반)</li>
                 <li>예산 설정 및 현황 조회</li>

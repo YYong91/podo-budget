@@ -375,7 +375,7 @@ function RecentExpenses({ expenses }: { expenses: Expense[] }) {
   )
 }
 
-/* 정기 거래 알림 카드 */
+/* 반복 거래 알림 카드 */
 function PendingRecurring({
   items,
   onExecute,
@@ -389,7 +389,7 @@ function PendingRecurring({
 
   return (
     <div className="bg-white rounded-2xl border border-warm-200/60 shadow-sm p-5">
-      <h2 className="text-base font-semibold text-warm-700 mb-3">오늘의 정기 거래</h2>
+      <h2 className="text-base font-semibold text-warm-700 mb-3">오늘의 반복 거래</h2>
       <div className="space-y-3">
         {items.map((r) => (
           <div
@@ -528,7 +528,7 @@ export default function Dashboard() {
         )
       )
 
-      // 수입 통계 + 최근 수입 + 정기 거래 (에러 무시 - 없어도 대시보드 동작)
+      // 수입 통계 + 최근 수입 + 반복 거래 (에러 무시 - 없어도 대시보드 동작)
       const incomePromises = [
         incomeApi.getStats('monthly', undefined, activeHouseholdId ?? undefined).catch(() => null),
         incomeApi.getAll({ limit: 5, household_id: activeHouseholdId ?? undefined }).catch(() => ({ data: [] as Income[] })),
@@ -697,7 +697,7 @@ export default function Dashboard() {
         (stats?.daily_trend?.filter(d => d.amount > 0).length ?? 0) + (incomeStats?.count ?? 0)
       } />
 
-      {/* 정기 거래 알림 */}
+      {/* 반복 거래 알림 */}
       <PendingRecurring
         items={pendingRecurring}
         onExecute={async (id) => {
@@ -707,13 +707,13 @@ export default function Dashboard() {
             setPendingRecurring((prev) => prev.filter((r) => r.id !== id))
             fetchData()
           } catch {
-            addToast('error', '정기 거래 등록에 실패했습니다')
+            addToast('error', '반복 거래 등록에 실패했습니다')
           }
         }}
         onSkip={async (id) => {
           try {
             const res = await recurringApi.skip(id)
-            addToast('success', `다음 실행일: ${res.data.next_due_date}`)
+            addToast('success', `다음 예정일: ${res.data.next_due_date}`)
             setPendingRecurring((prev) => prev.filter((r) => r.id !== id))
           } catch {
             addToast('error', '건너뛰기에 실패했습니다')

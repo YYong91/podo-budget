@@ -273,10 +273,10 @@ export default function BudgetManager() {
             </div>
             <div className="flex justify-between text-xs text-warm-600">
               <span>
-                배분: {formatAmount(allocatedTotal)} / {formatAmount(totalNum)} ({allocationPercent.toFixed(1)}%)
+                배정: {formatAmount(allocatedTotal)} / {formatAmount(totalNum)} ({allocationPercent.toFixed(1)}%)
               </span>
               <span className={remainingBudget != null && remainingBudget < 0 ? 'text-rose-600 font-semibold' : ''}>
-                여유: {remainingBudget != null ? formatAmount(remainingBudget) : '-'}
+                남은 예산: {remainingBudget != null ? formatAmount(remainingBudget) : '-'}
               </span>
             </div>
           </div>
