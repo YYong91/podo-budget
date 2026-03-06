@@ -91,7 +91,7 @@ export default function AssetForm() {
       const res = await assetApi.parse(naturalInput)
       setPreviewItems(res.data.items)
     } catch {
-      addToast('분석 중 오류가 발생했습니다', 'error')
+      addToast('error', '분석 중 오류가 발생했습니다')
     } finally {
       setLoading(false)
     }
@@ -105,10 +105,10 @@ export default function AssetForm() {
       for (const item of previewItems) {
         await assetApi.create(item)
       }
-      addToast(`${previewItems.length}개 자산이 등록되었습니다`, 'success')
+      addToast('success', `${previewItems.length}개 자산이 등록되었습니다`)
       navigate('/assets')
     } catch {
-      addToast('저장 중 오류가 발생했습니다', 'error')
+      addToast('error', '저장 중 오류가 발생했습니다')
     } finally {
       setLoading(false)
     }
@@ -118,16 +118,16 @@ export default function AssetForm() {
   async function handleDirectSave(e: React.FormEvent) {
     e.preventDefault()
     if (!form.name?.trim()) {
-      addToast('자산명을 입력해주세요', 'error')
+      addToast('error', '자산명을 입력해주세요')
       return
     }
     setLoading(true)
     try {
       await assetApi.create(form)
-      addToast('자산이 등록되었습니다', 'success')
+      addToast('success', '자산이 등록되었습니다')
       navigate('/assets')
     } catch {
-      addToast('저장 중 오류가 발생했습니다', 'error')
+      addToast('error', '저장 중 오류가 발생했습니다')
     } finally {
       setLoading(false)
     }

@@ -26,12 +26,14 @@ vi.mock('../api/assets', () => ({
   },
 }))
 
-const mockAssets = [
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const mockAssets: any[] = [
   { id: 1, name: '삼성전자', type: 'stock_kr', is_liability: false, current_value: 700000, profit_loss_pct: 5.2 },
   { id: 2, name: '주담대', type: 'loan', is_liability: true, current_value: 200000000, interest_rate: 3.5 },
 ]
 
-const mockSummary = {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const mockSummary: any = {
   total_assets: 700000,
   total_liabilities: 200000000,
   net_worth: -199300000,
@@ -50,9 +52,12 @@ function renderDashboard() {
 
 describe('AssetDashboard', () => {
   beforeEach(() => {
-    vi.mocked(assetApi.getAll).mockResolvedValue({ data: mockAssets })
-    vi.mocked(assetApi.getSummary).mockResolvedValue({ data: mockSummary })
-    vi.mocked(assetApi.getSnapshots).mockResolvedValue({ data: [] })
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    vi.mocked(assetApi.getAll).mockResolvedValue({ data: mockAssets } as any)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    vi.mocked(assetApi.getSummary).mockResolvedValue({ data: mockSummary } as any)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    vi.mocked(assetApi.getSnapshots).mockResolvedValue({ data: [] } as any)
   })
 
   test('로딩 후 순자산 카드 표시', async () => {
@@ -100,10 +105,10 @@ describe('AssetDashboard', () => {
   })
 
   test('빈 상태: 자산 없을 때 CTA 표시', async () => {
-    vi.mocked(assetApi.getAll).mockResolvedValueOnce({ data: [] })
-    vi.mocked(assetApi.getSummary).mockResolvedValueOnce({
-      data: { total_assets: 0, total_liabilities: 0, net_worth: 0, breakdown: {}, total_profit_loss: null, total_profit_loss_pct: null },
-    })
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    vi.mocked(assetApi.getAll).mockResolvedValueOnce({ data: [] } as any)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    vi.mocked(assetApi.getSummary).mockResolvedValueOnce({ data: { total_assets: 0, total_liabilities: 0, net_worth: 0, breakdown: {}, total_profit_loss: null, total_profit_loss_pct: null } } as any)
     renderDashboard()
     await waitFor(() => {
       expect(screen.getByText('첫 자산 등록하기')).toBeInTheDocument()
