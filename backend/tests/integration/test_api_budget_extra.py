@@ -244,3 +244,81 @@ async def test_monthly_stats_invalid_month_format(authenticated_client: AsyncCli
     """잘못된 월 형식으로 요청 시 422"""
     response = await authenticated_client.get("/api/budgets/monthly-stats?month=2026/03")
     assert response.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_category_overview_empty(authenticated_client: AsyncClient, test_user: User):
+    """카테고리/예산/지출 없을 때 category-overview는 빈 배열 반환"""
+    response = await authenticated_client.get("/api/budgets/category-overview")
+    assert response.status_code == 200
+    data = response.json()
+    assert isinstance(data, list)
+
+
+@pytest.mark.asyncio
+async def test_category_overview_with_data(
+    authenticated_client: AsyncClient,
+    test_user: User,
+    db_session: AsyncSession,
+):
+    """카테고리/예산/지출 있을 때 category-overview 정상 반환"""
+    category = Category(user_id=test_user.id, name="식비", type="expense")
+    db_session.add(category)
+    await db_session.commit()
+    await db_session.refresh(category)
+
+    budget = Budget(
+        user_id=test_user.id,
+        category_id=category.id,
+        amount=300000,
+        period="monthly",
+        start_date=datetime(2026, 1, 1),
+    )
+    db_session.add(budget)
+
+    expense = Expense(
+        user_id=test_user.id,
+        category_id=category.id,
+        amount=50000,
+        description="식비 테스트",
+        date=datetime(2026, 3, 10),
+    )
+    db_session.add(expense)
+    await db_session.commit()
+
+    response = await authenticated_client.get("/api/budgets/category-overview")
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data) >= 1
+
+    cat_data = next((c for c in data if c["category_name"] == "식비"), None)
+    assert cat_data is not None
+    assert cat_data["current_budget_amount"] == 300000
+    assert len(cat_data["monthly_spending"]) >= 1
+    march_spending = next((s for s in cat_data["monthly_spending"] if s["month"] == 3), None)
+    assert march_spending is not None
+    assert march_spending["amount"] == 50000
+
+
+@pytest.mark.asyncio
+async def test_category_overview_null_category_expense(
+    authenticated_client: AsyncClient,
+    test_user: User,
+    db_session: AsyncSession,
+):
+    """카테고리 미설정(NULL) 지출이 있어도 category-overview 500 에러 없음"""
+    # 카테고리 미설정 지출 추가 (category_id=None)
+    expense = Expense(
+        user_id=test_user.id,
+        category_id=None,
+        amount=10000,
+        description="카테고리 없는 지출",
+        date=datetime(2026, 3, 15),
+    )
+    db_session.add(expense)
+    await db_session.commit()
+
+    # 500 에러 없이 정상 응답해야 함
+    response = await authenticated_client.get("/api/budgets/category-overview")
+    assert response.status_code == 200
+    assert isinstance(response.json(), list)
