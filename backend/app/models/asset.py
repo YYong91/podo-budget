@@ -13,8 +13,8 @@ class Asset(Base):
     )
 
     id = Column(Integer, primary_key=True, index=True)
-    household_id = Column(Integer, ForeignKey("households.id", ondelete="SET NULL"), nullable=True, index=True)
-    created_by = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    household_id = Column(Integer, ForeignKey("households.id", ondelete="SET NULL"), nullable=True)
+    created_by = Column(Integer, ForeignKey("users.id"), nullable=False)
     name = Column(String, nullable=False)
     type = Column(String, nullable=False)  # stock_kr, stock_us, crypto, deposit, real_estate, other, loan
     is_liability = Column(Boolean, nullable=False, default=False)
