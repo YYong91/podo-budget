@@ -3,7 +3,7 @@
 import { render, screen, waitFor, fireEvent, act } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
-import { vi, describe, test, expect, beforeEach } from 'vitest'
+import { vi, describe, test, expect, beforeEach, afterEach } from 'vitest'
 import AssetForm from '../pages/AssetForm'
 import { assetApi } from '../api/assets'
 import { accountApi } from '../api/accounts'
