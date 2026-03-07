@@ -41,6 +41,7 @@ export default function AssetDashboard() {
   const { activeHouseholdId } = useHouseholdStore()
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true)
     setError(null)
     const hid = activeHouseholdId ?? undefined
