@@ -7,8 +7,7 @@ import FloatingActionButton from './FloatingActionButton'
 import { useAuth } from '../contexts/AuthContext'
 import { useHouseholdStore } from '../stores/useHouseholdStore'
 import {
-  LayoutDashboard, Receipt, Wallet, PlusCircle, Tags,
-  PiggyBank, Repeat, TrendingUp, Users, Settings as SettingsIcon,
+  LayoutDashboard, Receipt, TrendingUp, Users, Settings as SettingsIcon,
   Mail, Home, Menu, X, ChevronDown, LogOut, Landmark,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
@@ -17,13 +16,7 @@ const AUTH_URL = import.meta.env.VITE_AUTH_URL || 'https://auth.podonest.com'
 
 const navItems: { path: string; label: string; icon: LucideIcon }[] = [
   { path: '/', label: '대시보드', icon: LayoutDashboard },
-  { path: '/expenses', label: '지출 목록', icon: Receipt },
-  { path: '/expenses/new', label: '지출 입력', icon: PlusCircle },
-  { path: '/income', label: '수입 목록', icon: Wallet },
-  { path: '/income/new', label: '수입 입력', icon: PlusCircle },
-  { path: '/categories', label: '카테고리', icon: Tags },
-  { path: '/budgets', label: '예산 관리', icon: PiggyBank },
-  { path: '/recurring', label: '반복 거래', icon: Repeat },
+  { path: '/transactions', label: '거래 내역', icon: Receipt },
   { path: '/insights', label: '리포트', icon: TrendingUp },
   { path: '/assets', label: '자산 관리', icon: Landmark },
   { path: '/households', label: '공유 가계부', icon: Users },
@@ -147,7 +140,9 @@ export default function Layout() {
           {/* 네비게이션 */}
           <nav className="space-y-1 flex-1 overflow-y-auto">
             {navItems.map(item => {
-              const isActive = location.pathname === item.path
+              const isActive = item.path === '/'
+                ? location.pathname === '/'
+                : location.pathname.startsWith(item.path)
               const Icon = item.icon
               return (
                 <Link
