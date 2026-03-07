@@ -1,8 +1,8 @@
-/* 자산 등록 폼 */
+/* 자산 등록/수정 폼 */
 
 import { useState, useEffect, useRef } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
-import { ArrowLeft, Search, Loader2 } from 'lucide-react'
+import { useNavigate, useParams, Link } from 'react-router-dom'
+import { ArrowLeft, Search, Loader2, Trash2 } from 'lucide-react'
 import { useToast } from '../hooks/useToast'
 import { assetApi } from '../api/assets'
 import { accountApi } from '../api/accounts'
@@ -30,10 +30,14 @@ function isLiabilityType(type: AssetType): boolean {
 
 export default function AssetForm() {
   const navigate = useNavigate()
+  const { id } = useParams<{ id: string }>()
+  const isEdit = !!id
   const { addToast } = useToast()
 
   const [mode, setMode] = useState<Mode>('natural')
   const [loading, setLoading] = useState(false)
+  const [initialLoading, setInitialLoading] = useState(isEdit)
+  const [confirmDelete, setConfirmDelete] = useState(false)
 
   // 자연어 모드
   const [naturalInput, setNaturalInput] = useState('')
@@ -64,12 +68,48 @@ export default function AssetForm() {
       .catch(() => {})
   }, [activeHouseholdId])
 
-  // 자산 타입 변경 시 폼 초기화
+  // 수정 모드: 기존 자산 데이터 로드
   useEffect(() => {
+    if (!isEdit) return
+    setInitialLoading(true)
+    assetApi.getById(Number(id))
+      .then(res => {
+        const asset = res.data
+        setAssetType(asset.type as AssetType)
+        setMode('direct')
+        setForm({
+          name: asset.name,
+          type: asset.type as AssetType,
+          is_liability: asset.is_liability,
+          ticker: asset.ticker ?? undefined,
+          quantity: asset.quantity ?? undefined,
+          avg_buy_price: asset.avg_buy_price ?? undefined,
+          manual_value: asset.manual_value ?? undefined,
+          interest_rate: asset.interest_rate ?? undefined,
+          maturity_date: asset.maturity_date ?? undefined,
+          repayment_type: asset.repayment_type ?? undefined,
+          monthly_payment: asset.monthly_payment ?? undefined,
+          account_id: asset.account_id ?? undefined,
+          memo: asset.memo ?? undefined,
+        })
+        if (asset.ticker) setSearchQuery(asset.ticker)
+        else if (['stock_kr', 'stock_us', 'crypto'].includes(asset.type)) setSearchQuery(asset.name)
+      })
+      .catch(() => {
+        addToast('error', '자산 정보를 불러오지 못했습니다')
+        navigate('/assets')
+      })
+      .finally(() => setInitialLoading(false))
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id])
+
+  // 자산 타입 변경 시 폼 초기화 (신규 모드에서만)
+  useEffect(() => {
+    if (isEdit) return
     setForm({ name: '', type: assetType, is_liability: isLiabilityType(assetType) })
     setSearchQuery('')
     setSearchResults([])
-  }, [assetType])
+  }, [assetType, isEdit])
 
   // 종목 검색 디바운스
   useEffect(() => {
@@ -127,7 +167,7 @@ export default function AssetForm() {
     }
   }
 
-  // 직접 입력 저장
+  // 직접 입력 저장 (신규/수정 공통)
   async function handleDirectSave(e: React.FormEvent) {
     e.preventDefault()
     if (!form.name?.trim()) {
@@ -136,11 +176,30 @@ export default function AssetForm() {
     }
     setLoading(true)
     try {
-      await assetApi.create(form)
-      addToast('success', '자산이 등록되었습니다')
+      if (isEdit) {
+        await assetApi.update(Number(id), form)
+        addToast('success', '자산이 수정되었습니다')
+      } else {
+        await assetApi.create(form)
+        addToast('success', '자산이 등록되었습니다')
+      }
       navigate('/assets')
     } catch {
-      addToast('error', '저장 중 오류가 발생했습니다')
+      addToast('error', isEdit ? '수정 중 오류가 발생했습니다' : '저장 중 오류가 발생했습니다')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // 삭제
+  async function handleDelete() {
+    setLoading(true)
+    try {
+      await assetApi.delete(Number(id))
+      addToast('success', '자산이 삭제되었습니다')
+      navigate('/assets')
+    } catch {
+      addToast('error', '삭제 중 오류가 발생했습니다')
     } finally {
       setLoading(false)
     }
@@ -149,6 +208,14 @@ export default function AssetForm() {
   const isInvestmentType = ['stock_kr', 'stock_us', 'crypto'].includes(assetType)
   const isManualType = ['deposit', 'real_estate', 'other', 'loan'].includes(assetType)
 
+  if (initialLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <Loader2 className="w-8 h-8 text-grape-600 animate-spin" />
+      </div>
+    )
+  }
+
   return (
     <div className="max-w-xl mx-auto space-y-6">
       {/* 헤더 */}
@@ -156,26 +223,28 @@ export default function AssetForm() {
         <Link to="/assets" className="p-2 rounded-lg hover:bg-warm-100 text-warm-500">
           <ArrowLeft className="w-5 h-5" />
         </Link>
-        <h1 className="text-xl font-bold text-warm-900">자산 등록</h1>
+        <h1 className="text-xl font-bold text-warm-900">{isEdit ? '자산 수정' : '자산 등록'}</h1>
       </div>
 
-      {/* 모드 탭 */}
-      <div className="flex rounded-xl bg-warm-100 p-1">
-        {(['natural', 'direct'] as Mode[]).map(m => (
-          <button
-            key={m}
-            onClick={() => { setMode(m); setPreviewItems(null) }}
-            className={`flex-1 py-2 text-sm font-medium rounded-lg transition-colors ${
-              mode === m ? 'bg-white text-grape-700 shadow-sm' : 'text-warm-500 hover:text-warm-700'
-            }`}
-          >
-            {m === 'natural' ? '간편 입력' : '직접 입력'}
-          </button>
-        ))}
-      </div>
+      {/* 모드 탭 (신규 모드에서만) */}
+      {!isEdit && (
+        <div className="flex rounded-xl bg-warm-100 p-1">
+          {(['natural', 'direct'] as Mode[]).map(m => (
+            <button
+              key={m}
+              onClick={() => { setMode(m); setPreviewItems(null) }}
+              className={`flex-1 py-2 text-sm font-medium rounded-lg transition-colors ${
+                mode === m ? 'bg-white text-grape-700 shadow-sm' : 'text-warm-500 hover:text-warm-700'
+              }`}
+            >
+              {m === 'natural' ? '간편 입력' : '직접 입력'}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* 자연어 모드 */}
-      {mode === 'natural' && (
+      {mode === 'natural' && !isEdit && (
         <div className="space-y-4">
           <div className="bg-white rounded-2xl border border-warm-200/60 shadow-sm p-5 space-y-3">
             <p className="text-sm text-warm-500">
@@ -235,14 +304,18 @@ export default function AssetForm() {
       )}
 
       {/* 직접 입력 모드 */}
-      {mode === 'direct' && (
+      {(mode === 'direct' || isEdit) && (
         <form onSubmit={handleDirectSave} className="bg-white rounded-2xl border border-warm-200/60 shadow-sm p-5 space-y-4">
           {/* 자산 유형 선택 */}
           <div>
             <label className="block text-sm font-medium text-warm-700 mb-1.5">자산 유형</label>
             <select
               value={assetType}
-              onChange={e => setAssetType(e.target.value as AssetType)}
+              onChange={e => {
+                const t = e.target.value as AssetType
+                setAssetType(t)
+                if (isEdit) setForm(f => ({ ...f, type: t, is_liability: isLiabilityType(t) }))
+              }}
               className="w-full border border-warm-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-grape-300"
             >
               {(Object.entries(TYPE_LABELS) as [AssetType, string][]).map(([v, label]) => (
@@ -431,9 +504,43 @@ export default function AssetForm() {
             className="w-full py-2.5 bg-grape-600 text-white rounded-lg text-sm font-medium hover:bg-grape-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
           >
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-            저장하기
+            {isEdit ? '수정하기' : '저장하기'}
           </button>
         </form>
+      )}
+
+      {/* 삭제 버튼 (수정 모드에서만) */}
+      {isEdit && (
+        <div className="bg-white rounded-2xl border border-warm-200/60 shadow-sm p-5">
+          {!confirmDelete ? (
+            <button
+              onClick={() => setConfirmDelete(true)}
+              className="flex items-center gap-2 text-sm text-rose-600 hover:text-rose-700 font-medium"
+            >
+              <Trash2 className="w-4 h-4" />
+              자산 삭제
+            </button>
+          ) : (
+            <div className="space-y-3">
+              <p className="text-sm text-warm-700">정말 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.</p>
+              <div className="flex gap-2">
+                <button
+                  onClick={handleDelete}
+                  disabled={loading}
+                  className="flex-1 py-2 bg-rose-600 text-white rounded-lg text-sm font-medium hover:bg-rose-700 disabled:opacity-50 transition-colors"
+                >
+                  {loading ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : '삭제'}
+                </button>
+                <button
+                  onClick={() => setConfirmDelete(false)}
+                  className="flex-1 py-2 border border-warm-200 text-warm-600 rounded-lg text-sm font-medium hover:bg-warm-50 transition-colors"
+                >
+                  취소
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
       )}
     </div>
   )

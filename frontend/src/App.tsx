@@ -67,6 +67,7 @@ function App() {
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/assets" element={<AssetDashboard />} />
             <Route path="/assets/new" element={<AssetForm />} />
+            <Route path="/assets/:id" element={<AssetForm />} />
             <Route path="/accounts" element={<AccountManager />} />
           </Route>
         </Route>

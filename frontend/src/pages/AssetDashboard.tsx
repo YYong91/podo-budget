@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Loader2, Plus, TrendingUp, TrendingDown, Landmark, LayoutList, Wallet } from 'lucide-react'
+import { Loader2, Plus, TrendingUp, TrendingDown, Landmark, LayoutList, Wallet, ChevronRight } from 'lucide-react'
 import { Chart as ChartJS, ArcElement, LineElement, PointElement, CategoryScale, LinearScale, Filler, Tooltip as ChartTooltip, Legend } from 'chart.js'
 import { Pie, Line } from 'react-chartjs-2'
 import { assetApi } from '../api/assets'
@@ -44,22 +44,28 @@ type ViewMode = 'type' | 'account'
 
 function AssetRow({ asset }: { asset: Asset }) {
   return (
-    <div className="flex items-center justify-between py-2 border-b border-warm-100 last:border-0">
+    <Link
+      to={`/assets/${asset.id}`}
+      className="flex items-center justify-between py-2 border-b border-warm-100 last:border-0 hover:bg-warm-50 -mx-1 px-1 rounded transition-colors"
+    >
       <div>
         <p className="text-sm font-medium text-warm-800">{asset.name}</p>
         <p className="text-xs text-warm-400">{TYPE_LABELS[asset.type] ?? asset.type}</p>
       </div>
-      <div className="text-right">
-        <p className="text-sm font-semibold text-warm-900">
-          {asset.current_value != null ? formatAmount(asset.current_value) : '-'}
-        </p>
-        {asset.profit_loss_pct != null && (
-          <p className={`text-xs ${asset.profit_loss_pct >= 0 ? 'text-leaf-600' : 'text-rose-600'}`}>
-            {formatPct(asset.profit_loss_pct)}
+      <div className="flex items-center gap-1">
+        <div className="text-right">
+          <p className="text-sm font-semibold text-warm-900">
+            {asset.current_value != null ? formatAmount(asset.current_value) : '-'}
           </p>
-        )}
+          {asset.profit_loss_pct != null && (
+            <p className={`text-xs ${asset.profit_loss_pct >= 0 ? 'text-leaf-600' : 'text-rose-600'}`}>
+              {formatPct(asset.profit_loss_pct)}
+            </p>
+          )}
+        </div>
+        <ChevronRight className="w-4 h-4 text-warm-300 shrink-0" />
       </div>
-    </div>
+    </Link>
   )
 }
 
@@ -296,7 +302,11 @@ export default function AssetDashboard() {
             ) : (
               <div className="space-y-2">
                 {liabilities.map(asset => (
-                  <div key={asset.id} className="flex items-center justify-between py-2 border-b border-warm-100 last:border-0">
+                  <Link
+                    key={asset.id}
+                    to={`/assets/${asset.id}`}
+                    className="flex items-center justify-between py-2 border-b border-warm-100 last:border-0 hover:bg-warm-50 -mx-1 px-1 rounded transition-colors"
+                  >
                     <div>
                       <p className="text-sm font-medium text-warm-800">{asset.name}</p>
                       <p className="text-xs text-warm-400">
@@ -304,10 +314,13 @@ export default function AssetDashboard() {
                         {asset.interest_rate != null && ` · 연 ${asset.interest_rate}%`}
                       </p>
                     </div>
-                    <p className="text-sm font-semibold text-rose-700">
-                      {asset.current_value != null ? formatAmount(asset.current_value) : '-'}
-                    </p>
-                  </div>
+                    <div className="flex items-center gap-1">
+                      <p className="text-sm font-semibold text-rose-700">
+                        {asset.current_value != null ? formatAmount(asset.current_value) : '-'}
+                      </p>
+                      <ChevronRight className="w-4 h-4 text-warm-300 shrink-0" />
+                    </div>
+                  </Link>
                 ))}
               </div>
             )}
@@ -355,7 +368,11 @@ export default function AssetDashboard() {
               </h2>
               <div className="space-y-2">
                 {liabilities.map(asset => (
-                  <div key={asset.id} className="flex items-center justify-between py-2 border-b border-warm-100 last:border-0">
+                  <Link
+                    key={asset.id}
+                    to={`/assets/${asset.id}`}
+                    className="flex items-center justify-between py-2 border-b border-warm-100 last:border-0 hover:bg-warm-50 -mx-1 px-1 rounded transition-colors"
+                  >
                     <div>
                       <p className="text-sm font-medium text-warm-800">{asset.name}</p>
                       <p className="text-xs text-warm-400">
@@ -363,10 +380,13 @@ export default function AssetDashboard() {
                         {asset.interest_rate != null && ` · 연 ${asset.interest_rate}%`}
                       </p>
                     </div>
-                    <p className="text-sm font-semibold text-rose-700">
-                      {asset.current_value != null ? formatAmount(asset.current_value) : '-'}
-                    </p>
-                  </div>
+                    <div className="flex items-center gap-1">
+                      <p className="text-sm font-semibold text-rose-700">
+                        {asset.current_value != null ? formatAmount(asset.current_value) : '-'}
+                      </p>
+                      <ChevronRight className="w-4 h-4 text-warm-300 shrink-0" />
+                    </div>
+                  </Link>
                 ))}
               </div>
             </div>
