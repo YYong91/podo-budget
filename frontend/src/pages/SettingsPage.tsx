@@ -4,7 +4,9 @@
  */
 
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import toast from 'react-hot-toast'
+import { Tags, PiggyBank, Repeat } from 'lucide-react'
 import { generateTelegramLinkCode, unlinkTelegram } from '../api/telegram'
 import { useAuth } from '../contexts/AuthContext'
 
@@ -64,6 +66,34 @@ export default function SettingsPage() {
   return (
     <div className="space-y-6">
       <h1 className="text-xl font-bold text-grape-700">설정</h1>
+
+      {/* 관리 */}
+      <div className="bg-white rounded-2xl shadow-sm border border-warm-200 p-6">
+        <h2 className="text-lg font-semibold text-warm-900 mb-4">관리</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <Link
+            to="/categories"
+            className="flex items-center gap-3 px-4 py-3 rounded-xl border border-warm-200 hover:bg-grape-50 hover:border-grape-200 transition-colors"
+          >
+            <Tags className="w-5 h-5 text-grape-500" />
+            <span className="text-sm font-medium text-warm-800">카테고리</span>
+          </Link>
+          <Link
+            to="/budgets"
+            className="flex items-center gap-3 px-4 py-3 rounded-xl border border-warm-200 hover:bg-grape-50 hover:border-grape-200 transition-colors"
+          >
+            <PiggyBank className="w-5 h-5 text-grape-500" />
+            <span className="text-sm font-medium text-warm-800">예산 관리</span>
+          </Link>
+          <Link
+            to="/recurring"
+            className="flex items-center gap-3 px-4 py-3 rounded-xl border border-warm-200 hover:bg-grape-50 hover:border-grape-200 transition-colors"
+          >
+            <Repeat className="w-5 h-5 text-grape-500" />
+            <span className="text-sm font-medium text-warm-800">반복 거래</span>
+          </Link>
+        </div>
+      </div>
 
       {/* 계정 정보 */}
       <div className="bg-white rounded-2xl shadow-sm border border-warm-200 p-6">

@@ -57,11 +57,11 @@ function StatsCards({ stats, incomeTotal }: { stats: MonthlyStats; incomeTotal?:
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Link to="/expenses" className="block bg-gradient-to-br from-grape-50 to-grape-100 rounded-2xl border border-grape-200/60 shadow-sm p-5 hover:shadow-md transition-shadow duration-200 cursor-pointer">
+        <Link to="/transactions?tab=expense" className="block bg-gradient-to-br from-grape-50 to-grape-100 rounded-2xl border border-grape-200/60 shadow-sm p-5 hover:shadow-md transition-shadow duration-200 cursor-pointer">
           <p className="text-sm text-grape-700/70">이번 달 총 지출</p>
           <p className="text-2xl font-bold tracking-tight text-warm-900 mt-1">{formatAmount(total)}</p>
         </Link>
-        <Link to="/income" className="block bg-gradient-to-br from-leaf-50 to-leaf-100 rounded-2xl border border-leaf-200/60 shadow-sm p-5 hover:shadow-md transition-shadow duration-200 cursor-pointer">
+        <Link to="/transactions?tab=income" className="block bg-gradient-to-br from-leaf-50 to-leaf-100 rounded-2xl border border-leaf-200/60 shadow-sm p-5 hover:shadow-md transition-shadow duration-200 cursor-pointer">
           <p className="text-sm text-leaf-700/70">이번 달 총 수입</p>
           <p className="text-2xl font-bold tracking-tight text-leaf-700 mt-1">+{formatAmount(income)}</p>
         </Link>
@@ -345,7 +345,7 @@ function RecentExpenses({ expenses }: { expenses: Expense[] }) {
     <div className="bg-white rounded-2xl border border-warm-200/60 shadow-sm p-5">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-base font-semibold text-warm-700">최근 지출</h2>
-        <Link to="/expenses" className="text-sm text-grape-600 hover:text-grape-700">
+        <Link to="/transactions?tab=expense" className="text-sm text-grape-600 hover:text-grape-700">
           전체 보기 →
         </Link>
       </div>
@@ -439,7 +439,7 @@ function RecentIncomes({ incomes }: { incomes: Income[] }) {
     <div className="bg-white rounded-2xl border border-warm-200/60 shadow-sm p-5">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-base font-semibold text-warm-700">최근 수입</h2>
-        <Link to="/income" className="text-sm text-leaf-600 hover:text-leaf-700">
+        <Link to="/transactions?tab=income" className="text-sm text-leaf-600 hover:text-leaf-700">
           전체 보기 →
         </Link>
       </div>
@@ -594,25 +594,7 @@ export default function Dashboard() {
   if (error) {
     return (
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h1 className="text-xl font-bold text-grape-700">대시보드</h1>
-          <div className="flex gap-2">
-            <button
-              onClick={() => navigate('/expenses/new')}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-grape-600 hover:bg-grape-700 text-white text-sm font-medium transition-colors"
-            >
-              지출 입력
-              <kbd className="hidden sm:inline-block text-xs bg-grape-500/60 rounded px-1 py-0.5 leading-none">E</kbd>
-            </button>
-            <button
-              onClick={() => navigate('/income/new')}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-leaf-600 hover:bg-leaf-700 text-white text-sm font-medium transition-colors"
-            >
-              수입 입력
-              <kbd className="hidden sm:inline-block text-xs bg-leaf-500/60 rounded px-1 py-0.5 leading-none">I</kbd>
-            </button>
-          </div>
-        </div>
+        <h1 className="text-xl font-bold text-grape-700">대시보드</h1>
         <div className="bg-white rounded-xl shadow-sm border border-warm-200/60">
           <ErrorState onRetry={fetchData} />
         </div>
@@ -626,25 +608,7 @@ export default function Dashboard() {
   if (hasNoData && (!personalStats || personalStats.total === 0)) {
     return (
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h1 className="text-xl font-bold text-grape-700">대시보드</h1>
-          <div className="flex gap-2">
-            <button
-              onClick={() => navigate('/expenses/new')}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-grape-600 hover:bg-grape-700 text-white text-sm font-medium transition-colors"
-            >
-              지출 입력
-              <kbd className="hidden sm:inline-block text-xs bg-grape-500/60 rounded px-1 py-0.5 leading-none">E</kbd>
-            </button>
-            <button
-              onClick={() => navigate('/income/new')}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-leaf-600 hover:bg-leaf-700 text-white text-sm font-medium transition-colors"
-            >
-              수입 입력
-              <kbd className="hidden sm:inline-block text-xs bg-leaf-500/60 rounded px-1 py-0.5 leading-none">I</kbd>
-            </button>
-          </div>
-        </div>
+        <h1 className="text-xl font-bold text-grape-700">대시보드</h1>
         <div className="bg-white rounded-xl shadow-sm border border-warm-200/60">
           <EmptyState
             title="아직 이번 달 지출 기록이 없어요"
@@ -654,8 +618,8 @@ export default function Dashboard() {
               onClick: () => navigate('/expenses/new'),
             }}
             secondaryAction={{
-              label: '지출 목록 보기',
-              onClick: () => navigate('/expenses'),
+              label: '거래 내역 보기',
+              onClick: () => navigate('/transactions'),
             }}
           />
         </div>
@@ -671,22 +635,6 @@ export default function Dashboard() {
         <h1 className="text-xl font-bold text-grape-700">
           {activeHouseholdId ? '공유 가계부' : '대시보드'}
         </h1>
-        <div className="flex gap-2">
-          <button
-            onClick={() => navigate('/expenses/new')}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-grape-600 hover:bg-grape-700 text-white text-sm font-medium transition-colors"
-          >
-            지출 입력
-            <kbd className="hidden sm:inline-block text-xs bg-grape-500/60 rounded px-1 py-0.5 leading-none">E</kbd>
-          </button>
-          <button
-            onClick={() => navigate('/income/new')}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-leaf-600 hover:bg-leaf-700 text-white text-sm font-medium transition-colors"
-          >
-            수입 입력
-            <kbd className="hidden sm:inline-block text-xs bg-leaf-500/60 rounded px-1 py-0.5 leading-none">I</kbd>
-          </button>
-        </div>
       </div>
 
       {/* 메인 데이터 (가구 선택 시 가구, 미선택 시 개인) */}

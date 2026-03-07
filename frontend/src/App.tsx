@@ -1,12 +1,11 @@
 import { lazy, Suspense } from 'react'
-import { Routes, Route } from 'react-router-dom'
+import { Routes, Route, Navigate } from 'react-router-dom'
 import Layout from './components/Layout'
 import ProtectedRoute from './components/ProtectedRoute'
 import { Loader2 } from 'lucide-react'
 
 /* 코드 스플리팅: 페이지별 lazy loading으로 초기 번들 크기 축소 */
 const Dashboard = lazy(() => import('./pages/Dashboard'))
-const ExpenseList = lazy(() => import('./pages/ExpenseList'))
 const ExpenseForm = lazy(() => import('./pages/ExpenseForm'))
 const ExpenseDetail = lazy(() => import('./pages/ExpenseDetail'))
 const CategoryManager = lazy(() => import('./pages/CategoryManager'))
@@ -20,7 +19,6 @@ const AuthCallbackPage = lazy(() => import('./pages/AuthCallbackPage'))
 const PrivacyPolicyPage = lazy(() => import('./pages/PrivacyPolicyPage'))
 const TermsOfServicePage = lazy(() => import('./pages/TermsOfServicePage'))
 const SettingsPage = lazy(() => import('./pages/SettingsPage'))
-const IncomeList = lazy(() => import('./pages/IncomeList'))
 const IncomeForm = lazy(() => import('./pages/IncomeForm'))
 const IncomeDetail = lazy(() => import('./pages/IncomeDetail'))
 const RecurringList = lazy(() => import('./pages/RecurringList'))
@@ -28,6 +26,7 @@ const NotFoundPage = lazy(() => import('./pages/NotFoundPage'))
 const AssetDashboard = lazy(() => import('./pages/AssetDashboard'))
 const AssetForm = lazy(() => import('./pages/AssetForm'))
 const AccountManager = lazy(() => import('./pages/AccountManager'))
+const TransactionList = lazy(() => import('./pages/TransactionList'))
 
 /* 로딩 스피너 */
 function PageLoading() {
@@ -50,16 +49,17 @@ function App() {
         <Route element={<ProtectedRoute />}>
           <Route element={<Layout />}>
             <Route path="/" element={<Dashboard />} />
-            <Route path="/expenses" element={<ExpenseList />} />
+            <Route path="/transactions" element={<TransactionList />} />
+            <Route path="/expenses" element={<Navigate to="/transactions?tab=expense" replace />} />
             <Route path="/expenses/new" element={<ExpenseForm />} />
             <Route path="/expenses/:id" element={<ExpenseDetail />} />
-            <Route path="/categories" element={<CategoryManager />} />
-            <Route path="/income" element={<IncomeList />} />
+            <Route path="/income" element={<Navigate to="/transactions?tab=income" replace />} />
             <Route path="/income/new" element={<IncomeForm />} />
             <Route path="/income/:id" element={<IncomeDetail />} />
-            <Route path="/insights" element={<InsightsPage />} />
+            <Route path="/categories" element={<CategoryManager />} />
             <Route path="/budgets" element={<BudgetManager />} />
             <Route path="/recurring" element={<RecurringList />} />
+            <Route path="/insights" element={<InsightsPage />} />
             <Route path="/households" element={<HouseholdListPage />} />
             <Route path="/households/:id" element={<HouseholdDetailPage />} />
             <Route path="/invitations" element={<InvitationListPage />} />
