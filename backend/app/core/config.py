@@ -39,6 +39,10 @@ class Settings(BaseSettings):
     TELEGRAM_BOT_TOKEN: str = ""
     TELEGRAM_WEBHOOK_SECRET: str = ""  # setWebhook의 secret_token과 일치해야 함
 
+    # 한국투자증권 Open API (시세 조회)
+    KIS_APPKEY: str = ""
+    KIS_APPSECRET: str = ""
+
     # KakaoTalk Bot
     KAKAO_BOT_API_KEY: str = ""
 

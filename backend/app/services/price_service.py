@@ -1,27 +1,125 @@
 """자산 시세 조회 서비스
 
-한국 주식/ETF: 네이버 금융 비공식 API
+한국 주식/ETF: 한국투자증권 Open API (1차), 네이버 금융 (fallback)
 미국 주식/ETF: Yahoo Finance
 코인: 업비트 공개 API
 환율: exchangerate-api
 """
 
+import logging
 import time
 
 import httpx
 
+from app.core.config import settings
+
+logger = logging.getLogger(__name__)
+
 # 시세 캐시 (5분)
-_price_cache: dict[str, tuple[float, float]] = {}  # ticker → (price, timestamp)
+_price_cache: dict[str, tuple[float, float]] = {}  # key → (price, timestamp)
 CACHE_TTL = 300  # 5분
+
+# 한투 API 토큰 캐시
+_kis_token: str | None = None
+_kis_token_expires: float = 0  # unix timestamp
+KIS_BASE_URL = "https://openapi.koreainvestment.com:9443"
+
+
+# ── 한투 API 인증 ──────────────────────────────────────────────
+
+
+async def _get_kis_token() -> str | None:
+    """한투 API OAuth 토큰 발급/캐싱 (24시간 유효, 1시간 전 갱신)"""
+    global _kis_token, _kis_token_expires
+
+    if _kis_token and time.time() < _kis_token_expires - 3600:
+        return _kis_token
+
+    if not settings.KIS_APPKEY or not settings.KIS_APPSECRET:
+        return None
+
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            resp = await client.post(
+                f"{KIS_BASE_URL}/oauth2/tokenP",
+                json={
+                    "grant_type": "client_credentials",
+                    "appkey": settings.KIS_APPKEY,
+                    "appsecret": settings.KIS_APPSECRET,
+                },
+            )
+            if resp.status_code == 200:
+                data = resp.json()
+                _kis_token = data["access_token"]
+                # token_token_expired: "YYYY-MM-DD HH:MM:SS" 형식이지만
+                # 안전하게 현재 + 23시간으로 설정
+                _kis_token_expires = time.time() + 23 * 3600
+                logger.info("한투 API 토큰 발급 성공")
+                return _kis_token
+    except Exception:
+        logger.warning("한투 API 토큰 발급 실패")
+    return None
+
+
+# ── 한국 주식 시세 ─────────────────────────────────────────────
 
 
 async def get_stock_kr_price(ticker: str) -> float | None:
-    """한국 주식/ETF 현재가 조회"""
+    """한국 주식/ETF 현재가 조회 (한투 API 우선, 네이버 fallback)"""
     cached = _get_cached(f"kr:{ticker}")
     if cached is not None:
         return cached
 
-    # 네이버 금융 API (비공식, 안정적)
+    # 1차: 한투 API
+    price = await _get_stock_kr_price_kis(ticker)
+    if price:
+        _set_cached(f"kr:{ticker}", price)
+        return price
+
+    # 2차: 네이버 금융 fallback
+    price = await _get_stock_kr_price_naver(ticker)
+    if price:
+        _set_cached(f"kr:{ticker}", price)
+        return price
+
+    return None
+
+
+async def _get_stock_kr_price_kis(ticker: str) -> float | None:
+    """한투 API 한국 주식 현재가 조회"""
+    token = await _get_kis_token()
+    if not token:
+        return None
+
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            resp = await client.get(
+                f"{KIS_BASE_URL}/uapi/domestic-stock/v1/quotations/inquire-price",
+                headers={
+                    "content-type": "application/json; charset=utf-8",
+                    "authorization": f"Bearer {token}",
+                    "appkey": settings.KIS_APPKEY,
+                    "appsecret": settings.KIS_APPSECRET,
+                    "tr_id": "FHKST01010100",
+                },
+                params={
+                    "FID_COND_MRKT_DIV_CODE": "J",
+                    "FID_INPUT_ISCD": ticker,
+                },
+            )
+            if resp.status_code == 200:
+                data = resp.json()
+                output = data.get("output", {})
+                price = float(output.get("stck_prpr", 0))
+                if price > 0:
+                    return price
+    except Exception:
+        logger.warning("한투 API 시세 조회 실패: %s", ticker)
+    return None
+
+
+async def _get_stock_kr_price_naver(ticker: str) -> float | None:
+    """네이버 금융 한국 주식 현재가 조회 (fallback)"""
     try:
         async with httpx.AsyncClient(timeout=10) as client:
             resp = await client.get(
@@ -32,11 +130,13 @@ async def get_stock_kr_price(ticker: str) -> float | None:
                 data = resp.json()
                 price = float(data.get("currentPrice", 0))
                 if price > 0:
-                    _set_cached(f"kr:{ticker}", price)
                     return price
     except Exception:
         pass
     return None
+
+
+# ── 미국 주식 시세 ─────────────────────────────────────────────
 
 
 async def get_stock_us_price(ticker: str) -> tuple[float | None, float | None]:
@@ -66,6 +166,9 @@ async def get_stock_us_price(ticker: str) -> tuple[float | None, float | None]:
     return None, None
 
 
+# ── 코인 시세 ──────────────────────────────────────────────────
+
+
 async def get_crypto_price(symbol: str) -> float | None:
     """업비트 코인 현재가 조회 (KRW)"""
     cached = _get_cached(f"crypto:{symbol}")
@@ -90,6 +193,9 @@ async def get_crypto_price(symbol: str) -> float | None:
     return None
 
 
+# ── 환율 ───────────────────────────────────────────────────────
+
+
 async def get_usd_krw_rate() -> float | None:
     """USD/KRW 환율 조회"""
     cached = _get_cached("fx:USDKRW")
@@ -107,6 +213,9 @@ async def get_usd_krw_rate() -> float | None:
     except Exception:
         pass
     return None
+
+
+# ── 자산 평가액 계산 ───────────────────────────────────────────
 
 
 async def get_asset_current_value(asset) -> dict:
@@ -153,14 +262,16 @@ async def get_asset_current_value(asset) -> dict:
     return result
 
 
+# ── 종목 검색 ──────────────────────────────────────────────────
+
+
 async def search_stock_kr(query: str) -> list[dict]:
-    """한국 종목 검색 (네이버 우선, Yahoo Finance fallback)"""
-    # 1차: 네이버 금융 (한국 IP에서만 동작)
+    """한국 종목 검색 (프론트 정적 JSON으로 이전, 백엔드는 fallback용 유지)"""
+    # 1차: 네이버 금융
     results = await _search_stock_kr_naver(query)
     if results:
         return results
-
-    # 2차: Yahoo Finance fallback (해외 IP에서도 동작)
+    # 2차: Yahoo Finance fallback
     return await _search_stock_kr_yahoo(query)
 
 
@@ -198,9 +309,8 @@ async def _search_stock_kr_yahoo(query: str) -> list[dict]:
                 results = []
                 for item in data.get("quotes", []):
                     symbol = item.get("symbol", "")
-                    # .KS = KOSPI, .KQ = KOSDAQ
                     if symbol.endswith(".KS") or symbol.endswith(".KQ"):
-                        ticker = symbol.rsplit(".", 1)[0]  # 005930.KS → 005930
+                        ticker = symbol.rsplit(".", 1)[0]
                         name = item.get("shortname") or item.get("longname") or ticker
                         results.append({"ticker": ticker, "name": name, "market": "KR"})
                 return results[:10]
@@ -251,6 +361,9 @@ async def search_crypto(query: str) -> list[dict]:
     except Exception:
         pass
     return []
+
+
+# ── 캐시 유틸 ──────────────────────────────────────────────────
 
 
 def _get_cached(key: str) -> float | None:
