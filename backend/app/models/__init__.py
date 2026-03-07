@@ -1,3 +1,5 @@
+from app.models.asset import Asset
+from app.models.asset_snapshot import AssetSnapshot
 from app.models.budget import Budget
 from app.models.category import Category
 from app.models.expense import Expense
@@ -9,6 +11,8 @@ from app.models.recurring_transaction import RecurringTransaction
 from app.models.user import User
 
 __all__ = [
+    "Asset",
+    "AssetSnapshot",
     "Budget",
     "Category",
     "Expense",

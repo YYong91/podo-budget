@@ -69,6 +69,11 @@ class LLMProvider(ABC):
         """지출 데이터를 분석하여 인사이트 생성"""
         pass
 
+    @abstractmethod
+    async def generate(self, prompt: str) -> str:
+        """범용 텍스트 생성 (자산 파싱 등 커스텀 프롬프트용)"""
+        pass
+
 
 class AnthropicProvider(LLMProvider):
     def __init__(self, model: str = ""):
@@ -250,6 +255,19 @@ class AnthropicProvider(LLMProvider):
             logger.error(f"인사이트 생성 실패: {e}")
             return f"인사이트 생성 중 오류가 발생했습니다: {str(e)}"
 
+    async def generate(self, prompt: str) -> str:
+        """범용 텍스트 생성"""
+        try:
+            response = await self.client.messages.create(
+                model=self.model,
+                max_tokens=2048,
+                messages=[{"role": "user", "content": prompt}],
+            )
+            return response.content[0].text
+        except Exception as e:
+            logger.error(f"Claude generate 실패: {e}")
+            return ""
+
 
 class OpenAIProvider(LLMProvider):
     def __init__(self, model: str = ""):
@@ -366,6 +384,19 @@ class OpenAIProvider(LLMProvider):
             logger.error(f"인사이트 생성 실패: {e}")
             return f"인사이트 생성 중 오류가 발생했습니다: {str(e)}"
 
+    async def generate(self, prompt: str) -> str:
+        """범용 텍스트 생성"""
+        try:
+            response = await self.client.chat.completions.create(
+                model=self.model,
+                max_tokens=2048,
+                messages=[{"role": "user", "content": prompt}],
+            )
+            return response.choices[0].message.content
+        except Exception as e:
+            logger.error(f"OpenAI generate 실패: {e}")
+            return ""
+
 
 class GoogleProvider(LLMProvider):
     def __init__(self, model: str = ""):
@@ -386,6 +417,9 @@ class GoogleProvider(LLMProvider):
     async def generate_insights(self, expenses_data: dict[str, Any]) -> str:
         raise NotImplementedError("Google Gemini 프로바이더는 아직 구현되지 않았습니다")
 
+    async def generate(self, prompt: str) -> str:
+        raise NotImplementedError("Google Gemini 프로바이더는 아직 구현되지 않았습니다")
+
 
 class LocalLLMProvider(LLMProvider):
     def __init__(self, model: str = ""):
@@ -403,6 +437,9 @@ class LocalLLMProvider(LLMProvider):
         raise NotImplementedError("로컬 LLM 프로바이더는 이미지 OCR을 지원하지 않습니다")
 
     async def generate_insights(self, expenses_data: dict[str, Any]) -> str:
+        raise NotImplementedError("로컬 LLM 프로바이더는 아직 구현되지 않았습니다")
+
+    async def generate(self, prompt: str) -> str:
         raise NotImplementedError("로컬 LLM 프로바이더는 아직 구현되지 않았습니다")
 
 
