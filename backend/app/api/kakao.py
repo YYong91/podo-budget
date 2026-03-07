@@ -147,7 +147,7 @@ async def kakao_webhook(request: Request, db: AsyncSession = Depends(get_db)):
 
                 # 카테고리 매칭/생성 (사용자별 카테고리 관리)
                 category_name = parsed.get("category", "기타")
-                category = await get_or_create_category(db, category_name, user_id=bot_user.id)
+                category = await get_or_create_category(db, category_name, user_id=bot_user.id, household_id=household_id)
 
                 # Expense 생성 (user_id + household_id 연결)
                 expense_date = datetime.fromisoformat(parsed.get("date", datetime.now().isoformat()))
@@ -182,7 +182,7 @@ async def kakao_webhook(request: Request, db: AsyncSession = Depends(get_db)):
                 for item in parsed:
                     # 카테고리 매칭/생성 (사용자별 카테고리 관리)
                     category_name = item.get("category", "기타")
-                    category = await get_or_create_category(db, category_name, user_id=bot_user.id)
+                    category = await get_or_create_category(db, category_name, user_id=bot_user.id, household_id=household_id)
 
                     # Expense 생성 (user_id + household_id 연결)
                     expense_date = datetime.fromisoformat(item.get("date", datetime.now().isoformat()))

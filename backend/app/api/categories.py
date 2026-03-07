@@ -1,14 +1,16 @@
 """카테고리 CRUD API 라우트
 
-사용자별 카테고리 + 시스템 공통 카테고리를 관리합니다.
-- user_id=None: 시스템 카테고리 (모든 사용자가 조회 가능, 수정/삭제 불가)
-- user_id={user_id}: 개인 카테고리 (해당 사용자만 조회/수정/삭제 가능)
+카테고리 스코프:
+- user_id=None, household_id=None: 시스템 카테고리 (전체 공유, 수정/삭제 불가)
+- household_id=X: 가계 카테고리 (가구 멤버 공유)
+- user_id=X, household_id=None: 솔로 유저 개인 카테고리 (가구 미소속 폴백)
 """
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import or_, select
+from sqlalchemy import and_, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.dependencies import get_user_active_household_id
 from app.core.auth import get_current_user
 from app.core.database import get_db
 from app.models.category import Category
@@ -18,6 +20,22 @@ from app.schemas.category import CategoryCreate, CategoryReorderRequest, Categor
 router = APIRouter()
 
 
+async def _get_household_id(current_user: User, db: AsyncSession) -> int | None:
+    """현재 사용자의 활성 가구 ID 조회"""
+    return await get_user_active_household_id(current_user, db)
+
+
+def _build_accessible_filter(user_id: int, household_id: int | None):
+    """접근 가능한 카테고리 필터 (3-scope)"""
+    conditions = [
+        and_(Category.household_id.is_(None), Category.user_id.is_(None)),  # 시스템
+        and_(Category.user_id == user_id, Category.household_id.is_(None)),  # 솔로 폴백
+    ]
+    if household_id is not None:
+        conditions.append(Category.household_id == household_id)  # 가계
+    return or_(*conditions)
+
+
 @router.get("", response_model=list[CategoryResponse])
 async def get_categories(
     current_user: User = Depends(get_current_user),
@@ -25,20 +43,12 @@ async def get_categories(
 ):
     """카테고리 목록 조회
 
-    시스템 공통 카테고리(user_id=None) + 현재 사용자의 개인 카테고리를 반환합니다.
-
-    Args:
-        current_user: 현재 인증된 사용자
-        db: 데이터베이스 세션
-
-    Returns:
-        카테고리 목록 (시스템 카테고리 + 개인 카테고리)
+    시스템 카테고리 + 가계/솔로 카테고리를 반환합니다.
     """
-    result = await db.execute(
-        select(Category)
-        .where(or_(Category.user_id == None, Category.user_id == current_user.id))  # noqa: E711
-        .order_by(Category.sort_order.desc(), Category.name)
-    )
+    household_id = await _get_household_id(current_user, db)
+    scope_filter = _build_accessible_filter(current_user.id, household_id)
+
+    result = await db.execute(select(Category).where(scope_filter).order_by(Category.sort_order.desc(), Category.name))
     return result.scalars().all()
 
 
@@ -50,31 +60,21 @@ async def create_category(
 ):
     """카테고리 생성
 
-    현재 사용자의 개인 카테고리를 생성합니다.
-    user_id는 자동으로 현재 로그인한 사용자로 설정됩니다.
-
-    Args:
-        category: 카테고리 생성 데이터
-        current_user: 현재 인증된 사용자
-        db: 데이터베이스 세션
-
-    Returns:
-        생성된 카테고리 정보
-
-    Raises:
-        HTTPException 400: 같은 이름의 카테고리가 이미 존재하는 경우
+    가구가 있으면 가계 카테고리로, 없으면 솔로 개인 카테고리로 생성합니다.
     """
-    # 중복 이름 체크 (시스템 카테고리 + 사용자의 개인 카테고리 모두 확인)
-    existing = await db.execute(
-        select(Category).where(
-            Category.name == category.name,
-            or_(Category.user_id == None, Category.user_id == current_user.id),  # noqa: E711
-        )
-    )
+    household_id = await _get_household_id(current_user, db)
+    scope_filter = _build_accessible_filter(current_user.id, household_id)
+
+    # 중복 이름 체크
+    existing = await db.execute(select(Category).where(Category.name == category.name, scope_filter))
     if existing.scalar_one_or_none():
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="이미 존재하는 카테고리입니다")
 
-    db_category = Category(**category.model_dump(), user_id=current_user.id)
+    if household_id is not None:
+        db_category = Category(**category.model_dump(), household_id=household_id, user_id=None)
+    else:
+        db_category = Category(**category.model_dump(), user_id=current_user.id)
+
     db.add(db_category)
     await db.commit()
     await db.refresh(db_category)
@@ -91,25 +91,14 @@ async def reorder_categories(
 
     전달받은 category_ids 순서대로 sort_order를 설정합니다.
     첫 번째 ID가 가장 높은 sort_order를 받아 목록 최상단에 표시됩니다.
-    시스템 카테고리와 사용자 카테고리 모두 순서 변경 가능합니다.
-
-    Args:
-        request: 순서대로 정렬된 카테고리 ID 목록
-        current_user: 현재 인증된 사용자
-        db: 데이터베이스 세션
-
-    Returns:
-        순서가 업데이트된 전체 카테고리 목록
+    시스템 카테고리는 글로벌 공유이므로 sort_order 변경 불가.
     """
-    # 사용자가 접근 가능한 카테고리 조회
-    result = await db.execute(
-        select(Category).where(
-            or_(Category.user_id == None, Category.user_id == current_user.id)  # noqa: E711
-        )
-    )
+    household_id = await _get_household_id(current_user, db)
+    scope_filter = _build_accessible_filter(current_user.id, household_id)
+
+    result = await db.execute(select(Category).where(scope_filter))
     accessible = {cat.id: cat for cat in result.scalars().all()}
 
-    # 전달된 ID가 모두 접근 가능한지 확인
     for cat_id in request.category_ids:
         if cat_id not in accessible:
             raise HTTPException(
@@ -117,22 +106,16 @@ async def reorder_categories(
                 detail=f"카테고리 ID {cat_id}에 접근할 수 없습니다",
             )
 
-    # sort_order 업데이트 (첫 번째가 가장 높은 값)
-    # 시스템 카테고리(user_id=None)는 글로벌 공유이므로 순서 변경 불가 — 개인 카테고리만 업데이트
     total = len(request.category_ids)
     for idx, cat_id in enumerate(request.category_ids):
         cat = accessible[cat_id]
-        if cat.user_id is not None:
+        # 시스템 카테고리(user_id=None, household_id=None)는 순서 변경 불가
+        if cat.user_id is not None or cat.household_id is not None:
             cat.sort_order = total - idx
 
     await db.commit()
 
-    # 업데이트된 목록 반환
-    result = await db.execute(
-        select(Category)
-        .where(or_(Category.user_id == None, Category.user_id == current_user.id))  # noqa: E711
-        .order_by(Category.sort_order.desc(), Category.name)
-    )
+    result = await db.execute(select(Category).where(scope_filter).order_by(Category.sort_order.desc(), Category.name))
     return result.scalars().all()
 
 
@@ -145,33 +128,24 @@ async def update_category(
 ):
     """카테고리 수정
 
-    현재 로그인한 사용자의 개인 카테고리만 수정할 수 있습니다.
-    시스템 카테고리(user_id=None)는 수정할 수 없습니다.
-
-    Args:
-        category_id: 카테고리 ID
-        category: 수정할 필드들
-        current_user: 현재 인증된 사용자
-        db: 데이터베이스 세션
-
-    Returns:
-        수정된 카테고리 정보
-
-    Raises:
-        HTTPException 404: 카테고리를 찾을 수 없거나 소유자가 아닌 경우
-        HTTPException 403: 시스템 카테고리를 수정하려는 경우
+    가계 카테고리(household_id) 또는 솔로 개인 카테고리(user_id)만 수정 가능합니다.
+    시스템 카테고리는 수정할 수 없습니다.
     """
+    household_id = await _get_household_id(current_user, db)
+
     result = await db.execute(select(Category).where(Category.id == category_id))
     db_category = result.scalar_one_or_none()
     if not db_category:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="카테고리를 찾을 수 없습니다")
 
     # 시스템 카테고리는 수정 불가
-    if db_category.user_id is None:
+    if db_category.user_id is None and db_category.household_id is None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="시스템 카테고리는 수정할 수 없습니다")
 
-    # 소유자 확인
-    if db_category.user_id != current_user.id:
+    # 소유권 확인: 가계 카테고리(멤버이면 OK) 또는 솔로 개인 카테고리(본인만)
+    is_household_owner = household_id is not None and db_category.household_id == household_id
+    is_solo_owner = db_category.user_id == current_user.id
+    if not (is_household_owner or is_solo_owner):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="카테고리를 찾을 수 없습니다")
 
     update_data = category.model_dump(exclude_unset=True)
@@ -191,29 +165,24 @@ async def delete_category(
 ):
     """카테고리 삭제
 
-    현재 로그인한 사용자의 개인 카테고리만 삭제할 수 있습니다.
-    시스템 카테고리(user_id=None)는 삭제할 수 없습니다.
-
-    Args:
-        category_id: 카테고리 ID
-        current_user: 현재 인증된 사용자
-        db: 데이터베이스 세션
-
-    Raises:
-        HTTPException 404: 카테고리를 찾을 수 없거나 소유자가 아닌 경우
-        HTTPException 403: 시스템 카테고리를 삭제하려는 경우
+    가계 카테고리(household_id) 또는 솔로 개인 카테고리(user_id)만 삭제 가능합니다.
+    시스템 카테고리는 삭제할 수 없습니다.
     """
+    household_id = await _get_household_id(current_user, db)
+
     result = await db.execute(select(Category).where(Category.id == category_id))
     db_category = result.scalar_one_or_none()
     if not db_category:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="카테고리를 찾을 수 없습니다")
 
     # 시스템 카테고리는 삭제 불가
-    if db_category.user_id is None:
+    if db_category.user_id is None and db_category.household_id is None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="시스템 카테고리는 삭제할 수 없습니다")
 
-    # 소유자 확인
-    if db_category.user_id != current_user.id:
+    # 소유권 확인
+    is_household_owner = household_id is not None and db_category.household_id == household_id
+    is_solo_owner = db_category.user_id == current_user.id
+    if not (is_household_owner or is_solo_owner):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="카테고리를 찾을 수 없습니다")
 
     await db.delete(db_category)

@@ -8,7 +8,7 @@ expenses/recurring과 동일한 household 패턴을 따릅니다.
 from datetime import datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import extract, func, or_, select
+from sqlalchemy import and_, extract, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import get_household_member, get_user_active_household_id
@@ -241,12 +241,18 @@ async def get_category_overview(
         start_year -= 1
     start_date = datetime(start_year, start_month, 1)
 
-    # 지출/공통 카테고리 조회 — 시스템 카테고리(user_id=None) + 현재 유저의 개인 카테고리만
+    # 지출/공통 카테고리 조회 — 시스템 + 가계 + 솔로 개인 카테고리 (3-scope)
+    category_conditions = [
+        and_(Category.household_id.is_(None), Category.user_id.is_(None)),  # 시스템
+        and_(Category.user_id == current_user.id, Category.household_id.is_(None)),  # 솔로 폴백
+    ]
+    if household_id is not None:
+        category_conditions.append(Category.household_id == household_id)  # 가계
     categories_result = await db.execute(
         select(Category)
         .where(
             Category.type.in_(["expense", "both"]),
-            or_(Category.user_id.is_(None), Category.user_id == current_user.id),
+            or_(*category_conditions),
         )
         .order_by(Category.name)
     )

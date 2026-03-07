@@ -21,10 +21,10 @@ async def test_get_user_categories_empty(db_session: AsyncSession, test_user: Us
 
 @pytest.mark.asyncio
 async def test_get_user_categories_system_and_personal(db_session: AsyncSession, test_user: User):
-    """시스템 카테고리 + 개인 카테고리 모두 반환"""
+    """시스템 카테고리 + 솔로 개인 카테고리 모두 반환"""
     # 시스템 카테고리 (user_id=None)
     sys_cat = Category(name="식비", description="시스템 카테고리", user_id=None)
-    # 개인 카테고리
+    # 솔로 개인 카테고리
     user_cat = Category(name="전기차충전", description="개인 카테고리", user_id=test_user.id)
     db_session.add_all([sys_cat, user_cat])
     await db_session.commit()
@@ -37,7 +37,7 @@ async def test_get_user_categories_system_and_personal(db_session: AsyncSession,
 
 @pytest.mark.asyncio
 async def test_get_user_categories_excludes_other_users(db_session: AsyncSession, test_user: User, test_user2: User):
-    """다른 사용자의 개인 카테고리는 제외"""
+    """다른 사용자의 솔로 카테고리는 제외"""
     my_cat = Category(name="내카테고리", user_id=test_user.id)
     other_cat = Category(name="남카테고리", user_id=test_user2.id)
     db_session.add_all([my_cat, other_cat])
@@ -46,6 +46,42 @@ async def test_get_user_categories_excludes_other_users(db_session: AsyncSession
     categories = await get_user_categories(db_session, test_user.id)
     assert "내카테고리" in categories
     assert "남카테고리" not in categories
+
+
+@pytest.mark.asyncio
+async def test_get_user_categories_includes_household(db_session: AsyncSession, test_user: User):
+    """household_id가 주어지면 가계 카테고리도 포함"""
+    household_id = 42
+    hh_cat = Category(name="가계공통", household_id=household_id, user_id=None)
+    solo_cat = Category(name="내카테고리", user_id=test_user.id)
+    sys_cat = Category(name="시스템", user_id=None, household_id=None)
+    db_session.add_all([hh_cat, solo_cat, sys_cat])
+    await db_session.commit()
+
+    # household_id 없이 조회 → 가계 카테고리 미포함
+    categories_no_hh = await get_user_categories(db_session, test_user.id)
+    assert "가계공통" not in categories_no_hh
+    assert "내카테고리" in categories_no_hh
+    assert "시스템" in categories_no_hh
+
+    # household_id 포함하여 조회 → 가계 카테고리 포함
+    categories_with_hh = await get_user_categories(db_session, test_user.id, household_id=household_id)
+    assert "가계공통" in categories_with_hh
+    assert "내카테고리" in categories_with_hh
+    assert "시스템" in categories_with_hh
+
+
+@pytest.mark.asyncio
+async def test_get_user_categories_excludes_other_household(db_session: AsyncSession, test_user: User):
+    """다른 가계의 카테고리는 제외"""
+    hh1_cat = Category(name="가계1카테고리", household_id=1, user_id=None)
+    hh2_cat = Category(name="가계2카테고리", household_id=2, user_id=None)
+    db_session.add_all([hh1_cat, hh2_cat])
+    await db_session.commit()
+
+    categories = await get_user_categories(db_session, test_user.id, household_id=1)
+    assert "가계1카테고리" in categories
+    assert "가계2카테고리" not in categories
 
 
 @pytest.mark.asyncio

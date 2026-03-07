@@ -102,7 +102,7 @@ async def chat(
     llm = get_llm_provider("parse")
 
     # 카테고리 목록 + 히스토리 패턴 로드 (LLM 프롬프트에 주입하여 정확도 향상)
-    user_categories = await get_user_categories(db, current_user.id)
+    user_categories = await get_user_categories(db, current_user.id, household_id)
     history_hints = await get_category_hints(db, current_user.id, household_id)
 
     # LLM으로 사용자 입력 파싱
@@ -172,7 +172,7 @@ async def chat(
 
     for item in items:
         item_type = item.get("type", "expense")
-        category = await get_or_create_category(db, item.get("category", "기타"), current_user.id)
+        category = await get_or_create_category(db, item.get("category", "기타"), current_user.id, household_id)
 
         # 외화 환율 변환
         amount = item["amount"]

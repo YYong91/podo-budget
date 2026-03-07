@@ -1,9 +1,9 @@
 """카테고리 엔티티 모델
 
 지출/예산의 카테고리를 관리하는 엔티티입니다.
-- user_id가 None이고 household_id가 None: 시스템 공통 카테고리(모든 사용자)
-- user_id가 있고 household_id가 None: 개인 카테고리
-- household_id가 있음: 가구 공유 카테고리
+- user_id=None, household_id=None: 시스템 공통 카테고리 (전체 공유)
+- household_id=X: 가계 카테고리 (가구 멤버 공유)
+- user_id=X, household_id=None: 솔로 유저 개인 카테고리 (가구 미소속 폴백)
 """
 
 from sqlalchemy import BigInteger, Column, DateTime, ForeignKey, Integer, String, UniqueConstraint
@@ -18,15 +18,15 @@ class Category(Base):
 
     Attributes:
         id: 카테고리 고유 식별자 (Primary Key)
-        user_id: 카테고리 소유자 ID (None이면 시스템 공통 카테고리)
-        household_id: 가구 공유 카테고리 ID (None이면 개인/시스템 카테고리)
-        name: 카테고리 이름 (사용자별 유니크)
+        user_id: 솔로 유저 개인 카테고리 소유자 ID (None이면 시스템 or 가계 카테고리)
+        household_id: 가계 카테고리 ID (None이면 솔로/시스템 카테고리)
+        name: 카테고리 이름
         description: 카테고리 설명
         created_at: 레코드 생성 시각
     """
 
     __tablename__ = "categories"
-    __table_args__ = (UniqueConstraint("name", "user_id", name="uq_category_name_user"),)
+    __table_args__ = (UniqueConstraint("name", "household_id", "user_id", name="uq_category_name_scope"),)
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)  # None이면 시스템 카테고리

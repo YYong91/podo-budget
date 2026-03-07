@@ -9,7 +9,7 @@ import logging
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
-from sqlalchemy import extract, func, or_, select
+from sqlalchemy import and_, extract, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import get_user_active_household_id
@@ -164,7 +164,7 @@ async def telegram_webhook(request: Request, db: AsyncSession = Depends(get_db))
 
             # 카테고리 매칭/생성 (사용자별 카테고리 관리)
             category_name = parsed.get("category", "기타")
-            category = await get_or_create_category(db, category_name, user_id=bot_user.id)
+            category = await get_or_create_category(db, category_name, user_id=bot_user.id, household_id=household_id)
 
             # Expense 생성 (user_id + household_id 연결)
             expense_date = datetime.fromisoformat(parsed.get("date", datetime.now().isoformat()))
@@ -213,7 +213,7 @@ async def telegram_webhook(request: Request, db: AsyncSession = Depends(get_db))
             for item in parsed:
                 # 카테고리 매칭/생성 (사용자별 카테고리 관리)
                 category_name = item.get("category", "기타")
-                category = await get_or_create_category(db, category_name, user_id=bot_user.id)
+                category = await get_or_create_category(db, category_name, user_id=bot_user.id, household_id=household_id)
 
                 # Expense 생성 (user_id + household_id 연결)
                 expense_date = datetime.fromisoformat(item.get("date", datetime.now().isoformat()))
@@ -332,10 +332,14 @@ async def handle_callback_query(callback_query: dict, db: AsyncSession):
             # 카테고리 선택 인라인 키보드 표시
             await answer_callback_query(callback_id, "카테고리를 선택해주세요.")
 
-            # 사용자의 카테고리 목록 조회 (시스템 + 개인)
-            cat_result = await db.execute(
-                select(Category).where(or_(Category.user_id.is_(None), Category.user_id == expense.user_id)).order_by(Category.name).limit(8)
-            )
+            # 카테고리 목록 조회 (시스템 + 가계/솔로 3-scope)
+            _cat_conditions = [
+                and_(Category.household_id.is_(None), Category.user_id.is_(None)),
+                and_(Category.user_id == expense.user_id, Category.household_id.is_(None)),
+            ]
+            if expense.household_id is not None:
+                _cat_conditions.append(Category.household_id == expense.household_id)
+            cat_result = await db.execute(select(Category).where(or_(*_cat_conditions)).order_by(Category.name).limit(8))
             categories = cat_result.scalars().all()
 
             if not categories:
@@ -361,7 +365,7 @@ async def handle_callback_query(callback_query: dict, db: AsyncSession):
                     await answer_callback_query(callback_id, "카테고리를 찾을 수 없어요.")
                     return {"ok": True}
             else:
-                new_category = await get_or_create_category(db, category_info, user_id=expense.user_id)
+                new_category = await get_or_create_category(db, category_info, user_id=expense.user_id, household_id=expense.household_id)
 
             expense.category_id = new_category.id
             await db.commit()

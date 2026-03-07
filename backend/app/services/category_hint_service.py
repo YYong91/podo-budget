@@ -4,7 +4,7 @@
 LLM 프롬프트에 주입하여 카테고리 자동 인식 정확도를 높입니다.
 """
 
-from sqlalchemy import or_, select
+from sqlalchemy import and_, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.category import Category
@@ -15,13 +15,17 @@ from app.models.income import Income
 async def get_user_categories(
     db: AsyncSession,
     user_id: int,
+    household_id: int | None = None,
 ) -> list[str]:
-    """사용자의 카테고리 목록 반환 (시스템 카테고리 + 개인 카테고리)"""
-    result = await db.execute(
-        select(Category.name)
-        .where(or_(Category.user_id == None, Category.user_id == user_id))  # noqa: E711
-        .order_by(Category.name)
-    )
+    """사용자의 카테고리 목록 반환 (시스템 카테고리 + 가계/개인 카테고리)"""
+    conditions = [
+        and_(Category.household_id.is_(None), Category.user_id.is_(None)),  # 시스템
+        and_(Category.user_id == user_id, Category.household_id.is_(None)),  # 솔로 폴백
+    ]
+    if household_id is not None:
+        conditions.append(Category.household_id == household_id)  # 가계
+
+    result = await db.execute(select(Category.name).where(or_(*conditions)).order_by(Category.name))
     return [row[0] for row in result.all()]
 
 
