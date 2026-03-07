@@ -1,8 +1,8 @@
 """자산/부채 및 순자산 스냅샷 테이블 추가
 
-Revision ID: k4l5m6n7o8p9
-Revises: j3k4l5m6n7o8
-Create Date: 2026-03-06
+Revision ID: l5m6n7o8p9q0
+Revises: k4l5m6n7o8p9
+Create Date: 2026-03-07
 """
 
 import sqlalchemy as sa
@@ -10,8 +10,8 @@ import sqlalchemy as sa
 from alembic import op
 
 # revision identifiers, used by Alembic.
-revision = "k4l5m6n7o8p9"  # pragma: allowlist secret
-down_revision = "j3k4l5m6n7o8"  # pragma: allowlist secret
+revision = "l5m6n7o8p9q0"  # pragma: allowlist secret
+down_revision = "k4l5m6n7o8p9"  # pragma: allowlist secret
 branch_labels = None
 depends_on = None
 
