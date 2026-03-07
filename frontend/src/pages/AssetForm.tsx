@@ -324,51 +324,75 @@ export default function AssetForm() {
             </select>
           </div>
 
-          {/* 자산명 */}
-          <div>
-            <label className="block text-sm font-medium text-warm-700 mb-1.5">자산명</label>
-            <input
-              type="text"
-              value={form.name ?? ''}
-              onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-              placeholder="예) 삼성전자, 내 적금, 주택담보대출"
-              className="w-full border border-warm-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-grape-300"
-              required
-            />
-          </div>
+          {/* 자산명 (수동형에서만) */}
+          {!isInvestmentType && (
+            <div>
+              <label className="block text-sm font-medium text-warm-700 mb-1.5">자산명</label>
+              <input
+                type="text"
+                value={form.name ?? ''}
+                onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                placeholder="예) 내 적금, 주택담보대출"
+                className="w-full border border-warm-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-grape-300"
+                required
+              />
+            </div>
+          )}
 
-          {/* 투자형: 종목 검색 */}
+          {/* 투자형: 종목 검색 (자산명 대체) */}
           {isInvestmentType && (
             <>
               <div className="relative">
-                <label className="block text-sm font-medium text-warm-700 mb-1.5">종목 검색</label>
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-warm-400" />
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={e => setSearchQuery(e.target.value)}
-                    placeholder={assetType === 'crypto' ? 'BTC, ETH...' : '종목명 또는 코드 검색'}
-                    className="w-full border border-warm-200 rounded-lg pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-grape-300"
-                  />
-                </div>
-                {showDropdown && (
-                  <div className="absolute z-10 left-0 right-0 top-full mt-1 bg-white border border-warm-200 rounded-lg shadow-lg py-1 max-h-48 overflow-y-auto">
-                    {searchResults.map(r => (
-                      <button
-                        key={r.ticker}
-                        type="button"
-                        onClick={() => {
-                          setForm(f => ({ ...f, name: r.name || r.ticker, ticker: r.ticker }))
-                          setSearchQuery(r.name || r.ticker)
-                          setShowDropdown(false)
-                        }}
-                        className="w-full text-left px-3 py-2 text-sm hover:bg-warm-100 flex items-center justify-between"
-                      >
-                        <span className="font-medium text-warm-800">{r.name}</span>
-                        <span className="text-xs text-warm-400">{r.ticker}</span>
-                      </button>
-                    ))}
+                <label className="block text-sm font-medium text-warm-700 mb-1.5">종목명</label>
+                {form.ticker ? (
+                  /* 선택된 상태 */
+                  <div className="flex items-center gap-2 p-2.5 border border-grape-200 bg-grape-50 rounded-lg">
+                    <div className="flex-1">
+                      <span className="text-sm font-medium text-warm-800">{form.name}</span>
+                      <span className="ml-2 text-xs text-grape-600 font-mono">{form.ticker}</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setForm(f => ({ ...f, name: '', ticker: undefined }))
+                        setSearchQuery('')
+                      }}
+                      className="text-xs text-warm-400 hover:text-warm-600 px-2 py-0.5 rounded hover:bg-warm-100"
+                    >
+                      변경
+                    </button>
+                  </div>
+                ) : (
+                  /* 검색 상태 */
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-warm-400" />
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={e => setSearchQuery(e.target.value)}
+                      onKeyDown={e => { if (e.key === 'Enter') e.preventDefault() }}
+                      placeholder={assetType === 'crypto' ? 'BTC, 비트코인...' : '종목명 또는 코드 검색'}
+                      className="w-full border border-warm-200 rounded-lg pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-grape-300"
+                    />
+                    {showDropdown && (
+                      <div className="absolute z-10 left-0 right-0 top-full mt-1 bg-white border border-warm-200 rounded-lg shadow-lg py-1 max-h-48 overflow-y-auto">
+                        {searchResults.map(r => (
+                          <button
+                            key={r.ticker}
+                            type="button"
+                            onClick={() => {
+                              setForm(f => ({ ...f, name: r.name || r.ticker, ticker: r.ticker }))
+                              setSearchQuery(r.name || r.ticker)
+                              setShowDropdown(false)
+                            }}
+                            className="w-full text-left px-3 py-2 text-sm hover:bg-warm-100 flex items-center justify-between"
+                          >
+                            <span className="font-medium text-warm-800">{r.name}</span>
+                            <span className="text-xs text-warm-400">{r.ticker}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
