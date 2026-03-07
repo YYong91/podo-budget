@@ -7,8 +7,8 @@ import FloatingActionButton from './FloatingActionButton'
 import { useAuth } from '../contexts/AuthContext'
 import { useHouseholdStore } from '../stores/useHouseholdStore'
 import {
-  LayoutDashboard, Receipt, TrendingUp, Users, Settings as SettingsIcon,
-  Mail, Home, Menu, X, ChevronDown, LogOut, Landmark,
+  LayoutDashboard, Receipt, TrendingUp, Settings as SettingsIcon,
+  Mail, Home, Menu, X, ChevronDown, Landmark,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
@@ -16,10 +16,9 @@ const AUTH_URL = import.meta.env.VITE_AUTH_URL || 'https://auth.podonest.com'
 
 const navItems: { path: string; label: string; icon: LucideIcon }[] = [
   { path: '/', label: '대시보드', icon: LayoutDashboard },
-  { path: '/transactions', label: '거래 내역', icon: Receipt },
+  { path: '/transactions', label: '가계부', icon: Receipt },
   { path: '/insights', label: '리포트', icon: TrendingUp },
   { path: '/assets', label: '자산 관리', icon: Landmark },
-  { path: '/households', label: '공유 가계부', icon: Users },
   { path: '/settings', label: '설정', icon: SettingsIcon },
 ]
 
@@ -27,7 +26,7 @@ export default function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [householdDropdownOpen, setHouseholdDropdownOpen] = useState(false)
   const location = useLocation()
-  const { user, logout } = useAuth()
+  const { user } = useAuth()
   const {
     households, activeHouseholdId, myInvitations,
     fetchHouseholds, fetchMyInvitations, setActiveHouseholdId,
@@ -160,11 +159,6 @@ export default function Layout() {
                 >
                   <Icon className="w-[18px] h-[18px]" />
                   {item.label}
-                  {item.path === '/households' && pendingInvitationCount > 0 && (
-                    <span className="ml-auto bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full min-w-[20px] text-center">
-                      {pendingInvitationCount}
-                    </span>
-                  )}
                 </Link>
               )
             })}
@@ -189,26 +183,19 @@ export default function Layout() {
             )}
           </nav>
 
-          {/* 사이드바 하단 — 유저 정보 + 서비스 링크 */}
-          <div className="mt-4 pt-4 border-t border-warm-200 text-sm space-y-1">
+          {/* 사이드바 하단 — 유저 정보 */}
+          <div className="mt-4 pt-4 border-t border-warm-200 text-sm">
             {user && (
-              <div className="flex items-center gap-1 px-3 py-1.5">
+              <div className="px-3 py-1.5">
                 <a
                   href={AUTH_URL}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex-1 text-sm font-medium text-warm-600 hover:text-grape-600 truncate"
+                  className="text-sm font-medium text-warm-600 hover:text-grape-600 truncate block"
                   title="계정 관리"
                 >
                   {user.username}
                 </a>
-                <button
-                  onClick={logout}
-                  className="p-1.5 rounded-md text-warm-400 hover:text-grape-600 hover:bg-grape-50 transition-colors"
-                  title="로그아웃"
-                >
-                  <LogOut size={14} />
-                </button>
               </div>
             )}
           </div>

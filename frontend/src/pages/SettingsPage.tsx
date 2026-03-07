@@ -6,14 +6,14 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import toast from 'react-hot-toast'
-import { Tags, PiggyBank, Repeat } from 'lucide-react'
+import { Tags, PiggyBank, Repeat, Users, LogOut } from 'lucide-react'
 import { generateTelegramLinkCode, unlinkTelegram } from '../api/telegram'
 import { useAuth } from '../contexts/AuthContext'
 
 const AUTH_URL = import.meta.env.VITE_AUTH_URL || 'https://auth.podonest.com'
 
 export default function SettingsPage() {
-  const { user, refreshUser } = useAuth()
+  const { user, refreshUser, logout } = useAuth()
   const [linkCode, setLinkCode] = useState<{ code: string; expires_at: string } | null>(null)
   const [loadingCode, setLoadingCode] = useState(false)
   const [loadingUnlink, setLoadingUnlink] = useState(false)
@@ -70,7 +70,7 @@ export default function SettingsPage() {
       {/* 관리 */}
       <div className="bg-white rounded-2xl shadow-sm border border-warm-200 p-6">
         <h2 className="text-lg font-semibold text-warm-900 mb-4">관리</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <Link
             to="/categories"
             className="flex items-center gap-3 px-4 py-3 rounded-xl border border-warm-200 hover:bg-grape-50 hover:border-grape-200 transition-colors"
@@ -91,6 +91,13 @@ export default function SettingsPage() {
           >
             <Repeat className="w-5 h-5 text-grape-500" />
             <span className="text-sm font-medium text-warm-800">반복 거래</span>
+          </Link>
+          <Link
+            to="/households"
+            className="flex items-center gap-3 px-4 py-3 rounded-xl border border-warm-200 hover:bg-grape-50 hover:border-grape-200 transition-colors"
+          >
+            <Users className="w-5 h-5 text-grape-500" />
+            <span className="text-sm font-medium text-warm-800">공유 가계부</span>
           </Link>
         </div>
       </div>
@@ -219,14 +226,23 @@ export default function SettingsPage() {
         <p className="text-sm text-warm-600 mb-4">
           비밀번호 변경, 계정 삭제 등은 포도 통합 계정에서 관리합니다.
         </p>
-        <a
-          href={AUTH_URL}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-grape-300 text-grape-700 text-sm font-medium hover:bg-grape-50 transition-colors"
-        >
-          포도 통합 계정 관리 →
-        </a>
+        <div className="flex flex-wrap gap-3">
+          <a
+            href={AUTH_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-grape-300 text-grape-700 text-sm font-medium hover:bg-grape-50 transition-colors"
+          >
+            포도 통합 계정 관리 →
+          </a>
+          <button
+            onClick={logout}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-warm-300 text-warm-600 text-sm font-medium hover:bg-red-50 hover:border-red-300 hover:text-red-600 transition-colors"
+          >
+            <LogOut className="w-4 h-4" />
+            로그아웃
+          </button>
+        </div>
       </div>
     </div>
   )

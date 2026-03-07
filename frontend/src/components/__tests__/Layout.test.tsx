@@ -66,10 +66,9 @@ describe('Layout', () => {
     it('모든 네비게이션 항목을 표시한다', () => {
       renderLayout()
       expect(screen.getByRole('link', { name: /대시보드/i })).toBeInTheDocument()
-      expect(screen.getByRole('link', { name: /거래 내역/i })).toBeInTheDocument()
+      expect(screen.getByRole('link', { name: '가계부' })).toBeInTheDocument()
       expect(screen.getByRole('link', { name: /리포트/i })).toBeInTheDocument()
       expect(screen.getByRole('link', { name: /자산 관리/i })).toBeInTheDocument()
-      expect(screen.getByRole('link', { name: /공유 가계부/i })).toBeInTheDocument()
       expect(screen.getByRole('link', { name: /설정/i })).toBeInTheDocument()
     })
 
@@ -81,7 +80,7 @@ describe('Layout', () => {
 
     it('다른 경로의 네비게이션 항목에는 aria-current가 없다', () => {
       renderLayout('/')
-      const transactionLink = screen.getByRole('link', { name: /거래 내역/i })
+      const transactionLink = screen.getByRole('link', { name: '가계부' })
       expect(transactionLink).not.toHaveAttribute('aria-current')
     })
   })
@@ -122,7 +121,7 @@ describe('Layout', () => {
       await user.click(menuButton)
 
       // 네비게이션 링크 클릭
-      const transactionLink = screen.getByRole('link', { name: /거래 내역/i })
+      const transactionLink = screen.getByRole('link', { name: '가계부' })
       await user.click(transactionLink)
 
       // 오버레이가 사라졌는지 확인

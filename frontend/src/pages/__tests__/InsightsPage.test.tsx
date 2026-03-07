@@ -63,7 +63,8 @@ describe('InsightsPage', () => {
     it('월간 통계의 카테고리 섹션을 표시한다', async () => {
       renderInsightsPage()
       await waitFor(() => {
-        expect(screen.getByText('카테고리별 지출')).toBeInTheDocument()
+        // 통합 뷰: 지출과 수입 각각 카테고리 섹션이 렌더링됨
+        expect(screen.getAllByText('카테고리별 지출').length).toBeGreaterThan(0)
       })
     })
 
@@ -154,15 +155,10 @@ describe('InsightsPage', () => {
       })
     })
 
-    it('수입 토글 시 예산 대비 지출 섹션이 숨겨진다', async () => {
-      const user = userEvent.setup()
+    it('통합 뷰에서 예산 대비 지출 섹션이 지출 통계와 함께 표시된다', async () => {
       renderInsightsPage()
       await waitFor(() => {
-        expect(screen.getByText('총 지출')).toBeInTheDocument()
-      })
-      await user.click(screen.getByRole('button', { name: '수입' }))
-      await waitFor(() => {
-        expect(screen.queryByTestId('budget-vs-actual')).not.toBeInTheDocument()
+        expect(screen.getByTestId('budget-vs-actual')).toBeInTheDocument()
       })
     })
   })
@@ -175,23 +171,19 @@ describe('InsightsPage', () => {
       })
     })
 
-    it('수입 토글을 클릭하면 수입 통계를 표시한다', async () => {
-      const user = userEvent.setup()
+    it('통합 뷰에서 지출과 수입 통계를 함께 표시한다', async () => {
       renderInsightsPage()
       await waitFor(() => {
         expect(screen.getByText('총 지출')).toBeInTheDocument()
-      })
-      await user.click(screen.getByRole('button', { name: '수입' }))
-      await waitFor(() => {
         expect(screen.getByText('총 수입')).toBeInTheDocument()
       })
     })
 
-    it('AI 탭에서는 지출/수입 토글이 표시되지 않는다', async () => {
+    it('AI 탭에서는 통계 섹션이 표시되지 않는다', async () => {
       const user = userEvent.setup()
       renderInsightsPage()
       await user.click(screen.getByText('AI 인사이트'))
-      expect(screen.queryByRole('button', { name: '수입' })).not.toBeInTheDocument()
+      expect(screen.queryByText('총 지출')).not.toBeInTheDocument()
     })
   })
 

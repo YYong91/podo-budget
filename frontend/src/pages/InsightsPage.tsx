@@ -22,6 +22,7 @@ import type { BudgetMonthlyStatsResponse, InsightsResponse, StatsResponse, Compa
 type TabType = 'weekly' | 'monthly' | 'yearly' | 'ai'
 type DataType = 'expense' | 'income'
 
+
 const TABS: { id: TabType; label: string; icon: React.ReactNode }[] = [
   { id: 'weekly', label: '주간', icon: <Calendar className="w-4 h-4" /> },
   { id: 'monthly', label: '월간', icon: <CalendarDays className="w-4 h-4" /> },
@@ -300,7 +301,6 @@ function StatsTab({ period, dateStr, householdId, dataType }: { period: string; 
 
 export default function InsightsPage() {
   const [activeTab, setActiveTab] = useState<TabType>('monthly')
-  const [dataType, setDataType] = useState<DataType>('expense')
   const [dateStr, setDateStr] = useState(toDateStr(new Date()))
   const activeHouseholdId = useHouseholdStore((s) => s.activeHouseholdId)
 
@@ -382,43 +382,37 @@ export default function InsightsPage() {
         ))}
       </div>
 
-      {/* 기간 네비게이션 + 지출/수입 토글 (AI 탭 제외) */}
+      {/* 기간 네비게이션 (AI 탭 제외) */}
       {activeTab !== 'ai' && (
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <PeriodNavigator label={getNavLabel()} onPrev={handlePrev} onNext={handleNext} />
-          <div className="flex gap-1 bg-warm-100 p-1 rounded-lg">
-            <button
-              onClick={() => setDataType('expense')}
-              className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                dataType === 'expense'
-                  ? 'bg-white text-grape-700 shadow-sm'
-                  : 'text-warm-500 hover:text-warm-700'
-              }`}
-            >
-              지출
-            </button>
-            <button
-              onClick={() => setDataType('income')}
-              className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                dataType === 'income'
-                  ? 'bg-white text-leaf-700 shadow-sm'
-                  : 'text-warm-500 hover:text-warm-700'
-              }`}
-            >
-              수입
-            </button>
-          </div>
-        </div>
+        <PeriodNavigator label={getNavLabel()} onPrev={handlePrev} onNext={handleNext} />
       )}
 
-      {/* 통계 탭 콘텐츠 */}
+      {/* 통계 탭 콘텐츠 — 지출/수입 통합 뷰 */}
       {activeTab !== 'ai' && (
-        <StatsTab
-          period={activeTab}
-          dateStr={dateStr}
-          householdId={activeHouseholdId ?? undefined}
-          dataType={dataType}
-        />
+        <div className="space-y-8">
+          <div>
+            <h2 className="text-sm font-semibold text-grape-600 mb-3 flex items-center gap-1.5">
+              <span>💸</span> 지출
+            </h2>
+            <StatsTab
+              period={activeTab}
+              dateStr={dateStr}
+              householdId={activeHouseholdId ?? undefined}
+              dataType="expense"
+            />
+          </div>
+          <div>
+            <h2 className="text-sm font-semibold text-leaf-600 mb-3 flex items-center gap-1.5">
+              <span>💰</span> 수입
+            </h2>
+            <StatsTab
+              period={activeTab}
+              dateStr={dateStr}
+              householdId={activeHouseholdId ?? undefined}
+              dataType="income"
+            />
+          </div>
+        </div>
       )}
 
       {/* AI 인사이트 탭 콘텐츠 */}
