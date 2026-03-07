@@ -53,8 +53,8 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastContext.Provider value={{ addToast, removeToast }}>
       {children}
-      {/* 토스트 컨테이너: 화면 우상단에 고정 */}
-      <div className="fixed top-4 right-4 z-50 pointer-events-none">
+      {/* 토스트 컨테이너: 화면 하단 중앙에 고정 */}
+      <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 pointer-events-none">
         <div className="pointer-events-auto">
           {toasts.map((toast) => (
             <Toast
