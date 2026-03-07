@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react'
-import { Routes, Route } from 'react-router-dom'
+import { Routes, Route, Navigate } from 'react-router-dom'
 import Layout from './components/Layout'
 import ProtectedRoute from './components/ProtectedRoute'
 import { Loader2 } from 'lucide-react'
@@ -28,6 +28,7 @@ const NotFoundPage = lazy(() => import('./pages/NotFoundPage'))
 const AssetDashboard = lazy(() => import('./pages/AssetDashboard'))
 const AssetForm = lazy(() => import('./pages/AssetForm'))
 const AccountManager = lazy(() => import('./pages/AccountManager'))
+const TransactionList = lazy(() => import('./pages/TransactionList'))
 
 /* 로딩 스피너 */
 function PageLoading() {
@@ -50,16 +51,17 @@ function App() {
         <Route element={<ProtectedRoute />}>
           <Route element={<Layout />}>
             <Route path="/" element={<Dashboard />} />
-            <Route path="/expenses" element={<ExpenseList />} />
+            <Route path="/transactions" element={<TransactionList />} />
+            <Route path="/expenses" element={<Navigate to="/transactions?tab=expense" replace />} />
             <Route path="/expenses/new" element={<ExpenseForm />} />
             <Route path="/expenses/:id" element={<ExpenseDetail />} />
-            <Route path="/categories" element={<CategoryManager />} />
-            <Route path="/income" element={<IncomeList />} />
+            <Route path="/income" element={<Navigate to="/transactions?tab=income" replace />} />
             <Route path="/income/new" element={<IncomeForm />} />
             <Route path="/income/:id" element={<IncomeDetail />} />
-            <Route path="/insights" element={<InsightsPage />} />
+            <Route path="/categories" element={<CategoryManager />} />
             <Route path="/budgets" element={<BudgetManager />} />
             <Route path="/recurring" element={<RecurringList />} />
+            <Route path="/insights" element={<InsightsPage />} />
             <Route path="/households" element={<HouseholdListPage />} />
             <Route path="/households/:id" element={<HouseholdDetailPage />} />
             <Route path="/invitations" element={<InvitationListPage />} />
