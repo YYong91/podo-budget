@@ -33,6 +33,7 @@ class Asset(Base):
     repayment_type = Column(String, nullable=True)  # equal_principal_interest, equal_principal, bullet
     monthly_payment = Column(Numeric(18, 2), nullable=True)
 
+    account_id = Column(Integer, ForeignKey("accounts.id", ondelete="SET NULL"), nullable=True)
     memo = Column(Text, nullable=True)
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
@@ -40,3 +41,4 @@ class Asset(Base):
     # Relationships
     user = relationship("User", backref="assets")
     household = relationship("Household", backref="assets")
+    account = relationship("Account", back_populates="assets")

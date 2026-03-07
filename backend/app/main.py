@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from slowapi.errors import RateLimitExceeded
 
-from app.api import assets, auth, budget, categories, chat, expenses, households, income, insights, invitations, kakao, recurring, telegram
+from app.api import accounts, assets, auth, budget, categories, chat, expenses, households, income, insights, invitations, kakao, recurring, telegram
 from app.core.config import settings
 from app.core.database import Base, engine
 from app.core.exceptions import register_exception_handlers
@@ -159,6 +159,7 @@ app.include_router(income.router, prefix="/api/income", tags=["income"])
 app.include_router(invitations.router, prefix="/api/invitations", tags=["invitations"])
 app.include_router(recurring.router, prefix="/api/recurring", tags=["recurring"])
 app.include_router(assets.router, prefix="/api/assets", tags=["assets"])
+app.include_router(accounts.router, prefix="/api/accounts", tags=["accounts"])
 
 
 @app.get("/")

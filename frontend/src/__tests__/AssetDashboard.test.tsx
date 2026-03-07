@@ -5,6 +5,7 @@ import { MemoryRouter } from 'react-router-dom'
 import { vi, describe, test, expect, beforeEach } from 'vitest'
 import AssetDashboard from '../pages/AssetDashboard'
 import { assetApi } from '../api/assets'
+import { accountApi } from '../api/accounts'
 
 // chart.js는 jsdom에서 Canvas API 없으므로 모킹
 vi.mock('react-chartjs-2', () => ({
@@ -23,6 +24,13 @@ vi.mock('../api/assets', () => ({
     getAll: vi.fn(),
     getSummary: vi.fn(),
     getSnapshots: vi.fn(),
+  },
+}))
+
+// accounts API 모킹
+vi.mock('../api/accounts', () => ({
+  accountApi: {
+    getAll: vi.fn(),
   },
 }))
 
@@ -58,6 +66,8 @@ describe('AssetDashboard', () => {
     vi.mocked(assetApi.getSummary).mockResolvedValue({ data: mockSummary } as any)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     vi.mocked(assetApi.getSnapshots).mockResolvedValue({ data: [] } as any)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    vi.mocked(accountApi.getAll).mockResolvedValue({ data: [] } as any)
   })
 
   test('로딩 후 순자산 카드 표시', async () => {

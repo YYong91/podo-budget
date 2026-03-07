@@ -27,6 +27,7 @@ const RecurringList = lazy(() => import('./pages/RecurringList'))
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'))
 const AssetDashboard = lazy(() => import('./pages/AssetDashboard'))
 const AssetForm = lazy(() => import('./pages/AssetForm'))
+const AccountManager = lazy(() => import('./pages/AccountManager'))
 
 /* 로딩 스피너 */
 function PageLoading() {
@@ -66,6 +67,7 @@ function App() {
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/assets" element={<AssetDashboard />} />
             <Route path="/assets/new" element={<AssetForm />} />
+            <Route path="/accounts" element={<AccountManager />} />
           </Route>
         </Route>
         <Route path="*" element={<NotFoundPage />} />

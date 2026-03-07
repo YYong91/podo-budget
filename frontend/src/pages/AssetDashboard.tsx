@@ -2,12 +2,13 @@
 
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Loader2, Plus, TrendingUp, TrendingDown, Landmark } from 'lucide-react'
+import { Loader2, Plus, TrendingUp, TrendingDown, Landmark, LayoutList, Wallet } from 'lucide-react'
 import { Chart as ChartJS, ArcElement, LineElement, PointElement, CategoryScale, LinearScale, Filler, Tooltip as ChartTooltip, Legend } from 'chart.js'
 import { Pie, Line } from 'react-chartjs-2'
 import { assetApi } from '../api/assets'
+import { accountApi } from '../api/accounts'
 import { useHouseholdStore } from '../stores/useHouseholdStore'
-import type { Asset, AssetSummary, AssetSnapshot } from '../types'
+import type { Asset, AssetSummary, AssetSnapshot, Account } from '../types'
 
 ChartJS.register(ArcElement, LineElement, PointElement, CategoryScale, LinearScale, Filler, ChartTooltip, Legend)
 
@@ -30,14 +31,46 @@ const TYPE_LABELS: Record<string, string> = {
   loan: '대출',
 }
 
+const ACCOUNT_TYPE_LABELS: Record<string, string> = {
+  brokerage: '증권',
+  bank: '은행',
+  crypto_exchange: '거래소',
+  other: '기타',
+}
+
 const PIE_COLORS = ['#9333EA', '#3B82F6', '#10B981', '#F59E0B', '#EC4899', '#06B6D4', '#78716C']
+
+type ViewMode = 'type' | 'account'
+
+function AssetRow({ asset }: { asset: Asset }) {
+  return (
+    <div className="flex items-center justify-between py-2 border-b border-warm-100 last:border-0">
+      <div>
+        <p className="text-sm font-medium text-warm-800">{asset.name}</p>
+        <p className="text-xs text-warm-400">{TYPE_LABELS[asset.type] ?? asset.type}</p>
+      </div>
+      <div className="text-right">
+        <p className="text-sm font-semibold text-warm-900">
+          {asset.current_value != null ? formatAmount(asset.current_value) : '-'}
+        </p>
+        {asset.profit_loss_pct != null && (
+          <p className={`text-xs ${asset.profit_loss_pct >= 0 ? 'text-leaf-600' : 'text-rose-600'}`}>
+            {formatPct(asset.profit_loss_pct)}
+          </p>
+        )}
+      </div>
+    </div>
+  )
+}
 
 export default function AssetDashboard() {
   const [assets, setAssets] = useState<Asset[]>([])
+  const [accounts, setAccounts] = useState<Account[]>([])
   const [summary, setSummary] = useState<AssetSummary | null>(null)
   const [snapshots, setSnapshots] = useState<AssetSnapshot[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [viewMode, setViewMode] = useState<ViewMode>('type')
   const { activeHouseholdId } = useHouseholdStore()
 
   useEffect(() => {
@@ -49,11 +82,13 @@ export default function AssetDashboard() {
       assetApi.getAll(hid),
       assetApi.getSummary(hid),
       assetApi.getSnapshots(hid, 12),
+      accountApi.getAll(hid),
     ])
-      .then(([assetsRes, summaryRes, snapshotsRes]) => {
+      .then(([assetsRes, summaryRes, snapshotsRes, accountsRes]) => {
         setAssets(assetsRes.data)
         setSummary(summaryRes.data)
         setSnapshots(snapshotsRes.data.slice().reverse())
+        setAccounts(accountsRes.data)
       })
       .catch(() => setError('자산 정보를 불러오지 못했습니다'))
       .finally(() => setLoading(false))
@@ -109,6 +144,25 @@ export default function AssetDashboard() {
     }],
   }
 
+  // 계좌별 그룹핑
+  const accountMap = new Map(accounts.map(a => [a.id, a]))
+  const assetsByAccount: { account: Account | null; assets: Asset[] }[] = []
+  const seen = new Set<number | null>()
+
+  // 계좌가 있는 자산 먼저 그룹핑
+  accounts.forEach(account => {
+    const group = nonLiabilities.filter(a => a.account_id === account.id)
+    if (group.length > 0) {
+      assetsByAccount.push({ account, assets: group })
+      seen.add(account.id)
+    }
+  })
+  // 계좌 미지정 자산
+  const unassigned = nonLiabilities.filter(a => !a.account_id || !accountMap.has(a.account_id))
+  if (unassigned.length > 0) {
+    assetsByAccount.push({ account: null, assets: unassigned })
+  }
+
   return (
     <div className="space-y-6">
       {/* 헤더 */}
@@ -117,13 +171,22 @@ export default function AssetDashboard() {
           <Landmark className="w-6 h-6 text-grape-600" />
           <h1 className="text-2xl font-bold text-warm-900">자산 관리</h1>
         </div>
-        <Link
-          to="/assets/new"
-          className="flex items-center gap-2 px-4 py-2 bg-grape-600 text-white rounded-lg text-sm font-medium hover:bg-grape-700 transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          자산 등록
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link
+            to="/accounts"
+            className="flex items-center gap-1.5 px-3 py-2 border border-warm-200 text-warm-600 rounded-lg text-sm font-medium hover:bg-warm-50 transition-colors"
+          >
+            <Wallet className="w-4 h-4" />
+            계좌 관리
+          </Link>
+          <Link
+            to="/assets/new"
+            className="flex items-center gap-2 px-4 py-2 bg-grape-600 text-white rounded-lg text-sm font-medium hover:bg-grape-700 transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            자산 등록
+          </Link>
+        </div>
       </div>
 
       {/* 순자산 요약 카드 */}
@@ -184,68 +247,132 @@ export default function AssetDashboard() {
         </div>
       )}
 
-      {/* 자산 목록 */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* 자산 */}
-        <div className="bg-white rounded-2xl border border-warm-200/60 shadow-sm p-5">
-          <h2 className="text-sm font-semibold text-warm-700 mb-3 flex items-center gap-2">
-            <TrendingUp className="w-4 h-4 text-leaf-600" />
-            자산 ({nonLiabilities.length})
-          </h2>
-          {nonLiabilities.length === 0 ? (
-            <p className="text-sm text-warm-400 text-center py-4">등록된 자산이 없습니다</p>
-          ) : (
-            <div className="space-y-2">
-              {nonLiabilities.map(asset => (
-                <div key={asset.id} className="flex items-center justify-between py-2 border-b border-warm-100 last:border-0">
-                  <div>
-                    <p className="text-sm font-medium text-warm-800">{asset.name}</p>
-                    <p className="text-xs text-warm-400">{TYPE_LABELS[asset.type] ?? asset.type}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm font-semibold text-warm-900">
+      {/* 자산 목록 — 뷰 모드 토글 */}
+      {assets.length > 0 && (
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setViewMode('type')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${viewMode === 'type' ? 'bg-grape-100 text-grape-700' : 'text-warm-500 hover:text-warm-700'}`}
+          >
+            <LayoutList className="w-3.5 h-3.5" />
+            종목별
+          </button>
+          <button
+            onClick={() => setViewMode('account')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${viewMode === 'account' ? 'bg-grape-100 text-grape-700' : 'text-warm-500 hover:text-warm-700'}`}
+          >
+            <Wallet className="w-3.5 h-3.5" />
+            계좌별
+          </button>
+        </div>
+      )}
+
+      {viewMode === 'type' ? (
+        /* 종목별 뷰 (기존) */
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* 자산 */}
+          <div className="bg-white rounded-2xl border border-warm-200/60 shadow-sm p-5">
+            <h2 className="text-sm font-semibold text-warm-700 mb-3 flex items-center gap-2">
+              <TrendingUp className="w-4 h-4 text-leaf-600" />
+              자산 ({nonLiabilities.length})
+            </h2>
+            {nonLiabilities.length === 0 ? (
+              <p className="text-sm text-warm-400 text-center py-4">등록된 자산이 없습니다</p>
+            ) : (
+              <div className="space-y-2">
+                {nonLiabilities.map(asset => <AssetRow key={asset.id} asset={asset} />)}
+              </div>
+            )}
+          </div>
+
+          {/* 부채 */}
+          <div className="bg-white rounded-2xl border border-warm-200/60 shadow-sm p-5">
+            <h2 className="text-sm font-semibold text-warm-700 mb-3 flex items-center gap-2">
+              <TrendingDown className="w-4 h-4 text-rose-500" />
+              부채 ({liabilities.length})
+            </h2>
+            {liabilities.length === 0 ? (
+              <p className="text-sm text-warm-400 text-center py-4">등록된 부채가 없습니다</p>
+            ) : (
+              <div className="space-y-2">
+                {liabilities.map(asset => (
+                  <div key={asset.id} className="flex items-center justify-between py-2 border-b border-warm-100 last:border-0">
+                    <div>
+                      <p className="text-sm font-medium text-warm-800">{asset.name}</p>
+                      <p className="text-xs text-warm-400">
+                        {TYPE_LABELS[asset.type] ?? asset.type}
+                        {asset.interest_rate != null && ` · 연 ${asset.interest_rate}%`}
+                      </p>
+                    </div>
+                    <p className="text-sm font-semibold text-rose-700">
                       {asset.current_value != null ? formatAmount(asset.current_value) : '-'}
                     </p>
-                    {asset.profit_loss_pct != null && (
-                      <p className={`text-xs ${asset.profit_loss_pct >= 0 ? 'text-leaf-600' : 'text-rose-600'}`}>
-                        {formatPct(asset.profit_loss_pct)}
-                      </p>
-                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      ) : (
+        /* 계좌별 뷰 */
+        <div className="space-y-4">
+          {assetsByAccount.length === 0 ? (
+            <div className="bg-white rounded-2xl border border-warm-200/60 shadow-sm p-5 text-center">
+              <p className="text-sm text-warm-400 py-4">등록된 자산이 없습니다</p>
+            </div>
+          ) : (
+            assetsByAccount.map(({ account, assets: groupAssets }) => {
+              const groupTotal = groupAssets.reduce((sum, a) => sum + (a.current_value ?? 0), 0)
+              return (
+                <div key={account?.id ?? 'unassigned'} className="bg-white rounded-2xl border border-warm-200/60 shadow-sm p-5">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <Wallet className="w-4 h-4 text-grape-500" />
+                      <span className="text-sm font-semibold text-warm-700">
+                        {account ? account.name : '계좌 미지정'}
+                      </span>
+                      {account && (
+                        <span className="text-xs text-warm-400">
+                          {ACCOUNT_TYPE_LABELS[account.type] ?? account.type}
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-sm font-semibold text-warm-900">{formatAmount(groupTotal)}</span>
+                  </div>
+                  <div className="space-y-1">
+                    {groupAssets.map(asset => <AssetRow key={asset.id} asset={asset} />)}
                   </div>
                 </div>
-              ))}
-            </div>
+              )
+            })
           )}
-        </div>
-
-        {/* 부채 */}
-        <div className="bg-white rounded-2xl border border-warm-200/60 shadow-sm p-5">
-          <h2 className="text-sm font-semibold text-warm-700 mb-3 flex items-center gap-2">
-            <TrendingDown className="w-4 h-4 text-rose-500" />
-            부채 ({liabilities.length})
-          </h2>
-          {liabilities.length === 0 ? (
-            <p className="text-sm text-warm-400 text-center py-4">등록된 부채가 없습니다</p>
-          ) : (
-            <div className="space-y-2">
-              {liabilities.map(asset => (
-                <div key={asset.id} className="flex items-center justify-between py-2 border-b border-warm-100 last:border-0">
-                  <div>
-                    <p className="text-sm font-medium text-warm-800">{asset.name}</p>
-                    <p className="text-xs text-warm-400">
-                      {TYPE_LABELS[asset.type] ?? asset.type}
-                      {asset.interest_rate != null && ` · 연 ${asset.interest_rate}%`}
+          {/* 부채는 계좌별 뷰에서도 표시 */}
+          {liabilities.length > 0 && (
+            <div className="bg-white rounded-2xl border border-warm-200/60 shadow-sm p-5">
+              <h2 className="text-sm font-semibold text-warm-700 mb-3 flex items-center gap-2">
+                <TrendingDown className="w-4 h-4 text-rose-500" />
+                부채 ({liabilities.length})
+              </h2>
+              <div className="space-y-2">
+                {liabilities.map(asset => (
+                  <div key={asset.id} className="flex items-center justify-between py-2 border-b border-warm-100 last:border-0">
+                    <div>
+                      <p className="text-sm font-medium text-warm-800">{asset.name}</p>
+                      <p className="text-xs text-warm-400">
+                        {TYPE_LABELS[asset.type] ?? asset.type}
+                        {asset.interest_rate != null && ` · 연 ${asset.interest_rate}%`}
+                      </p>
+                    </div>
+                    <p className="text-sm font-semibold text-rose-700">
+                      {asset.current_value != null ? formatAmount(asset.current_value) : '-'}
                     </p>
                   </div>
-                  <p className="text-sm font-semibold text-rose-700">
-                    {asset.current_value != null ? formatAmount(asset.current_value) : '-'}
-                  </p>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           )}
         </div>
-      </div>
+      )}
 
       {/* 빈 상태 */}
       {assets.length === 0 && (

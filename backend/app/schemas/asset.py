@@ -15,6 +15,7 @@ class AssetBase(BaseModel):
     maturity_date: date | None = None
     repayment_type: str | None = None
     monthly_payment: float | None = None
+    account_id: int | None = None
     memo: str | None = None
 
 
@@ -40,6 +41,7 @@ class AssetUpdate(BaseModel):
 class AssetResponse(AssetBase):
     id: int
     household_id: int | None = None
+    account_id: int | None = None
     created_by: int
     created_at: datetime
     updated_at: datetime

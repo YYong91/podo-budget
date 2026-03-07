@@ -5,7 +5,9 @@ import { useNavigate, Link } from 'react-router-dom'
 import { ArrowLeft, Search, Loader2 } from 'lucide-react'
 import { useToast } from '../hooks/useToast'
 import { assetApi } from '../api/assets'
-import type { AssetSearchResult, CreateAssetParams } from '../types'
+import { accountApi } from '../api/accounts'
+import { useHouseholdStore } from '../stores/useHouseholdStore'
+import type { AssetSearchResult, CreateAssetParams, Account } from '../types'
 
 type Mode = 'natural' | 'direct'
 type AssetType = 'stock_kr' | 'stock_us' | 'crypto' | 'deposit' | 'real_estate' | 'other' | 'loan'
@@ -45,11 +47,22 @@ export default function AssetForm() {
     is_liability: false,
   })
 
+  // 계좌 목록
+  const [accounts, setAccounts] = useState<Account[]>([])
+  const { activeHouseholdId } = useHouseholdStore()
+
   // 종목 검색
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState<AssetSearchResult[]>([])
   const [showDropdown, setShowDropdown] = useState(false)
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // 계좌 목록 로드
+  useEffect(() => {
+    accountApi.getAll(activeHouseholdId ?? undefined)
+      .then(res => setAccounts(res.data))
+      .catch(() => {})
+  }, [activeHouseholdId])
 
   // 자산 타입 변경 시 폼 초기화
   useEffect(() => {
@@ -381,6 +394,23 @@ export default function AssetForm() {
                 </div>
               )}
             </>
+          )}
+
+          {/* 계좌 선택 (선택) */}
+          {accounts.length > 0 && (
+            <div>
+              <label className="block text-sm font-medium text-warm-700 mb-1.5">계좌 (선택)</label>
+              <select
+                value={form.account_id ?? ''}
+                onChange={e => setForm(f => ({ ...f, account_id: e.target.value ? Number(e.target.value) : null }))}
+                className="w-full border border-warm-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-grape-300"
+              >
+                <option value="">계좌 미지정</option>
+                {accounts.map(acc => (
+                  <option key={acc.id} value={acc.id}>{acc.name}</option>
+                ))}
+              </select>
+            </div>
           )}
 
           {/* 메모 */}
