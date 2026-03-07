@@ -4,17 +4,18 @@ import MonthlyHighlights, { generateHighlights } from '../MonthlyHighlights'
 import type { BudgetMonthlyStatsResponse, ComparisonResponse } from '../../../types'
 
 const baseBudget: BudgetMonthlyStatsResponse = {
+  month: '2026-03',
   total_budget: 500000,
   total_spent: 400000,
   categories: [
-    { category_name: '식비', budget_amount: 300000, spent_amount: 240000, usage_percentage: 80, is_exceeded: false },
+    { category_name: '식비', budget_amount: 300000, spent_amount: 240000, remaining_amount: 60000, usage_percentage: 80, is_exceeded: false },
   ],
 }
 
 const exceededBudget: BudgetMonthlyStatsResponse = {
   ...baseBudget,
   categories: [
-    { category_name: '구독', budget_amount: 50000, spent_amount: 55000, usage_percentage: 110, is_exceeded: true },
+    { category_name: '구독', budget_amount: 50000, spent_amount: 55000, remaining_amount: -5000, usage_percentage: 110, is_exceeded: true },
   ],
 }
 
