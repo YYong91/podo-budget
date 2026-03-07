@@ -1,50 +1,53 @@
 /**
  * @file InsightsPage.tsx
- * @description 인사이트/통계 페이지
- * 주간/월간/연간 통계 탭 + AI 인사이트 탭
+ * @description 종합 재무 리포트 페이지
+ * 기간 선택 → 핵심 지표 → 복합 추이 차트 → 예산 현황 → 자동 하이라이트 → AI 심층 분석
  */
 
 import { useEffect, useState, useCallback } from 'react'
-import { TrendingUp, BarChart3, Calendar, CalendarDays, Loader2, Sparkles, Wallet } from 'lucide-react'
+import { TrendingUp, Loader2, Sparkles } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { insightsApi, statsApi } from '../api/insights'
 import { incomeApi } from '../api/income'
 import { getMonthlyStats } from '../api/budgets'
 import { useHouseholdStore } from '../stores/useHouseholdStore'
-import EmptyState from '../components/EmptyState'
 import PeriodNavigator from '../components/stats/PeriodNavigator'
-import StatsSummaryCards from '../components/stats/StatsSummaryCards'
-import TrendChart from '../components/stats/TrendChart'
-import ComparisonChart from '../components/stats/ComparisonChart'
-import CategoryBreakdown from '../components/stats/CategoryBreakdown'
-import type { BudgetMonthlyStatsResponse, InsightsResponse, StatsResponse, ComparisonResponse } from '../types'
+import UnifiedSummaryCards from '../components/stats/UnifiedSummaryCards'
+import CombinedTrendChart from '../components/stats/CombinedTrendChart'
+import BudgetVsActual from '../components/stats/BudgetVsActual'
+import MonthlyHighlights from '../components/stats/MonthlyHighlights'
+import type { BudgetMonthlyStatsResponse, ComparisonResponse, InsightsResponse, StatsResponse } from '../types'
 
-type TabType = 'weekly' | 'monthly' | 'yearly' | 'ai'
-type DataType = 'expense' | 'income'
-
-
-const TABS: { id: TabType; label: string; icon: React.ReactNode }[] = [
-  { id: 'weekly', label: '주간', icon: <Calendar className="w-4 h-4" /> },
-  { id: 'monthly', label: '월간', icon: <CalendarDays className="w-4 h-4" /> },
-  { id: 'yearly', label: '연간', icon: <BarChart3 className="w-4 h-4" /> },
-  { id: 'ai', label: 'AI 인사이트', icon: <Sparkles className="w-4 h-4" /> },
-]
+type PeriodType = 'weekly' | 'monthly' | 'yearly'
 
 // ── 날짜 유틸 ──
 
 function toDateStr(d: Date): string {
-  const year = d.getFullYear()
-  const month = String(d.getMonth() + 1).padStart(2, '0')
-  const day = String(d.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
-function shiftDate(dateStr: string, tab: TabType, direction: number): string {
+function shiftDate(dateStr: string, period: PeriodType, direction: number): string {
   const d = new Date(dateStr + 'T00:00:00')
-  if (tab === 'weekly') d.setDate(d.getDate() + direction * 7)
-  else if (tab === 'monthly') d.setMonth(d.getMonth() + direction)
+  if (period === 'weekly') d.setDate(d.getDate() + direction * 7)
+  else if (period === 'monthly') d.setMonth(d.getMonth() + direction)
   else d.setFullYear(d.getFullYear() + direction)
   return toDateStr(d)
+}
+
+function getNavLabel(dateStr: string, period: PeriodType): string {
+  const d = new Date(dateStr + 'T00:00:00')
+  if (period === 'weekly') {
+    const firstDay = new Date(d.getFullYear(), d.getMonth(), 1)
+    const weekNum = Math.ceil((d.getDate() + firstDay.getDay()) / 7)
+    return `${d.getMonth() + 1}월 ${weekNum}주차`
+  }
+  if (period === 'monthly') return `${d.getFullYear()}년 ${d.getMonth() + 1}월`
+  return `${d.getFullYear()}년`
+}
+
+function getMonthStr(dateStr: string): string {
+  const d = new Date(dateStr + 'T00:00:00')
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
 }
 
 function getCurrentMonth(): string {
@@ -52,67 +55,25 @@ function getCurrentMonth(): string {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
 }
 
-// ── 마크다운 렌더링 (기존 유지) ──
+// ── 마크다운 렌더링 ──
 
 function renderBoldText(text: string): React.ReactNode[] {
-  const parts = text.split(/(\*\*.*?\*\*)/g)
-  return parts.map((part, j) => {
-    if (part.startsWith('**') && part.endsWith('**')) {
-      return (
-        <strong key={j} className="font-semibold">
-          {part.slice(2, -2)}
-        </strong>
-      )
-    }
-    return part
-  })
+  return text.split(/(\*\*.*?\*\*)/g).map((part, j) =>
+    part.startsWith('**') && part.endsWith('**')
+      ? <strong key={j} className="font-semibold">{part.slice(2, -2)}</strong>
+      : part
+  )
 }
 
 function renderMarkdown(text: string) {
   return text.split('\n').map((line, i) => {
-    if (line.startsWith('### ')) {
-      return (
-        <h4 key={i} className="text-base font-semibold text-warm-900 mt-3 mb-1">
-          {renderBoldText(line.slice(4))}
-        </h4>
-      )
-    }
-    if (line.startsWith('## ')) {
-      return (
-        <h3 key={i} className="text-lg font-semibold text-warm-900 mt-4 mb-2">
-          {renderBoldText(line.slice(3))}
-        </h3>
-      )
-    }
-    if (line.startsWith('# ')) {
-      return (
-        <h2 key={i} className="text-xl font-bold text-warm-900 mt-4 mb-2">
-          {renderBoldText(line.slice(2))}
-        </h2>
-      )
-    }
-    if (line.startsWith('- ') || line.startsWith('* ')) {
-      return (
-        <li key={i} className="ml-4 text-warm-700">
-          {renderBoldText(line.slice(2))}
-        </li>
-      )
-    }
-    if (/^\d+\. /.test(line)) {
-      return (
-        <li key={i} className="ml-4 text-warm-700 list-decimal">
-          {renderBoldText(line.replace(/^\d+\. /, ''))}
-        </li>
-      )
-    }
-    if (line.trim() === '') {
-      return <div key={i} className="h-2" />
-    }
-    return (
-      <p key={i} className="text-warm-700 leading-relaxed">
-        {renderBoldText(line)}
-      </p>
-    )
+    if (line.startsWith('### ')) return <h4 key={i} className="text-base font-semibold text-warm-900 mt-3 mb-1">{renderBoldText(line.slice(4))}</h4>
+    if (line.startsWith('## ')) return <h3 key={i} className="text-lg font-semibold text-warm-900 mt-4 mb-2">{renderBoldText(line.slice(3))}</h3>
+    if (line.startsWith('# ')) return <h2 key={i} className="text-xl font-bold text-warm-900 mt-4 mb-2">{renderBoldText(line.slice(2))}</h2>
+    if (line.startsWith('- ') || line.startsWith('* ')) return <li key={i} className="ml-4 text-warm-700">{renderBoldText(line.slice(2))}</li>
+    if (/^\d+\. /.test(line)) return <li key={i} className="ml-4 text-warm-700 list-decimal">{renderBoldText(line.replace(/^\d+\. /, ''))}</li>
+    if (line.trim() === '') return <div key={i} className="h-2" />
+    return <p key={i} className="text-warm-700 leading-relaxed">{renderBoldText(line)}</p>
   })
 }
 
@@ -120,133 +81,50 @@ function formatAmount(amount: number): string {
   return `₩${amount.toLocaleString('ko-KR')}`
 }
 
-// ── 예산 대비 지출 섹션 (월간 전용) ──
+// ── 메인 페이지 ──
 
-function BudgetVsActual({ month }: { month: string }) {
+export default function InsightsPage() {
+  const [period, setPeriod] = useState<PeriodType>('monthly')
+  const [dateStr, setDateStr] = useState(toDateStr(new Date()))
+  const [expenseStats, setExpenseStats] = useState<StatsResponse | null>(null)
+  const [incomeStats, setIncomeStats] = useState<StatsResponse | null>(null)
   const [budgetStats, setBudgetStats] = useState<BudgetMonthlyStatsResponse | null>(null)
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    let cancelled = false
-    async function fetchBudgetStats() {
-      setLoading(true)
-      try {
-        const res = await getMonthlyStats(month)
-        if (!cancelled) setBudgetStats(res.data)
-      } catch {
-        // 예산 데이터 없음은 조용히 처리
-        if (!cancelled) setBudgetStats(null)
-      } finally {
-        if (!cancelled) setLoading(false)
-      }
-    }
-    fetchBudgetStats()
-    return () => { cancelled = true }
-  }, [month])
-
-  if (loading) return null
-  if (!budgetStats || budgetStats.categories.length === 0) return null
-
-  const totalBudget = budgetStats.total_budget
-  const totalSpent = budgetStats.total_spent
-  const totalUsage = totalBudget && totalBudget > 0 ? (totalSpent / totalBudget) * 100 : null
-
-  return (
-    <div className="bg-white rounded-2xl shadow-sm border border-warm-200 p-4 sm:p-6" data-testid="budget-vs-actual">
-      <div className="flex items-center gap-2 mb-4">
-        <Wallet className="w-5 h-5 text-grape-600" />
-        <h2 className="text-base font-semibold text-warm-900">예산 대비 지출</h2>
-      </div>
-
-      {/* 총 예산 요약 */}
-      {totalBudget != null && (
-        <div className="mb-4 p-3 bg-warm-50 rounded-xl">
-          <div className="flex justify-between items-center mb-2">
-            <span className="text-sm text-warm-600">이번 달 총 예산</span>
-            <span className="text-sm font-semibold text-warm-900">{formatAmount(totalBudget)}</span>
-          </div>
-          <div className="flex justify-between items-center mb-2">
-            <span className="text-sm text-warm-600">총 지출</span>
-            <span className={`text-sm font-semibold ${totalSpent > totalBudget ? 'text-red-600' : 'text-warm-900'}`}>
-              {formatAmount(totalSpent)}
-            </span>
-          </div>
-          {totalUsage != null && (
-            <div>
-              <div className="w-full bg-warm-200 rounded-full h-2 overflow-hidden">
-                <div
-                  className={`h-2 rounded-full transition-all ${totalUsage > 100 ? 'bg-red-500' : totalUsage >= 80 ? 'bg-amber-500' : 'bg-grape-500'}`}
-                  style={{ width: `${Math.min(totalUsage, 100)}%` }}
-                />
-              </div>
-              <p className="text-xs text-warm-500 mt-1 text-right">{totalUsage.toFixed(1)}% 사용</p>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* 카테고리별 예산 사용 현황 */}
-      <div className="space-y-3">
-        {budgetStats.categories.map((cat) => (
-          <div key={cat.category_name}>
-            <div className="flex justify-between items-center mb-1">
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-warm-800">{cat.category_name}</span>
-                {cat.is_exceeded && (
-                  <span className="text-xs px-1.5 py-0.5 bg-red-100 text-red-600 rounded-full">초과</span>
-                )}
-              </div>
-              <div className="text-right">
-                <span className={`text-sm font-semibold ${cat.is_exceeded ? 'text-red-600' : 'text-warm-900'}`}>
-                  {formatAmount(cat.spent_amount)}
-                </span>
-                <span className="text-xs text-warm-400"> / {formatAmount(cat.budget_amount)}</span>
-              </div>
-            </div>
-            <div className="w-full bg-warm-200 rounded-full h-1.5 overflow-hidden">
-              <div
-                className={`h-1.5 rounded-full transition-all ${cat.is_exceeded ? 'bg-red-500' : cat.usage_percentage >= 80 ? 'bg-amber-500' : 'bg-grape-500'}`}
-                style={{ width: `${Math.min(cat.usage_percentage, 100)}%` }}
-              />
-            </div>
-            <p className="text-xs text-warm-400 mt-0.5 text-right">{cat.usage_percentage.toFixed(1)}%</p>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-}
-
-// ── 통계 탭 컴포넌트 ──
-
-function StatsTab({ period, dateStr, householdId, dataType }: { period: string; dateStr: string; householdId: number | undefined; dataType: DataType }) {
-  const [stats, setStats] = useState<StatsResponse | null>(null)
   const [comparison, setComparison] = useState<ComparisonResponse | null>(null)
   const [loading, setLoading] = useState(true)
-  const isIncome = dataType === 'income'
 
-  // 월간 탭에서 사용할 YYYY-MM 형식
-  const d = new Date(dateStr + 'T00:00:00')
-  const monthStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+  const [selectedMonth, setSelectedMonth] = useState(getCurrentMonth())
+  const [insights, setInsights] = useState<InsightsResponse | null>(null)
+  const [aiLoading, setAiLoading] = useState(false)
 
+  const activeHouseholdId = useHouseholdStore((s) => s.activeHouseholdId)
+
+  // 통계 병렬 로딩
   useEffect(() => {
     let cancelled = false
-    async function fetchData() {
+    async function fetchAll() {
       setLoading(true)
       try {
-        const statsRes = isIncome
-          ? await incomeApi.getStats(period, dateStr, householdId)
-          : await statsApi.getStats(period, dateStr, householdId)
+        const [expRes, incRes] = await Promise.all([
+          statsApi.getStats(period, dateStr, activeHouseholdId ?? undefined),
+          incomeApi.getStats(period, dateStr, activeHouseholdId ?? undefined),
+        ])
         if (cancelled) return
-        setStats(statsRes.data)
+        setExpenseStats(expRes.data)
+        setIncomeStats(incRes.data)
 
-        // 수입은 비교 데이터 없음, 주간도 비교 데이터 없음
-        if (!isIncome && period !== 'weekly') {
-          const compRes = await statsApi.getComparison(period, dateStr, 3, householdId)
+        // 월간 전용: 비교 + 예산
+        if (period === 'monthly') {
+          const monthStr = getMonthStr(dateStr)
+          const [compRes, budgetRes] = await Promise.allSettled([
+            statsApi.getComparison(period, dateStr, 3, activeHouseholdId ?? undefined),
+            getMonthlyStats(monthStr),
+          ])
           if (cancelled) return
-          setComparison(compRes.data)
+          setComparison(compRes.status === 'fulfilled' ? compRes.value.data : null)
+          setBudgetStats(budgetRes.status === 'fulfilled' ? budgetRes.value.data : null)
         } else {
           setComparison(null)
+          setBudgetStats(null)
         }
       } catch {
         if (!cancelled) toast.error('통계를 불러오는데 실패했습니다')
@@ -254,106 +132,32 @@ function StatsTab({ period, dateStr, householdId, dataType }: { period: string; 
         if (!cancelled) setLoading(false)
       }
     }
-    fetchData()
+    fetchAll()
     return () => { cancelled = true }
-  }, [period, dateStr, householdId, isIncome])
+  }, [period, dateStr, activeHouseholdId])
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className={`w-8 h-8 animate-spin ${isIncome ? 'text-leaf-600' : 'text-grape-600'}`} />
-      </div>
-    )
-  }
+  const handlePrev = useCallback(() => setDateStr(d => shiftDate(d, period, -1)), [period])
+  const handleNext = useCallback(() => setDateStr(d => shiftDate(d, period, 1)), [period])
 
-  const emptyLabel = isIncome ? '수입' : '지출'
-  if (!stats || stats.total === 0) {
-    return <EmptyState title={`이 기간에 기록된 ${emptyLabel}이 없습니다`} description="다른 기간을 선택해보세요." />
-  }
-
-  return (
-    <div className="space-y-6">
-      <StatsSummaryCards
-        total={stats.total}
-        count={stats.count}
-        trend={stats.trend}
-        changePercentage={comparison?.change.percentage ?? null}
-        totalLabel={isIncome ? '총 수입' : '총 지출'}
-        accentColor={isIncome ? 'leaf' : 'grape'}
-      />
-      <TrendChart data={stats.trend} />
-      {comparison && comparison.trend.length > 0 && (
-        <ComparisonChart data={comparison.trend} />
-      )}
-      <CategoryBreakdown
-        categories={stats.by_category}
-        comparisons={comparison?.by_category_comparison}
-      />
-      {/* 월간 지출 탭에서만 예산 대비 사용 현황 표시 */}
-      {period === 'monthly' && !isIncome && (
-        <BudgetVsActual month={monthStr} />
-      )}
-    </div>
-  )
-}
-
-// ── 메인 페이지 ──
-
-export default function InsightsPage() {
-  const [activeTab, setActiveTab] = useState<TabType>('monthly')
-  const [dateStr, setDateStr] = useState(toDateStr(new Date()))
-  const activeHouseholdId = useHouseholdStore((s) => s.activeHouseholdId)
-
-  // AI 인사이트 상태 (기존)
-  const [selectedMonth, setSelectedMonth] = useState(getCurrentMonth())
-  const [insights, setInsights] = useState<InsightsResponse | null>(null)
-  const [aiLoading, setAiLoading] = useState(false)
-
-  const handlePrev = useCallback(() => {
-    setDateStr((d) => shiftDate(d, activeTab, -1))
-  }, [activeTab])
-
-  const handleNext = useCallback(() => {
-    setDateStr((d) => shiftDate(d, activeTab, 1))
-  }, [activeTab])
-
-  // 탭 변경 시 날짜 리셋
-  const handleTabChange = (tab: TabType) => {
-    setActiveTab(tab)
-    if (tab !== 'ai') setDateStr(toDateStr(new Date()))
+  const handlePeriodChange = (p: PeriodType) => {
+    setPeriod(p)
+    setDateStr(toDateStr(new Date()))
   }
 
   // AI 인사이트 생성
   const handleGenerate = async () => {
-    if (!selectedMonth) {
-      toast.error('월을 선택해주세요')
-      return
-    }
-
+    if (!selectedMonth) { toast.error('월을 선택해주세요'); return }
     setAiLoading(true)
     try {
       const res = await insightsApi.generate(selectedMonth)
       setInsights(res.data)
       toast.success('인사이트가 생성되었습니다')
     } catch (error: unknown) {
-      const message =
-        (error as { response?: { data?: { detail?: string } } }).response?.data?.detail || '인사이트 생성에 실패했습니다'
+      const message = (error as { response?: { data?: { detail?: string } } }).response?.data?.detail || '인사이트 생성에 실패했습니다'
       toast.error(message)
     } finally {
       setAiLoading(false)
     }
-  }
-
-  // 현재 탭의 네비게이션 라벨
-  const getNavLabel = () => {
-    const d = new Date(dateStr + 'T00:00:00')
-    if (activeTab === 'weekly') {
-      const firstDay = new Date(d.getFullYear(), d.getMonth(), 1)
-      const weekNum = Math.ceil((d.getDate() + firstDay.getDay()) / 7)
-      return `${d.getMonth() + 1}월 ${weekNum}주차`
-    }
-    if (activeTab === 'monthly') return `${d.getFullYear()}년 ${d.getMonth() + 1}월`
-    return `${d.getFullYear()}년`
   }
 
   return (
@@ -364,195 +168,114 @@ export default function InsightsPage() {
         <h1 className="text-xl font-bold text-grape-700">리포트</h1>
       </div>
 
-      {/* 탭 */}
-      <div className="flex gap-1 bg-warm-100 p-1 rounded-xl">
-        {TABS.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => handleTabChange(tab.id)}
-            className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
-              activeTab === tab.id
-                ? 'bg-white text-grape-700 shadow-sm'
-                : 'text-warm-500 hover:text-warm-700'
-            }`}
-          >
-            {tab.icon}
-            <span className="hidden sm:inline">{tab.label}</span>
-          </button>
-        ))}
+      {/* 기간 선택 */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex gap-1 bg-warm-100 p-1 rounded-lg">
+          {(['weekly', 'monthly', 'yearly'] as PeriodType[]).map((p) => (
+            <button
+              key={p}
+              onClick={() => handlePeriodChange(p)}
+              className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                period === p ? 'bg-white text-grape-700 shadow-sm' : 'text-warm-500 hover:text-warm-700'
+              }`}
+            >
+              {p === 'weekly' ? '주간' : p === 'monthly' ? '월간' : '연간'}
+            </button>
+          ))}
+        </div>
+        <PeriodNavigator label={getNavLabel(dateStr, period)} onPrev={handlePrev} onNext={handleNext} />
       </div>
 
-      {/* 기간 네비게이션 (AI 탭 제외) */}
-      {activeTab !== 'ai' && (
-        <PeriodNavigator label={getNavLabel()} onPrev={handlePrev} onNext={handleNext} />
-      )}
-
-      {/* 통계 탭 콘텐츠 — 지출/수입 통합 뷰 */}
-      {activeTab !== 'ai' && (
-        <div className="space-y-8">
-          <div>
-            <h2 className="text-sm font-semibold text-grape-600 mb-3 flex items-center gap-1.5">
-              <span>💸</span> 지출
-            </h2>
-            <StatsTab
-              period={activeTab}
-              dateStr={dateStr}
-              householdId={activeHouseholdId ?? undefined}
-              dataType="expense"
-            />
-          </div>
-          <div>
-            <h2 className="text-sm font-semibold text-leaf-600 mb-3 flex items-center gap-1.5">
-              <span>💰</span> 수입
-            </h2>
-            <StatsTab
-              period={activeTab}
-              dateStr={dateStr}
-              householdId={activeHouseholdId ?? undefined}
-              dataType="income"
-            />
-          </div>
+      {/* 로딩 */}
+      {loading && (
+        <div className="flex items-center justify-center h-40">
+          <Loader2 className="w-8 h-8 animate-spin text-grape-600" />
         </div>
       )}
 
-      {/* AI 인사이트 탭 콘텐츠 */}
-      {activeTab === 'ai' && (
-        <>
-          {/* 월 선택 및 생성 버튼 */}
-          <div className="bg-white rounded-2xl shadow-sm border border-warm-200 p-4 sm:p-6">
-            <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-end">
-              <div className="flex-1 w-full">
-                <label
-                  htmlFor="month-select"
-                  className="block text-sm font-medium text-warm-700 mb-2"
-                >
-                  분석할 월 선택
-                </label>
-                <input
-                  id="month-select"
-                  type="month"
-                  value={selectedMonth}
-                  onChange={(e) => setSelectedMonth(e.target.value)}
-                  className="w-full px-4 py-2 border border-warm-300 rounded-lg focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
-                />
-              </div>
-              <button
-                onClick={handleGenerate}
-                disabled={aiLoading}
-                className="w-full sm:w-auto px-6 py-2 text-sm font-medium text-white bg-grape-600 rounded-lg hover:bg-grape-700 disabled:bg-warm-400 disabled:cursor-not-allowed transition-colors whitespace-nowrap"
-              >
-                {aiLoading ? '생성 중...' : '인사이트 생성'}
-              </button>
-            </div>
-
-            <p className="text-sm text-warm-500 mt-3">
-              Claude API를 통해 해당 월의 지출 패턴을 분석하고 인사이트를
-              제공합니다. (최대 30초 소요)
-            </p>
-          </div>
-
-          {/* 로딩 스피너 */}
-          {aiLoading && (
-            <div className="bg-white rounded-2xl shadow-sm border border-warm-200 p-12">
-              <div className="flex flex-col items-center gap-4">
-                <Loader2 className="animate-spin h-12 w-12 text-grape-600" />
-                <p className="text-warm-600">
-                  AI가 당신의 지출을 분석하고 있습니다...
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* 인사이트 결과 */}
-          {!aiLoading && insights && (
-            <div className="space-y-6">
-              {/* 월별 요약 */}
-              <div className="bg-white rounded-2xl shadow-sm border border-warm-200 p-4 sm:p-6">
-                <h2 className="text-lg font-semibold text-warm-900 mb-4">
-                  {insights.month} 요약
-                </h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="bg-grape-50 rounded-lg p-4">
-                    <p className="text-sm text-warm-600 mb-1">총 지출</p>
-                    <p className="text-2xl font-bold text-grape-700">
-                      {formatAmount(insights.total)}
-                    </p>
-                  </div>
-                  <div className="bg-warm-50 rounded-lg p-4">
-                    <p className="text-sm text-warm-600 mb-1">카테고리 수</p>
-                    <p className="text-2xl font-bold text-warm-700">
-                      {Object.keys(insights.by_category).length}개
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* 카테고리별 금액 */}
-              <div className="bg-white rounded-2xl shadow-sm border border-warm-200 p-4 sm:p-6">
-                <h2 className="text-lg font-semibold text-warm-900 mb-4">
-                  카테고리별 지출
-                </h2>
-                <div className="space-y-3">
-                  {Object.entries(insights.by_category)
-                    .sort(([, a], [, b]) => b - a)
-                    .map(([category, amount]) => {
-                      const percentage =
-                        insights.total > 0
-                          ? ((amount / insights.total) * 100).toFixed(1)
-                          : 0
-                      return (
-                        <div key={category} className="flex items-center gap-3">
-                          <div className="flex-1">
-                            <div className="flex justify-between items-center mb-1">
-                              <span className="text-sm font-medium text-warm-700">
-                                {category}
-                              </span>
-                              <span className="text-sm font-semibold text-warm-900">
-                                {formatAmount(amount)}
-                              </span>
-                            </div>
-                            <div className="w-full bg-warm-200 rounded-full h-2 overflow-hidden">
-                              <div
-                                className="bg-grape-600 h-2 rounded-full transition-all"
-                                style={{ width: `${percentage}%` }}
-                              />
-                            </div>
-                          </div>
-                          <span className="text-xs text-warm-500 w-12 text-right">
-                            {percentage}%
-                          </span>
-                        </div>
-                      )
-                    })}
-                </div>
-              </div>
-
-              {/* AI 인사이트 */}
-              <div className="bg-white rounded-2xl shadow-sm border border-warm-200 p-4 sm:p-6">
-                <div className="flex items-center gap-2 mb-4">
-                  <TrendingUp className="w-5 h-5 text-grape-600" />
-                  <h2 className="text-lg font-semibold text-warm-900">
-                    AI 분석
-                  </h2>
-                </div>
-                <div className="prose prose-sm max-w-none text-warm-700 space-y-2">
-                  {renderMarkdown(insights.insights)}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* 초기 상태 (아직 인사이트 생성 안 함) */}
-          {!aiLoading && !insights && (
-            <div className="bg-white rounded-2xl shadow-sm border border-warm-200">
-              <EmptyState
-                title="월을 선택하고 인사이트를 생성하세요"
-                description="AI가 당신의 지출 패턴을 분석하고 개인화된 조언을 제공합니다."
-              />
-            </div>
-          )}
-        </>
+      {/* 핵심 지표 */}
+      {!loading && expenseStats && incomeStats && (
+        <UnifiedSummaryCards
+          incomeTotal={incomeStats.total}
+          expenseTotal={expenseStats.total}
+        />
       )}
+
+      {/* 복합 추이 차트 */}
+      {!loading && expenseStats && incomeStats && (
+        <CombinedTrendChart
+          expenseTrend={expenseStats.trend}
+          incomeTrend={incomeStats.trend}
+        />
+      )}
+
+      {/* 월간 전용: 예산 현황 */}
+      {!loading && period === 'monthly' && (
+        <BudgetVsActual budgetStats={budgetStats} />
+      )}
+
+      {/* 월간 전용: 자동 하이라이트 */}
+      {!loading && period === 'monthly' && expenseStats && incomeStats && (
+        <MonthlyHighlights
+          incomeTotal={incomeStats.total}
+          expenseTotal={expenseStats.total}
+          budgetStats={budgetStats}
+          comparison={comparison}
+        />
+      )}
+
+      {/* AI 심층 분석 */}
+      <div className="bg-white rounded-2xl shadow-sm border border-warm-200 p-4 sm:p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <Sparkles className="w-5 h-5 text-grape-600" />
+          <h2 className="text-base font-semibold text-warm-900">AI 심층 분석</h2>
+        </div>
+        <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-end mb-4">
+          <div className="flex-1 w-full">
+            <label htmlFor="month-select" className="block text-sm font-medium text-warm-700 mb-2">분석할 월 선택</label>
+            <input
+              id="month-select"
+              type="month"
+              value={selectedMonth}
+              onChange={(e) => setSelectedMonth(e.target.value)}
+              className="w-full px-4 py-2 border border-warm-300 rounded-lg focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
+            />
+          </div>
+          <button
+            onClick={handleGenerate}
+            disabled={aiLoading}
+            className="w-full sm:w-auto px-6 py-2 text-sm font-medium text-white bg-grape-600 rounded-lg hover:bg-grape-700 disabled:bg-warm-400 disabled:cursor-not-allowed transition-colors whitespace-nowrap"
+          >
+            {aiLoading ? '분석 중...' : 'AI 심층 분석 생성하기'}
+          </button>
+        </div>
+        <p className="text-sm text-warm-500">Claude API를 통해 해당 월의 지출 패턴을 분석하고 인사이트를 제공합니다. (최대 30초 소요)</p>
+
+        {aiLoading && (
+          <div className="mt-6 flex flex-col items-center gap-4 py-8">
+            <Loader2 className="animate-spin h-10 w-10 text-grape-600" />
+            <p className="text-warm-600">AI가 당신의 지출을 분석하고 있습니다...</p>
+          </div>
+        )}
+
+        {!aiLoading && insights && (
+          <div className="mt-6 space-y-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="bg-grape-50 rounded-lg p-4">
+                <p className="text-sm text-warm-600 mb-1">총 지출</p>
+                <p className="text-2xl font-bold text-grape-700">{formatAmount(insights.total)}</p>
+              </div>
+              <div className="bg-warm-50 rounded-lg p-4">
+                <p className="text-sm text-warm-600 mb-1">카테고리 수</p>
+                <p className="text-2xl font-bold text-warm-700">{Object.keys(insights.by_category).length}개</p>
+              </div>
+            </div>
+            <div className="prose prose-sm max-w-none text-warm-700 space-y-2">
+              {renderMarkdown(insights.insights)}
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   )
 }
