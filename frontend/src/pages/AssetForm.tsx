@@ -59,7 +59,11 @@ export default function AssetForm() {
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState<AssetSearchResult[]>([])
   const [showDropdown, setShowDropdown] = useState(false)
+  const [searchLoading, setSearchLoading] = useState(false)
+  const [searchError, setSearchError] = useState<string | null>(null)
+  const [manualMode, setManualMode] = useState(false)
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const dropdownRef = useRef<HTMLDivElement>(null)
 
   // 계좌 목록 로드
   useEffect(() => {
@@ -109,13 +113,16 @@ export default function AssetForm() {
     setForm({ name: '', type: assetType, is_liability: isLiabilityType(assetType) })
     setSearchQuery('')
     setSearchResults([])
+    setManualMode(false)
   }, [assetType, isEdit])
 
   // 종목 검색 디바운스
   useEffect(() => {
-    if (!searchQuery || searchQuery.length < 1) {
+    if (!searchQuery || searchQuery.length < 1 || manualMode) {
       setSearchResults([])
       setShowDropdown(false)
+      setSearchLoading(false)
+      setSearchError(null)
       return
     }
     const market =
@@ -126,15 +133,35 @@ export default function AssetForm() {
     if (!market) return
 
     if (searchTimer.current) clearTimeout(searchTimer.current)
+    setSearchLoading(true)
+    setSearchError(null)
     searchTimer.current = setTimeout(() => {
       assetApi.search(searchQuery, market)
         .then(res => {
           setSearchResults(res.data)
-          setShowDropdown(res.data.length > 0)
+          setShowDropdown(true)
+          setSearchError(null)
         })
-        .catch(() => {})
+        .catch(() => {
+          setSearchResults([])
+          setShowDropdown(true)
+          setSearchError('검색 중 오류가 발생했습니다')
+        })
+        .finally(() => setSearchLoading(false))
     }, 300)
-  }, [searchQuery, assetType])
+  }, [searchQuery, assetType, manualMode])
+
+  // 바깥 클릭 시 드롭다운 닫기
+  useEffect(() => {
+    if (!showDropdown) return
+    const handler = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setShowDropdown(false)
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [showDropdown])
 
   // 자연어 분석
   async function handleNaturalParse() {
@@ -342,9 +369,9 @@ export default function AssetForm() {
           {/* 투자형: 종목 검색 (자산명 대체) */}
           {isInvestmentType && (
             <>
-              <div className="relative">
+              <div className="relative" ref={dropdownRef}>
                 <label className="block text-sm font-medium text-warm-700 mb-1.5">종목명</label>
-                {form.ticker ? (
+                {form.ticker && !manualMode ? (
                   /* 선택된 상태 */
                   <div className="flex items-center gap-2 p-2.5 border border-grape-200 bg-grape-50 rounded-lg">
                     <div className="flex-1">
@@ -356,41 +383,104 @@ export default function AssetForm() {
                       onClick={() => {
                         setForm(f => ({ ...f, name: '', ticker: undefined }))
                         setSearchQuery('')
+                        setManualMode(false)
                       }}
                       className="text-xs text-warm-400 hover:text-warm-600 px-2 py-0.5 rounded hover:bg-warm-100"
                     >
                       변경
                     </button>
                   </div>
+                ) : manualMode ? (
+                  /* 직접 입력 모드 */
+                  <div className="space-y-2">
+                    <input
+                      type="text"
+                      value={form.name ?? ''}
+                      onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                      placeholder="종목명 (예: 삼성전자)"
+                      className="w-full border border-warm-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-grape-300"
+                      required
+                    />
+                    <input
+                      type="text"
+                      value={form.ticker ?? ''}
+                      onChange={e => setForm(f => ({ ...f, ticker: e.target.value || undefined }))}
+                      placeholder="티커/코드 (선택, 예: 005930)"
+                      className="w-full border border-warm-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-grape-300"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setManualMode(false)
+                        setForm(f => ({ ...f, name: '', ticker: undefined }))
+                        setSearchQuery('')
+                      }}
+                      className="text-xs text-grape-600 hover:text-grape-700 font-medium"
+                    >
+                      ← 검색으로 돌아가기
+                    </button>
+                  </div>
                 ) : (
                   /* 검색 상태 */
                   <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-warm-400" />
+                    {searchLoading ? (
+                      <Loader2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-grape-500 animate-spin" />
+                    ) : (
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-warm-400" />
+                    )}
                     <input
                       type="text"
                       value={searchQuery}
                       onChange={e => setSearchQuery(e.target.value)}
+                      onFocus={() => { if (searchResults.length > 0 || searchError) setShowDropdown(true) }}
                       onKeyDown={e => { if (e.key === 'Enter') e.preventDefault() }}
                       placeholder={assetType === 'crypto' ? 'BTC, 비트코인...' : '종목명 또는 코드 검색'}
                       className="w-full border border-warm-200 rounded-lg pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-grape-300"
                     />
                     {showDropdown && (
                       <div className="absolute z-10 left-0 right-0 top-full mt-1 bg-white border border-warm-200 rounded-lg shadow-lg py-1 max-h-48 overflow-y-auto">
-                        {searchResults.map(r => (
-                          <button
-                            key={r.ticker}
-                            type="button"
-                            onClick={() => {
-                              setForm(f => ({ ...f, name: r.name || r.ticker, ticker: r.ticker }))
-                              setSearchQuery(r.name || r.ticker)
-                              setShowDropdown(false)
-                            }}
-                            className="w-full text-left px-3 py-2 text-sm hover:bg-warm-100 flex items-center justify-between"
-                          >
-                            <span className="font-medium text-warm-800">{r.name}</span>
-                            <span className="text-xs text-warm-400">{r.ticker}</span>
-                          </button>
-                        ))}
+                        {searchError ? (
+                          /* 에러 상태 */
+                          <div className="px-3 py-4 text-center">
+                            <p className="text-sm text-rose-600">{searchError}</p>
+                            <button
+                              type="button"
+                              onClick={() => setManualMode(true)}
+                              className="mt-2 text-xs text-grape-600 hover:text-grape-700 font-medium"
+                            >
+                              직접 입력하기
+                            </button>
+                          </div>
+                        ) : searchResults.length === 0 ? (
+                          /* 빈 결과 */
+                          <div className="px-3 py-4 text-center">
+                            <p className="text-sm text-warm-500">"{searchQuery}"에 대한 검색 결과가 없습니다</p>
+                            <button
+                              type="button"
+                              onClick={() => setManualMode(true)}
+                              className="mt-2 text-xs text-grape-600 hover:text-grape-700 font-medium"
+                            >
+                              직접 입력하기
+                            </button>
+                          </div>
+                        ) : (
+                          /* 결과 목록 */
+                          searchResults.map(r => (
+                            <button
+                              key={r.ticker}
+                              type="button"
+                              onClick={() => {
+                                setForm(f => ({ ...f, name: r.name || r.ticker, ticker: r.ticker }))
+                                setSearchQuery(r.name || r.ticker)
+                                setShowDropdown(false)
+                              }}
+                              className="w-full text-left px-3 py-2 text-sm hover:bg-warm-100 flex items-center justify-between"
+                            >
+                              <span className="font-medium text-warm-800">{r.name}</span>
+                              <span className="text-xs text-warm-400">{r.ticker}</span>
+                            </button>
+                          ))
+                        )}
                       </div>
                     )}
                   </div>
