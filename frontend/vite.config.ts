@@ -45,7 +45,7 @@ export default defineConfig({
       },
       workbox: {
         // 캐시 이름 버전 업 → 구 SW 캐시 강제 제거 (API 캐시 제거 포함)
-        cacheId: 'podo-budget-v5',
+        cacheId: 'podo-budget-v6',
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
         // 새 SW가 즉시 활성화되도록 설정 (기본: 모든 탭 닫힐 때까지 대기)
         skipWaiting: true,
