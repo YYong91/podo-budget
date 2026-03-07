@@ -4,7 +4,6 @@ import type { } from 'react'
 import { useState, useEffect } from 'react'
 import { Link, Outlet, useLocation } from 'react-router-dom'
 import FloatingActionButton from './FloatingActionButton'
-import { useAuth } from '../contexts/AuthContext'
 import { useHouseholdStore } from '../stores/useHouseholdStore'
 import {
   LayoutDashboard, Receipt, TrendingUp, Settings as SettingsIcon,
@@ -12,7 +11,6 @@ import {
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
-const AUTH_URL = import.meta.env.VITE_AUTH_URL || 'https://auth.podonest.com'
 
 const navItems: { path: string; label: string; icon: LucideIcon }[] = [
   { path: '/', label: '대시보드', icon: LayoutDashboard },
@@ -26,7 +24,6 @@ export default function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [householdDropdownOpen, setHouseholdDropdownOpen] = useState(false)
   const location = useLocation()
-  const { user } = useAuth()
   const {
     households, activeHouseholdId, myInvitations,
     fetchHouseholds, fetchMyInvitations, setActiveHouseholdId,
@@ -183,22 +180,6 @@ export default function Layout() {
             )}
           </nav>
 
-          {/* 사이드바 하단 — 유저 정보 */}
-          <div className="mt-4 pt-4 border-t border-warm-200 text-sm">
-            {user && (
-              <div className="px-3 py-1.5">
-                <a
-                  href={AUTH_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-sm font-medium text-warm-600 hover:text-grape-600 truncate block"
-                  title="계정 관리"
-                >
-                  {user.username}
-                </a>
-              </div>
-            )}
-          </div>
         </aside>
 
         {/* 모바일 오버레이 */}
