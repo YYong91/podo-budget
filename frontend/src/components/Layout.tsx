@@ -3,6 +3,7 @@
 import type { } from 'react'
 import { useState, useEffect } from 'react'
 import { Link, Outlet, useLocation } from 'react-router-dom'
+import FloatingActionButton from './FloatingActionButton'
 import { useAuth } from '../contexts/AuthContext'
 import { useHouseholdStore } from '../stores/useHouseholdStore'
 import {
@@ -231,6 +232,9 @@ export default function Layout() {
         <main className="flex-1 p-4 md:p-6 max-w-6xl mx-auto w-full">
           <Outlet />
         </main>
+
+        {/* 플로팅 액션 버튼 */}
+        <FloatingActionButton />
       </div>
     </div>
   )
