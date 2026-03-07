@@ -2,7 +2,7 @@
 # 문서: https://fly.io/docs/reference/configuration/
 
 app = "podo-budget-backend"
-primary_region = "icn"  # 서울 (Incheon) — 네이버 금융 API 한국 IP 필요
+primary_region = "nrt"  # 도쿄 (Tokyo Narita)
 
 # 자동 중지 방지 (무료 티어에서는 비활성 시 중지됨)
 # 유료 플랜 전환 시 주석 해제

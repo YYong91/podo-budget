@@ -154,7 +154,18 @@ async def get_asset_current_value(asset) -> dict:
 
 
 async def search_stock_kr(query: str) -> list[dict]:
-    """한국 종목 검색"""
+    """한국 종목 검색 (네이버 우선, Yahoo Finance fallback)"""
+    # 1차: 네이버 금융 (한국 IP에서만 동작)
+    results = await _search_stock_kr_naver(query)
+    if results:
+        return results
+
+    # 2차: Yahoo Finance fallback (해외 IP에서도 동작)
+    return await _search_stock_kr_yahoo(query)
+
+
+async def _search_stock_kr_naver(query: str) -> list[dict]:
+    """네이버 금융 한국 종목 검색"""
     try:
         async with httpx.AsyncClient(timeout=10) as client:
             resp = await client.get(
@@ -168,6 +179,31 @@ async def search_stock_kr(query: str) -> list[dict]:
                 for item in data.get("result", {}).get("d", [])[:10]:
                     results.append({"ticker": item.get("cd", ""), "name": item.get("nm", ""), "market": "KR"})
                 return results
+    except Exception:
+        pass
+    return []
+
+
+async def _search_stock_kr_yahoo(query: str) -> list[dict]:
+    """Yahoo Finance 한국 종목 검색 fallback (.KS/.KQ 필터)"""
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            resp = await client.get(
+                "https://query1.finance.yahoo.com/v1/finance/search",
+                params={"q": query, "quotesCount": 20},
+                headers={"User-Agent": "Mozilla/5.0"},
+            )
+            if resp.status_code == 200:
+                data = resp.json()
+                results = []
+                for item in data.get("quotes", []):
+                    symbol = item.get("symbol", "")
+                    # .KS = KOSPI, .KQ = KOSDAQ
+                    if symbol.endswith(".KS") or symbol.endswith(".KQ"):
+                        ticker = symbol.rsplit(".", 1)[0]  # 005930.KS → 005930
+                        name = item.get("shortname") or item.get("longname") or ticker
+                        results.append({"ticker": ticker, "name": name, "market": "KR"})
+                return results[:10]
     except Exception:
         pass
     return []
