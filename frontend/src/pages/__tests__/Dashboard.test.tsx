@@ -39,47 +39,11 @@ describe('Dashboard', () => {
     mockNavigate.mockClear()
   })
 
-  describe('빠른 입력 버튼', () => {
-    it('지출 입력 버튼을 표시한다', async () => {
-      renderDashboard()
-      await waitFor(() => {
-        expect(screen.getByRole('button', { name: /지출 입력/i })).toBeInTheDocument()
-      })
-    })
-
-    it('수입 입력 버튼을 표시한다', async () => {
-      renderDashboard()
-      await waitFor(() => {
-        expect(screen.getByRole('button', { name: /수입 입력/i })).toBeInTheDocument()
-      })
-    })
-
-    it('지출 입력 버튼 클릭 시 /expenses/new로 이동한다', async () => {
-      const user = userEvent.setup()
-      renderDashboard()
-      await waitFor(() => {
-        expect(screen.getByRole('button', { name: /지출 입력/i })).toBeInTheDocument()
-      })
-      await user.click(screen.getAllByRole('button', { name: /지출 입력/i })[0])
-      expect(mockNavigate).toHaveBeenCalledWith('/expenses/new')
-    })
-
-    it('수입 입력 버튼 클릭 시 /income/new로 이동한다', async () => {
-      const user = userEvent.setup()
-      renderDashboard()
-      await waitFor(() => {
-        expect(screen.getByRole('button', { name: /수입 입력/i })).toBeInTheDocument()
-      })
-      await user.click(screen.getAllByRole('button', { name: /수입 입력/i })[0])
-      expect(mockNavigate).toHaveBeenCalledWith('/income/new')
-    })
-  })
-
   describe('키보드 단축키', () => {
     it('e 키를 누르면 /expenses/new로 이동한다', async () => {
       renderDashboard()
       await waitFor(() => {
-        expect(screen.getByRole('button', { name: /지출 입력/i })).toBeInTheDocument()
+        expect(screen.getByRole('heading', { name: '대시보드' })).toBeInTheDocument()
       })
       fireEvent.keyDown(document, { key: 'e' })
       expect(mockNavigate).toHaveBeenCalledWith('/expenses/new')
@@ -88,7 +52,7 @@ describe('Dashboard', () => {
     it('i 키를 누르면 /income/new로 이동한다', async () => {
       renderDashboard()
       await waitFor(() => {
-        expect(screen.getByRole('button', { name: /수입 입력/i })).toBeInTheDocument()
+        expect(screen.getByRole('heading', { name: '대시보드' })).toBeInTheDocument()
       })
       fireEvent.keyDown(document, { key: 'i' })
       expect(mockNavigate).toHaveBeenCalledWith('/income/new')
@@ -97,7 +61,7 @@ describe('Dashboard', () => {
     it('input 필드에 포커스된 경우 키보드 단축키가 동작하지 않는다', async () => {
       renderDashboard()
       await waitFor(() => {
-        expect(screen.getByRole('button', { name: /지출 입력/i })).toBeInTheDocument()
+        expect(screen.getByRole('heading', { name: '대시보드' })).toBeInTheDocument()
       })
       const input = document.createElement('input')
       document.body.appendChild(input)
@@ -138,21 +102,21 @@ describe('Dashboard', () => {
       })
     })
 
-    it('이번 달 총 지출 카드를 클릭하면 지출 목록으로 이동한다', async () => {
+    it('이번 달 총 지출 카드를 클릭하면 거래 내역(지출 탭)으로 이동한다', async () => {
       renderDashboard()
       await waitFor(() => {
         const links = screen.getAllByRole('link')
         const expenseCard = links.find(l => l.textContent?.includes('이번 달 총 지출'))
-        expect(expenseCard).toHaveAttribute('href', '/expenses')
+        expect(expenseCard).toHaveAttribute('href', '/transactions?tab=expense')
       })
     })
 
-    it('이번 달 총 수입 카드를 클릭하면 수입 목록으로 이동한다', async () => {
+    it('이번 달 총 수입 카드를 클릭하면 거래 내역(수입 탭)으로 이동한다', async () => {
       renderDashboard()
       await waitFor(() => {
         const links = screen.getAllByRole('link')
         const incomeCard = links.find(l => l.textContent?.includes('이번 달 총 수입'))
-        expect(incomeCard).toHaveAttribute('href', '/income')
+        expect(incomeCard).toHaveAttribute('href', '/transactions?tab=income')
       })
     })
 
@@ -224,7 +188,7 @@ describe('Dashboard', () => {
       renderDashboard()
       await waitFor(() => {
         const links = screen.getAllByRole('link', { name: /전체 보기/i })
-        const expenseLink = links.find(l => l.getAttribute('href') === '/expenses')
+        const expenseLink = links.find(l => l.getAttribute('href') === '/transactions?tab=expense')
         expect(expenseLink).toBeDefined()
       })
     })

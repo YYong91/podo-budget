@@ -6,7 +6,6 @@ import { Loader2 } from 'lucide-react'
 
 /* 코드 스플리팅: 페이지별 lazy loading으로 초기 번들 크기 축소 */
 const Dashboard = lazy(() => import('./pages/Dashboard'))
-const ExpenseList = lazy(() => import('./pages/ExpenseList'))
 const ExpenseForm = lazy(() => import('./pages/ExpenseForm'))
 const ExpenseDetail = lazy(() => import('./pages/ExpenseDetail'))
 const CategoryManager = lazy(() => import('./pages/CategoryManager'))
@@ -20,7 +19,6 @@ const AuthCallbackPage = lazy(() => import('./pages/AuthCallbackPage'))
 const PrivacyPolicyPage = lazy(() => import('./pages/PrivacyPolicyPage'))
 const TermsOfServicePage = lazy(() => import('./pages/TermsOfServicePage'))
 const SettingsPage = lazy(() => import('./pages/SettingsPage'))
-const IncomeList = lazy(() => import('./pages/IncomeList'))
 const IncomeForm = lazy(() => import('./pages/IncomeForm'))
 const IncomeDetail = lazy(() => import('./pages/IncomeDetail'))
 const RecurringList = lazy(() => import('./pages/RecurringList'))

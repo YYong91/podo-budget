@@ -24,8 +24,8 @@ interface Transaction {
   date: string
   description: string
   amount: number
-  category_id: number
-  user_id: number
+  category_id: number | null
+  user_id: number | null
   exclude_from_stats?: boolean
   raw_input?: string | null
 }
@@ -187,11 +187,11 @@ export default function TransactionList() {
     return <span className="ml-1 text-grape-600">{sortDir === 'asc' ? '▲' : '▼'}</span>
   }
 
-  const getCategoryName = (id: number) =>
-    categories.find(c => c.id === id)?.name ?? '미분류'
+  const getCategoryName = (id: number | null) =>
+    id != null ? (categories.find(c => c.id === id)?.name ?? '미분류') : '미분류'
 
-  const getMemberName = (userId: number) =>
-    members.find(m => m.user_id === userId)?.username ?? ''
+  const getMemberName = (userId: number | null) =>
+    userId != null ? (members.find(m => m.user_id === userId)?.username ?? '') : ''
 
   const showMemberFilter = activeHouseholdId != null && members.length > 1
 
