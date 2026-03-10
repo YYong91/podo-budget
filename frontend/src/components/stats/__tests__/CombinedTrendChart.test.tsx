@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/react'
 import CombinedTrendChart from '../CombinedTrendChart'
 
 vi.mock('react-chartjs-2', () => ({
-  Line: () => <div data-testid="mock-line-chart" />,
+  Chart: () => <div data-testid="mock-chart" />,
 }))
 
 const mockTrend = [
@@ -12,10 +12,11 @@ const mockTrend = [
 ]
 
 describe('CombinedTrendChart', () => {
-  it('수입과 지출 범례를 표시한다', () => {
+  it('수입, 지출, 순수익 범례를 표시한다', () => {
     render(<CombinedTrendChart expenseTrend={mockTrend} incomeTrend={mockTrend} />)
     expect(screen.getByText('지출')).toBeInTheDocument()
     expect(screen.getByText('수입')).toBeInTheDocument()
+    expect(screen.getByText('순수익')).toBeInTheDocument()
   })
 
   it('데이터가 없을 때 빈 상태를 표시한다', () => {
