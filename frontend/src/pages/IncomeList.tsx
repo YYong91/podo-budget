@@ -391,7 +391,7 @@ export default function IncomeList() {
       </div>
 
       {/* 페이지네이션 */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between pb-20">
         <button
           onClick={() => setPage(Math.max(0, page - 1))}
           disabled={page === 0}
