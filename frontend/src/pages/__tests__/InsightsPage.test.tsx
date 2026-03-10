@@ -19,6 +19,7 @@ vi.mock('../../stores/useHouseholdStore', () => ({
 
 vi.mock('react-chartjs-2', () => ({
   Line: () => <div data-testid="mock-line-chart" />,
+  Chart: () => <div data-testid="mock-chart" />,
 }))
 
 function renderInsightsPage() {
@@ -53,7 +54,8 @@ describe('InsightsPage', () => {
         expect(screen.getByText('총 수입')).toBeInTheDocument()
         // 총 지출은 UnifiedSummaryCards와 BudgetVsActual에 모두 나타남
         expect(screen.getAllByText('총 지출').length).toBeGreaterThan(0)
-        expect(screen.getByText('순수익')).toBeInTheDocument()
+        // 순수익은 SummaryCards와 CombinedTrendChart 범례에 모두 나타남
+        expect(screen.getAllByText('순수익').length).toBeGreaterThan(0)
         expect(screen.getByText('저축률')).toBeInTheDocument()
       })
     })
