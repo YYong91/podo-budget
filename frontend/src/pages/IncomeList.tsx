@@ -248,27 +248,27 @@ export default function IncomeList() {
           })}
         </div>
         <div
-          className={`grid grid-cols-1 sm:grid-cols-2 ${showMemberFilter ? 'lg:grid-cols-5' : 'lg:grid-cols-4'} gap-4`}
+          className={`grid grid-cols-2 ${showMemberFilter ? 'lg:grid-cols-5' : 'lg:grid-cols-4'} gap-3`}
         >
-          <div>
+          <div className="min-w-0">
             <label className="block text-xs text-warm-400 mb-1">시작일</label>
             <input
               type="date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
-              className="w-full border border-warm-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-leaf-500/30 focus:border-leaf-500"
+              className="w-full min-w-0 border border-warm-300 rounded-xl px-2 sm:px-3 py-2 text-xs sm:text-sm focus:ring-2 focus:ring-leaf-500/30 focus:border-leaf-500"
             />
           </div>
-          <div>
+          <div className="min-w-0">
             <label className="block text-xs text-warm-400 mb-1">종료일</label>
             <input
               type="date"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
-              className="w-full border border-warm-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-leaf-500/30 focus:border-leaf-500"
+              className="w-full min-w-0 border border-warm-300 rounded-xl px-2 sm:px-3 py-2 text-xs sm:text-sm focus:ring-2 focus:ring-leaf-500/30 focus:border-leaf-500"
             />
           </div>
-          <div>
+          <div className="min-w-0 col-span-2 sm:col-span-1">
             <label className="block text-xs text-warm-400 mb-1">카테고리</label>
             <div className="relative">
               <select
@@ -287,7 +287,7 @@ export default function IncomeList() {
             </div>
           </div>
           {showMemberFilter && (
-            <div>
+            <div className="min-w-0 col-span-2 sm:col-span-1">
               <label className="block text-xs text-warm-400 mb-1">멤버</label>
               <div className="relative">
                 <select
@@ -306,7 +306,7 @@ export default function IncomeList() {
               </div>
             </div>
           )}
-          <div className="flex items-end">
+          <div className="flex items-end col-span-2 lg:col-span-1">
             <button
               onClick={() => setParams({ start: null, end: null, cat: null, member: null, page: null })}
               className="w-full sm:w-auto px-4 py-2 text-sm text-warm-500 hover:text-warm-600 underline"
