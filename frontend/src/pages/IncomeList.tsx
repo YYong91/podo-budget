@@ -5,7 +5,7 @@
 
 import { useEffect, useState, useMemo } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { Loader2, PlusCircle } from 'lucide-react'
+import { ChevronDown, Loader2, PlusCircle } from 'lucide-react'
 import { incomeApi } from '../api/income'
 import { categoryApi } from '../api/categories'
 import { useHouseholdStore } from '../stores/useHouseholdStore'
@@ -270,34 +270,40 @@ export default function IncomeList() {
           </div>
           <div>
             <label className="block text-xs text-warm-400 mb-1">카테고리</label>
-            <select
-              value={categoryId ?? ''}
-              onChange={(e) => setCategoryId(e.target.value ? Number(e.target.value) : undefined)}
-              className="w-full border border-warm-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-leaf-500/30 focus:border-leaf-500"
-            >
-              <option value="">전체</option>
-              {categories.map((cat) => (
-                <option key={cat.id} value={cat.id}>
-                  {cat.name}
-                </option>
-              ))}
-            </select>
+            <div className="relative">
+              <select
+                value={categoryId ?? ''}
+                onChange={(e) => setCategoryId(e.target.value ? Number(e.target.value) : undefined)}
+                className="w-full appearance-none border border-warm-300 rounded-xl px-3 py-2 pr-10 text-sm focus:ring-2 focus:ring-leaf-500/30 focus:border-leaf-500"
+              >
+                <option value="">전체</option>
+                {categories.map((cat) => (
+                  <option key={cat.id} value={cat.id}>
+                    {cat.name}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-warm-400 pointer-events-none" />
+            </div>
           </div>
           {showMemberFilter && (
             <div>
               <label className="block text-xs text-warm-400 mb-1">멤버</label>
-              <select
-                value={memberUserId ?? ''}
-                onChange={(e) => setMemberUserId(e.target.value ? Number(e.target.value) : undefined)}
-                className="w-full border border-warm-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-leaf-500/30 focus:border-leaf-500"
-              >
-                <option value="">전체 멤버</option>
-                {members.map((m) => (
-                  <option key={m.user_id} value={m.user_id}>
-                    {m.username}
-                  </option>
-                ))}
-              </select>
+              <div className="relative">
+                <select
+                  value={memberUserId ?? ''}
+                  onChange={(e) => setMemberUserId(e.target.value ? Number(e.target.value) : undefined)}
+                  className="w-full appearance-none border border-warm-300 rounded-xl px-3 py-2 pr-10 text-sm focus:ring-2 focus:ring-leaf-500/30 focus:border-leaf-500"
+                >
+                  <option value="">전체 멤버</option>
+                  {members.map((m) => (
+                    <option key={m.user_id} value={m.user_id}>
+                      {m.username}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-warm-400 pointer-events-none" />
+              </div>
             </div>
           )}
           <div className="flex items-end">
