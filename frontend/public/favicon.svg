@@ -11,34 +11,24 @@
       <stop offset="100%" stop-color="#6D28D9"/>
     </radialGradient>
   </defs>
-  <!-- Stem -->
-  <path d="M 32 8 Q 30 2 35 0" stroke="#16a34a" stroke-width="2.5" fill="none" stroke-linecap="round"/>
-  <!-- Leaf -->
-  <path d="M 34 1 Q 44 -4 46 5 Q 40 9 35 4 Z" fill="#22c55e"/>
-  <!-- Row 1 -->
-  <circle cx="24" cy="15" r="7" fill="url(#g1)" stroke="#6D28D9" stroke-width="0.5"/>
-  <circle cx="40" cy="15" r="7" fill="url(#g2)" stroke="#6D28D9" stroke-width="0.5"/>
-  <!-- Row 2 -->
-  <circle cx="16" cy="28" r="7" fill="url(#g2)" stroke="#6D28D9" stroke-width="0.5"/>
-  <circle cx="32" cy="28" r="7" fill="url(#g1)" stroke="#6D28D9" stroke-width="0.5"/>
-  <circle cx="48" cy="28" r="7" fill="url(#g1)" stroke="#6D28D9" stroke-width="0.5"/>
-  <!-- Row 3 -->
-  <circle cx="24" cy="41" r="7" fill="url(#g1)" stroke="#6D28D9" stroke-width="0.5"/>
-  <circle cx="40" cy="41" r="7" fill="url(#g2)" stroke="#6D28D9" stroke-width="0.5"/>
-  <!-- Highlights -->
-  <ellipse cx="21" cy="12" rx="2.5" ry="1.8" fill="white" opacity="0.35" transform="rotate(-20 21 12)"/>
-  <ellipse cx="37" cy="12" rx="2.5" ry="1.8" fill="white" opacity="0.35" transform="rotate(-20 37 12)"/>
-  <ellipse cx="29" cy="25" rx="2.5" ry="1.8" fill="white" opacity="0.35" transform="rotate(-20 29 25)"/>
-  <!-- Ledger book -->
-  <!-- Cover -->
-  <rect x="4" y="50" width="56" height="13" rx="3" fill="#4C1D95"/>
-  <!-- Pages area -->
-  <rect x="11" y="51" width="49" height="11" rx="2" fill="#EDE9FE"/>
-  <!-- Spine -->
-  <rect x="4" y="50" width="8" height="13" rx="2" fill="#3B0764"/>
-  <!-- Horizontal lines (ledger) -->
-  <line x1="14" y1="55" x2="58" y2="55" stroke="#8B5CF6" stroke-width="0.8" opacity="0.6"/>
-  <line x1="14" y1="59" x2="58" y2="59" stroke="#8B5CF6" stroke-width="0.8" opacity="0.6"/>
-  <!-- Vertical column separator -->
-  <line x1="48" y1="51" x2="48" y2="61" stroke="#8B5CF6" stroke-width="0.7" opacity="0.4"/>
+  <g transform="translate(0, 8)">
+    <!-- Stem -->
+    <path d="M 32 8 Q 30 2 35 0" stroke="#16a34a" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    <!-- Leaf -->
+    <path d="M 34 1 Q 44 -4 46 5 Q 40 9 35 4 Z" fill="#22c55e"/>
+    <!-- Row 1 -->
+    <circle cx="24" cy="15" r="7" fill="url(#g1)" stroke="#6D28D9" stroke-width="0.5"/>
+    <circle cx="40" cy="15" r="7" fill="url(#g2)" stroke="#6D28D9" stroke-width="0.5"/>
+    <!-- Row 2 -->
+    <circle cx="16" cy="28" r="7" fill="url(#g2)" stroke="#6D28D9" stroke-width="0.5"/>
+    <circle cx="32" cy="28" r="7" fill="url(#g1)" stroke="#6D28D9" stroke-width="0.5"/>
+    <circle cx="48" cy="28" r="7" fill="url(#g1)" stroke="#6D28D9" stroke-width="0.5"/>
+    <!-- Row 3 -->
+    <circle cx="24" cy="41" r="7" fill="url(#g1)" stroke="#6D28D9" stroke-width="0.5"/>
+    <circle cx="40" cy="41" r="7" fill="url(#g2)" stroke="#6D28D9" stroke-width="0.5"/>
+    <!-- Highlights -->
+    <ellipse cx="21" cy="12" rx="2.5" ry="1.8" fill="white" opacity="0.35" transform="rotate(-20 21 12)"/>
+    <ellipse cx="37" cy="12" rx="2.5" ry="1.8" fill="white" opacity="0.35" transform="rotate(-20 37 12)"/>
+    <ellipse cx="29" cy="25" rx="2.5" ry="1.8" fill="white" opacity="0.35" transform="rotate(-20 29 25)"/>
+  </g>
 </svg>
