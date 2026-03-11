@@ -3,9 +3,10 @@
  * @description 통합 거래 내역 페이지 - 지출+수입 탭 필터, 정렬, 페이지네이션
  */
 
-import { useEffect, useState, useMemo, useCallback } from 'react'
+import { useEffect, useState, useMemo, useCallback, useRef } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { Loader2 } from 'lucide-react'
+import toast from 'react-hot-toast'
 import { expenseApi } from '../api/expenses'
 import { incomeApi } from '../api/income'
 import { categoryApi } from '../api/categories'
@@ -89,6 +90,9 @@ export default function TransactionList() {
   const [members, setMembers] = useState<HouseholdMember[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
+  const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null)
+  const [savingCategoryId, setSavingCategoryId] = useState<string | null>(null)
+  const selectRef = useRef<HTMLSelectElement>(null)
 
   // URL 파라미터 업데이트 헬퍼
   const setParams = useCallback((updates: Record<string, string | null>) => {
@@ -192,6 +196,26 @@ export default function TransactionList() {
 
   const getMemberName = (userId: number | null) =>
     userId != null ? (members.find(m => m.user_id === userId)?.username ?? '') : ''
+
+  const handleCategorySelect = async (tx: Transaction, newCategoryId: string) => {
+    const key = `${tx.type}-${tx.id}`
+    const categoryIdValue = newCategoryId === '' ? null : Number(newCategoryId)
+    setSavingCategoryId(key)
+    setEditingCategoryId(null)
+    try {
+      if (tx.type === 'expense') {
+        await expenseApi.update(tx.id, { category_id: categoryIdValue ?? undefined })
+        setExpenses(prev => prev.map(e => e.id === tx.id ? { ...e, category_id: categoryIdValue } : e))
+      } else {
+        await incomeApi.update(tx.id, { category_id: categoryIdValue ?? undefined })
+        setIncomes(prev => prev.map(i => i.id === tx.id ? { ...i, category_id: categoryIdValue } : i))
+      }
+    } catch {
+      toast.error('카테고리 변경에 실패했습니다')
+    } finally {
+      setSavingCategoryId(null)
+    }
+  }
 
   const showMemberFilter = activeHouseholdId != null && members.length > 1
 
@@ -373,13 +397,43 @@ export default function TransactionList() {
                       </div>
                     </td>
                     <td className="px-4 py-3 hidden sm:table-cell">
-                      <span className={`inline-block text-xs px-2 py-1 rounded-full ${
-                        tx.type === 'income'
-                          ? 'bg-leaf-50 text-leaf-700'
-                          : 'bg-grape-50 text-grape-700'
-                      }`}>
-                        {getCategoryName(tx.category_id)}
-                      </span>
+                      {(() => {
+                        const key = `${tx.type}-${tx.id}`
+                        if (savingCategoryId === key) {
+                          return <Loader2 className="w-4 h-4 animate-spin text-warm-400" />
+                        }
+                        if (editingCategoryId === key) {
+                          return (
+                            <select
+                              ref={selectRef}
+                              defaultValue={tx.category_id ?? ''}
+                              autoFocus
+                              className="text-xs border border-grape-300 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-grape-500/30 bg-white"
+                              onChange={(e) => handleCategorySelect(tx, e.target.value)}
+                              onBlur={() => setEditingCategoryId(null)}
+                              onKeyDown={(e) => { if (e.key === 'Escape') setEditingCategoryId(null) }}
+                            >
+                              <option value="">미분류</option>
+                              {categories.map((cat) => (
+                                <option key={cat.id} value={cat.id}>{cat.name}</option>
+                              ))}
+                            </select>
+                          )
+                        }
+                        return (
+                          <button
+                            onClick={() => setEditingCategoryId(key)}
+                            title="클릭하여 카테고리 변경"
+                            className={`inline-block text-xs px-2 py-1 rounded-full transition-opacity hover:opacity-70 cursor-pointer ${
+                              tx.type === 'income'
+                                ? 'bg-leaf-50 text-leaf-700'
+                                : 'bg-grape-50 text-grape-700'
+                            }`}
+                          >
+                            {getCategoryName(tx.category_id)}
+                          </button>
+                        )
+                      })()}
                     </td>
                     {showMemberFilter && (
                       <td className="px-4 py-3 hidden md:table-cell">
