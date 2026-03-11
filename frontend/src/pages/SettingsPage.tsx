@@ -6,7 +6,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import toast from 'react-hot-toast'
-import { Tags, PiggyBank, Repeat, Users, LogOut } from 'lucide-react'
+import { Tags, PiggyBank, Repeat, Users, LogOut, BookOpen } from 'lucide-react'
 import { generateTelegramLinkCode, unlinkTelegram } from '../api/telegram'
 import { useAuth } from '../contexts/AuthContext'
 
@@ -98,6 +98,13 @@ export default function SettingsPage() {
           >
             <Users className="w-5 h-5 text-grape-500" />
             <span className="text-sm font-medium text-warm-800">공유 가계부</span>
+          </Link>
+          <Link
+            to="/guide"
+            className="flex items-center gap-3 px-4 py-3 rounded-xl border border-warm-200 hover:bg-grape-50 hover:border-grape-200 transition-colors"
+          >
+            <BookOpen className="w-5 h-5 text-grape-500" />
+            <span className="text-sm font-medium text-warm-800">사용 가이드</span>
           </Link>
         </div>
       </div>
