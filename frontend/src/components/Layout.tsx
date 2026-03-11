@@ -56,7 +56,7 @@ export default function Layout() {
       <header className="md:hidden bg-white border-b border-warm-200 sticky top-0 z-30 h-12 flex items-center px-4 gap-3">
         <button
           onClick={() => setSidebarOpen(true)}
-          className="p-1.5 rounded-md hover:bg-warm-100"
+          className="p-2 rounded-md hover:bg-warm-100"
           aria-label="메뉴 열기"
         >
           <Menu className="w-5 h-5 text-warm-600" />
@@ -82,7 +82,7 @@ export default function Layout() {
 
           {/* 모바일 닫기 버튼 */}
           <div className="md:hidden flex justify-end mb-2">
-            <button onClick={() => setSidebarOpen(false)} className="p-1.5 rounded-md hover:bg-warm-100">
+            <button onClick={() => setSidebarOpen(false)} className="p-2 rounded-md hover:bg-warm-100">
               <X className="w-4 h-4 text-warm-500" />
             </button>
           </div>
@@ -192,7 +192,7 @@ export default function Layout() {
         )}
 
         {/* 메인 콘텐츠 */}
-        <main className="flex-1 p-4 md:p-6 pb-24 max-w-6xl mx-auto w-full">
+        <main className="flex-1 p-4 pb-24 md:p-6 md:pb-24 max-w-6xl mx-auto w-full">
           <Outlet />
         </main>
 
