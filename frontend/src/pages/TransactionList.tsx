@@ -14,6 +14,8 @@ import { useHouseholdStore } from '../stores/useHouseholdStore'
 import EmptyState from '../components/EmptyState'
 import ErrorState from '../components/ErrorState'
 import type { Expense, Income, Category, HouseholdMember } from '../types'
+import { formatAmountWithSign as formatAmount } from '../utils/format'
+import { DATE_PRESETS } from '../utils/datePresets'
 
 type TransactionType = 'all' | 'expense' | 'income'
 type SortField = 'date' | 'amount'
@@ -31,44 +33,7 @@ interface Transaction {
   raw_input?: string | null
 }
 
-function formatAmount(amount: number, type: 'expense' | 'income'): string {
-  const formatted = `₩${amount.toLocaleString('ko-KR')}`
-  return type === 'income' ? `+${formatted}` : formatted
-}
 
-function toDateString(date: Date): string {
-  const y = date.getFullYear()
-  const m = String(date.getMonth() + 1).padStart(2, '0')
-  const d = String(date.getDate()).padStart(2, '0')
-  return `${y}-${m}-${d}`
-}
-
-const DATE_PRESETS = [
-  { label: '이번주', getRange: () => {
-    const now = new Date()
-    const day = now.getDay() || 7
-    const mon = new Date(now); mon.setDate(now.getDate() - day + 1)
-    return { start: toDateString(mon), end: toDateString(now) }
-  }},
-  { label: '지난주', getRange: () => {
-    const now = new Date()
-    const day = now.getDay() || 7
-    const mon = new Date(now); mon.setDate(now.getDate() - day - 6)
-    const sun = new Date(mon); sun.setDate(mon.getDate() + 6)
-    return { start: toDateString(mon), end: toDateString(sun) }
-  }},
-  { label: '이번달', getRange: () => {
-    const now = new Date()
-    const first = new Date(now.getFullYear(), now.getMonth(), 1)
-    return { start: toDateString(first), end: toDateString(now) }
-  }},
-  { label: '저번달', getRange: () => {
-    const now = new Date()
-    const first = new Date(now.getFullYear(), now.getMonth() - 1, 1)
-    const last = new Date(now.getFullYear(), now.getMonth(), 0)
-    return { start: toDateString(first), end: toDateString(last) }
-  }},
-]
 
 export default function TransactionList() {
   const [searchParams, setSearchParams] = useSearchParams()
@@ -459,7 +424,7 @@ export default function TransactionList() {
       </div>
 
       {/* 페이지네이션 */}
-      <div className="flex items-center justify-between pb-20">
+      <div className="flex items-center justify-between">
         <button
           onClick={() => setPage(Math.max(0, page - 1))}
           disabled={page === 0}
