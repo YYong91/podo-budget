@@ -308,6 +308,7 @@ export default function ExpenseList() {
                 value={categoryId ?? ''}
                 onChange={(e) => setCategoryId(e.target.value ? Number(e.target.value) : undefined)}
                 className="w-full appearance-none border border-warm-300 rounded-xl px-3 py-2 pr-10 text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
+                style={{ WebkitAppearance: 'none' }}
               >
                 <option value="">전체</option>
                 {categories.map((cat) => (
@@ -326,6 +327,7 @@ export default function ExpenseList() {
                   value={memberUserId ?? ''}
                   onChange={(e) => setMemberUserId(e.target.value ? Number(e.target.value) : undefined)}
                   className="w-full appearance-none border border-warm-300 rounded-xl px-3 py-2 pr-10 text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
+                  style={{ WebkitAppearance: 'none' }}
                 >
                   <option value="">전체 멤버</option>
                   {members.map((m) => (
