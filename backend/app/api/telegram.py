@@ -339,7 +339,13 @@ async def handle_callback_query(callback_query: dict, db: AsyncSession):
             ]
             if expense.household_id is not None:
                 _cat_conditions.append(Category.household_id == expense.household_id)
-            cat_result = await db.execute(select(Category).where(or_(*_cat_conditions)).order_by(Category.name).limit(8))
+            cat_result = await db.execute(
+                select(Category)
+                .outerjoin(Expense, and_(Expense.category_id == Category.id, Expense.user_id == expense.user_id))
+                .where(or_(*_cat_conditions))
+                .group_by(Category.id)
+                .order_by(func.count(Expense.id).desc(), Category.name)
+            )
             categories = cat_result.scalars().all()
 
             if not categories:
