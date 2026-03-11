@@ -169,6 +169,7 @@ async def chat(
     items = [parsed] if isinstance(parsed, dict) else parsed
     created_expenses = []
     created_incomes = []
+    saved_amounts = []  # 실제 저장된 금액 (외화 환율 변환 후)
 
     for item in items:
         item_type = item.get("type", "expense")
@@ -185,6 +186,8 @@ async def chat(
                 amount = round(amount * rate)
                 currency_memo = f"{currency} {original:g} (환율 {rate:,.2f})"
                 memo = f"{memo}, {currency_memo}" if memo else currency_memo
+
+        saved_amounts.append(amount)
 
         if item_type == "income":
             record = Income(
@@ -217,15 +220,15 @@ async def chat(
     for r in created_expenses + created_incomes:
         await db.refresh(r)
 
-    # 응답 메시지 생성
-    total_amount = sum(item["amount"] for item in items)
+    # 응답 메시지 생성 — saved_amounts 사용 (외화 변환 후 실제 저장된 금액)
+    total_amount = sum(saved_amounts)
     count = len(items)
     income_count = len(created_incomes)
     expense_count = len(created_expenses)
 
     if count == 1:
         item_type_label = "수입" if income_count > 0 else "지출"
-        msg = f"₩{int(items[0]['amount']):,}이(가) [{items[0].get('category', '기타')}] 카테고리로 {item_type_label} 기록되었습니다."
+        msg = f"₩{int(saved_amounts[0]):,}이(가) [{items[0].get('category', '기타')}] 카테고리로 {item_type_label} 기록되었습니다."
     else:
         parts = []
         if expense_count > 0:

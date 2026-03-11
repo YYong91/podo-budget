@@ -163,33 +163,54 @@ async def get_budget_alerts(
     alerts = []
     now = datetime.now()
 
-    for budget in budgets:
-        if budget.start_date > now:
-            continue
+    # 유효한 예산만 필터 (기간 미시작 제외)
+    active_budgets = [b for b in budgets if b.start_date <= now]
+    if not active_budgets:
+        return alerts
 
+    # 카테고리 배치 조회 (1 쿼리)
+    category_ids = [b.category_id for b in active_budgets]
+    cat_result = await db.execute(select(Category).where(Category.id.in_(category_ids)))
+    categories_map = {c.id: c for c in cat_result.scalars().all()}
+
+    # period_start별로 예산 그룹화 (period 타입별로 동일한 period_start 공유)
+    budgets_by_period: dict[datetime, list] = {}
+    for budget in active_budgets:
         if budget.period == "monthly":
             period_start = datetime(now.year, now.month, 1)
         elif budget.period == "weekly":
-            days_since_monday = now.weekday()  # 0=월요일
+            days_since_monday = now.weekday()
             period_start = datetime(now.year, now.month, now.day) - timedelta(days=days_since_monday)
         else:  # daily
             period_start = datetime(now.year, now.month, now.day)
+        budgets_by_period.setdefault(period_start, []).append(budget)
 
-        category_result = await db.execute(select(Category).where(Category.id == budget.category_id))
-        category = category_result.scalar_one_or_none()
-        if not category:
-            continue
-
+    # period_start별 지출 합계 배치 조회 (period 유형 수만큼 쿼리 — 보통 1~3회)
+    spent_map: dict[int, float] = {}
+    for period_start, period_budgets in budgets_by_period.items():
+        period_cat_ids = [b.category_id for b in period_budgets]
         expense_result = await db.execute(
-            select(func.sum(Expense.amount)).where(
+            select(Expense.category_id, func.sum(Expense.amount).label("total"))
+            .where(
                 expense_scope,
-                Expense.category_id == budget.category_id,
+                Expense.category_id.in_(period_cat_ids),
                 Expense.date >= period_start,
                 Expense.date <= now,
             )
+            .group_by(Expense.category_id)
         )
-        spent_amount = float(expense_result.scalar() or 0)
+        for row in expense_result.all():
+            spent_map[row.category_id] = float(row.total)
+        # 지출 없는 카테고리는 0으로 초기화
+        for cat_id in period_cat_ids:
+            spent_map.setdefault(cat_id, 0.0)
 
+    for budget in active_budgets:
+        category = categories_map.get(budget.category_id)
+        if not category:
+            continue
+
+        spent_amount = spent_map.get(budget.category_id, 0.0)
         budget_amount = float(budget.amount)
         usage_percentage = (spent_amount / budget_amount * 100) if budget_amount > 0 else 0
         remaining_amount = budget_amount - spent_amount

@@ -13,7 +13,7 @@ from calendar import monthrange
 from datetime import date, datetime, timedelta
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
-from sqlalchemy import func, select
+from sqlalchemy import extract, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import get_household_member, get_user_active_household_id
@@ -377,22 +377,24 @@ async def get_stats_comparison(
         cur_y = ref_date.year
         prev_y = cur_y - 1
 
-        current_total = 0.0
-        previous_total = 0.0
-        for m in range(1, 13):
-            current_total += await _month_total(cur_y, m)
-            previous_total += await _month_total(prev_y, m)
+        # 필요한 연도 목록 수집 (current, previous, trend)
+        trend_years = [cur_y - y_offset for y_offset in range(months - 1, -1, -1)]
+        years_needed = list({cur_y, prev_y, *trend_years})
 
+        # 연도별 합계를 단일 쿼리로 조회 (기존 24-60회 → 1회)
+        year_totals_result = await db.execute(
+            select(extract("year", Expense.date).label("year"), func.coalesce(func.sum(Expense.amount), 0).label("total"))
+            .where(scope_filter, excl_filter, extract("year", Expense.date).in_(years_needed))
+            .group_by(extract("year", Expense.date))
+        )
+        year_totals: dict[int, float] = {int(row.year): float(row.total) for row in year_totals_result.all()}
+
+        current_total = year_totals.get(cur_y, 0.0)
+        previous_total = year_totals.get(prev_y, 0.0)
         current_label = f"{cur_y}년"
         previous_label = f"{prev_y}년"
 
-        trend_data = []
-        for y_offset in range(months - 1, -1, -1):
-            y = cur_y - y_offset
-            y_total = 0.0
-            for m in range(1, 13):
-                y_total += await _month_total(y, m)
-            trend_data.append(PeriodTotal(label=f"{y}년", total=y_total))
+        trend_data = [PeriodTotal(label=f"{y}년", total=year_totals.get(y, 0.0)) for y in trend_years]
 
         by_cat_comparison = []
 
