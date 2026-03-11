@@ -9,12 +9,9 @@ import { assetApi } from '../api/assets'
 import { accountApi } from '../api/accounts'
 import { useHouseholdStore } from '../stores/useHouseholdStore'
 import type { Asset, AssetSummary, AssetSnapshot, Account } from '../types'
+import { formatAmount } from '../utils/format'
 
 ChartJS.register(ArcElement, LineElement, PointElement, CategoryScale, LinearScale, Filler, ChartTooltip, Legend)
-
-function formatAmount(amount: number): string {
-  return `₩${amount.toLocaleString('ko-KR')}`
-}
 
 function formatPct(pct: number | null): string {
   if (pct == null) return ''

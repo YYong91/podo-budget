@@ -17,6 +17,7 @@ import CombinedTrendChart from '../components/stats/CombinedTrendChart'
 import BudgetVsActual from '../components/stats/BudgetVsActual'
 import MonthlyHighlights from '../components/stats/MonthlyHighlights'
 import type { BudgetMonthlyStatsResponse, ComparisonResponse, InsightsResponse, StatsResponse } from '../types'
+import { formatAmount } from '../utils/format'
 
 type PeriodType = 'weekly' | 'monthly' | 'yearly'
 
@@ -77,9 +78,7 @@ function renderMarkdown(text: string) {
   })
 }
 
-function formatAmount(amount: number): string {
-  return `₩${amount.toLocaleString('ko-KR')}`
-}
+
 
 // ── 메인 페이지 ──
 

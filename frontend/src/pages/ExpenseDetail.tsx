@@ -12,13 +12,7 @@ import { expenseApi } from '../api/expenses'
 import { categoryApi } from '../api/categories'
 import RegisterRecurringModal from '../components/RegisterRecurringModal'
 import type { Expense, Category } from '../types'
-
-/**
- * 금액을 한국 원화 형식으로 포맷
- */
-function formatAmount(amount: number): string {
-  return `₩${amount.toLocaleString('ko-KR')}`
-}
+import { formatAmount } from '../utils/format'
 
 /**
  * ISO 날짜 문자열을 YYYY.MM.DD 형식으로 변환

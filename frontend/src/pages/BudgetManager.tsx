@@ -13,6 +13,7 @@ import budgetApi from '../api/budgets'
 import EmptyState from '../components/EmptyState'
 import ErrorState from '../components/ErrorState'
 import type { BudgetAlert, CategoryBudgetOverview } from '../types'
+import { formatAmount } from '../utils/format'
 
 export default function BudgetManager() {
   const { addToast } = useToast()
@@ -179,12 +180,6 @@ export default function BudgetManager() {
       })
     }
   }
-
-  /**
-   * 금액 포맷팅
-   */
-  const formatAmount = (amount: number): string =>
-    `₩${amount.toLocaleString('ko-KR')}`
 
   /**
    * 프로그레스바 색상 결정

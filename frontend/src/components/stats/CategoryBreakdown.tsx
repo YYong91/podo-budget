@@ -5,14 +5,11 @@
 
 import ChangeIndicator from './ChangeIndicator'
 import type { CategoryStats, CategoryChange } from '../../types'
+import { formatAmount } from '../../utils/format'
 
 interface CategoryBreakdownProps {
   categories: CategoryStats[]
   comparisons?: CategoryChange[]
-}
-
-function formatAmount(amount: number): string {
-  return `₩${amount.toLocaleString('ko-KR')}`
 }
 
 export default function CategoryBreakdown({ categories, comparisons = [] }: CategoryBreakdownProps) {

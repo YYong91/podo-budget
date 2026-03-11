@@ -13,6 +13,7 @@ import { useHouseholdStore } from '../stores/useHouseholdStore'
 import EmptyState from '../components/EmptyState'
 import ErrorState from '../components/ErrorState'
 import type { RecurringTransaction, RecurringTransactionCreate, Category } from '../types'
+import { formatAmount } from '../utils/format'
 
 /* 빈도 한국어 표시 */
 function formatFrequency(r: RecurringTransaction): string {
@@ -29,11 +30,6 @@ function formatFrequency(r: RecurringTransaction): string {
     default:
       return r.frequency
   }
-}
-
-/* 금액 포맷 */
-function formatAmount(amount: number): string {
-  return `₩${amount.toLocaleString('ko-KR')}`
 }
 
 /* 빈 폼 데이터 */
@@ -313,17 +309,17 @@ export default function RecurringList() {
                     <td className="px-5 py-3">
                       <div className="flex items-center justify-end gap-1">
                         {r.is_active && (
-                          <button onClick={() => handleExecute(r)} className="p-1.5 rounded-md hover:bg-leaf-50 text-warm-500 hover:text-leaf-600" title="바로 등록">
+                          <button onClick={() => handleExecute(r)} className="p-2 rounded-md hover:bg-leaf-50 text-warm-500 hover:text-leaf-600" title="바로 등록">
                             <Zap className="w-4 h-4" />
                           </button>
                         )}
-                        <button onClick={() => toggleActive(r)} className="p-1.5 rounded-md hover:bg-warm-100 text-warm-500" title={r.is_active ? '중지' : '다시 시작'}>
+                        <button onClick={() => toggleActive(r)} className="p-2 rounded-md hover:bg-warm-100 text-warm-500" title={r.is_active ? '중지' : '다시 시작'}>
                           {r.is_active ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
                         </button>
-                        <button onClick={() => openEdit(r)} className="p-1.5 rounded-md hover:bg-warm-100 text-warm-500" title="수정">
+                        <button onClick={() => openEdit(r)} className="p-2 rounded-md hover:bg-warm-100 text-warm-500" title="수정">
                           <Pencil className="w-4 h-4" />
                         </button>
-                        <button onClick={() => handleDelete(r.id)} className="p-1.5 rounded-md hover:bg-red-50 text-warm-500 hover:text-red-600" title="삭제">
+                        <button onClick={() => handleDelete(r.id)} className="p-2 rounded-md hover:bg-red-50 text-warm-500 hover:text-red-600" title="삭제">
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </div>

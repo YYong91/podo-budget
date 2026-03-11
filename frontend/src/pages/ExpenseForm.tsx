@@ -291,6 +291,7 @@ export default function ExpenseForm() {
       <div className="flex items-center gap-3">
         <Link
           to="/expenses"
+          aria-label="뒤로가기"
           className="p-2 rounded-lg hover:bg-warm-100 transition-colors"
         >
           <ArrowLeft className="w-5 h-5 text-warm-600" />
@@ -734,12 +735,13 @@ export default function ExpenseForm() {
         <form onSubmit={handleFormSubmit} className="bg-white rounded-2xl shadow-sm border border-warm-200/60 p-6 space-y-5">
           {/* 금액 (필수) */}
           <div>
-            <label className="block text-sm font-medium text-warm-700 mb-2">
+            <label htmlFor="expense-amount" className="block text-sm font-medium text-warm-700 mb-2">
               금액 <span className="text-rose-500">*</span>
             </label>
             <div className="relative">
               <span className="absolute left-4 top-1/2 -translate-y-1/2 text-warm-500">₩</span>
               <input
+                id="expense-amount"
                 type="number"
                 value={formData.amount}
                 onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
@@ -754,10 +756,11 @@ export default function ExpenseForm() {
 
           {/* 설명 (필수) */}
           <div>
-            <label className="block text-sm font-medium text-warm-700 mb-2">
+            <label htmlFor="expense-description" className="block text-sm font-medium text-warm-700 mb-2">
               설명 <span className="text-rose-500">*</span>
             </label>
             <input
+              id="expense-description"
               type="text"
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
@@ -769,10 +772,11 @@ export default function ExpenseForm() {
 
           {/* 카테고리 (선택) */}
           <div>
-            <label className="block text-sm font-medium text-warm-700 mb-2">
+            <label htmlFor="expense-category" className="block text-sm font-medium text-warm-700 mb-2">
               카테고리
             </label>
             <select
+              id="expense-category"
               value={formData.category_id}
               onChange={(e) => setFormData({ ...formData, category_id: e.target.value })}
               className="w-full px-4 py-3 border border-warm-300 rounded-xl focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
@@ -825,10 +829,11 @@ export default function ExpenseForm() {
 
           {/* 날짜 (기본 오늘) */}
           <div>
-            <label className="block text-sm font-medium text-warm-700 mb-2">
+            <label htmlFor="expense-date" className="block text-sm font-medium text-warm-700 mb-2">
               날짜 <span className="text-rose-500">*</span>
             </label>
             <input
+              id="expense-date"
               type="date"
               value={formData.date}
               onChange={(e) => setFormData({ ...formData, date: e.target.value })}
@@ -839,10 +844,11 @@ export default function ExpenseForm() {
 
           {/* 메모 (선택) */}
           <div>
-            <label className="block text-sm font-medium text-warm-700 mb-2">
+            <label htmlFor="expense-memo" className="block text-sm font-medium text-warm-700 mb-2">
               메모
             </label>
             <input
+              id="expense-memo"
               type="text"
               value={formData.memo}
               onChange={(e) => setFormData({ ...formData, memo: e.target.value })}

@@ -18,15 +18,12 @@ import ErrorState from '../components/ErrorState'
 import GrapeProgress from '../components/GrapeProgress'
 import { useToast } from '../hooks/useToast'
 import type { Expense, Income, MonthlyStats, RecurringTransaction, StatsResponse } from '../types'
+import { formatAmount } from '../utils/format'
 
 ChartJS.register(ArcElement, LineElement, PointElement, CategoryScale, LinearScale, Filler, ChartTooltip, Legend)
 
 const COLORS = ['#9333EA', '#0EA5E9', '#10B981', '#F43F5E', '#8B5CF6', '#EC4899', '#06B6D4', '#78716C']
 
-/* 금액 포맷 */
-function formatAmount(amount: number): string {
-  return `₩${amount.toLocaleString('ko-KR')}`
-}
 
 /* 현재 월 (YYYY-MM) */
 function getCurrentMonth(): string {

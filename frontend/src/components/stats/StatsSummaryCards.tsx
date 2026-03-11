@@ -5,6 +5,7 @@
 
 import ChangeIndicator from './ChangeIndicator'
 import type { TrendPoint } from '../../types'
+import { formatAmount } from '../../utils/format'
 
 interface StatsSummaryCardsProps {
   total: number
@@ -13,10 +14,6 @@ interface StatsSummaryCardsProps {
   changePercentage: number | null
   totalLabel?: string
   accentColor?: 'grape' | 'leaf'
-}
-
-function formatAmount(amount: number): string {
-  return `₩${amount.toLocaleString('ko-KR')}`
 }
 
 export default function StatsSummaryCards({ total, count, trend, changePercentage, totalLabel = '총 지출', accentColor = 'grape' }: StatsSummaryCardsProps) {

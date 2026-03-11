@@ -293,7 +293,7 @@ export default function AssetForm() {
     <div className="max-w-xl mx-auto space-y-6">
       {/* 헤더 */}
       <div className="flex items-center gap-3">
-        <Link to="/assets" className="p-2 rounded-lg hover:bg-warm-100 text-warm-500">
+        <Link to="/assets" aria-label="뒤로가기" className="p-2 rounded-lg hover:bg-warm-100 text-warm-500">
           <ArrowLeft className="w-5 h-5" />
         </Link>
         <h1 className="text-xl font-bold text-warm-900">{isEdit ? '자산 수정' : '자산 등록'}</h1>

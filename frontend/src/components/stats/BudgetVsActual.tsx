@@ -5,10 +5,7 @@
 
 import { Wallet } from 'lucide-react'
 import type { BudgetMonthlyStatsResponse } from '../../types'
-
-function formatAmount(amount: number): string {
-  return `₩${amount.toLocaleString('ko-KR')}`
-}
+import { formatAmount } from '../../utils/format'
 
 interface BudgetVsActualProps {
   budgetStats: BudgetMonthlyStatsResponse | null

@@ -7,6 +7,7 @@ import { useRef, useState } from 'react'
 import { Chart as ChartJS, LineElement, PointElement, CategoryScale, LinearScale, Filler, Tooltip, Legend } from 'chart.js'
 import { Line } from 'react-chartjs-2'
 import type { TrendPoint } from '../../types'
+import { formatAmount } from '../../utils/format'
 
 ChartJS.register(LineElement, PointElement, CategoryScale, LinearScale, Filler, Tooltip, Legend)
 
@@ -15,9 +16,7 @@ interface TrendChartProps {
   title?: string
 }
 
-function formatAmount(amount: number): string {
-  return `₩${amount.toLocaleString('ko-KR')}`
-}
+
 
 /** Y축 눈금 한국어 표기 */
 function formatAxisAmount(v: number): string {

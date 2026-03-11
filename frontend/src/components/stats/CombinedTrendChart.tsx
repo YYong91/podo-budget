@@ -18,6 +18,7 @@ import {
 } from 'chart.js'
 import { Chart } from 'react-chartjs-2'
 import type { TrendPoint } from '../../types'
+import { formatAmount } from '../../utils/format'
 
 // mixed chart (bar + line)이므로 BarController와 LineController 모두 등록 필수
 ChartJS.register(BarController, BarElement, LineController, LineElement, PointElement, CategoryScale, LinearScale, Tooltip, Legend)
@@ -27,9 +28,7 @@ interface CombinedTrendChartProps {
   incomeTrend: TrendPoint[]
 }
 
-function formatAmount(amount: number): string {
-  return `₩${amount.toLocaleString('ko-KR')}`
-}
+
 
 function formatAxisAmount(v: number): string {
   const n = Math.abs(Number(v))

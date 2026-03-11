@@ -73,7 +73,7 @@ export default function AccountManager() {
     <div className="max-w-xl mx-auto space-y-6">
       {/* 헤더 */}
       <div className="flex items-center gap-3">
-        <Link to="/assets" className="p-2 rounded-lg hover:bg-warm-100 text-warm-500">
+        <Link to="/assets" aria-label="뒤로가기" className="p-2 rounded-lg hover:bg-warm-100 text-warm-500">
           <ArrowLeft className="w-5 h-5" />
         </Link>
         <h1 className="text-xl font-bold text-warm-900 flex-1">계좌 관리</h1>
@@ -160,7 +160,7 @@ export default function AccountManager() {
               </div>
               <button
                 onClick={() => handleDelete(account.id)}
-                className="p-1.5 text-warm-300 hover:text-rose-500 rounded-lg hover:bg-rose-50 transition-colors"
+                className="p-2 text-warm-300 hover:text-rose-500 rounded-lg hover:bg-rose-50 transition-colors"
               >
                 <Trash2 className="w-4 h-4" />
               </button>

@@ -11,10 +11,7 @@ import { incomeApi } from '../api/income'
 import { categoryApi } from '../api/categories'
 import RegisterRecurringModal from '../components/RegisterRecurringModal'
 import type { Income, Category } from '../types'
-
-function formatAmount(amount: number): string {
-  return `₩${amount.toLocaleString('ko-KR')}`
-}
+import { formatAmount } from '../utils/format'
 
 function formatDate(dateStr: string): string {
   return dateStr.slice(0, 10).replace(/-/g, '.')

@@ -7,6 +7,7 @@ import { useRef } from 'react'
 import { Chart as ChartJS, BarElement, CategoryScale, LinearScale, Tooltip, Legend } from 'chart.js'
 import { Bar } from 'react-chartjs-2'
 import type { PeriodTotal } from '../../types'
+import { formatAmount } from '../../utils/format'
 
 ChartJS.register(BarElement, CategoryScale, LinearScale, Tooltip, Legend)
 
@@ -14,9 +15,6 @@ interface ComparisonChartProps {
   data: PeriodTotal[]
 }
 
-function formatAmount(amount: number): string {
-  return `₩${amount.toLocaleString('ko-KR')}`
-}
 
 export default function ComparisonChart({ data }: ComparisonChartProps) {
   const chartRef = useRef<ChartJS<'bar'>>(null)
