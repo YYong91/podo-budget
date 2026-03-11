@@ -28,6 +28,7 @@ const AssetForm = lazy(() => import('./pages/AssetForm'))
 const AccountManager = lazy(() => import('./pages/AccountManager'))
 const TransactionList = lazy(() => import('./pages/TransactionList'))
 const GuidePage = lazy(() => import('./pages/GuidePage'))
+const FeedbackPage = lazy(() => import('./pages/FeedbackPage'))
 
 /* 로딩 스피너 */
 function PageLoading() {
@@ -71,6 +72,7 @@ function App() {
             <Route path="/assets/:id" element={<AssetForm />} />
             <Route path="/accounts" element={<AccountManager />} />
             <Route path="/guide" element={<GuidePage />} />
+            <Route path="/feedback" element={<FeedbackPage />} />
           </Route>
         </Route>
         <Route path="*" element={<NotFoundPage />} />

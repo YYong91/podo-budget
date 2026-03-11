@@ -365,6 +365,29 @@ export interface ExecuteResponse {
   next_due_date: string
 }
 
+/* 피드백 관련 타입 */
+
+export type FeedbackType = 'feature' | 'bug'
+export type FeedbackStatus = 'new' | 'read' | 'done'
+
+export interface Feedback {
+  id: number
+  user_id: number
+  type: FeedbackType
+  title: string
+  content: string
+  status: FeedbackStatus
+  username: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface FeedbackCreateRequest {
+  type: FeedbackType
+  title: string
+  content: string
+}
+
 /* Household 관련 타입 */
 export type {
   Household,

@@ -50,6 +50,9 @@ class Settings(BaseSettings):
     SENTRY_DSN: str = ""
     SENTRY_ENVIRONMENT: str = "development"
 
+    # 관리자 설정
+    ADMIN_USER_ID: int = 1  # 피드백 관리 등 관리자 기능용 사용자 ID
+
     # CORS — 허용할 프론트엔드 오리진 (쉼표로 구분)
     CORS_ORIGINS: str = "http://localhost:5173,https://budget.podonest.com"
 
