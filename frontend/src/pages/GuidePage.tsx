@@ -290,6 +290,13 @@ export default function GuidePage() {
             <p>거래를 기록할수록 포도알이 자라납니다. 대시보드에서 이번 달 성장 현황을 확인하세요.</p>
           </div>
           <div>
+            <p className="font-semibold text-warm-800 mb-1">새소식 (업데이트 알림)</p>
+            <p>
+              새로운 기능이 추가되면 사이드바의 <strong>설정</strong> 아이콘에 빨간 점이 표시됩니다.
+              설정 페이지 상단의 <strong>새소식</strong> 섹션에서 전체 업데이트 내역을 확인할 수 있어요.
+            </p>
+          </div>
+          <div>
             <p className="font-semibold text-warm-800 mb-1">자연어 입력 팁</p>
             <ExampleBox>
               <p>
