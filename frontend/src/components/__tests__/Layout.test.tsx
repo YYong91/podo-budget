@@ -4,11 +4,12 @@
  * 헤더, 사이드바, 네비게이션 항목, 반응형 동작을 테스트한다.
  */
 
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import userEvent from '@testing-library/user-event'
 import Layout from '../Layout'
+import { changelogs } from '../../data/changelogs'
 
 /**
  * useAuth 훅 모킹
@@ -47,7 +48,13 @@ function renderLayout(initialPath = '/') {
   )
 }
 
+const STORAGE_KEY = 'podo-changelog-last-seen'
+
 describe('Layout', () => {
+  beforeEach(() => {
+    localStorage.clear()
+  })
+
   describe('헤더 렌더링', () => {
     it('로고를 표시한다', () => {
       renderLayout()
@@ -140,6 +147,24 @@ describe('Layout', () => {
     it('Outlet을 통해 하위 페이지가 렌더링된다', () => {
       renderLayout()
       expect(screen.getByRole('main')).toBeInTheDocument()
+    })
+  })
+
+  describe('새소식 알림 dot', () => {
+    it('미확인 업데이트가 있으면 설정 아이콘에 빨간 점을 표시한다', () => {
+      renderLayout()
+      const settingsLink = screen.getByRole('link', { name: /설정/i })
+      // 빨간 점(bg-red-500 rounded-full)이 설정 링크 안에 존재
+      const dot = settingsLink.querySelector('.bg-red-500.rounded-full')
+      expect(dot).toBeInTheDocument()
+    })
+
+    it('이미 확인한 버전이면 빨간 점이 없다', () => {
+      localStorage.setItem(STORAGE_KEY, changelogs[0].version)
+      renderLayout()
+      const settingsLink = screen.getByRole('link', { name: /설정/i })
+      const dot = settingsLink.querySelector('.bg-red-500.rounded-full')
+      expect(dot).toBeNull()
     })
   })
 })

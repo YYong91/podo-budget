@@ -8,6 +8,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import SettingsPage from '../SettingsPage'
+import { changelogs } from '../../data/changelogs'
 
 // useAuth 모킹
 vi.mock('../../contexts/AuthContext', () => ({
@@ -26,6 +27,16 @@ vi.mock('../../contexts/AuthContext', () => ({
   }),
 }))
 
+// IntersectionObserver 모킹
+const mockObserve = vi.fn()
+const mockDisconnect = vi.fn()
+globalThis.IntersectionObserver = class IntersectionObserver {
+  constructor() {}
+  observe = mockObserve
+  disconnect = mockDisconnect
+  unobserve = vi.fn()
+} as unknown as typeof globalThis.IntersectionObserver
+
 function renderSettingsPage() {
   return render(
     <MemoryRouter>
@@ -37,6 +48,7 @@ function renderSettingsPage() {
 describe('SettingsPage', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    localStorage.clear()
   })
 
   describe('기본 렌더링', () => {
@@ -80,6 +92,39 @@ describe('SettingsPage', () => {
     it('podo-auth 안내 문구를 표시한다', () => {
       renderSettingsPage()
       expect(screen.getAllByText(/포도 통합 계정/).length).toBeGreaterThan(0)
+    })
+  })
+
+  describe('새소식 섹션', () => {
+    it('새소식 제목을 표시한다', () => {
+      renderSettingsPage()
+      expect(screen.getByText('새소식')).toBeInTheDocument()
+    })
+
+    it('changelog 항목의 버전과 제목을 표시한다', () => {
+      renderSettingsPage()
+      changelogs.forEach((log) => {
+        expect(screen.getByText(`v${log.version}`)).toBeInTheDocument()
+        expect(screen.getByText(log.title)).toBeInTheDocument()
+      })
+    })
+
+    it('미확인 업데이트가 있으면 "새 업데이트" 뱃지를 표시한다', () => {
+      renderSettingsPage()
+      expect(screen.getByText('새 업데이트')).toBeInTheDocument()
+    })
+
+    it('이미 확인한 버전이면 "새 업데이트" 뱃지가 없다', () => {
+      localStorage.setItem('podo-changelog-last-seen', changelogs[0].version)
+      renderSettingsPage()
+      expect(screen.queryByText('새 업데이트')).not.toBeInTheDocument()
+    })
+
+    it('태그(신규/개선/수정)를 표시한다', () => {
+      renderSettingsPage()
+      // 첫 번째 changelog의 첫 번째 아이템 태그 확인
+      const firstTag = changelogs[0].items[0].tag
+      expect(screen.getAllByText(firstTag).length).toBeGreaterThan(0)
     })
   })
 })
