@@ -3,20 +3,41 @@
  * @description 설정 페이지 - 계정 정보 및 텔레그램 연동
  */
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import toast from 'react-hot-toast'
-import { Tags, PiggyBank, Repeat, Users, LogOut, BookOpen, MessageSquarePlus } from 'lucide-react'
+import { Tags, PiggyBank, Repeat, Users, LogOut, BookOpen, MessageSquarePlus, Megaphone } from 'lucide-react'
 import { generateTelegramLinkCode, unlinkTelegram } from '../api/telegram'
 import { useAuth } from '../contexts/AuthContext'
+import { useChangelog } from '../hooks/useChangelog'
+import type { ChangelogItem } from '../data/changelogs'
 
 const AUTH_URL = import.meta.env.VITE_AUTH_URL || 'https://auth.podonest.com'
 
+const TAG_STYLES: Record<ChangelogItem['tag'], string> = {
+  '신규': 'bg-grape-100 text-grape-700',
+  '개선': 'bg-leaf-100 text-leaf-700',
+  '수정': 'bg-warm-100 text-warm-700',
+}
+
 export default function SettingsPage() {
   const { user, refreshUser, logout } = useAuth()
+  const { hasUnread, markAsRead, changelogs } = useChangelog()
+  const changelogRef = useRef<HTMLDivElement>(null)
   const [linkCode, setLinkCode] = useState<{ code: string; expires_at: string } | null>(null)
   const [loadingCode, setLoadingCode] = useState(false)
   const [loadingUnlink, setLoadingUnlink] = useState(false)
+
+  // 새소식 섹션이 화면에 보이면 읽음 처리
+  useEffect(() => {
+    if (!hasUnread || !changelogRef.current) return
+    const observer = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) markAsRead() },
+      { threshold: 0.3 },
+    )
+    observer.observe(changelogRef.current)
+    return () => observer.disconnect()
+  }, [hasUnread, markAsRead])
 
   const formatDate = (dateStr: string): string => dateStr.slice(0, 10).replace(/-/g, '.')
 
@@ -66,6 +87,52 @@ export default function SettingsPage() {
   return (
     <div className="space-y-6">
       <h1 className="text-xl font-bold text-grape-700">설정</h1>
+
+      {/* 새소식 */}
+      <div ref={changelogRef} className="bg-white rounded-2xl shadow-sm border border-warm-200 p-6">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="relative">
+            <Megaphone className="w-5 h-5 text-grape-500" />
+            {hasUnread && (
+              <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white" />
+            )}
+          </div>
+          <h2 className="text-lg font-semibold text-warm-900">새소식</h2>
+          {hasUnread && (
+            <span className="text-xs bg-grape-100 text-grape-700 px-2 py-0.5 rounded-full font-medium">
+              새 업데이트
+            </span>
+          )}
+        </div>
+        <div className="space-y-4">
+          {changelogs.map((log, idx) => (
+            <div
+              key={log.version}
+              className={`relative pl-6 ${idx < changelogs.length - 1 ? 'pb-4 border-l-2 border-warm-200 ml-1' : 'ml-1'}`}
+            >
+              {/* 타임라인 점 */}
+              <div className={`absolute left-0 top-1 w-2.5 h-2.5 rounded-full -translate-x-[5px] ${
+                idx === 0 ? 'bg-grape-500' : 'bg-warm-300'
+              }`} />
+              <div className="flex items-baseline gap-2 mb-1.5">
+                <span className="text-sm font-bold text-warm-900">v{log.version}</span>
+                <span className="text-xs text-warm-400">{log.date}</span>
+              </div>
+              <p className="text-sm font-medium text-warm-700 mb-2">{log.title}</p>
+              <ul className="space-y-1">
+                {log.items.map((item, i) => (
+                  <li key={i} className="flex items-start gap-2 text-sm text-warm-600">
+                    <span className={`inline-block text-xs px-1.5 py-0.5 rounded font-medium flex-shrink-0 mt-0.5 ${TAG_STYLES[item.tag]}`}>
+                      {item.tag}
+                    </span>
+                    <span>{item.text}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+      </div>
 
       {/* 관리 */}
       <div className="bg-white rounded-2xl shadow-sm border border-warm-200 p-6">

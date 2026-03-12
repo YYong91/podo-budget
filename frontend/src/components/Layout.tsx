@@ -10,6 +10,7 @@ import {
   Mail, Home, Menu, X, ChevronDown, Landmark,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
+import { useChangelog } from '../hooks/useChangelog'
 
 
 const navItems: { path: string; label: string; icon: LucideIcon }[] = [
@@ -47,6 +48,7 @@ export default function Layout() {
     setSidebarOpen(false)
   }, [location.pathname])
 
+  const { hasUnread: hasUnreadChangelog } = useChangelog()
   const pendingInvitationCount = myInvitations.filter(inv => inv.status === 'pending').length
   const activeHousehold = households.find(h => h.id === activeHouseholdId)
 
@@ -154,7 +156,12 @@ export default function Layout() {
                     }
                   `}
                 >
-                  <Icon className="w-[18px] h-[18px]" />
+                  <span className="relative">
+                    <Icon className="w-[18px] h-[18px]" />
+                    {item.path === '/settings' && hasUnreadChangelog && (
+                      <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full" />
+                    )}
+                  </span>
                   {item.label}
                 </Link>
               )
