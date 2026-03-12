@@ -59,6 +59,11 @@
   }
 }
 
+/* 모바일 하단 탭 바 safe area (노치/홈바 대응) */
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
 body {
   margin: 0;
   min-width: 320px;
