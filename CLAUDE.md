@@ -111,6 +111,21 @@ frontend/src/
 - **재사용**: `ci-test.yml` (테스트 로직), `notify.yml` (텔레그램 알림)
 - **E2E**: `e2e.yml` — 수동 실행 전용 (SSO 전환 후 미업데이트)
 
+## 환경 구성
+
+| 항목 | Development (개발) | Production (운영) |
+|------|-------------------|-------------------|
+| **Git 브랜치** | `develop` | `main` |
+| **BE URL** | `podo-budget-dev.fly.dev` | `podo-budget-backend.fly.dev` |
+| **FE URL** | `podo-budget-dev.pages.dev` | `budget.podonest.com` |
+| **Fly 설정** | `backend/fly.dev.toml` | `backend/fly.toml` |
+| **텔레그램 봇** | `@PodoBudgetDevBot` | `@PodoBudgetBot` |
+
+### 브랜치 전략
+- `feature/*`, `fix/*` → `develop`에 PR (CI 테스트)
+- develop 머지 → 개발환경 자동 배포 (CD)
+- `develop` → `main` PR → 운영 배포 (CI+CD)
+
 ## Environment Variables
 
 Key variables in `backend/.env` (see `.env.example`):

@@ -1,14 +1,13 @@
-# CD: main 머지 시 배포만 실행 (테스트는 PR CI에서 완료)
-name: CD
+# CD: develop 머지 시 개발환경 배포 (테스트 없이 배포만)
+name: CD (Dev)
 
 on:
   push:
-    branches: [main]
-  workflow_dispatch:
+    branches: [develop]
 
 # 동시 배포 방지
 concurrency:
-  group: deploy-production
+  group: deploy-dev
   cancel-in-progress: false
 
 env:
@@ -20,7 +19,7 @@ jobs:
     name: 배포 시작 알림
     uses: ./.github/workflows/notify.yml
     with:
-      message: "[PROD] 🚀 podo-budget 배포 시작"
+      message: "[DEV] 🚀 podo-budget 배포 시작"
     secrets:
       TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
       TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
@@ -41,7 +40,7 @@ jobs:
       - name: 백엔드 배포
         run: |
           set -o pipefail
-          flyctl deploy --remote-only --config backend/fly.toml --dockerfile backend/Dockerfile 2>&1 | tee /tmp/deploy.log
+          flyctl deploy --remote-only --config backend/fly.dev.toml --dockerfile backend/Dockerfile 2>&1 | tee /tmp/deploy.log
 
       - name: 실패 원인 수집
         id: on-failure
@@ -74,12 +73,12 @@ jobs:
       - name: 빌드
         run: cd frontend && npm ci && npm run build
         env:
-          VITE_API_URL: ${{ secrets.VITE_API_URL }}
+          VITE_API_URL: https://podo-budget-dev.fly.dev
           VITE_AUTH_URL: ${{ secrets.VITE_AUTH_URL }}
-          VITE_AUTH_CALLBACK_URL: ${{ secrets.VITE_AUTH_CALLBACK_URL }}
+          VITE_AUTH_CALLBACK_URL: https://podo-budget-dev.pages.dev/auth/callback
           VITE_BOOKSHELF_URL: ${{ secrets.VITE_BOOKSHELF_URL }}
           VITE_SENTRY_DSN: ${{ secrets.VITE_SENTRY_DSN }}
-          VITE_SENTRY_ENVIRONMENT: production
+          VITE_SENTRY_ENVIRONMENT: development
 
       - name: Cloudflare 배포
         env:
@@ -87,10 +86,10 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
           npx wrangler@3 pages deploy frontend/dist \
-            --project-name=podo-budget \
+            --project-name=podo-budget-dev \
             --commit-message="Deploy ${{ github.sha }}" \
             --commit-hash="${{ github.sha }}" \
-            --branch="main" \
+            --branch="develop" \
             2>&1 | tee /tmp/deploy.log
 
       - name: 실패 원인 수집
@@ -124,11 +123,11 @@ jobs:
 
           if [ "$BACKEND_STATUS" = "success" ] && [ "$FRONTEND_STATUS" = "success" ]; then
             KST_TIME="$(TZ=Asia/Seoul date '+%Y-%m-%d %H:%M KST')"
-            MESSAGE="$(printf '[PROD] ✅ podo-budget 배포 완료\n📝 %s\n🕐 %s' \
+            MESSAGE="$(printf '[DEV] ✅ podo-budget 배포 완료\n📝 %s\n🕐 %s' \
               "${DISPLAY_MSG}" \
               "${KST_TIME}")"
           else
-            MESSAGE="[PROD] ❌ podo-budget 배포 실패 (backend: ${BACKEND_STATUS}, frontend: ${FRONTEND_STATUS})"
+            MESSAGE="[DEV] ❌ podo-budget 배포 실패 (backend: ${BACKEND_STATUS}, frontend: ${FRONTEND_STATUS})"
             [ -n "$BACKEND_FAILURE" ] && MESSAGE="${MESSAGE}"$'\n'"🔴 Backend: ${BACKEND_FAILURE}"
             [ -n "$FRONTEND_FAILURE" ] && MESSAGE="${MESSAGE}"$'\n'"🔴 Frontend: ${FRONTEND_FAILURE}"
             MESSAGE="${MESSAGE}"$'\n'"🔗 https://github.com/${REPO}/actions/runs/${RUN_ID}"
