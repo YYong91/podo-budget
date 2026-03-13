@@ -1,5 +1,5 @@
 # 백엔드/프론트엔드 테스트 재사용 워크플로우
-name: CI Test
+name: 테스트
 
 on:
   workflow_call:
@@ -19,31 +19,31 @@ on:
 
 jobs:
   test-backend:
-    name: Test Backend
+    name: 백엔드
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install uv
+      - name: uv 설치
         uses: astral-sh/setup-uv@v4
         with:
           version: "latest"
           enable-cache: true
 
-      - name: Set up Python
+      - name: Python 설정
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
-      - name: Install dependencies
+      - name: 의존성 설치
         run: uv sync --all-extras
 
-      - name: Lint
+      - name: 린트
         run: uv run ruff check backend/
 
-      - name: Run tests
+      - name: 테스트 실행
         env:
           DATABASE_URL: sqlite+aiosqlite:///./test.db
           SECRET_KEY: test-secret-key  # pragma: allowlist secret
@@ -52,30 +52,30 @@ jobs:
         run: PYTHONPATH=backend uv run pytest backend/tests/ --ignore=backend/tests/integration/test_api_budget_bulk.py
 
   test-frontend:
-    name: Test Frontend
+    name: 프론트엔드
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Node.js 설정
         uses: actions/setup-node@v4
         with:
           node-version: "22"
           cache: "npm"
           cache-dependency-path: frontend/package-lock.json
 
-      - name: Install dependencies
+      - name: 의존성 설치
         run: cd frontend && npm ci
 
-      - name: Run linter
+      - name: 린트
         run: cd frontend && npm run lint
 
-      - name: Run tests
+      - name: 테스트 실행
         run: cd frontend && npm run test:run
 
-      - name: Build check
+      - name: 빌드 검증
         if: inputs.frontend_build_check
         run: cd frontend && npm run build
         env:

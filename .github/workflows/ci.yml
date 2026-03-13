@@ -11,21 +11,31 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # ── 테스트 시작 알림 ─────────────────────────────
+  notify-test-start:
+    name: 테스트 시작 알림
+    uses: ./.github/workflows/notify.yml
+    with:
+      message: "🧪 podo-budget 테스트 시작\n📝 #${{ github.event.pull_request.number }} ${{ github.event.pull_request.title || 'Manual trigger' }}"
+    secrets:
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+
   test:
-    name: CI Test
+    name: 테스트
     uses: ./.github/workflows/ci-test.yml
     with:
       frontend_build_check: true
 
-  # ── CI 결과 알림 ──────────────────────────────────
-  notify-ci-result:
-    name: Notify CI Result
+  # ── 테스트 결과 알림 ─────────────────────────────
+  notify-test-result:
+    name: 테스트 결과 알림
     needs: [test]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 2
     steps:
-      - name: Send Telegram notification
+      - name: 텔레그램 전송
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
@@ -36,11 +46,11 @@ jobs:
           RUN_ID: ${{ github.run_id }}
         run: |
           if [ "$TEST_STATUS" = "success" ]; then
-            MESSAGE="$(printf '✅ podo-budget CI 통과\n📝 #%s %s' \
+            MESSAGE="$(printf '✅ podo-budget 테스트 통과\n📝 #%s %s' \
               "${PR_NUMBER}" \
               "${PR_TITLE}")"
           else
-            MESSAGE="$(printf '❌ podo-budget CI 실패\n📝 #%s %s\n🔗 https://github.com/%s/actions/runs/%s' \
+            MESSAGE="$(printf '❌ podo-budget 테스트 실패\n📝 #%s %s\n🔗 https://github.com/%s/actions/runs/%s' \
               "${PR_NUMBER}" \
               "${PR_TITLE}" \
               "${REPO}" \
