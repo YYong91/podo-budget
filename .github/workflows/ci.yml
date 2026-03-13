@@ -13,7 +13,7 @@ concurrency:
 jobs:
   # ── 테스트 시작 알림 ─────────────────────────────
   notify-test-start:
-    name: Notify Test Start
+    name: 시작 알림
     uses: ./.github/workflows/notify.yml
     with:
       message: "🧪 podo-budget 테스트 시작\n📝 #${{ github.event.pull_request.number }} ${{ github.event.pull_request.title || 'Manual trigger' }}"
@@ -22,14 +22,14 @@ jobs:
       TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
 
   test:
-    name: CI Test
+    name: 테스트
     uses: ./.github/workflows/ci-test.yml
     with:
       frontend_build_check: true
 
   # ── 테스트 결과 알림 ─────────────────────────────
   notify-test-result:
-    name: Notify Test Result
+    name: 결과 알림
     needs: [test]
     if: always()
     runs-on: ubuntu-latest

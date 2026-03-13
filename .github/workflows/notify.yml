@@ -16,7 +16,7 @@ on:
 
 jobs:
   notify:
-    name: Send Notification
+    name: 알림
     runs-on: ubuntu-latest
     timeout-minutes: 2
     steps:

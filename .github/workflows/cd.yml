@@ -17,7 +17,7 @@ env:
 jobs:
   # ── 배포 시작 알림 ─────────────────────────────────
   notify-deploy-start:
-    name: Notify Deploy Start
+    name: 시작 알림
     uses: ./.github/workflows/notify.yml
     with:
       message: "🚀 podo-budget 배포 시작"
@@ -27,7 +27,7 @@ jobs:
 
   # ── Backend 배포 (Fly.io) ──────────────────────────
   deploy-backend:
-    name: Deploy Backend to Fly.io
+    name: BE 배포
     runs-on: ubuntu-latest
     timeout-minutes: 15
     outputs:
@@ -52,7 +52,7 @@ jobs:
 
   # ── Frontend 배포 (Cloudflare Pages) ───────────────
   deploy-frontend:
-    name: Deploy Frontend to Cloudflare Pages
+    name: FE 배포
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -102,7 +102,7 @@ jobs:
 
   # ── 배포 결과 알림 ─────────────────────────────────
   notify-deploy-result:
-    name: Notify Deploy Result
+    name: 결과 알림
     needs: [deploy-backend, deploy-frontend]
     runs-on: ubuntu-latest
     timeout-minutes: 2
@@ -120,14 +120,7 @@ jobs:
           REPO: ${{ github.repository }}
           RUN_ID: ${{ github.run_id }}
         run: |
-          # 머지 커밋이면 PR 제목 추출, 아니면 커밋 메시지 그대로 사용
-          if echo "$COMMIT_MSG" | grep -q "^Merge pull request"; then
-            # "Merge pull request #N from ..." 에서 두 번째 줄(PR 제목) 추출
-            DISPLAY_MSG="$(echo "$COMMIT_MSG" | sed -n '2p' | sed 's/^[[:space:]]*//')"
-            [ -z "$DISPLAY_MSG" ] && DISPLAY_MSG="$COMMIT_MSG"
-          else
-            DISPLAY_MSG="$(echo "$COMMIT_MSG" | head -1)"
-          fi
+          DISPLAY_MSG="$(echo "$COMMIT_MSG" | head -1)"
 
           if [ "$BACKEND_STATUS" = "success" ] && [ "$FRONTEND_STATUS" = "success" ]; then
             KST_TIME="$(TZ=Asia/Seoul date '+%Y-%m-%d %H:%M KST')"
