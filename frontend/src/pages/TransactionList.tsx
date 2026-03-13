@@ -17,6 +17,7 @@ import MiniCalendar from '../components/MiniCalendar'
 import TransactionItem from '../components/TransactionItem'
 import PendingRecurring from '../components/PendingRecurring'
 import CategoryBottomSheet from '../components/CategoryBottomSheet'
+import PullToRefresh from '../components/PullToRefresh'
 import EmptyState from '../components/EmptyState'
 import ErrorState from '../components/ErrorState'
 import type { Expense, Income, Category, RecurringTransaction } from '../types'
@@ -215,6 +216,10 @@ export default function TransactionList() {
 
   const monthLabel = `${currentYear}년 ${currentMonth + 1}월`
 
+  const handleRefresh = useCallback(async () => {
+    await fetchData()
+  }, [fetchData])
+
   if (error) {
     return (
       <div className="space-y-4">
@@ -224,6 +229,7 @@ export default function TransactionList() {
   }
 
   return (
+    <PullToRefresh onRefresh={handleRefresh}>
     <div className="space-y-4">
       {/* 월 네비게이션 */}
       <div className="flex items-center justify-center gap-4">
@@ -381,5 +387,6 @@ export default function TransactionList() {
         saving={sheetSaving}
       />
     </div>
+    </PullToRefresh>
   )
 }
