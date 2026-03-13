@@ -40,6 +40,7 @@ class LLMProvider(ABC):
         user_input: str,
         categories: list[str] | None = None,
         history_hints: dict[str, Any] | None = None,
+        category_mappings: dict[str, str] | None = None,
     ) -> dict[str, Any] | list[dict[str, Any]]:
         """사용자 입력을 파싱하여 지출 정보 추출
 
@@ -47,6 +48,7 @@ class LLMProvider(ABC):
             user_input: 사용자가 입력한 자연어 텍스트
             categories: 사용자의 카테고리 이름 목록 (프롬프트에 주입)
             history_hints: 과거 거래 패턴 dict (설명→카테고리, 프롬프트에 주입)
+            category_mappings: 카테고리 별칭 매핑 dict (소스→대상, 프롬프트에 주입)
 
         Returns:
             단일 지출: dict (에러 포함 가능)
@@ -87,12 +89,13 @@ class AnthropicProvider(LLMProvider):
         user_input: str,
         categories: list[str] | None = None,
         history_hints: dict[str, Any] | None = None,
+        category_mappings: dict[str, str] | None = None,
     ) -> dict[str, Any] | list[dict[str, Any]]:
         """Claude API로 자연어 지출 입력을 구조화된 데이터로 변환
 
         단일 지출 또는 여러 지출을 파싱합니다.
         여러 지출인 경우 리스트로 반환합니다.
-        categories와 history_hints가 있으면 프롬프트에 주입하여 정확도를 높입니다.
+        categories, history_hints, category_mappings가 있으면 프롬프트에 주입하여 정확도를 높입니다.
         """
         from app.services.prompts import get_expense_parser_prompt
 
@@ -102,7 +105,7 @@ class AnthropicProvider(LLMProvider):
                 response = await self.client.messages.create(
                     model=self.model,
                     max_tokens=8192,  # Haiku 최대값 — 월간 40건+ 파싱 대응
-                    system=get_expense_parser_prompt(categories=categories, history_hints=history_hints),
+                    system=get_expense_parser_prompt(categories=categories, history_hints=history_hints, category_mappings=category_mappings),
                     messages=[{"role": "user", "content": user_input}],
                 )
 
@@ -281,12 +284,13 @@ class OpenAIProvider(LLMProvider):
         user_input: str,
         categories: list[str] | None = None,
         history_hints: dict[str, Any] | None = None,
+        category_mappings: dict[str, str] | None = None,
     ) -> dict[str, Any] | list[dict[str, Any]]:
         """OpenAI API로 자연어 지출 입력을 구조화된 데이터로 변환
 
         단일 지출 또는 여러 지출을 파싱합니다.
         여러 지출인 경우 리스트로 반환합니다.
-        categories와 history_hints가 있으면 프롬프트에 주입하여 정확도를 높입니다.
+        categories, history_hints, category_mappings가 있으면 프롬프트에 주입하여 정확도를 높입니다.
         """
         from app.services.prompts import get_expense_parser_prompt
 
@@ -297,7 +301,10 @@ class OpenAIProvider(LLMProvider):
                     model=self.model,
                     max_tokens=8192,  # Haiku 최대값 — 월간 40건+ 파싱 대응
                     messages=[
-                        {"role": "system", "content": get_expense_parser_prompt(categories=categories, history_hints=history_hints)},
+                        {
+                            "role": "system",
+                            "content": get_expense_parser_prompt(categories=categories, history_hints=history_hints, category_mappings=category_mappings),
+                        },
                         {"role": "user", "content": user_input},
                     ],
                 )
