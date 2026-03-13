@@ -3,7 +3,7 @@
  * @description 설정 페이지 - 메뉴 목록 → 서브 페이지 네스팅 구조
  */
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import {
@@ -94,21 +94,15 @@ function SubPageWrapper({ children }: { children: React.ReactNode }) {
 /* ─── 새소식 섹션 ─── */
 function ChangelogSection() {
   const { hasUnread, markAsRead, changelogs } = useChangelog()
-  const changelogRef = useRef<HTMLDivElement>(null)
 
+  // 새소식 페이지 진입 시 즉시 읽음 처리
   useEffect(() => {
-    if (!hasUnread || !changelogRef.current) return
-    const observer = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting) markAsRead() },
-      { threshold: 0.3 },
-    )
-    observer.observe(changelogRef.current)
-    return () => observer.disconnect()
+    if (hasUnread) markAsRead()
   }, [hasUnread, markAsRead])
 
   return (
     <SubPageWrapper>
-      <div ref={changelogRef} className="bg-white rounded-2xl shadow-sm border border-warm-200 p-6">
+      <div className="bg-white rounded-2xl shadow-sm border border-warm-200 p-6">
         <div className="space-y-4">
           {changelogs.map((log, idx) => (
             <div
