@@ -23,7 +23,7 @@ primary_region = "nrt"
   min_machines_running = 0    # 비용 절약: 최소 0대
 
   [[http_service.checks]]
-    grace_period = "10s"
+    grace_period = "30s"
     interval = "30s"
     method = "GET"
     timeout = "5s"
@@ -32,7 +32,7 @@ primary_region = "nrt"
 [[vm]]
   cpu_kind = "shared"
   cpus = 1
-  memory_mb = 256
+  memory_mb = 512
 
 [[mounts]]
   source = "budget_dev_data"
