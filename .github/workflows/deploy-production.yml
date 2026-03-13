@@ -5,138 +5,61 @@ on:
     branches: [main]
   workflow_dispatch:
 
+# 동일 브랜치 동시 배포 방지
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
 env:
   FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
 
 jobs:
+  # ── 테스트 ──────────────────────────────────────────
   notify-test-start:
     name: Notify Test Start
-    runs-on: ubuntu-latest
-    steps:
-      - name: Send Telegram notification
-        env:
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-        run: |
-          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
-            -d chat_id="${TELEGRAM_CHAT_ID}" \
-            --data-urlencode "text=🧪 podo-budget 테스트 시작"
+    uses: ./.github/workflows/notify.yml
+    with:
+      message: "🧪 podo-budget 테스트 시작"
+    secrets:
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
 
-  test-backend:
-    name: Test Backend
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@v4
-        with:
-          version: "latest"
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-
-      - name: Install dependencies
-        run: uv sync --all-extras
-
-      - name: Lint
-        run: uv run ruff check backend/
-
-      - name: Run tests
-        env:
-          DATABASE_URL: sqlite+aiosqlite:///./test.db
-          SECRET_KEY: test-secret-key  # pragma: allowlist secret
-          LLM_PROVIDER: anthropic
-          ANTHROPIC_API_KEY: test-key  # pragma: allowlist secret
-        run: PYTHONPATH=backend uv run pytest backend/tests/ --ignore=backend/tests/integration/test_api_budget_bulk.py
-
-  test-frontend:
-    name: Test Frontend
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-          cache: "npm"
-          cache-dependency-path: frontend/package-lock.json
-
-      - name: Install dependencies
-        run: |
-          cd frontend
-          npm ci
-
-      - name: Run linter
-        run: |
-          cd frontend
-          npm run lint
-
-      - name: Run tests
-        run: |
-          cd frontend
-          npm run test:run
-
-      - name: Build
-        run: |
-          cd frontend
-          npm run build
-        env:
-          VITE_API_URL: /api
-          VITE_AUTH_URL: ${{ secrets.VITE_AUTH_URL }}
-          VITE_AUTH_CALLBACK_URL: ${{ secrets.VITE_AUTH_CALLBACK_URL }}
-          VITE_BOOKSHELF_URL: ${{ secrets.VITE_BOOKSHELF_URL }}
+  test:
+    name: CI Test
+    uses: ./.github/workflows/ci-test.yml
+    with:
+      frontend_build_check: true
 
   notify-test-result:
     name: Notify Test Result
-    needs: [test-backend, test-frontend]
-    runs-on: ubuntu-latest
+    needs: [test]
     if: always()
-    steps:
-      - name: Send Telegram notification
-        env:
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-          BACKEND_STATUS: ${{ needs.test-backend.result }}
-          FRONTEND_STATUS: ${{ needs.test-frontend.result }}
-        run: |
-          PROJECT="podo-budget"
-          if [ "$BACKEND_STATUS" = "success" ] && [ "$FRONTEND_STATUS" = "success" ]; then
-            MSG="✅ ${PROJECT} 테스트 완료"
-          else
-            FAILURES=""
-            [ "$BACKEND_STATUS" != "success" ] && FAILURES="backend"
-            [ "$FRONTEND_STATUS" != "success" ] && FAILURES="${FAILURES:+${FAILURES} + }frontend"
-            MSG="❌ ${PROJECT} 테스트 실패 (${FAILURES})"
-          fi
-          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
-            -d chat_id="${TELEGRAM_CHAT_ID}" \
-            --data-urlencode "text=${MSG}"
+    uses: ./.github/workflows/notify.yml
+    with:
+      message: >-
+        ${{ needs.test.result == 'success'
+          && '✅ podo-budget 테스트 완료'
+          || '❌ podo-budget 테스트 실패' }}
+    secrets:
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
 
+  # ── 배포 ──────────────────────────────────────────
   notify-deploy-start:
     name: Notify Deploy Start
-    needs: [test-backend, test-frontend]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Send Telegram notification
-        env:
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-        run: |
-          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
-            -d chat_id="${TELEGRAM_CHAT_ID}" \
-            --data-urlencode "text=🚀 podo-budget 배포 시작"
+    needs: [test]
+    uses: ./.github/workflows/notify.yml
+    with:
+      message: "🚀 podo-budget 배포 시작"
+    secrets:
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
 
   deploy-backend:
     name: Deploy Backend to Fly.io
-    needs: [test-backend, test-frontend]
+    needs: [test]
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     outputs:
       failure_reason: ${{ steps.on-failure.outputs.reason }}
 
@@ -150,7 +73,7 @@ jobs:
           set -o pipefail
           flyctl deploy --remote-only --config backend/fly.toml --dockerfile backend/Dockerfile 2>&1 | tee /tmp/deploy.log
 
-      - name: On failure
+      - name: Capture failure reason
         id: on-failure
         if: failure()
         run: |
@@ -159,8 +82,9 @@ jobs:
 
   deploy-frontend:
     name: Deploy Frontend to Cloudflare Pages
-    needs: [test-backend, test-frontend]
+    needs: [test]
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       contents: read
       deployments: write
@@ -177,15 +101,8 @@ jobs:
           cache: "npm"
           cache-dependency-path: frontend/package-lock.json
 
-      - name: Install dependencies
-        run: |
-          cd frontend
-          npm ci
-
-      - name: Build
-        run: |
-          cd frontend
-          npm run build
+      - name: Install and build
+        run: cd frontend && npm ci && npm run build
         env:
           VITE_API_URL: ${{ secrets.VITE_API_URL }}
           VITE_AUTH_URL: ${{ secrets.VITE_AUTH_URL }}
@@ -206,7 +123,7 @@ jobs:
             --branch="main" \
             2>&1 | tee /tmp/deploy.log
 
-      - name: On failure
+      - name: Capture failure reason
         id: on-failure
         if: failure()
         run: |
@@ -217,6 +134,7 @@ jobs:
     name: Notify Deploy Result
     needs: [deploy-backend, deploy-frontend]
     runs-on: ubuntu-latest
+    timeout-minutes: 2
     if: always()
     steps:
       - name: Send Telegram notification
@@ -231,30 +149,23 @@ jobs:
           REPO: ${{ github.repository }}
           RUN_ID: ${{ github.run_id }}
         run: |
-          PROJECT="podo-budget"
-
-          # 테스트 실패로 배포 건너뛴 경우 알림 없음 (notify-test-result가 이미 처리)
+          # 테스트 실패로 배포 건너뛴 경우 알림 없음
           if [ "$BACKEND_STATUS" = "skipped" ] && [ "$FRONTEND_STATUS" = "skipped" ]; then
             exit 0
           fi
 
           if [ "$BACKEND_STATUS" = "success" ] && [ "$FRONTEND_STATUS" = "success" ]; then
             KST_TIME="$(TZ=Asia/Seoul date '+%Y-%m-%d %H:%M KST')"
-            MESSAGE="$(printf '✅ %s 배포 완료\n📝 %s\n🔗 %s\n🕐 %s' \
-              "${PROJECT}" \
+            MESSAGE="$(printf '✅ podo-budget 배포 완료\n📝 %s\n🔗 %s\n🕐 %s' \
               "${COMMIT_MSG}" \
               "https://github.com/${REPO}/actions/runs/${RUN_ID}" \
               "${KST_TIME}")"
           else
-            MESSAGE="❌ ${PROJECT} 배포 실패 (backend: ${BACKEND_STATUS}, frontend: ${FRONTEND_STATUS})"
-            if [ -n "$BACKEND_FAILURE" ]; then
-              MESSAGE="${MESSAGE}"$'\n'"🔴 Backend: ${BACKEND_FAILURE}"
-            fi
-            if [ -n "$FRONTEND_FAILURE" ]; then
-              MESSAGE="${MESSAGE}"$'\n'"🔴 Frontend: ${FRONTEND_FAILURE}"
-            fi
+            MESSAGE="❌ podo-budget 배포 실패 (backend: ${BACKEND_STATUS}, frontend: ${FRONTEND_STATUS})"
+            [ -n "$BACKEND_FAILURE" ] && MESSAGE="${MESSAGE}"$'\n'"🔴 Backend: ${BACKEND_FAILURE}"
+            [ -n "$FRONTEND_FAILURE" ] && MESSAGE="${MESSAGE}"$'\n'"🔴 Frontend: ${FRONTEND_FAILURE}"
           fi
 
-          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+          curl -sf -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
             -d chat_id="${TELEGRAM_CHAT_ID}" \
-            --data-urlencode "text=${MESSAGE}"
+            --data-urlencode "text=${MESSAGE}" || true

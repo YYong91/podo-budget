@@ -101,9 +101,16 @@ frontend/src/
 - Alembic: 6 migrations (초기 스키마, 인덱스/FK, Float→Numeric, Income+Category type, RecurringTransaction, telegram_link_code)
 
 ### Infrastructure
-- Docker Compose: `db` (postgres:16-alpine with healthcheck) + `backend` (python:3.12-slim)
-- Backend volume-mounted for hot reload in dev
-- Frontend: Vite dev server with proxy to backend
+- Docker Compose: `backend` + `frontend` (SQLite, 볼륨 마운트)
+- Backend: Fly.io (Docker, `backend/fly.toml`)
+- Frontend: Cloudflare Pages (Wrangler CLI)
+
+### CI/CD (GitHub Actions)
+- `.github/workflows/ci-test.yml` — 백엔드/프론트엔드 테스트 (재사용 워크플로우)
+- `.github/workflows/notify.yml` — 텔레그램 알림 (재사용 워크플로우)
+- `.github/workflows/ci.yml` — PR 테스트 (ci-test.yml 호출)
+- `.github/workflows/deploy-production.yml` — main push → 테스트 → 배포 (Fly.io + Cloudflare Pages)
+- `.github/workflows/e2e.yml` — E2E 테스트 (수동 실행, SSO 전환 후 미업데이트)
 
 ## Environment Variables
 
