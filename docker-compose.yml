@@ -5,7 +5,7 @@ services:
     build:
       context: .
       dockerfile: backend/Dockerfile
-    container_name: homenrich-backend
+    container_name: podo-budget-backend
     restart: unless-stopped
     ports:
       - "8000:8000"
@@ -30,7 +30,7 @@ services:
         - VITE_AUTH_URL=https://auth.podonest.com
         - VITE_AUTH_CALLBACK_URL=https://budget.podonest.com/auth/callback
         - VITE_BOOKSHELF_URL=https://bookshelf.podonest.com
-    container_name: homenrich-frontend
+    container_name: podo-budget-frontend
     restart: unless-stopped
     ports:
       - "3000:80"

@@ -9,6 +9,13 @@ on:
         required: false
         default: true
         type: boolean
+    outputs:
+      backend_result:
+        description: "백엔드 테스트 결과"
+        value: ${{ jobs.test-backend.result }}
+      frontend_result:
+        description: "프론트엔드 테스트 결과"
+        value: ${{ jobs.test-frontend.result }}
 
 jobs:
   test-backend:
@@ -23,6 +30,7 @@ jobs:
         uses: astral-sh/setup-uv@v4
         with:
           version: "latest"
+          enable-cache: true
 
       - name: Set up Python
         uses: actions/setup-python@v5

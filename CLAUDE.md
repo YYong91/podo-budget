@@ -105,12 +105,11 @@ frontend/src/
 - Backend: Fly.io (Docker, `backend/fly.toml`)
 - Frontend: Cloudflare Pages (Wrangler CLI)
 
-### CI/CD (GitHub Actions)
-- `.github/workflows/ci-test.yml` — 백엔드/프론트엔드 테스트 (재사용 워크플로우)
-- `.github/workflows/notify.yml` — 텔레그램 알림 (재사용 워크플로우)
-- `.github/workflows/ci.yml` — PR 테스트 (ci-test.yml 호출)
-- `.github/workflows/deploy-production.yml` — main push → 테스트 → 배포 (Fly.io + Cloudflare Pages)
-- `.github/workflows/e2e.yml` — E2E 테스트 (수동 실행, SSO 전환 후 미업데이트)
+### CI/CD (GitHub Actions) — CI/CD 분리 구조
+- **CI**: PR → `ci.yml` → `ci-test.yml` (lint + test + build check) → 통과해야 머지 가능
+- **CD**: main push → `cd.yml` → 배포만 (Fly.io + Cloudflare Pages) + 텔레그램 알림
+- **재사용**: `ci-test.yml` (테스트 로직), `notify.yml` (텔레그램 알림)
+- **E2E**: `e2e.yml` — 수동 실행 전용 (SSO 전환 후 미업데이트)
 
 ## Environment Variables
 
