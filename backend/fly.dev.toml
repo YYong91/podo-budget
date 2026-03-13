@@ -1,0 +1,39 @@
+# Fly.io 배포 설정 - Backend (개발환경)
+
+app = "podo-budget-dev"
+primary_region = "nrt"
+
+[build]
+
+[deploy]
+  release_command = "sh -c 'uv sync --frozen --no-dev --no-install-project && .venv/bin/alembic upgrade head'"
+
+[env]
+  PORT = "8000"
+  APP_NAME = "PodoBudget-Dev"
+  DEBUG = "True"
+  DATABASE_URL = "sqlite+aiosqlite:////app/data/db.sqlite3"
+  SENTRY_ENVIRONMENT = "development"
+
+[http_service]
+  internal_port = 8000
+  force_https = true
+  auto_stop_machines = true   # 비용 절약: 사용 안 할 때 자동 중지
+  auto_start_machines = true
+  min_machines_running = 0    # 비용 절약: 최소 0대
+
+  [[http_service.checks]]
+    grace_period = "10s"
+    interval = "30s"
+    method = "GET"
+    timeout = "5s"
+    path = "/health"
+
+[[vm]]
+  cpu_kind = "shared"
+  cpus = 1
+  memory_mb = 256
+
+[[mounts]]
+  source = "budget_dev_data"
+  destination = "/app/data"
