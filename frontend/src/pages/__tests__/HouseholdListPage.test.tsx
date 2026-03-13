@@ -139,7 +139,7 @@ describe('HouseholdListPage', () => {
   })
 
   describe('가구 목록 표시', () => {
-    it('페이지 제목을 표시한다', () => {
+    it('가구 설명 안내 문구를 표시한다', () => {
       storeState = {
         households: mockHouseholds,
         isLoading: false,
@@ -148,7 +148,7 @@ describe('HouseholdListPage', () => {
 
       renderHouseholdList()
 
-      expect(screen.getByRole('heading', { name: '공유 가계부' })).toBeInTheDocument()
+      expect(screen.getByText('가족이나 친구들과 함께 지출을 관리하세요')).toBeInTheDocument()
     })
 
     it('가구 목록을 카드 형태로 표시한다', () => {

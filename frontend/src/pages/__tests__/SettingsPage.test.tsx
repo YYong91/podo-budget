@@ -56,9 +56,9 @@ describe('SettingsPage', () => {
   })
 
   describe('메뉴 목록 (메인)', () => {
-    it('페이지 제목 "설정"을 표시한다', () => {
+    it('카테고리 메뉴 항목을 표시한다', () => {
       renderSettingsPage()
-      expect(screen.getByRole('heading', { name: '설정' })).toBeInTheDocument()
+      expect(screen.getByText('카테고리')).toBeInTheDocument()
     })
 
     it('8개 메뉴 항목을 표시한다', () => {

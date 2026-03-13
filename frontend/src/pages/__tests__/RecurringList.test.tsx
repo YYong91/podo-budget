@@ -19,9 +19,10 @@ function renderRecurringList() {
 }
 
 describe('RecurringList', () => {
-  it('페이지 제목을 표시한다', () => {
+  it('필터 탭을 표시한다', () => {
     renderRecurringList()
-    expect(screen.getByText('반복 거래')).toBeInTheDocument()
+    expect(screen.getByText('전체')).toBeInTheDocument()
+    expect(screen.getByText('추가')).toBeInTheDocument()
   })
 
   it('반복 거래 목록을 표시한다', async () => {

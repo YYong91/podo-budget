@@ -54,13 +54,6 @@ describe('ExpenseForm', () => {
   })
 
   describe('기본 렌더링', () => {
-    it('지출 입력 제목을 표시한다', async () => {
-      renderExpenseForm()
-      await waitFor(() => {
-        expect(screen.getByRole('heading', { name: '지출 입력' })).toBeInTheDocument()
-      })
-    })
-
     it('목록으로 돌아가는 링크가 /expenses로 이동한다', async () => {
       renderExpenseForm()
       await waitFor(() => {

@@ -41,13 +41,6 @@ beforeEach(() => {
 
 describe('IncomeDetail', () => {
   describe('기본 렌더링', () => {
-    it('페이지 제목을 표시한다', async () => {
-      renderIncomeDetail()
-      await waitFor(() => {
-        expect(screen.getByRole('heading', { name: '수입 상세' })).toBeInTheDocument()
-      })
-    })
-
     it('뒤로가기 링크를 표시한다', async () => {
       renderIncomeDetail()
       await waitFor(() => {

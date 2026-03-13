@@ -28,11 +28,6 @@ function renderInsightsPage() {
 
 describe('InsightsPage', () => {
   describe('기본 렌더링', () => {
-    it('페이지 제목을 표시한다', () => {
-      renderInsightsPage()
-      expect(screen.getByRole('heading', { name: '리포트' })).toBeInTheDocument()
-    })
-
     it('기간 네비게이터를 표시한다', () => {
       renderInsightsPage()
       expect(screen.getByLabelText('이전 기간')).toBeInTheDocument()

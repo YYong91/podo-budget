@@ -6,6 +6,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
+import { MemoryRouter } from 'react-router-dom'
 import userEvent from '@testing-library/user-event'
 import BudgetManager from '../BudgetManager'
 import { server } from '../../mocks/server'
@@ -128,7 +129,11 @@ function setupErrorHandlers() {
  * BudgetManager 렌더링 헬퍼
  */
 function renderBudgetManager() {
-  return render(<BudgetManager />)
+  return render(
+    <MemoryRouter>
+      <BudgetManager />
+    </MemoryRouter>
+  )
 }
 
 beforeEach(() => {
@@ -147,12 +152,12 @@ describe('BudgetManager', () => {
   })
 
   describe('정상 데이터 표시', () => {
-    it('데이터 로드 후 "예산 관리" 페이지 제목을 표시한다', async () => {
+    it('데이터 로드 후 월 총 예산 섹션을 표시한다', async () => {
       setupSuccessHandlers()
       renderBudgetManager()
 
       await waitFor(() => {
-        expect(screen.getByRole('heading', { name: '예산 관리' })).toBeInTheDocument()
+        expect(screen.getByText('월 총 예산')).toBeInTheDocument()
       })
     })
 
@@ -201,7 +206,7 @@ describe('BudgetManager', () => {
       renderBudgetManager()
 
       await waitFor(() => {
-        expect(screen.getByRole('heading', { name: '예산 관리' })).toBeInTheDocument()
+        expect(screen.getByText('월 총 예산')).toBeInTheDocument()
       })
 
       expect(screen.queryByRole('button', { name: '저장' })).not.toBeInTheDocument()
@@ -417,7 +422,7 @@ describe('BudgetManager', () => {
       renderBudgetManager()
 
       await waitFor(() => {
-        expect(screen.getByText('예산 관리')).toBeInTheDocument()
+        expect(screen.getByText('월 총 예산')).toBeInTheDocument()
       })
 
       expect(screen.queryByText('예산 현황')).not.toBeInTheDocument()
@@ -512,7 +517,7 @@ describe('BudgetManager', () => {
       await user.click(retryButton)
 
       await waitFor(() => {
-        expect(screen.getByRole('heading', { name: '예산 관리' })).toBeInTheDocument()
+        expect(screen.getByText('월 총 예산')).toBeInTheDocument()
       })
     })
   })

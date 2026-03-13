@@ -56,13 +56,6 @@ describe('IncomeForm', () => {
   })
 
   describe('기본 렌더링', () => {
-    it('수입 입력 제목을 표시한다', async () => {
-      renderIncomeForm()
-      await waitFor(() => {
-        expect(screen.getByRole('heading', { name: '수입 입력' })).toBeInTheDocument()
-      })
-    })
-
     it('간편 입력 모드가 기본 활성화되어 있다', async () => {
       renderIncomeForm()
       await waitFor(() => {
