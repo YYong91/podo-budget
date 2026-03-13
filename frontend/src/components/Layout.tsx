@@ -6,7 +6,7 @@ import { Link, Outlet, useLocation } from 'react-router-dom'
 import FloatingActionButton from './FloatingActionButton'
 import { useHouseholdStore } from '../stores/useHouseholdStore'
 import {
-  LayoutDashboard, Receipt, TrendingUp, Settings as SettingsIcon,
+  Receipt, TrendingUp, Settings as SettingsIcon,
   Mail, Home, ChevronDown, Landmark,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
@@ -14,8 +14,7 @@ import { useChangelog } from '../hooks/useChangelog'
 
 
 const navItems: { path: string; label: string; icon: LucideIcon }[] = [
-  { path: '/', label: '대시보드', icon: LayoutDashboard },
-  { path: '/transactions', label: '가계부', icon: Receipt },
+  { path: '/', label: '가계부', icon: Receipt },
   { path: '/insights', label: '리포트', icon: TrendingUp },
   { path: '/assets', label: '자산', icon: Landmark },
   { path: '/settings', label: '설정', icon: SettingsIcon },
