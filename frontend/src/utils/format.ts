@@ -8,3 +8,17 @@ export function formatAmountWithSign(amount: number, type: 'expense' | 'income')
   const formatted = formatAmount(amount)
   return type === 'income' ? `+${formatted}` : formatted
 }
+
+/** 금액을 축약 형태로 포맷 (캘린더 셀용) */
+export function formatCompactAmount(amount: number): string {
+  if (amount < 10000) {
+    return amount.toLocaleString('ko-KR')
+  }
+  if (amount < 1000000) {
+    const man = amount / 10000
+    const formatted = man % 1 === 0 ? man.toFixed(0) : man.toFixed(1)
+    return `${formatted}만`
+  }
+  const man = Math.round(amount / 10000)
+  return `${man}만`
+}
