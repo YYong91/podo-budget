@@ -61,17 +61,23 @@ describe('SettingsPage', () => {
       expect(screen.getByRole('heading', { name: '설정' })).toBeInTheDocument()
     })
 
-    it('3개 메뉴 항목을 표시한다', () => {
+    it('8개 메뉴 항목을 표시한다', () => {
       renderSettingsPage()
-      expect(screen.getByText('새소식')).toBeInTheDocument()
-      expect(screen.getByText('관리')).toBeInTheDocument()
+      expect(screen.getByText('카테고리')).toBeInTheDocument()
+      expect(screen.getByText('예산 관리')).toBeInTheDocument()
+      expect(screen.getByText('반복 거래')).toBeInTheDocument()
+      expect(screen.getByText('공유 가계부')).toBeInTheDocument()
       expect(screen.getByText('내 계정')).toBeInTheDocument()
+      expect(screen.getByText('새소식')).toBeInTheDocument()
+      expect(screen.getByText('사용 가이드')).toBeInTheDocument()
+      expect(screen.getByText('피드백')).toBeInTheDocument()
     })
 
     it('메뉴 설명을 표시한다', () => {
       renderSettingsPage()
       expect(screen.getByText('앱 업데이트 내역')).toBeInTheDocument()
       expect(screen.getByText('프로필, 텔레그램 연동, 로그아웃')).toBeInTheDocument()
+      expect(screen.getByText('지출/수입 분류 카테고리 관리')).toBeInTheDocument()
     })
   })
 
