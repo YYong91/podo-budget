@@ -1,0 +1,108 @@
+/**
+ * @file CategoryBottomSheet.tsx
+ * @description 카테고리 선택 바텀시트 — 모바일에서는 하단 시트, PC에서는 중앙 모달
+ */
+
+import { useEffect, useRef } from 'react'
+import { X, Loader2 } from 'lucide-react'
+import type { Category } from '../types'
+
+interface CategoryBottomSheetProps {
+  isOpen: boolean
+  onClose: () => void
+  onSelect: (categoryId: number | null) => void
+  categories: Category[]
+  currentCategoryId: number | null
+  transactionType: 'expense' | 'income'
+  saving?: boolean
+}
+
+export default function CategoryBottomSheet({
+  isOpen,
+  onClose,
+  onSelect,
+  categories,
+  currentCategoryId,
+  transactionType,
+  saving = false,
+}: CategoryBottomSheetProps) {
+  const sheetRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!isOpen) return
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [isOpen, onClose])
+
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden'
+    }
+    return () => {
+      document.body.style.overflow = ''
+    }
+  }, [isOpen])
+
+  if (!isOpen) return null
+
+  const filteredCategories = categories.filter(
+    c => c.type === transactionType || c.type === 'both'
+  )
+
+  // Tailwind 동적 클래스 대신 조건부 전체 문자열 (빌드 시 감지 보장)
+  const activeClass = transactionType === 'income'
+    ? 'bg-leaf-50 text-leaf-700 font-medium'
+    : 'bg-grape-50 text-grape-700 font-medium'
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end md:items-center md:justify-center">
+      <div
+        className="absolute inset-0 bg-black/40 transition-opacity"
+        onClick={onClose}
+      />
+      <div
+        ref={sheetRef}
+        className="relative w-full md:max-w-sm bg-white rounded-t-2xl md:rounded-2xl max-h-[60vh] flex flex-col animate-slide-up md:animate-none"
+      >
+        <div className="flex items-center justify-between px-4 pt-4 pb-2 border-b border-warm-100">
+          <h3 className="text-sm font-semibold text-warm-900">카테고리 변경</h3>
+          <button onClick={onClose} className="p-1 rounded-lg hover:bg-warm-100">
+            <X className="w-4 h-4 text-warm-400" />
+          </button>
+        </div>
+        <div className="overflow-y-auto p-2">
+          {saving ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="w-5 h-5 animate-spin text-warm-400" />
+            </div>
+          ) : (
+            <>
+              <button
+                onClick={() => onSelect(null)}
+                className={`w-full text-left px-3 py-2.5 rounded-lg text-sm transition-colors ${
+                  currentCategoryId === null ? activeClass : 'text-warm-700 hover:bg-warm-50'
+                }`}
+              >
+                미분류
+              </button>
+              {filteredCategories.map(cat => (
+                <button
+                  key={cat.id}
+                  onClick={() => onSelect(cat.id)}
+                  className={`w-full text-left px-3 py-2.5 rounded-lg text-sm transition-colors ${
+                    currentCategoryId === cat.id ? activeClass : 'text-warm-700 hover:bg-warm-50'
+                  }`}
+                >
+                  {cat.name}
+                </button>
+              ))}
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
