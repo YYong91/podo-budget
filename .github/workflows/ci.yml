@@ -23,7 +23,6 @@ jobs:
 
   test:
     name: CI Test
-    needs: [notify-test-start]
     uses: ./.github/workflows/ci-test.yml
     with:
       frontend_build_check: true
