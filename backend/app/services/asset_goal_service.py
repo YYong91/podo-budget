@@ -123,8 +123,7 @@ async def get_goal_with_insight(
 async def _get_recent_snapshots(user_id: int, household_id: int | None, db: AsyncSession, months: int = 4) -> list[AssetSnapshot]:
     """최근 N개월 스냅샷 조회"""
     q = select(AssetSnapshot).where(AssetSnapshot.user_id == user_id)
-    if household_id:
-        q = q.where(AssetSnapshot.household_id == household_id)
+    q = q.where(AssetSnapshot.household_id == household_id) if household_id else q.where(AssetSnapshot.household_id.is_(None))
     q = q.order_by(AssetSnapshot.snapshot_date.desc()).limit(months)
     result = await db.execute(q)
     return list(result.scalars().all())
