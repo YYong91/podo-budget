@@ -1,5 +1,5 @@
-# CD: main 머지 시 배포만 실행 (테스트는 PR CI에서 완료)
-name: CD
+# CD: main 머지 시 배포 (테스트는 PR CI에서 완료)
+name: CD (Prod)
 
 on:
   push:

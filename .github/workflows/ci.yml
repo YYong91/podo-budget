@@ -16,7 +16,7 @@ jobs:
     name: 테스트 시작 알림
     uses: ./.github/workflows/notify.yml
     with:
-      message: "🧪 podo-budget 테스트 시작\n📝 #${{ github.event.pull_request.number }} ${{ github.event.pull_request.title || 'Manual trigger' }}"
+      message: "${{ github.base_ref == 'main' && '[PROD]' || '[DEV]' }} 🧪 podo-budget 테스트 시작\n📝 #${{ github.event.pull_request.number }} ${{ github.event.pull_request.title || 'Manual trigger' }}"
     secrets:
       TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
       TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
@@ -44,13 +44,16 @@ jobs:
           PR_NUMBER: ${{ github.event.pull_request.number }}
           REPO: ${{ github.repository }}
           RUN_ID: ${{ github.run_id }}
+          ENV_PREFIX: ${{ github.base_ref == 'main' && '[PROD]' || '[DEV]' }}
         run: |
           if [ "$TEST_STATUS" = "success" ]; then
-            MESSAGE="$(printf '✅ podo-budget 테스트 통과\n📝 #%s %s' \
+            MESSAGE="$(printf '%s ✅ podo-budget 테스트 통과\n📝 #%s %s' \
+              "${ENV_PREFIX}" \
               "${PR_NUMBER}" \
               "${PR_TITLE}")"
           else
-            MESSAGE="$(printf '❌ podo-budget 테스트 실패\n📝 #%s %s\n🔗 https://github.com/%s/actions/runs/%s' \
+            MESSAGE="$(printf '%s ❌ podo-budget 테스트 실패\n📝 #%s %s\n🔗 https://github.com/%s/actions/runs/%s' \
+              "${ENV_PREFIX}" \
               "${PR_NUMBER}" \
               "${PR_TITLE}" \
               "${REPO}" \
