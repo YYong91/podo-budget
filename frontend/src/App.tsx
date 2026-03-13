@@ -67,6 +67,7 @@ function App() {
             <Route path="/invitations" element={<InvitationListPage />} />
             <Route path="/invitations/accept" element={<AcceptInvitationPage />} />
             <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/settings/:section" element={<SettingsPage />} />
             <Route path="/assets" element={<AssetDashboard />} />
             <Route path="/assets/new" element={<AssetForm />} />
             <Route path="/assets/:id" element={<AssetForm />} />
