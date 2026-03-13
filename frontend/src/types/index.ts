@@ -72,6 +72,28 @@ export interface AssetSearchResult {
   market: string
 }
 
+export interface AssetGoal {
+  id: number
+  target_net_worth: number
+  target_date: string
+  household_id: number | null
+  user_id: number
+  progress_pct: number
+  monthly_required: number | null
+  estimated_date: string | null
+  pace_status: 'ahead' | 'on_track' | 'behind'
+  pace_message: string
+  created_at: string
+  updated_at: string
+}
+
+export interface MonthlySavings {
+  month: string
+  total_income: number
+  total_expense: number
+  net_savings: number
+}
+
 export interface CreateAssetParams {
   name: string
   type: string

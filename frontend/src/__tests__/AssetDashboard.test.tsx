@@ -5,11 +5,9 @@ import { MemoryRouter } from 'react-router-dom'
 import { vi, describe, test, expect, beforeEach } from 'vitest'
 import AssetDashboard from '../pages/AssetDashboard'
 import { assetApi } from '../api/assets'
-import { accountApi } from '../api/accounts'
 
 // chart.js는 jsdom에서 Canvas API 없으므로 모킹
 vi.mock('react-chartjs-2', () => ({
-  Pie: () => <div data-testid="pie-chart" />,
   Line: () => <div data-testid="line-chart" />,
 }))
 
@@ -24,20 +22,17 @@ vi.mock('../api/assets', () => ({
     getAll: vi.fn(),
     getSummary: vi.fn(),
     getSnapshots: vi.fn(),
-  },
-}))
-
-// accounts API 모킹
-vi.mock('../api/accounts', () => ({
-  accountApi: {
-    getAll: vi.fn(),
+    getGoal: vi.fn(),
+    getMonthlySavings: vi.fn(),
+    setGoal: vi.fn(),
+    deleteGoal: vi.fn(),
   },
 }))
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const mockAssets: any[] = [
-  { id: 1, name: '삼성전자', type: 'stock_kr', is_liability: false, current_value: 700000, profit_loss_pct: 5.2 },
-  { id: 2, name: '주담대', type: 'loan', is_liability: true, current_value: 200000000, interest_rate: 3.5 },
+  { id: 1, name: '삼성전자', type: 'stock_kr', is_liability: false, current_value: 700000, profit_loss_pct: 5.2, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+  { id: 2, name: '주담대', type: 'loan', is_liability: true, current_value: 200000000, interest_rate: 3.5, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
 ]
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -67,10 +62,12 @@ describe('AssetDashboard', () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     vi.mocked(assetApi.getSnapshots).mockResolvedValue({ data: [] } as any)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    vi.mocked(accountApi.getAll).mockResolvedValue({ data: [] } as any)
+    vi.mocked(assetApi.getGoal).mockResolvedValue({ data: null } as any)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    vi.mocked(assetApi.getMonthlySavings).mockResolvedValue({ data: { year: 2026, month: 3, total_income: 3000000, total_expense: 2500000, net_savings: 500000 } } as any)
   })
 
-  test('로딩 후 순자산 카드 표시', async () => {
+  test('로딩 후 순자산 표시', async () => {
     renderDashboard()
     await waitFor(() => {
       expect(screen.getByText('순자산')).toBeInTheDocument()
@@ -91,14 +88,6 @@ describe('AssetDashboard', () => {
     })
   })
 
-  test('총 자산/부채 카드 표시', async () => {
-    renderDashboard()
-    await waitFor(() => {
-      expect(screen.getByText('총 자산')).toBeInTheDocument()
-      expect(screen.getByText('총 부채')).toBeInTheDocument()
-    })
-  })
-
   test('자산 등록 버튼 표시', async () => {
     renderDashboard()
     await waitFor(() => {
@@ -106,11 +95,10 @@ describe('AssetDashboard', () => {
     })
   })
 
-  test('자산/부채 섹션 헤더 표시', async () => {
+  test('목표 미설정 시 CTA 표시', async () => {
     renderDashboard()
     await waitFor(() => {
-      expect(screen.getByText(/자산 \(1\)/)).toBeInTheDocument()
-      expect(screen.getByText(/부채 \(1\)/)).toBeInTheDocument()
+      expect(screen.getByText('순자산 목표를 설정해보세요')).toBeInTheDocument()
     })
   })
 

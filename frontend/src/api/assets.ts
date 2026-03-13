@@ -1,7 +1,7 @@
 /* 자산 관리 API */
 
 import apiClient from './client'
-import type { Asset, AssetSummary, AssetSnapshot, AssetSearchResult, CreateAssetParams } from '../types'
+import type { Asset, AssetSummary, AssetSnapshot, AssetSearchResult, AssetGoal, MonthlySavings, CreateAssetParams } from '../types'
 
 export const assetApi = {
   getAll: (householdId?: number) =>
@@ -41,4 +41,24 @@ export const assetApi = {
 
   parse: (text: string) =>
     apiClient.post<{ items: CreateAssetParams[] }>('/assets/parse', { text }),
+
+  /* 목표 관리 */
+  getGoal: (householdId?: number) =>
+    apiClient.get<AssetGoal | null>('/assets/goal', {
+      params: householdId != null ? { household_id: householdId } : undefined,
+    }),
+
+  setGoal: (data: { target_net_worth: number; target_date: string; household_id?: number }) =>
+    apiClient.post<AssetGoal>('/assets/goal', data),
+
+  deleteGoal: (householdId?: number) =>
+    apiClient.delete('/assets/goal', {
+      params: householdId != null ? { household_id: householdId } : undefined,
+    }),
+
+  /* 월별 저축 추이 */
+  getMonthlySavings: (householdId?: number) =>
+    apiClient.get<MonthlySavings[]>('/assets/monthly-savings', {
+      params: householdId != null ? { household_id: householdId } : undefined,
+    }),
 }

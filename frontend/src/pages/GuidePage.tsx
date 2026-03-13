@@ -223,7 +223,13 @@ export default function GuidePage() {
             <strong>등록:</strong> 자산 → + 버튼 → 자산 유형 선택 후 정보 입력
           </p>
           <p>
-            <strong>현황:</strong> 총 자산, 순자산(자산-부채) 한눈에 확인
+            <strong>순자산 현황:</strong> 순자산, 전월 대비 변동, 자산/부채 요약을 한눈에 확인
+          </p>
+          <p>
+            <strong>목표 설정:</strong> 순자산 목표 금액과 날짜를 설정하면 진행률과 달성 페이스를 추적
+          </p>
+          <p>
+            <strong>유형별 보기:</strong> 투자, 예적금, 부동산/기타, 부채 그룹으로 자산 목록 확인
           </p>
         </ExampleBox>
       </SectionCard>
