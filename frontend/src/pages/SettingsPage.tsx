@@ -24,21 +24,23 @@ const TAG_STYLES: Record<ChangelogItem['tag'], string> = {
   '수정': 'bg-warm-100 text-warm-700',
 }
 
-type SettingsSection = 'changelog' | 'management' | 'my-account'
+type SettingsSection = 'changelog' | 'my-account'
 
 /* 이전 URL 호환용 리디렉션 맵 */
-const SECTION_REDIRECTS: Record<string, SettingsSection> = {
+const SECTION_REDIRECTS: Record<string, SettingsSection | string> = {
   'account-info': 'my-account',
   'telegram': 'my-account',
   'account-manage': 'my-account',
+  'management': '__redirect_settings__',
 }
 
 interface MenuItem {
-  key: SettingsSection
+  to: string
   label: string
   description: string
   icon: LucideIcon
   badge?: React.ReactNode
+  section?: SettingsSection
 }
 
 /* ─── 메뉴 목록 (설정 메인) ─── */
@@ -51,8 +53,8 @@ function SettingsMenu({ menuItems }: { menuItems: MenuItem[] }) {
           const Icon = item.icon
           return (
             <Link
-              key={item.key}
-              to={`/settings/${item.key}`}
+              key={item.to}
+              to={item.to}
               className={`flex items-center gap-4 px-5 py-4 hover:bg-grape-50 transition-colors ${
                 idx < menuItems.length - 1 ? 'border-b border-warm-100' : ''
               }`}
@@ -136,37 +138,6 @@ function ChangelogSection() {
                 ))}
               </ul>
             </div>
-          ))}
-        </div>
-      </div>
-    </SubPageWrapper>
-  )
-}
-
-/* ─── 관리 섹션 ─── */
-function ManagementSection() {
-  const links = [
-    { to: '/categories', icon: Tags, label: '카테고리' },
-    { to: '/budgets', icon: PiggyBank, label: '예산 관리' },
-    { to: '/recurring', icon: Repeat, label: '반복 거래' },
-    { to: '/households', icon: Users, label: '공유 가계부' },
-    { to: '/guide', icon: BookOpen, label: '사용 가이드' },
-    { to: '/feedback', icon: MessageSquarePlus, label: '피드백' },
-  ]
-
-  return (
-    <SubPageWrapper title="관리">
-      <div className="bg-white rounded-2xl shadow-sm border border-warm-200 p-6">
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-          {links.map(({ to, icon: Icon, label }) => (
-            <Link
-              key={to}
-              to={to}
-              className="flex items-center gap-3 px-4 py-3 rounded-xl border border-warm-200 hover:bg-grape-50 hover:border-grape-200 transition-colors"
-            >
-              <Icon className="w-5 h-5 text-grape-500" />
-              <span className="text-sm font-medium text-warm-800">{label}</span>
-            </Link>
           ))}
         </div>
       </div>
@@ -377,25 +348,57 @@ export default function SettingsPage() {
 
   const menuItems: MenuItem[] = [
     {
-      key: 'changelog',
+      to: '/categories',
+      label: '카테고리',
+      description: '지출/수입 분류 카테고리 관리',
+      icon: Tags,
+    },
+    {
+      to: '/budgets',
+      label: '예산 관리',
+      description: '카테고리별/월 총 예산 설정',
+      icon: PiggyBank,
+    },
+    {
+      to: '/recurring',
+      label: '반복 거래',
+      description: '정기 지출/수입 관리',
+      icon: Repeat,
+    },
+    {
+      to: '/households',
+      label: '공유 가계부',
+      description: '가구 생성, 초대, 멤버 관리',
+      icon: Users,
+    },
+    {
+      to: '/settings/my-account',
+      label: '내 계정',
+      description: '프로필, 텔레그램 연동, 로그아웃',
+      icon: User,
+      section: 'my-account',
+    },
+    {
+      to: '/settings/changelog',
       label: '새소식',
       description: '앱 업데이트 내역',
       icon: Megaphone,
+      section: 'changelog',
       badge: hasUnread ? (
         <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white" />
       ) : undefined,
     },
     {
-      key: 'management',
-      label: '관리',
-      description: '카테고리, 예산, 반복 거래, 가이드',
-      icon: Tags,
+      to: '/guide',
+      label: '사용 가이드',
+      description: '앱 기능별 상세 사용법',
+      icon: BookOpen,
     },
     {
-      key: 'my-account',
-      label: '내 계정',
-      description: '프로필, 텔레그램 연동, 로그아웃',
-      icon: User,
+      to: '/feedback',
+      label: '피드백',
+      description: '기능 요청/버그 신고',
+      icon: MessageSquarePlus,
     },
   ]
 
@@ -403,12 +406,13 @@ export default function SettingsPage() {
 
   // 이전 URL 호환: 삭제된 섹션은 새 섹션으로 리디렉션
   if (section && SECTION_REDIRECTS[section]) {
-    navigate(`/settings/${SECTION_REDIRECTS[section]}`, { replace: true })
+    const target = SECTION_REDIRECTS[section]
+    navigate(target === '__redirect_settings__' ? '/settings' : `/settings/${target}`, { replace: true })
     return null
   }
 
   // 잘못된 섹션이면 설정 메인으로 리디렉션
-  const validSections: SettingsSection[] = ['changelog', 'management', 'my-account']
+  const validSections: SettingsSection[] = ['changelog', 'my-account']
   if (section && !validSections.includes(section as SettingsSection)) {
     navigate('/settings', { replace: true })
     return null
@@ -421,8 +425,6 @@ export default function SettingsPage() {
   switch (section) {
     case 'changelog':
       return <ChangelogSection />
-    case 'management':
-      return <ManagementSection />
     case 'my-account':
       return <MyAccountSection />
     default:

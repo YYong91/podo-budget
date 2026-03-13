@@ -145,7 +145,7 @@ export default function GuidePage() {
         </p>
         <ExampleBox>
           <p>
-            <strong>등록:</strong> 설정 → 관리 → 반복 거래 → 새 정기 거래 추가
+            <strong>등록:</strong> 설정 → 반복 거래 → 새 정기 거래 추가
           </p>
           <p>
             <strong>주기:</strong> 매일 / 매주 / 매월 / 매년 선택 가능
@@ -161,7 +161,7 @@ export default function GuidePage() {
         <p>카테고리별로 월 예산을 설정하면 지출 대비 잔여 예산을 실시간으로 추적합니다.</p>
         <ExampleBox>
           <p>
-            <strong>설정:</strong> 설정 → 관리 → 예산 관리 → 카테고리별 월 예산 금액 입력
+            <strong>설정:</strong> 설정 → 예산 관리 → 카테고리별 월 예산 금액 입력
           </p>
           <p>
             <strong>추적:</strong> 리포트에서 예산 대비 실제 지출 비교 차트 확인
@@ -231,7 +231,7 @@ export default function GuidePage() {
         <p>가족이나 동거인과 함께 가계부를 공유할 수 있습니다.</p>
         <ExampleBox>
           <p>
-            <strong>가구 생성:</strong> 설정 → 관리 → 공유 가계부 → 새 가구 만들기
+            <strong>가구 생성:</strong> 설정 → 공유 가계부 → 새 가구 만들기
           </p>
           <p>
             <strong>초대:</strong> 이메일로 가구 구성원 초대
