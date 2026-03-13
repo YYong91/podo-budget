@@ -1,5 +1,5 @@
 # 텔레그램 알림 재사용 워크플로우
-name: Telegram Notify
+name: 텔레그램 알림
 
 on:
   workflow_call:
@@ -16,11 +16,11 @@ on:
 
 jobs:
   notify:
-    name: 알림
+    name: 전송
     runs-on: ubuntu-latest
     timeout-minutes: 2
     steps:
-      - name: Send Telegram message
+      - name: 텔레그램 전송
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}

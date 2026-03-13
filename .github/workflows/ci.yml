@@ -13,7 +13,7 @@ concurrency:
 jobs:
   # ── 테스트 시작 알림 ─────────────────────────────
   notify-test-start:
-    name: 시작 알림
+    name: 테스트 시작 알림
     uses: ./.github/workflows/notify.yml
     with:
       message: "🧪 podo-budget 테스트 시작\n📝 #${{ github.event.pull_request.number }} ${{ github.event.pull_request.title || 'Manual trigger' }}"
@@ -29,13 +29,13 @@ jobs:
 
   # ── 테스트 결과 알림 ─────────────────────────────
   notify-test-result:
-    name: 결과 알림
+    name: 테스트 결과 알림
     needs: [test]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 2
     steps:
-      - name: Send Telegram notification
+      - name: 텔레그램 전송
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
