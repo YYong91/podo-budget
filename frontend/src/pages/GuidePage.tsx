@@ -118,20 +118,26 @@ export default function GuidePage() {
       {/* 2. 가계부 */}
       <SectionCard id="transactions" icon={Receipt} title="가계부 (지출/수입 관리)">
         <p>
-          사이드바의 <strong>내역</strong> 메뉴에서 지출과 수입 내역을 탭으로 전환하여 조회합니다.
+          하단 탭 바의 <strong>가계부</strong> 메뉴에서 월별 캘린더와 함께 지출/수입 내역을 한눈에 조회합니다.
         </p>
         <ExampleBox>
           <p>
-            <strong>지출 입력:</strong> + 버튼 → 자연어 입력 또는 직접 입력 폼
+            <strong>월 이동:</strong> 상단 좌우 화살표로 이전/다음 달 전환
           </p>
           <p>
-            <strong>수입 입력:</strong> + 버튼 → "수입" 탭 선택 후 입력
+            <strong>필터:</strong> 상단의 지출/수입 금액을 탭하면 해당 유형만 필터링 (다시 탭하면 전체)
           </p>
           <p>
-            <strong>상세/수정:</strong> 목록에서 항목 탭 → 상세 페이지에서 수정/삭제
+            <strong>날짜 이동:</strong> 캘린더에서 날짜를 탭하면 해당 날짜의 거래로 자동 스크롤
+          </p>
+          <p>
+            <strong>카테고리 변경:</strong> 거래 항목의 카테고리 뱃지를 탭하면 바텀시트에서 바로 변경
+          </p>
+          <p>
+            <strong>상세/수정:</strong> 거래 항목을 탭하면 상세 페이지에서 수정/삭제
           </p>
         </ExampleBox>
-        <p>월별로 자동 그룹핑되며, 대시보드에서 이번 달 요약(총 지출, 총 수입, 순수익)을 확인할 수 있습니다.</p>
+        <p>캘린더 각 날짜에 그날의 지출/수입 금액이 간략히 표시되어 한 달의 소비 패턴을 파악할 수 있습니다.</p>
       </SectionCard>
 
       {/* 3. 정기 거래 */}

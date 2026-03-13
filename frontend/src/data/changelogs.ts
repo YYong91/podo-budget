@@ -18,6 +18,17 @@ export interface Changelog {
 
 export const changelogs: Changelog[] = [
   {
+    version: '1.6.0',
+    date: '2026-03-13',
+    title: '가계부 목록 대폭 개편',
+    items: [
+      { tag: '개선', text: '토스 스타일 월별 캘린더로 거래 내역을 한눈에 확인' },
+      { tag: '개선', text: '지출/수입 금액을 탭하여 간편 필터링' },
+      { tag: '개선', text: '모바일에서 카테고리 확인 및 바텀시트로 바로 변경' },
+      { tag: '개선', text: '페이지네이션 제거, 월 단위로 전체 거래 조회' },
+    ],
+  },
+  {
     version: '1.5.0',
     date: '2026-03-13',
     title: '설정 페이지 개편',
