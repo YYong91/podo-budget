@@ -2,7 +2,7 @@ name: CI
 
 on:
   pull_request:
-    branches: [main]
+    branches: [develop, main]
   workflow_dispatch:
 
 # 동일 PR에서 새 커밋 push 시 이전 실행 취소
