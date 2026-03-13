@@ -388,6 +388,45 @@ export interface FeedbackCreateRequest {
   content: string
 }
 
+// ── 종합 재무 인사이트 ──
+
+export interface HealthScore {
+  savings: number
+  spending: number
+  debt: number
+  overall: number
+  grade: string
+}
+
+export interface Finding {
+  what: string
+  so_what: string
+  now_what: string
+}
+
+export interface AssetAnalysisResult {
+  summary: string
+  allocation_analysis: string
+  diversification_tip: string
+}
+
+export interface ActionItem {
+  title: string
+  description: string
+}
+
+export interface StructuredInsights {
+  findings: Finding[]
+  asset_analysis: AssetAnalysisResult | null
+  action_items: ActionItem[]
+  encouragement: string
+}
+
+export interface ComprehensiveInsightsResponse {
+  month: string
+  insights: StructuredInsights
+}
+
 /* Household 관련 타입 */
 export type {
   Household,
