@@ -120,16 +120,25 @@ jobs:
           REPO: ${{ github.repository }}
           RUN_ID: ${{ github.run_id }}
         run: |
+          # 머지 커밋이면 PR 제목 추출, 아니면 커밋 메시지 그대로 사용
+          if echo "$COMMIT_MSG" | grep -q "^Merge pull request"; then
+            # "Merge pull request #N from ..." 에서 두 번째 줄(PR 제목) 추출
+            DISPLAY_MSG="$(echo "$COMMIT_MSG" | sed -n '2p' | sed 's/^[[:space:]]*//')"
+            [ -z "$DISPLAY_MSG" ] && DISPLAY_MSG="$COMMIT_MSG"
+          else
+            DISPLAY_MSG="$(echo "$COMMIT_MSG" | head -1)"
+          fi
+
           if [ "$BACKEND_STATUS" = "success" ] && [ "$FRONTEND_STATUS" = "success" ]; then
             KST_TIME="$(TZ=Asia/Seoul date '+%Y-%m-%d %H:%M KST')"
-            MESSAGE="$(printf '✅ podo-budget 배포 완료\n📝 %s\n🔗 %s\n🕐 %s' \
-              "${COMMIT_MSG}" \
-              "https://github.com/${REPO}/actions/runs/${RUN_ID}" \
+            MESSAGE="$(printf '✅ podo-budget 배포 완료\n📝 %s\n🕐 %s' \
+              "${DISPLAY_MSG}" \
               "${KST_TIME}")"
           else
             MESSAGE="❌ podo-budget 배포 실패 (backend: ${BACKEND_STATUS}, frontend: ${FRONTEND_STATUS})"
             [ -n "$BACKEND_FAILURE" ] && MESSAGE="${MESSAGE}"$'\n'"🔴 Backend: ${BACKEND_FAILURE}"
             [ -n "$FRONTEND_FAILURE" ] && MESSAGE="${MESSAGE}"$'\n'"🔴 Frontend: ${FRONTEND_FAILURE}"
+            MESSAGE="${MESSAGE}"$'\n'"🔗 https://github.com/${REPO}/actions/runs/${RUN_ID}"
           fi
 
           curl -sf -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
