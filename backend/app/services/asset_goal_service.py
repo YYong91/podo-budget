@@ -2,11 +2,13 @@
 
 from datetime import date, timedelta
 
-from sqlalchemy import select
+from sqlalchemy import extract, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.asset_goal import AssetGoal
 from app.models.asset_snapshot import AssetSnapshot
+from app.models.expense import Expense
+from app.models.income import Income
 from app.models.user import User
 from app.services.asset_service import get_asset_summary
 
@@ -136,3 +138,41 @@ def _calc_avg_monthly_growth(snapshots: list[AssetSnapshot]) -> float | None:
     oldest = float(snapshots[-1].net_worth)
     months = len(snapshots) - 1
     return (newest - oldest) / months if months > 0 else None
+
+
+async def get_monthly_savings(user_id: int, household_id: int | None, db: AsyncSession) -> dict:
+    """이번 달 수입 - 지출 = 순저축액"""
+    today = date.today()
+    year = today.year
+    month = today.month
+
+    # 이번 달 수입 합산
+    income_q = select(func.coalesce(func.sum(Income.amount), 0)).where(
+        extract("year", Income.date) == year,
+        extract("month", Income.date) == month,
+    )
+    # 이번 달 지출 합산
+    expense_q = select(func.coalesce(func.sum(Expense.amount), 0)).where(
+        extract("year", Expense.date) == year,
+        extract("month", Expense.date) == month,
+    )
+
+    if household_id is not None:
+        income_q = income_q.where(Income.household_id == household_id)
+        expense_q = expense_q.where(Expense.household_id == household_id)
+    else:
+        income_q = income_q.where(Income.user_id == user_id)
+        expense_q = expense_q.where(Expense.user_id == user_id)
+
+    income_result = await db.execute(income_q)
+    expense_result = await db.execute(expense_q)
+    total_income = float(income_result.scalar_one())
+    total_expense = float(expense_result.scalar_one())
+
+    return {
+        "year": year,
+        "month": month,
+        "total_income": total_income,
+        "total_expense": total_expense,
+        "net_savings": total_income - total_expense,
+    }

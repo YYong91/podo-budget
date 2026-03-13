@@ -1,17 +1,13 @@
 """자산 관리 API"""
 
 import json
-from datetime import date
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import extract, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import get_household_member
 from app.core.auth import get_current_user
 from app.core.database import get_db
-from app.models.expense import Expense
-from app.models.income import Income
 from app.models.user import User
 from app.schemas.asset import (
     AssetCreate,
@@ -140,6 +136,8 @@ async def get_goal(
     db: AsyncSession = Depends(get_db),
 ):
     """순자산 목표 + 페이스 인사이트 조회"""
+    if household_id is not None:
+        await get_household_member(household_id, current_user, db)
     result = await asset_goal_service.get_goal_with_insight(current_user, household_id, db)
     return result
 
@@ -151,6 +149,8 @@ async def upsert_goal(
     db: AsyncSession = Depends(get_db),
 ):
     """순자산 목표 설정/수정 (upsert)"""
+    if body.household_id is not None:
+        await get_household_member(body.household_id, current_user, db)
     await asset_goal_service.upsert_goal(
         user_id=current_user.id,
         household_id=body.household_id,
@@ -171,6 +171,8 @@ async def delete_goal(
     db: AsyncSession = Depends(get_db),
 ):
     """순자산 목표 삭제"""
+    if household_id is not None:
+        await get_household_member(household_id, current_user, db)
     deleted = await asset_goal_service.delete_goal(current_user.id, household_id, db)
     if not deleted:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="목표를 찾을 수 없습니다")
@@ -184,40 +186,9 @@ async def get_monthly_savings(
     db: AsyncSession = Depends(get_db),
 ):
     """이번 달 저축액 (수입 - 지출)"""
-    today = date.today()
-    year = today.year
-    month = today.month
-
-    # 이번 달 수입 합산
-    income_q = select(func.coalesce(func.sum(Income.amount), 0)).where(
-        extract("year", Income.date) == year,
-        extract("month", Income.date) == month,
-    )
-    # 이번 달 지출 합산
-    expense_q = select(func.coalesce(func.sum(Expense.amount), 0)).where(
-        extract("year", Expense.date) == year,
-        extract("month", Expense.date) == month,
-    )
-
     if household_id is not None:
-        income_q = income_q.where(Income.household_id == household_id)
-        expense_q = expense_q.where(Expense.household_id == household_id)
-    else:
-        income_q = income_q.where(Income.user_id == current_user.id)
-        expense_q = expense_q.where(Expense.user_id == current_user.id)
-
-    income_result = await db.execute(income_q)
-    expense_result = await db.execute(expense_q)
-    total_income = float(income_result.scalar_one())
-    total_expense = float(expense_result.scalar_one())
-
-    return {
-        "year": year,
-        "month": month,
-        "total_income": total_income,
-        "total_expense": total_expense,
-        "net_savings": total_income - total_expense,
-    }
+        await get_household_member(household_id, current_user, db)
+    return await asset_goal_service.get_monthly_savings(current_user.id, household_id, db)
 
 
 @router.get("/{asset_id}", response_model=AssetWithPrice)
