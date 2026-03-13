@@ -201,7 +201,7 @@ export default function Layout() {
         </aside>
 
         {/* 메인 콘텐츠 */}
-        <main className="flex-1 p-4 pb-28 md:p-6 md:pb-24 max-w-6xl mx-auto w-full">
+        <main className="flex-1 p-4 pb-32 md:p-6 md:pb-24 max-w-6xl mx-auto w-full">
           <Outlet />
         </main>
 
