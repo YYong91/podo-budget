@@ -1,4 +1,4 @@
-# HomeNRich 프로덕션 오픈 체크리스트
+# 포도가계부 프로덕션 오픈 체크리스트
 
 서비스를 실제 사용자에게 공개하기 전 반드시 확인해야 할 항목들입니다.
 
@@ -9,9 +9,8 @@
 ### 1. 인프라 설정
 
 - [ ] Fly.io 계정 생성 및 결제 정보 등록
-- [ ] PostgreSQL 생성 (3GB 무료 티어)
-- [ ] Backend 앱 생성 및 DB 연결
-- [ ] Frontend 앱 생성
+- [ ] Backend 앱 생성 (Fly.io, SQLite + Volume)
+- [ ] Cloudflare Pages 프로젝트 생성 (Frontend)
 - [ ] 도메인 구매 (선택)
 - [ ] Cloudflare DNS 설정 (선택)
 
@@ -28,10 +27,12 @@
 - [ ] `CORS_ORIGINS` (프론트엔드 도메인, 와일드카드 금지)
 - [ ] `DEBUG=False` (프로덕션 필수)
 
-#### Frontend
+#### Frontend (Cloudflare Pages 빌드 환경변수)
 
-- [ ] `BACKEND_URL` (Backend Fly 앱 URL)
-- [ ] `VITE_API_URL=/api` (빌드 시 설정)
+- [ ] `VITE_API_URL` (Backend API URL)
+- [ ] `VITE_AUTH_URL` (podo-auth SSO URL)
+- [ ] `VITE_AUTH_CALLBACK_URL` (SSO 콜백 URL)
+- [ ] `VITE_SENTRY_DSN` (Sentry DSN)
 
 ### 3. 코드 품질
 
@@ -63,18 +64,19 @@
 
 ### 2. Frontend 배포
 
-- [ ] Fly.io Frontend 앱 배포 성공
+- [ ] Cloudflare Pages 배포 성공
 - [ ] 메인 페이지 로드 확인
-- [ ] API 프록시 동작 확인 (`/api/*`)
-- [ ] 정적 파일 캐싱 확인 (`Cache-Control` 헤더)
-- [ ] 로그에 에러 없음
+- [ ] API 연결 동작 확인
+- [ ] 정적 파일 CDN 캐싱 확인
+- [ ] podo-auth SSO 로그인 동작 확인
 
 ### 3. CI/CD 설정
 
-- [ ] GitHub Actions workflow 파일 생성
-- [ ] GitHub Secrets에 `FLY_API_TOKEN` 추가
-- [ ] `main` 브랜치 push 시 자동 배포 테스트
-- [ ] PR 생성 시 테스트 실행 확인
+- [ ] GitHub Actions 워크플로우 확인 (ci.yml + cd.yml)
+- [ ] GitHub Secrets 설정 (`FLY_API_TOKEN`, `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` 등)
+- [ ] Branch protection rule 설정 (PR 필수, CI 통과 필수)
+- [ ] PR 생성 시 CI 테스트 실행 확인
+- [ ] main 머지 시 CD 배포 실행 확인
 
 ---
 
@@ -174,10 +176,10 @@
 
 ### 1. 백업
 
-- [ ] 자동 백업 활성화 (Fly Postgres 기본 제공)
+- [ ] Fly Volume 스냅샷 활성화
 - [ ] 수동 백업 테스트 (`flyctl volumes snapshots create`)
-- [ ] 백업 보관 기간 확인 (7일)
-- [ ] 백업 위치 확인 (Fly.io 내부)
+- [ ] 백업 보관 기간 확인
+- [ ] SQLite DB 파일 백업 전략 수립
 
 ### 2. 복구 테스트
 
@@ -246,7 +248,7 @@
 
 ### 1. 비용 관리
 
-- [ ] Fly.io 무료 티어 제약 확인 (3개 앱, 3GB DB, 160GB 트래픽)
+- [ ] Fly.io 무료 티어 제약 확인 (앱 수, Volume 크기, 트래픽)
 - [ ] LLM API 예산 설정 (Anthropic/OpenAI 대시보드)
 - [ ] 비용 알림 설정 (월 $10 초과 시 알림)
 - [ ] 비용 모니터링 대시보드 설정

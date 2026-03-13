@@ -101,9 +101,15 @@ frontend/src/
 - Alembic: 6 migrations (초기 스키마, 인덱스/FK, Float→Numeric, Income+Category type, RecurringTransaction, telegram_link_code)
 
 ### Infrastructure
-- Docker Compose: `db` (postgres:16-alpine with healthcheck) + `backend` (python:3.12-slim)
-- Backend volume-mounted for hot reload in dev
-- Frontend: Vite dev server with proxy to backend
+- Docker Compose: `backend` + `frontend` (SQLite, 볼륨 마운트)
+- Backend: Fly.io (Docker, `backend/fly.toml`)
+- Frontend: Cloudflare Pages (Wrangler CLI)
+
+### CI/CD (GitHub Actions) — CI/CD 분리 구조
+- **CI**: PR → `ci.yml` → `ci-test.yml` (lint + test + build check) → 통과해야 머지 가능
+- **CD**: main push → `cd.yml` → 배포만 (Fly.io + Cloudflare Pages) + 텔레그램 알림
+- **재사용**: `ci-test.yml` (테스트 로직), `notify.yml` (텔레그램 알림)
+- **E2E**: `e2e.yml` — 수동 실행 전용 (SSO 전환 후 미업데이트)
 
 ## Environment Variables
 

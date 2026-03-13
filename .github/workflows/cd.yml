@@ -1,0 +1,137 @@
+# CD: main 머지 시 배포만 실행 (테스트는 PR CI에서 완료)
+name: CD
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# 동시 배포 방지
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+env:
+  FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
+jobs:
+  # ── 배포 시작 알림 ─────────────────────────────────
+  notify-deploy-start:
+    name: Notify Deploy Start
+    uses: ./.github/workflows/notify.yml
+    with:
+      message: "🚀 podo-budget 배포 시작"
+    secrets:
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+
+  # ── Backend 배포 (Fly.io) ──────────────────────────
+  deploy-backend:
+    name: Deploy Backend to Fly.io
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      failure_reason: ${{ steps.on-failure.outputs.reason }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: Deploy Backend
+        run: |
+          set -o pipefail
+          flyctl deploy --remote-only --config backend/fly.toml --dockerfile backend/Dockerfile 2>&1 | tee /tmp/deploy.log
+
+      - name: Capture failure reason
+        id: on-failure
+        if: failure()
+        run: |
+          REASON=$(grep -iE "error|failed" /tmp/deploy.log 2>/dev/null | tail -3 | sed 's/\x1b\[[0-9;]*m//g' | tr '\n' ' ' | cut -c1-300)
+          echo "reason=${REASON:-Fly.io 배포 실패}" >> $GITHUB_OUTPUT
+
+  # ── Frontend 배포 (Cloudflare Pages) ───────────────
+  deploy-frontend:
+    name: Deploy Frontend to Cloudflare Pages
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      deployments: write
+    outputs:
+      failure_reason: ${{ steps.on-failure.outputs.reason }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install and build
+        run: cd frontend && npm ci && npm run build
+        env:
+          VITE_API_URL: ${{ secrets.VITE_API_URL }}
+          VITE_AUTH_URL: ${{ secrets.VITE_AUTH_URL }}
+          VITE_AUTH_CALLBACK_URL: ${{ secrets.VITE_AUTH_CALLBACK_URL }}
+          VITE_BOOKSHELF_URL: ${{ secrets.VITE_BOOKSHELF_URL }}
+          VITE_SENTRY_DSN: ${{ secrets.VITE_SENTRY_DSN }}
+          VITE_SENTRY_ENVIRONMENT: production
+
+      - name: Deploy to Cloudflare Pages
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          npx wrangler@3 pages deploy frontend/dist \
+            --project-name=podo-budget \
+            --commit-message="Deploy ${{ github.sha }}" \
+            --commit-hash="${{ github.sha }}" \
+            --branch="main" \
+            2>&1 | tee /tmp/deploy.log
+
+      - name: Capture failure reason
+        id: on-failure
+        if: failure()
+        run: |
+          REASON=$(grep -iE "error|failed" /tmp/deploy.log 2>/dev/null | tail -3 | sed 's/\x1b\[[0-9;]*m//g' | tr '\n' ' ' | cut -c1-300)
+          echo "reason=${REASON:-Cloudflare Pages 배포 실패}" >> $GITHUB_OUTPUT
+
+  # ── 배포 결과 알림 ─────────────────────────────────
+  notify-deploy-result:
+    name: Notify Deploy Result
+    needs: [deploy-backend, deploy-frontend]
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    if: always()
+    steps:
+      - name: Send Telegram notification
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          BACKEND_STATUS: ${{ needs.deploy-backend.result }}
+          FRONTEND_STATUS: ${{ needs.deploy-frontend.result }}
+          BACKEND_FAILURE: ${{ needs.deploy-backend.outputs.failure_reason }}
+          FRONTEND_FAILURE: ${{ needs.deploy-frontend.outputs.failure_reason }}
+          COMMIT_MSG: ${{ github.event.head_commit.message || 'Manual trigger' }}
+          REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          if [ "$BACKEND_STATUS" = "success" ] && [ "$FRONTEND_STATUS" = "success" ]; then
+            KST_TIME="$(TZ=Asia/Seoul date '+%Y-%m-%d %H:%M KST')"
+            MESSAGE="$(printf '✅ podo-budget 배포 완료\n📝 %s\n🔗 %s\n🕐 %s' \
+              "${COMMIT_MSG}" \
+              "https://github.com/${REPO}/actions/runs/${RUN_ID}" \
+              "${KST_TIME}")"
+          else
+            MESSAGE="❌ podo-budget 배포 실패 (backend: ${BACKEND_STATUS}, frontend: ${FRONTEND_STATUS})"
+            [ -n "$BACKEND_FAILURE" ] && MESSAGE="${MESSAGE}"$'\n'"🔴 Backend: ${BACKEND_FAILURE}"
+            [ -n "$FRONTEND_FAILURE" ] && MESSAGE="${MESSAGE}"$'\n'"🔴 Frontend: ${FRONTEND_FAILURE}"
+          fi
+
+          curl -sf -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            -d chat_id="${TELEGRAM_CHAT_ID}" \
+            --data-urlencode "text=${MESSAGE}" || true

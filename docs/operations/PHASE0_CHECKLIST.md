@@ -33,7 +33,7 @@
 
 - [ ] 텔레그램에서 [@BotFather](https://t.me/BotFather) 검색
 - [ ] `/newbot` 명령으로 봇 생성
-- [ ] 봇 이름/유저네임 설정 (예: HomeNRich Bot / homenrich_bot)
+- [ ] 봇 이름/유저네임 설정 (예: 포도가계부 Bot / podo_budget_bot)
 - [ ] 발급받은 **Bot Token** 안전한 곳에 메모
 
 > Webhook URL은 배포 완료 후 설정합니다:
@@ -57,31 +57,24 @@
 ## 5. 도메인 구매 (선택, 10분)
 
 - [ ] 도메인 구매 (Namecheap, 가비아 등) — 연 $10-15
-- [ ] 또는 Fly.io 기본 도메인 사용: `homenrich-frontend.fly.dev`
+- [ ] 또는 Cloudflare Pages 기본 도메인 사용
 
 > 커스텀 도메인은 나중에 추가 가능하므로, 처음엔 기본 도메인으로 시작해도 됩니다.
 
 ---
 
-## 6. 배포 스크립트 실행 권한 (1분)
+## 6. Cloudflare 계정 설정 (5분)
 
-```bash
-chmod +x scripts/deploy-init.sh scripts/deploy-frontend.sh
-```
+- [ ] Cloudflare 계정 생성: https://dash.cloudflare.com/sign-up
+- [ ] Cloudflare Pages 프로젝트 생성 (podo-budget)
+- [ ] API Token 발급 (Cloudflare Pages 배포 권한)
+- [ ] GitHub Secrets에 `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` 등록
 
 ---
 
 ## 준비 완료 후 다음 단계
 
-위 항목을 모두 완료하면, Phase 1(코드 보강)을 AI 에이전트에게 요청하세요:
-
-```
-Phase 1 코드 보강 시작해줘:
-- 개인정보처리방침 + 이용약관 페이지
-- 회원가입 이메일 필드 + 약관 동의
-- 계정 삭제 기능
-- Rate Limiting
-- Axios 401 처리
-```
-
-Phase 1 완료 후 실제 배포는 `QUICKSTART.md`를 따라 진행합니다.
+위 항목을 모두 완료하면:
+1. feature 브랜치에서 개발 후 PR 생성
+2. CI 통과 확인 후 main 머지
+3. CD가 자동으로 Fly.io + Cloudflare Pages에 배포
