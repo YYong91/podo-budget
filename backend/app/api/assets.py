@@ -1,13 +1,17 @@
 """자산 관리 API"""
 
 import json
+from datetime import date
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy import extract, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import get_household_member
 from app.core.auth import get_current_user
 from app.core.database import get_db
+from app.models.expense import Expense
+from app.models.income import Income
 from app.models.user import User
 from app.schemas.asset import (
     AssetCreate,
@@ -19,7 +23,8 @@ from app.schemas.asset import (
     AssetUpdate,
     AssetWithPrice,
 )
-from app.services import asset_service, price_service
+from app.schemas.asset_goal import AssetGoalCreate, AssetGoalWithInsight
+from app.services import asset_goal_service, asset_service, price_service
 from app.services.asset_parse_service import parse_asset_input
 
 router = APIRouter()
@@ -126,6 +131,93 @@ async def get_all_prices(
             info = await price_service.get_asset_current_value(asset)
             prices[asset.id] = info
     return prices
+
+
+@router.get("/goal", response_model=AssetGoalWithInsight | None)
+async def get_goal(
+    household_id: int | None = Query(None),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """순자산 목표 + 페이스 인사이트 조회"""
+    result = await asset_goal_service.get_goal_with_insight(current_user, household_id, db)
+    return result
+
+
+@router.post("/goal", response_model=AssetGoalWithInsight, status_code=status.HTTP_201_CREATED)
+async def upsert_goal(
+    body: AssetGoalCreate,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """순자산 목표 설정/수정 (upsert)"""
+    await asset_goal_service.upsert_goal(
+        user_id=current_user.id,
+        household_id=body.household_id,
+        target_net_worth=body.target_net_worth,
+        target_date=body.target_date,
+        db=db,
+    )
+    await db.commit()
+    # 인사이트 포함하여 반환
+    result = await asset_goal_service.get_goal_with_insight(current_user, body.household_id, db)
+    return result
+
+
+@router.delete("/goal", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_goal(
+    household_id: int | None = Query(None),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """순자산 목표 삭제"""
+    deleted = await asset_goal_service.delete_goal(current_user.id, household_id, db)
+    if not deleted:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="목표를 찾을 수 없습니다")
+    await db.commit()
+
+
+@router.get("/monthly-savings")
+async def get_monthly_savings(
+    household_id: int | None = Query(None),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """이번 달 저축액 (수입 - 지출)"""
+    today = date.today()
+    year = today.year
+    month = today.month
+
+    # 이번 달 수입 합산
+    income_q = select(func.coalesce(func.sum(Income.amount), 0)).where(
+        extract("year", Income.date) == year,
+        extract("month", Income.date) == month,
+    )
+    # 이번 달 지출 합산
+    expense_q = select(func.coalesce(func.sum(Expense.amount), 0)).where(
+        extract("year", Expense.date) == year,
+        extract("month", Expense.date) == month,
+    )
+
+    if household_id is not None:
+        income_q = income_q.where(Income.household_id == household_id)
+        expense_q = expense_q.where(Expense.household_id == household_id)
+    else:
+        income_q = income_q.where(Income.user_id == current_user.id)
+        expense_q = expense_q.where(Expense.user_id == current_user.id)
+
+    income_result = await db.execute(income_q)
+    expense_result = await db.execute(expense_q)
+    total_income = float(income_result.scalar_one())
+    total_expense = float(expense_result.scalar_one())
+
+    return {
+        "year": year,
+        "month": month,
+        "total_income": total_income,
+        "total_expense": total_expense,
+        "net_savings": total_income - total_expense,
+    }
 
 
 @router.get("/{asset_id}", response_model=AssetWithPrice)
