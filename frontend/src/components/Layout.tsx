@@ -52,7 +52,7 @@ export default function Layout() {
     <div className="min-h-screen bg-cream">
       {/* 모바일 전용 미니 헤더 */}
       <header className="md:hidden bg-white border-b border-warm-200 sticky top-0 z-30 h-12 flex items-center px-4 gap-3">
-        <Link to="/" className="font-bold text-grape-700">🍇 포도가계부</Link>
+        <Link to="/" className="font-bold text-grape-700 flex items-center gap-1.5"><img src="/pwa-192x192.png" alt="" className="w-6 h-6 rounded" />포도가계부</Link>
         {/* 가구 선택 (모바일 헤더) */}
         {households.length > 1 && (
           <div className="relative ml-auto">
@@ -100,7 +100,7 @@ export default function Layout() {
         <aside className="hidden md:flex md:sticky md:top-0 md:h-screen w-60 bg-cream border-r border-warm-200 p-4 flex-col">
           {/* 앱 타이틀 */}
           <div className="mb-4">
-            <Link to="/" className="text-2xl font-bold text-grape-700">🍇 포도가계부</Link>
+            <Link to="/" className="text-2xl font-bold text-grape-700 flex items-center gap-2"><img src="/pwa-192x192.png" alt="" className="w-8 h-8 rounded" />포도가계부</Link>
           </div>
 
           {/* 가구 선택 드롭다운 */}
