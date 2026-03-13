@@ -52,10 +52,10 @@ function App() {
           <Route element={<Layout />}>
             <Route path="/" element={<Dashboard />} />
             <Route path="/transactions" element={<TransactionList />} />
-            <Route path="/expenses" element={<Navigate to="/transactions?tab=expense" replace />} />
+            <Route path="/expenses" element={<Navigate to="/transactions?filter=expense" replace />} />
             <Route path="/expenses/new" element={<ExpenseForm />} />
             <Route path="/expenses/:id" element={<ExpenseDetail />} />
-            <Route path="/income" element={<Navigate to="/transactions?tab=income" replace />} />
+            <Route path="/income" element={<Navigate to="/transactions?filter=income" replace />} />
             <Route path="/income/new" element={<IncomeForm />} />
             <Route path="/income/:id" element={<IncomeDetail />} />
             <Route path="/categories" element={<CategoryManager />} />

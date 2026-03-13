@@ -5,6 +5,8 @@
  */
 
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { ArrowLeft } from 'lucide-react'
 import { useToast } from '../hooks/useToast'
 import { categoryApi } from '../api/categories'
 import EmptyState from '../components/EmptyState'
@@ -12,6 +14,7 @@ import ErrorState from '../components/ErrorState'
 import type { Category } from '../types'
 
 export default function CategoryManager() {
+  const navigate = useNavigate()
   const { addToast } = useToast()
   const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
@@ -163,7 +166,9 @@ export default function CategoryManager() {
   if (error) {
     return (
       <div className="space-y-6">
-        <h1 className="text-xl font-bold text-grape-700">카테고리 관리</h1>
+        <button onClick={() => navigate('/settings')} className="p-1.5 -ml-1.5 rounded-lg hover:bg-warm-100 transition-colors">
+          <ArrowLeft className="w-5 h-5 text-warm-600" />
+        </button>
         <div className="bg-white rounded-2xl shadow-sm border border-warm-200">
           <ErrorState onRetry={fetchCategories} />
         </div>
@@ -173,9 +178,10 @@ export default function CategoryManager() {
 
   return (
     <div className="space-y-6">
-      {/* 헤더 */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <h1 className="text-xl font-bold text-grape-700">카테고리 관리</h1>
+      <div className="flex items-center justify-between">
+        <button onClick={() => navigate('/settings')} className="p-1.5 -ml-1.5 rounded-lg hover:bg-warm-100 transition-colors">
+          <ArrowLeft className="w-5 h-5 text-warm-600" />
+        </button>
         <button
           onClick={() => setIsAdding(true)}
           className="w-full sm:w-auto px-4 py-2 text-sm font-medium text-white bg-grape-600 rounded-lg hover:bg-grape-700 transition-colors"

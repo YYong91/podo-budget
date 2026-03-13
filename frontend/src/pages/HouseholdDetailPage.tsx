@@ -283,9 +283,6 @@ export default function HouseholdDetailPage() {
             >
               <ArrowLeft className="w-5 h-5" />
             </button>
-            <h1 className="text-xl font-bold text-grape-700">
-              {currentHousehold.name}
-            </h1>
             <span
               className={`text-xs px-2 py-1 rounded-full ${getRoleBadgeColor(
                 currentHousehold.my_role

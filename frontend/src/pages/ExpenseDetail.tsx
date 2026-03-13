@@ -147,20 +147,16 @@ export default function ExpenseDetail() {
 
   return (
     <div className="space-y-6">
-      {/* 헤더 */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <Link
-            to="/expenses"
-            aria-label="목록으로"
-            className="p-2 rounded-lg hover:bg-warm-100 transition-colors"
-          >
-            <ArrowLeft className="w-5 h-5 text-warm-600" />
-          </Link>
-          <h1 className="text-xl font-bold text-grape-700">지출 상세</h1>
-        </div>
+      <div className="flex items-center justify-between">
+        <Link
+          to="/expenses"
+          aria-label="목록으로"
+          className="p-2 -ml-2 rounded-lg hover:bg-warm-100 transition-colors"
+        >
+          <ArrowLeft className="w-5 h-5 text-warm-600" />
+        </Link>
 
-        <div className="flex gap-2 justify-end">
+        <div className="flex gap-2">
           {isEditing ? (
             <>
               <button

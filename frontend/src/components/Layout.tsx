@@ -50,50 +50,46 @@ export default function Layout() {
 
   return (
     <div className="min-h-screen bg-cream">
-      {/* 모바일 전용 미니 헤더 */}
-      <header className="md:hidden bg-white border-b border-warm-200 sticky top-0 z-30 h-12 flex items-center px-4 gap-3">
-        <Link to="/" className="font-bold text-grape-700 flex items-center gap-1.5"><img src="/pwa-192x192.png" alt="" className="w-6 h-6 rounded" />포도가계부</Link>
-        {/* 가구 선택 (모바일 헤더) */}
-        {households.length > 1 && (
-          <div className="relative ml-auto">
-            <button
-              onClick={e => { e.stopPropagation(); setHouseholdDropdownOpen(!householdDropdownOpen) }}
-              className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs bg-grape-50 hover:bg-grape-100 text-grape-700 transition-colors"
-            >
-              <Home className="w-3.5 h-3.5" />
-              <span className="font-medium truncate max-w-[100px]">{activeHousehold?.name ?? '가구'}</span>
-              <ChevronDown className="w-3 h-3 text-warm-400" />
-            </button>
-            {householdDropdownOpen && (
-              <div className="absolute right-0 top-full mt-1 bg-white border border-warm-200 rounded-lg shadow-lg z-50 py-1 min-w-[140px]">
-                {households.map(h => (
-                  <button
-                    key={h.id}
-                    onClick={() => { setActiveHouseholdId(h.id); setHouseholdDropdownOpen(false) }}
-                    className={`w-full text-left px-3 py-2 text-sm hover:bg-warm-100 transition-colors truncate ${
-                      h.id === activeHouseholdId ? 'text-grape-700 font-medium bg-grape-50' : 'text-warm-700'
-                    }`}
-                  >
-                    {h.name}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-        {/* 초대 배지 (모바일 헤더) */}
-        {pendingInvitationCount > 0 && (
-          <Link
-            to="/invitations"
-            className={`${households.length <= 1 ? 'ml-auto' : ''} relative p-1.5`}
-          >
-            <Mail className="w-5 h-5 text-warm-600" />
-            <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[10px] px-1 py-0.5 rounded-full min-w-[16px] text-center leading-none">
-              {pendingInvitationCount}
-            </span>
-          </Link>
-        )}
-      </header>
+      {/* 모바일 전용 미니 헤더 — 가구 전환/초대 배지가 있을 때만 표시 */}
+      {(pendingInvitationCount > 0 || households.length > 1) && (
+        <header className="md:hidden bg-white border-b border-warm-200 sticky top-0 z-30 h-12 flex items-center justify-end px-4 gap-3">
+          {households.length > 1 && (
+            <div className="relative">
+              <button
+                onClick={e => { e.stopPropagation(); setHouseholdDropdownOpen(!householdDropdownOpen) }}
+                className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs bg-grape-50 hover:bg-grape-100 text-grape-700 transition-colors"
+              >
+                <Home className="w-3.5 h-3.5" />
+                <span className="font-medium truncate max-w-[100px]">{activeHousehold?.name ?? '가구'}</span>
+                <ChevronDown className="w-3 h-3 text-warm-400" />
+              </button>
+              {householdDropdownOpen && (
+                <div className="absolute right-0 top-full mt-1 bg-white border border-warm-200 rounded-lg shadow-lg z-50 py-1 min-w-[140px]">
+                  {households.map(h => (
+                    <button
+                      key={h.id}
+                      onClick={() => { setActiveHouseholdId(h.id); setHouseholdDropdownOpen(false) }}
+                      className={`w-full text-left px-3 py-2 text-sm hover:bg-warm-100 transition-colors truncate ${
+                        h.id === activeHouseholdId ? 'text-grape-700 font-medium bg-grape-50' : 'text-warm-700'
+                      }`}
+                    >
+                      {h.name}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+          {pendingInvitationCount > 0 && (
+            <Link to="/invitations" className="relative p-1.5">
+              <Mail className="w-5 h-5 text-warm-600" />
+              <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[10px] px-1 py-0.5 rounded-full min-w-[16px] text-center leading-none">
+                {pendingInvitationCount}
+              </span>
+            </Link>
+          )}
+        </header>
+      )}
 
       <div className="flex">
         {/* 데스크톱 사이드바 (md 이상에서만 표시) */}

@@ -7,7 +7,7 @@
 import type { } from 'react'
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Users, Calendar } from 'lucide-react'
+import { ArrowLeft, Users, Calendar } from 'lucide-react'
 import { useHouseholdStore } from '../stores/useHouseholdStore'
 import { useToast } from '../hooks/useToast'
 import CreateHouseholdModal from '../components/CreateHouseholdModal'

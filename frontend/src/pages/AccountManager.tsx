@@ -71,12 +71,10 @@ export default function AccountManager() {
 
   return (
     <div className="max-w-xl mx-auto space-y-6">
-      {/* 헤더 */}
-      <div className="flex items-center gap-3">
-        <Link to="/assets" aria-label="뒤로가기" className="p-2 rounded-lg hover:bg-warm-100 text-warm-500">
+      <div className="flex items-center justify-between">
+        <Link to="/assets" aria-label="뒤로가기" className="p-2 -ml-2 rounded-lg hover:bg-warm-100 text-warm-500">
           <ArrowLeft className="w-5 h-5" />
         </Link>
-        <h1 className="text-xl font-bold text-warm-900 flex-1">계좌 관리</h1>
         <button
           onClick={() => setShowForm(v => !v)}
           className="flex items-center gap-1.5 px-3 py-2 bg-grape-600 text-white rounded-lg text-sm font-medium hover:bg-grape-700 transition-colors"

@@ -183,18 +183,14 @@ export default function InvitationListPage() {
 
   return (
     <div className="space-y-6">
-      {/* 헤더 */}
       <div>
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => navigate('/households')}
-            className="text-warm-400 hover:text-warm-600 transition-colors"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-          <h1 className="text-xl font-bold text-grape-700">받은 초대</h1>
-        </div>
-        <p className="text-sm text-warm-500 mt-1">
+        <button
+          onClick={() => navigate('/households')}
+          className="text-warm-400 hover:text-warm-600 transition-colors"
+        >
+          <ArrowLeft className="w-5 h-5" />
+        </button>
+        <p className="text-sm text-warm-500 mt-2">
           다른 사람이 보낸 가구 초대를 확인하고 수락하세요
         </p>
       </div>

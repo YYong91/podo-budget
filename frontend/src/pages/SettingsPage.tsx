@@ -47,7 +47,6 @@ interface MenuItem {
 function SettingsMenu({ menuItems }: { menuItems: MenuItem[] }) {
   return (
     <div className="space-y-6">
-      <h1 className="text-xl font-bold text-grape-700">설정</h1>
       <div className="bg-white rounded-2xl shadow-sm border border-warm-200 overflow-hidden">
         {menuItems.map((item, idx) => {
           const Icon = item.icon
@@ -77,19 +76,16 @@ function SettingsMenu({ menuItems }: { menuItems: MenuItem[] }) {
 }
 
 /* ─── 서브 페이지 래퍼 ─── */
-function SubPageWrapper({ title, children }: { title: string; children: React.ReactNode }) {
+function SubPageWrapper({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate()
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <button
-          onClick={() => navigate('/settings')}
-          className="p-1.5 -ml-1.5 rounded-lg hover:bg-warm-100 transition-colors"
-        >
-          <ArrowLeft className="w-5 h-5 text-warm-600" />
-        </button>
-        <h1 className="text-xl font-bold text-grape-700">{title}</h1>
-      </div>
+      <button
+        onClick={() => navigate('/settings')}
+        className="p-1.5 -ml-1.5 rounded-lg hover:bg-warm-100 transition-colors"
+      >
+        <ArrowLeft className="w-5 h-5 text-warm-600" />
+      </button>
       {children}
     </div>
   )
@@ -111,7 +107,7 @@ function ChangelogSection() {
   }, [hasUnread, markAsRead])
 
   return (
-    <SubPageWrapper title="새소식">
+    <SubPageWrapper>
       <div ref={changelogRef} className="bg-white rounded-2xl shadow-sm border border-warm-200 p-6">
         <div className="space-y-4">
           {changelogs.map((log, idx) => (
@@ -198,7 +194,7 @@ function MyAccountSection() {
     : null
 
   return (
-    <SubPageWrapper title="내 계정">
+    <SubPageWrapper>
       {/* 기본 정보 */}
       <div className="bg-white rounded-2xl shadow-sm border border-warm-200 p-6">
         <p className="text-xs font-semibold text-warm-500 uppercase tracking-wide mb-3">기본 정보</p>

@@ -7,7 +7,8 @@
  */
 
 import { useState, useEffect, useMemo } from 'react'
-import { BarChart3, AlertTriangle, Wallet } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { ArrowLeft, BarChart3, AlertTriangle, Wallet } from 'lucide-react'
 import { useToast } from '../hooks/useToast'
 import budgetApi from '../api/budgets'
 import EmptyState from '../components/EmptyState'
@@ -16,6 +17,7 @@ import type { BudgetAlert, CategoryBudgetOverview } from '../types'
 import { formatAmount } from '../utils/format'
 
 export default function BudgetManager() {
+  const navigate = useNavigate()
   const { addToast } = useToast()
 
   const [overview, setOverview] = useState<CategoryBudgetOverview[]>([])
@@ -219,13 +221,9 @@ export default function BudgetManager() {
 
   return (
     <div className="space-y-6">
-      {/* 헤더 */}
-      <div>
-        <h1 className="text-xl font-bold text-grape-700">예산 관리</h1>
-        <p className="text-sm text-warm-500 mt-1">
-          카테고리별 예산을 한 번에 설정하세요
-        </p>
-      </div>
+      <button onClick={() => navigate('/settings')} className="p-1.5 -ml-1.5 rounded-lg hover:bg-warm-100 transition-colors">
+        <ArrowLeft className="w-5 h-5 text-warm-600" />
+      </button>
 
       {/* 월 총 예산 카드 */}
       <div className="bg-white rounded-2xl shadow-sm border border-warm-200 p-5">

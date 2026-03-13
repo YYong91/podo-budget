@@ -64,16 +64,12 @@ export default function GuidePage() {
 
   return (
     <div className="space-y-6">
-      {/* 헤더 */}
-      <div className="flex items-center gap-3">
-        <button
-          onClick={() => navigate('/settings')}
-          className="w-9 h-9 flex items-center justify-center rounded-xl border border-warm-200 hover:bg-warm-50 transition-colors"
-        >
-          <ArrowLeft className="w-5 h-5 text-warm-600" />
-        </button>
-        <h1 className="text-xl font-bold text-grape-700">사용 가이드</h1>
-      </div>
+      <button
+        onClick={() => navigate('/settings')}
+        className="w-9 h-9 flex items-center justify-center rounded-xl border border-warm-200 hover:bg-warm-50 transition-colors"
+      >
+        <ArrowLeft className="w-5 h-5 text-warm-600" />
+      </button>
 
       {/* 목차 */}
       <div className="bg-grape-50 rounded-2xl border border-grape-100 p-5">
