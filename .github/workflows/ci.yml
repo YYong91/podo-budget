@@ -16,3 +16,37 @@ jobs:
     uses: ./.github/workflows/ci-test.yml
     with:
       frontend_build_check: true
+
+  # ── CI 결과 알림 ──────────────────────────────────
+  notify-ci-result:
+    name: Notify CI Result
+    needs: [test]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Send Telegram notification
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          TEST_STATUS: ${{ needs.test.result }}
+          PR_TITLE: ${{ github.event.pull_request.title || 'Manual trigger' }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          if [ "$TEST_STATUS" = "success" ]; then
+            MESSAGE="$(printf '✅ podo-budget CI 통과\n📝 #%s %s' \
+              "${PR_NUMBER}" \
+              "${PR_TITLE}")"
+          else
+            MESSAGE="$(printf '❌ podo-budget CI 실패\n📝 #%s %s\n🔗 https://github.com/%s/actions/runs/%s' \
+              "${PR_NUMBER}" \
+              "${PR_TITLE}" \
+              "${REPO}" \
+              "${RUN_ID}")"
+          fi
+
+          curl -sf -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            -d chat_id="${TELEGRAM_CHAT_ID}" \
+            --data-urlencode "text=${MESSAGE}" || true
