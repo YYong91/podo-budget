@@ -1,11 +1,10 @@
 import { lazy, Suspense } from 'react'
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { Routes, Route, Navigate, useSearchParams } from 'react-router-dom'
 import Layout from './components/Layout'
 import ProtectedRoute from './components/ProtectedRoute'
 import { Loader2 } from 'lucide-react'
 
 /* 코드 스플리팅: 페이지별 lazy loading으로 초기 번들 크기 축소 */
-const Dashboard = lazy(() => import('./pages/Dashboard'))
 const ExpenseForm = lazy(() => import('./pages/ExpenseForm'))
 const ExpenseDetail = lazy(() => import('./pages/ExpenseDetail'))
 const CategoryManager = lazy(() => import('./pages/CategoryManager'))
@@ -30,6 +29,13 @@ const TransactionList = lazy(() => import('./pages/TransactionList'))
 const GuidePage = lazy(() => import('./pages/GuidePage'))
 const FeedbackPage = lazy(() => import('./pages/FeedbackPage'))
 
+/* /transactions → / 쿼리 보존 리다이렉트 */
+function TransactionsRedirect() {
+  const [searchParams] = useSearchParams()
+  const query = searchParams.toString()
+  return <Navigate to={query ? `/?${query}` : '/'} replace />
+}
+
 /* 로딩 스피너 */
 function PageLoading() {
   return (
@@ -50,8 +56,8 @@ function App() {
         {/* 인증이 필요한 라우트들을 ProtectedRoute로 감싼다 */}
         <Route element={<ProtectedRoute />}>
           <Route element={<Layout />}>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/transactions" element={<TransactionList />} />
+            <Route path="/" element={<TransactionList />} />
+            <Route path="/transactions" element={<TransactionsRedirect />} />
             <Route path="/expenses" element={<Navigate to="/transactions?filter=expense" replace />} />
             <Route path="/expenses/new" element={<ExpenseForm />} />
             <Route path="/expenses/:id" element={<ExpenseDetail />} />
