@@ -65,8 +65,7 @@ describe('Layout', () => {
   describe('네비게이션', () => {
     it('모든 네비게이션 항목을 표시한다 (사이드바 + 하단 탭 바)', () => {
       renderLayout()
-      // 데스크톱 사이드바 + 모바일 하단 탭 바에 각각 존재
-      expect(screen.getAllByRole('link', { name: /대시보드/i }).length).toBe(2)
+      // 데스크톱 사이드바 + 모바일 하단 탭 바에 각각 존재 (4탭)
       expect(screen.getAllByRole('link', { name: '가계부' }).length).toBe(2)
       expect(screen.getAllByRole('link', { name: /리포트/i }).length).toBe(2)
       expect(screen.getAllByRole('link', { name: /^자산$/i }).length).toBe(2)
@@ -75,17 +74,17 @@ describe('Layout', () => {
 
     it('현재 경로에 해당하는 네비게이션 항목에 aria-current를 설정한다', () => {
       renderLayout('/')
-      const dashboardLinks = screen.getAllByRole('link', { name: /대시보드/i })
+      const transactionLinks = screen.getAllByRole('link', { name: '가계부' })
       // 사이드바와 하단 탭 바 모두 aria-current 설정
-      dashboardLinks.forEach(link => {
+      transactionLinks.forEach(link => {
         expect(link).toHaveAttribute('aria-current', 'page')
       })
     })
 
     it('다른 경로의 네비게이션 항목에는 aria-current가 없다', () => {
       renderLayout('/')
-      const transactionLinks = screen.getAllByRole('link', { name: '가계부' })
-      transactionLinks.forEach(link => {
+      const reportLinks = screen.getAllByRole('link', { name: /리포트/i })
+      reportLinks.forEach(link => {
         expect(link).not.toHaveAttribute('aria-current')
       })
     })

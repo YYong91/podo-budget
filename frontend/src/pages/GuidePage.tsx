@@ -93,7 +93,7 @@ export default function GuidePage() {
       {/* 1. 간편 입력 */}
       <SectionCard id="natural-input" icon={MessageSquare} title="간편 입력 (자연어 AI 파싱)">
         <p>
-          대시보드 하단의 <strong>+ 버튼</strong>을 누르면 자연어로 지출/수입을 입력할 수 있습니다. AI가 자동으로
+          화면 우측 하단의 <strong>+ 버튼</strong>을 누르면 자연어로 지출/수입을 입력할 수 있습니다. AI가 자동으로
           금액, 카테고리, 날짜를 분류합니다.
         </p>
         <ExampleBox>
@@ -153,7 +153,7 @@ export default function GuidePage() {
             <strong>주기:</strong> 매일 / 매주 / 매월 / 매년 선택 가능
           </p>
           <p>
-            <strong>관리:</strong> 실행 예정인 거래를 대시보드에서 확인하고 건너뛰기 가능
+            <strong>관리:</strong> 실행 예정인 거래를 가계부 상단에서 확인하고 건너뛰기 가능
           </p>
         </ExampleBox>
       </SectionCard>
@@ -239,7 +239,7 @@ export default function GuidePage() {
             <strong>초대:</strong> 이메일로 가구 구성원 초대
           </p>
           <p>
-            <strong>전환:</strong> 대시보드 상단 드롭다운에서 개인/가구 전환
+            <strong>전환:</strong> 상단 헤더의 드롭다운에서 개인/가구 전환
           </p>
           <p>
             <strong>필터:</strong> 가구 모드에서 멤버별 지출 필터링 가능
@@ -288,8 +288,8 @@ export default function GuidePage() {
             </p>
           </div>
           <div>
-            <p className="font-semibold text-warm-800 mb-1">포도알 성장</p>
-            <p>거래를 기록할수록 포도알이 자라납니다. 대시보드에서 이번 달 성장 현황을 확인하세요.</p>
+            <p className="font-semibold text-warm-800 mb-1">가계부가 첫 화면</p>
+            <p>앱을 열면 바로 이번 달 거래 내역이 표시됩니다. 캘린더와 함께 소비 패턴을 한눈에 파악하세요.</p>
           </div>
           <div>
             <p className="font-semibold text-warm-800 mb-1">새소식 (업데이트 알림)</p>

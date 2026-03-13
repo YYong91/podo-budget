@@ -18,6 +18,16 @@ export interface Changelog {
 
 export const changelogs: Changelog[] = [
   {
+    version: '1.7.0',
+    date: '2026-03-14',
+    title: '첫 화면 개편',
+    items: [
+      { tag: '개선', text: '앱을 열면 바로 가계부(거래 내역)가 표시됩니다' },
+      { tag: '개선', text: '네비게이션이 4탭으로 간결해졌습니다' },
+      { tag: '개선', text: '반복 거래 알림이 가계부 상단에 표시됩니다' },
+    ],
+  },
+  {
     version: '1.6.0',
     date: '2026-03-13',
     title: '가계부 목록 대폭 개편',
