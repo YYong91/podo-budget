@@ -5,7 +5,7 @@
  */
 
 import { useEffect, useState, useCallback } from 'react'
-import { TrendingUp, Loader2, Sparkles } from 'lucide-react'
+import { Loader2, Sparkles } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { insightsApi, statsApi } from '../api/insights'
 import { incomeApi } from '../api/income'
