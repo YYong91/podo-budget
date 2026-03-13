@@ -1,34 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
-  <defs>
-    <radialGradient id="g1" cx="35%" cy="35%" r="65%">
-      <stop offset="0%" stop-color="#A78BFA"/>
-      <stop offset="50%" stop-color="#7C3AED"/>
-      <stop offset="100%" stop-color="#5B21B6"/>
-    </radialGradient>
-    <radialGradient id="g2" cx="35%" cy="35%" r="65%">
-      <stop offset="0%" stop-color="#C4B5FD"/>
-      <stop offset="50%" stop-color="#8B5CF6"/>
-      <stop offset="100%" stop-color="#6D28D9"/>
-    </radialGradient>
-  </defs>
-  <g transform="translate(0, 8)">
-    <!-- Stem -->
-    <path d="M 32 8 Q 30 2 35 0" stroke="#16a34a" stroke-width="2.5" fill="none" stroke-linecap="round"/>
-    <!-- Leaf -->
-    <path d="M 34 1 Q 44 -4 46 5 Q 40 9 35 4 Z" fill="#22c55e"/>
-    <!-- Row 1 -->
-    <circle cx="24" cy="15" r="7" fill="url(#g1)" stroke="#6D28D9" stroke-width="0.5"/>
-    <circle cx="40" cy="15" r="7" fill="url(#g2)" stroke="#6D28D9" stroke-width="0.5"/>
-    <!-- Row 2 -->
-    <circle cx="16" cy="28" r="7" fill="url(#g2)" stroke="#6D28D9" stroke-width="0.5"/>
-    <circle cx="32" cy="28" r="7" fill="url(#g1)" stroke="#6D28D9" stroke-width="0.5"/>
-    <circle cx="48" cy="28" r="7" fill="url(#g1)" stroke="#6D28D9" stroke-width="0.5"/>
-    <!-- Row 3 -->
-    <circle cx="24" cy="41" r="7" fill="url(#g1)" stroke="#6D28D9" stroke-width="0.5"/>
-    <circle cx="40" cy="41" r="7" fill="url(#g2)" stroke="#6D28D9" stroke-width="0.5"/>
-    <!-- Highlights -->
-    <ellipse cx="21" cy="12" rx="2.5" ry="1.8" fill="white" opacity="0.35" transform="rotate(-20 21 12)"/>
-    <ellipse cx="37" cy="12" rx="2.5" ry="1.8" fill="white" opacity="0.35" transform="rotate(-20 37 12)"/>
-    <ellipse cx="29" cy="25" rx="2.5" ry="1.8" fill="white" opacity="0.35" transform="rotate(-20 29 25)"/>
+  <!-- 3알 포도 파비콘 (투명 배경) -->
+  <g transform="translate(32, 30)">
+    <!-- 잎 -->
+    <path d="M 2,-18 Q 12,-26 14,-16 Q 8,-12 2,-18 Z" fill="#22c55e"/>
+    <!-- 포도알 3개 (삼각형, 틈 없이 밀착) -->
+    <circle cx="-8" cy="-4" r="10" fill="#9333ea"/>
+    <circle cx="8" cy="-4" r="10" fill="#a855f7"/>
+    <circle cx="0" cy="12" r="10" fill="#9333ea"/>
   </g>
 </svg>

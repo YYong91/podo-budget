@@ -1,41 +1,21 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
-  <defs>
-    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#7C3AED"/>
-      <stop offset="100%" stop-color="#4C1D95"/>
-    </linearGradient>
-    <radialGradient id="g1" cx="35%" cy="35%" r="65%">
-      <stop offset="0%" stop-color="#DDD6FE"/>
-      <stop offset="50%" stop-color="#A78BFA"/>
-      <stop offset="100%" stop-color="#7C3AED"/>
-    </radialGradient>
-    <radialGradient id="g2" cx="35%" cy="35%" r="65%">
-      <stop offset="0%" stop-color="#EDE9FE"/>
-      <stop offset="50%" stop-color="#C4B5FD"/>
-      <stop offset="100%" stop-color="#8B5CF6"/>
-    </radialGradient>
-  </defs>
-  <!-- Background -->
-  <rect width="512" height="512" rx="80" fill="url(#bg)"/>
-  <g transform="translate(0, 50)">
-    <!-- Stem -->
-    <path d="M 256 75 Q 248 46 272 36" stroke="#16a34a" stroke-width="10" fill="none" stroke-linecap="round"/>
-    <!-- Leaf -->
-    <path d="M 272 36 Q 348 12 356 60 Q 304 72 272 50 Z" fill="#22c55e"/>
-    <!-- Row 1 -->
-    <circle cx="208" cy="130" r="52" fill="url(#g1)"/>
-    <circle cx="304" cy="130" r="52" fill="url(#g2)"/>
-    <!-- Row 2 -->
-    <circle cx="156" cy="234" r="52" fill="url(#g2)"/>
-    <circle cx="256" cy="234" r="52" fill="url(#g1)"/>
-    <circle cx="356" cy="234" r="52" fill="url(#g1)"/>
-    <!-- Row 3 -->
-    <circle cx="208" cy="320" r="52" fill="url(#g1)"/>
-    <circle cx="304" cy="320" r="52" fill="url(#g2)"/>
-    <!-- Highlights -->
-    <ellipse cx="188" cy="114" rx="20" ry="14" fill="white" opacity="0.35" transform="rotate(-20 188 114)"/>
-    <ellipse cx="284" cy="114" rx="20" ry="14" fill="white" opacity="0.35" transform="rotate(-20 284 114)"/>
-    <ellipse cx="236" cy="218" rx="20" ry="14" fill="white" opacity="0.35" transform="rotate(-20 236 218)"/>
-    <ellipse cx="188" cy="304" rx="20" ry="14" fill="white" opacity="0.35" transform="rotate(-20 188 304)"/>
+  <!-- 포도가계부 PWA 아이콘 (크림 배경 + 포도책) -->
+  <rect width="512" height="512" fill="#fefce8"/>
+  <g transform="translate(256, 240)">
+    <!-- 책 몸체 -->
+    <rect x="-100" y="-110" width="200" height="220" rx="16" fill="#e9d5ff" stroke="#c4b5fd" stroke-width="4"/>
+    <!-- 책 옆면 (페이지) -->
+    <rect x="96" y="-100" width="16" height="200" rx="4" fill="#ddd6fe" stroke="#c4b5fd" stroke-width="2"/>
+    <!-- 책 표지 라인 -->
+    <line x1="-80" y1="80" x2="80" y2="80" stroke="#c4b5fd" stroke-width="3" stroke-linecap="round"/>
+    <!-- 포도 (책 표지 위) -->
+    <g transform="translate(0, -20)">
+      <!-- 잎 -->
+      <path d="M 2,-52 Q 18,-66 22,-50 Q 12,-44 2,-52 Z" fill="#22c55e"/>
+      <!-- 포도알 3개 -->
+      <circle cx="-18" cy="-24" r="22" fill="#9333ea"/>
+      <circle cx="18" cy="-24" r="22" fill="#a855f7"/>
+      <circle cx="0" cy="4" r="22" fill="#9333ea"/>
+    </g>
   </g>
 </svg>
