@@ -1,12 +1,12 @@
 /**
  * @file SettingsPage.test.tsx
  * @description 설정 페이지 테스트
- * 사용자 정보 표시 및 계정 관리 안내를 테스트한다.
+ * 메뉴 목록 및 서브 페이지 렌더링을 테스트한다.
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
-import { MemoryRouter } from 'react-router-dom'
+import { MemoryRouter, Routes, Route } from 'react-router-dom'
 import SettingsPage from '../SettingsPage'
 import { changelogs } from '../../data/changelogs'
 
@@ -24,6 +24,7 @@ vi.mock('../../contexts/AuthContext', () => ({
     isAuthenticated: true,
     loading: false,
     refreshUser: vi.fn(),
+    logout: vi.fn(),
   }),
 }))
 
@@ -37,10 +38,13 @@ globalThis.IntersectionObserver = class IntersectionObserver {
   unobserve = vi.fn()
 } as unknown as typeof globalThis.IntersectionObserver
 
-function renderSettingsPage() {
+function renderSettingsPage(path = '/settings') {
   return render(
-    <MemoryRouter>
-      <SettingsPage />
+    <MemoryRouter initialEntries={[path]}>
+      <Routes>
+        <Route path="/settings" element={<SettingsPage />} />
+        <Route path="/settings/:section" element={<SettingsPage />} />
+      </Routes>
     </MemoryRouter>
   )
 }
@@ -51,78 +55,75 @@ describe('SettingsPage', () => {
     localStorage.clear()
   })
 
-  describe('기본 렌더링', () => {
+  describe('메뉴 목록 (메인)', () => {
     it('페이지 제목 "설정"을 표시한다', () => {
       renderSettingsPage()
       expect(screen.getByRole('heading', { name: '설정' })).toBeInTheDocument()
     })
 
-    it('계정 정보 섹션 제목을 표시한다', () => {
+    it('3개 메뉴 항목을 표시한다', () => {
       renderSettingsPage()
-      expect(screen.getByText('계정 정보')).toBeInTheDocument()
+      expect(screen.getByText('새소식')).toBeInTheDocument()
+      expect(screen.getByText('관리')).toBeInTheDocument()
+      expect(screen.getByText('내 계정')).toBeInTheDocument()
+    })
+
+    it('메뉴 설명을 표시한다', () => {
+      renderSettingsPage()
+      expect(screen.getByText('앱 업데이트 내역')).toBeInTheDocument()
+      expect(screen.getByText('프로필, 텔레그램 연동, 로그아웃')).toBeInTheDocument()
     })
   })
 
-  describe('사용자 정보 표시', () => {
-    it('사용자명을 표시한다', () => {
-      renderSettingsPage()
+  describe('내 계정 서브 페이지', () => {
+    it('기본 정보를 표시한다', () => {
+      renderSettingsPage('/settings/my-account')
+      expect(screen.getByText('기본 정보')).toBeInTheDocument()
       expect(screen.getByText('사용자명')).toBeInTheDocument()
       expect(screen.getByText('testuser')).toBeInTheDocument()
     })
 
     it('이메일을 표시한다', () => {
-      renderSettingsPage()
+      renderSettingsPage('/settings/my-account')
       expect(screen.getByText('이메일')).toBeInTheDocument()
       expect(screen.getByText('test@test.com')).toBeInTheDocument()
     })
 
     it('가입일을 표시한다', () => {
-      renderSettingsPage()
+      renderSettingsPage('/settings/my-account')
       expect(screen.getByText('가입일')).toBeInTheDocument()
       expect(screen.getByText('2024.01.15')).toBeInTheDocument()
     })
-  })
 
-  describe('계정 관리 안내', () => {
-    it('계정 관리 섹션을 표시한다', () => {
-      renderSettingsPage()
-      expect(screen.getByText('계정 관리')).toBeInTheDocument()
+    it('연동 서비스 섹션을 표시한다', () => {
+      renderSettingsPage('/settings/my-account')
+      expect(screen.getByText('연동 서비스')).toBeInTheDocument()
+      expect(screen.getByText('텔레그램')).toBeInTheDocument()
     })
 
-    it('podo-auth 안내 문구를 표시한다', () => {
-      renderSettingsPage()
+    it('podo-auth 안내를 표시한다', () => {
+      renderSettingsPage('/settings/my-account')
       expect(screen.getAllByText(/포도 통합 계정/).length).toBeGreaterThan(0)
     })
   })
 
-  describe('새소식 섹션', () => {
-    it('새소식 제목을 표시한다', () => {
-      renderSettingsPage()
-      expect(screen.getByText('새소식')).toBeInTheDocument()
-    })
-
+  describe('새소식 서브 페이지', () => {
     it('changelog 항목의 버전과 제목을 표시한다', () => {
-      renderSettingsPage()
+      renderSettingsPage('/settings/changelog')
       changelogs.forEach((log) => {
         expect(screen.getByText(`v${log.version}`)).toBeInTheDocument()
         expect(screen.getByText(log.title)).toBeInTheDocument()
       })
     })
 
-    it('미확인 업데이트가 있으면 "새 업데이트" 뱃지를 표시한다', () => {
+    it('미확인 업데이트가 있으면 메뉴에 뱃지를 표시한다', () => {
       renderSettingsPage()
-      expect(screen.getByText('새 업데이트')).toBeInTheDocument()
-    })
-
-    it('이미 확인한 버전이면 "새 업데이트" 뱃지가 없다', () => {
-      localStorage.setItem('podo-changelog-last-seen', changelogs[0].version)
-      renderSettingsPage()
-      expect(screen.queryByText('새 업데이트')).not.toBeInTheDocument()
+      // 메뉴 목록에서 새소식 항목의 unread 뱃지 확인
+      expect(screen.getByText('새소식')).toBeInTheDocument()
     })
 
     it('태그(신규/개선/수정)를 표시한다', () => {
-      renderSettingsPage()
-      // 첫 번째 changelog의 첫 번째 아이템 태그 확인
+      renderSettingsPage('/settings/changelog')
       const firstTag = changelogs[0].items[0].tag
       expect(screen.getAllByText(firstTag).length).toBeGreaterThan(0)
     })
