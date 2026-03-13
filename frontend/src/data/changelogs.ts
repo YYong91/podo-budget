@@ -22,7 +22,7 @@ export const changelogs: Changelog[] = [
     date: '2026-03-13',
     title: '설정 페이지 개편',
     items: [
-      { tag: '개선', text: '설정 페이지 네스팅 구조 — 각 항목을 탭하면 상세 페이지로 이동' },
+      { tag: '개선', text: '설정 페이지 개편 — 새소식·관리·내 계정 3개 메뉴로 정리' },
     ],
   },
   {

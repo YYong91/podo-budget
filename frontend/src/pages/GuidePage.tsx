@@ -145,7 +145,7 @@ export default function GuidePage() {
         </p>
         <ExampleBox>
           <p>
-            <strong>등록:</strong> 설정 → 반복 거래 → 새 정기 거래 추가
+            <strong>등록:</strong> 설정 → 관리 → 반복 거래 → 새 정기 거래 추가
           </p>
           <p>
             <strong>주기:</strong> 매일 / 매주 / 매월 / 매년 선택 가능
@@ -161,7 +161,7 @@ export default function GuidePage() {
         <p>카테고리별로 월 예산을 설정하면 지출 대비 잔여 예산을 실시간으로 추적합니다.</p>
         <ExampleBox>
           <p>
-            <strong>설정:</strong> 설정 → 예산 관리 → 카테고리별 월 예산 금액 입력
+            <strong>설정:</strong> 설정 → 관리 → 예산 관리 → 카테고리별 월 예산 금액 입력
           </p>
           <p>
             <strong>추적:</strong> 리포트에서 예산 대비 실제 지출 비교 차트 확인
@@ -231,7 +231,7 @@ export default function GuidePage() {
         <p>가족이나 동거인과 함께 가계부를 공유할 수 있습니다.</p>
         <ExampleBox>
           <p>
-            <strong>가구 생성:</strong> 설정 → 공유 가계부 → 새 가구 만들기
+            <strong>가구 생성:</strong> 설정 → 관리 → 공유 가계부 → 새 가구 만들기
           </p>
           <p>
             <strong>초대:</strong> 이메일로 가구 구성원 초대
@@ -250,7 +250,7 @@ export default function GuidePage() {
         <p>텔레그램 봇을 연동하면 채팅으로 간편하게 지출/수입을 기록할 수 있습니다.</p>
         <ExampleBox>
           <p>
-            <strong>연동:</strong> 설정 → 텔레그램 연동 → 코드 발급 → 봇에{' '}
+            <strong>연동:</strong> 설정 → 내 계정 → 텔레그램 연동 코드 발급 → 봇에{' '}
             <code className="bg-warm-100 px-1 rounded">/link 코드</code> 입력
           </p>
           <p>
@@ -293,7 +293,7 @@ export default function GuidePage() {
             <p className="font-semibold text-warm-800 mb-1">새소식 (업데이트 알림)</p>
             <p>
               새로운 기능이 추가되면 사이드바의 <strong>설정</strong> 아이콘에 빨간 점이 표시됩니다.
-              설정 페이지 상단의 <strong>새소식</strong> 섹션에서 전체 업데이트 내역을 확인할 수 있어요.
+              설정 → <strong>새소식</strong>에서 전체 업데이트 내역을 확인할 수 있어요.
             </p>
           </div>
           <div>

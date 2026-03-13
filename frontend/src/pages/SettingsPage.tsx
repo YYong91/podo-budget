@@ -1,6 +1,6 @@
 /**
  * @file SettingsPage.tsx
- * @description 설정 페이지 - 메뉴 목록 + 서브 페이지 네스팅 구조
+ * @description 설정 페이지 - 메뉴 목록 → 서브 페이지 네스팅 구조
  */
 
 import { useState, useEffect, useRef } from 'react'
@@ -8,7 +8,7 @@ import { Link, useParams, useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import {
   Tags, PiggyBank, Repeat, Users, LogOut, BookOpen, MessageSquarePlus,
-  Megaphone, ChevronRight, ArrowLeft, User, Send, Shield,
+  Megaphone, ChevronRight, ArrowLeft, User, Send,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { generateTelegramLinkCode, unlinkTelegram } from '../api/telegram'
@@ -24,7 +24,14 @@ const TAG_STYLES: Record<ChangelogItem['tag'], string> = {
   '수정': 'bg-warm-100 text-warm-700',
 }
 
-type SettingsSection = 'changelog' | 'management' | 'account-info' | 'telegram' | 'account-manage'
+type SettingsSection = 'changelog' | 'management' | 'my-account'
+
+/* 이전 URL 호환용 리디렉션 맵 */
+const SECTION_REDIRECTS: Record<string, SettingsSection> = {
+  'account-info': 'my-account',
+  'telegram': 'my-account',
+  'account-manage': 'my-account',
+}
 
 interface MenuItem {
   key: SettingsSection
@@ -167,41 +174,14 @@ function ManagementSection() {
   )
 }
 
-/* ─── 계정 정보 섹션 ─── */
-function AccountInfoSection() {
-  const { user } = useAuth()
-  const formatDate = (dateStr: string): string => dateStr.slice(0, 10).replace(/-/g, '.')
-
-  if (!user) return null
-
-  return (
-    <SubPageWrapper title="계정 정보">
-      <div className="bg-white rounded-2xl shadow-sm border border-warm-200 p-6">
-        <div className="space-y-3">
-          <div className="flex items-center justify-between py-2 border-b border-warm-100">
-            <span className="text-sm font-medium text-warm-600">사용자명</span>
-            <span className="text-sm text-warm-900">{user.username}</span>
-          </div>
-          <div className="flex items-center justify-between py-2 border-b border-warm-100">
-            <span className="text-sm font-medium text-warm-600">이메일</span>
-            <span className="text-sm text-warm-900">{user.email || '미등록'}</span>
-          </div>
-          <div className="flex items-center justify-between py-2">
-            <span className="text-sm font-medium text-warm-600">가입일</span>
-            <span className="text-sm text-warm-900">{formatDate(user.created_at)}</span>
-          </div>
-        </div>
-      </div>
-    </SubPageWrapper>
-  )
-}
-
-/* ─── 텔레그램 연동 섹션 ─── */
-function TelegramSection() {
-  const { user, refreshUser } = useAuth()
+/* ─── 내 계정 섹션 (계정 정보 + 텔레그램 + 계정 관리 통합) ─── */
+function MyAccountSection() {
+  const { user, refreshUser, logout } = useAuth()
   const [linkCode, setLinkCode] = useState<{ code: string; expires_at: string } | null>(null)
   const [loadingCode, setLoadingCode] = useState(false)
   const [loadingUnlink, setLoadingUnlink] = useState(false)
+
+  const formatDate = (dateStr: string): string => dateStr.slice(0, 10).replace(/-/g, '.')
 
   const handleGenerateCode = async () => {
     setLoadingCode(true)
@@ -247,17 +227,39 @@ function TelegramSection() {
     : null
 
   return (
-    <SubPageWrapper title="텔레그램 연동">
+    <SubPageWrapper title="내 계정">
+      {/* 기본 정보 */}
       <div className="bg-white rounded-2xl shadow-sm border border-warm-200 p-6">
-        <p className="text-sm text-warm-500 mb-4">
-          텔레그램 봇에서 말하듯이 지출/수입을 바로 입력할 수 있습니다.
-          <br />
-          예: <span className="font-mono text-warm-700">"오늘 점심 김치찌개 8000원"</span>
-          <span className="font-mono text-warm-700">, "월급 320만원 받았어"</span>
-        </p>
+        <p className="text-xs font-semibold text-warm-500 uppercase tracking-wide mb-3">기본 정보</p>
+        <div className="space-y-3">
+          <div className="flex items-center justify-between py-2 border-b border-warm-100">
+            <span className="text-sm font-medium text-warm-600">사용자명</span>
+            <span className="text-sm text-warm-900">{user.username}</span>
+          </div>
+          <div className="flex items-center justify-between py-2 border-b border-warm-100">
+            <span className="text-sm font-medium text-warm-600">이메일</span>
+            <span className="text-sm text-warm-900">{user.email || '미등록'}</span>
+          </div>
+          <div className="flex items-center justify-between py-2">
+            <span className="text-sm font-medium text-warm-600">가입일</span>
+            <span className="text-sm text-warm-900">{formatDate(user.created_at)}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* 연동 서비스 */}
+      <div className="bg-white rounded-2xl shadow-sm border border-warm-200 p-6">
+        <p className="text-xs font-semibold text-warm-500 uppercase tracking-wide mb-3">연동 서비스</p>
+        <div className="flex items-center gap-3 mb-3">
+          <Send className="w-5 h-5 text-grape-500" />
+          <div>
+            <p className="text-sm font-medium text-warm-900">텔레그램</p>
+            <p className="text-xs text-warm-500">봇으로 지출/수입을 바로 입력</p>
+          </div>
+        </div>
 
         {user.is_telegram_linked ? (
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between py-2 px-3 bg-leaf-50 rounded-xl">
             <span className="text-sm text-leaf-600 font-medium">✅ 연동됨</span>
             <button
               onClick={handleUnlink}
@@ -341,20 +343,9 @@ function TelegramSection() {
           </div>
         )}
       </div>
-    </SubPageWrapper>
-  )
-}
 
-/* ─── 계정 관리 섹션 ─── */
-function AccountManageSection() {
-  const { logout } = useAuth()
-
-  return (
-    <SubPageWrapper title="계정 관리">
+      {/* 계정 액션 */}
       <div className="bg-white rounded-2xl shadow-sm border border-warm-200 p-6">
-        <p className="text-sm text-warm-600 mb-4">
-          비밀번호 변경, 계정 삭제 등은 포도 통합 계정에서 관리합니다.
-        </p>
         <div className="flex flex-wrap gap-3">
           <a
             href={AUTH_URL}
@@ -381,7 +372,7 @@ function AccountManageSection() {
 export default function SettingsPage() {
   const { user } = useAuth()
   const { hasUnread } = useChangelog()
-  const { section } = useParams<{ section: SettingsSection }>()
+  const { section } = useParams<{ section: string }>()
   const navigate = useNavigate()
 
   const menuItems: MenuItem[] = [
@@ -397,55 +388,43 @@ export default function SettingsPage() {
     {
       key: 'management',
       label: '관리',
-      description: '카테고리, 예산, 반복 거래, 공유 가계부',
+      description: '카테고리, 예산, 반복 거래, 가이드',
       icon: Tags,
     },
     {
-      key: 'account-info',
-      label: '계정 정보',
-      description: '사용자명, 이메일, 가입일',
+      key: 'my-account',
+      label: '내 계정',
+      description: '프로필, 텔레그램 연동, 로그아웃',
       icon: User,
-    },
-    {
-      key: 'telegram',
-      label: '텔레그램 연동',
-      description: user?.is_telegram_linked ? '연동됨' : '미연동',
-      icon: Send,
-    },
-    {
-      key: 'account-manage',
-      label: '계정 관리',
-      description: '포도 통합 계정, 로그아웃',
-      icon: Shield,
     },
   ]
 
   if (!user) return null
 
+  // 이전 URL 호환: 삭제된 섹션은 새 섹션으로 리디렉션
+  if (section && SECTION_REDIRECTS[section]) {
+    navigate(`/settings/${SECTION_REDIRECTS[section]}`, { replace: true })
+    return null
+  }
+
   // 잘못된 섹션이면 설정 메인으로 리디렉션
-  const validSections: SettingsSection[] = ['changelog', 'management', 'account-info', 'telegram', 'account-manage']
+  const validSections: SettingsSection[] = ['changelog', 'management', 'my-account']
   if (section && !validSections.includes(section as SettingsSection)) {
     navigate('/settings', { replace: true })
     return null
   }
 
-  // 섹션이 없으면 메뉴 목록 표시
   if (!section) {
     return <SettingsMenu menuItems={menuItems} />
   }
 
-  // 섹션별 서브 페이지 렌더링
   switch (section) {
     case 'changelog':
       return <ChangelogSection />
     case 'management':
       return <ManagementSection />
-    case 'account-info':
-      return <AccountInfoSection />
-    case 'telegram':
-      return <TelegramSection />
-    case 'account-manage':
-      return <AccountManageSection />
+    case 'my-account':
+      return <MyAccountSection />
     default:
       return <SettingsMenu menuItems={menuItems} />
   }
