@@ -64,6 +64,23 @@
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
+/* PWA standalone 모드에서 하단 탭 바 크기 확대 */
+@media (display-mode: standalone) {
+  .pwa-nav-container {
+    height: 4rem; /* 56px → 64px */
+  }
+  .pwa-nav-icon {
+    width: 1.5rem !important;
+    height: 1.5rem !important; /* 20px → 24px */
+  }
+  .pwa-nav-label {
+    font-size: 11px !important; /* 10px → 11px */
+  }
+  .pwa-fab-position {
+    bottom: calc(4rem + env(safe-area-inset-bottom, 0px) + 0.75rem) !important;
+  }
+}
+
 body {
   margin: 0;
   min-width: 320px;

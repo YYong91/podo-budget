@@ -211,7 +211,7 @@ export default function Layout() {
 
       {/* 모바일 하단 탭 바 */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-white border-t border-warm-200 safe-area-bottom">
-        <div className="flex items-center justify-around h-14">
+        <div className="flex items-center justify-around h-14 pwa-nav-container">
           {navItems.map(item => {
             const active = isActive(item.path)
             const Icon = item.icon
@@ -230,12 +230,12 @@ export default function Layout() {
                 `}
               >
                 <span className="relative">
-                  <Icon className={`w-5 h-5 ${active ? 'stroke-[2.5]' : ''}`} />
+                  <Icon className={`w-5 h-5 pwa-nav-icon ${active ? 'stroke-[2.5]' : ''}`} />
                   {item.path === '/settings' && hasUnreadChangelog && (
                     <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full" />
                   )}
                 </span>
-                <span className={`text-[10px] leading-tight ${active ? 'font-semibold' : 'font-medium'}`}>
+                <span className={`text-[10px] leading-tight pwa-nav-label ${active ? 'font-semibold' : 'font-medium'}`}>
                   {item.label}
                 </span>
               </Link>
