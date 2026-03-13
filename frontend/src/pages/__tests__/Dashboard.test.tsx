@@ -43,7 +43,7 @@ describe('Dashboard', () => {
     it('e 키를 누르면 /expenses/new로 이동한다', async () => {
       renderDashboard()
       await waitFor(() => {
-        expect(screen.getByRole('heading', { name: '대시보드' })).toBeInTheDocument()
+        expect(screen.getByText('이번 달 총 지출')).toBeInTheDocument()
       })
       fireEvent.keyDown(document, { key: 'e' })
       expect(mockNavigate).toHaveBeenCalledWith('/expenses/new')
@@ -52,7 +52,7 @@ describe('Dashboard', () => {
     it('i 키를 누르면 /income/new로 이동한다', async () => {
       renderDashboard()
       await waitFor(() => {
-        expect(screen.getByRole('heading', { name: '대시보드' })).toBeInTheDocument()
+        expect(screen.getByText('이번 달 총 지출')).toBeInTheDocument()
       })
       fireEvent.keyDown(document, { key: 'i' })
       expect(mockNavigate).toHaveBeenCalledWith('/income/new')
@@ -61,7 +61,7 @@ describe('Dashboard', () => {
     it('input 필드에 포커스된 경우 키보드 단축키가 동작하지 않는다', async () => {
       renderDashboard()
       await waitFor(() => {
-        expect(screen.getByRole('heading', { name: '대시보드' })).toBeInTheDocument()
+        expect(screen.getByText('이번 달 총 지출')).toBeInTheDocument()
       })
       const input = document.createElement('input')
       document.body.appendChild(input)
@@ -80,13 +80,6 @@ describe('Dashboard', () => {
   })
 
   describe('정상 데이터 표시', () => {
-    it('페이지 제목을 표시한다', async () => {
-      renderDashboard()
-      await waitFor(() => {
-        expect(screen.getByRole('heading', { name: '대시보드' })).toBeInTheDocument()
-      })
-    })
-
     it('이번 달 총 지출을 표시한다', async () => {
       renderDashboard()
       await waitFor(() => {

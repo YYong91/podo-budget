@@ -5,7 +5,7 @@
  */
 
 import { useEffect, useState, useCallback } from 'react'
-import { TrendingUp, Loader2, Sparkles } from 'lucide-react'
+import { Loader2, Sparkles } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { insightsApi, statsApi } from '../api/insights'
 import { incomeApi } from '../api/income'
@@ -161,12 +161,6 @@ export default function InsightsPage() {
 
   return (
     <div className="space-y-6">
-      {/* 헤더 */}
-      <div className="flex items-center gap-2">
-        <TrendingUp className="w-6 h-6 text-grape-600" />
-        <h1 className="text-xl font-bold text-grape-700">리포트</h1>
-      </div>
-
       {/* 기간 선택 */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex gap-1 bg-warm-100 p-1 rounded-lg">

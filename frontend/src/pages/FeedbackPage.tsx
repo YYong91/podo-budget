@@ -79,13 +79,9 @@ export default function FeedbackPage() {
 
   return (
     <div className="space-y-6">
-      {/* 헤더 */}
-      <div className="flex items-center gap-3">
-        <Link to="/settings" aria-label="뒤로가기" className="text-warm-500 hover:text-warm-700">
-          <ArrowLeft className="w-5 h-5" />
-        </Link>
-        <h1 className="text-xl font-bold text-grape-700">피드백</h1>
-      </div>
+      <Link to="/settings" aria-label="뒤로가기" className="text-warm-500 hover:text-warm-700 inline-block">
+        <ArrowLeft className="w-5 h-5" />
+      </Link>
 
       {/* 제출 폼 */}
       <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-sm border border-warm-200 p-6 space-y-4">

@@ -6,7 +6,7 @@
 
 import { useEffect, useState, useRef, useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Loader2, ChevronDown, ChevronUp } from 'lucide-react'
+import { Loader2, ChevronDown } from 'lucide-react'
 import { Chart as ChartJS, ArcElement, LineElement, PointElement, CategoryScale, LinearScale, Filler, Tooltip as ChartTooltip, Legend } from 'chart.js'
 import { Pie, Line } from 'react-chartjs-2'
 import { expenseApi } from '../api/expenses'
@@ -15,7 +15,6 @@ import { recurringApi } from '../api/recurring'
 import { useHouseholdStore } from '../stores/useHouseholdStore'
 import EmptyState from '../components/EmptyState'
 import ErrorState from '../components/ErrorState'
-import GrapeProgress from '../components/GrapeProgress'
 import { useToast } from '../hooks/useToast'
 import type { Expense, Income, MonthlyStats, RecurringTransaction, StatsResponse } from '../types'
 import { formatAmount } from '../utils/format'
@@ -98,6 +97,9 @@ function ChartSection({ stats, prevMonthsStats }: { stats: MonthlyStats; prevMon
   const [hiddenIndices, setHiddenIndices] = useState<Set<number>>(new Set())
   // 일별 추이 라인 숨기기/보이기
   const [lineHidden, setLineHidden] = useState(false)
+  // 카테고리 범례 더보기 토글
+  const [categoryExpanded, setCategoryExpanded] = useState(false)
+  const CATEGORY_INITIAL_COUNT = 5
 
   // 현재 월의 모든 날짜 레이블 (01~말일) + 오늘 날짜
   const { allDayLabels, today } = useMemo(() => {
@@ -240,9 +242,9 @@ function ChartSection({ stats, prevMonthsStats }: { stats: MonthlyStats; prevMon
                 }}
               />
             </div>
-            {/* 커스텀 범례 — 클릭으로 카테고리 숨기기/보이기 */}
+            {/* 커스텀 범례 — 상위 5개 + 더보기 토글 */}
             <div className="mt-3 space-y-1">
-              {byCategory.map((c, i) => {
+              {(categoryExpanded ? byCategory : byCategory.slice(0, CATEGORY_INITIAL_COUNT)).map((c, i) => {
                 const pct = totalAmount > 0 ? ((c.amount / totalAmount) * 100).toFixed(1) : '0.0'
                 const isHidden = hiddenIndices.has(i)
                 return (
@@ -263,6 +265,15 @@ function ChartSection({ stats, prevMonthsStats }: { stats: MonthlyStats; prevMon
                   </button>
                 )
               })}
+              {byCategory.length > CATEGORY_INITIAL_COUNT && (
+                <button
+                  onClick={() => setCategoryExpanded(!categoryExpanded)}
+                  className="flex items-center justify-center gap-1 w-full text-sm text-warm-500 hover:text-warm-700 py-1.5 transition-colors"
+                >
+                  <span>{categoryExpanded ? '접기' : `외 ${byCategory.length - CATEGORY_INITIAL_COUNT}개 더보기`}</span>
+                  <ChevronDown className={`w-4 h-4 transition-transform ${categoryExpanded ? 'rotate-180' : ''}`} />
+                </button>
+              )}
             </div>
           </div>
         ) : (
@@ -489,28 +500,11 @@ export default function Dashboard() {
   const [recentIncomes, setRecentIncomes] = useState<Income[]>([])
   const [pendingRecurring, setPendingRecurring] = useState<RecurringTransaction[]>([])
 
-  // 개인 데이터 (가구 선택 시에만 별도 로드)
-  const [personalStats, setPersonalStats] = useState<MonthlyStats | null>(null)
-  const [personalExpenses, setPersonalExpenses] = useState<Expense[]>([])
-
   // 일별 추이 3개월 평균용 이전 달 통계
   const [prevMonthsStats, setPrevMonthsStats] = useState<MonthlyStats[]>([])
 
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
-
-  // 개인 지출 섹션 접기/펼치기 (localStorage 영속)
-  const [personalExpanded, setPersonalExpanded] = useState(() => {
-    return localStorage.getItem('dashboard_personal_expanded') !== 'false'
-  })
-
-  const togglePersonal = () => {
-    setPersonalExpanded((prev) => {
-      const next = !prev
-      localStorage.setItem('dashboard_personal_expanded', String(next))
-      return next
-    })
-  }
 
   async function fetchData() {
     setLoading(true)
@@ -532,39 +526,17 @@ export default function Dashboard() {
       ] as const
       const pendingPromise = recurringApi.getPending(activeHouseholdId ?? undefined).catch(() => ({ data: [] as RecurringTransaction[] }))
 
-      if (activeHouseholdId) {
-        // 가구가 선택된 경우: 가구 데이터 + 개인 데이터 병렬 로드
-        const [householdStatsRes, householdExpensesRes, personalStatsRes, personalExpensesRes, incStatsRes, incListRes, pendingRes] = await Promise.all([
-          expenseApi.getMonthlyStats(month, activeHouseholdId),
-          expenseApi.getAll({ limit: 5, household_id: activeHouseholdId }),
-          expenseApi.getMonthlyStats(month),
-          expenseApi.getAll({ limit: 5 }),
-          ...incomePromises,
-          pendingPromise,
-        ])
-        setStats(householdStatsRes.data)
-        setRecentExpenses(householdExpensesRes.data)
-        setPersonalStats(personalStatsRes.data)
-        setPersonalExpenses(personalExpensesRes.data)
-        setIncomeStats(incStatsRes?.data ?? null)
-        setRecentIncomes(incListRes?.data ?? [])
-        setPendingRecurring(pendingRes?.data ?? [])
-      } else {
-        // 가구 미선택: 개인 데이터만
-        const [statsRes, expensesRes, incStatsRes, incListRes, pendingRes] = await Promise.all([
-          expenseApi.getMonthlyStats(month),
-          expenseApi.getAll({ limit: 5 }),
-          ...incomePromises,
-          pendingPromise,
-        ])
-        setStats(statsRes.data)
-        setRecentExpenses(expensesRes.data)
-        setPersonalStats(null)
-        setPersonalExpenses([])
-        setIncomeStats(incStatsRes?.data ?? null)
-        setRecentIncomes(incListRes?.data ?? [])
-        setPendingRecurring(pendingRes?.data ?? [])
-      }
+      const [statsRes, expensesRes, incStatsRes, incListRes, pendingRes] = await Promise.all([
+        expenseApi.getMonthlyStats(month, activeHouseholdId ?? undefined),
+        expenseApi.getAll({ limit: 5, household_id: activeHouseholdId ?? undefined }),
+        ...incomePromises,
+        pendingPromise,
+      ])
+      setStats(statsRes.data)
+      setRecentExpenses(expensesRes.data)
+      setIncomeStats(incStatsRes?.data ?? null)
+      setRecentIncomes(incListRes?.data ?? [])
+      setPendingRecurring(pendingRes?.data ?? [])
 
       // 이전 달 통계 처리 (이미 병렬로 실행 중)
       const prevResults = await prevMonthsPromise
@@ -591,7 +563,6 @@ export default function Dashboard() {
   if (error) {
     return (
       <div className="space-y-6">
-        <h1 className="text-xl font-bold text-grape-700">대시보드</h1>
         <div className="bg-white rounded-xl shadow-sm border border-warm-200/60">
           <ErrorState onRetry={fetchData} />
         </div>
@@ -602,10 +573,9 @@ export default function Dashboard() {
   const total = stats?.total ?? 0
   const hasNoData = total === 0 && recentExpenses.length === 0
 
-  if (hasNoData && (!personalStats || personalStats.total === 0)) {
+  if (hasNoData) {
     return (
       <div className="space-y-6">
-        <h1 className="text-xl font-bold text-grape-700">대시보드</h1>
         <div className="bg-white rounded-xl shadow-sm border border-warm-200/60">
           <EmptyState
             title="아직 이번 달 지출 기록이 없어요"
@@ -624,23 +594,9 @@ export default function Dashboard() {
     )
   }
 
-  const showPersonalSection = activeHouseholdId && personalStats
-
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold text-grape-700">
-          {activeHouseholdId ? '공유 가계부' : '대시보드'}
-        </h1>
-      </div>
-
-      {/* 메인 데이터 (가구 선택 시 가구, 미선택 시 개인) */}
       {stats && <StatsCards stats={stats} incomeTotal={incomeStats?.total} />}
-
-      {/* 포도알 성장 카드 */}
-      <GrapeProgress count={
-        (stats?.daily_trend?.filter(d => d.amount > 0).length ?? 0) + (incomeStats?.count ?? 0)
-      } />
 
       {/* 반복 거래 알림 */}
       <PendingRecurring
@@ -671,33 +627,6 @@ export default function Dashboard() {
         <RecentExpenses expenses={recentExpenses} />
         <RecentIncomes incomes={recentIncomes} />
       </div>
-
-      {/* 개인 지출 섹션 (가구 선택 시에만 표시) */}
-      {showPersonalSection && (
-        <div className="space-y-4">
-          <button
-            onClick={togglePersonal}
-            className="flex items-center gap-2 text-warm-700 hover:text-warm-900 transition-colors"
-          >
-            {personalExpanded ? (
-              <ChevronUp className="w-5 h-5" />
-            ) : (
-              <ChevronDown className="w-5 h-5" />
-            )}
-            <span className="text-lg font-semibold">내 개인 지출</span>
-            <span className="text-sm text-warm-500">
-              {formatAmount(personalStats.total ?? 0)}
-            </span>
-          </button>
-
-          {personalExpanded && (
-            <div className="space-y-6">
-              <StatsCards stats={personalStats} />
-              <RecentExpenses expenses={personalExpenses} />
-            </div>
-          )}
-        </div>
-      )}
     </div>
   )
 }

@@ -92,19 +92,7 @@ describe('InvitationListPage', () => {
   })
 
   describe('기본 렌더링', () => {
-    it('페이지 제목 "받은 초대"를 표시한다', () => {
-      storeState = {
-        myInvitations: mockInvitations,
-        isLoading: false,
-        error: null,
-      }
-
-      renderInvitationList()
-
-      expect(screen.getByRole('heading', { name: '받은 초대' })).toBeInTheDocument()
-    })
-
-    it('부가 설명을 표시한다', () => {
+    it('안내 문구를 표시한다', () => {
       storeState = {
         myInvitations: mockInvitations,
         isLoading: false,

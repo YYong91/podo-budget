@@ -168,13 +168,8 @@ export default function AssetDashboard() {
 
   return (
     <div className="space-y-6">
-      {/* 헤더 */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Landmark className="w-6 h-6 text-grape-600" />
-          <h1 className="text-2xl font-bold text-warm-900">자산 관리</h1>
-        </div>
-        <div className="flex items-center gap-2">
+      {/* 액션 버튼 */}
+      <div className="flex items-center justify-end gap-2">
           <Link
             to="/accounts"
             className="flex items-center gap-1.5 px-3 py-2 border border-warm-200 text-warm-600 rounded-lg text-sm font-medium hover:bg-warm-50 transition-colors"
@@ -189,7 +184,6 @@ export default function AssetDashboard() {
             <Plus className="w-4 h-4" />
             자산 등록
           </Link>
-        </div>
       </div>
 
       {/* 순자산 요약 카드 */}

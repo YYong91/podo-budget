@@ -5,7 +5,8 @@
  */
 
 import { useState, useEffect } from 'react'
-import { Loader2, Plus, Pencil, Trash2, Pause, Play, X, Zap } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { ArrowLeft, Loader2, Plus, Pencil, Trash2, Pause, Play, X, Zap } from 'lucide-react'
 import { useToast } from '../hooks/useToast'
 import { recurringApi } from '../api/recurring'
 import { categoryApi } from '../api/categories'
@@ -48,6 +49,7 @@ const emptyForm = {
 }
 
 export default function RecurringList() {
+  const navigate = useNavigate()
   const { addToast } = useToast()
   const activeHouseholdId = useHouseholdStore((s) => s.activeHouseholdId)
 
@@ -218,7 +220,9 @@ export default function RecurringList() {
   if (error) {
     return (
       <div className="space-y-6">
-        <h1 className="text-xl font-bold text-grape-700">반복 거래</h1>
+        <button onClick={() => navigate('/settings')} className="p-1.5 -ml-1.5 rounded-lg hover:bg-warm-100 transition-colors">
+          <ArrowLeft className="w-5 h-5 text-warm-600" />
+        </button>
         <div className="bg-white rounded-2xl shadow-sm border border-warm-200/60">
           <ErrorState onRetry={loadData} />
         </div>
@@ -230,7 +234,9 @@ export default function RecurringList() {
     <div className="space-y-6">
       {/* 헤더 */}
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold text-grape-700">반복 거래</h1>
+        <button onClick={() => navigate('/settings')} className="p-1.5 -ml-1.5 rounded-lg hover:bg-warm-100 transition-colors">
+          <ArrowLeft className="w-5 h-5 text-warm-600" />
+        </button>
         <button
           onClick={openAdd}
           className="flex items-center gap-1.5 px-4 py-2 bg-grape-600 text-white rounded-xl text-sm font-medium shadow-sm hover:bg-grape-700 transition-colors"

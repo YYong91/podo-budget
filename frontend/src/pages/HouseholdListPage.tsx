@@ -7,7 +7,7 @@
 import type { } from 'react'
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Users, Calendar } from 'lucide-react'
+import { ArrowLeft, Users, Calendar } from 'lucide-react'
 import { useHouseholdStore } from '../stores/useHouseholdStore'
 import { useToast } from '../hooks/useToast'
 import CreateHouseholdModal from '../components/CreateHouseholdModal'
@@ -125,7 +125,9 @@ export default function HouseholdListPage() {
   if (error && households.length === 0) {
     return (
       <div className="space-y-6">
-        <h1 className="text-xl font-bold text-grape-700">공유 가계부</h1>
+        <button onClick={() => navigate('/settings')} className="p-1.5 -ml-1.5 rounded-lg hover:bg-warm-100 transition-colors">
+          <ArrowLeft className="w-5 h-5 text-warm-600" />
+        </button>
         <div className="bg-white rounded-2xl shadow-sm border border-warm-200">
           <ErrorState onRetry={fetchHouseholds} />
         </div>
@@ -138,7 +140,9 @@ export default function HouseholdListPage() {
       {/* 헤더 */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-grape-700">공유 가계부</h1>
+          <button onClick={() => navigate('/settings')} className="p-1.5 -ml-1.5 rounded-lg hover:bg-warm-100 transition-colors">
+          <ArrowLeft className="w-5 h-5 text-warm-600" />
+        </button>
           <p className="text-sm text-warm-500 mt-1">
             가족이나 친구들과 함께 지출을 관리하세요
           </p>

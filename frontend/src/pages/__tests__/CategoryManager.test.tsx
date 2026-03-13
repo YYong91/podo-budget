@@ -6,6 +6,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
+import { MemoryRouter } from 'react-router-dom'
 import userEvent from '@testing-library/user-event'
 import CategoryManager from '../CategoryManager'
 import { mockCategories } from '../../mocks/fixtures'
@@ -33,9 +34,11 @@ vi.mock('../../hooks/useToast', () => ({
  */
 function renderCategoryManager() {
   return render(
-    <ToastProvider>
-      <CategoryManager />
-    </ToastProvider>
+    <MemoryRouter>
+      <ToastProvider>
+        <CategoryManager />
+      </ToastProvider>
+    </MemoryRouter>
   )
 }
 
@@ -48,10 +51,10 @@ beforeEach(() => {
 
 describe('CategoryManager', () => {
   describe('기본 렌더링', () => {
-    it('페이지 제목을 표시한다', async () => {
+    it('추가 버튼과 테이블을 포함한 페이지를 표시한다', async () => {
       renderCategoryManager()
       await waitFor(() => {
-        expect(screen.getByRole('heading', { name: '카테고리 관리' })).toBeInTheDocument()
+        expect(screen.getByRole('button', { name: '+ 추가' })).toBeInTheDocument()
       })
     })
 

@@ -257,17 +257,13 @@ export default function IncomeForm() {
 
   return (
     <div className="space-y-6 max-w-2xl">
-      {/* 헤더 */}
-      <div className="flex items-center gap-3">
-        <Link
-          to="/income"
-          aria-label="뒤로가기"
-          className="p-2 rounded-lg hover:bg-warm-100 transition-colors"
-        >
-          <ArrowLeft className="w-5 h-5 text-warm-600" />
-        </Link>
-        <h1 className="text-xl font-bold text-grape-700">수입 입력</h1>
-      </div>
+      <Link
+        to="/income"
+        aria-label="뒤로가기"
+        className="p-2 -ml-2 rounded-lg hover:bg-warm-100 transition-colors inline-block"
+      >
+        <ArrowLeft className="w-5 h-5 text-warm-600" />
+      </Link>
 
       {/* 모드 전환 탭 */}
       <div className="bg-white rounded-xl shadow-sm border border-warm-200/60 p-2 flex gap-2">

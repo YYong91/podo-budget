@@ -244,7 +244,9 @@ export default function HouseholdDetailPage() {
   if (error && !currentHousehold) {
     return (
       <div className="space-y-6">
-        <h1 className="text-xl font-bold text-grape-700">가구 정보</h1>
+        <button onClick={() => navigate('/households')} className="p-1.5 -ml-1.5 rounded-lg hover:bg-warm-100 transition-colors">
+          <ArrowLeft className="w-5 h-5 text-warm-600" />
+        </button>
         <div className="bg-white rounded-2xl shadow-sm border border-warm-200">
           <ErrorState onRetry={() => id && fetchHouseholdDetail(Number(id))} />
         </div>
@@ -283,9 +285,6 @@ export default function HouseholdDetailPage() {
             >
               <ArrowLeft className="w-5 h-5" />
             </button>
-            <h1 className="text-xl font-bold text-grape-700">
-              {currentHousehold.name}
-            </h1>
             <span
               className={`text-xs px-2 py-1 rounded-full ${getRoleBadgeColor(
                 currentHousehold.my_role
