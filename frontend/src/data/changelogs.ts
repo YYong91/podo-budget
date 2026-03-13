@@ -18,6 +18,14 @@ export interface Changelog {
 
 export const changelogs: Changelog[] = [
   {
+    version: '1.5.0',
+    date: '2026-03-13',
+    title: '설정 페이지 개편',
+    items: [
+      { tag: '개선', text: '설정 페이지 네스팅 구조 — 각 항목을 탭하면 상세 페이지로 이동' },
+    ],
+  },
+  {
     version: '1.4.0',
     date: '2026-03-12',
     title: '업데이트 알림 기능',

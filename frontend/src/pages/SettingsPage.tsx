@@ -1,12 +1,16 @@
 /**
  * @file SettingsPage.tsx
- * @description 설정 페이지 - 계정 정보 및 텔레그램 연동
+ * @description 설정 페이지 - 메뉴 목록 + 서브 페이지 네스팅 구조
  */
 
 import { useState, useEffect, useRef } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useParams, useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
-import { Tags, PiggyBank, Repeat, Users, LogOut, BookOpen, MessageSquarePlus, Megaphone } from 'lucide-react'
+import {
+  Tags, PiggyBank, Repeat, Users, LogOut, BookOpen, MessageSquarePlus,
+  Megaphone, ChevronRight, ArrowLeft, User, Send, Shield,
+} from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 import { generateTelegramLinkCode, unlinkTelegram } from '../api/telegram'
 import { useAuth } from '../contexts/AuthContext'
 import { useChangelog } from '../hooks/useChangelog'
@@ -20,15 +24,73 @@ const TAG_STYLES: Record<ChangelogItem['tag'], string> = {
   '수정': 'bg-warm-100 text-warm-700',
 }
 
-export default function SettingsPage() {
-  const { user, refreshUser, logout } = useAuth()
+type SettingsSection = 'changelog' | 'management' | 'account-info' | 'telegram' | 'account-manage'
+
+interface MenuItem {
+  key: SettingsSection
+  label: string
+  description: string
+  icon: LucideIcon
+  badge?: React.ReactNode
+}
+
+/* ─── 메뉴 목록 (설정 메인) ─── */
+function SettingsMenu({ menuItems }: { menuItems: MenuItem[] }) {
+  return (
+    <div className="space-y-6">
+      <h1 className="text-xl font-bold text-grape-700">설정</h1>
+      <div className="bg-white rounded-2xl shadow-sm border border-warm-200 overflow-hidden">
+        {menuItems.map((item, idx) => {
+          const Icon = item.icon
+          return (
+            <Link
+              key={item.key}
+              to={`/settings/${item.key}`}
+              className={`flex items-center gap-4 px-5 py-4 hover:bg-grape-50 transition-colors ${
+                idx < menuItems.length - 1 ? 'border-b border-warm-100' : ''
+              }`}
+            >
+              <div className="relative flex-shrink-0">
+                <Icon className="w-5 h-5 text-grape-500" />
+                {item.badge}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-warm-900">{item.label}</p>
+                <p className="text-xs text-warm-500 truncate">{item.description}</p>
+              </div>
+              <ChevronRight className="w-4 h-4 text-warm-400 flex-shrink-0" />
+            </Link>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+/* ─── 서브 페이지 래퍼 ─── */
+function SubPageWrapper({ title, children }: { title: string; children: React.ReactNode }) {
+  const navigate = useNavigate()
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center gap-3">
+        <button
+          onClick={() => navigate('/settings')}
+          className="p-1.5 -ml-1.5 rounded-lg hover:bg-warm-100 transition-colors"
+        >
+          <ArrowLeft className="w-5 h-5 text-warm-600" />
+        </button>
+        <h1 className="text-xl font-bold text-grape-700">{title}</h1>
+      </div>
+      {children}
+    </div>
+  )
+}
+
+/* ─── 새소식 섹션 ─── */
+function ChangelogSection() {
   const { hasUnread, markAsRead, changelogs } = useChangelog()
   const changelogRef = useRef<HTMLDivElement>(null)
-  const [linkCode, setLinkCode] = useState<{ code: string; expires_at: string } | null>(null)
-  const [loadingCode, setLoadingCode] = useState(false)
-  const [loadingUnlink, setLoadingUnlink] = useState(false)
 
-  // 새소식 섹션이 화면에 보이면 읽음 처리
   useEffect(() => {
     if (!hasUnread || !changelogRef.current) return
     const observer = new IntersectionObserver(
@@ -39,7 +101,107 @@ export default function SettingsPage() {
     return () => observer.disconnect()
   }, [hasUnread, markAsRead])
 
+  return (
+    <SubPageWrapper title="새소식">
+      <div ref={changelogRef} className="bg-white rounded-2xl shadow-sm border border-warm-200 p-6">
+        <div className="space-y-4">
+          {changelogs.map((log, idx) => (
+            <div
+              key={log.version}
+              className={`relative pl-6 ${idx < changelogs.length - 1 ? 'pb-4 border-l-2 border-warm-200 ml-1' : 'ml-1'}`}
+            >
+              <div className={`absolute left-0 top-1 w-2.5 h-2.5 rounded-full -translate-x-[5px] ${
+                idx === 0 ? 'bg-grape-500' : 'bg-warm-300'
+              }`} />
+              <div className="flex items-baseline gap-2 mb-1.5">
+                <span className="text-sm font-bold text-warm-900">v{log.version}</span>
+                <span className="text-xs text-warm-400">{log.date}</span>
+              </div>
+              <p className="text-sm font-medium text-warm-700 mb-2">{log.title}</p>
+              <ul className="space-y-1">
+                {log.items.map((item, i) => (
+                  <li key={i} className="flex items-start gap-2 text-sm text-warm-600">
+                    <span className={`inline-block text-xs px-1.5 py-0.5 rounded font-medium flex-shrink-0 mt-0.5 ${TAG_STYLES[item.tag]}`}>
+                      {item.tag}
+                    </span>
+                    <span>{item.text}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+      </div>
+    </SubPageWrapper>
+  )
+}
+
+/* ─── 관리 섹션 ─── */
+function ManagementSection() {
+  const links = [
+    { to: '/categories', icon: Tags, label: '카테고리' },
+    { to: '/budgets', icon: PiggyBank, label: '예산 관리' },
+    { to: '/recurring', icon: Repeat, label: '반복 거래' },
+    { to: '/households', icon: Users, label: '공유 가계부' },
+    { to: '/guide', icon: BookOpen, label: '사용 가이드' },
+    { to: '/feedback', icon: MessageSquarePlus, label: '피드백' },
+  ]
+
+  return (
+    <SubPageWrapper title="관리">
+      <div className="bg-white rounded-2xl shadow-sm border border-warm-200 p-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          {links.map(({ to, icon: Icon, label }) => (
+            <Link
+              key={to}
+              to={to}
+              className="flex items-center gap-3 px-4 py-3 rounded-xl border border-warm-200 hover:bg-grape-50 hover:border-grape-200 transition-colors"
+            >
+              <Icon className="w-5 h-5 text-grape-500" />
+              <span className="text-sm font-medium text-warm-800">{label}</span>
+            </Link>
+          ))}
+        </div>
+      </div>
+    </SubPageWrapper>
+  )
+}
+
+/* ─── 계정 정보 섹션 ─── */
+function AccountInfoSection() {
+  const { user } = useAuth()
   const formatDate = (dateStr: string): string => dateStr.slice(0, 10).replace(/-/g, '.')
+
+  if (!user) return null
+
+  return (
+    <SubPageWrapper title="계정 정보">
+      <div className="bg-white rounded-2xl shadow-sm border border-warm-200 p-6">
+        <div className="space-y-3">
+          <div className="flex items-center justify-between py-2 border-b border-warm-100">
+            <span className="text-sm font-medium text-warm-600">사용자명</span>
+            <span className="text-sm text-warm-900">{user.username}</span>
+          </div>
+          <div className="flex items-center justify-between py-2 border-b border-warm-100">
+            <span className="text-sm font-medium text-warm-600">이메일</span>
+            <span className="text-sm text-warm-900">{user.email || '미등록'}</span>
+          </div>
+          <div className="flex items-center justify-between py-2">
+            <span className="text-sm font-medium text-warm-600">가입일</span>
+            <span className="text-sm text-warm-900">{formatDate(user.created_at)}</span>
+          </div>
+        </div>
+      </div>
+    </SubPageWrapper>
+  )
+}
+
+/* ─── 텔레그램 연동 섹션 ─── */
+function TelegramSection() {
+  const { user, refreshUser } = useAuth()
+  const [linkCode, setLinkCode] = useState<{ code: string; expires_at: string } | null>(null)
+  const [loadingCode, setLoadingCode] = useState(false)
+  const [loadingUnlink, setLoadingUnlink] = useState(false)
 
   const handleGenerateCode = async () => {
     setLoadingCode(true)
@@ -85,126 +247,8 @@ export default function SettingsPage() {
     : null
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-xl font-bold text-grape-700">설정</h1>
-
-      {/* 새소식 */}
-      <div ref={changelogRef} className="bg-white rounded-2xl shadow-sm border border-warm-200 p-6">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="relative">
-            <Megaphone className="w-5 h-5 text-grape-500" />
-            {hasUnread && (
-              <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white" />
-            )}
-          </div>
-          <h2 className="text-lg font-semibold text-warm-900">새소식</h2>
-          {hasUnread && (
-            <span className="text-xs bg-grape-100 text-grape-700 px-2 py-0.5 rounded-full font-medium">
-              새 업데이트
-            </span>
-          )}
-        </div>
-        <div className="space-y-4">
-          {changelogs.map((log, idx) => (
-            <div
-              key={log.version}
-              className={`relative pl-6 ${idx < changelogs.length - 1 ? 'pb-4 border-l-2 border-warm-200 ml-1' : 'ml-1'}`}
-            >
-              {/* 타임라인 점 */}
-              <div className={`absolute left-0 top-1 w-2.5 h-2.5 rounded-full -translate-x-[5px] ${
-                idx === 0 ? 'bg-grape-500' : 'bg-warm-300'
-              }`} />
-              <div className="flex items-baseline gap-2 mb-1.5">
-                <span className="text-sm font-bold text-warm-900">v{log.version}</span>
-                <span className="text-xs text-warm-400">{log.date}</span>
-              </div>
-              <p className="text-sm font-medium text-warm-700 mb-2">{log.title}</p>
-              <ul className="space-y-1">
-                {log.items.map((item, i) => (
-                  <li key={i} className="flex items-start gap-2 text-sm text-warm-600">
-                    <span className={`inline-block text-xs px-1.5 py-0.5 rounded font-medium flex-shrink-0 mt-0.5 ${TAG_STYLES[item.tag]}`}>
-                      {item.tag}
-                    </span>
-                    <span>{item.text}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* 관리 */}
+    <SubPageWrapper title="텔레그램 연동">
       <div className="bg-white rounded-2xl shadow-sm border border-warm-200 p-6">
-        <h2 className="text-lg font-semibold text-warm-900 mb-4">관리</h2>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <Link
-            to="/categories"
-            className="flex items-center gap-3 px-4 py-3 rounded-xl border border-warm-200 hover:bg-grape-50 hover:border-grape-200 transition-colors"
-          >
-            <Tags className="w-5 h-5 text-grape-500" />
-            <span className="text-sm font-medium text-warm-800">카테고리</span>
-          </Link>
-          <Link
-            to="/budgets"
-            className="flex items-center gap-3 px-4 py-3 rounded-xl border border-warm-200 hover:bg-grape-50 hover:border-grape-200 transition-colors"
-          >
-            <PiggyBank className="w-5 h-5 text-grape-500" />
-            <span className="text-sm font-medium text-warm-800">예산 관리</span>
-          </Link>
-          <Link
-            to="/recurring"
-            className="flex items-center gap-3 px-4 py-3 rounded-xl border border-warm-200 hover:bg-grape-50 hover:border-grape-200 transition-colors"
-          >
-            <Repeat className="w-5 h-5 text-grape-500" />
-            <span className="text-sm font-medium text-warm-800">반복 거래</span>
-          </Link>
-          <Link
-            to="/households"
-            className="flex items-center gap-3 px-4 py-3 rounded-xl border border-warm-200 hover:bg-grape-50 hover:border-grape-200 transition-colors"
-          >
-            <Users className="w-5 h-5 text-grape-500" />
-            <span className="text-sm font-medium text-warm-800">공유 가계부</span>
-          </Link>
-          <Link
-            to="/guide"
-            className="flex items-center gap-3 px-4 py-3 rounded-xl border border-warm-200 hover:bg-grape-50 hover:border-grape-200 transition-colors"
-          >
-            <BookOpen className="w-5 h-5 text-grape-500" />
-            <span className="text-sm font-medium text-warm-800">사용 가이드</span>
-          </Link>
-          <Link
-            to="/feedback"
-            className="flex items-center gap-3 px-4 py-3 rounded-xl border border-warm-200 hover:bg-grape-50 hover:border-grape-200 transition-colors"
-          >
-            <MessageSquarePlus className="w-5 h-5 text-grape-500" />
-            <span className="text-sm font-medium text-warm-800">피드백</span>
-          </Link>
-        </div>
-      </div>
-
-      {/* 계정 정보 */}
-      <div className="bg-white rounded-2xl shadow-sm border border-warm-200 p-6">
-        <h2 className="text-lg font-semibold text-warm-900 mb-4">계정 정보</h2>
-        <div className="space-y-3">
-          <div className="flex items-center justify-between py-2 border-b border-warm-100">
-            <span className="text-sm font-medium text-warm-600">사용자명</span>
-            <span className="text-sm text-warm-900">{user.username}</span>
-          </div>
-          <div className="flex items-center justify-between py-2 border-b border-warm-100">
-            <span className="text-sm font-medium text-warm-600">이메일</span>
-            <span className="text-sm text-warm-900">{user.email || '미등록'}</span>
-          </div>
-          <div className="flex items-center justify-between py-2">
-            <span className="text-sm font-medium text-warm-600">가입일</span>
-            <span className="text-sm text-warm-900">{formatDate(user.created_at)}</span>
-          </div>
-        </div>
-      </div>
-
-      {/* 텔레그램 연동 */}
-      <div className="bg-white rounded-2xl shadow-sm border border-warm-200 p-6">
-        <h2 className="text-lg font-semibold text-warm-900 mb-1">텔레그램 연동</h2>
         <p className="text-sm text-warm-500 mb-4">
           텔레그램 봇에서 말하듯이 지출/수입을 바로 입력할 수 있습니다.
           <br />
@@ -213,7 +257,6 @@ export default function SettingsPage() {
         </p>
 
         {user.is_telegram_linked ? (
-          /* 연동 상태 */
           <div className="flex items-center justify-between">
             <span className="text-sm text-leaf-600 font-medium">✅ 연동됨</span>
             <button
@@ -225,9 +268,7 @@ export default function SettingsPage() {
             </button>
           </div>
         ) : (
-          /* 미연동 상태 */
           <div className="space-y-4">
-            {/* 연동 방법 안내 */}
             <div className="bg-warm-50 rounded-xl p-4 space-y-2">
               <p className="text-xs font-semibold text-warm-600 uppercase tracking-wide">연동 방법</p>
               <ol className="space-y-2 text-sm text-warm-700">
@@ -300,10 +341,17 @@ export default function SettingsPage() {
           </div>
         )}
       </div>
+    </SubPageWrapper>
+  )
+}
 
-      {/* 계정 관리 안내 */}
+/* ─── 계정 관리 섹션 ─── */
+function AccountManageSection() {
+  const { logout } = useAuth()
+
+  return (
+    <SubPageWrapper title="계정 관리">
       <div className="bg-white rounded-2xl shadow-sm border border-warm-200 p-6">
-        <h2 className="text-lg font-semibold text-warm-900 mb-2">계정 관리</h2>
         <p className="text-sm text-warm-600 mb-4">
           비밀번호 변경, 계정 삭제 등은 포도 통합 계정에서 관리합니다.
         </p>
@@ -325,6 +373,80 @@ export default function SettingsPage() {
           </button>
         </div>
       </div>
-    </div>
+    </SubPageWrapper>
   )
+}
+
+/* ─── 메인 설정 페이지 ─── */
+export default function SettingsPage() {
+  const { user } = useAuth()
+  const { hasUnread } = useChangelog()
+  const { section } = useParams<{ section: SettingsSection }>()
+  const navigate = useNavigate()
+
+  const menuItems: MenuItem[] = [
+    {
+      key: 'changelog',
+      label: '새소식',
+      description: '앱 업데이트 내역',
+      icon: Megaphone,
+      badge: hasUnread ? (
+        <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white" />
+      ) : undefined,
+    },
+    {
+      key: 'management',
+      label: '관리',
+      description: '카테고리, 예산, 반복 거래, 공유 가계부',
+      icon: Tags,
+    },
+    {
+      key: 'account-info',
+      label: '계정 정보',
+      description: '사용자명, 이메일, 가입일',
+      icon: User,
+    },
+    {
+      key: 'telegram',
+      label: '텔레그램 연동',
+      description: user?.is_telegram_linked ? '연동됨' : '미연동',
+      icon: Send,
+    },
+    {
+      key: 'account-manage',
+      label: '계정 관리',
+      description: '포도 통합 계정, 로그아웃',
+      icon: Shield,
+    },
+  ]
+
+  if (!user) return null
+
+  // 잘못된 섹션이면 설정 메인으로 리디렉션
+  const validSections: SettingsSection[] = ['changelog', 'management', 'account-info', 'telegram', 'account-manage']
+  if (section && !validSections.includes(section as SettingsSection)) {
+    navigate('/settings', { replace: true })
+    return null
+  }
+
+  // 섹션이 없으면 메뉴 목록 표시
+  if (!section) {
+    return <SettingsMenu menuItems={menuItems} />
+  }
+
+  // 섹션별 서브 페이지 렌더링
+  switch (section) {
+    case 'changelog':
+      return <ChangelogSection />
+    case 'management':
+      return <ManagementSection />
+    case 'account-info':
+      return <AccountInfoSection />
+    case 'telegram':
+      return <TelegramSection />
+    case 'account-manage':
+      return <AccountManageSection />
+    default:
+      return <SettingsMenu menuItems={menuItems} />
+  }
 }
