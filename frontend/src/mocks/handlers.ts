@@ -15,8 +15,14 @@ import {
   mockRecurringTransactions,
   mockStats,
   mockComparison,
+  mockAssets,
   mockAssetSummary,
   mockAssetSnapshots,
+  mockAssetGoal,
+  mockMonthlySavings,
+  mockChatResponse,
+  mockFeedbacks,
+  mockDashboardStats,
   mockStructuredInsights,
 } from './fixtures'
 
@@ -364,7 +370,30 @@ export const handlers = [
     })
   }),
 
+  // ==================== 자연어 채팅 API ====================
+
+  http.post(`${BASE_URL}/chat`, async ({ request }) => {
+    const body = (await request.json()) as Record<string, unknown>
+    if (body.preview) {
+      return HttpResponse.json({
+        ...mockChatResponse,
+        expenses_created: null,
+        parsed_items: [
+          { amount: 8000, category: '식비', description: '김치찌개', date: '2026-03-14', memo: '' },
+        ],
+        parsed_expenses: [
+          { amount: 8000, category: '식비', description: '김치찌개', date: '2026-03-14', memo: '' },
+        ],
+      })
+    }
+    return HttpResponse.json(mockChatResponse)
+  }),
+
   // ==================== 자산 API ====================
+
+  http.get(`${BASE_URL}/assets`, () => {
+    return HttpResponse.json(mockAssets)
+  }),
 
   http.get(`${BASE_URL}/assets/summary`, () => {
     return HttpResponse.json(mockAssetSummary)
@@ -372,6 +401,78 @@ export const handlers = [
 
   http.get(`${BASE_URL}/assets/snapshots`, () => {
     return HttpResponse.json(mockAssetSnapshots)
+  }),
+
+  http.get(`${BASE_URL}/assets/search`, ({ request }) => {
+    const url = new URL(request.url)
+    const q = url.searchParams.get('q') || ''
+    const results = mockAssets.filter((a) => a.name.includes(q)).map((a) => ({
+      name: a.name,
+      ticker: a.ticker,
+      type: a.type,
+      market: 'KR',
+    }))
+    return HttpResponse.json(results)
+  }),
+
+  http.get(`${BASE_URL}/assets/goal`, () => {
+    return HttpResponse.json(mockAssetGoal)
+  }),
+
+  http.post(`${BASE_URL}/assets/goal`, async ({ request }) => {
+    const body = (await request.json()) as Record<string, unknown>
+    return HttpResponse.json({
+      ...mockAssetGoal,
+      target_net_worth: body.target_net_worth ?? mockAssetGoal.target_net_worth,
+      target_date: body.target_date ?? mockAssetGoal.target_date,
+    }, { status: 201 })
+  }),
+
+  http.delete(`${BASE_URL}/assets/goal`, () => {
+    return HttpResponse.json(null, { status: 204 })
+  }),
+
+  http.get(`${BASE_URL}/assets/monthly-savings`, () => {
+    return HttpResponse.json(mockMonthlySavings)
+  }),
+
+  http.post(`${BASE_URL}/assets/parse`, async ({ request }) => {
+    const body = (await request.json()) as { text: string }
+    return HttpResponse.json({
+      items: [{ name: body.text, type: 'deposit', purchase_price: 1000000, current_price: 1000000 }],
+    })
+  }),
+
+  http.get(`${BASE_URL}/assets/:id`, ({ params }) => {
+    const asset = mockAssets.find((a) => a.id === Number(params.id))
+    if (!asset) return HttpResponse.json({ detail: 'Not found' }, { status: 404 })
+    return HttpResponse.json(asset)
+  }),
+
+  http.post(`${BASE_URL}/assets`, async ({ request }) => {
+    const body = (await request.json()) as Record<string, unknown>
+    return HttpResponse.json({
+      id: 99,
+      ...body,
+      user_id: 1,
+      household_id: null,
+      account_id: null,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }, { status: 201 })
+  }),
+
+  http.put(`${BASE_URL}/assets/:id`, async ({ params, request }) => {
+    const asset = mockAssets.find((a) => a.id === Number(params.id))
+    if (!asset) return HttpResponse.json({ detail: 'Not found' }, { status: 404 })
+    const body = (await request.json()) as Record<string, unknown>
+    return HttpResponse.json({ ...asset, ...body, updated_at: new Date().toISOString() })
+  }),
+
+  http.delete(`${BASE_URL}/assets/:id`, ({ params }) => {
+    const asset = mockAssets.find((a) => a.id === Number(params.id))
+    if (!asset) return HttpResponse.json({ detail: 'Not found' }, { status: 404 })
+    return HttpResponse.json(null, { status: 204 })
   }),
 
   // ==================== 인사이트 API ====================
@@ -396,6 +497,83 @@ export const handlers = [
     return HttpResponse.json({
       month: '2026-03',
       insights: mockStructuredInsights,
+    })
+  }),
+
+  // ==================== 피드백 API ====================
+
+  http.post(`${BASE_URL}/feedback`, async ({ request }) => {
+    const body = (await request.json()) as Record<string, unknown>
+    return HttpResponse.json({
+      id: 99,
+      user_id: 1,
+      type: body.type ?? 'feature',
+      title: body.title ?? '',
+      content: body.content ?? '',
+      status: 'new',
+      username: 'testuser',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }, { status: 201 })
+  }),
+
+  http.get(`${BASE_URL}/feedback/mine`, () => {
+    return HttpResponse.json(mockFeedbacks)
+  }),
+
+  http.get(`${BASE_URL}/feedback`, () => {
+    return HttpResponse.json(mockFeedbacks)
+  }),
+
+  http.patch(`${BASE_URL}/feedback/:id`, async ({ params, request }) => {
+    const fb = mockFeedbacks.find((f) => f.id === Number(params.id))
+    if (!fb) return HttpResponse.json({ detail: 'Not found' }, { status: 404 })
+    const body = (await request.json()) as { status: string }
+    return HttpResponse.json({ ...fb, status: body.status, updated_at: new Date().toISOString() })
+  }),
+
+  // ==================== 관리자 API ====================
+
+  http.get(`${BASE_URL}/admin/stats/dashboard`, () => {
+    return HttpResponse.json(mockDashboardStats)
+  }),
+
+  http.get(`${BASE_URL}/admin/users`, ({ request }) => {
+    const url = new URL(request.url)
+    const page = Number(url.searchParams.get('page')) || 1
+    const pageSize = Number(url.searchParams.get('page_size')) || 20
+    return HttpResponse.json({
+      users: [
+        { id: 1, username: 'testuser', email: 'test@example.com', is_active: true, created_at: '2026-01-01T00:00:00Z', expense_count: 100, income_count: 50 },
+      ],
+      total: 1,
+      page,
+      page_size: pageSize,
+    })
+  }),
+
+  http.get(`${BASE_URL}/admin/users/:userId`, ({ params }) => {
+    return HttpResponse.json({
+      id: Number(params.userId),
+      username: 'testuser',
+      email: 'test@example.com',
+      is_active: true,
+      created_at: '2026-01-01T00:00:00Z',
+      expense_count: 100,
+      income_count: 50,
+    })
+  }),
+
+  http.patch(`${BASE_URL}/admin/users/:userId`, async ({ params, request }) => {
+    const body = (await request.json()) as Record<string, unknown>
+    return HttpResponse.json({
+      id: Number(params.userId),
+      username: 'testuser',
+      email: 'test@example.com',
+      is_active: body.is_active ?? true,
+      created_at: '2026-01-01T00:00:00Z',
+      expense_count: 100,
+      income_count: 50,
     })
   }),
 ]
