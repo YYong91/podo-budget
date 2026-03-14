@@ -15,12 +15,14 @@ interface PullToRefreshProps {
 const THRESHOLD = 60        // 새로고침 트리거 거리 (px)
 const MAX_PULL = 100        // 최대 당김 거리 (px)
 const RESISTANCE = 0.4      // 당김 저항 계수
+const ACTIVATION_DELTA = 15 // 이 거리 이상 당겨야 pull-to-refresh 활성화 (px)
 
 export default function PullToRefresh({ onRefresh, children }: PullToRefreshProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const startY = useRef(0)
   const currentY = useRef(0)
   const pulling = useRef(false)
+  const activated = useRef(false) // 활성화 임계값 초과 여부
 
   const [pullDistance, setPullDistance] = useState(0)
   const [refreshing, setRefreshing] = useState(false)
@@ -39,6 +41,7 @@ export default function PullToRefresh({ onRefresh, children }: PullToRefreshProp
     startY.current = e.touches[0].clientY
     currentY.current = startY.current
     pulling.current = true
+    activated.current = false
   }, [refreshing, isAtTop])
 
   const handleTouchMove = useCallback((e: TouchEvent) => {
@@ -49,17 +52,25 @@ export default function PullToRefresh({ onRefresh, children }: PullToRefreshProp
 
     if (delta <= 0) {
       // 위로 스크롤 → 무시
+      activated.current = false
       setPullDistance(0)
       return
     }
 
     if (!isAtTop()) {
       pulling.current = false
+      activated.current = false
       setPullDistance(0)
       return
     }
 
-    // 기본 스크롤 방지
+    // 활성화 임계값 미달 → 브라우저 기본 스크롤에 맡김
+    if (!activated.current) {
+      if (delta < ACTIVATION_DELTA) return
+      activated.current = true
+    }
+
+    // 활성화 이후에만 기본 스크롤 방지
     e.preventDefault()
 
     const distance = Math.min(delta * RESISTANCE, MAX_PULL)
@@ -69,6 +80,7 @@ export default function PullToRefresh({ onRefresh, children }: PullToRefreshProp
   const handleTouchEnd = useCallback(async () => {
     if (!pulling.current) return
     pulling.current = false
+    activated.current = false
 
     if (pullDistance >= THRESHOLD && !refreshing) {
       setRefreshing(true)
@@ -103,7 +115,7 @@ export default function PullToRefresh({ onRefresh, children }: PullToRefreshProp
   const showIndicator = pullDistance > 10 || refreshing
 
   return (
-    <div ref={containerRef} className="relative">
+    <div ref={containerRef} className="relative" style={{ overscrollBehaviorY: 'contain' }}>
       {/* 새로고침 인디케이터 */}
       <div
         className="flex items-center justify-center overflow-hidden transition-[height] duration-200 ease-out"
