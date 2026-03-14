@@ -42,8 +42,7 @@ async def create_recurring(
     if household_id is None:
         household_id = await get_user_active_household_id(current_user, db)
 
-    if household_id is not None:
-        await get_household_member(household_id, current_user, db)
+    await get_household_member(household_id, current_user, db)
 
     next_due = calculate_initial_due_date(
         data.start_date,
@@ -83,11 +82,10 @@ async def get_recurring_list(
     db: AsyncSession = Depends(get_db),
 ):
     """정기 거래 목록 조회"""
-    if household_id is not None:
-        await get_household_member(household_id, current_user, db)
-        query = select(RecurringTransaction).where(RecurringTransaction.household_id == household_id)
-    else:
-        query = select(RecurringTransaction).where(RecurringTransaction.user_id == current_user.id)
+    if household_id is None:
+        household_id = await get_user_active_household_id(current_user, db)
+    await get_household_member(household_id, current_user, db)
+    query = select(RecurringTransaction).where(RecurringTransaction.household_id == household_id)
 
     if type is not None:
         query = query.where(RecurringTransaction.type == type)
@@ -106,19 +104,14 @@ async def get_pending_recurring(
     """처리 대기 중인 정기 거래 조회 (next_due_date <= today)"""
     today = date.today()
 
-    if household_id is not None:
-        await get_household_member(household_id, current_user, db)
-        query = select(RecurringTransaction).where(
-            RecurringTransaction.household_id == household_id,
-            RecurringTransaction.next_due_date <= today,
-            RecurringTransaction.is_active.is_(True),
-        )
-    else:
-        query = select(RecurringTransaction).where(
-            RecurringTransaction.user_id == current_user.id,
-            RecurringTransaction.next_due_date <= today,
-            RecurringTransaction.is_active.is_(True),
-        )
+    if household_id is None:
+        household_id = await get_user_active_household_id(current_user, db)
+    await get_household_member(household_id, current_user, db)
+    query = select(RecurringTransaction).where(
+        RecurringTransaction.household_id == household_id,
+        RecurringTransaction.next_due_date <= today,
+        RecurringTransaction.is_active.is_(True),
+    )
 
     query = query.order_by(RecurringTransaction.next_due_date.asc())
     result = await db.execute(query)
@@ -227,12 +220,15 @@ async def _get_user_recurring(
             detail="정기 거래를 찾을 수 없습니다",
         )
 
+    # 접근 권한 확인: 가구 멤버인지 검증
     if recurring.household_id is not None:
         await get_household_member(recurring.household_id, current_user, db)
-    elif recurring.user_id != current_user.id:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="정기 거래를 찾을 수 없습니다",
-        )
+    else:
+        # 레거시 데이터: household_id 없는 정기 거래는 본인 것만 조회
+        if recurring.user_id != current_user.id:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="정기 거래를 찾을 수 없습니다",
+            )
 
     return recurring
