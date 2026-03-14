@@ -18,7 +18,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.auth import get_current_user
 from app.core.database import get_db
 from app.models.user import User
-from app.schemas.auth import MessageResponse, TelegramLinkCodeResponse, UserResponse
+from app.schemas.auth import KakaoLinkCodeResponse, MessageResponse, TelegramLinkCodeResponse, UserResponse
 
 router = APIRouter()
 
@@ -40,6 +40,7 @@ async def get_me(current_user: User = Depends(get_current_user)):
         "is_active": current_user.is_active,
         "created_at": current_user.created_at,
         "is_telegram_linked": current_user.telegram_chat_id is not None,
+        "is_kakao_linked": current_user.kakao_user_id is not None,
     }
 
 
@@ -78,3 +79,39 @@ async def unlink_telegram(
     await db.execute(update(User).where(User.id == current_user.id).values(telegram_chat_id=None, telegram_link_code=None, telegram_link_code_expires_at=None))
     await db.commit()
     return MessageResponse(message="텔레그램 연동이 해제되었습니다.")
+
+
+@router.post("/kakao-link-code", response_model=KakaoLinkCodeResponse)
+async def generate_kakao_link_code(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """카카오톡 연동용 단기 코드 발급 (15분 유효)
+
+    재발급 시 이전 코드를 덮어씁니다.
+
+    Returns:
+        연동 코드와 만료 시각
+    """
+    code = "".join(secrets.choice(string.ascii_uppercase + string.digits) for _ in range(6))
+    expires_at = datetime.now(UTC) + timedelta(minutes=15)
+    await db.execute(update(User).where(User.id == current_user.id).values(kakao_link_code=code, kakao_link_code_expires_at=expires_at))
+    await db.commit()
+    return KakaoLinkCodeResponse(code=code, expires_at=expires_at)
+
+
+@router.delete("/kakao/link", response_model=MessageResponse)
+async def unlink_kakao(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """카카오톡 연동 해제
+
+    kakao_user_id와 연동 코드를 모두 초기화합니다.
+
+    Returns:
+        성공 메시지
+    """
+    await db.execute(update(User).where(User.id == current_user.id).values(kakao_user_id=None, kakao_link_code=None, kakao_link_code_expires_at=None))
+    await db.commit()
+    return MessageResponse(message="카카오톡 연동이 해제되었습니다.")

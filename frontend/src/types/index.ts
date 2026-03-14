@@ -199,6 +199,7 @@ export interface User {
   is_active: boolean
   created_at: string
   is_telegram_linked: boolean
+  is_kakao_linked: boolean
 }
 
 export interface LoginRequest {

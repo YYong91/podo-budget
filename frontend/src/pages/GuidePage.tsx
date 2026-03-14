@@ -15,6 +15,7 @@ import {
   Landmark,
   Users,
   Send,
+  MessageCircle,
   Lightbulb,
 } from 'lucide-react'
 
@@ -28,6 +29,7 @@ const sections = [
   { id: 'assets', icon: Landmark, label: '자산 관리' },
   { id: 'household', icon: Users, label: '공유 가계부' },
   { id: 'telegram', icon: Send, label: '텔레그램 봇 연동' },
+  { id: 'kakao', icon: MessageCircle, label: '카카오톡 봇 연동' },
   { id: 'tips', icon: Lightbulb, label: '팁과 단축키' },
 ] as const
 
@@ -292,7 +294,28 @@ export default function GuidePage() {
         </p>
       </SectionCard>
 
-      {/* 10. 팁과 단축키 */}
+      {/* 10. 카카오톡 봇 */}
+      <SectionCard id="kakao" icon={MessageCircle} title="카카오톡 봇 연동">
+        <p>카카오톡 채널 봇을 연동하면 채팅으로 간편하게 지출/수입을 기록할 수 있습니다.</p>
+        <ExampleBox>
+          <p>
+            <strong>연동:</strong> 설정 → 내 계정 → 카카오톡 연동 코드 발급 → 채널 채팅에{' '}
+            <code className="bg-warm-100 px-1 rounded">/link 코드</code> 입력
+          </p>
+          <p>
+            <strong>입력:</strong> 채널에 <code className="bg-warm-100 px-1 rounded">"커피 4500원"</code> 같이 메시지
+            전송
+          </p>
+          <p>
+            <strong>조회:</strong> <code className="bg-warm-100 px-1 rounded">/report</code>로 이번 달 지출 요약 확인
+          </p>
+        </ExampleBox>
+        <p className="text-warm-500 text-xs">
+          카카오톡에서 <span className="font-mono">포도가계부</span> 채널을 검색하여 추가하세요.
+        </p>
+      </SectionCard>
+
+      {/* 11. 팁과 단축키 */}
       <SectionCard id="tips" icon={Lightbulb} title="팁과 단축키">
         <div className="space-y-3">
           <div>

@@ -18,6 +18,14 @@ export interface Changelog {
 
 export const changelogs: Changelog[] = [
   {
+    version: '1.9.0',
+    date: '2026-03-14',
+    title: '카카오톡 채널 봇 연동',
+    items: [
+      { tag: '신규', text: '카카오톡 채널 봇 계정 연동 — 설정에서 코드 발급 후 봇에 /link 입력으로 연동' },
+    ],
+  },
+  {
     version: '1.8.0',
     date: '2026-03-14',
     title: '종합 재무 리포트 개편',
