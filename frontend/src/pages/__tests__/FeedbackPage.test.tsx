@@ -3,7 +3,7 @@
  * @description 피드백 페이지 테스트
  */
 
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
@@ -17,6 +17,31 @@ vi.mock('react-hot-toast', () => ({
   },
 }))
 
+// feedbackApi 모킹 — jsdom XHR/undici 비호환 회피
+vi.mock('../../api/feedback', () => {
+  const feedbacks = [
+    {
+      id: 1,
+      user_id: 1,
+      type: 'feature' as const,
+      title: '다크모드 추가',
+      content: '다크모드를 추가해주세요',
+      status: 'new' as const,
+      username: 'testuser',
+      created_at: '2026-03-01T00:00:00Z',
+      updated_at: '2026-03-01T00:00:00Z',
+    },
+  ]
+  return {
+    feedbackApi: {
+      getMine: vi.fn().mockResolvedValue({ data: feedbacks }),
+      getAll: vi.fn().mockResolvedValue({ data: feedbacks }),
+      create: vi.fn().mockResolvedValue({ data: { id: 99 } }),
+      updateStatus: vi.fn().mockResolvedValue({ data: {} }),
+    },
+  }
+})
+
 function renderPage() {
   return render(
     <MemoryRouter>
@@ -26,6 +51,10 @@ function renderPage() {
 }
 
 describe('FeedbackPage', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
   it('피드백 폼을 렌더링한다', async () => {
     renderPage()
     expect(screen.getByText('피드백 보내기')).toBeInTheDocument()
@@ -62,7 +91,6 @@ describe('FeedbackPage', () => {
 
     const bugBtn = screen.getByText('버그 신고')
     await user.click(bugBtn)
-    // 버그 타입 버튼이 활성화 스타일을 가져야 함 (bg-red-600)
     expect(bugBtn.closest('button')!.className).toContain('bg-red-600')
   })
 
@@ -86,7 +114,6 @@ describe('FeedbackPage', () => {
     await waitFor(() => {
       expect(screen.getByText('내 피드백')).toBeInTheDocument()
     })
-    // 내 피드백 + 관리자 피드백 모두 같은 데이터를 표시하므로 여러 개 존재
     expect(screen.getAllByText('다크모드 추가').length).toBeGreaterThan(0)
   })
 
