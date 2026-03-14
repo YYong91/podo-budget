@@ -17,6 +17,8 @@ from sqlalchemy.orm import sessionmaker
 from app.core.config import settings
 from app.core.database import Base
 from app.models import Category, Expense, Income, User
+from app.models.household import Household
+from app.models.household_member import HouseholdMember
 
 engine = create_async_engine(settings.DATABASE_URL)
 async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
@@ -109,7 +111,7 @@ async def get_or_create_user(session: AsyncSession) -> User:
     return user
 
 
-async def get_category_map(session: AsyncSession, user_id: int) -> dict[str, int]:
+async def get_category_map(session: AsyncSession, user_id: int, household_id: int) -> dict[str, int]:
     """카테고리명 → id 매핑을 반환한다. 없으면 생성."""
     result = await session.execute(select(Category))
     existing = {c.name: c.id for c in result.scalars().all()}
@@ -118,7 +120,7 @@ async def get_category_map(session: AsyncSession, user_id: int) -> dict[str, int
     for name in all_names:
         if name not in existing:
             cat_type = "income" if name in INCOME_CATEGORIES else "expense"
-            cat = Category(name=name, type=cat_type, user_id=user_id, sort_order=0)
+            cat = Category(name=name, type=cat_type, user_id=user_id, household_id=household_id, sort_order=0)
             session.add(cat)
             await session.flush()
             existing[name] = cat.id
@@ -138,7 +140,19 @@ async def seed():
         await session.commit()
 
         user = await get_or_create_user(session)
-        cat_map = await get_category_map(session, user.id)
+
+        # 가구 생성
+        result = await session.execute(select(Household).limit(1))
+        household = result.scalar_one_or_none()
+        if not household:
+            household = Household(name="우리 가계부", description="시연용", currency="KRW")
+            session.add(household)
+            await session.flush()
+            member = HouseholdMember(household_id=household.id, user_id=user.id, role="owner")
+            session.add(member)
+            await session.flush()
+
+        cat_map = await get_category_map(session, user.id, household.id)
 
         expense_count = 0
         income_count = 0
@@ -156,6 +170,7 @@ async def seed():
                     amount = random.randint(lo // 100, hi // 100) * 100  # 100원 단위
                     expense = Expense(
                         user_id=user.id,
+                        household_id=household.id,
                         amount=amount,
                         description=desc,
                         category_id=cat_map.get(cat_name),
@@ -182,6 +197,7 @@ async def seed():
 
                     income = Income(
                         user_id=user.id,
+                        household_id=household.id,
                         amount=amount,
                         description=desc,
                         category_id=cat_map.get(cat_name),
