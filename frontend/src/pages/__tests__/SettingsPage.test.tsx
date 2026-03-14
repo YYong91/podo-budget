@@ -76,7 +76,7 @@ describe('SettingsPage', () => {
     it('메뉴 설명을 표시한다', () => {
       renderSettingsPage()
       expect(screen.getByText('앱 업데이트 내역')).toBeInTheDocument()
-      expect(screen.getByText('프로필, 텔레그램 연동, 로그아웃')).toBeInTheDocument()
+      expect(screen.getByText('프로필, 텔레그램/카카오톡 연동, 로그아웃')).toBeInTheDocument()
       expect(screen.getByText('지출/수입 분류 카테고리 관리')).toBeInTheDocument()
     })
   })
