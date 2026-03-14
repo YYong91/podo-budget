@@ -16,6 +16,7 @@ from sqlalchemy import update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.auth import get_current_user
+from app.core.config import settings
 from app.core.database import get_db
 from app.models.user import User
 from app.schemas.auth import MessageResponse, TelegramLinkCodeResponse, UserResponse
@@ -40,6 +41,7 @@ async def get_me(current_user: User = Depends(get_current_user)):
         "is_active": current_user.is_active,
         "created_at": current_user.created_at,
         "is_telegram_linked": current_user.telegram_chat_id is not None,
+        "is_admin": current_user.id == settings.ADMIN_USER_ID,
     }
 
 
