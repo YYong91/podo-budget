@@ -1,7 +1,7 @@
 /* 인사이트 + 통계 API */
 
 import apiClient from './client'
-import type { InsightsResponse, StatsResponse, ComparisonResponse } from '../types'
+import type { InsightsResponse, StatsResponse, ComparisonResponse, ComprehensiveInsightsResponse } from '../types'
 
 export const insightsApi = {
   /** LLM 호출이 포함되므로 60초 타임아웃 적용 */
@@ -10,6 +10,12 @@ export const insightsApi = {
       params: { month },
       timeout: 60000,
     }),
+
+  /** 종합 재무 인사이트 생성 */
+  generateComprehensive: (data: Record<string, unknown>) =>
+    apiClient
+      .post<ComprehensiveInsightsResponse>('/insights/generate-comprehensive', data, { timeout: 60000 })
+      .then((res) => res.data),
 }
 
 export const statsApi = {

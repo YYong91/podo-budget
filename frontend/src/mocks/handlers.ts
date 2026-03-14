@@ -15,6 +15,9 @@ import {
   mockRecurringTransactions,
   mockStats,
   mockComparison,
+  mockAssetSummary,
+  mockAssetSnapshots,
+  mockStructuredInsights,
 } from './fixtures'
 
 const BASE_URL = '/api'
@@ -361,6 +364,16 @@ export const handlers = [
     })
   }),
 
+  // ==================== 자산 API ====================
+
+  http.get(`${BASE_URL}/assets/summary`, () => {
+    return HttpResponse.json(mockAssetSummary)
+  }),
+
+  http.get(`${BASE_URL}/assets/snapshots`, () => {
+    return HttpResponse.json(mockAssetSnapshots)
+  }),
+
   // ==================== 인사이트 API ====================
 
   /**
@@ -373,6 +386,16 @@ export const handlers = [
     return HttpResponse.json({
       ...mockInsights,
       month: month || mockInsights.month,
+    })
+  }),
+
+  /**
+   * POST /api/insights/generate-comprehensive - 종합 인사이트 생성
+   */
+  http.post(`${BASE_URL}/insights/generate-comprehensive`, () => {
+    return HttpResponse.json({
+      month: '2026-03',
+      insights: mockStructuredInsights,
     })
   }),
 ]

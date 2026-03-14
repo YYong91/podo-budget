@@ -18,6 +18,10 @@ from app.core.rate_limit import limiter
 from app.models.category import Category
 from app.models.expense import Expense
 from app.models.user import User
+from app.schemas.insights import (
+    ComprehensiveInsightsRequest,
+    ComprehensiveInsightsResponse,
+)
 from app.services.llm_service import get_llm_provider
 
 router = APIRouter()
@@ -108,3 +112,29 @@ async def generate_insights(
         "by_category": by_category,
         "insights": insights_text,
     }
+
+
+@router.post("/generate-comprehensive", response_model=ComprehensiveInsightsResponse)
+@limiter.limit("5/minute")
+async def generate_comprehensive_insights(
+    request: Request,
+    body: ComprehensiveInsightsRequest,
+    current_user: User = Depends(get_current_user),
+):
+    """종합 재무 인사이트 생성
+
+    프론트엔드가 사전 계산한 재무 데이터를 받아 LLM에게 구조화된 분석을 요청합니다.
+    건강 점수, 자산/부채 현황 등은 프론트엔드에서 계산하여 전송합니다.
+
+    Rate Limiting:
+    - 사용자당 분당 5회 제한
+    """
+    report_data = body.model_dump(exclude_none=True)
+
+    llm = get_llm_provider("insights")
+    structured = await llm.generate_comprehensive_insights(report_data)
+
+    return ComprehensiveInsightsResponse(
+        month=body.month,
+        insights=structured,
+    )
