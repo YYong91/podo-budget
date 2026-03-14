@@ -21,6 +21,7 @@ class UserResponse(BaseModel):
     is_active: bool
     created_at: datetime
     is_telegram_linked: bool = False  # 텔레그램 연동 여부
+    is_kakao_linked: bool = False  # 카카오톡 연동 여부
     is_admin: bool = False  # 관리자 여부
 
     class Config:
@@ -35,6 +36,13 @@ class MessageResponse(BaseModel):
 
 class TelegramLinkCodeResponse(BaseModel):
     """텔레그램 연동 코드 응답"""
+
+    code: str
+    expires_at: datetime
+
+
+class KakaoLinkCodeResponse(BaseModel):
+    """카카오톡 연동 코드 응답"""
 
     code: str
     expires_at: datetime

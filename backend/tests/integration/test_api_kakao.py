@@ -2,11 +2,13 @@
 카카오톡 채널 봇 Webhook API 통합 테스트
 
 - /help, /report, /budget 명령어 응답
+- /link 명령어 (웹 계정 연동)
 - LLM 파싱 → 지출 저장 플로우 (Mock)
 - 에러 처리 (파싱 실패, utterance 없음)
 - 카카오 응답 형식 검증
 """
 
+from datetime import UTC, datetime, timedelta
 from unittest.mock import patch
 
 import pytest
@@ -430,3 +432,94 @@ async def test_kakao_webhook_llm_timeout(client, db_session, mock_llm_parse_expe
     # DB에 저장되지 않아야 함
     result = await db_session.execute(select(Expense))
     assert len(result.scalars().all()) == 0
+
+
+# ──────────────────────────────────────────────
+# /link 명령어 테스트
+# ──────────────────────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_kakao_webhook_link_without_code(client, db_session):
+    """/link 코드 없이 입력하면 사용법 안내 반환"""
+    payload = make_kakao_request("/link")
+
+    response = await client.post("/api/kakao/webhook", json=payload)
+    assert response.status_code == 200
+
+    data = response.json()
+    text = data["template"]["outputs"][0]["simpleText"]["text"]
+    assert "카카오톡" in text and "연동" in text
+
+
+@pytest.mark.asyncio
+async def test_kakao_webhook_link_invalid_code(client, db_session):
+    """/link 유효하지 않은 코드는 에러 메시지 반환"""
+    payload = make_kakao_request("/link INVALID")
+
+    response = await client.post("/api/kakao/webhook", json=payload)
+    assert response.status_code == 200
+
+    data = response.json()
+    text = data["template"]["outputs"][0]["simpleText"]["text"]
+    assert "유효하지 않은" in text
+
+
+@pytest.mark.asyncio
+async def test_kakao_webhook_link_valid_code(client, db_session):
+    """/link 유효한 코드로 연동 성공"""
+    from passlib.context import CryptContext
+
+    pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+    # 웹 사용자 생성 + 코드 발급
+    web_user = User(
+        username="web_user_kakao",
+        email="kakao@test.com",
+        hashed_password=pwd_context.hash("test"),
+        is_active=True,
+        kakao_link_code="ABC123",
+        kakao_link_code_expires_at=datetime.now(UTC) + timedelta(minutes=15),
+    )
+    db_session.add(web_user)
+    await db_session.commit()
+
+    payload = make_kakao_request("/link ABC123", user_id="kakao_linker_001")
+    response = await client.post("/api/kakao/webhook", json=payload)
+    assert response.status_code == 200
+
+    data = response.json()
+    text = data["template"]["outputs"][0]["simpleText"]["text"]
+    assert "연동 완료" in text
+
+    # DB에서 연동 확인
+    await db_session.refresh(web_user)
+    assert web_user.kakao_user_id == "kakao_linker_001"
+    assert web_user.kakao_link_code is None
+
+
+@pytest.mark.asyncio
+async def test_kakao_webhook_link_expired_code(client, db_session):
+    """/link 만료된 코드는 만료 메시지 반환"""
+    from passlib.context import CryptContext
+
+    pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+    web_user = User(
+        username="web_user_kakao_exp",
+        email="kakao_exp@test.com",
+        hashed_password=pwd_context.hash("test"),
+        is_active=True,
+        kakao_link_code="EXP123",
+        kakao_link_code_expires_at=datetime.now(UTC) - timedelta(minutes=1),
+    )
+    db_session.add(web_user)
+    await db_session.commit()
+
+    payload = make_kakao_request("/link EXP123", user_id="kakao_linker_002")
+    response = await client.post("/api/kakao/webhook", json=payload)
+    assert response.status_code == 200
+
+    data = response.json()
+    text = data["template"]["outputs"][0]["simpleText"]["text"]
+    assert "만료" in text

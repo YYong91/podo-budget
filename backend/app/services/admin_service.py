@@ -171,9 +171,7 @@ async def get_dashboard_stats(db: AsyncSession) -> DashboardStatsResponse:
             id=r.id,
             username=r.username,
             last_activity_at=r.last_activity_at,
-            days_inactive=(now - r.last_activity_at.replace(tzinfo=UTC)).days
-            if r.last_activity_at
-            else 9999,
+            days_inactive=(now - r.last_activity_at.replace(tzinfo=UTC)).days if r.last_activity_at else 9999,
         )
         for r in inactive_result
     ]

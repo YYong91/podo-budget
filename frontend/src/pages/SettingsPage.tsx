@@ -8,10 +8,11 @@ import { Link, useParams, useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import {
   Tags, PiggyBank, Repeat, Users, LogOut, BookOpen, MessageSquarePlus,
-  Megaphone, ChevronRight, ArrowLeft, User, Send,
+  Megaphone, ChevronRight, ArrowLeft, User, Send, MessageCircle,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { generateTelegramLinkCode, unlinkTelegram } from '../api/telegram'
+import { generateKakaoLinkCode, unlinkKakao } from '../api/kakao'
 import { useAuth } from '../contexts/AuthContext'
 import { useChangelog } from '../hooks/useChangelog'
 import type { ChangelogItem } from '../data/changelogs'
@@ -141,6 +142,9 @@ function MyAccountSection() {
   const [linkCode, setLinkCode] = useState<{ code: string; expires_at: string } | null>(null)
   const [loadingCode, setLoadingCode] = useState(false)
   const [loadingUnlink, setLoadingUnlink] = useState(false)
+  const [kakaoLinkCode, setKakaoLinkCode] = useState<{ code: string; expires_at: string } | null>(null)
+  const [loadingKakaoCode, setLoadingKakaoCode] = useState(false)
+  const [loadingKakaoUnlink, setLoadingKakaoUnlink] = useState(false)
 
   const formatDate = (dateStr: string): string => dateStr.slice(0, 10).replace(/-/g, '.')
 
@@ -181,10 +185,51 @@ function MyAccountSection() {
     }
   }
 
+  const handleGenerateKakaoCode = async () => {
+    setLoadingKakaoCode(true)
+    try {
+      const data = await generateKakaoLinkCode()
+      setKakaoLinkCode(data)
+    } catch {
+      toast.error('코드 발급에 실패했습니다.')
+    } finally {
+      setLoadingKakaoCode(false)
+    }
+  }
+
+  const handleUnlinkKakao = async () => {
+    if (!confirm('카카오톡 연동을 해제할까요?')) return
+    setLoadingKakaoUnlink(true)
+    try {
+      await unlinkKakao()
+      toast.success('카카오톡 연동이 해제되었습니다.')
+      await refreshUser()
+      setKakaoLinkCode(null)
+    } catch {
+      toast.error('연동 해제에 실패했습니다.')
+    } finally {
+      setLoadingKakaoUnlink(false)
+    }
+  }
+
+  const handleCopyKakaoCode = async () => {
+    if (!kakaoLinkCode) return
+    try {
+      await navigator.clipboard.writeText(`/link ${kakaoLinkCode.code}`)
+      toast.success('복사되었습니다!')
+    } catch {
+      toast.error('자동 복사 실패 — 아래 명령어를 직접 복사해주세요')
+    }
+  }
+
   if (!user) return null
 
   const expiresAt = linkCode
     ? new Date(linkCode.expires_at).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
+    : null
+
+  const kakaoExpiresAt = kakaoLinkCode
+    ? new Date(kakaoLinkCode.expires_at).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
     : null
 
   return (
@@ -305,6 +350,103 @@ function MyAccountSection() {
         )}
       </div>
 
+      {/* 카카오톡 연동 서비스 */}
+      <div className="bg-white rounded-2xl shadow-sm border border-warm-200 p-6">
+        <p className="text-xs font-semibold text-warm-500 uppercase tracking-wide mb-3">카카오톡 연동</p>
+        <div className="flex items-center gap-3 mb-3">
+          <MessageCircle className="w-5 h-5 text-grape-500" />
+          <div>
+            <p className="text-sm font-medium text-warm-900">카카오톡</p>
+            <p className="text-xs text-warm-500">카카오톡 채널로 지출/수입을 바로 입력</p>
+          </div>
+        </div>
+
+        {user.is_kakao_linked ? (
+          <div className="flex items-center justify-between py-2 px-3 bg-leaf-50 rounded-xl">
+            <span className="text-sm text-leaf-600 font-medium">✅ 연동됨</span>
+            <button
+              onClick={handleUnlinkKakao}
+              disabled={loadingKakaoUnlink}
+              className="text-sm text-warm-500 hover:text-red-500 underline disabled:opacity-50"
+            >
+              {loadingKakaoUnlink ? '해제 중...' : '연동 해제'}
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <div className="bg-warm-50 rounded-xl p-4 space-y-2">
+              <p className="text-xs font-semibold text-warm-600 uppercase tracking-wide">연동 방법</p>
+              <ol className="space-y-2 text-sm text-warm-700">
+                <li className="flex gap-2">
+                  <span className="flex-shrink-0 w-5 h-5 rounded-full bg-grape-100 text-grape-700 text-xs font-bold flex items-center justify-center">1</span>
+                  <span>카카오톡에서 <span className="font-mono bg-warm-100 px-1 rounded">포도가계부</span> 채널을 검색하여 추가하세요</span>
+                </li>
+                <li className="flex gap-2">
+                  <span className="flex-shrink-0 w-5 h-5 rounded-full bg-grape-100 text-grape-700 text-xs font-bold flex items-center justify-center">2</span>
+                  <span>채널 채팅에서 아무 메시지나 보내 시작하세요</span>
+                </li>
+                <li className="flex gap-2">
+                  <span className="flex-shrink-0 w-5 h-5 rounded-full bg-grape-100 text-grape-700 text-xs font-bold flex items-center justify-center">3</span>
+                  <span>아래 <strong>연동 코드 발급</strong> 버튼을 눌러 코드를 받으세요 (15분 유효)</span>
+                </li>
+                <li className="flex gap-2">
+                  <span className="flex-shrink-0 w-5 h-5 rounded-full bg-grape-100 text-grape-700 text-xs font-bold flex items-center justify-center">4</span>
+                  <span>채널 채팅에 <span className="font-mono bg-warm-100 px-1 rounded">/link 발급된코드</span>를 입력하면 연동 완료!</span>
+                </li>
+              </ol>
+              <div className="mt-3 bg-grape-50 rounded-lg p-3 text-xs text-warm-600 space-y-1">
+                <p className="font-semibold text-warm-700">연동 후 이런 게 가능해요</p>
+                <p>• <span className="font-mono">"오늘 점심 8000원"</span> → AI가 자동으로 카테고리 분류</p>
+                <p>• <span className="font-mono">"어제 교통비 3회 각 1500원"</span> → 여러 건 한 번에 입력</p>
+                <p>• <span className="font-mono">/report</span> → 이번 달 지출 요약 조회</p>
+              </div>
+            </div>
+
+            {kakaoLinkCode ? (
+              <div className="bg-grape-50 rounded-xl p-4 space-y-3">
+                <p className="text-xs font-semibold text-warm-600 uppercase tracking-wide">발급된 연동 코드</p>
+                <div className="flex items-center justify-between">
+                  <span className="font-mono text-2xl font-bold text-grape-700 tracking-widest">
+                    {kakaoLinkCode.code}
+                  </span>
+                  <button
+                    onClick={handleCopyKakaoCode}
+                    className="text-xs text-grape-600 border border-grape-300 rounded-lg px-3 py-1 hover:bg-grape-100"
+                  >
+                    /link {kakaoLinkCode.code} 복사
+                  </button>
+                </div>
+                <p className="text-xs text-warm-500">⏰ {kakaoExpiresAt}까지 유효 (만료 전 입력하세요)</p>
+                <div
+                  className="bg-white rounded-lg p-3 border border-grape-200 cursor-pointer active:bg-grape-50"
+                  onClick={(e) => {
+                    const el = e.currentTarget.querySelector('p.selectable')
+                    if (el && window.getSelection) {
+                      const range = document.createRange()
+                      range.selectNodeContents(el)
+                      const sel = window.getSelection()
+                      sel?.removeAllRanges()
+                      sel?.addRange(range)
+                    }
+                  }}
+                >
+                  <p className="text-xs text-warm-500 mb-1">카카오톡 채널 채팅에 아래 명령어를 입력하세요: (탭하면 선택됩니다)</p>
+                  <p className="selectable font-mono text-sm text-grape-700 font-bold select-all">/link {kakaoLinkCode.code}</p>
+                </div>
+              </div>
+            ) : (
+              <button
+                onClick={handleGenerateKakaoCode}
+                disabled={loadingKakaoCode}
+                className="w-full py-2.5 rounded-xl bg-grape-600 text-white text-sm font-medium hover:bg-grape-700 disabled:opacity-50"
+              >
+                {loadingKakaoCode ? '발급 중...' : '연동 코드 발급'}
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+
       {/* 계정 액션 */}
       <div className="bg-white rounded-2xl shadow-sm border border-warm-200 p-6">
         <div className="flex flex-wrap gap-3">
@@ -364,7 +506,7 @@ export default function SettingsPage() {
     {
       to: '/settings/my-account',
       label: '내 계정',
-      description: '프로필, 텔레그램 연동, 로그아웃',
+      description: '프로필, 텔레그램/카카오톡 연동, 로그아웃',
       icon: User,
       section: 'my-account',
     },

@@ -35,6 +35,9 @@ class User(Base):
     telegram_chat_id = Column(String, unique=True, index=True, nullable=True)  # Telegram 연동용
     telegram_link_code = Column(String(8), unique=True, index=True, nullable=True)  # 단기 연동 코드
     telegram_link_code_expires_at = Column(DateTime(timezone=True), nullable=True)  # 만료 시각
+    kakao_user_id = Column(String, unique=True, index=True, nullable=True)  # 카카오 연동용
+    kakao_link_code = Column(String(8), unique=True, index=True, nullable=True)  # 카카오 단기 연동 코드
+    kakao_link_code_expires_at = Column(DateTime(timezone=True), nullable=True)  # 카카오 코드 만료 시각
     total_monthly_budget = Column(Numeric(12, 2), nullable=True)  # 월 총 예산
     created_at = Column(DateTime, default=func.now(), nullable=False)
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now(), nullable=False)

@@ -57,11 +57,23 @@ def format_welcome_message() -> str:
 
 
 def format_link_usage_message() -> str:
-    """연동 코드 사용법 안내"""
+    """연동 코드 사용법 안내 (텔레그램)"""
     return (
         "🔗 텔레그램 계정 연동\n\n"
         "1. 포도가계부 웹사이트에서 로그인\n"
         "2. 설정 → 텔레그램 연동 → 코드 발급\n"
+        "3. 아래 형식으로 입력:\n\n"
+        "/link ABC123\n\n"
+        "⏰ 코드는 15분 후 만료됩니다."
+    )
+
+
+def format_kakao_link_usage_message() -> str:
+    """연동 코드 사용법 안내 (카카오톡)"""
+    return (
+        "🔗 카카오톡 계정 연동\n\n"
+        "1. 포도가계부 웹사이트에서 로그인\n"
+        "2. 설정 → 내 계정 → 카카오톡 연동 → 코드 발급\n"
         "3. 아래 형식으로 입력:\n\n"
         "/link ABC123\n\n"
         "⏰ 코드는 15분 후 만료됩니다."
