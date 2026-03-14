@@ -71,7 +71,7 @@ backend/app/
 frontend/src/
 ├── api/           # Axios API clients (expenses, income, recurring, categories, insights)
 ├── components/    # Reusable components (Layout with sidebar navigation)
-├── pages/         # Page components (TransactionList[홈], ExpenseForm, ExpenseDetail, IncomeForm, IncomeDetail, RecurringList, CategoryManager, InsightsPage, AuthCallbackPage)
+├── pages/         # Page components (TransactionList[홈], ExpenseForm, ExpenseDetail, IncomeForm, IncomeDetail, RecurringList, CategoryManager, InsightsPage[종합 재무 리포트], AuthCallbackPage)
 ├── hooks/         # Custom hooks (empty — not yet implemented)
 ├── types/         # TypeScript type definitions (Expense, Category, MonthlyStats, etc.)
 ├── assets/        # Static assets
@@ -159,7 +159,7 @@ Frontend: `frontend/.env.development`:
 ## Current State (2026-02-23)
 
 - **Backend**: **podo-auth SSO 전용** (자체 로그인/회원가입 없음, Shadow User 패턴), 지출 CRUD, **수입 CRUD + 통계**, 카테고리(type 필드), 예산, 인사이트, Household/초대 API 모두 구현됨. **정기 거래(RecurringTransaction) CRUD + execute/skip/pending API**. LLM 파싱(Anthropic/OpenAI) + 프리뷰 모드 + **수입/지출 자동 분류**. 자연어 컨텍스트 탐지. 멤버별 필터링. Telegram/Kakao 봇. **텔레그램 코드 기반 계정 연동**. Resend 이메일 발송(초대 전용). 금액 필드 Numeric(12,2). 테스트 375개.
-- **Frontend**: React 19 SPA. **Grape 디자인 시스템(포도책방 공유)** — grape/leaf/warm/cream 컬러. **podo-auth SSO 연동** (AuthCallbackPage, ProtectedRoute → auth.podonest.com 리디렉션). 자연어 입력 → 프리뷰 → 수정 → 확인 플로우. **수입 입력/목록/상세 페이지**. **정기 거래 관리 페이지 + 가계부 상단 알림 카드**. **리포트 지출/수입 토글**. **TransactionList가 첫 화면(`/`)**, 4탭 네비게이션(가계부/리포트/자산/설정). 가구 전환 드롭다운. 멤버별 필터링. **설정 페이지 텔레그램 연동 UI**.
+- **Frontend**: React 19 SPA. **Grape 디자인 시스템(포도책방 공유)** — grape/leaf/warm/cream 컬러. **podo-auth SSO 연동** (AuthCallbackPage, ProtectedRoute → auth.podonest.com 리디렉션). 자연어 입력 → 프리뷰 → 수정 → 확인 플로우. **수입 입력/목록/상세 페이지**. **정기 거래 관리 페이지 + 가계부 상단 알림 카드**. **종합 재무 리포트 (월간 — 요약카드/카테고리TOP/예산/자산변동/건강점수/AI분석)**. **TransactionList가 첫 화면(`/`)**, 4탭 네비게이션(가계부/리포트/자산/설정). 가구 전환 드롭다운. 멤버별 필터링. **설정 페이지 텔레그램 연동 UI**.
 - **Infrastructure**: Docker Compose로 SQLite + Backend + Frontend 실행. post-merge 훅으로 자동 배포.
 - **Phase 1**: 100%. **Phase 2**: 100%. **Phase 3**: 100%. **Phase 4**: 85% (Sentry + CI/CD + Fly.io 설정 완료, 결제 활성화 후 배포).
 

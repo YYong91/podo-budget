@@ -198,16 +198,25 @@ export default function GuidePage() {
         </p>
         <ExampleBox>
           <p>
-            <strong>요약 카드:</strong> 총 지출, 총 수입, 순수익, 일평균 지출
+            <strong>종합 요약:</strong> 총 수입, 총 지출, 순수익, 저축률 + 순자산(자산 연동 시)
           </p>
           <p>
-            <strong>추이 차트:</strong> 지출/수입 월별 추이 그래프
+            <strong>지출 카테고리 TOP:</strong> 상위 5개 카테고리 비율 바 표시
           </p>
           <p>
             <strong>예산 vs 실제:</strong> 카테고리별 예산 대비 지출 비교
           </p>
           <p>
-            <strong>AI 하이라이트:</strong> 이번 달 주요 소비 패턴 자동 분석
+            <strong>자산 변동:</strong> 순자산 전월 대비 증감 + 유형별 변동
+          </p>
+          <p>
+            <strong>재정 건강 점수:</strong> 저축·지출·부채 기반 종합 등급 (A+~F)
+          </p>
+          <p>
+            <strong>AI 심층 분석:</strong> 수입/지출/예산/자산을 종합 분석하여 맞춤 인사이트 제공
+          </p>
+          <p className="text-xs text-warm-500 mt-1">
+            자산 정보를 연동하면 더 풍부한 분석을 받을 수 있어요.
           </p>
         </ExampleBox>
       </SectionCard>

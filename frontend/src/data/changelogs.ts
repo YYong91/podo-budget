@@ -18,6 +18,18 @@ export interface Changelog {
 
 export const changelogs: Changelog[] = [
   {
+    version: '1.8.0',
+    date: '2026-03-14',
+    title: '종합 재무 리포트 개편',
+    items: [
+      { tag: '개선', text: '리포트가 월간 종합 재무 리포트로 개편되었습니다' },
+      { tag: '신규', text: '재정 건강 점수 — 저축·지출·부채 기반 종합 등급(A+~F) 제공' },
+      { tag: '신규', text: 'AI 심층 분석 — 수입/지출/예산/자산을 종합 분석하여 구조화된 인사이트 제공' },
+      { tag: '신규', text: '자산 변동 요약 — 순자산 전월 대비 증감 및 유형별 변동 표시' },
+      { tag: '신규', text: '지출 카테고리 TOP — 상위 5개 카테고리 비율 한눈에 확인' },
+    ],
+  },
+  {
     version: '1.7.0',
     date: '2026-03-14',
     title: '첫 화면 개편',
