@@ -494,7 +494,7 @@ export default function IncomeForm() {
                 className="w-full pl-8 pr-4 py-3 border border-warm-300 rounded-xl focus:ring-2 focus:ring-leaf-500/30 focus:border-leaf-500"
                 disabled={loading}
                 min="1"
-                step="100"
+                step="any"
               />
             </div>
           </div>
