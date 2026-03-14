@@ -7,9 +7,8 @@ import FloatingActionButton from './FloatingActionButton'
 import { useHouseholdStore } from '../stores/useHouseholdStore'
 import {
   Receipt, TrendingUp, Settings as SettingsIcon,
-  Mail, Home, ChevronDown, Landmark, ShieldCheck,
+  Mail, Home, ChevronDown, Landmark,
 } from 'lucide-react'
-import { useAuth } from '../contexts/AuthContext'
 import type { LucideIcon } from 'lucide-react'
 import { useChangelog } from '../hooks/useChangelog'
 
@@ -41,7 +40,6 @@ export default function Layout() {
     return () => document.removeEventListener('click', handleClick)
   }, [householdDropdownOpen])
 
-  const { user } = useAuth()
   const { hasUnread: hasUnreadChangelog } = useChangelog()
   const pendingInvitationCount = myInvitations.filter(inv => inv.status === 'pending').length
   const activeHousehold = households.find(h => h.id === activeHouseholdId)
@@ -201,22 +199,6 @@ export default function Layout() {
                 <span className="ml-auto bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full min-w-[20px] text-center">
                   {pendingInvitationCount}
                 </span>
-              </Link>
-            )}
-            {user?.is_admin && (
-              <Link
-                to="/admin"
-                className={`
-                  flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium
-                  transition-colors relative
-                  ${location.pathname === '/admin'
-                    ? 'bg-grape-50 text-grape-700 border-l-3 border-grape-500'
-                    : 'text-warm-600 hover:bg-warm-100 hover:text-warm-800'
-                  }
-                `}
-              >
-                <ShieldCheck className="w-[18px] h-[18px]" />
-                관리
               </Link>
             )}
           </nav>
