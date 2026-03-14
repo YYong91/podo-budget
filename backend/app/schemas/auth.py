@@ -22,6 +22,7 @@ class UserResponse(BaseModel):
     created_at: datetime
     is_telegram_linked: bool = False  # 텔레그램 연동 여부
     is_kakao_linked: bool = False  # 카카오톡 연동 여부
+    is_admin: bool = False  # 관리자 여부
 
     class Config:
         from_attributes = True  # SQLAlchemy 모델을 Pydantic으로 변환 허용

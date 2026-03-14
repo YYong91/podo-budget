@@ -28,6 +28,7 @@ const AccountManager = lazy(() => import('./pages/AccountManager'))
 const TransactionList = lazy(() => import('./pages/TransactionList'))
 const GuidePage = lazy(() => import('./pages/GuidePage'))
 const FeedbackPage = lazy(() => import('./pages/FeedbackPage'))
+const AdminPage = lazy(() => import('./pages/AdminPage'))
 
 /* /transactions → / 쿼리 보존 리다이렉트 */
 function TransactionsRedirect() {
@@ -80,6 +81,7 @@ function App() {
             <Route path="/accounts" element={<AccountManager />} />
             <Route path="/guide" element={<GuidePage />} />
             <Route path="/feedback" element={<FeedbackPage />} />
+            <Route path="/admin" element={<AdminPage />} />
           </Route>
         </Route>
         <Route path="*" element={<NotFoundPage />} />

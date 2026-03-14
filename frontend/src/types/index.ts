@@ -200,6 +200,7 @@ export interface User {
   created_at: string
   is_telegram_linked: boolean
   is_kakao_linked: boolean
+  is_admin: boolean
 }
 
 export interface LoginRequest {
@@ -448,6 +449,70 @@ export interface StructuredInsights {
 export interface ComprehensiveInsightsResponse {
   month: string
   insights: StructuredInsights
+}
+
+/* Admin 관련 타입 */
+
+export interface RecentActivityItem {
+  type: 'expense' | 'income' | 'signup' | 'feedback'
+  username: string
+  description: string
+  amount: number | null
+  created_at: string
+}
+
+export interface InactiveUserItem {
+  id: number
+  username: string
+  last_activity_at: string | null
+  days_inactive: number
+}
+
+export interface DashboardStats {
+  total_users: number
+  active_users: number
+  telegram_linked_count: number
+  total_households: number
+  today_active_users: number
+  today_transaction_count: number
+  pending_feedback_count: number
+  recent_activity: RecentActivityItem[]
+  inactive_users: InactiveUserItem[]
+}
+
+export interface AdminUserItem {
+  id: number
+  username: string
+  email: string | null
+  is_active: boolean
+  created_at: string
+  expense_count: number
+  income_count: number
+  last_activity_at: string | null
+  is_telegram_linked: boolean
+}
+
+export interface AdminUserListResponse {
+  users: AdminUserItem[]
+  total: number
+  page: number
+  page_size: number
+}
+
+export interface AdminUserDetail {
+  id: number
+  username: string
+  email: string | null
+  is_active: boolean
+  created_at: string
+  updated_at: string
+  expense_count: number
+  income_count: number
+  total_spent: number
+  total_earned: number
+  household_count: number
+  is_telegram_linked: boolean
+  last_activity_at: string | null
 }
 
 /* Household 관련 타입 */
