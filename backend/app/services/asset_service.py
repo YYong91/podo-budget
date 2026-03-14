@@ -12,8 +12,8 @@ from app.models.user import User
 from app.services.price_service import get_asset_current_value
 
 
-async def get_user_active_household_id(user: User, db: AsyncSession) -> int | None:
-    """사용자의 활성 household_id 가져오기"""
+async def get_user_active_household_id(user: User, db: AsyncSession) -> int:
+    """사용자의 활성 household_id 가져오기 (필수)"""
     from app.api.dependencies import get_user_active_household_id as _get
 
     return await _get(user, db)
@@ -33,8 +33,10 @@ async def create_asset(db: AsyncSession, asset_data: dict, user: User) -> Asset:
 
 
 async def get_assets(db: AsyncSession, user: User, household_id: int | None = None) -> list[Asset]:
-    """자산 목록 조회 (household 또는 개인)"""
-    query = select(Asset).where(Asset.household_id == household_id) if household_id is not None else select(Asset).where(Asset.created_by == user.id)
+    """자산 목록 조회 (household 기반)"""
+    query = (
+        select(Asset).where(Asset.household_id == household_id) if household_id is not None else select(Asset).where(Asset.created_by == user.id)
+    )  # 레거시 폴백
     query = query.order_by(Asset.type, Asset.name)
     result = await db.execute(query)
     return list(result.scalars().all())

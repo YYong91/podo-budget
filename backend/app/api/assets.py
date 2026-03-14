@@ -5,7 +5,7 @@ import json
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.dependencies import get_household_member
+from app.api.dependencies import get_household_member, get_user_active_household_id
 from app.core.auth import get_current_user
 from app.core.database import get_db
 from app.models.user import User
@@ -45,8 +45,9 @@ async def get_assets(
     db: AsyncSession = Depends(get_db),
 ):
     """자산 목록 (시세 포함)"""
-    if household_id is not None:
-        await get_household_member(household_id, current_user, db)
+    if household_id is None:
+        household_id = await get_user_active_household_id(current_user, db)
+    await get_household_member(household_id, current_user, db)
     results = await asset_service.get_assets_with_prices(db, current_user, household_id)
     return results
 
@@ -58,8 +59,9 @@ async def get_summary(
     db: AsyncSession = Depends(get_db),
 ):
     """순자산 요약"""
-    if household_id is not None:
-        await get_household_member(household_id, current_user, db)
+    if household_id is None:
+        household_id = await get_user_active_household_id(current_user, db)
+    await get_household_member(household_id, current_user, db)
     return await asset_service.get_asset_summary(db, current_user, household_id)
 
 
@@ -71,6 +73,8 @@ async def get_snapshots(
     db: AsyncSession = Depends(get_db),
 ):
     """월별 스냅샷 (순자산 추이)"""
+    if household_id is None:
+        household_id = await get_user_active_household_id(current_user, db)
     snapshots = await asset_service.get_snapshots(db, current_user, household_id, months)
     results = []
     for s in snapshots:
@@ -120,6 +124,8 @@ async def get_all_prices(
     db: AsyncSession = Depends(get_db),
 ):
     """보유 투자형 자산 일괄 시세"""
+    if household_id is None:
+        household_id = await get_user_active_household_id(current_user, db)
     assets = await asset_service.get_assets(db, current_user, household_id)
     prices = {}
     for asset in assets:
@@ -136,8 +142,9 @@ async def get_goal(
     db: AsyncSession = Depends(get_db),
 ):
     """순자산 목표 + 페이스 인사이트 조회"""
-    if household_id is not None:
-        await get_household_member(household_id, current_user, db)
+    if household_id is None:
+        household_id = await get_user_active_household_id(current_user, db)
+    await get_household_member(household_id, current_user, db)
     result = await asset_goal_service.get_goal_with_insight(current_user, household_id, db)
     return result
 
@@ -149,18 +156,20 @@ async def upsert_goal(
     db: AsyncSession = Depends(get_db),
 ):
     """순자산 목표 설정/수정 (upsert)"""
-    if body.household_id is not None:
-        await get_household_member(body.household_id, current_user, db)
+    hid = body.household_id
+    if hid is None:
+        hid = await get_user_active_household_id(current_user, db)
+    await get_household_member(hid, current_user, db)
     await asset_goal_service.upsert_goal(
         user_id=current_user.id,
-        household_id=body.household_id,
+        household_id=hid,
         target_net_worth=body.target_net_worth,
         target_date=body.target_date,
         db=db,
     )
     await db.commit()
     # 인사이트 포함하여 반환
-    result = await asset_goal_service.get_goal_with_insight(current_user, body.household_id, db)
+    result = await asset_goal_service.get_goal_with_insight(current_user, hid, db)
     return result
 
 
@@ -171,8 +180,9 @@ async def delete_goal(
     db: AsyncSession = Depends(get_db),
 ):
     """순자산 목표 삭제"""
-    if household_id is not None:
-        await get_household_member(household_id, current_user, db)
+    if household_id is None:
+        household_id = await get_user_active_household_id(current_user, db)
+    await get_household_member(household_id, current_user, db)
     deleted = await asset_goal_service.delete_goal(current_user.id, household_id, db)
     if not deleted:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="목표를 찾을 수 없습니다")
@@ -186,8 +196,9 @@ async def get_monthly_savings(
     db: AsyncSession = Depends(get_db),
 ):
     """이번 달 저축액 (수입 - 지출)"""
-    if household_id is not None:
-        await get_household_member(household_id, current_user, db)
+    if household_id is None:
+        household_id = await get_user_active_household_id(current_user, db)
+    await get_household_member(household_id, current_user, db)
     return await asset_goal_service.get_monthly_savings(current_user.id, household_id, db)
 
 

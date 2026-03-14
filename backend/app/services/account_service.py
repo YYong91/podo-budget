@@ -7,7 +7,8 @@ from app.models.account import Account
 from app.models.user import User
 
 
-async def get_user_active_household_id(user: User, db: AsyncSession) -> int | None:
+async def get_user_active_household_id(user: User, db: AsyncSession) -> int:
+    """사용자의 활성 household_id 가져오기 (필수)"""
     from app.api.dependencies import get_user_active_household_id as _get
 
     return await _get(user, db)
