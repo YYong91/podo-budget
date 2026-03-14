@@ -76,6 +76,11 @@ class LLMProvider(ABC):
         """범용 텍스트 생성 (자산 파싱 등 커스텀 프롬프트용)"""
         pass
 
+    @abstractmethod
+    async def generate_comprehensive_insights(self, report_data: dict[str, Any]) -> dict[str, Any]:
+        """종합 재무 데이터를 분석하여 구조화된 인사이트 생성"""
+        pass
+
 
 class AnthropicProvider(LLMProvider):
     def __init__(self, model: str = ""):
@@ -271,6 +276,40 @@ class AnthropicProvider(LLMProvider):
             logger.error(f"Claude generate 실패: {e}")
             return ""
 
+    async def generate_comprehensive_insights(self, report_data: dict[str, Any]) -> dict[str, Any]:
+        """종합 재무 데이터를 분석하여 구조화된 인사이트 생성 (Anthropic tool_use)"""
+        from app.services.prompts import (
+            COMPREHENSIVE_INSIGHTS_JSON_SCHEMA,
+            COMPREHENSIVE_INSIGHTS_SYSTEM_PROMPT,
+        )
+
+        response = await self.client.messages.create(
+            model=self.model,
+            max_tokens=2000,
+            system=COMPREHENSIVE_INSIGHTS_SYSTEM_PROMPT,
+            messages=[
+                {
+                    "role": "user",
+                    "content": f"다음 재무 데이터를 분석해주세요:\n\n{json.dumps(report_data, ensure_ascii=False, indent=2)}",
+                }
+            ],
+            tools=[
+                {
+                    "name": "structured_insights",
+                    "description": "구조화된 재무 인사이트 응답",
+                    "input_schema": COMPREHENSIVE_INSIGHTS_JSON_SCHEMA,
+                }
+            ],
+            tool_choice={"type": "tool", "name": "structured_insights"},
+        )
+
+        # tool_use 블록에서 구조화된 JSON 추출
+        for block in response.content:
+            if block.type == "tool_use":
+                return block.input
+
+        raise ValueError("LLM이 구조화된 응답을 반환하지 않았습니다")
+
 
 class OpenAIProvider(LLMProvider):
     def __init__(self, model: str = ""):
@@ -404,6 +443,35 @@ class OpenAIProvider(LLMProvider):
             logger.error(f"OpenAI generate 실패: {e}")
             return ""
 
+    async def generate_comprehensive_insights(self, report_data: dict[str, Any]) -> dict[str, Any]:
+        """종합 재무 데이터를 분석하여 구조화된 인사이트 생성 (OpenAI json_schema)"""
+        from app.services.prompts import (
+            COMPREHENSIVE_INSIGHTS_JSON_SCHEMA,
+            COMPREHENSIVE_INSIGHTS_SYSTEM_PROMPT,
+        )
+
+        response = await self.client.chat.completions.create(
+            model=self.model,
+            max_tokens=2000,
+            messages=[
+                {"role": "system", "content": COMPREHENSIVE_INSIGHTS_SYSTEM_PROMPT},
+                {
+                    "role": "user",
+                    "content": f"다음 재무 데이터를 분석해주세요:\n\n{json.dumps(report_data, ensure_ascii=False, indent=2)}",
+                },
+            ],
+            response_format={
+                "type": "json_schema",
+                "json_schema": {
+                    "name": "structured_insights",
+                    "schema": COMPREHENSIVE_INSIGHTS_JSON_SCHEMA,
+                    "strict": True,
+                },
+            },
+        )
+
+        return json.loads(response.choices[0].message.content)
+
 
 class GoogleProvider(LLMProvider):
     def __init__(self, model: str = ""):
@@ -427,6 +495,9 @@ class GoogleProvider(LLMProvider):
     async def generate(self, prompt: str) -> str:
         raise NotImplementedError("Google Gemini 프로바이더는 아직 구현되지 않았습니다")
 
+    async def generate_comprehensive_insights(self, report_data: dict[str, Any]) -> dict[str, Any]:
+        raise NotImplementedError("종합 인사이트는 아직 이 프로바이더를 지원하지 않습니다")
+
 
 class LocalLLMProvider(LLMProvider):
     def __init__(self, model: str = ""):
@@ -448,6 +519,9 @@ class LocalLLMProvider(LLMProvider):
 
     async def generate(self, prompt: str) -> str:
         raise NotImplementedError("로컬 LLM 프로바이더는 아직 구현되지 않았습니다")
+
+    async def generate_comprehensive_insights(self, report_data: dict[str, Any]) -> dict[str, Any]:
+        raise NotImplementedError("종합 인사이트는 아직 이 프로바이더를 지원하지 않습니다")
 
 
 def _resolve_provider_and_model(feature: LLMFeature | None = None) -> tuple[str, str]:

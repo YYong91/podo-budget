@@ -72,6 +72,28 @@ export interface AssetSearchResult {
   market: string
 }
 
+export interface AssetGoal {
+  id: number
+  target_net_worth: number
+  target_date: string
+  household_id: number | null
+  user_id: number
+  progress_pct: number
+  monthly_required: number | null
+  estimated_date: string | null
+  pace_status: 'ahead' | 'on_track' | 'behind'
+  pace_message: string
+  created_at: string
+  updated_at: string
+}
+
+export interface MonthlySavings {
+  month: string
+  total_income: number
+  total_expense: number
+  net_savings: number
+}
+
 export interface CreateAssetParams {
   name: string
   type: string
@@ -386,6 +408,45 @@ export interface FeedbackCreateRequest {
   type: FeedbackType
   title: string
   content: string
+}
+
+// ── 종합 재무 인사이트 ──
+
+export interface HealthScore {
+  savings: number
+  spending: number
+  debt: number
+  overall: number
+  grade: string
+}
+
+export interface Finding {
+  what: string
+  so_what: string
+  now_what: string
+}
+
+export interface AssetAnalysisResult {
+  summary: string
+  allocation_analysis: string
+  diversification_tip: string
+}
+
+export interface ActionItem {
+  title: string
+  description: string
+}
+
+export interface StructuredInsights {
+  findings: Finding[]
+  asset_analysis: AssetAnalysisResult | null
+  action_items: ActionItem[]
+  encouragement: string
+}
+
+export interface ComprehensiveInsightsResponse {
+  month: string
+  insights: StructuredInsights
 }
 
 /* Household 관련 타입 */

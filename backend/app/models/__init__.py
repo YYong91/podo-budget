@@ -1,5 +1,6 @@
 from app.models.account import Account
 from app.models.asset import Asset
+from app.models.asset_goal import AssetGoal
 from app.models.asset_snapshot import AssetSnapshot
 from app.models.budget import Budget
 from app.models.category import Category
@@ -16,6 +17,7 @@ from app.models.user import User
 __all__ = [
     "Account",
     "Asset",
+    "AssetGoal",
     "AssetSnapshot",
     "Budget",
     "Category",

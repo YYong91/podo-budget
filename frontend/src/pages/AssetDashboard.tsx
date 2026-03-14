@@ -1,17 +1,22 @@
-/* 자산/부채 현황 대시보드 */
+/* 자산/부채 현황 대시보드 — 순자산 중심 + 목표 기반 UI */
 
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Loader2, Plus, TrendingUp, TrendingDown, Landmark, LayoutList, Wallet, ChevronRight } from 'lucide-react'
-import { Chart as ChartJS, ArcElement, LineElement, PointElement, CategoryScale, LinearScale, Filler, Tooltip as ChartTooltip, Legend } from 'chart.js'
-import { Pie, Line } from 'react-chartjs-2'
+import {
+  Loader2, Plus, TrendingUp, TrendingDown, Landmark, Wallet,
+  ChevronRight, ChevronDown, ChevronUp, Target, Bell, Building2, X,
+} from 'lucide-react'
+import {
+  Chart as ChartJS, LineElement, PointElement, CategoryScale,
+  LinearScale, Filler, Tooltip as ChartTooltip, Legend,
+} from 'chart.js'
+import { Line } from 'react-chartjs-2'
 import { assetApi } from '../api/assets'
-import { accountApi } from '../api/accounts'
 import { useHouseholdStore } from '../stores/useHouseholdStore'
-import type { Asset, AssetSummary, AssetSnapshot, Account } from '../types'
+import type { Asset, AssetSummary, AssetSnapshot, AssetGoal, MonthlySavings } from '../types'
 import { formatAmount } from '../utils/format'
 
-ChartJS.register(ArcElement, LineElement, PointElement, CategoryScale, LinearScale, Filler, ChartTooltip, Legend)
+ChartJS.register(LineElement, PointElement, CategoryScale, LinearScale, Filler, ChartTooltip, Legend)
 
 function formatPct(pct: number | null): string {
   if (pct == null) return ''
@@ -28,16 +33,23 @@ const TYPE_LABELS: Record<string, string> = {
   loan: '대출',
 }
 
-const ACCOUNT_TYPE_LABELS: Record<string, string> = {
-  brokerage: '증권',
-  bank: '은행',
-  crypto_exchange: '거래소',
-  other: '기타',
+/* 유형 그룹 정의 */
+interface TypeGroup {
+  key: string
+  label: string
+  icon: React.ComponentType<{ className?: string }>
+  types: string[]
+  isLiability?: boolean
+  colorClass: string
+  iconColorClass: string
 }
 
-const PIE_COLORS = ['#9333EA', '#3B82F6', '#10B981', '#F59E0B', '#EC4899', '#06B6D4', '#78716C']
-
-type ViewMode = 'type' | 'account'
+const TYPE_GROUPS: TypeGroup[] = [
+  { key: 'investment', label: '투자', icon: TrendingUp, types: ['stock_kr', 'stock_us', 'crypto'], colorClass: 'text-warm-700', iconColorClass: 'text-grape-500' },
+  { key: 'deposit', label: '예적금', icon: Landmark, types: ['deposit'], colorClass: 'text-warm-700', iconColorClass: 'text-leaf-600' },
+  { key: 'real_estate', label: '부동산/기타', icon: Building2, types: ['real_estate', 'other'], colorClass: 'text-warm-700', iconColorClass: 'text-warm-500' },
+  { key: 'liability', label: '부채', icon: TrendingDown, types: ['loan'], isLiability: true, colorClass: 'text-rose-700', iconColorClass: 'text-rose-500' },
+]
 
 function AssetRow({ asset }: { asset: Asset }) {
   return (
@@ -51,7 +63,7 @@ function AssetRow({ asset }: { asset: Asset }) {
       </div>
       <div className="flex items-center gap-1">
         <div className="text-right">
-          <p className="text-sm font-semibold text-warm-900">
+          <p className={`text-sm font-semibold ${asset.is_liability ? 'text-rose-700' : 'text-warm-900'}`}>
             {asset.current_value != null ? formatAmount(asset.current_value) : '-'}
           </p>
           {asset.profit_loss_pct != null && (
@@ -68,16 +80,20 @@ function AssetRow({ asset }: { asset: Asset }) {
 
 export default function AssetDashboard() {
   const [assets, setAssets] = useState<Asset[]>([])
-  const [accounts, setAccounts] = useState<Account[]>([])
   const [summary, setSummary] = useState<AssetSummary | null>(null)
   const [snapshots, setSnapshots] = useState<AssetSnapshot[]>([])
+  const [goal, setGoal] = useState<AssetGoal | null>(null)
+  const [monthlySavings, setMonthlySavings] = useState<MonthlySavings | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [viewMode, setViewMode] = useState<ViewMode>('type')
+  const [showGoalModal, setShowGoalModal] = useState(false)
+  const [goalAmount, setGoalAmount] = useState('')
+  const [goalDate, setGoalDate] = useState('')
+  const [goalSaving, setGoalSaving] = useState(false)
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
   const { activeHouseholdId } = useHouseholdStore()
 
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+  const fetchData = () => {
     setLoading(true)
     setError(null)
     const hid = activeHouseholdId ?? undefined
@@ -85,17 +101,76 @@ export default function AssetDashboard() {
       assetApi.getAll(hid),
       assetApi.getSummary(hid),
       assetApi.getSnapshots(hid, 12),
-      accountApi.getAll(hid),
+      assetApi.getGoal(hid).catch(() => ({ data: null })),
+      assetApi.getMonthlySavings(hid).catch(() => ({ data: null })),
     ])
-      .then(([assetsRes, summaryRes, snapshotsRes, accountsRes]) => {
+      .then(([assetsRes, summaryRes, snapshotsRes, goalRes, savingsRes]) => {
         setAssets(assetsRes.data)
         setSummary(summaryRes.data)
         setSnapshots(snapshotsRes.data.slice().reverse())
-        setAccounts(accountsRes.data)
+        setGoal(goalRes.data)
+        // 월별 저축: 배열이면 최신 1건, 단일 객체면 그대로
+        const savingsData = savingsRes.data
+        if (Array.isArray(savingsData)) {
+          setMonthlySavings(savingsData.length > 0 ? savingsData[savingsData.length - 1] : null)
+        } else {
+          setMonthlySavings(savingsData)
+        }
       })
       .catch(() => setError('자산 정보를 불러오지 못했습니다'))
       .finally(() => setLoading(false))
+  }
+
+  useEffect(() => {
+    fetchData()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeHouseholdId])
+
+  /* 목표 저장 */
+  const handleSaveGoal = async () => {
+    const amount = Number(goalAmount)
+    if (!amount || !goalDate) return
+    setGoalSaving(true)
+    try {
+      const res = await assetApi.setGoal({
+        target_net_worth: amount,
+        target_date: goalDate,
+        household_id: activeHouseholdId ?? undefined,
+      })
+      setGoal(res.data)
+      setShowGoalModal(false)
+    } catch {
+      // 실패 시 모달 유지
+    } finally {
+      setGoalSaving(false)
+    }
+  }
+
+  /* 목표 삭제 */
+  const handleDeleteGoal = async () => {
+    setGoalSaving(true)
+    try {
+      await assetApi.deleteGoal(activeHouseholdId ?? undefined)
+      setGoal(null)
+      setShowGoalModal(false)
+    } catch {
+      // 무시
+    } finally {
+      setGoalSaving(false)
+    }
+  }
+
+  /* 목표 모달 열기 */
+  const openGoalModal = () => {
+    if (goal) {
+      setGoalAmount(String(goal.target_net_worth))
+      setGoalDate(goal.target_date)
+    } else {
+      setGoalAmount('')
+      setGoalDate('')
+    }
+    setShowGoalModal(true)
+  }
 
   if (loading) {
     return (
@@ -114,29 +189,15 @@ export default function AssetDashboard() {
   const netWorth = summary?.net_worth ?? 0
   const totalAssets = summary?.total_assets ?? 0
   const totalLiabilities = summary?.total_liabilities ?? 0
-  const breakdown = summary?.breakdown ?? {}
 
-  const nonLiabilities = assets.filter(a => !a.is_liability)
-  const liabilities = assets.filter(a => a.is_liability)
+  /* 전월 대비 변동 */
+  const prevMonthNW = snapshots.length >= 2 ? snapshots[snapshots.length - 2].net_worth : null
+  const prevMonthDiff = prevMonthNW != null ? netWorth - prevMonthNW : null
 
-  // 파이차트 데이터 (자산 유형별)
-  const pieLabels = Object.keys(breakdown).map(k => TYPE_LABELS[k] ?? k)
-  const pieValues = Object.values(breakdown)
-  const pieData = {
-    labels: pieLabels,
-    datasets: [{
-      data: pieValues,
-      backgroundColor: PIE_COLORS.slice(0, pieLabels.length),
-      borderWidth: 1,
-      borderColor: '#fff',
-    }],
-  }
-
-  // 순자산 추이 라인차트
+  /* 순자산 추이 라인차트 */
   const lineLabels = snapshots.map(s => s.snapshot_date.slice(0, 7))
-  const lineData = {
-    labels: lineLabels,
-    datasets: [{
+  const lineDatasets = [
+    {
       label: '순자산',
       data: snapshots.map(s => s.net_worth),
       borderColor: '#9333EA',
@@ -144,244 +205,204 @@ export default function AssetDashboard() {
       fill: true,
       tension: 0.3,
       pointRadius: 4,
-    }],
-  }
+    },
+    // 목표 기준선
+    ...(goal ? [{
+      label: '목표',
+      data: snapshots.map(() => goal.target_net_worth),
+      borderColor: '#D1D5DB',
+      borderDash: [5, 5],
+      fill: false,
+      tension: 0,
+      pointRadius: 0,
+    }] : []),
+  ]
+  const lineData = { labels: lineLabels, datasets: lineDatasets }
 
-  // 계좌별 그룹핑
-  const accountMap = new Map(accounts.map(a => [a.id, a]))
-  const assetsByAccount: { account: Account | null; assets: Asset[] }[] = []
-  const seen = new Set<number | null>()
+  /* 유형별 그룹 구성 */
+  const groupedAssets = TYPE_GROUPS.map(group => {
+    const items = group.isLiability
+      ? assets.filter(a => a.is_liability)
+      : assets.filter(a => !a.is_liability && group.types.includes(a.type))
+    const total = items.reduce((sum, a) => sum + (a.current_value ?? 0), 0)
+    return { ...group, items, total }
+  }).filter(g => g.items.length > 0)
 
-  // 계좌가 있는 자산 먼저 그룹핑
-  accounts.forEach(account => {
-    const group = nonLiabilities.filter(a => a.account_id === account.id)
-    if (group.length > 0) {
-      assetsByAccount.push({ account, assets: group })
-      seen.add(account.id)
-    }
-  })
-  // 계좌 미지정 자산
-  const unassigned = nonLiabilities.filter(a => !a.account_id || !accountMap.has(a.account_id))
-  if (unassigned.length > 0) {
-    assetsByAccount.push({ account: null, assets: unassigned })
+  /* 업데이트 촉구: 가장 최근 자산의 updated_at 확인 */
+  const latestUpdatedAt = assets.length > 0
+    ? assets.reduce((latest, a) => (a.updated_at > latest ? a.updated_at : latest), assets[0].updated_at)
+    : null
+  const daysSinceUpdate = latestUpdatedAt
+    ? Math.floor((Date.now() - new Date(latestUpdatedAt).getTime()) / (1000 * 60 * 60 * 24))
+    : null
+  const showNudge = daysSinceUpdate != null && daysSinceUpdate > 30
+
+  const toggleGroup = (key: string) => {
+    setCollapsed(prev => ({ ...prev, [key]: !prev[key] }))
   }
 
   return (
     <div className="space-y-6">
       {/* 액션 버튼 */}
       <div className="flex items-center justify-end gap-2">
-          <Link
-            to="/accounts"
-            className="flex items-center gap-1.5 px-3 py-2 border border-warm-200 text-warm-600 rounded-lg text-sm font-medium hover:bg-warm-50 transition-colors"
-          >
-            <Wallet className="w-4 h-4" />
-            계좌 관리
-          </Link>
-          <Link
-            to="/assets/new"
-            className="flex items-center gap-2 px-4 py-2 bg-grape-600 text-white rounded-lg text-sm font-medium hover:bg-grape-700 transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            자산 등록
-          </Link>
+        <Link
+          to="/accounts"
+          className="flex items-center gap-1.5 px-3 py-2 border border-warm-200 text-warm-600 rounded-lg text-sm font-medium hover:bg-warm-50 transition-colors"
+        >
+          <Wallet className="w-4 h-4" />
+          계좌 관리
+        </Link>
+        <Link
+          to="/assets/new"
+          className="flex items-center gap-2 px-4 py-2 bg-grape-600 text-white rounded-lg text-sm font-medium hover:bg-grape-700 transition-colors"
+        >
+          <Plus className="w-4 h-4" />
+          자산 등록
+        </Link>
       </div>
 
-      {/* 순자산 요약 카드 */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className={`rounded-2xl border shadow-sm p-5 col-span-1 ${netWorth >= 0 ? 'bg-gradient-to-br from-grape-50 to-grape-100 border-grape-200/60' : 'bg-gradient-to-br from-rose-50 to-red-50 border-rose-200/60'}`}>
-          <p className="text-sm text-warm-600">순자산</p>
-          <p className={`text-3xl font-bold tracking-tight mt-1 ${netWorth >= 0 ? 'text-grape-700' : 'text-rose-700'}`}>
-            {formatAmount(netWorth)}
+      {/* 1. 순자산 히어로 섹션 */}
+      <div className={`rounded-2xl border shadow-sm p-6 ${netWorth >= 0 ? 'bg-gradient-to-br from-grape-50 to-grape-100 border-grape-200/60' : 'bg-gradient-to-br from-rose-50 to-red-50 border-rose-200/60'}`}>
+        <p className="text-sm text-warm-500 mb-1">순자산</p>
+        <p className={`text-3xl font-bold tracking-tight ${netWorth >= 0 ? 'text-grape-700' : 'text-rose-700'}`}>
+          {formatAmount(netWorth)}
+        </p>
+        {/* 전월 대비 변동 */}
+        {prevMonthDiff != null && (
+          <p className={`text-sm mt-1 font-medium ${prevMonthDiff >= 0 ? 'text-leaf-600' : 'text-rose-600'}`}>
+            전월 대비 {prevMonthDiff >= 0 ? '+' : ''}{formatAmount(prevMonthDiff)}
           </p>
-          {summary?.total_profit_loss != null && summary.total_profit_loss !== 0 && (
-            <p className={`text-xs mt-1 ${summary.total_profit_loss >= 0 ? 'text-leaf-600' : 'text-rose-600'}`}>
-              투자손익 {formatAmount(summary.total_profit_loss)}
-              {summary.total_profit_loss_pct != null && ` (${formatPct(summary.total_profit_loss_pct)})`}
-            </p>
-          )}
+        )}
+        {/* 자산/부채 요약 */}
+        <div className="flex gap-4 mt-3 text-xs text-warm-500">
+          <span>자산 {formatAmount(totalAssets)}</span>
+          <span>부채 {formatAmount(totalLiabilities)}</span>
         </div>
-        <div className="bg-gradient-to-br from-leaf-50 to-leaf-100 border border-leaf-200/60 rounded-2xl shadow-sm p-5">
-          <p className="text-sm text-leaf-700/70">총 자산</p>
-          <p className="text-2xl font-bold tracking-tight text-leaf-700 mt-1">{formatAmount(totalAssets)}</p>
-        </div>
-        <div className="bg-gradient-to-br from-rose-50 to-red-50 border border-rose-200/60 rounded-2xl shadow-sm p-5">
-          <p className="text-sm text-rose-700/70">총 부채</p>
-          <p className="text-2xl font-bold tracking-tight text-rose-700 mt-1">{formatAmount(totalLiabilities)}</p>
-        </div>
+        {/* 월 저축 요약 */}
+        {monthlySavings && (
+          <p className="text-xs text-warm-400 mt-2">
+            {monthlySavings.month} 저축 {formatAmount(monthlySavings.net_savings)}
+            {monthlySavings.net_savings > 0 ? ' 👍' : ''}
+          </p>
+        )}
       </div>
 
-      {/* 차트 영역 */}
-      {(pieLabels.length > 0 || snapshots.length > 0) && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* 자산 유형별 파이차트 */}
-          {pieLabels.length > 0 && (
-            <div className="bg-white rounded-2xl border border-warm-200/60 shadow-sm p-5">
-              <h2 className="text-sm font-semibold text-warm-700 mb-4">자산 유형별 비중</h2>
-              <div className="h-48 flex items-center justify-center">
-                <Pie data={pieData} options={{ plugins: { legend: { position: 'right' } } }} />
-              </div>
-            </div>
-          )}
-          {/* 순자산 추이 */}
-          {snapshots.length > 1 && (
-            <div className="bg-white rounded-2xl border border-warm-200/60 shadow-sm p-5">
-              <h2 className="text-sm font-semibold text-warm-700 mb-4">순자산 추이</h2>
-              <div className="h-48">
-                <Line
-                  data={lineData}
-                  options={{
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                      y: { ticks: { callback: (v) => `₩${Number(v).toLocaleString()}` } },
-                    },
-                  }}
-                />
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* 자산 목록 — 뷰 모드 토글 */}
-      {assets.length > 0 && (
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setViewMode('type')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${viewMode === 'type' ? 'bg-grape-100 text-grape-700' : 'text-warm-500 hover:text-warm-700'}`}
-          >
-            <LayoutList className="w-3.5 h-3.5" />
-            종목별
-          </button>
-          <button
-            onClick={() => setViewMode('account')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${viewMode === 'account' ? 'bg-grape-100 text-grape-700' : 'text-warm-500 hover:text-warm-700'}`}
-          >
-            <Wallet className="w-3.5 h-3.5" />
-            계좌별
-          </button>
-        </div>
-      )}
-
-      {viewMode === 'type' ? (
-        /* 종목별 뷰 (기존) */
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* 자산 */}
-          <div className="bg-white rounded-2xl border border-warm-200/60 shadow-sm p-5">
-            <h2 className="text-sm font-semibold text-warm-700 mb-3 flex items-center gap-2">
-              <TrendingUp className="w-4 h-4 text-leaf-600" />
-              자산 ({nonLiabilities.length})
+      {/* 2. 목표 진행률 */}
+      {goal ? (
+        <div className="bg-white rounded-2xl border border-warm-200/60 shadow-sm p-5">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-semibold text-warm-700 flex items-center gap-2">
+              <Target className="w-4 h-4 text-grape-500" />
+              순자산 목표
             </h2>
-            {nonLiabilities.length === 0 ? (
-              <p className="text-sm text-warm-400 text-center py-4">등록된 자산이 없습니다</p>
-            ) : (
-              <div className="space-y-2">
-                {nonLiabilities.map(asset => <AssetRow key={asset.id} asset={asset} />)}
-              </div>
-            )}
+            <button
+              onClick={openGoalModal}
+              className="text-xs text-grape-600 hover:text-grape-700 font-medium"
+            >
+              수정
+            </button>
           </div>
-
-          {/* 부채 */}
-          <div className="bg-white rounded-2xl border border-warm-200/60 shadow-sm p-5">
-            <h2 className="text-sm font-semibold text-warm-700 mb-3 flex items-center gap-2">
-              <TrendingDown className="w-4 h-4 text-rose-500" />
-              부채 ({liabilities.length})
-            </h2>
-            {liabilities.length === 0 ? (
-              <p className="text-sm text-warm-400 text-center py-4">등록된 부채가 없습니다</p>
-            ) : (
-              <div className="space-y-2">
-                {liabilities.map(asset => (
-                  <Link
-                    key={asset.id}
-                    to={`/assets/${asset.id}`}
-                    className="flex items-center justify-between py-2 border-b border-warm-100 last:border-0 hover:bg-warm-50 -mx-1 px-1 rounded transition-colors"
-                  >
-                    <div>
-                      <p className="text-sm font-medium text-warm-800">{asset.name}</p>
-                      <p className="text-xs text-warm-400">
-                        {TYPE_LABELS[asset.type] ?? asset.type}
-                        {asset.interest_rate != null && ` · 연 ${asset.interest_rate}%`}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <p className="text-sm font-semibold text-rose-700">
-                        {asset.current_value != null ? formatAmount(asset.current_value) : '-'}
-                      </p>
-                      <ChevronRight className="w-4 h-4 text-warm-300 shrink-0" />
-                    </div>
-                  </Link>
-                ))}
-              </div>
+          <div className="flex items-center justify-between text-sm mb-2">
+            <span className="text-warm-500">목표 {formatAmount(goal.target_net_worth)}</span>
+            <span className="font-semibold text-grape-700">{goal.progress_pct.toFixed(1)}%</span>
+          </div>
+          {/* 진행 바 */}
+          <div className="w-full h-2.5 bg-warm-100 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-grape-500 rounded-full transition-all duration-500"
+              style={{ width: `${Math.min(goal.progress_pct, 100)}%` }}
+            />
+          </div>
+          <div className="flex items-center justify-between mt-2 text-xs text-warm-400">
+            <span>{goal.pace_message}</span>
+            {goal.monthly_required != null && (
+              <span>월 {formatAmount(goal.monthly_required)} 필요</span>
             )}
           </div>
         </div>
       ) : (
-        /* 계좌별 뷰 */
-        <div className="space-y-4">
-          {assetsByAccount.length === 0 ? (
-            <div className="bg-white rounded-2xl border border-warm-200/60 shadow-sm p-5 text-center">
-              <p className="text-sm text-warm-400 py-4">등록된 자산이 없습니다</p>
-            </div>
-          ) : (
-            assetsByAccount.map(({ account, assets: groupAssets }) => {
-              const groupTotal = groupAssets.reduce((sum, a) => sum + (a.current_value ?? 0), 0)
-              return (
-                <div key={account?.id ?? 'unassigned'} className="bg-white rounded-2xl border border-warm-200/60 shadow-sm p-5">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-2">
-                      <Wallet className="w-4 h-4 text-grape-500" />
-                      <span className="text-sm font-semibold text-warm-700">
-                        {account ? account.name : '계좌 미지정'}
-                      </span>
-                      {account && (
-                        <span className="text-xs text-warm-400">
-                          {ACCOUNT_TYPE_LABELS[account.type] ?? account.type}
-                        </span>
-                      )}
-                    </div>
-                    <span className="text-sm font-semibold text-warm-900">{formatAmount(groupTotal)}</span>
+        <button
+          onClick={openGoalModal}
+          className="w-full bg-white rounded-2xl border-2 border-dashed border-warm-200 p-5 flex items-center justify-center gap-2 text-warm-400 hover:border-grape-300 hover:text-grape-500 transition-colors"
+        >
+          <Target className="w-5 h-5" />
+          <span className="text-sm font-medium">순자산 목표를 설정해보세요</span>
+        </button>
+      )}
+
+      {/* 3. 순자산 추이 차트 */}
+      {snapshots.length > 1 && (
+        <div className="bg-white rounded-2xl border border-warm-200/60 shadow-sm p-5">
+          <h2 className="text-sm font-semibold text-warm-700 mb-4">순자산 추이</h2>
+          <div className="h-48">
+            <Line
+              data={lineData}
+              options={{
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: !!goal } },
+                scales: {
+                  y: { ticks: { callback: (v) => `₩${Number(v).toLocaleString()}` } },
+                },
+              }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* 4. 유형별 자산 목록 */}
+      {groupedAssets.length > 0 && (
+        <div className="space-y-3">
+          {groupedAssets.map(group => {
+            const Icon = group.icon
+            const isCollapsed = collapsed[group.key] ?? false
+            return (
+              <div key={group.key} className="bg-white rounded-2xl border border-warm-200/60 shadow-sm overflow-hidden">
+                {/* 그룹 헤더 */}
+                <button
+                  onClick={() => toggleGroup(group.key)}
+                  className="w-full flex items-center justify-between p-4 hover:bg-warm-50 transition-colors"
+                >
+                  <div className="flex items-center gap-2">
+                    <Icon className={`w-4 h-4 ${group.iconColorClass}`} />
+                    <span className={`text-sm font-semibold ${group.colorClass}`}>
+                      {group.label} ({group.items.length})
+                    </span>
                   </div>
-                  <div className="space-y-1">
-                    {groupAssets.map(asset => <AssetRow key={asset.id} asset={asset} />)}
+                  <div className="flex items-center gap-2">
+                    <span className={`text-sm font-semibold ${group.isLiability ? 'text-rose-700' : 'text-warm-900'}`}>
+                      {formatAmount(group.total)}
+                    </span>
+                    {isCollapsed
+                      ? <ChevronDown className="w-4 h-4 text-warm-400" />
+                      : <ChevronUp className="w-4 h-4 text-warm-400" />
+                    }
                   </div>
-                </div>
-              )
-            })
-          )}
-          {/* 부채는 계좌별 뷰에서도 표시 */}
-          {liabilities.length > 0 && (
-            <div className="bg-white rounded-2xl border border-warm-200/60 shadow-sm p-5">
-              <h2 className="text-sm font-semibold text-warm-700 mb-3 flex items-center gap-2">
-                <TrendingDown className="w-4 h-4 text-rose-500" />
-                부채 ({liabilities.length})
-              </h2>
-              <div className="space-y-2">
-                {liabilities.map(asset => (
-                  <Link
-                    key={asset.id}
-                    to={`/assets/${asset.id}`}
-                    className="flex items-center justify-between py-2 border-b border-warm-100 last:border-0 hover:bg-warm-50 -mx-1 px-1 rounded transition-colors"
-                  >
-                    <div>
-                      <p className="text-sm font-medium text-warm-800">{asset.name}</p>
-                      <p className="text-xs text-warm-400">
-                        {TYPE_LABELS[asset.type] ?? asset.type}
-                        {asset.interest_rate != null && ` · 연 ${asset.interest_rate}%`}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <p className="text-sm font-semibold text-rose-700">
-                        {asset.current_value != null ? formatAmount(asset.current_value) : '-'}
-                      </p>
-                      <ChevronRight className="w-4 h-4 text-warm-300 shrink-0" />
-                    </div>
-                  </Link>
-                ))}
+                </button>
+                {/* 자산 항목 */}
+                {!isCollapsed && (
+                  <div className="px-4 pb-3">
+                    {group.items.map(asset => (
+                      <AssetRow key={asset.id} asset={asset} />
+                    ))}
+                  </div>
+                )}
               </div>
-            </div>
-          )}
+            )
+          })}
+        </div>
+      )}
+
+      {/* 5. 업데이트 촉구 카드 */}
+      {showNudge && (
+        <div className="bg-amber-50 border border-amber-200/60 rounded-2xl p-4 flex items-start gap-3">
+          <Bell className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-medium text-amber-800">자산 현황을 업데이트해보세요</p>
+            <p className="text-xs text-amber-600 mt-0.5">
+              마지막 업데이트: {daysSinceUpdate}일 전
+            </p>
+          </div>
         </div>
       )}
 
@@ -397,6 +418,74 @@ export default function AssetDashboard() {
             <Plus className="w-4 h-4" />
             첫 자산 등록하기
           </Link>
+        </div>
+      )}
+
+      {/* 6. 목표 설정 모달 */}
+      {showGoalModal && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+          {/* 배경 오버레이 */}
+          <div
+            className="absolute inset-0 bg-black/40"
+            onClick={() => setShowGoalModal(false)}
+          />
+          {/* 모달 본체 */}
+          <div className="relative bg-white w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl p-6 space-y-5 animate-in slide-in-from-bottom sm:slide-in-from-bottom-0">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-bold text-warm-800">순자산 목표 설정</h2>
+              <button onClick={() => setShowGoalModal(false)} className="text-warm-400 hover:text-warm-600">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-warm-700 mb-1">목표 금액</label>
+                <input
+                  type="number"
+                  value={goalAmount}
+                  onChange={e => setGoalAmount(e.target.value)}
+                  placeholder="예: 100000000"
+                  className="w-full px-3 py-2.5 border border-warm-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-grape-500/40 focus:border-grape-400"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-warm-700 mb-1">목표 날짜</label>
+                <input
+                  type="date"
+                  value={goalDate}
+                  onChange={e => setGoalDate(e.target.value)}
+                  className="w-full px-3 py-2.5 border border-warm-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-grape-500/40 focus:border-grape-400"
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              {goal && (
+                <button
+                  onClick={handleDeleteGoal}
+                  disabled={goalSaving}
+                  className="px-4 py-2.5 text-sm font-medium text-rose-600 border border-rose-200 rounded-lg hover:bg-rose-50 transition-colors disabled:opacity-50"
+                >
+                  삭제
+                </button>
+              )}
+              <div className="flex-1" />
+              <button
+                onClick={() => setShowGoalModal(false)}
+                className="px-4 py-2.5 text-sm font-medium text-warm-500 border border-warm-200 rounded-lg hover:bg-warm-50 transition-colors"
+              >
+                취소
+              </button>
+              <button
+                onClick={handleSaveGoal}
+                disabled={goalSaving || !goalAmount || !goalDate}
+                className="px-4 py-2.5 text-sm font-medium text-white bg-grape-600 rounded-lg hover:bg-grape-700 transition-colors disabled:opacity-50"
+              >
+                {goalSaving ? '저장 중...' : '저장'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

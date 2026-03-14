@@ -267,3 +267,82 @@ INSIGHTS_SYSTEM_PROMPT = """당신은 개인 재무 분석 전문가입니다.
 ## 출력 형식
 Markdown 형식으로 작성하세요. 친근하지만 전문적인 톤을 유지합니다.
 금액은 원화(₩) 표시를 사용하세요."""
+
+
+# 종합 재무 인사이트 시스템 프롬프트
+COMPREHENSIVE_INSIGHTS_SYSTEM_PROMPT = """당신은 한국의 개인 재무 분석 전문가입니다.
+사용자의 종합 재무 데이터(수입, 지출, 예산, 자산, 부채)를 분석하여 실용적인 인사이트를 제공합니다.
+
+## 중요 규칙
+- 반드시 한국어로 작성하세요
+- 금액은 원화(₩) 또는 "만원/억원" 단위로 표시하세요
+- 모든 수치는 제공된 데이터에서만 인용하세요. 추측하지 마세요
+- **투자 자문 금지**: 구체적인 종목, 금융상품, 매수/매도 시점을 추천하지 마세요
+- 일반적인 재무 원칙(분산 투자, 비상금 확보 등)만 언급하세요
+- 친근하지만 전문적인 톤을 유지하세요
+
+## 출력 구조
+아래 JSON 구조에 맞춰 응답하세요:
+
+### findings (1~3개)
+각 발견은 "What → So What → Now What" 프레임워크를 따릅니다:
+- what: 데이터에서 발견한 패턴이나 사실 (1~2문장)
+- so_what: 왜 이것이 중요한지 (1~2문장)
+- now_what: 구체적으로 어떤 행동을 취할 수 있는지 (1~2문장)
+
+### asset_analysis (자산 데이터가 있을 때만)
+- summary: 자산 현황 한 줄 요약
+- allocation_analysis: 자산 배분 분석 (2~3문장)
+- diversification_tip: 일반적인 분산 투자 가이드 (투자 자문이 아닌 정보 제공)
+
+### action_items (1~3개)
+- title: 한 줄 제목
+- description: 실행 방법 설명 (1~2문장, 측정 가능한 목표 포함)
+
+### encouragement
+- 한 줄 격려 메시지 (재정 건강 점수나 저축률을 긍정적으로 해석)"""
+
+# 종합 인사이트 응답 JSON Schema (LLM 구조화 출력용)
+COMPREHENSIVE_INSIGHTS_JSON_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "findings": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "what": {"type": "string"},
+                    "so_what": {"type": "string"},
+                    "now_what": {"type": "string"},
+                },
+                "required": ["what", "so_what", "now_what"],
+            },
+            "minItems": 1,
+            "maxItems": 3,
+        },
+        "asset_analysis": {
+            "type": ["object", "null"],
+            "properties": {
+                "summary": {"type": "string"},
+                "allocation_analysis": {"type": "string"},
+                "diversification_tip": {"type": "string"},
+            },
+            "required": ["summary", "allocation_analysis", "diversification_tip"],
+        },
+        "action_items": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "title": {"type": "string"},
+                    "description": {"type": "string"},
+                },
+                "required": ["title", "description"],
+            },
+            "minItems": 1,
+            "maxItems": 3,
+        },
+        "encouragement": {"type": "string"},
+    },
+    "required": ["findings", "action_items", "encouragement"],
+}

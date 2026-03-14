@@ -6,7 +6,7 @@ import { Link, Outlet, useLocation } from 'react-router-dom'
 import FloatingActionButton from './FloatingActionButton'
 import { useHouseholdStore } from '../stores/useHouseholdStore'
 import {
-  LayoutDashboard, Receipt, TrendingUp, Settings as SettingsIcon,
+  Receipt, TrendingUp, Settings as SettingsIcon,
   Mail, Home, ChevronDown, Landmark,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
@@ -14,8 +14,7 @@ import { useChangelog } from '../hooks/useChangelog'
 
 
 const navItems: { path: string; label: string; icon: LucideIcon }[] = [
-  { path: '/', label: '대시보드', icon: LayoutDashboard },
-  { path: '/transactions', label: '가계부', icon: Receipt },
+  { path: '/', label: '가계부', icon: Receipt },
   { path: '/insights', label: '리포트', icon: TrendingUp },
   { path: '/assets', label: '자산', icon: Landmark },
   { path: '/settings', label: '설정', icon: SettingsIcon },
@@ -48,8 +47,17 @@ export default function Layout() {
   const isActive = (path: string) =>
     path === '/' ? location.pathname === '/' : location.pathname.startsWith(path)
 
+  const isDev = import.meta.env.VITE_SENTRY_ENVIRONMENT === 'development'
+
   return (
     <div className="min-h-screen bg-cream">
+      {/* 개발 환경 표시 배너 */}
+      {isDev && (
+        <div className="bg-amber-500 text-white text-center text-xs font-bold py-1 tracking-wide z-50 relative">
+          DEV 환경
+        </div>
+      )}
+
       {/* 모바일 전용 미니 헤더 — 가구 전환/초대 배지가 있을 때만 표시 */}
       {(pendingInvitationCount > 0 || households.length > 1) && (
         <header className="md:hidden bg-white border-b border-warm-200 sticky top-0 z-30 h-12 flex items-center justify-end px-4 gap-3">

@@ -4,7 +4,7 @@
  * API 응답을 모킹하기 위한 샘플 데이터를 정의한다.
  */
 
-import type { Expense, Income, Category, MonthlyStats, InsightsResponse, StatsResponse, ComparisonResponse, RecurringTransaction } from '../types'
+import type { Expense, Income, Category, MonthlyStats, InsightsResponse, StatsResponse, ComparisonResponse, RecurringTransaction, AssetSummary, AssetSnapshot, StructuredInsights } from '../types'
 
 /**
  * 테스트용 카테고리 목록
@@ -286,4 +286,68 @@ export const mockInsights: InsightsResponse = {
 ## 개선 제안
 
 다음 달에는 쇼핑 예산을 30,000원 이하로 설정해보세요.`,
+}
+
+/**
+ * 테스트용 자산 요약
+ */
+export const mockAssetSummary: AssetSummary = {
+  total_assets: 100000000,
+  total_liabilities: 15000000,
+  net_worth: 85000000,
+  breakdown: {
+    stock_kr: 30000000,
+    deposit: 50000000,
+    real_estate: 20000000,
+  },
+  total_profit_loss: 2000000,
+  total_profit_loss_pct: 2.4,
+}
+
+/**
+ * 테스트용 자산 스냅샷
+ */
+export const mockAssetSnapshots: AssetSnapshot[] = [
+  {
+    snapshot_date: '2026-02-28',
+    total_assets: 97000000,
+    total_liabilities: 14000000,
+    net_worth: 83000000,
+    breakdown: { stock_kr: 28000000, deposit: 49000000, real_estate: 20000000 },
+  },
+  {
+    snapshot_date: '2026-03-31',
+    total_assets: 100000000,
+    total_liabilities: 15000000,
+    net_worth: 85000000,
+    breakdown: { stock_kr: 30000000, deposit: 50000000, real_estate: 20000000 },
+  },
+]
+
+/**
+ * 테스트용 구조화된 인사이트
+ */
+export const mockStructuredInsights: StructuredInsights = {
+  findings: [
+    {
+      what: '식비가 전체 지출의 37.5%를 차지합니다',
+      so_what: '전국 평균(30%) 대비 높은 수준입니다',
+      now_what: '주 2회 도시락을 준비하면 월 20만원 절약 가능합니다',
+    },
+    {
+      what: '순자산이 전월 대비 200만원 증가했습니다',
+      so_what: '꾸준한 저축과 투자 수익이 반영된 결과입니다',
+      now_what: '현재 페이스를 유지하세요',
+    },
+  ],
+  asset_analysis: {
+    summary: '순자산 8,500만원으로 전월 대비 2.4% 증가',
+    allocation_analysis: '예적금 비중이 59%로 안정적이나, 성장 자산 비중을 점진적으로 늘려볼 수 있습니다',
+    diversification_tip: '일반적으로 연령과 위험 허용도에 따라 자산을 분산하는 것이 권장됩니다',
+  },
+  action_items: [
+    { title: '식비 예산 100만원 설정', description: '이번 달 식비를 100만원 이내로 관리해보세요' },
+    { title: '비상금 확인', description: '월 생활비 3~6개월치 비상금이 확보되어 있는지 점검하세요' },
+  ],
+  encouragement: '저축률 36%는 매우 우수합니다! 이 습관을 유지하세요',
 }

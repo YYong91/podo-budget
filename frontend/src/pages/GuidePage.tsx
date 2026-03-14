@@ -93,7 +93,7 @@ export default function GuidePage() {
       {/* 1. 간편 입력 */}
       <SectionCard id="natural-input" icon={MessageSquare} title="간편 입력 (자연어 AI 파싱)">
         <p>
-          대시보드 하단의 <strong>+ 버튼</strong>을 누르면 자연어로 지출/수입을 입력할 수 있습니다. AI가 자동으로
+          화면 우측 하단의 <strong>+ 버튼</strong>을 누르면 자연어로 지출/수입을 입력할 수 있습니다. AI가 자동으로
           금액, 카테고리, 날짜를 분류합니다.
         </p>
         <ExampleBox>
@@ -153,7 +153,7 @@ export default function GuidePage() {
             <strong>주기:</strong> 매일 / 매주 / 매월 / 매년 선택 가능
           </p>
           <p>
-            <strong>관리:</strong> 실행 예정인 거래를 대시보드에서 확인하고 건너뛰기 가능
+            <strong>관리:</strong> 실행 예정인 거래를 가계부 상단에서 확인하고 건너뛰기 가능
           </p>
         </ExampleBox>
       </SectionCard>
@@ -198,16 +198,25 @@ export default function GuidePage() {
         </p>
         <ExampleBox>
           <p>
-            <strong>요약 카드:</strong> 총 지출, 총 수입, 순수익, 일평균 지출
+            <strong>종합 요약:</strong> 총 수입, 총 지출, 순수익, 저축률 + 순자산(자산 연동 시)
           </p>
           <p>
-            <strong>추이 차트:</strong> 지출/수입 월별 추이 그래프
+            <strong>지출 카테고리 TOP:</strong> 상위 5개 카테고리 비율 바 표시
           </p>
           <p>
             <strong>예산 vs 실제:</strong> 카테고리별 예산 대비 지출 비교
           </p>
           <p>
-            <strong>AI 하이라이트:</strong> 이번 달 주요 소비 패턴 자동 분석
+            <strong>자산 변동:</strong> 순자산 전월 대비 증감 + 유형별 변동
+          </p>
+          <p>
+            <strong>재정 건강 점수:</strong> 저축·지출·부채 기반 종합 등급 (A+~F)
+          </p>
+          <p>
+            <strong>AI 심층 분석:</strong> 수입/지출/예산/자산을 종합 분석하여 맞춤 인사이트 제공
+          </p>
+          <p className="text-xs text-warm-500 mt-1">
+            자산 정보를 연동하면 더 풍부한 분석을 받을 수 있어요.
           </p>
         </ExampleBox>
       </SectionCard>
@@ -223,7 +232,13 @@ export default function GuidePage() {
             <strong>등록:</strong> 자산 → + 버튼 → 자산 유형 선택 후 정보 입력
           </p>
           <p>
-            <strong>현황:</strong> 총 자산, 순자산(자산-부채) 한눈에 확인
+            <strong>순자산 현황:</strong> 순자산, 전월 대비 변동, 자산/부채 요약을 한눈에 확인
+          </p>
+          <p>
+            <strong>목표 설정:</strong> 순자산 목표 금액과 날짜를 설정하면 진행률과 달성 페이스를 추적
+          </p>
+          <p>
+            <strong>유형별 보기:</strong> 투자, 예적금, 부동산/기타, 부채 그룹으로 자산 목록 확인
           </p>
         </ExampleBox>
       </SectionCard>
@@ -239,7 +254,7 @@ export default function GuidePage() {
             <strong>초대:</strong> 이메일로 가구 구성원 초대
           </p>
           <p>
-            <strong>전환:</strong> 대시보드 상단 드롭다운에서 개인/가구 전환
+            <strong>전환:</strong> 상단 헤더의 드롭다운에서 개인/가구 전환
           </p>
           <p>
             <strong>필터:</strong> 가구 모드에서 멤버별 지출 필터링 가능
@@ -288,8 +303,8 @@ export default function GuidePage() {
             </p>
           </div>
           <div>
-            <p className="font-semibold text-warm-800 mb-1">포도알 성장</p>
-            <p>거래를 기록할수록 포도알이 자라납니다. 대시보드에서 이번 달 성장 현황을 확인하세요.</p>
+            <p className="font-semibold text-warm-800 mb-1">가계부가 첫 화면</p>
+            <p>앱을 열면 바로 이번 달 거래 내역이 표시됩니다. 캘린더와 함께 소비 패턴을 한눈에 파악하세요.</p>
           </div>
           <div>
             <p className="font-semibold text-warm-800 mb-1">새소식 (업데이트 알림)</p>

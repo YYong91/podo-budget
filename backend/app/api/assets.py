@@ -19,7 +19,8 @@ from app.schemas.asset import (
     AssetUpdate,
     AssetWithPrice,
 )
-from app.services import asset_service, price_service
+from app.schemas.asset_goal import AssetGoalCreate, AssetGoalWithInsight
+from app.services import asset_goal_service, asset_service, price_service
 from app.services.asset_parse_service import parse_asset_input
 
 router = APIRouter()
@@ -126,6 +127,68 @@ async def get_all_prices(
             info = await price_service.get_asset_current_value(asset)
             prices[asset.id] = info
     return prices
+
+
+@router.get("/goal", response_model=AssetGoalWithInsight | None)
+async def get_goal(
+    household_id: int | None = Query(None),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """순자산 목표 + 페이스 인사이트 조회"""
+    if household_id is not None:
+        await get_household_member(household_id, current_user, db)
+    result = await asset_goal_service.get_goal_with_insight(current_user, household_id, db)
+    return result
+
+
+@router.post("/goal", response_model=AssetGoalWithInsight, status_code=status.HTTP_201_CREATED)
+async def upsert_goal(
+    body: AssetGoalCreate,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """순자산 목표 설정/수정 (upsert)"""
+    if body.household_id is not None:
+        await get_household_member(body.household_id, current_user, db)
+    await asset_goal_service.upsert_goal(
+        user_id=current_user.id,
+        household_id=body.household_id,
+        target_net_worth=body.target_net_worth,
+        target_date=body.target_date,
+        db=db,
+    )
+    await db.commit()
+    # 인사이트 포함하여 반환
+    result = await asset_goal_service.get_goal_with_insight(current_user, body.household_id, db)
+    return result
+
+
+@router.delete("/goal", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_goal(
+    household_id: int | None = Query(None),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """순자산 목표 삭제"""
+    if household_id is not None:
+        await get_household_member(household_id, current_user, db)
+    deleted = await asset_goal_service.delete_goal(current_user.id, household_id, db)
+    if not deleted:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="목표를 찾을 수 없습니다")
+    await db.commit()
+
+
+@router.get("/monthly-savings")
+async def get_monthly_savings(
+    household_id: int | None = Query(None),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """이번 달 저축액 (수입 - 지출)"""
+    if household_id is not None:
+        await get_household_member(household_id, current_user, db)
+    return await asset_goal_service.get_monthly_savings(current_user.id, household_id, db)
 
 
 @router.get("/{asset_id}", response_model=AssetWithPrice)

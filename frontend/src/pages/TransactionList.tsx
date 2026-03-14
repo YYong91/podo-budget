@@ -9,14 +9,18 @@ import { ChevronLeft, ChevronRight } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { expenseApi } from '../api/expenses'
 import { incomeApi } from '../api/income'
+import { recurringApi } from '../api/recurring'
 import { categoryApi } from '../api/categories'
 import { useHouseholdStore } from '../stores/useHouseholdStore'
+import { useToast } from '../hooks/useToast'
 import MiniCalendar from '../components/MiniCalendar'
 import TransactionItem from '../components/TransactionItem'
+import PendingRecurring from '../components/PendingRecurring'
 import CategoryBottomSheet from '../components/CategoryBottomSheet'
+import PullToRefresh from '../components/PullToRefresh'
 import EmptyState from '../components/EmptyState'
 import ErrorState from '../components/ErrorState'
-import type { Expense, Income, Category } from '../types'
+import type { Expense, Income, Category, RecurringTransaction } from '../types'
 import { formatAmount } from '../utils/format'
 import { getMonthRange, formatDateHeader } from '../utils/calendar'
 
@@ -36,6 +40,7 @@ interface UnifiedTransaction {
 export default function TransactionList() {
   const [searchParams, setSearchParams] = useSearchParams()
   const activeHouseholdId = useHouseholdStore((s) => s.activeHouseholdId)
+  const { addToast } = useToast()
 
   // URL에서 월 파라미터 읽기 (YYYY-MM 형식)
   const monthParam = searchParams.get('month')
@@ -53,6 +58,7 @@ export default function TransactionList() {
   const [expenses, setExpenses] = useState<Expense[]>([])
   const [incomes, setIncomes] = useState<Income[]>([])
   const [categories, setCategories] = useState<Category[]>([])
+  const [pendingRecurring, setPendingRecurring] = useState<RecurringTransaction[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
 
@@ -112,13 +118,15 @@ export default function TransactionList() {
         ...(activeHouseholdId ? { household_id: activeHouseholdId } : {}),
       }
 
-      const [expRes, incRes] = await Promise.all([
+      const [expRes, incRes, pendingRes] = await Promise.all([
         expenseApi.getAll(baseParams).catch(() => ({ data: [] as Expense[] })),
         incomeApi.getAll(baseParams).catch(() => ({ data: [] as Income[] })),
+        recurringApi.getPending(activeHouseholdId ?? undefined).catch(() => ({ data: [] as RecurringTransaction[] })),
       ])
 
       setExpenses(expRes.data)
       setIncomes(incRes.data)
+      setPendingRecurring(pendingRes?.data ?? [])
     } catch {
       setError(true)
     } finally {
@@ -208,6 +216,10 @@ export default function TransactionList() {
 
   const monthLabel = `${currentYear}년 ${currentMonth + 1}월`
 
+  const handleRefresh = useCallback(async () => {
+    await fetchData()
+  }, [fetchData])
+
   if (error) {
     return (
       <div className="space-y-4">
@@ -217,6 +229,7 @@ export default function TransactionList() {
   }
 
   return (
+    <PullToRefresh onRefresh={handleRefresh}>
     <div className="space-y-4">
       {/* 월 네비게이션 */}
       <div className="flex items-center justify-center gap-4">
@@ -261,6 +274,30 @@ export default function TransactionList() {
           </div>
         </button>
       </div>
+
+      {/* 반복 거래 알림 */}
+      <PendingRecurring
+        items={pendingRecurring}
+        onExecute={async (id) => {
+          try {
+            const res = await recurringApi.execute(id)
+            addToast('success', res.data.message)
+            setPendingRecurring((prev) => prev.filter((r) => r.id !== id))
+            fetchData()
+          } catch {
+            addToast('error', '반복 거래 등록에 실패했습니다')
+          }
+        }}
+        onSkip={async (id) => {
+          try {
+            const res = await recurringApi.skip(id)
+            addToast('success', `다음 예정일: ${res.data.next_due_date}`)
+            setPendingRecurring((prev) => prev.filter((r) => r.id !== id))
+          } catch {
+            addToast('error', '건너뛰기에 실패했습니다')
+          }
+        }}
+      />
 
       {/* 미니 캘린더 */}
       <div className="bg-white rounded-2xl shadow-sm border border-warm-200/60 p-3">
@@ -350,5 +387,6 @@ export default function TransactionList() {
         saving={sheetSaving}
       />
     </div>
+    </PullToRefresh>
   )
 }
