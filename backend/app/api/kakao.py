@@ -26,12 +26,13 @@ from app.services.bot_messages import (
     format_budget_status,
     format_expense_saved,
     format_help_message,
+    format_kakao_link_usage_message,
     format_parse_error,
     format_report_message,
     format_server_error,
     format_timeout_message,
 )
-from app.services.bot_user_service import get_or_create_bot_user
+from app.services.bot_user_service import get_or_create_bot_user, link_kakao_account_by_code
 from app.services.category_service import get_or_create_category
 from app.services.expense_context_detector import resolve_household_id
 from app.services.llm_service import get_llm_provider
@@ -122,6 +123,15 @@ async def kakao_webhook(request: Request, db: AsyncSession = Depends(get_db)):
         # /budget 명령어 처리 (예산 현황)
         if utterance.startswith("/budget"):
             return await handle_budget_command(db, user_id=bot_user.id)
+
+        # /link 명령어 처리 (웹 계정 연동)
+        if utterance.startswith("/link"):
+            parts = utterance.split()
+            if len(parts) != 2:
+                return make_simple_text_response(format_kakao_link_usage_message())
+            code = parts[1].upper()
+            success, message = await link_kakao_account_by_code(db, code, str(kakao_user_id))
+            return make_simple_text_response(message)
 
         # 자연어 지출 입력 → LLM 파싱 (4.5초 타임아웃)
         try:
