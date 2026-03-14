@@ -12,6 +12,7 @@ from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.dependencies import get_household_member, get_user_active_household_id
 from app.core.auth import get_current_user
 from app.core.database import get_db
 from app.core.rate_limit import limiter
@@ -32,12 +33,13 @@ router = APIRouter()
 async def generate_insights(
     request: Request,
     month: str = Query(..., description="YYYY-MM 형식", pattern=r"^\d{4}-\d{2}$"),
+    household_id: int | None = Query(None, description="가구 ID (없으면 활성 가구)"),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     """Claude AI로 월별 지출 인사이트 생성
 
-    현재 로그인한 사용자의 지출 데이터를 집계하여 Claude에게 분석을 요청합니다.
+    가구의 지출 데이터를 집계하여 Claude에게 분석을 요청합니다.
 
     Rate Limiting:
     - 사용자당 분당 5회 제한 (LLM API 호출 보호)
@@ -46,23 +48,29 @@ async def generate_insights(
     Args:
         request: FastAPI Request 객체 (rate limiting용)
         month: YYYY-MM 형식의 월
+        household_id: 가구 ID (없으면 활성 가구 자동 감지)
         current_user: 현재 인증된 사용자
         db: 데이터베이스 세션
 
     Returns:
         월별 통계와 AI 인사이트
     """
+    # household_id 미지정 시 활성 가구 자동 감지
+    if household_id is None:
+        household_id = await get_user_active_household_id(current_user, db)
+    await get_household_member(household_id, current_user, db)
+
     year, mon = map(int, month.split("-"))
     start = datetime(year, mon, 1)
     end = datetime(year + 1, 1, 1) if mon == 12 else datetime(year, mon + 1, 1)
 
-    # 사용자 필터 조건 (통계 제외 거래는 인사이트에서도 제외)
-    user_filter = Expense.user_id == current_user.id
+    # 가구 기반 필터 조건 (통계 제외 거래는 인사이트에서도 제외)
+    scope_filter = Expense.household_id == household_id
     excl_filter = Expense.exclude_from_stats == False  # noqa: E712
 
     # 총합
     total_result = await db.execute(
-        select(func.coalesce(func.sum(Expense.amount), 0)).where(user_filter, excl_filter, Expense.date >= start, Expense.date < end)
+        select(func.coalesce(func.sum(Expense.amount), 0)).where(scope_filter, excl_filter, Expense.date >= start, Expense.date < end)
     )
     total = float(total_result.scalar())
 
@@ -70,7 +78,7 @@ async def generate_insights(
     cat_result = await db.execute(
         select(Category.name, func.sum(Expense.amount).label("amount"))
         .join(Category, Expense.category_id == Category.id, isouter=True)
-        .where(user_filter, excl_filter, Expense.date >= start, Expense.date < end)
+        .where(scope_filter, excl_filter, Expense.date >= start, Expense.date < end)
         .group_by(Category.name)
         .order_by(func.sum(Expense.amount).desc())
     )
@@ -78,7 +86,7 @@ async def generate_insights(
 
     # 최근 지출 내역 (상위 20건)
     recent_result = await db.execute(
-        select(Expense).where(user_filter, excl_filter, Expense.date >= start, Expense.date < end).order_by(Expense.amount.desc()).limit(20)
+        select(Expense).where(scope_filter, excl_filter, Expense.date >= start, Expense.date < end).order_by(Expense.amount.desc()).limit(20)
     )
     top_expenses = [
         {
