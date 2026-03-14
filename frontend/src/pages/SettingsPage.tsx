@@ -532,7 +532,7 @@ export default function SettingsPage() {
       description: '기능 요청/버그 신고',
       icon: MessageSquarePlus,
     },
-    ...(user.is_admin ? [{
+    ...(user?.is_admin ? [{
       to: '/admin',
       label: '관리자',
       description: '운영 현황, 피드백 관리, 사용자 관리',
