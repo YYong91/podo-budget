@@ -115,7 +115,7 @@ export default function PullToRefresh({ onRefresh, children }: PullToRefreshProp
   const showIndicator = pullDistance > 10 || refreshing
 
   return (
-    <div ref={containerRef} className="relative" style={{ overscrollBehaviorY: 'contain' }}>
+    <div ref={containerRef} className="relative">
       {/* 새로고침 인디케이터 */}
       <div
         className="flex items-center justify-center overflow-hidden transition-[height] duration-200 ease-out"

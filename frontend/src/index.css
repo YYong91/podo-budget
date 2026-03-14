@@ -81,6 +81,10 @@
   }
 }
 
+html, body {
+  overscroll-behavior-y: none; /* 브라우저 네이티브 pull-to-refresh 비활성화 (커스텀 PTR 사용) */
+}
+
 body {
   margin: 0;
   min-width: 320px;
