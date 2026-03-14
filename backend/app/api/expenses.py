@@ -56,9 +56,8 @@ async def create_expense(
     if household_id is None:
         household_id = await get_user_active_household_id(current_user, db)
 
-    # 가구가 있으면 멤버 검증
-    if household_id is not None:
-        await get_household_member(household_id, current_user, db)
+    # 가구 멤버 검증
+    await get_household_member(household_id, current_user, db)
 
     expense_data = expense.model_dump(exclude={"household_id"})
     db_expense = Expense(**expense_data, user_id=current_user.id, household_id=household_id)
@@ -85,17 +84,16 @@ async def get_expenses(
     household_id가 있으면 해당 가구 전체 멤버의 지출을 조회합니다.
     없으면 현재 사용자의 지출만 조회합니다 (하위 호환).
     """
-    if household_id is not None:
-        # 가구 멤버 검증
-        await get_household_member(household_id, current_user, db)
-        # 가구 전체 멤버의 지출 조회
-        query = select(Expense).where(Expense.household_id == household_id)
-        # 특정 멤버 필터링
-        if member_user_id is not None:
-            query = query.where(Expense.user_id == member_user_id)
-    else:
-        # 하위 호환: 본인 지출만 조회
-        query = select(Expense).where(Expense.user_id == current_user.id)
+    # household_id 미지정 시 활성 가구 자동 감지
+    if household_id is None:
+        household_id = await get_user_active_household_id(current_user, db)
+
+    # 가구 멤버 검증 후 가구 전체 멤버의 지출 조회
+    await get_household_member(household_id, current_user, db)
+    query = select(Expense).where(Expense.household_id == household_id)
+    # 특정 멤버 필터링
+    if member_user_id is not None:
+        query = query.where(Expense.user_id == member_user_id)
 
     # 필터 적용 (YYYY-MM-DD 또는 YYYY-MM-DDTHH:MM:SS 모두 허용)
     if start_date:
@@ -145,11 +143,9 @@ def _get_year_range(d: date) -> tuple[date, date]:
     return date(d.year, 1, 1), date(d.year, 12, 31)
 
 
-def _build_scope_filter(household_id: int | None, current_user: User):
-    """가구 또는 개인 스코프 필터 생성"""
-    if household_id is not None:
-        return Expense.household_id == household_id
-    return Expense.user_id == current_user.id
+def _build_scope_filter(household_id: int):
+    """가구 스코프 필터 생성"""
+    return Expense.household_id == household_id
 
 
 # ── 통계 API ──
@@ -185,10 +181,12 @@ async def get_stats(
     start_dt = datetime(start_d.year, start_d.month, start_d.day)
     end_dt = datetime(end_d.year, end_d.month, end_d.day, 23, 59, 59)
 
-    # 스코프 필터
-    if household_id is not None:
-        await get_household_member(household_id, current_user, db)
-    scope_filter = _build_scope_filter(household_id, current_user)
+    # household_id 미지정 시 활성 가구 자동 감지
+    if household_id is None:
+        household_id = await get_user_active_household_id(current_user, db)
+    await get_household_member(household_id, current_user, db)
+
+    scope_filter = _build_scope_filter(household_id)
     stats_filter = Expense.exclude_from_stats == False  # noqa: E712
     base_where = [scope_filter, stats_filter, Expense.date >= start_dt, Expense.date <= end_dt]
 
@@ -285,10 +283,11 @@ async def get_stats_comparison(
 
     ref_date = date_type.fromisoformat(date) if date else date_type.today()
 
-    # 스코프 필터
-    if household_id is not None:
-        await get_household_member(household_id, current_user, db)
-    scope_filter = _build_scope_filter(household_id, current_user)
+    # household_id 미지정 시 활성 가구 자동 감지
+    if household_id is None:
+        household_id = await get_user_active_household_id(current_user, db)
+    await get_household_member(household_id, current_user, db)
+    scope_filter = _build_scope_filter(household_id)
 
     excl_filter = Expense.exclude_from_stats == False  # noqa: E712
 
@@ -428,12 +427,11 @@ async def get_monthly_stats(
     start = datetime(year, mon, 1)
     end = datetime(year + 1, 1, 1) if mon == 12 else datetime(year, mon + 1, 1)
 
-    # 필터 조건: 가구 또는 개인
-    if household_id is not None:
-        await get_household_member(household_id, current_user, db)
-        scope_filter = Expense.household_id == household_id
-    else:
-        scope_filter = Expense.user_id == current_user.id
+    # household_id 미지정 시 활성 가구 자동 감지
+    if household_id is None:
+        household_id = await get_user_active_household_id(current_user, db)
+    await get_household_member(household_id, current_user, db)
+    scope_filter = Expense.household_id == household_id
 
     excl_filter = Expense.exclude_from_stats == False  # noqa: E712
 
@@ -500,9 +498,10 @@ async def parse_expense_image(
             detail="파일 크기는 10MB 이하여야 합니다",
         )
 
-    # 가구 멤버 검증 (household_id가 있는 경우)
-    if household_id is not None:
-        await get_household_member(household_id, current_user, db)
+    # household_id 미지정 시 활성 가구 자동 감지
+    if household_id is None:
+        household_id = await get_user_active_household_id(current_user, db)
+    await get_household_member(household_id, current_user, db)
 
     # OCR 프로바이더로 이미지 파싱 (anthropic 기본값)
     try:
@@ -571,13 +570,13 @@ async def get_expense(
     if not expense:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="지출을 찾을 수 없습니다")
 
-    # 접근 권한 확인
+    # 접근 권한 확인: 가구 멤버인지 검증
     if expense.household_id is not None:
-        # 가구 지출이면 멤버인지 확인
         await get_household_member(expense.household_id, current_user, db)
-    elif expense.user_id != current_user.id:
-        # 개인 지출이면 본인 것인지 확인
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="지출을 찾을 수 없습니다")
+    else:
+        # 레거시 데이터: household_id 없는 지출은 본인 것만 조회
+        if expense.user_id != current_user.id:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="지출을 찾을 수 없습니다")
 
     return expense
 
