@@ -122,11 +122,18 @@ jobs:
         run: |
           DISPLAY_MSG="$(echo "$COMMIT_MSG" | head -1)"
 
+          # 커밋 메시지에서 PR 번호 추출 (예: (#38) → 38)
+          PR_NUM="$(echo "$DISPLAY_MSG" | grep -oE '#[0-9]+' | tail -1 | tr -d '#')"
+          if [ -n "$PR_NUM" ]; then
+            PR_LINK="https://github.com/${REPO}/pull/${PR_NUM}"
+          fi
+
           if [ "$BACKEND_STATUS" = "success" ] && [ "$FRONTEND_STATUS" = "success" ]; then
             KST_TIME="$(TZ=Asia/Seoul date '+%Y-%m-%d %H:%M KST')"
             MESSAGE="$(printf '[PROD] ✅ podo-budget 배포 완료\n📝 %s\n🕐 %s' \
               "${DISPLAY_MSG}" \
               "${KST_TIME}")"
+            [ -n "$PR_LINK" ] && MESSAGE="${MESSAGE}"$'\n'"🔗 ${PR_LINK}"
           else
             MESSAGE="[PROD] ❌ podo-budget 배포 실패 (backend: ${BACKEND_STATUS}, frontend: ${FRONTEND_STATUS})"
             [ -n "$BACKEND_FAILURE" ] && MESSAGE="${MESSAGE}"$'\n'"🔴 Backend: ${BACKEND_FAILURE}"
