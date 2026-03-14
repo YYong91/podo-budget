@@ -1,10 +1,10 @@
 """Admin 대시보드 API 테스트
 
-접근 제어(403), 통계 엔드포인트 응답 검증을 수행합니다.
+접근 제어(403), 대시보드 통합 통계, 사용자 관리 엔드포인트를 검증합니다.
 test_user(id=1)는 ADMIN_USER_ID=1과 일치하므로 관리자로 간주됩니다.
 """
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 import pytest
 from httpx import AsyncClient
@@ -12,7 +12,6 @@ from httpx import AsyncClient
 from app.models.expense import Expense
 from app.models.feedback import Feedback
 from app.models.household import Household
-from app.models.household_invitation import HouseholdInvitation
 from app.models.household_member import HouseholdMember
 from app.models.income import Income
 from app.models.user import User
@@ -24,10 +23,7 @@ from app.models.user import User
 async def test_admin_endpoints_require_auth(client: AsyncClient):
     """인증 없이 admin 엔드포인트 접근 시 401"""
     endpoints = [
-        "/api/admin/stats/overview",
-        "/api/admin/stats/transactions",
-        "/api/admin/stats/households",
-        "/api/admin/stats/feedback",
+        "/api/admin/stats/dashboard",
         "/api/admin/users",
     ]
     for endpoint in endpoints:
@@ -52,10 +48,7 @@ async def test_admin_endpoints_require_admin_role(client: AsyncClient, db_sessio
     headers = {"Authorization": f"Bearer {token2}"}
 
     endpoints = [
-        "/api/admin/stats/overview",
-        "/api/admin/stats/transactions",
-        "/api/admin/stats/households",
-        "/api/admin/stats/feedback",
+        "/api/admin/stats/dashboard",
         "/api/admin/users",
     ]
     for endpoint in endpoints:
@@ -63,136 +56,128 @@ async def test_admin_endpoints_require_admin_role(client: AsyncClient, db_sessio
         assert response.status_code == 403, f"{endpoint}: expected 403, got {response.status_code}"
 
 
-# ── 개요 통계 테스트 ──
+@pytest.mark.asyncio
+async def test_old_endpoints_removed(authenticated_client: AsyncClient):
+    """삭제된 엔드포인트가 404를 반환하는지 확인"""
+    old_endpoints = [
+        "/api/admin/stats/overview",
+        "/api/admin/stats/transactions",
+        "/api/admin/stats/households",
+        "/api/admin/stats/feedback",
+    ]
+    for endpoint in old_endpoints:
+        response = await authenticated_client.get(endpoint)
+        # 라우트가 없으므로 405(Method Not Allowed) 또는 404
+        assert response.status_code in (404, 405), f"{endpoint}: expected 404/405, got {response.status_code}"
+
+
+# ── 대시보드 통합 통계 테스트 ──
 
 
 @pytest.mark.asyncio
-async def test_overview_stats_empty(authenticated_client: AsyncClient):
-    """사용자만 있고 거래 없는 상태에서 개요 통계"""
-    response = await authenticated_client.get("/api/admin/stats/overview")
+async def test_dashboard_stats_empty(authenticated_client: AsyncClient):
+    """사용자만 있고 거래 없는 상태에서 대시보드 통계"""
+    response = await authenticated_client.get("/api/admin/stats/dashboard")
     assert response.status_code == 200
     data = response.json()
-    assert data["total_users"] >= 1  # test_user가 존재
-    assert data["dau"] == 0  # 거래 없음
-    assert data["mau"] == 0
-    assert data["new_signups_today"] >= 1
+
+    # 헬스 카드 필드
+    assert data["total_users"] >= 1  # test_user 존재
+    assert data["active_users"] >= 1
+    assert data["today_active_users"] == 0  # 거래 없음
+    assert data["today_transaction_count"] == 0
+    assert "pending_feedback_count" in data
+    assert "total_households" in data
+    assert "telegram_linked_count" in data
+
+    # 최근 활동 (가입 이벤트만)
+    assert isinstance(data["recent_activity"], list)
+    # 가입 이벤트가 있어야 함
+    signup_events = [a for a in data["recent_activity"] if a["type"] == "signup"]
+    assert len(signup_events) >= 1
+
+    # 이탈 감지
+    assert isinstance(data["inactive_users"], list)
 
 
 @pytest.mark.asyncio
-async def test_overview_stats_with_transactions(authenticated_client: AsyncClient, db_session, test_user: User):
-    """거래가 있는 상태에서 DAU/MAU 확인"""
-    # 지출 하나 추가
-    expense = Expense(
-        user_id=test_user.id,
-        amount=10000,
-        description="테스트 지출",
-        date=datetime.now(UTC),
-    )
-    db_session.add(expense)
-    await db_session.commit()
-
-    response = await authenticated_client.get("/api/admin/stats/overview")
-    assert response.status_code == 200
-    data = response.json()
-    assert data["dau"] >= 1
-    assert data["mau"] >= 1
-
-
-# ── 거래 통계 테스트 ──
-
-
-@pytest.mark.asyncio
-async def test_transaction_stats_empty(authenticated_client: AsyncClient):
-    """거래 없는 상태에서 통계"""
-    response = await authenticated_client.get("/api/admin/stats/transactions")
-    assert response.status_code == 200
-    data = response.json()
-    assert data["total_expense_amount"] == 0
-    assert data["total_income_amount"] == 0
-    assert data["total_expense_count"] == 0
-    assert data["daily_counts"] == []
-
-
-@pytest.mark.asyncio
-async def test_transaction_stats_with_data(authenticated_client: AsyncClient, db_session, test_user: User):
-    """거래 데이터가 있는 상태에서 통계"""
+async def test_dashboard_stats_with_transactions(authenticated_client: AsyncClient, db_session, test_user: User):
+    """거래 + 피드백이 있는 상태에서 대시보드 통계"""
     now = datetime.now(UTC)
-    db_session.add(Expense(user_id=test_user.id, amount=5000, description="커피", date=now))
-    db_session.add(Expense(user_id=test_user.id, amount=15000, description="점심", date=now))
+
+    # 오늘 거래 추가
+    db_session.add(Expense(user_id=test_user.id, amount=10000, description="테스트 지출", date=now))
     db_session.add(Income(user_id=test_user.id, amount=3000000, description="월급", date=now))
+    db_session.add(Feedback(user_id=test_user.id, type="feature", title="요청1", content="내용1", status="new"))
+    db_session.add(Feedback(user_id=test_user.id, type="bug", title="버그1", content="내용2", status="done"))
     await db_session.commit()
 
-    response = await authenticated_client.get("/api/admin/stats/transactions?days=7")
+    response = await authenticated_client.get("/api/admin/stats/dashboard")
     assert response.status_code == 200
     data = response.json()
-    assert data["total_expense_count"] == 2
-    assert data["total_income_count"] == 1
-    assert data["total_expense_amount"] == 20000
-    assert data["total_income_amount"] == 3000000
 
+    # 오늘 활동
+    assert data["today_active_users"] >= 1
+    assert data["today_transaction_count"] >= 2
 
-# ── 가구 통계 테스트 ──
+    # 미처리 피드백
+    assert data["pending_feedback_count"] >= 1
+
+    # 최근 활동에 거래와 피드백 포함
+    activity_types = {a["type"] for a in data["recent_activity"]}
+    assert "expense" in activity_types
+    assert "income" in activity_types
 
 
 @pytest.mark.asyncio
-async def test_household_stats_empty(authenticated_client: AsyncClient):
-    """가구 없는 상태에서 통계"""
-    response = await authenticated_client.get("/api/admin/stats/households")
+async def test_dashboard_inactive_users(authenticated_client: AsyncClient, db_session, test_user: User):
+    """이탈 감지 — 오래된 거래만 있는 사용자"""
+    from tests.conftest import TEST_AUTH_USER_ID_2
+
+    # 비활동 사용자 생성
+    old_user = User(
+        auth_user_id=TEST_AUTH_USER_ID_2,
+        username="inactive_user",
+        email="inactive@test.com",
+        is_active=True,
+    )
+    db_session.add(old_user)
+    await db_session.commit()
+    await db_session.refresh(old_user)
+
+    # 30일 전 거래
+    old_date = datetime.now(UTC) - timedelta(days=30)
+    db_session.add(Expense(user_id=old_user.id, amount=5000, description="옛날 지출", date=old_date, created_at=old_date))
+    await db_session.commit()
+
+    response = await authenticated_client.get("/api/admin/stats/dashboard")
     assert response.status_code == 200
     data = response.json()
-    assert data["total_households"] == 0
-    assert data["total_members"] == 0
+
+    # 이탈 감지에 비활동 사용자가 포함
+    inactive_ids = [u["id"] for u in data["inactive_users"]]
+    assert old_user.id in inactive_ids
+
+    # 비활동 일수 확인
+    inactive_item = next(u for u in data["inactive_users"] if u["id"] == old_user.id)
+    assert inactive_item["days_inactive"] >= 29
 
 
 @pytest.mark.asyncio
-async def test_household_stats_with_data(authenticated_client: AsyncClient, db_session, test_user: User, test_user2: User):
-    """가구 데이터가 있는 상태에서 통계"""
+async def test_dashboard_with_households(authenticated_client: AsyncClient, db_session, test_user: User):
+    """가구가 있는 상태에서 대시보드 통계"""
     household = Household(name="테스트 가구")
     db_session.add(household)
     await db_session.commit()
     await db_session.refresh(household)
 
     db_session.add(HouseholdMember(household_id=household.id, user_id=test_user.id, role="owner"))
-    db_session.add(HouseholdMember(household_id=household.id, user_id=test_user2.id, role="member"))
-    db_session.add(
-        HouseholdInvitation(
-            household_id=household.id,
-            inviter_id=test_user.id,
-            invitee_email="new@test.com",
-            token="test-token-123",
-            status="pending",
-            expires_at=datetime.now(UTC),
-        )
-    )
     await db_session.commit()
 
-    response = await authenticated_client.get("/api/admin/stats/households")
+    response = await authenticated_client.get("/api/admin/stats/dashboard")
     assert response.status_code == 200
     data = response.json()
-    assert data["total_households"] == 1
-    assert data["total_members"] == 2
-    assert data["invitation_stats"]["total"] == 1
-    assert data["invitation_stats"]["pending"] == 1
-
-
-# ── 피드백 통계 테스트 ──
-
-
-@pytest.mark.asyncio
-async def test_feedback_stats(authenticated_client: AsyncClient, db_session, test_user: User):
-    """피드백 통계"""
-    db_session.add(Feedback(user_id=test_user.id, type="feature", title="요청1", content="내용1", status="new"))
-    db_session.add(Feedback(user_id=test_user.id, type="bug", title="버그1", content="내용2", status="done"))
-    await db_session.commit()
-
-    response = await authenticated_client.get("/api/admin/stats/feedback")
-    assert response.status_code == 200
-    data = response.json()
-    assert data["total"] == 2
-    assert data["by_type"]["feature"] == 1
-    assert data["by_type"]["bug"] == 1
-    assert data["by_status"]["new"] == 1
-    assert data["by_status"]["done"] == 1
+    assert data["total_households"] >= 1
 
 
 # ── 사용자 관리 테스트 ──

@@ -2,26 +2,14 @@
 
 import apiClient from './client'
 import type {
-  OverviewStats,
-  TransactionStats,
-  HouseholdStats,
-  FeedbackStats,
+  DashboardStats,
   AdminUserListResponse,
   AdminUserDetail,
 } from '../types'
 
 export const adminApi = {
-  getOverviewStats: () =>
-    apiClient.get<OverviewStats>('/admin/stats/overview'),
-
-  getTransactionStats: (days = 30) =>
-    apiClient.get<TransactionStats>('/admin/stats/transactions', { params: { days } }),
-
-  getHouseholdStats: () =>
-    apiClient.get<HouseholdStats>('/admin/stats/households'),
-
-  getFeedbackStats: () =>
-    apiClient.get<FeedbackStats>('/admin/stats/feedback'),
+  getDashboardStats: () =>
+    apiClient.get<DashboardStats>('/admin/stats/dashboard'),
 
   getUserList: (page = 1, pageSize = 20, search?: string) =>
     apiClient.get<AdminUserListResponse>('/admin/users', {

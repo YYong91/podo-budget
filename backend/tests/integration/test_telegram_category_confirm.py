@@ -133,9 +133,7 @@ async def test_confirm_cat_callback_saves_and_maps(client, db_session, mock_tele
     assert expense is not None
 
     # "외식비" 카테고리 조회
-    cat_result = await db_session.execute(
-        select(Category).where(Category.name == "외식비", Category.household_id == household.id)
-    )
+    cat_result = await db_session.execute(select(Category).where(Category.name == "외식비", Category.household_id == household.id))
     target_category = cat_result.scalar_one()
 
     # confirm_cat 콜백: 사용자가 "외식비"를 선택
@@ -156,9 +154,7 @@ async def test_confirm_cat_callback_saves_and_maps(client, db_session, mock_tele
     assert expense.category_id == target_category.id
 
     # 매핑이 저장되었는지 확인 ("식비" → "외식비")
-    mapping_result = await db_session.execute(
-        select(CategoryMapping).where(CategoryMapping.source_name == "식비")
-    )
+    mapping_result = await db_session.execute(select(CategoryMapping).where(CategoryMapping.source_name == "식비"))
     mapping = mapping_result.scalar_one_or_none()
     assert mapping is not None
     assert mapping.target_category_id == target_category.id
@@ -224,9 +220,7 @@ async def test_mapping_applied_on_next_input(client, db_session, mock_telegram_s
     bot_user, household = await setup_bot_user_with_household_and_categories(db_session, chat_id=50005)
 
     # "외식비" 카테고리 조회
-    cat_result = await db_session.execute(
-        select(Category).where(Category.name == "외식비", Category.household_id == household.id)
-    )
+    cat_result = await db_session.execute(select(Category).where(Category.name == "외식비", Category.household_id == household.id))
     target_category = cat_result.scalar_one()
 
     # 미리 매핑 저장: "식비" → "외식비"

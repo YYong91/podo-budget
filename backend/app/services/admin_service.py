@@ -1,18 +1,16 @@
 """Admin 대시보드 서비스
 
-시스템 전체 통계 집계 쿼리와 사용자 관리 로직을 담당합니다.
+운영 중심 대시보드: 현황 통합 조회, 사용자 관리 로직을 담당합니다.
 """
 
 from datetime import UTC, datetime, timedelta
 
-from sqlalchemy import case, func, select
+from sqlalchemy import case, func, literal, literal_column, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.category import Category
 from app.models.expense import Expense
 from app.models.feedback import Feedback
 from app.models.household import Household
-from app.models.household_invitation import HouseholdInvitation
 from app.models.household_member import HouseholdMember
 from app.models.income import Income
 from app.models.user import User
@@ -20,25 +18,19 @@ from app.schemas.admin import (
     AdminUserDetailResponse,
     AdminUserItem,
     AdminUserListResponse,
-    CategoryDistribution,
-    DailyCount,
-    FeedbackStatsResponse,
-    HouseholdStatsResponse,
-    InvitationStats,
-    OverviewStatsResponse,
-    TransactionStatsResponse,
+    DashboardStatsResponse,
+    InactiveUserItem,
+    RecentActivityItem,
 )
 
 
-async def get_overview_stats(db: AsyncSession) -> OverviewStatsResponse:
-    """사용자 현황 통계 조회"""
+async def get_dashboard_stats(db: AsyncSession) -> DashboardStatsResponse:
+    """운영 대시보드 통합 현황 조회"""
     now = datetime.now(UTC)
     today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
-    week_start = today_start - timedelta(days=today_start.weekday())
-    month_start = today_start.replace(day=1)
-    prev_month_start = (month_start - timedelta(days=1)).replace(day=1)
+    inactive_threshold = now - timedelta(days=7)
 
-    # 총 사용자 수, 활성 사용자 수
+    # 1) 사용자 카운트 (총, 활성, 텔레그램)
     user_counts = await db.execute(
         select(
             func.count(User.id).label("total"),
@@ -49,268 +41,153 @@ async def get_overview_stats(db: AsyncSession) -> OverviewStatsResponse:
     row = user_counts.one()
     total_users = row.total
     active_users = row.active
-    telegram_linked = row.telegram
+    telegram_linked_count = row.telegram
 
-    # 신규 가입 (오늘/이번주/이번달)
-    signup_counts = await db.execute(
+    # 2) 오늘 활성 사용자 + 거래 건수
+    today_expense = select(Expense.user_id).where(Expense.created_at >= today_start)
+    today_income = select(Income.user_id).where(Income.created_at >= today_start)
+    today_union = today_expense.union(today_income).subquery()
+    today_active_result = await db.execute(select(func.count(func.distinct(today_union.c.user_id))))
+    today_active_users = today_active_result.scalar() or 0
+
+    today_tx_result = await db.execute(
         select(
-            func.count(case((User.created_at >= today_start, User.id))).label("today"),
-            func.count(case((User.created_at >= week_start, User.id))).label("week"),
-            func.count(case((User.created_at >= month_start, User.id))).label("month"),
+            (
+                select(func.count(Expense.id)).where(Expense.created_at >= today_start).scalar_subquery()
+                + select(func.count(Income.id)).where(Income.created_at >= today_start).scalar_subquery()
+            ).label("total_tx")
         )
     )
-    signups = signup_counts.one()
+    today_transaction_count = today_tx_result.scalar() or 0
 
-    # DAU: 오늘 거래(지출 또는 수입) 기록한 유저 수
-    dau_expense = select(Expense.user_id).where(Expense.created_at >= today_start)
-    dau_income = select(Income.user_id).where(Income.created_at >= today_start)
-    dau_union = dau_expense.union(dau_income).subquery()
-    dau_result = await db.execute(select(func.count(func.distinct(dau_union.c.user_id))))
-    dau = dau_result.scalar() or 0
+    # 3) 미처리 피드백 건수
+    pending_fb_result = await db.execute(select(func.count(Feedback.id)).where(Feedback.status == "new"))
+    pending_feedback_count = pending_fb_result.scalar() or 0
 
-    # MAU: 이번달 거래 기록한 유저 수
-    mau_expense = select(Expense.user_id).where(Expense.created_at >= month_start)
-    mau_income = select(Income.user_id).where(Income.created_at >= month_start)
-    mau_union = mau_expense.union(mau_income).subquery()
-    mau_result = await db.execute(select(func.count(func.distinct(mau_union.c.user_id))))
-    mau = mau_result.scalar() or 0
+    # 4) 가구 수
+    household_result = await db.execute(select(func.count(Household.id)).where(Household.deleted_at.is_(None)))
+    total_households = household_result.scalar() or 0
 
-    # 리텐션: 이번달 MAU 중 지난달에도 활성이었던 비율
-    retention_rate = None
-    if mau > 0:
-        prev_expense = select(Expense.user_id).where(
-            Expense.created_at >= prev_month_start,
-            Expense.created_at < month_start,
+    # 5) 최근 활동 피드 (최신 20건) — 개별 쿼리 후 Python에서 합치기
+    #    SQLite에서 UNION ALL + ORDER BY/LIMIT 서브쿼리 호환 문제 회피
+    expense_q = (
+        select(
+            literal("expense").label("type"),
+            User.username.label("username"),
+            Expense.description.label("description"),
+            Expense.amount.label("amount"),
+            Expense.created_at.label("created_at"),
         )
-        prev_income = select(Income.user_id).where(
-            Income.created_at >= prev_month_start,
-            Income.created_at < month_start,
+        .join(User, Expense.user_id == User.id)
+        .order_by(Expense.created_at.desc())
+        .limit(20)
+    )
+
+    income_q = (
+        select(
+            literal("income").label("type"),
+            User.username.label("username"),
+            Income.description.label("description"),
+            Income.amount.label("amount"),
+            Income.created_at.label("created_at"),
         )
-        prev_union = prev_expense.union(prev_income).subquery()
+        .join(User, Income.user_id == User.id)
+        .order_by(Income.created_at.desc())
+        .limit(20)
+    )
 
-        # 이번달 활성 유저와 지난달 활성 유저의 교집합
-        current_users = mau_expense.union(mau_income).subquery()
-        retained = await db.execute(select(func.count(func.distinct(current_users.c.user_id))).where(current_users.c.user_id.in_(select(prev_union.c.user_id))))
-        retained_count = retained.scalar() or 0
-        retention_rate = round(retained_count / mau * 100, 1)
+    signup_q = (
+        select(
+            literal("signup").label("type"),
+            User.username.label("username"),
+            literal("회원가입").label("description"),
+            literal_column("NULL").label("amount"),
+            User.created_at.label("created_at"),
+        )
+        .order_by(User.created_at.desc())
+        .limit(20)
+    )
 
-    return OverviewStatsResponse(
+    feedback_q = (
+        select(
+            literal("feedback").label("type"),
+            User.username.label("username"),
+            Feedback.title.label("description"),
+            literal_column("NULL").label("amount"),
+            Feedback.created_at.label("created_at"),
+        )
+        .join(User, Feedback.user_id == User.id)
+        .order_by(Feedback.created_at.desc())
+        .limit(20)
+    )
+
+    # 개별 쿼리 실행 후 합치기
+    all_activities = []
+    for q in [expense_q, income_q, signup_q, feedback_q]:
+        result = await db.execute(q)
+        all_activities.extend(result.all())
+
+    # created_at 기준 정렬 후 최신 20건
+    all_activities.sort(key=lambda r: r.created_at, reverse=True)
+    all_activities = all_activities[:20]
+    recent_activity = [
+        RecentActivityItem(
+            type=r.type,
+            username=r.username,
+            description=r.description or "",
+            amount=float(r.amount) if r.amount is not None else None,
+            created_at=r.created_at,
+        )
+        for r in all_activities
+    ]
+
+    # 6) 이탈 감지: 활성 사용자 중 7일+ 비활동 (최대 10명)
+    last_expense = select(func.max(Expense.created_at)).where(Expense.user_id == User.id).correlate(User).scalar_subquery()
+    last_income = select(func.max(Income.created_at)).where(Income.user_id == User.id).correlate(User).scalar_subquery()
+    last_activity = case(
+        (last_expense.is_(None), last_income),
+        (last_income.is_(None), last_expense),
+        (last_expense > last_income, last_expense),
+        else_=last_income,
+    )
+
+    inactive_q = (
+        select(
+            User.id,
+            User.username,
+            last_activity.label("last_activity_at"),
+        )
+        .where(
+            User.is_active.is_(True),
+            (last_activity < inactive_threshold) | last_activity.is_(None),
+        )
+        .order_by(last_activity.asc().nulls_first())
+        .limit(10)
+    )
+
+    inactive_result = await db.execute(inactive_q)
+    inactive_users = [
+        InactiveUserItem(
+            id=r.id,
+            username=r.username,
+            last_activity_at=r.last_activity_at,
+            days_inactive=(now - r.last_activity_at.replace(tzinfo=UTC)).days
+            if r.last_activity_at
+            else 9999,
+        )
+        for r in inactive_result
+    ]
+
+    return DashboardStatsResponse(
         total_users=total_users,
         active_users=active_users,
-        new_signups_today=signups.today,
-        new_signups_week=signups.week,
-        new_signups_month=signups.month,
-        dau=dau,
-        mau=mau,
-        telegram_linked_count=telegram_linked,
-        retention_rate=retention_rate,
-    )
-
-
-async def get_transaction_stats(db: AsyncSession, days: int = 30) -> TransactionStatsResponse:
-    """거래 통계 조회"""
-    now = datetime.now(UTC)
-    start_date = now - timedelta(days=days)
-
-    # 전체 통계
-    expense_stats = await db.execute(
-        select(
-            func.count(Expense.id).label("count"),
-            func.coalesce(func.sum(Expense.amount), 0).label("total"),
-        ).where(Expense.created_at >= start_date)
-    )
-    e = expense_stats.one()
-
-    income_stats = await db.execute(
-        select(
-            func.count(Income.id).label("count"),
-            func.coalesce(func.sum(Income.amount), 0).label("total"),
-        ).where(Income.created_at >= start_date)
-    )
-    i = income_stats.one()
-
-    avg_expense = float(e.total) / e.count if e.count > 0 else 0
-    avg_income = float(i.total) / i.count if i.count > 0 else 0
-
-    # 일별 추이 — func.date()는 SQLite/PostgreSQL 모두 호환
-    expense_daily = await db.execute(
-        select(
-            func.date(Expense.date).label("d"),
-            func.count(Expense.id).label("count"),
-            func.coalesce(func.sum(Expense.amount), 0).label("amount"),
-        )
-        .where(Expense.created_at >= start_date)
-        .group_by(func.date(Expense.date))
-        .order_by(func.date(Expense.date))
-    )
-
-    income_daily = await db.execute(
-        select(
-            func.date(Income.date).label("d"),
-            func.count(Income.id).label("count"),
-            func.coalesce(func.sum(Income.amount), 0).label("amount"),
-        )
-        .where(Income.created_at >= start_date)
-        .group_by(func.date(Income.date))
-        .order_by(func.date(Income.date))
-    )
-
-    # 일별 데이터 합치기
-    expense_by_day: dict[str, tuple[int, float]] = {}
-    for row in expense_daily:
-        day_str = str(row.d) if row.d else "unknown"
-        expense_by_day[day_str] = (row.count, float(row.amount))
-
-    income_by_day: dict[str, tuple[int, float]] = {}
-    for row in income_daily:
-        day_str = str(row.d) if row.d else "unknown"
-        income_by_day[day_str] = (row.count, float(row.amount))
-
-    all_days = sorted(set(expense_by_day.keys()) | set(income_by_day.keys()))
-    daily_counts = [
-        DailyCount(
-            date=d,
-            expense_count=expense_by_day.get(d, (0, 0))[0],
-            income_count=income_by_day.get(d, (0, 0))[0],
-            expense_amount=expense_by_day.get(d, (0, 0.0))[1],
-            income_amount=income_by_day.get(d, (0, 0.0))[1],
-        )
-        for d in all_days
-    ]
-
-    # 카테고리별 분포 (지출)
-    expense_cat = await db.execute(
-        select(
-            func.coalesce(Category.name, "미분류").label("cat"),
-            func.sum(Expense.amount).label("amount"),
-            func.count(Expense.id).label("count"),
-        )
-        .outerjoin(Category, Expense.category_id == Category.id)
-        .where(Expense.created_at >= start_date)
-        .group_by("cat")
-        .order_by(func.sum(Expense.amount).desc())
-    )
-    expense_total = float(e.total) if float(e.total) > 0 else 1
-    expense_by_category = [
-        CategoryDistribution(
-            category=row.cat,
-            amount=float(row.amount),
-            count=row.count,
-            percentage=round(float(row.amount) / expense_total * 100, 1),
-        )
-        for row in expense_cat
-    ]
-
-    # 카테고리별 분포 (수입)
-    income_cat = await db.execute(
-        select(
-            func.coalesce(Category.name, "미분류").label("cat"),
-            func.sum(Income.amount).label("amount"),
-            func.count(Income.id).label("count"),
-        )
-        .outerjoin(Category, Income.category_id == Category.id)
-        .where(Income.created_at >= start_date)
-        .group_by("cat")
-        .order_by(func.sum(Income.amount).desc())
-    )
-    income_total = float(i.total) if float(i.total) > 0 else 1
-    income_by_category = [
-        CategoryDistribution(
-            category=row.cat,
-            amount=float(row.amount),
-            count=row.count,
-            percentage=round(float(row.amount) / income_total * 100, 1),
-        )
-        for row in income_cat
-    ]
-
-    return TransactionStatsResponse(
-        total_expense_amount=float(e.total),
-        total_income_amount=float(i.total),
-        total_expense_count=e.count,
-        total_income_count=i.count,
-        avg_expense_amount=round(avg_expense, 2),
-        avg_income_amount=round(avg_income, 2),
-        daily_counts=daily_counts,
-        expense_by_category=expense_by_category,
-        income_by_category=income_by_category,
-    )
-
-
-async def get_household_stats(db: AsyncSession) -> HouseholdStatsResponse:
-    """가구 현황 통계 조회"""
-    # 활성 가구 수
-    total_result = await db.execute(select(func.count(Household.id)).where(Household.deleted_at.is_(None)))
-    total_households = total_result.scalar() or 0
-
-    # 총 활성 멤버 수
-    total_members_result = await db.execute(select(func.count(HouseholdMember.id)).where(HouseholdMember.left_at.is_(None)))
-    total_members = total_members_result.scalar() or 0
-
-    # 멤버 수별 가구 분포
-    member_dist_query = (
-        select(
-            func.count(HouseholdMember.id).label("member_count"),
-        )
-        .join(Household, HouseholdMember.household_id == Household.id)
-        .where(
-            HouseholdMember.left_at.is_(None),
-            Household.deleted_at.is_(None),
-        )
-        .group_by(HouseholdMember.household_id)
-    )
-    member_dist_result = await db.execute(
-        select(
-            member_dist_query.subquery().c.member_count,
-            func.count().label("household_count"),
-        ).group_by("member_count")
-    )
-    member_distribution = {str(row.member_count): row.household_count for row in member_dist_result}
-
-    # 초대 통계
-    inv_result = await db.execute(
-        select(
-            func.count(HouseholdInvitation.id).label("total"),
-            func.count(case((HouseholdInvitation.status == "pending", HouseholdInvitation.id))).label("pending"),
-            func.count(case((HouseholdInvitation.status == "accepted", HouseholdInvitation.id))).label("accepted"),
-            func.count(case((HouseholdInvitation.status == "rejected", HouseholdInvitation.id))).label("rejected"),
-            func.count(case((HouseholdInvitation.status == "expired", HouseholdInvitation.id))).label("expired"),
-        )
-    )
-    inv = inv_result.one()
-
-    return HouseholdStatsResponse(
+        telegram_linked_count=telegram_linked_count,
         total_households=total_households,
-        total_members=total_members,
-        member_distribution=member_distribution,
-        invitation_stats=InvitationStats(
-            total=inv.total,
-            pending=inv.pending,
-            accepted=inv.accepted,
-            rejected=inv.rejected,
-            expired=inv.expired,
-        ),
-    )
-
-
-async def get_feedback_stats(db: AsyncSession) -> FeedbackStatsResponse:
-    """피드백 통계 조회"""
-    result = await db.execute(
-        select(
-            func.count(Feedback.id).label("total"),
-            func.count(case((Feedback.status == "new", Feedback.id))).label("new"),
-            func.count(case((Feedback.status == "read", Feedback.id))).label("read"),
-            func.count(case((Feedback.status == "done", Feedback.id))).label("done"),
-            func.count(case((Feedback.type == "feature", Feedback.id))).label("feature"),
-            func.count(case((Feedback.type == "bug", Feedback.id))).label("bug"),
-        )
-    )
-    row = result.one()
-
-    return FeedbackStatsResponse(
-        total=row.total,
-        by_status={"new": row.new, "read": row.read, "done": row.done},
-        by_type={"feature": row.feature, "bug": row.bug},
+        today_active_users=today_active_users,
+        today_transaction_count=today_transaction_count,
+        pending_feedback_count=pending_feedback_count,
+        recent_activity=recent_activity,
+        inactive_users=inactive_users,
     )
 
 

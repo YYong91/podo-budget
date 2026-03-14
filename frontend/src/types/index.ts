@@ -452,64 +452,31 @@ export interface ComprehensiveInsightsResponse {
 
 /* Admin 관련 타입 */
 
-export interface OverviewStats {
+export interface RecentActivityItem {
+  type: 'expense' | 'income' | 'signup' | 'feedback'
+  username: string
+  description: string
+  amount: number | null
+  created_at: string
+}
+
+export interface InactiveUserItem {
+  id: number
+  username: string
+  last_activity_at: string | null
+  days_inactive: number
+}
+
+export interface DashboardStats {
   total_users: number
   active_users: number
-  new_signups_today: number
-  new_signups_week: number
-  new_signups_month: number
-  dau: number
-  mau: number
   telegram_linked_count: number
-  retention_rate: number | null
-}
-
-export interface DailyCount {
-  date: string
-  expense_count: number
-  income_count: number
-  expense_amount: number
-  income_amount: number
-}
-
-export interface AdminCategoryDistribution {
-  category: string
-  amount: number
-  count: number
-  percentage: number
-}
-
-export interface TransactionStats {
-  total_expense_amount: number
-  total_income_amount: number
-  total_expense_count: number
-  total_income_count: number
-  avg_expense_amount: number
-  avg_income_amount: number
-  daily_counts: DailyCount[]
-  expense_by_category: AdminCategoryDistribution[]
-  income_by_category: AdminCategoryDistribution[]
-}
-
-export interface InvitationStatsData {
-  total: number
-  pending: number
-  accepted: number
-  rejected: number
-  expired: number
-}
-
-export interface HouseholdStats {
   total_households: number
-  total_members: number
-  member_distribution: Record<string, number>
-  invitation_stats: InvitationStatsData
-}
-
-export interface FeedbackStats {
-  total: number
-  by_status: Record<string, number>
-  by_type: Record<string, number>
+  today_active_users: number
+  today_transaction_count: number
+  pending_feedback_count: number
+  recent_activity: RecentActivityItem[]
+  inactive_users: InactiveUserItem[]
 }
 
 export interface AdminUserItem {

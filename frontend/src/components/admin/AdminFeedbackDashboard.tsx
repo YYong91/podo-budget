@@ -1,68 +1,164 @@
-/* Admin 피드백 대시보드 — 상태별/유형별 분포 */
+/* Admin 피드백 관리 — 피드백 목록 + 상태 필터 + 상태 변경 */
 
-import { MessageSquare, Bug, Lightbulb, CheckCircle } from 'lucide-react'
-import type { FeedbackStats } from '../../types'
+import { useEffect, useState } from 'react'
+import { Loader2, MessageSquare, Bug, Lightbulb } from 'lucide-react'
+import toast from 'react-hot-toast'
+import { feedbackApi } from '../../api/feedback'
+import type { Feedback, FeedbackStatus, FeedbackType } from '../../types'
 
-interface Props {
-  data: FeedbackStats
+const STATUS_META: Record<string, { label: string; color: string }> = {
+  new: { label: '신규', color: 'bg-red-100 text-red-700' },
+  read: { label: '확인', color: 'bg-yellow-100 text-yellow-700' },
+  done: { label: '완료', color: 'bg-green-100 text-green-700' },
 }
 
-export default function AdminFeedbackDashboard({ data }: Props) {
-  const statusLabels: Record<string, { label: string; color: string }> = {
-    new: { label: '신규', color: 'bg-red-100 text-red-700' },
-    read: { label: '확인', color: 'bg-yellow-100 text-yellow-700' },
-    done: { label: '완료', color: 'bg-green-100 text-green-700' },
+const TYPE_META: Record<string, { label: string; icon: React.ComponentType<{ className?: string }> }> = {
+  feature: { label: '기능 요청', icon: Lightbulb },
+  bug: { label: '버그', icon: Bug },
+}
+
+export default function AdminFeedbackDashboard() {
+  const [feedbacks, setFeedbacks] = useState<Feedback[]>([])
+  const [loading, setLoading] = useState(true)
+  const [statusFilter, setStatusFilter] = useState<FeedbackStatus | 'all'>('all')
+  const [typeFilter, setTypeFilter] = useState<FeedbackType | 'all'>('all')
+
+  const loadFeedbacks = async () => {
+    try {
+      const res = await feedbackApi.getAll()
+      setFeedbacks(res.data)
+    } catch {
+      toast.error('피드백 로딩 실패')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => { loadFeedbacks() }, [])
+
+  const handleStatusChange = async (id: number, newStatus: FeedbackStatus) => {
+    try {
+      const res = await feedbackApi.updateStatus(id, newStatus)
+      setFeedbacks(prev => prev.map(f => f.id === id ? res.data : f))
+      toast.success('상태 변경 완료')
+    } catch {
+      toast.error('상태 변경 실패')
+    }
+  }
+
+  // 필터 적용
+  const filtered = feedbacks.filter(f => {
+    if (statusFilter !== 'all' && f.status !== statusFilter) return false
+    if (typeFilter !== 'all' && f.type !== typeFilter) return false
+    return true
+  })
+
+  // 상태별 건수
+  const statusCounts = feedbacks.reduce<Record<string, number>>((acc, f) => {
+    acc[f.status] = (acc[f.status] || 0) + 1
+    return acc
+  }, {})
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="w-6 h-6 text-grape-600 animate-spin" />
+      </div>
+    )
   }
 
   return (
-    <div className="space-y-6">
-      {/* 전체 수 */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <div className="bg-white rounded-xl p-4 border border-warm-200">
-          <div className="flex items-center gap-2 text-warm-500 mb-1">
-            <MessageSquare className="w-4 h-4" />
-            <span className="text-xs font-medium">전체</span>
-          </div>
-          <div className="text-2xl font-bold text-warm-900">{data.total}</div>
-        </div>
-        <div className="bg-white rounded-xl p-4 border border-warm-200">
-          <div className="flex items-center gap-2 text-warm-500 mb-1">
-            <Lightbulb className="w-4 h-4" />
-            <span className="text-xs font-medium">기능 요청</span>
-          </div>
-          <div className="text-2xl font-bold text-grape-600">{data.by_type.feature ?? 0}</div>
-        </div>
-        <div className="bg-white rounded-xl p-4 border border-warm-200">
-          <div className="flex items-center gap-2 text-warm-500 mb-1">
-            <Bug className="w-4 h-4" />
-            <span className="text-xs font-medium">버그 리포트</span>
-          </div>
-          <div className="text-2xl font-bold text-red-600">{data.by_type.bug ?? 0}</div>
-        </div>
-        <div className="bg-white rounded-xl p-4 border border-warm-200">
-          <div className="flex items-center gap-2 text-warm-500 mb-1">
-            <CheckCircle className="w-4 h-4" />
-            <span className="text-xs font-medium">처리 완료</span>
-          </div>
-          <div className="text-2xl font-bold text-green-600">{data.by_status.done ?? 0}</div>
-        </div>
+    <div className="space-y-4">
+      {/* 상태 필터 */}
+      <div className="flex gap-2 flex-wrap">
+        {[
+          { key: 'all' as const, label: '전체', count: feedbacks.length },
+          { key: 'new' as const, label: '신규', count: statusCounts['new'] || 0 },
+          { key: 'read' as const, label: '확인', count: statusCounts['read'] || 0 },
+          { key: 'done' as const, label: '완료', count: statusCounts['done'] || 0 },
+        ].map(({ key, label, count }) => (
+          <button
+            key={key}
+            onClick={() => setStatusFilter(key)}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+              statusFilter === key
+                ? 'bg-grape-600 text-white'
+                : 'bg-warm-100 text-warm-600 hover:bg-warm-200'
+            }`}
+          >
+            {label} ({count})
+          </button>
+        ))}
       </div>
 
-      {/* 상태별 분포 */}
-      <div className="bg-white rounded-xl p-4 border border-warm-200">
-        <h3 className="text-sm font-semibold text-warm-700 mb-3">상태별 분포</h3>
-        <div className="flex gap-3">
-          {Object.entries(data.by_status).map(([status, count]) => {
-            const meta = statusLabels[status] ?? { label: status, color: 'bg-warm-100 text-warm-700' }
+      {/* 유형 필터 */}
+      <div className="flex gap-2">
+        {[
+          { key: 'all' as const, label: '전체' },
+          { key: 'feature' as const, label: '기능 요청' },
+          { key: 'bug' as const, label: '버그' },
+        ].map(({ key, label }) => (
+          <button
+            key={key}
+            onClick={() => setTypeFilter(key)}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+              typeFilter === key
+                ? 'bg-warm-700 text-white'
+                : 'bg-warm-100 text-warm-600 hover:bg-warm-200'
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {/* 피드백 목록 */}
+      {filtered.length === 0 ? (
+        <div className="bg-white rounded-xl border border-warm-200 px-4 py-12 text-center text-warm-400 text-sm">
+          <MessageSquare className="w-8 h-8 mx-auto mb-2 opacity-50" />
+          피드백이 없습니다
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {filtered.map(fb => {
+            const typeMeta = TYPE_META[fb.type]
+            const statusMeta = STATUS_META[fb.status] ?? { label: fb.status, color: 'bg-warm-100 text-warm-700' }
+            const TypeIcon = typeMeta?.icon ?? MessageSquare
+
             return (
-              <div key={status} className={`${meta.color} rounded-lg px-4 py-2 text-center flex-1`}>
-                <div className="text-lg font-bold">{count}</div>
-                <div className="text-xs">{meta.label}</div>
+              <div key={fb.id} className="bg-white rounded-xl border border-warm-200 p-4">
+                {/* 헤더: 유형 뱃지 + 상태 드롭다운 + 시간 */}
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-md bg-warm-100 text-warm-600">
+                    <TypeIcon className="w-3 h-3" />
+                    {typeMeta?.label ?? fb.type}
+                  </span>
+
+                  {/* 상태 변경 드롭다운 */}
+                  <select
+                    value={fb.status}
+                    onChange={(e) => handleStatusChange(fb.id, e.target.value as FeedbackStatus)}
+                    className={`${statusMeta.color} text-[11px] font-medium px-2 py-0.5 rounded-md border-0 cursor-pointer`}
+                  >
+                    <option value="new">신규</option>
+                    <option value="read">확인</option>
+                    <option value="done">완료</option>
+                  </select>
+
+                  <span className="text-[11px] text-warm-400 ml-auto">
+                    {fb.username && <>{fb.username} · </>}
+                    {new Date(fb.created_at).toLocaleDateString('ko-KR')}
+                  </span>
+                </div>
+
+                {/* 제목 + 내용 */}
+                <h4 className="text-sm font-semibold text-warm-800 mb-1">{fb.title}</h4>
+                <p className="text-sm text-warm-600 whitespace-pre-wrap">{fb.content}</p>
               </div>
             )
           })}
         </div>
-      </div>
+      )}
     </div>
   )
 }

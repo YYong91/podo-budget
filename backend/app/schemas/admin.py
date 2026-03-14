@@ -1,90 +1,51 @@
 """Admin 대시보드 관련 Pydantic 스키마
 
-시스템 전체 통계, 사용자 관리 등 관리자 전용 응답 DTO들입니다.
+운영 중심 대시보드: 현황(헬스카드 + 최근 활동 + 이탈 감지), 사용자 관리
 """
 
 from datetime import datetime
 
 from pydantic import BaseModel
 
-# ── 개요 (사용자 현황) ──
+# ── 대시보드 (현황 탭) ──
 
 
-class OverviewStatsResponse(BaseModel):
-    """사용자 현황 통계"""
+class RecentActivityItem(BaseModel):
+    """최근 활동 피드 항목"""
 
+    type: str  # "expense" | "income" | "signup" | "feedback"
+    username: str
+    description: str
+    amount: float | None = None
+    created_at: datetime
+
+
+class InactiveUserItem(BaseModel):
+    """이탈 감지 — 비활동 사용자"""
+
+    id: int
+    username: str
+    last_activity_at: datetime | None = None
+    days_inactive: int
+
+
+class DashboardStatsResponse(BaseModel):
+    """운영 대시보드 통합 응답"""
+
+    # 헬스 카드
     total_users: int
     active_users: int  # is_active=True
-    new_signups_today: int
-    new_signups_week: int
-    new_signups_month: int
-    dau: int  # Daily Active Users (오늘 거래 기록한 유저 수)
-    mau: int  # Monthly Active Users (이번달 거래 기록한 유저 수)
     telegram_linked_count: int
-    retention_rate: float | None  # 이번달 MAU 중 지난달에도 활성이었던 비율 (%)
-
-
-# ── 거래 통계 ──
-
-
-class DailyCount(BaseModel):
-    date: str
-    expense_count: int
-    income_count: int
-    expense_amount: float
-    income_amount: float
-
-
-class CategoryDistribution(BaseModel):
-    category: str
-    amount: float
-    count: int
-    percentage: float
-
-
-class TransactionStatsResponse(BaseModel):
-    """거래 통계"""
-
-    total_expense_amount: float
-    total_income_amount: float
-    total_expense_count: int
-    total_income_count: int
-    avg_expense_amount: float
-    avg_income_amount: float
-    daily_counts: list[DailyCount]
-    expense_by_category: list[CategoryDistribution]
-    income_by_category: list[CategoryDistribution]
-
-
-# ── 가구 현황 ──
-
-
-class InvitationStats(BaseModel):
-    total: int
-    pending: int
-    accepted: int
-    rejected: int
-    expired: int
-
-
-class HouseholdStatsResponse(BaseModel):
-    """가구 현황 통계"""
-
     total_households: int
-    total_members: int
-    member_distribution: dict[str, int]  # {"1": 3, "2": 5, "3": 2} (멤버 수 별 가구 수)
-    invitation_stats: InvitationStats
+    today_active_users: int  # 오늘 거래 기록한 유저 수
+    today_transaction_count: int  # 오늘 총 거래 건수
+    pending_feedback_count: int  # status='new' 피드백 수
 
+    # 최근 활동 피드 (최신 20건)
+    recent_activity: list[RecentActivityItem]
 
-# ── 피드백 통계 ──
-
-
-class FeedbackStatsResponse(BaseModel):
-    """피드백 통계"""
-
-    total: int
-    by_status: dict[str, int]  # {"new": 5, "read": 3, "done": 10}
-    by_type: dict[str, int]  # {"feature": 10, "bug": 5}
+    # 이탈 감지 (7일+ 비활동, 최대 10명)
+    inactive_users: list[InactiveUserItem]
 
 
 # ── 사용자 관리 ──
