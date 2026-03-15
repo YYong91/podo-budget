@@ -2,7 +2,7 @@
  * @file AcceptInvitationPage.tsx
  * @description 토큰 기반 초대 수락 페이지
  * URL 쿼리 파라미터의 token을 사용하여 초대를 수락하거나 거절한다.
- * 주로 이메일 링크를 통해 접근한다.
+ * Layout 밖에서 렌더링되므로 독립 레이아웃을 가진다.
  */
 
 import type { } from 'react'
@@ -10,36 +10,24 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useHouseholdStore } from '../stores/useHouseholdStore'
 import { useToast } from '../hooks/useToast'
-import EmptyState from '../components/EmptyState'
 
 export default function AcceptInvitationPage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const { addToast } = useToast()
 
-  // Zustand 스토어
   const { acceptInvitation, rejectInvitation, clearError } = useHouseholdStore()
 
-  // 로컬 상태
   const [isProcessing, setIsProcessing] = useState(false)
   const [action, setAction] = useState<'accept' | 'reject' | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  // URL에서 token 추출
   const token = searchParams.get('token')
 
-  /**
-   * 에러 초기화
-   */
   useEffect(() => {
-    return () => {
-      clearError()
-    }
+    return () => { clearError() }
   }, [clearError])
 
-  /**
-   * 초대 수락 핸들러
-   */
   const handleAccept = async () => {
     if (!token) {
       setError('유효하지 않은 초대 링크입니다')
@@ -53,8 +41,7 @@ export default function AcceptInvitationPage() {
     try {
       const result = await acceptInvitation(token)
       addToast('success', `${result.household_name} 가구에 가입했습니다`)
-      // 가구 상세 페이지로 이동
-      navigate(`/households/${result.household_id}`)
+      navigate('/', { replace: true })
     } catch (err) {
       console.error('초대 수락 실패:', err)
       setError('초대 수락에 실패했습니다. 초대가 만료되었거나 이미 처리되었을 수 있습니다.')
@@ -65,9 +52,6 @@ export default function AcceptInvitationPage() {
     }
   }
 
-  /**
-   * 초대 거절 핸들러
-   */
   const handleReject = async () => {
     if (!token) {
       setError('유효하지 않은 초대 링크입니다')
@@ -83,8 +67,7 @@ export default function AcceptInvitationPage() {
     try {
       await rejectInvitation(token)
       addToast('success', '초대를 거절했습니다')
-      // 가구 목록 페이지로 이동
-      navigate('/households')
+      navigate('/', { replace: true })
     } catch (err) {
       console.error('초대 거절 실패:', err)
       setError('초대 거절에 실패했습니다')
@@ -95,49 +78,48 @@ export default function AcceptInvitationPage() {
     }
   }
 
-  /**
-   * 토큰이 없는 경우
-   */
+  // 토큰 없음
   if (!token) {
     return (
-      <div className="space-y-6">
-        <EmptyState
-          title="유효하지 않은 초대 링크입니다"
-          description="초대 링크가 올바르지 않습니다. 초대를 보낸 사람에게 다시 요청해주세요."
-          action={{
-            label: '가구 목록으로',
-            onClick: () => navigate('/households'),
-          }}
-        />
+      <div className="min-h-screen bg-[var(--surface)] flex items-center justify-center p-4">
+        <div className="w-full max-w-md text-center space-y-4">
+          <div className="text-6xl">📨</div>
+          <h1 className="text-xl font-bold text-[var(--text-primary)]">유효하지 않은 초대 링크입니다</h1>
+          <p className="text-sm text-[var(--text-tertiary)]">초대 링크가 올바르지 않습니다. 초대를 보낸 사람에게 다시 요청해주세요.</p>
+          <button
+            onClick={() => navigate('/')}
+            className="px-4 py-2 text-sm font-medium text-white bg-grape-600 rounded-lg hover:bg-grape-700"
+          >
+            홈으로
+          </button>
+        </div>
       </div>
     )
   }
 
-  /**
-   * 에러 발생 시
-   */
+  // 에러 발생
   if (error) {
     return (
-      <div className="space-y-6">
-        <EmptyState
-          title="초대 처리에 실패했습니다"
-          description={error}
-          action={{
-            label: '가구 목록으로',
-            onClick: () => navigate('/households'),
-          }}
-          secondaryAction={{
-            label: '받은 초대 확인',
-            onClick: () => navigate('/invitations'),
-          }}
-        />
+      <div className="min-h-screen bg-[var(--surface)] flex items-center justify-center p-4">
+        <div className="w-full max-w-md text-center space-y-4">
+          <div className="text-6xl">📨</div>
+          <h1 className="text-xl font-bold text-[var(--text-primary)]">초대 처리에 실패했습니다</h1>
+          <p className="text-sm text-[var(--text-tertiary)]">{error}</p>
+          <button
+            onClick={() => navigate('/')}
+            className="px-4 py-2 text-sm font-medium text-white bg-grape-600 rounded-lg hover:bg-grape-700"
+          >
+            홈으로
+          </button>
+        </div>
       </div>
     )
   }
 
+  // 정상 렌더링
   return (
-    <div className="space-y-6">
-      <div className="max-w-md mx-auto">
+    <div className="min-h-screen bg-[var(--surface)] flex items-center justify-center p-4">
+      <div className="w-full max-w-md">
         {/* 헤더 */}
         <div className="text-center mb-8">
           <div className="text-6xl mb-4">📨</div>
@@ -182,7 +164,7 @@ export default function AcceptInvitationPage() {
           </button>
 
           <button
-            onClick={() => navigate('/households')}
+            onClick={() => navigate('/')}
             disabled={isProcessing}
             className="w-full px-4 py-3 text-sm font-medium text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
@@ -190,7 +172,6 @@ export default function AcceptInvitationPage() {
           </button>
         </div>
 
-        {/* 추가 안내 */}
         <div className="mt-6 text-center">
           <p className="text-xs text-[var(--text-tertiary)]">
             이미 로그인한 상태에서만 초대를 수락할 수 있습니다
