@@ -74,7 +74,7 @@ export default function GuidePage() {
       </button>
 
       {/* 목차 */}
-      <div className="bg-grape-50 rounded-2xl border border-grape-100 p-5">
+      <div className="bg-grape-50 dark:bg-grape-900/20 rounded-2xl border border-grape-100 p-5">
         <h2 className="text-sm font-semibold text-grape-700 dark:text-grape-300 mb-3">목차</h2>
         <ol className="space-y-1.5">
           {sections.map((s, i) => (
@@ -103,13 +103,13 @@ export default function GuidePage() {
             <strong>예시:</strong>
           </p>
           <p>
-            <code className="bg-warm-100 px-1.5 rounded">"오늘 점심 김치찌개 8000원"</code> → 식비 8,000원 자동 분류
+            <code className="bg-[var(--surface-hover)] px-1.5 rounded">"오늘 점심 김치찌개 8000원"</code> → 식비 8,000원 자동 분류
           </p>
           <p>
-            <code className="bg-warm-100 px-1.5 rounded">"어제 교통비 3회 각 1500원"</code> → 교통비 4,500원 (3건)
+            <code className="bg-[var(--surface-hover)] px-1.5 rounded">"어제 교통비 3회 각 1500원"</code> → 교통비 4,500원 (3건)
           </p>
           <p>
-            <code className="bg-warm-100 px-1.5 rounded">"월급 320만원 받았어"</code> → 수입 3,200,000원 자동 등록
+            <code className="bg-[var(--surface-hover)] px-1.5 rounded">"월급 320만원 받았어"</code> → 수입 3,200,000원 자동 등록
           </p>
         </ExampleBox>
         <p className="text-[var(--text-tertiary)] text-xs">
@@ -270,14 +270,14 @@ export default function GuidePage() {
         <ExampleBox>
           <p>
             <strong>연동:</strong> 설정 → 내 계정 → 텔레그램 연동 코드 발급 → 봇에{' '}
-            <code className="bg-warm-100 px-1 rounded">/link 코드</code> 입력
+            <code className="bg-[var(--surface-hover)] px-1 rounded">/link 코드</code> 입력
           </p>
           <p>
-            <strong>입력:</strong> 봇에게 <code className="bg-warm-100 px-1 rounded">"커피 4500원"</code> 같이 메시지
+            <strong>입력:</strong> 봇에게 <code className="bg-[var(--surface-hover)] px-1 rounded">"커피 4500원"</code> 같이 메시지
             전송
           </p>
           <p>
-            <strong>조회:</strong> <code className="bg-warm-100 px-1 rounded">"이번 달 얼마 썼어?"</code>로 현황 확인
+            <strong>조회:</strong> <code className="bg-[var(--surface-hover)] px-1 rounded">"이번 달 얼마 썼어?"</code>로 현황 확인
           </p>
         </ExampleBox>
         <p className="text-[var(--text-tertiary)] text-xs">
@@ -300,14 +300,14 @@ export default function GuidePage() {
         <ExampleBox>
           <p>
             <strong>연동:</strong> 설정 → 내 계정 → 카카오톡 연동 코드 발급 → 채널 채팅에{' '}
-            <code className="bg-warm-100 px-1 rounded">/link 코드</code> 입력
+            <code className="bg-[var(--surface-hover)] px-1 rounded">/link 코드</code> 입력
           </p>
           <p>
-            <strong>입력:</strong> 채널에 <code className="bg-warm-100 px-1 rounded">"커피 4500원"</code> 같이 메시지
+            <strong>입력:</strong> 채널에 <code className="bg-[var(--surface-hover)] px-1 rounded">"커피 4500원"</code> 같이 메시지
             전송
           </p>
           <p>
-            <strong>조회:</strong> <code className="bg-warm-100 px-1 rounded">/report</code>로 이번 달 지출 요약 확인
+            <strong>조회:</strong> <code className="bg-[var(--surface-hover)] px-1 rounded">/report</code>로 이번 달 지출 요약 확인
           </p>
         </ExampleBox>
         <p className="text-[var(--text-tertiary)] text-xs">
@@ -340,13 +340,13 @@ export default function GuidePage() {
             <p className="font-semibold text-[var(--text-primary)] mb-1">자연어 입력 팁</p>
             <ExampleBox>
               <p>
-                여러 건 한 번에: <code className="bg-warm-100 px-1 rounded">"택시 2만원, 점심 9천원"</code>
+                여러 건 한 번에: <code className="bg-[var(--surface-hover)] px-1 rounded">"택시 2만원, 점심 9천원"</code>
               </p>
               <p>
-                날짜 지정: <code className="bg-warm-100 px-1 rounded">"어제 마트에서 3만원"</code>
+                날짜 지정: <code className="bg-[var(--surface-hover)] px-1 rounded">"어제 마트에서 3만원"</code>
               </p>
               <p>
-                수입도 가능: <code className="bg-warm-100 px-1 rounded">"프리랜서 수입 50만원"</code>
+                수입도 가능: <code className="bg-[var(--surface-hover)] px-1 rounded">"프리랜서 수입 50만원"</code>
               </p>
             </ExampleBox>
           </div>

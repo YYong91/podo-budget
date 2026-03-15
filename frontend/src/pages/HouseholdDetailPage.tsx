@@ -45,9 +45,9 @@ function getRoleBadgeColor(role: string): string {
     case 'admin':
       return 'bg-blue-100 text-blue-800'
     case 'member':
-      return 'bg-warm-100 text-[var(--text-primary)]'
+      return 'bg-[var(--surface-hover)] text-[var(--text-primary)]'
     default:
-      return 'bg-warm-100 text-[var(--text-primary)]'
+      return 'bg-[var(--surface-hover)] text-[var(--text-primary)]'
   }
 }
 
@@ -393,7 +393,7 @@ export default function HouseholdDetailPage() {
                                   e.target.value as MemberRole
                                 )
                               }
-                              className="text-sm px-2 py-1 border border-warm-300 rounded bg-[var(--surface-card)] focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
+                              className="text-sm px-2 py-1 border border-[var(--input-border)] rounded bg-[var(--surface-card)] focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
                             >
                               <option value="member">멤버</option>
                               <option value="admin">관리자</option>
@@ -417,14 +417,14 @@ export default function HouseholdDetailPage() {
                               onClick={() =>
                                 handleRemoveMember(member.user_id, member.username)
                               }
-                              className="text-rose-600 hover:text-rose-700 font-medium"
+                              className="text-rose-600 dark:text-rose-400 hover:text-rose-700 font-medium"
                             >
                               추방
                             </button>
                           ) : isMe && member.role !== 'owner' ? (
                             <button
                               onClick={handleLeave}
-                              className="text-rose-600 hover:text-rose-700 font-medium"
+                              className="text-rose-600 dark:text-rose-400 hover:text-rose-700 font-medium"
                             >
                               탈퇴
                             </button>
@@ -464,7 +464,7 @@ export default function HouseholdDetailPage() {
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full px-3 py-2 border border-warm-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
+                  className="w-full px-3 py-2 border border-[var(--input-border)] rounded-xl focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
                   disabled={!editMode}
                   required
                 />
@@ -483,7 +483,7 @@ export default function HouseholdDetailPage() {
                   onChange={(e) =>
                     setFormData({ ...formData, description: e.target.value })
                   }
-                  className="w-full px-3 py-2 border border-warm-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500 resize-none"
+                  className="w-full px-3 py-2 border border-[var(--input-border)] rounded-xl focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500 resize-none"
                   rows={3}
                   disabled={!editMode}
                 />
@@ -501,7 +501,7 @@ export default function HouseholdDetailPage() {
                           description: currentHousehold.description || '',
                         })
                       }}
-                      className="px-4 py-2 text-sm font-medium text-[var(--text-secondary)] bg-[var(--surface-card)] border border-warm-300 rounded-lg hover:bg-[var(--surface-hover)] transition-colors"
+                      className="px-4 py-2 text-sm font-medium text-[var(--text-secondary)] bg-[var(--surface-card)] border border-[var(--input-border)] rounded-lg hover:bg-[var(--surface-hover)] transition-colors"
                     >
                       취소
                     </button>

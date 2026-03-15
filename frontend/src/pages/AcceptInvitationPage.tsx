@@ -169,7 +169,7 @@ export default function AcceptInvitationPage() {
           <button
             onClick={handleReject}
             disabled={isProcessing}
-            className="w-full px-4 py-3 text-sm font-medium text-[var(--text-secondary)] bg-[var(--surface-card)] border border-warm-300 rounded-lg hover:bg-[var(--surface-hover)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full px-4 py-3 text-sm font-medium text-[var(--text-secondary)] bg-[var(--surface-card)] border border-[var(--input-border)] rounded-lg hover:bg-[var(--surface-hover)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isProcessing && action === 'reject' ? (
               <div className="flex items-center justify-center gap-2">

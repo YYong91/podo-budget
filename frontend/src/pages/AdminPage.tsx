@@ -47,7 +47,7 @@ export default function AdminPage() {
   // 비관리자 접근 방지
   if (!user?.is_admin) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[50vh] text-warm-400">
+      <div className="flex flex-col items-center justify-center min-h-[50vh] text-[var(--text-muted)]">
         <ShieldCheck className="w-12 h-12 mb-3" />
         <p>관리자만 접근할 수 있습니다</p>
       </div>
@@ -68,12 +68,12 @@ export default function AdminPage() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <ShieldCheck className="w-6 h-6 text-grape-600" />
-          <h1 className="text-xl font-bold text-warm-900">관리자 대시보드</h1>
+          <h1 className="text-xl font-bold text-[var(--text-primary)]">관리자 대시보드</h1>
         </div>
         <button
           onClick={() => loadData(true)}
           disabled={refreshing}
-          className="p-2 rounded-lg text-warm-500 hover:bg-warm-100 transition-colors disabled:opacity-50"
+          className="p-2 rounded-lg text-[var(--text-tertiary)] hover:bg-[var(--surface-hover)] transition-colors disabled:opacity-50"
           title="새로고침"
         >
           <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
@@ -81,15 +81,15 @@ export default function AdminPage() {
       </div>
 
       {/* 탭 네비게이션 */}
-      <div className="flex gap-1 bg-warm-100 rounded-lg p-1">
+      <div className="flex gap-1 bg-[var(--surface-hover)] rounded-lg p-1">
         {TABS.map(tab => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
             className={`px-4 py-2 rounded-md text-sm font-medium whitespace-nowrap transition-colors flex-1 ${
               activeTab === tab
-                ? 'bg-white text-grape-700 shadow-sm'
-                : 'text-warm-500 hover:text-warm-700'
+                ? 'bg-[var(--surface-card)] text-grape-700 dark:text-grape-300 shadow-sm'
+                : 'text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]'
             }`}
           >
             {tab}

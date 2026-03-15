@@ -254,7 +254,7 @@ export default function RecurringList() {
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
               typeFilter === t
                 ? 'bg-grape-100 text-grape-800'
-                : 'bg-warm-100 text-[var(--text-secondary)] hover:bg-[var(--surface-hover)]'
+                : 'bg-[var(--surface-hover)] text-[var(--text-secondary)] hover:bg-[var(--surface-hover)]'
             }`}
           >
             {t === 'all' ? '전체' : t === 'expense' ? '지출' : '수입'}
@@ -306,7 +306,7 @@ export default function RecurringList() {
                     <td className="px-5 py-3 text-[var(--text-secondary)]">{r.next_due_date}</td>
                     <td className="px-5 py-3 text-center">
                       <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${
-                        r.is_active ? 'bg-leaf-100 text-leaf-700 dark:text-leaf-400' : 'bg-warm-100 text-[var(--text-tertiary)]'
+                        r.is_active ? 'bg-leaf-100 text-leaf-700 dark:text-leaf-400' : 'bg-[var(--surface-hover)] text-[var(--text-tertiary)]'
                       }`}>
                         {r.is_active ? '사용 중' : '중지'}
                       </span>
@@ -314,7 +314,7 @@ export default function RecurringList() {
                     <td className="px-5 py-3">
                       <div className="flex items-center justify-end gap-1">
                         {r.is_active && (
-                          <button onClick={() => handleExecute(r)} className="p-2 rounded-md hover:bg-leaf-50 text-[var(--text-tertiary)] hover:text-leaf-600" title="바로 등록">
+                          <button onClick={() => handleExecute(r)} className="p-2 rounded-md hover:bg-leaf-50 dark:hover:bg-leaf-900/20 text-[var(--text-tertiary)] hover:text-leaf-600 dark:hover:text-leaf-400" title="바로 등록">
                             <Zap className="w-4 h-4" />
                           </button>
                         )}
@@ -355,7 +355,7 @@ export default function RecurringList() {
                   </div>
                   <div className="flex items-center gap-1">
                     {r.is_active && (
-                      <button onClick={() => handleExecute(r)} className="p-1 text-[var(--text-muted)] hover:text-leaf-600" title="바로 등록">
+                      <button onClick={() => handleExecute(r)} className="p-1 text-[var(--text-muted)] hover:text-leaf-600 dark:hover:text-leaf-400" title="바로 등록">
                         <Zap className="w-4 h-4" />
                       </button>
                     )}
@@ -398,7 +398,7 @@ export default function RecurringList() {
                       type="button"
                       onClick={() => setFormData({ ...formData, type: 'expense', category_id: '' })}
                       className={`flex-1 py-2 rounded-xl text-sm font-medium transition-colors ${
-                        formData.type === 'expense' ? 'bg-grape-100 text-grape-800' : 'bg-warm-100 text-[var(--text-secondary)]'
+                        formData.type === 'expense' ? 'bg-grape-100 text-grape-800' : 'bg-[var(--surface-hover)] text-[var(--text-secondary)]'
                       }`}
                     >
                       지출
@@ -407,7 +407,7 @@ export default function RecurringList() {
                       type="button"
                       onClick={() => setFormData({ ...formData, type: 'income', category_id: '' })}
                       className={`flex-1 py-2 rounded-xl text-sm font-medium transition-colors ${
-                        formData.type === 'income' ? 'bg-leaf-100 text-leaf-800' : 'bg-warm-100 text-[var(--text-secondary)]'
+                        formData.type === 'income' ? 'bg-leaf-100 text-leaf-800' : 'bg-[var(--surface-hover)] text-[var(--text-secondary)]'
                       }`}
                     >
                       수입
@@ -424,7 +424,7 @@ export default function RecurringList() {
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   placeholder="예: 넷플릭스, 월급"
-                  className="w-full px-3 py-2 rounded-xl border border-warm-300 text-sm focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
+                  className="w-full px-3 py-2 rounded-xl border border-[var(--input-border)] text-sm focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
                 />
               </div>
 
@@ -437,7 +437,7 @@ export default function RecurringList() {
                   onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
                   placeholder="0"
                   min="1"
-                  className="w-full px-3 py-2 rounded-xl border border-warm-300 text-sm focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
+                  className="w-full px-3 py-2 rounded-xl border border-[var(--input-border)] text-sm focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
                 />
               </div>
 
@@ -447,7 +447,7 @@ export default function RecurringList() {
                 <select
                   value={formData.category_id}
                   onChange={(e) => setFormData({ ...formData, category_id: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl border border-warm-300 text-sm focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
+                  className="w-full px-3 py-2 rounded-xl border border-[var(--input-border)] text-sm focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
                 >
                   <option value="">선택 안 함</option>
                   {filteredCategories.map((c) => (
@@ -464,7 +464,7 @@ export default function RecurringList() {
                     <select
                       value={formData.frequency}
                       onChange={(e) => setFormData({ ...formData, frequency: e.target.value as typeof formData.frequency })}
-                      className="w-full px-3 py-2 rounded-xl border border-warm-300 text-sm focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
+                      className="w-full px-3 py-2 rounded-xl border border-[var(--input-border)] text-sm focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
                     >
                       <option value="monthly">매월</option>
                       <option value="weekly">매주</option>
@@ -483,7 +483,7 @@ export default function RecurringList() {
                         onChange={(e) => setFormData({ ...formData, day_of_month: e.target.value })}
                         min="1"
                         max="31"
-                        className="w-full px-3 py-2 rounded-xl border border-warm-300 text-sm focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
+                        className="w-full px-3 py-2 rounded-xl border border-[var(--input-border)] text-sm focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
                       />
                     </div>
                   )}
@@ -494,7 +494,7 @@ export default function RecurringList() {
                       <select
                         value={formData.day_of_week}
                         onChange={(e) => setFormData({ ...formData, day_of_week: e.target.value })}
-                        className="w-full px-3 py-2 rounded-xl border border-warm-300 text-sm focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
+                        className="w-full px-3 py-2 rounded-xl border border-[var(--input-border)] text-sm focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
                       >
                         {['월', '화', '수', '목', '금', '토', '일'].map((d, i) => (
                           <option key={i} value={i}>{d}요일</option>
@@ -509,7 +509,7 @@ export default function RecurringList() {
                       <select
                         value={formData.month_of_year}
                         onChange={(e) => setFormData({ ...formData, month_of_year: e.target.value })}
-                        className="w-full px-3 py-2 rounded-xl border border-warm-300 text-sm focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
+                        className="w-full px-3 py-2 rounded-xl border border-[var(--input-border)] text-sm focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
                       >
                         {Array.from({ length: 12 }, (_, i) => (
                           <option key={i + 1} value={i + 1}>{i + 1}월</option>
@@ -526,7 +526,7 @@ export default function RecurringList() {
                         value={formData.interval}
                         onChange={(e) => setFormData({ ...formData, interval: e.target.value })}
                         min="1"
-                        className="w-full px-3 py-2 rounded-xl border border-warm-300 text-sm focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
+                        className="w-full px-3 py-2 rounded-xl border border-[var(--input-border)] text-sm focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
                       />
                     </div>
                   )}
@@ -538,7 +538,7 @@ export default function RecurringList() {
                       type="date"
                       value={formData.start_date}
                       onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
-                      className="w-full px-3 py-2 rounded-xl border border-warm-300 text-sm focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
+                      className="w-full px-3 py-2 rounded-xl border border-[var(--input-border)] text-sm focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
                     />
                   </div>
                 </>
@@ -551,7 +551,7 @@ export default function RecurringList() {
                   type="date"
                   value={formData.end_date}
                   onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl border border-warm-300 text-sm focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
+                  className="w-full px-3 py-2 rounded-xl border border-[var(--input-border)] text-sm focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
                 />
               </div>
 
