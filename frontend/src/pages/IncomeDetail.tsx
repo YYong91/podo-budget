@@ -168,7 +168,7 @@ export default function IncomeDetail() {
               </button>
               <button
                 onClick={() => setIsEditing(true)}
-                className="flex-1 sm:flex-none px-4 py-2 text-sm font-medium text-leaf-700 dark:text-leaf-400 bg-leaf-50 rounded-xl hover:bg-leaf-100 transition-colors"
+                className="flex-1 sm:flex-none px-4 py-2 text-sm font-medium text-leaf-600 bg-leaf-50 rounded-xl hover:bg-leaf-100 transition-colors"
               >
                 수정
               </button>
@@ -197,7 +197,7 @@ export default function IncomeDetail() {
               placeholder="10000"
             />
           ) : (
-            <p className="text-2xl sm:text-3xl font-bold text-leaf-700 dark:text-leaf-400">
+            <p className="text-2xl sm:text-3xl font-bold text-leaf-600">
               +{formatAmount(income.amount)}
             </p>
           )}

@@ -41,7 +41,7 @@ export default function EmptyState({
 
   return (
     <div className="flex flex-col items-center justify-center py-12 px-4">
-      <div className="w-16 h-16 rounded-full bg-grape-50 dark:bg-grape-900/20 flex items-center justify-center mb-4">
+      <div className="w-16 h-16 rounded-full bg-grape-50 flex items-center justify-center mb-4">
         {icon ?? defaultIcon}
       </div>
       <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-2 text-center">

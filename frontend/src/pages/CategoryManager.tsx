@@ -217,7 +217,7 @@ export default function CategoryManager() {
           <tbody className="divide-y divide-[var(--border-subtle)]">
             {/* 추가 폼 (isAdding일 때) */}
             {isAdding && (
-              <tr className="bg-grape-50 dark:bg-grape-900/20">
+              <tr className="bg-grape-50">
                 <td className="px-2 sm:px-3 py-4"></td>
                 <td className="px-4 sm:px-6 py-4">
                   <input
@@ -269,7 +269,7 @@ export default function CategoryManager() {
                 return (
                   <tr
                     key={category.id}
-                    className={isEditing ? 'bg-grape-50 dark:bg-grape-900/20' : 'hover:bg-[var(--surface-elevated)] transition-colors'}
+                    className={isEditing ? 'bg-grape-50' : 'hover:bg-[var(--surface-elevated)] transition-colors'}
                   >
                     <td className="px-2 sm:px-3 py-4">
                       <div className="flex flex-col items-center gap-0.5">
@@ -362,13 +362,13 @@ export default function CategoryManager() {
                         <div className="flex justify-end gap-2">
                           <button
                             onClick={() => startEdit(category)}
-                            className="px-3 py-1.5 text-sm font-medium text-grape-700 dark:text-grape-300 bg-grape-50 dark:bg-grape-900/20 rounded-lg hover:bg-grape-100 transition-colors"
+                            className="px-3 py-1.5 text-sm font-medium text-grape-600 bg-grape-50 rounded-lg hover:bg-grape-100 transition-colors"
                           >
                             수정
                           </button>
                           <button
                             onClick={() => setDeleteTarget(category.id)}
-                            className="px-3 py-1.5 text-sm font-medium text-rose-700 bg-rose-50 dark:bg-rose-900/20 rounded-lg hover:bg-rose-100 transition-colors"
+                            className="px-3 py-1.5 text-sm font-medium text-rose-700 bg-rose-50 rounded-lg hover:bg-rose-100 transition-colors"
                           >
                             삭제
                           </button>
@@ -407,7 +407,7 @@ export default function CategoryManager() {
             <p className="text-[var(--text-secondary)] mb-6">
               정말로 이 카테고리를 삭제하시겠습니까?
               <br />
-              <span className="text-sm text-rose-600 dark:text-rose-400">
+              <span className="text-sm text-rose-600">
                 이 카테고리에 연결된 지출 내역은 미분류가 됩니다.
               </span>
             </p>

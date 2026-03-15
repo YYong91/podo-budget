@@ -5,10 +5,10 @@ interface FinancialHealthScoreProps {
 }
 
 function getGradeColor(grade: string): string {
-  if (grade.startsWith('A')) return 'text-leaf-600 dark:text-leaf-400'
-  if (grade.startsWith('B')) return 'text-grape-600 dark:text-grape-400'
-  if (grade.startsWith('C')) return 'text-amber-600 dark:text-amber-400'
-  return 'text-red-600 dark:text-red-400'
+  if (grade.startsWith('A')) return 'text-leaf-600'
+  if (grade.startsWith('B')) return 'text-grape-600'
+  if (grade.startsWith('C')) return 'text-amber-600'
+  return 'text-red-600'
 }
 
 function getBarColor(value: number): string {

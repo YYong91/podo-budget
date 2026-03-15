@@ -243,7 +243,7 @@ export default function TransactionList() {
           }`}
         >
           <div className="text-xs text-[var(--text-tertiary)]">지출</div>
-          <div className={`text-base font-bold ${filter !== 'income' ? 'text-grape-700 dark:text-grape-400' : 'text-[var(--text-muted)]'}`}>
+          <div className={`text-base font-bold ${filter !== 'income' ? 'text-grape-600' : 'text-[var(--text-muted)]'}`}>
             {formatAmount(totalExpense)}
           </div>
         </button>
@@ -255,7 +255,7 @@ export default function TransactionList() {
           }`}
         >
           <div className="text-xs text-[var(--text-tertiary)]">수입</div>
-          <div className={`text-base font-bold ${filter !== 'expense' ? 'text-leaf-600 dark:text-leaf-400' : 'text-[var(--text-muted)]'}`}>
+          <div className={`text-base font-bold ${filter !== 'expense' ? 'text-leaf-600' : 'text-[var(--text-muted)]'}`}>
             {formatAmount(totalIncome)}
           </div>
         </button>

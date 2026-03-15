@@ -10,7 +10,7 @@ export default function StructuredInsightsView({ insights }: StructuredInsightsV
     <div className="space-y-4">
       {/* 격려 메시지 */}
       {insights.encouragement && (
-        <div className="bg-leaf-50 dark:bg-leaf-900/20 rounded-xl p-3 text-sm text-leaf-700 dark:text-leaf-400">{insights.encouragement}</div>
+        <div className="bg-leaf-50 rounded-xl p-3 text-sm text-leaf-600">{insights.encouragement}</div>
       )}
 
       {/* 핵심 발견 */}
@@ -23,7 +23,7 @@ export default function StructuredInsightsView({ insights }: StructuredInsightsV
           <div key={i} className="bg-[var(--surface-elevated)] rounded-xl p-3 space-y-1.5">
             <p className="text-sm font-medium text-[var(--text-primary)]">{f.what}</p>
             <p className="text-xs text-[var(--text-secondary)]">{f.so_what}</p>
-            <p className="text-xs text-grape-600 dark:text-grape-400 font-medium">→ {f.now_what}</p>
+            <p className="text-xs text-grape-600 font-medium">→ {f.now_what}</p>
           </div>
         ))}
       </div>
@@ -52,7 +52,7 @@ export default function StructuredInsightsView({ insights }: StructuredInsightsV
         <div className="space-y-2">
           {insights.action_items.map((item, i) => (
             <div key={i} className="flex gap-3 items-start">
-              <span className="shrink-0 w-5 h-5 rounded-full bg-grape-100 dark:bg-grape-800/40 text-grape-600 dark:text-grape-400 text-xs font-bold flex items-center justify-center mt-0.5">
+              <span className="shrink-0 w-5 h-5 rounded-full bg-grape-100 text-grape-600 text-xs font-bold flex items-center justify-center mt-0.5">
                 {i + 1}
               </span>
               <div>

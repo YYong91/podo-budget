@@ -348,7 +348,7 @@ export default function ExpenseForm() {
               onChange={(e) => setNaturalInput(e.target.value)}
               placeholder="예: 오늘 점심에 김치찌개 8000원 먹었어&#10;어제 스타벅스에서 아메리카노 4500원"
               rows={5}
-              className="w-full px-4 py-3 bg-grape-50/50 dark:bg-grape-900/20 border border-[var(--input-border)] rounded-xl focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500 resize-none"
+              className="w-full px-4 py-3 bg-grape-50/50 border border-[var(--input-border)] rounded-xl focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500 resize-none"
               disabled={loading}
             />
             <p className="mt-2 text-xs text-[var(--text-muted)]">
@@ -424,7 +424,7 @@ export default function ExpenseForm() {
                 })
               }
             }}
-            className="w-full px-4 py-3 text-sm font-medium text-grape-700 dark:text-grape-300 border border-grape-300 dark:border-grape-700 bg-grape-50 dark:bg-grape-900/20 rounded-xl hover:bg-grape-100 transition-colors disabled:opacity-50"
+            className="w-full px-4 py-3 text-sm font-medium text-grape-600 border border-grape-300 bg-grape-50 rounded-xl hover:bg-grape-100 transition-colors disabled:opacity-50"
           >
             갤러리에서 선택
           </button>
@@ -441,7 +441,7 @@ export default function ExpenseForm() {
             </div>
           )}
 
-          <div className="bg-grape-50 dark:bg-grape-900/20 border border-grape-200 dark:border-grape-700 rounded-2xl p-4">
+          <div className="bg-grape-50 border border-grape-200 rounded-2xl p-4">
             <p className="text-sm text-grape-800 font-medium">
               {previewItems.length}건의 지출을 인식했습니다. 내용을 확인하고 수정한 뒤 저장하세요.
             </p>
@@ -515,7 +515,7 @@ export default function ExpenseForm() {
                         value={newCategoryName}
                         onChange={(e) => setNewCategoryName(e.target.value)}
                         placeholder="새 카테고리 이름"
-                        className="flex-1 px-2 py-1.5 border border-grape-300 dark:border-grape-700 rounded-lg text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
+                        className="flex-1 px-2 py-1.5 border border-grape-300 rounded-lg text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
                         onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleCreateCategory(index) } }}
                         autoFocus
                       />
@@ -582,7 +582,7 @@ export default function ExpenseForm() {
       {/* 파싱 결과 프리뷰 카드 */}
       {mode === 'natural' && previewItems && (
         <div className="space-y-4">
-          <div className="bg-grape-50 dark:bg-grape-900/20 border border-grape-200 dark:border-grape-700 rounded-2xl p-4">
+          <div className="bg-grape-50 border border-grape-200 rounded-2xl p-4">
             <p className="text-sm text-grape-800 font-medium">
               {previewItems.length}건의 지출을 인식했습니다. 내용을 확인하고 수정한 뒤 저장하세요.
             </p>
@@ -660,7 +660,7 @@ export default function ExpenseForm() {
                         value={newCategoryName}
                         onChange={(e) => setNewCategoryName(e.target.value)}
                         placeholder="새 카테고리 이름"
-                        className="flex-1 px-2 py-1.5 border border-grape-300 dark:border-grape-700 rounded-lg text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
+                        className="flex-1 px-2 py-1.5 border border-grape-300 rounded-lg text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
                         onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleCreateCategory(index) } }}
                         autoFocus
                       />
@@ -792,7 +792,7 @@ export default function ExpenseForm() {
                   value={newCategoryName}
                   onChange={(e) => setNewCategoryName(e.target.value)}
                   placeholder="새 카테고리 이름"
-                  className="flex-1 px-3 py-2 border border-grape-300 dark:border-grape-700 rounded-lg text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
+                  className="flex-1 px-3 py-2 border border-grape-300 rounded-lg text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
                   onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleCreateCategoryForForm() } }}
                   autoFocus
                 />

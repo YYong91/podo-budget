@@ -88,7 +88,7 @@ export default function AdminPage() {
             onClick={() => setActiveTab(tab)}
             className={`px-4 py-2 rounded-md text-sm font-medium whitespace-nowrap transition-colors flex-1 ${
               activeTab === tab
-                ? 'bg-[var(--surface-card)] text-grape-700 dark:text-grape-300 shadow-sm'
+                ? 'bg-[var(--surface-card)] text-grape-600 shadow-sm'
                 : 'text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]'
             }`}
           >

@@ -12,7 +12,7 @@ import type { Feedback, FeedbackStatus, FeedbackType } from '../types'
 
 const STATUS_LABELS: Record<FeedbackStatus, { text: string; className: string }> = {
   new: { text: '접수', className: 'bg-[var(--surface-hover)] text-[var(--text-secondary)]' },
-  read: { text: '확인', className: 'bg-grape-100 text-grape-700 dark:bg-grape-900/20 dark:text-grape-300' },
+  read: { text: '확인', className: 'bg-grape-100 text-grape-600' },
   done: { text: '완료', className: 'bg-leaf-100 text-leaf-700' },
 }
 
@@ -199,7 +199,7 @@ function FeedbackCard({
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-2 flex-1 min-w-0">
           <span className={`flex-shrink-0 text-xs px-2 py-0.5 rounded-full font-medium ${
-            isFeature ? 'bg-grape-50 dark:bg-grape-900/20 text-grape-700 dark:text-grape-300' : 'bg-red-100 text-red-700'
+            isFeature ? 'bg-grape-50 text-grape-600' : 'bg-red-100 text-red-700'
           }`}>
             {isFeature ? '기능' : '버그'}
           </span>

@@ -299,14 +299,14 @@ export default function RecurringList() {
                         <span className="font-medium text-[var(--text-primary)]">{r.description}</span>
                       </div>
                     </td>
-                    <td className={`px-5 py-3 text-right font-semibold ${r.type === 'expense' ? 'text-[var(--text-primary)]' : 'text-leaf-700 dark:text-leaf-400'}`}>
+                    <td className={`px-5 py-3 text-right font-semibold ${r.type === 'expense' ? 'text-[var(--text-primary)]' : 'text-leaf-600'}`}>
                       {r.type === 'income' ? '+' : ''}{formatAmount(r.amount)}
                     </td>
                     <td className="px-5 py-3 text-[var(--text-secondary)]">{formatFrequency(r)}</td>
                     <td className="px-5 py-3 text-[var(--text-secondary)]">{r.next_due_date}</td>
                     <td className="px-5 py-3 text-center">
                       <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${
-                        r.is_active ? 'bg-leaf-100 text-leaf-700 dark:text-leaf-400' : 'bg-[var(--surface-hover)] text-[var(--text-tertiary)]'
+                        r.is_active ? 'bg-leaf-100 text-leaf-600' : 'bg-[var(--surface-hover)] text-[var(--text-tertiary)]'
                       }`}>
                         {r.is_active ? '사용 중' : '중지'}
                       </span>
@@ -314,7 +314,7 @@ export default function RecurringList() {
                     <td className="px-5 py-3">
                       <div className="flex items-center justify-end gap-1">
                         {r.is_active && (
-                          <button onClick={() => handleExecute(r)} className="p-2 rounded-md hover:bg-leaf-50 dark:hover:bg-leaf-900/20 text-[var(--text-tertiary)] hover:text-leaf-600 dark:hover:text-leaf-400" title="바로 등록">
+                          <button onClick={() => handleExecute(r)} className="p-2 rounded-md hover:bg-leaf-50 text-[var(--text-tertiary)] hover:text-leaf-600" title="바로 등록">
                             <Zap className="w-4 h-4" />
                           </button>
                         )}
@@ -344,7 +344,7 @@ export default function RecurringList() {
                     <span className={`w-2 h-2 rounded-full flex-shrink-0 ${r.type === 'expense' ? 'bg-grape-500' : 'bg-leaf-500'}`} />
                     <span className="font-medium text-[var(--text-primary)] truncate">{r.description}</span>
                   </div>
-                  <span className={`font-semibold whitespace-nowrap ml-2 ${r.type === 'expense' ? 'text-[var(--text-primary)]' : 'text-leaf-700 dark:text-leaf-400'}`}>
+                  <span className={`font-semibold whitespace-nowrap ml-2 ${r.type === 'expense' ? 'text-[var(--text-primary)]' : 'text-leaf-600'}`}>
                     {r.type === 'income' ? '+' : ''}{formatAmount(r.amount)}
                   </span>
                 </div>
@@ -355,7 +355,7 @@ export default function RecurringList() {
                   </div>
                   <div className="flex items-center gap-1">
                     {r.is_active && (
-                      <button onClick={() => handleExecute(r)} className="p-1 text-[var(--text-muted)] hover:text-leaf-600 dark:hover:text-leaf-400" title="바로 등록">
+                      <button onClick={() => handleExecute(r)} className="p-1 text-[var(--text-muted)] hover:text-leaf-600" title="바로 등록">
                         <Zap className="w-4 h-4" />
                       </button>
                     )}

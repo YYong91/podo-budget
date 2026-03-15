@@ -305,7 +305,7 @@ export default function IncomeForm() {
               onChange={(e) => setNaturalInput(e.target.value)}
               placeholder={"예: 이번 달 월급 350만원 들어왔어\n부업으로 50만원 받았어"}
               rows={5}
-              className="w-full px-4 py-3 bg-leaf-50/50 dark:bg-leaf-900/20 border border-[var(--input-border)] rounded-xl focus:ring-2 focus:ring-leaf-500/30 focus:border-leaf-500 resize-none"
+              className="w-full px-4 py-3 bg-leaf-50/50 border border-[var(--input-border)] rounded-xl focus:ring-2 focus:ring-leaf-500/30 focus:border-leaf-500 resize-none"
               disabled={loading}
             />
             <p className="mt-2 text-xs text-[var(--text-muted)]">
@@ -326,7 +326,7 @@ export default function IncomeForm() {
       {/* 파싱 결과 프리뷰 카드 */}
       {mode === 'natural' && previewItems && (
         <div className="space-y-4">
-          <div className="bg-leaf-50 dark:bg-leaf-900/20 border border-leaf-200 dark:border-leaf-700 rounded-2xl p-4">
+          <div className="bg-leaf-50 border border-leaf-200 rounded-2xl p-4">
             <p className="text-sm text-leaf-800 font-medium">
               {previewItems.length}건의 수입을 인식했습니다. 내용을 확인하고 수정한 뒤 저장하세요.
             </p>
@@ -409,7 +409,7 @@ export default function IncomeForm() {
                         value={newCategoryName}
                         onChange={(e) => setNewCategoryName(e.target.value)}
                         placeholder="새 카테고리 이름"
-                        className="flex-1 px-2 py-1.5 border border-leaf-300 dark:border-leaf-700 rounded-lg text-sm focus:ring-2 focus:ring-leaf-500/30 focus:border-leaf-500"
+                        className="flex-1 px-2 py-1.5 border border-leaf-300 rounded-lg text-sm focus:ring-2 focus:ring-leaf-500/30 focus:border-leaf-500"
                         onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleCreateCategory(index) } }}
                         autoFocus
                       />
@@ -433,7 +433,7 @@ export default function IncomeForm() {
                     <button
                       type="button"
                       onClick={() => { setShowNewCategoryFor(index); setNewCategoryName('') }}
-                      className="mt-1.5 text-xs text-leaf-600 dark:text-leaf-400 hover:text-leaf-800 font-medium"
+                      className="mt-1.5 text-xs text-leaf-600 hover:text-leaf-800 font-medium"
                     >
                       + 새 카테고리
                     </button>
@@ -541,7 +541,7 @@ export default function IncomeForm() {
                   value={newCategoryName}
                   onChange={(e) => setNewCategoryName(e.target.value)}
                   placeholder="새 카테고리 이름"
-                  className="flex-1 px-3 py-2 border border-leaf-300 dark:border-leaf-700 rounded-lg text-sm focus:ring-2 focus:ring-leaf-500/30 focus:border-leaf-500"
+                  className="flex-1 px-3 py-2 border border-leaf-300 rounded-lg text-sm focus:ring-2 focus:ring-leaf-500/30 focus:border-leaf-500"
                   onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleCreateCategoryForForm() } }}
                   autoFocus
                 />
@@ -565,7 +565,7 @@ export default function IncomeForm() {
               <button
                 type="button"
                 onClick={() => { setShowNewCategoryFor(-1); setNewCategoryName('') }}
-                className="mt-2 text-sm text-leaf-600 dark:text-leaf-400 hover:text-leaf-800 font-medium"
+                className="mt-2 text-sm text-leaf-600 hover:text-leaf-800 font-medium"
               >
                 + 새 카테고리
               </button>

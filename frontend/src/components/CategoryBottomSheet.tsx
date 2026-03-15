@@ -54,8 +54,8 @@ export default function CategoryBottomSheet({
 
   // Tailwind 동적 클래스 대신 조건부 전체 문자열 (빌드 시 감지 보장)
   const activeClass = transactionType === 'income'
-    ? 'bg-leaf-50 text-leaf-700 dark:text-leaf-400 font-medium'
-    : 'bg-grape-50 text-grape-700 dark:text-grape-300 font-medium'
+    ? 'bg-leaf-50 text-leaf-600 font-medium'
+    : 'bg-grape-50 text-grape-600 font-medium'
 
   return (
     <div className="fixed inset-0 z-50 flex items-end md:items-center md:justify-center">

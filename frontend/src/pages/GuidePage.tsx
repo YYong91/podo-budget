@@ -74,8 +74,8 @@ export default function GuidePage() {
       </button>
 
       {/* 목차 */}
-      <div className="bg-grape-50 dark:bg-grape-900/20 rounded-2xl border border-grape-100 p-5">
-        <h2 className="text-sm font-semibold text-grape-700 dark:text-grape-300 mb-3">목차</h2>
+      <div className="bg-grape-50 rounded-2xl border border-grape-100 p-5">
+        <h2 className="text-sm font-semibold text-grape-600 mb-3">목차</h2>
         <ol className="space-y-1.5">
           {sections.map((s, i) => (
             <li key={s.id}>

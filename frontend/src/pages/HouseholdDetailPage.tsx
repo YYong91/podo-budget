@@ -417,14 +417,14 @@ export default function HouseholdDetailPage() {
                               onClick={() =>
                                 handleRemoveMember(member.user_id, member.username)
                               }
-                              className="text-rose-600 dark:text-rose-400 hover:text-rose-700 font-medium"
+                              className="text-rose-600 hover:text-rose-700 font-medium"
                             >
                               추방
                             </button>
                           ) : isMe && member.role !== 'owner' ? (
                             <button
                               onClick={handleLeave}
-                              className="text-rose-600 dark:text-rose-400 hover:text-rose-700 font-medium"
+                              className="text-rose-600 hover:text-rose-700 font-medium"
                             >
                               탈퇴
                             </button>

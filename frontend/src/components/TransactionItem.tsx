@@ -47,7 +47,7 @@ export default function TransactionItem({
         </span>
         <span
           className={`text-sm font-semibold whitespace-nowrap ${
-            type === 'income' ? 'text-leaf-600 dark:text-leaf-400' : 'text-[var(--text-primary)]'
+            type === 'income' ? 'text-leaf-600' : 'text-[var(--text-primary)]'
           }`}
         >
           {type === 'expense' ? '-' : '+'}{formatAmount(amount)}
@@ -62,8 +62,8 @@ export default function TransactionItem({
           }}
           className={`text-xs px-2 py-0.5 rounded-full transition-colors ${
             type === 'income'
-              ? 'bg-leaf-50 text-leaf-700 dark:text-leaf-400 hover:bg-leaf-100'
-              : 'bg-grape-50 text-grape-700 dark:text-grape-300 hover:bg-grape-100'
+              ? 'bg-leaf-50 text-leaf-600 hover:bg-leaf-100'
+              : 'bg-grape-50 text-grape-600 hover:bg-grape-100'
           }`}
         >
           {category?.name ?? '미분류'}

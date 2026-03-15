@@ -182,7 +182,7 @@ export default function ExpenseDetail() {
               </button>
               <button
                 onClick={() => setIsEditing(true)}
-                className="flex-1 sm:flex-none px-4 py-2 text-sm font-medium text-grape-700 dark:text-grape-300 bg-grape-50 rounded-xl hover:bg-grape-100 transition-colors"
+                className="flex-1 sm:flex-none px-4 py-2 text-sm font-medium text-grape-600 bg-grape-50 rounded-xl hover:bg-grape-100 transition-colors"
               >
                 수정
               </button>

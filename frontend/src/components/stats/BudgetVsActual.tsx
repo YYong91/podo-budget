@@ -21,7 +21,7 @@ export default function BudgetVsActual({ budgetStats }: BudgetVsActualProps) {
   return (
     <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] p-4 sm:p-6" data-testid="budget-vs-actual">
       <div className="flex items-center gap-2 mb-4">
-        <Wallet className="w-5 h-5 text-grape-600 dark:text-grape-400" />
+        <Wallet className="w-5 h-5 text-grape-600" />
         <h2 className="text-base font-semibold text-[var(--text-primary)]">예산 현황</h2>
       </div>
 
@@ -33,7 +33,7 @@ export default function BudgetVsActual({ budgetStats }: BudgetVsActualProps) {
           </div>
           <div className="flex justify-between items-center mb-2">
             <span className="text-sm text-[var(--text-secondary)]">총 지출</span>
-            <span className={`text-sm font-semibold ${totalSpent > totalBudget ? 'text-red-600 dark:text-red-400' : 'text-[var(--text-primary)]'}`}>
+            <span className={`text-sm font-semibold ${totalSpent > totalBudget ? 'text-red-600' : 'text-[var(--text-primary)]'}`}>
               {formatAmount(totalSpent)}
             </span>
           </div>
@@ -58,11 +58,11 @@ export default function BudgetVsActual({ budgetStats }: BudgetVsActualProps) {
               <div className="flex items-center gap-2">
                 <span className="text-sm font-medium text-[var(--text-primary)]">{cat.category_name}</span>
                 {cat.is_exceeded && (
-                  <span className="text-xs px-1.5 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-full">초과</span>
+                  <span className="text-xs px-1.5 py-0.5 bg-red-100 text-red-600 rounded-full">초과</span>
                 )}
               </div>
               <div className="text-right">
-                <span className={`text-sm font-semibold ${cat.is_exceeded ? 'text-red-600 dark:text-red-400' : 'text-[var(--text-primary)]'}`}>
+                <span className={`text-sm font-semibold ${cat.is_exceeded ? 'text-red-600' : 'text-[var(--text-primary)]'}`}>
                   {formatAmount(cat.spent_amount)}
                 </span>
                 <span className="text-xs text-[var(--text-muted)]"> / {formatAmount(cat.budget_amount)}</span>

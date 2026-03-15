@@ -48,7 +48,7 @@ const TYPE_GROUPS: TypeGroup[] = [
   { key: 'investment', label: '투자', icon: TrendingUp, types: ['stock_kr', 'stock_us', 'crypto'], colorClass: 'text-[var(--text-secondary)]', iconColorClass: 'text-grape-500' },
   { key: 'deposit', label: '예적금', icon: Landmark, types: ['deposit'], colorClass: 'text-[var(--text-secondary)]', iconColorClass: 'text-leaf-600' },
   { key: 'real_estate', label: '부동산/기타', icon: Building2, types: ['real_estate', 'other'], colorClass: 'text-[var(--text-secondary)]', iconColorClass: 'text-[var(--text-tertiary)]' },
-  { key: 'liability', label: '부채', icon: TrendingDown, types: ['loan'], isLiability: true, colorClass: 'text-rose-700 dark:text-rose-400', iconColorClass: 'text-rose-500' },
+  { key: 'liability', label: '부채', icon: TrendingDown, types: ['loan'], isLiability: true, colorClass: 'text-rose-600', iconColorClass: 'text-rose-500' },
 ]
 
 function AssetRow({ asset }: { asset: Asset }) {
@@ -63,11 +63,11 @@ function AssetRow({ asset }: { asset: Asset }) {
       </div>
       <div className="flex items-center gap-1">
         <div className="text-right">
-          <p className={`text-sm font-semibold ${asset.is_liability ? 'text-rose-700 dark:text-rose-400' : 'text-[var(--text-primary)]'}`}>
+          <p className={`text-sm font-semibold ${asset.is_liability ? 'text-rose-600' : 'text-[var(--text-primary)]'}`}>
             {asset.current_value != null ? formatAmount(asset.current_value) : '-'}
           </p>
           {asset.profit_loss_pct != null && (
-            <p className={`text-xs ${asset.profit_loss_pct >= 0 ? 'text-leaf-600 dark:text-leaf-400' : 'text-rose-600 dark:text-rose-400'}`}>
+            <p className={`text-xs ${asset.profit_loss_pct >= 0 ? 'text-leaf-600' : 'text-rose-600'}`}>
               {formatPct(asset.profit_loss_pct)}
             </p>
           )}
@@ -244,14 +244,14 @@ export default function AssetDashboard() {
   return (
     <div className="space-y-6">
       {/* 1. 순자산 히어로 섹션 */}
-      <div className={`rounded-2xl border shadow-sm p-6 ${netWorth >= 0 ? 'bg-gradient-to-br from-grape-50 to-grape-100 dark:from-grape-900/30 dark:to-grape-800/20 border-grape-200/60 dark:border-grape-700/40' : 'bg-gradient-to-br from-rose-50 to-red-50 dark:from-rose-900/30 dark:to-red-900/20 border-rose-200/60 dark:border-rose-700/40'}`}>
+      <div className={`rounded-2xl border shadow-sm p-6 ${netWorth >= 0 ? 'bg-gradient-to-br from-grape-50 to-grape-100 border-grape-200/60' : 'bg-gradient-to-br from-rose-50 to-red-50 border-rose-200/60'}`}>
         <p className="text-sm text-[var(--text-tertiary)] mb-1">순자산</p>
-        <p className={`text-3xl font-bold tracking-tight ${netWorth >= 0 ? 'text-grape-700 dark:text-grape-300' : 'text-rose-700 dark:text-rose-300'}`}>
+        <p className={`text-3xl font-bold tracking-tight ${netWorth >= 0 ? 'text-grape-600' : 'text-rose-600'}`}>
           {formatAmount(netWorth)}
         </p>
         {/* 전월 대비 변동 */}
         {prevMonthDiff != null && (
-          <p className={`text-sm mt-1 font-medium ${prevMonthDiff >= 0 ? 'text-leaf-600 dark:text-leaf-400' : 'text-rose-600 dark:text-rose-400'}`}>
+          <p className={`text-sm mt-1 font-medium ${prevMonthDiff >= 0 ? 'text-leaf-600' : 'text-rose-600'}`}>
             전월 대비 {prevMonthDiff >= 0 ? '+' : ''}{formatAmount(prevMonthDiff)}
           </p>
         )}
@@ -264,7 +264,7 @@ export default function AssetDashboard() {
         <div className="flex gap-2 mt-4">
           <Link
             to="/accounts"
-            className={`flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-full text-sm font-medium transition-colors ${netWorth >= 0 ? 'bg-grape-200/50 dark:bg-grape-800/40 text-grape-700 dark:text-grape-300 hover:bg-grape-200/80' : 'bg-rose-200/50 dark:bg-rose-800/40 text-rose-700 dark:text-rose-300 hover:bg-rose-200/80'}`}
+            className={`flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-full text-sm font-medium transition-colors ${netWorth >= 0 ? 'bg-grape-200/50 text-grape-600 hover:bg-grape-200/80' : 'bg-rose-200/50 text-rose-600 hover:bg-rose-200/80'}`}
           >
             <Wallet className="w-4 h-4" />
             계좌 관리
@@ -284,7 +284,7 @@ export default function AssetDashboard() {
         <div className="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)]/60 shadow-sm p-4 flex items-center justify-between">
           <div>
             <p className="text-xs text-[var(--text-muted)]">{monthlySavings.month} 저축</p>
-            <p className={`text-lg font-bold ${monthlySavings.net_savings >= 0 ? 'text-leaf-600 dark:text-leaf-400' : 'text-rose-600 dark:text-rose-400'}`}>
+            <p className={`text-lg font-bold ${monthlySavings.net_savings >= 0 ? 'text-leaf-600' : 'text-rose-600'}`}>
               {formatAmount(monthlySavings.net_savings)}
             </p>
           </div>
@@ -314,7 +314,7 @@ export default function AssetDashboard() {
           </div>
           <div className="flex items-center justify-between text-sm mb-2">
             <span className="text-[var(--text-tertiary)]">목표 {formatAmount(goal.target_net_worth)}</span>
-            <span className="font-semibold text-grape-700 dark:text-grape-300">{goal.progress_pct.toFixed(1)}%</span>
+            <span className="font-semibold text-grape-600">{goal.progress_pct.toFixed(1)}%</span>
           </div>
           {/* 진행 바 */}
           <div className="w-full h-2.5 bg-[var(--surface-hover)] rounded-full overflow-hidden">
@@ -380,7 +380,7 @@ export default function AssetDashboard() {
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className={`text-sm font-semibold ${group.isLiability ? 'text-rose-700 dark:text-rose-400' : 'text-[var(--text-primary)]'}`}>
+                    <span className={`text-sm font-semibold ${group.isLiability ? 'text-rose-600' : 'text-[var(--text-primary)]'}`}>
                       {formatAmount(group.total)}
                     </span>
                     {isCollapsed
@@ -405,11 +405,11 @@ export default function AssetDashboard() {
 
       {/* 5. 업데이트 촉구 카드 */}
       {showNudge && (
-        <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200/60 dark:border-amber-700/40 rounded-2xl p-4 flex items-start gap-3">
+        <div className="bg-amber-50 border border-amber-200/60 rounded-2xl p-4 flex items-start gap-3">
           <Bell className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
           <div>
-            <p className="text-sm font-medium text-amber-800 dark:text-amber-300">자산 현황을 업데이트해보세요</p>
-            <p className="text-xs text-amber-600 dark:text-amber-400 mt-0.5">
+            <p className="text-sm font-medium text-amber-600">자산 현황을 업데이트해보세요</p>
+            <p className="text-xs text-amber-600 mt-0.5">
               마지막 업데이트: {daysSinceUpdate}일 전
             </p>
           </div>
@@ -475,7 +475,7 @@ export default function AssetDashboard() {
                 <button
                   onClick={handleDeleteGoal}
                   disabled={goalSaving}
-                  className="px-4 py-2.5 text-sm font-medium text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800/40 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors disabled:opacity-50"
+                  className="px-4 py-2.5 text-sm font-medium text-rose-600 border border-rose-200 rounded-lg hover:bg-rose-50 transition-colors disabled:opacity-50"
                 >
                   삭제
                 </button>

@@ -82,7 +82,7 @@ interface MonthlyHighlightsProps {
 }
 
 const iconMap = { warning: '⚠️', positive: '✅', info: '•' } as const
-const colorMap = { warning: 'text-amber-700 dark:text-amber-400', positive: 'text-leaf-700 dark:text-leaf-400', info: 'text-[var(--text-secondary)]' } as const
+const colorMap = { warning: 'text-amber-600', positive: 'text-leaf-600', info: 'text-[var(--text-secondary)]' } as const
 
 export default function MonthlyHighlights(props: MonthlyHighlightsProps) {
   const highlights = generateHighlights(props)

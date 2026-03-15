@@ -65,7 +65,7 @@ export default function Layout() {
             <div className="relative">
               <button
                 onClick={e => { e.stopPropagation(); setHouseholdDropdownOpen(!householdDropdownOpen) }}
-                className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs bg-grape-50 hover:bg-grape-100 text-grape-700 dark:text-grape-300 transition-colors"
+                className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs bg-grape-50 hover:bg-grape-100 text-grape-600 transition-colors"
               >
                 <Home className="w-3.5 h-3.5" />
                 <span className="font-medium truncate max-w-[100px]">{activeHousehold?.name ?? '가구'}</span>
@@ -78,7 +78,7 @@ export default function Layout() {
                       key={h.id}
                       onClick={() => { setActiveHouseholdId(h.id); setHouseholdDropdownOpen(false) }}
                       className={`w-full text-left px-3 py-2 text-sm hover:bg-[var(--surface-hover)] transition-colors truncate ${
-                        h.id === activeHouseholdId ? 'text-grape-700 dark:text-grape-300 font-medium bg-grape-50' : 'text-[var(--text-secondary)]'
+                        h.id === activeHouseholdId ? 'text-grape-600 font-medium bg-grape-50' : 'text-[var(--text-secondary)]'
                       }`}
                     >
                       {h.name}
@@ -104,13 +104,13 @@ export default function Layout() {
         <aside className="hidden md:flex md:sticky md:top-0 md:h-screen w-60 bg-[var(--surface)] border-r border-[var(--border-default)] p-4 flex-col">
           {/* 앱 타이틀 */}
           <div className="mb-4">
-            <Link to="/" className="text-2xl font-bold text-grape-700 dark:text-grape-400 flex items-center gap-2"><img src="/pwa-192x192.png" alt="" className="w-8 h-8 rounded dark:brightness-90" />포도가계부</Link>
+            <Link to="/" className="text-2xl font-bold text-grape-600 flex items-center gap-2"><img src="/pwa-192x192.png" alt="" className="w-8 h-8 rounded dark:brightness-90" />포도가계부</Link>
           </div>
 
           {/* 가구 선택 드롭다운 */}
           <div className="mb-4">
             {households.length <= 1 ? (
-              <div className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm bg-grape-50 text-grape-700 dark:text-grape-300">
+              <div className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm bg-grape-50 text-grape-600">
                 <Home className="w-4 h-4" />
                 <span className="font-medium truncate">{activeHousehold?.name ?? '가구'}</span>
               </div>
@@ -118,7 +118,7 @@ export default function Layout() {
               <div className="relative">
                 <button
                   onClick={e => { e.stopPropagation(); setHouseholdDropdownOpen(!householdDropdownOpen) }}
-                  className="flex items-center justify-between w-full px-3 py-2 rounded-lg text-sm bg-grape-50 hover:bg-grape-100 text-grape-700 dark:text-grape-300 transition-colors"
+                  className="flex items-center justify-between w-full px-3 py-2 rounded-lg text-sm bg-grape-50 hover:bg-grape-100 text-grape-600 transition-colors"
                 >
                   <div className="flex items-center gap-2 min-w-0">
                     <Home className="w-4 h-4" />
@@ -133,7 +133,7 @@ export default function Layout() {
                         key={h.id}
                         onClick={() => { setActiveHouseholdId(h.id); setHouseholdDropdownOpen(false) }}
                         className={`w-full text-left px-3 py-2 text-sm hover:bg-[var(--surface-hover)] transition-colors truncate ${
-                          h.id === activeHouseholdId ? 'text-grape-700 dark:text-grape-300 font-medium bg-grape-50' : 'text-[var(--text-secondary)]'
+                          h.id === activeHouseholdId ? 'text-grape-600 font-medium bg-grape-50' : 'text-[var(--text-secondary)]'
                         }`}
                       >
                         {h.name}
@@ -159,7 +159,7 @@ export default function Layout() {
                     flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium
                     transition-colors relative
                     ${active
-                      ? 'bg-grape-50 text-grape-700 dark:text-grape-300 border-l-3 border-grape-500'
+                      ? 'bg-grape-50 text-grape-600 border-l-3 border-grape-500'
                       : 'text-[var(--text-tertiary)] hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]'
                     }
                   `}
@@ -181,7 +181,7 @@ export default function Layout() {
                   flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium
                   transition-colors relative
                   ${location.pathname === '/invitations'
-                    ? 'bg-grape-50 text-grape-700 dark:text-grape-300 border-l-3 border-grape-500'
+                    ? 'bg-grape-50 text-grape-600 border-l-3 border-grape-500'
                     : 'text-[var(--text-tertiary)] hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]'
                   }
                 `}
@@ -220,7 +220,7 @@ export default function Layout() {
                   flex flex-col items-center justify-center gap-0.5 flex-1 h-full
                   transition-colors
                   ${active
-                    ? 'text-grape-600 dark:text-grape-400'
+                    ? 'text-grape-600'
                     : 'text-[var(--text-muted)] active:text-[var(--text-tertiary)]'
                   }
                 `}

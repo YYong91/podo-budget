@@ -69,7 +69,7 @@ export default function AssetChangeSummary({ summary, previousSnapshot }: AssetC
           <p className="text-xl font-bold text-[var(--text-primary)]">{formatLargeAmount(summary.net_worth)}</p>
         </div>
         {change !== null && (
-          <div className={`flex items-center gap-1 ${change >= 0 ? 'text-leaf-600 dark:text-leaf-400' : 'text-red-500'}`}>
+          <div className={`flex items-center gap-1 ${change >= 0 ? 'text-leaf-600' : 'text-red-600'}`}>
             {change >= 0 ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
             <span className="text-sm font-medium">
               전월 대비 {change >= 0 ? '+' : ''}
@@ -94,7 +94,7 @@ export default function AssetChangeSummary({ summary, previousSnapshot }: AssetC
               <div className="flex items-center gap-2">
                 <span className="text-[var(--text-secondary)]">{formatLargeAmount(tc.current)}</span>
                 {tc.change !== 0 && (
-                  <span className={tc.change > 0 ? 'text-leaf-600 dark:text-leaf-400' : 'text-red-500'}>
+                  <span className={tc.change > 0 ? 'text-leaf-600' : 'text-red-600'}>
                     {tc.change > 0 ? '+' : ''}
                     {formatLargeAmount(tc.change)}
                   </span>

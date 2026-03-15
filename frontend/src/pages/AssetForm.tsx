@@ -415,7 +415,7 @@ export default function AssetForm() {
                 <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">종목명</label>
                 {form.ticker && !manualMode ? (
                   /* 선택된 상태 */
-                  <div className="flex items-center gap-2 p-2.5 border border-grape-200 dark:border-grape-700 bg-grape-50 dark:bg-grape-900/20 rounded-lg">
+                  <div className="flex items-center gap-2 p-2.5 border border-grape-200 bg-grape-50 rounded-lg">
                     <div className="flex-1">
                       <span className="text-sm font-medium text-[var(--text-primary)]">{form.name}</span>
                       <span className="ml-2 text-xs text-grape-600 font-mono">{form.ticker}</span>

@@ -124,8 +124,8 @@ export default function CreateHouseholdModal({
 
           {/* 에러 메시지 */}
           {error && (
-            <div className="p-3 bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800/40 rounded-lg">
-              <p className="text-sm text-rose-600 dark:text-rose-400">{error}</p>
+            <div className="p-3 bg-rose-50 border border-rose-200 rounded-lg">
+              <p className="text-sm text-rose-600">{error}</p>
             </div>
           )}
 
