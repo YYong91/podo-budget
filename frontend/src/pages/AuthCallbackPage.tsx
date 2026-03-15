@@ -15,7 +15,6 @@
 
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Loader2 } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 
 export default function AuthCallbackPage() {
@@ -53,7 +52,7 @@ export default function AuthCallbackPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-[var(--surface)]">
       <div className="flex flex-col items-center gap-3">
-        <Loader2 className="animate-spin w-10 h-10 text-grape-600" />
+        <div className="animate-spin rounded-full border-b-2 border-grape-600 w-10 h-10" />
         <p className="text-sm text-[var(--text-tertiary)]">로그인 처리 중...</p>
       </div>
     </div>

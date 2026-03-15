@@ -6,7 +6,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
-import { Loader2, Mail } from 'lucide-react'
+import { Mail } from 'lucide-react'
 import { onboardingApi } from '../api/onboarding'
 import { useHouseholdStore } from '../stores/useHouseholdStore'
 
@@ -94,7 +94,7 @@ export default function OnboardingPage() {
                   disabled={isDisabled}
                   className="ml-3 shrink-0 px-3 py-1.5 text-xs font-medium text-white bg-grape-600 rounded-lg hover:bg-grape-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-1"
                 >
-                  {acceptingToken === inv.token && <Loader2 className="w-3 h-3 animate-spin" />}
+                  {acceptingToken === inv.token && <div className="animate-spin rounded-full border-b-2 border-current w-3 h-3" />}
                   참여
                 </button>
               </div>
@@ -133,7 +133,7 @@ export default function OnboardingPage() {
             disabled={isDisabled}
             className="w-full py-3 bg-grape-600 text-white rounded-lg text-sm font-medium hover:bg-grape-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
           >
-            {loading && <Loader2 className="w-4 h-4 animate-spin" />}
+            {loading && <div className="animate-spin rounded-full border-b-2 border-current w-4 h-4" />}
             새 가계부 만들기
           </button>
         </div>

@@ -5,7 +5,7 @@
  */
 
 import { useEffect, useState, useCallback } from 'react'
-import { Loader2, Sparkles } from 'lucide-react'
+import { Sparkles } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 // API
@@ -209,7 +209,7 @@ export default function InsightsPage() {
       {/* 로딩 */}
       {loading && (
         <div className="flex items-center justify-center h-40">
-          <Loader2 className="w-8 h-8 animate-spin text-grape-600" />
+          <div className="animate-spin rounded-full border-b-2 border-grape-600 w-8 h-8" />
         </div>
       )}
 
@@ -270,7 +270,7 @@ export default function InsightsPage() {
             {/* AI 로딩 */}
             {aiLoading && (
               <div className="flex flex-col items-center gap-3 py-8">
-                <Loader2 className="animate-spin h-8 w-8 text-grape-600" />
+                <div className="animate-spin rounded-full border-b-2 border-grape-600 h-8 w-8" />
                 <p className="text-sm text-[var(--text-secondary)]">AI가 재무 데이터를 분석하고 있습니다...</p>
               </div>
             )}

@@ -6,7 +6,7 @@
 
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, Loader2, Plus, Pencil, Trash2, Pause, Play, X, Zap } from 'lucide-react'
+import { ArrowLeft, Plus, Pencil, Trash2, Pause, Play, X, Zap } from 'lucide-react'
 import { useToast } from '../hooks/useToast'
 import { recurringApi } from '../api/recurring'
 import { categoryApi } from '../api/categories'
@@ -265,7 +265,7 @@ export default function RecurringList() {
       {/* 목록 */}
       {loading ? (
         <div className="flex items-center justify-center h-32">
-          <Loader2 className="w-6 h-6 animate-spin text-grape-600" />
+          <div className="animate-spin rounded-full border-b-2 border-grape-600 w-6 h-6" />
         </div>
       ) : items.length === 0 ? (
         <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)]/60">

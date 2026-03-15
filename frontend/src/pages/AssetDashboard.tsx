@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
-  Loader2, Plus, TrendingUp, TrendingDown, Landmark, Wallet,
+  Plus, TrendingUp, TrendingDown, Landmark, Wallet,
   ChevronRight, ChevronDown, ChevronUp, Target, Bell, Building2, X,
 } from 'lucide-react'
 import {
@@ -175,7 +175,7 @@ export default function AssetDashboard() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
-        <Loader2 className="w-8 h-8 text-grape-600 animate-spin" />
+        <div className="animate-spin rounded-full border-b-2 border-grape-600 w-8 h-8" />
       </div>
     )
   }
