@@ -18,6 +18,16 @@ export interface Changelog {
 
 export const changelogs: Changelog[] = [
   {
+    version: '1.12.0',
+    date: '2026-03-16',
+    title: '카카오톡 봇 기능 강화',
+    items: [
+      { tag: '신규', text: '카카오톡 봇 /undo — 마지막 지출을 바로 삭제할 수 있습니다' },
+      { tag: '신규', text: '카카오톡 봇 /change — 카테고리를 바로 변경할 수 있습니다' },
+      { tag: '개선', text: '카카오톡 봇 카테고리 정확도 향상 — 기존 카테고리와 사용 이력을 AI에 전달' },
+    ],
+  },
+  {
     version: '1.11.0',
     date: '2026-03-16',
     title: '온보딩 & 초대 개선',
