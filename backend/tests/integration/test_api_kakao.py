@@ -347,17 +347,16 @@ async def test_kakao_webhook_same_user_reuses_account(client, db_session, mock_l
 
 @pytest.mark.asyncio
 async def test_kakao_webhook_expense_with_household(client, db_session, mock_llm_parse_expense):
-    """가구에 속한 사용자의 공유 키워드 지출"""
+    """가구에 속한 사용자의 공유 키워드 지출 — 자동 생성된 기본 가구에 저장"""
     from app.services.bot_user_service import get_or_create_bot_user
 
-    # 봇 사용자 생성 + 가구 가입
-    bot_user = await get_or_create_bot_user(db_session, platform="kakao", platform_user_id="kakao_hh_111")
-    household = Household(name="테스트 가구")
-    db_session.add(household)
-    await db_session.flush()
-    member = HouseholdMember(household_id=household.id, user_id=bot_user.id, role="owner")
-    db_session.add(member)
+    # 봇 사용자 생성 (기본 가구 자동 생성됨)
+    bot_user = await get_or_create_bot_user(db_session, platform="kakao", platform_user_id="kakao_hh_111", auto_create_household=True)
     await db_session.commit()
+
+    # 자동 생성된 가구 ID 조회
+    result = await db_session.execute(select(HouseholdMember.household_id).where(HouseholdMember.user_id == bot_user.id))
+    auto_household_id = result.scalar_one()
 
     payload = make_kakao_request("우리 저녁 50000원", user_id="kakao_hh_111")
     response = await client.post("/api/kakao/webhook", json=payload)
@@ -366,22 +365,21 @@ async def test_kakao_webhook_expense_with_household(client, db_session, mock_llm
     result = await db_session.execute(select(Expense))
     expenses = result.scalars().all()
     assert len(expenses) == 1
-    assert expenses[0].household_id == household.id
+    assert expenses[0].household_id == auto_household_id
 
 
 @pytest.mark.asyncio
 async def test_kakao_webhook_personal_keyword_no_household(client, db_session, mock_llm_parse_expense):
-    """가구에 속해있어도 개인 키워드 → household_id는 활성 가구로 설정됨 (household_id 필수)"""
+    """개인 키워드여도 household_id는 활성 가구로 설정됨 (household_id 필수)"""
     from app.services.bot_user_service import get_or_create_bot_user
 
-    # 봇 사용자 생성 + 가구 가입
-    bot_user = await get_or_create_bot_user(db_session, platform="kakao", platform_user_id="kakao_hh_222")
-    household = Household(name="테스트 가구2")
-    db_session.add(household)
-    await db_session.flush()
-    member = HouseholdMember(household_id=household.id, user_id=bot_user.id, role="owner")
-    db_session.add(member)
+    # 봇 사용자 생성 (기본 가구 자동 생성됨)
+    bot_user = await get_or_create_bot_user(db_session, platform="kakao", platform_user_id="kakao_hh_222", auto_create_household=True)
     await db_session.commit()
+
+    # 자동 생성된 가구 ID 조회
+    result = await db_session.execute(select(HouseholdMember.household_id).where(HouseholdMember.user_id == bot_user.id))
+    auto_household_id = result.scalar_one()
 
     payload = make_kakao_request("내 커피 5000원", user_id="kakao_hh_222")
     response = await client.post("/api/kakao/webhook", json=payload)
@@ -391,7 +389,7 @@ async def test_kakao_webhook_personal_keyword_no_household(client, db_session, m
     expenses = result.scalars().all()
     assert len(expenses) == 1
     # household_id는 필수 — 개인 키워드여도 활성 가구로 설정됨
-    assert expenses[0].household_id == household.id
+    assert expenses[0].household_id == auto_household_id
 
 
 # ──────────────────────────────────────────────

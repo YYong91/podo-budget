@@ -14,6 +14,8 @@ from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.expense import Expense
+from app.models.household import Household
+from app.models.household_member import HouseholdMember
 from app.models.income import Income
 from app.models.user import User
 
@@ -23,7 +25,7 @@ logger = logging.getLogger(__name__)
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
-async def get_or_create_bot_user(db: AsyncSession, platform: str, platform_user_id: str) -> User:
+async def get_or_create_bot_user(db: AsyncSession, platform: str, platform_user_id: str, auto_create_household: bool = False) -> User:
     """봇 플랫폼 사용자를 찾거나 생성한다
 
     1) telegram_chat_id로 연동된 기존 계정이 있으면 해당 유저 반환
@@ -68,6 +70,16 @@ async def get_or_create_bot_user(db: AsyncSession, platform: str, platform_user_
         await db.flush()
         await db.refresh(user)
         logger.info(f"새 봇 사용자 생성: {username} (user_id={user.id})")
+
+        # 봇 유저에게 기본 가구 자동 생성 (expenses.household_id NOT NULL 제약 충족)
+        if auto_create_household:
+            household = Household(name="내 가계부", currency="KRW")
+            db.add(household)
+            await db.flush()
+            member = HouseholdMember(household_id=household.id, user_id=user.id, role="owner")
+            db.add(member)
+            await db.flush()
+            logger.info(f"봇 사용자 기본 가구 생성: user_id={user.id}, household_id={household.id}")
 
     return user
 
