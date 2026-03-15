@@ -243,27 +243,27 @@ export default function AssetDashboard() {
 
   return (
     <div className="space-y-6">
-      {/* 액션 버튼 */}
-      <div className="flex items-center justify-end gap-2">
-        <Link
-          to="/accounts"
-          className="flex items-center gap-1.5 px-3 py-2 border border-warm-200 text-warm-600 rounded-lg text-sm font-medium hover:bg-warm-50 transition-colors"
-        >
-          <Wallet className="w-4 h-4" />
-          계좌 관리
-        </Link>
-        <Link
-          to="/assets/new"
-          className="flex items-center gap-2 px-4 py-2 bg-grape-600 text-white rounded-lg text-sm font-medium hover:bg-grape-700 transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          자산 등록
-        </Link>
-      </div>
-
       {/* 1. 순자산 히어로 섹션 */}
       <div className={`rounded-2xl border shadow-sm p-6 ${netWorth >= 0 ? 'bg-gradient-to-br from-grape-50 to-grape-100 border-grape-200/60' : 'bg-gradient-to-br from-rose-50 to-red-50 border-rose-200/60'}`}>
-        <p className="text-sm text-warm-500 mb-1">순자산</p>
+        <div className="flex items-start justify-between mb-1">
+          <p className="text-sm text-warm-500">순자산</p>
+          <div className="flex items-center gap-2">
+            <Link
+              to="/accounts"
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${netWorth >= 0 ? 'text-grape-600 hover:bg-grape-200/50' : 'text-rose-600 hover:bg-rose-200/50'}`}
+            >
+              <Wallet className="w-3.5 h-3.5" />
+              계좌 관리
+            </Link>
+            <Link
+              to="/assets/new"
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${netWorth >= 0 ? 'bg-grape-600 text-white hover:bg-grape-700' : 'bg-rose-600 text-white hover:bg-rose-700'}`}
+            >
+              <Plus className="w-3.5 h-3.5" />
+              자산 등록
+            </Link>
+          </div>
+        </div>
         <p className={`text-3xl font-bold tracking-tight ${netWorth >= 0 ? 'text-grape-700' : 'text-rose-700'}`}>
           {formatAmount(netWorth)}
         </p>
