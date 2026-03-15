@@ -29,6 +29,7 @@ const TransactionList = lazy(() => import('./pages/TransactionList'))
 const GuidePage = lazy(() => import('./pages/GuidePage'))
 const FeedbackPage = lazy(() => import('./pages/FeedbackPage'))
 const AdminPage = lazy(() => import('./pages/AdminPage'))
+const OnboardingPage = lazy(() => import('./pages/OnboardingPage'))
 
 /* /transactions → / 쿼리 보존 리다이렉트 */
 function TransactionsRedirect() {
@@ -56,6 +57,7 @@ function App() {
         <Route path="/terms" element={<TermsOfServicePage />} />
         {/* 인증이 필요한 라우트들을 ProtectedRoute로 감싼다 */}
         <Route element={<ProtectedRoute />}>
+          <Route path="onboarding" element={<OnboardingPage />} />
           <Route element={<Layout />}>
             <Route path="/" element={<TransactionList />} />
             <Route path="/transactions" element={<TransactionsRedirect />} />
