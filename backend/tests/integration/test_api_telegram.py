@@ -311,7 +311,7 @@ async def test_webhook_expense_with_household(client, db_session, mock_telegram_
 
 @pytest.mark.asyncio
 async def test_webhook_personal_keyword_no_household(client, db_session, mock_telegram_send, mock_llm_parse_expense):
-    """'내' 등 개인 키워드 사용 시 household_id가 None"""
+    """'내' 등 개인 키워드 사용 시에도 household_id는 활성 가구로 설정됨 (household_id 필수)"""
     from app.services.bot_user_service import get_or_create_bot_user
 
     # 봇 사용자 생성 + 가구 가입
@@ -336,8 +336,8 @@ async def test_webhook_personal_keyword_no_household(client, db_session, mock_te
     result = await db_session.execute(select(Expense))
     expenses = result.scalars().all()
     assert len(expenses) == 1
-    # 개인 키워드 → household_id는 None
-    assert expenses[0].household_id is None
+    # household_id는 필수 — 개인 키워드여도 활성 가구로 설정됨
+    assert expenses[0].household_id == household.id
 
 
 @pytest.mark.asyncio
@@ -752,6 +752,14 @@ async def test_link_by_code_success(client, db_session, mock_telegram_send):
         telegram_link_code_expires_at=datetime.now(UTC) + timedelta(minutes=10),
     )
     db_session.add(web_user)
+    await db_session.flush()
+
+    # 웹 사용자에게 가구 설정 (household_id 필수 제약 충족)
+    household = Household(name="웹 사용자 가구")
+    db_session.add(household)
+    await db_session.flush()
+    member = HouseholdMember(household_id=household.id, user_id=web_user.id, role="owner")
+    db_session.add(member)
     await db_session.commit()
 
     chat_id = 99999

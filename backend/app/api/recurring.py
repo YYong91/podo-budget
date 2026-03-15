@@ -222,7 +222,13 @@ async def _get_user_recurring(
 
     # 접근 권한 확인: 가구 멤버인지 검증
     if recurring.household_id is not None:
-        await get_household_member(recurring.household_id, current_user, db)
+        try:
+            await get_household_member(recurring.household_id, current_user, db)
+        except HTTPException:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="정기 거래를 찾을 수 없습니다",
+            ) from None
     else:
         # 레거시 데이터: household_id 없는 정기 거래는 본인 것만 조회
         if recurring.user_id != current_user.id:

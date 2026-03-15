@@ -572,7 +572,11 @@ async def get_expense(
 
     # 접근 권한 확인: 가구 멤버인지 검증
     if expense.household_id is not None:
-        await get_household_member(expense.household_id, current_user, db)
+        try:
+            await get_household_member(expense.household_id, current_user, db)
+        except HTTPException:
+            # 가구 멤버가 아닌 경우 404 반환 (존재 여부 노출 방지)
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="지출을 찾을 수 없습니다") from None
     else:
         # 레거시 데이터: household_id 없는 지출은 본인 것만 조회
         if expense.user_id != current_user.id:

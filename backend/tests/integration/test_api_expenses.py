@@ -18,6 +18,7 @@ from sqlalchemy import select
 
 from app.models.category import Category
 from app.models.expense import Expense
+from app.models.household import Household
 from app.models.user import User
 
 
@@ -51,10 +52,10 @@ async def test_get_expenses_empty(authenticated_client, test_user: User, db_sess
 
 
 @pytest.mark.asyncio
-async def test_get_expenses_list(authenticated_client, test_user: User, db_session):
+async def test_get_expenses_list(authenticated_client, test_user: User, test_household: Household, db_session):
     """지출 목록 조회 (데이터 있음)"""
-    expense1 = Expense(user_id=test_user.id, amount=5000, description="택시", date=datetime(2026, 2, 10))
-    expense2 = Expense(user_id=test_user.id, amount=8000, description="김치찌개", date=datetime(2026, 2, 11))
+    expense1 = Expense(user_id=test_user.id, household_id=test_household.id, amount=5000, description="택시", date=datetime(2026, 2, 10))
+    expense2 = Expense(user_id=test_user.id, household_id=test_household.id, amount=8000, description="김치찌개", date=datetime(2026, 2, 11))
     db_session.add_all([expense1, expense2])
     await db_session.commit()
 
@@ -68,10 +69,10 @@ async def test_get_expenses_list(authenticated_client, test_user: User, db_sessi
 
 
 @pytest.mark.asyncio
-async def test_get_expenses_pagination(authenticated_client, test_user: User, db_session):
+async def test_get_expenses_pagination(authenticated_client, test_user: User, test_household: Household, db_session):
     """지출 목록 페이지네이션 테스트"""
     for i in range(5):
-        expense = Expense(user_id=test_user.id, amount=1000 * (i + 1), description=f"지출{i}", date=datetime(2026, 2, i + 1))
+        expense = Expense(user_id=test_user.id, household_id=test_household.id, amount=1000 * (i + 1), description=f"지출{i}", date=datetime(2026, 2, i + 1))
         db_session.add(expense)
     await db_session.commit()
 
@@ -83,11 +84,11 @@ async def test_get_expenses_pagination(authenticated_client, test_user: User, db
 
 
 @pytest.mark.asyncio
-async def test_get_expenses_filter_by_date(authenticated_client, test_user: User, db_session):
+async def test_get_expenses_filter_by_date(authenticated_client, test_user: User, test_household: Household, db_session):
     """지출 목록 날짜 필터링 테스트"""
-    expense1 = Expense(user_id=test_user.id, amount=5000, description="1월 지출", date=datetime(2026, 1, 15))
-    expense2 = Expense(user_id=test_user.id, amount=8000, description="2월 지출", date=datetime(2026, 2, 15))
-    expense3 = Expense(user_id=test_user.id, amount=3000, description="3월 지출", date=datetime(2026, 3, 15))
+    expense1 = Expense(user_id=test_user.id, household_id=test_household.id, amount=5000, description="1월 지출", date=datetime(2026, 1, 15))
+    expense2 = Expense(user_id=test_user.id, household_id=test_household.id, amount=8000, description="2월 지출", date=datetime(2026, 2, 15))
+    expense3 = Expense(user_id=test_user.id, household_id=test_household.id, amount=3000, description="3월 지출", date=datetime(2026, 3, 15))
     db_session.add_all([expense1, expense2, expense3])
     await db_session.commit()
 
@@ -100,15 +101,14 @@ async def test_get_expenses_filter_by_date(authenticated_client, test_user: User
 
 
 @pytest.mark.asyncio
-async def test_get_expenses_filter_by_date_only_format(authenticated_client, test_user: User, db_session):
+async def test_get_expenses_filter_by_date_only_format(authenticated_client, test_user: User, test_household: Household, db_session):
     """지출 목록 날짜 필터링 — YYYY-MM-DD 형식 (프론트엔드 date input 출력 형식)"""
-    expense1 = Expense(user_id=test_user.id, amount=5000, description="1월 지출", date=datetime(2026, 1, 15))
-    expense2 = Expense(user_id=test_user.id, amount=8000, description="2월 지출", date=datetime(2026, 2, 15))
-    expense3 = Expense(user_id=test_user.id, amount=3000, description="3월 지출", date=datetime(2026, 3, 15))
+    expense1 = Expense(user_id=test_user.id, household_id=test_household.id, amount=5000, description="1월 지출", date=datetime(2026, 1, 15))
+    expense2 = Expense(user_id=test_user.id, household_id=test_household.id, amount=8000, description="2월 지출", date=datetime(2026, 2, 15))
+    expense3 = Expense(user_id=test_user.id, household_id=test_household.id, amount=3000, description="3월 지출", date=datetime(2026, 3, 15))
     db_session.add_all([expense1, expense2, expense3])
     await db_session.commit()
 
-    # HTML date input이 보내는 YYYY-MM-DD 형식으로 요청
     response = await authenticated_client.get("/api/expenses?start_date=2026-02-01&end_date=2026-02-28")
     assert response.status_code == 200
 
@@ -118,7 +118,7 @@ async def test_get_expenses_filter_by_date_only_format(authenticated_client, tes
 
 
 @pytest.mark.asyncio
-async def test_get_expenses_filter_by_category(authenticated_client, test_user: User, db_session):
+async def test_get_expenses_filter_by_category(authenticated_client, test_user: User, test_household: Household, db_session):
     """지출 목록 카테고리 필터링 테스트"""
     cat1 = Category(user_id=test_user.id, name="식비")
     cat2 = Category(user_id=test_user.id, name="교통비")
@@ -127,8 +127,8 @@ async def test_get_expenses_filter_by_category(authenticated_client, test_user: 
     await db_session.refresh(cat1)
     await db_session.refresh(cat2)
 
-    expense1 = Expense(user_id=test_user.id, amount=8000, description="김치찌개", category_id=cat1.id, date=datetime.now())
-    expense2 = Expense(user_id=test_user.id, amount=5000, description="택시", category_id=cat2.id, date=datetime.now())
+    expense1 = Expense(user_id=test_user.id, household_id=test_household.id, amount=8000, description="김치찌개", category_id=cat1.id, date=datetime.now())
+    expense2 = Expense(user_id=test_user.id, household_id=test_household.id, amount=5000, description="택시", category_id=cat2.id, date=datetime.now())
     db_session.add_all([expense1, expense2])
     await db_session.commit()
 
@@ -141,9 +141,9 @@ async def test_get_expenses_filter_by_category(authenticated_client, test_user: 
 
 
 @pytest.mark.asyncio
-async def test_get_expense_by_id(authenticated_client, test_user: User, db_session):
+async def test_get_expense_by_id(authenticated_client, test_user: User, test_household: Household, db_session):
     """특정 지출 조회 API 테스트"""
-    expense = Expense(user_id=test_user.id, amount=8000, description="김치찌개", date=datetime.now())
+    expense = Expense(user_id=test_user.id, household_id=test_household.id, amount=8000, description="김치찌개", date=datetime.now())
     db_session.add(expense)
     await db_session.commit()
     await db_session.refresh(expense)
@@ -165,9 +165,9 @@ async def test_get_expense_not_found(authenticated_client, test_user: User, db_s
 
 
 @pytest.mark.asyncio
-async def test_update_expense(authenticated_client, test_user: User, db_session):
+async def test_update_expense(authenticated_client, test_user: User, test_household: Household, db_session):
     """지출 수정 API 테스트"""
-    expense = Expense(user_id=test_user.id, amount=8000, description="김치찌개", date=datetime.now())
+    expense = Expense(user_id=test_user.id, household_id=test_household.id, amount=8000, description="김치찌개", date=datetime.now())
     db_session.add(expense)
     await db_session.commit()
     await db_session.refresh(expense)
@@ -194,9 +194,9 @@ async def test_update_expense_not_found(authenticated_client, test_user: User, d
 
 
 @pytest.mark.asyncio
-async def test_delete_expense(authenticated_client, test_user: User, db_session):
+async def test_delete_expense(authenticated_client, test_user: User, test_household: Household, db_session):
     """지출 삭제 API 테스트"""
-    expense = Expense(user_id=test_user.id, amount=8000, description="김치찌개", date=datetime.now())
+    expense = Expense(user_id=test_user.id, household_id=test_household.id, amount=8000, description="김치찌개", date=datetime.now())
     db_session.add(expense)
     await db_session.commit()
     await db_session.refresh(expense)
@@ -216,7 +216,7 @@ async def test_delete_expense_not_found(authenticated_client, test_user: User, d
 
 
 @pytest.mark.asyncio
-async def test_monthly_stats(authenticated_client, test_user: User, db_session):
+async def test_monthly_stats(authenticated_client, test_user: User, test_household: Household, db_session):
     """월별 통계 API 테스트"""
     cat1 = Category(user_id=test_user.id, name="식비")
     cat2 = Category(user_id=test_user.id, name="교통비")
@@ -225,10 +225,14 @@ async def test_monthly_stats(authenticated_client, test_user: User, db_session):
     await db_session.refresh(cat1)
     await db_session.refresh(cat2)
 
-    expense1 = Expense(user_id=test_user.id, amount=8000, description="김치찌개", category_id=cat1.id, date=datetime(2026, 2, 10))
-    expense2 = Expense(user_id=test_user.id, amount=15000, description="택시", category_id=cat2.id, date=datetime(2026, 2, 15))
-    expense3 = Expense(user_id=test_user.id, amount=5000, description="버스", category_id=cat2.id, date=datetime(2026, 2, 20))
-    expense4 = Expense(user_id=test_user.id, amount=10000, description="1월 지출", category_id=cat1.id, date=datetime(2026, 1, 15))
+    expense1 = Expense(
+        user_id=test_user.id, household_id=test_household.id, amount=8000, description="김치찌개", category_id=cat1.id, date=datetime(2026, 2, 10)
+    )
+    expense2 = Expense(user_id=test_user.id, household_id=test_household.id, amount=15000, description="택시", category_id=cat2.id, date=datetime(2026, 2, 15))
+    expense3 = Expense(user_id=test_user.id, household_id=test_household.id, amount=5000, description="버스", category_id=cat2.id, date=datetime(2026, 2, 20))
+    expense4 = Expense(
+        user_id=test_user.id, household_id=test_household.id, amount=10000, description="1월 지출", category_id=cat1.id, date=datetime(2026, 1, 15)
+    )
     db_session.add_all([expense1, expense2, expense3, expense4])
     await db_session.commit()
 
@@ -310,55 +314,33 @@ async def test_create_expense_zero_amount(authenticated_client, test_user: User,
 
 # ──────────────────────────────────────────────
 # 날짜 형식 호환성 테스트 (TST-DATE)
-# 프론트엔드는 date input (YYYY-MM-DD) 값을 직접 전송하는 경우가 있음
-# Pydantic v2는 기본적으로 날짜만 있는 문자열(YYYY-MM-DD)을 datetime으로 파싱하지 못함
 # ──────────────────────────────────────────────
 
 
 @pytest.mark.asyncio
 async def test_create_expense_with_date_only_format(authenticated_client, test_user: User, db_session):
-    """YYYY-MM-DD 형식(시간 없는 날짜)으로 지출 생성 — 프론트엔드 LLM 프리뷰 저장 플로우
-
-    재현 시나리오:
-    1. 사용자가 자연어로 입력: "2월11일 전기차충전 11680원"
-    2. LLM이 date: "2026-02-11" (YYYY-MM-DD) 반환
-    3. 프론트엔드가 handleConfirmSave에서 item.date를 그대로 전송
-    4. 백엔드 ExpenseCreate.date: datetime이 "2026-02-11" 파싱 실패 → 422
-
-    기존 테스트에서 걸러지지 않은 이유:
-    - test_create_expense는 항상 "YYYY-MM-DDTHH:MM:SS" 형식 사용
-    - LLM이 반환하는 YYYY-MM-DD 형식에 대한 테스트가 없었음
-    """
+    """YYYY-MM-DD 형식(시간 없는 날짜)으로 지출 생성"""
     payload = {
         "amount": 11680,
         "description": "전기차충전",
-        "date": "2026-02-11",  # LLM이 반환하는 형식 — 시간 없는 날짜
+        "date": "2026-02-11",
     }
     response = await authenticated_client.post("/api/expenses", json=payload)
     assert response.status_code == 201, "YYYY-MM-DD 형식 날짜로 지출 생성이 실패함. " "ExpenseCreate.date 필드가 날짜만 있는 문자열을 허용해야 합니다."
     data = response.json()
     assert data["description"] == "전기차충전"
     assert data["amount"] == 11680
-    # 날짜가 올바르게 저장되었는지 확인
     assert "2026-02-11" in data["date"]
 
 
 # ──────────────────────────────────────────────
 # memo 필드 테스트 (TST-MEMO)
-# memo 컬럼이 DB 스키마에 누락되면 지출 목록 조회 전체가 500 오류가 되므로
-# 기본 CRUD와 memo 필드를 함께 검증하는 회귀 테스트를 추가합니다.
 # ──────────────────────────────────────────────
 
 
 @pytest.mark.asyncio
 async def test_create_expense_with_memo(authenticated_client, test_user: User, db_session):
-    """memo 필드 포함 지출 생성 — memo 컬럼 스키마 존재 회귀 테스트
-
-    배경:
-    - memo 컬럼이 Expense 모델에 추가됐지만 프로덕션 DB에 마이그레이션 미적용 시
-      GET /api/expenses/ 전체가 500 DATABASE_ERROR 오류 발생 (컬럼 누락)
-    - 이 테스트는 memo 컬럼이 정상적으로 존재하고 저장/조회 가능함을 확인한다.
-    """
+    """memo 필드 포함 지출 생성"""
     payload = {
         "amount": 15000,
         "description": "주유",
@@ -386,10 +368,11 @@ async def test_create_expense_without_memo(authenticated_client, test_user: User
 
 
 @pytest.mark.asyncio
-async def test_get_expenses_list_includes_memo(authenticated_client, test_user: User, db_session):
-    """지출 목록 조회 시 memo 필드 포함 — memo 컬럼 누락이면 500이 되는 회귀 시나리오"""
+async def test_get_expenses_list_includes_memo(authenticated_client, test_user: User, test_household: Household, db_session):
+    """지출 목록 조회 시 memo 필드 포함"""
     expense = Expense(
         user_id=test_user.id,
+        household_id=test_household.id,
         amount=8000,
         description="치킨",
         date=datetime(2026, 2, 20),

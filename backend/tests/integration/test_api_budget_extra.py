@@ -17,11 +17,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.budget import Budget
 from app.models.category import Category
 from app.models.expense import Expense
+from app.models.household import Household
 from app.models.user import User
 
 
 @pytest.mark.asyncio
-async def test_update_budget_invalid_dates(authenticated_client: AsyncClient, test_user: User, db_session: AsyncSession):
+async def test_update_budget_invalid_dates(authenticated_client: AsyncClient, test_user: User, test_household: Household, db_session: AsyncSession):
     """예산 수정 시 종료일이 시작일보다 이전이면 400"""
     category = Category(user_id=test_user.id, name="식비")
     db_session.add(category)
@@ -32,6 +33,7 @@ async def test_update_budget_invalid_dates(authenticated_client: AsyncClient, te
     start_date = datetime.now()
     budget = Budget(
         user_id=test_user.id,
+        household_id=test_household.id,
         category_id=category.id,
         amount=100000,
         period="monthly",
@@ -58,6 +60,7 @@ async def test_update_budget_other_user_not_found(
     authenticated_client: AsyncClient,
     test_user: User,
     test_user2: User,
+    test_household2: Household,
     db_session: AsyncSession,
 ):
     """다른 사용자 예산 수정 시도 → 404 (IDOR 방지)"""
@@ -68,6 +71,7 @@ async def test_update_budget_other_user_not_found(
 
     budget = Budget(
         user_id=test_user2.id,  # 다른 사용자의 예산
+        household_id=test_household2.id,
         category_id=category.id,
         amount=200000,
         period="monthly",
@@ -91,6 +95,7 @@ async def test_delete_budget_other_user_not_found(
     authenticated_client: AsyncClient,
     test_user: User,
     test_user2: User,
+    test_household2: Household,
     db_session: AsyncSession,
 ):
     """다른 사용자 예산 삭제 시도 → 404 (IDOR 방지)"""
@@ -101,6 +106,7 @@ async def test_delete_budget_other_user_not_found(
 
     budget = Budget(
         user_id=test_user2.id,
+        household_id=test_household2.id,
         category_id=category.id,
         amount=100000,
         period="monthly",
@@ -115,7 +121,7 @@ async def test_delete_budget_other_user_not_found(
 
 
 @pytest.mark.asyncio
-async def test_budget_alerts_future_budget_skipped(authenticated_client: AsyncClient, test_user: User, db_session: AsyncSession):
+async def test_budget_alerts_future_budget_skipped(authenticated_client: AsyncClient, test_user: User, test_household: Household, db_session: AsyncSession):
     """미래 시작 예산은 알림에서 스킵"""
     category = Category(user_id=test_user.id, name="여행")
     db_session.add(category)
@@ -126,6 +132,7 @@ async def test_budget_alerts_future_budget_skipped(authenticated_client: AsyncCl
     future_start = datetime.now() + timedelta(days=30)
     budget = Budget(
         user_id=test_user.id,
+        household_id=test_household.id,
         category_id=category.id,
         amount=500000,
         period="monthly",
@@ -156,6 +163,7 @@ async def test_monthly_stats_empty(authenticated_client: AsyncClient, test_user:
 async def test_monthly_stats_with_budget_and_expenses(
     authenticated_client: AsyncClient,
     test_user: User,
+    test_household: Household,
     db_session: AsyncSession,
 ):
     """예산 및 지출이 있을 때 월별 통계 정상 반환"""
@@ -167,6 +175,7 @@ async def test_monthly_stats_with_budget_and_expenses(
     # 2026-03에 활성 예산 생성
     budget = Budget(
         user_id=test_user.id,
+        household_id=test_household.id,
         category_id=category.id,
         amount=300000,
         period="monthly",
@@ -177,6 +186,7 @@ async def test_monthly_stats_with_budget_and_expenses(
     # 2026-03 지출 추가
     expense = Expense(
         user_id=test_user.id,
+        household_id=test_household.id,
         category_id=category.id,
         amount=150000,
         description="식비 테스트",
@@ -204,6 +214,7 @@ async def test_monthly_stats_with_budget_and_expenses(
 async def test_monthly_stats_exceeded(
     authenticated_client: AsyncClient,
     test_user: User,
+    test_household: Household,
     db_session: AsyncSession,
 ):
     """지출이 예산 초과 시 is_exceeded=True"""
@@ -214,6 +225,7 @@ async def test_monthly_stats_exceeded(
 
     budget = Budget(
         user_id=test_user.id,
+        household_id=test_household.id,
         category_id=category.id,
         amount=100000,
         period="monthly",
@@ -223,6 +235,7 @@ async def test_monthly_stats_exceeded(
 
     expense = Expense(
         user_id=test_user.id,
+        household_id=test_household.id,
         category_id=category.id,
         amount=150000,
         description="외식 초과",
@@ -259,6 +272,7 @@ async def test_category_overview_empty(authenticated_client: AsyncClient, test_u
 async def test_category_overview_with_data(
     authenticated_client: AsyncClient,
     test_user: User,
+    test_household: Household,
     db_session: AsyncSession,
 ):
     """카테고리/예산/지출 있을 때 category-overview 정상 반환"""
@@ -269,6 +283,7 @@ async def test_category_overview_with_data(
 
     budget = Budget(
         user_id=test_user.id,
+        household_id=test_household.id,
         category_id=category.id,
         amount=300000,
         period="monthly",
@@ -278,6 +293,7 @@ async def test_category_overview_with_data(
 
     expense = Expense(
         user_id=test_user.id,
+        household_id=test_household.id,
         category_id=category.id,
         amount=50000,
         description="식비 테스트",
@@ -304,12 +320,14 @@ async def test_category_overview_with_data(
 async def test_category_overview_null_category_expense(
     authenticated_client: AsyncClient,
     test_user: User,
+    test_household: Household,
     db_session: AsyncSession,
 ):
     """카테고리 미설정(NULL) 지출이 있어도 category-overview 500 에러 없음"""
     # 카테고리 미설정 지출 추가 (category_id=None)
     expense = Expense(
         user_id=test_user.id,
+        household_id=test_household.id,
         category_id=None,
         amount=10000,
         description="카테고리 없는 지출",

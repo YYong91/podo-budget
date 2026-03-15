@@ -4,6 +4,7 @@ from datetime import date
 
 import pytest
 
+from app.models.household import Household
 from app.models.recurring_transaction import RecurringTransaction
 from app.models.user import User
 
@@ -241,10 +242,11 @@ async def test_filter_by_income_type(authenticated_client):
 
 
 @pytest.mark.asyncio
-async def test_pending_includes_past_due(authenticated_client, db_session, test_user: User):
+async def test_pending_includes_past_due(authenticated_client, db_session, test_user: User, test_household: Household):
     """next_due_date가 오늘 이전이면 pending에 포함"""
     recurring = RecurringTransaction(
         user_id=test_user.id,
+        household_id=test_household.id,
         type="expense",
         amount=17000,
         description="넷플릭스",
@@ -263,10 +265,11 @@ async def test_pending_includes_past_due(authenticated_client, db_session, test_
 
 
 @pytest.mark.asyncio
-async def test_pending_excludes_future(authenticated_client, db_session, test_user: User):
+async def test_pending_excludes_future(authenticated_client, db_session, test_user: User, test_household: Household):
     """next_due_date가 미래면 pending에 미포함"""
     recurring = RecurringTransaction(
         user_id=test_user.id,
+        household_id=test_household.id,
         type="expense",
         amount=17000,
         description="넷플릭스",
@@ -285,10 +288,11 @@ async def test_pending_excludes_future(authenticated_client, db_session, test_us
 
 
 @pytest.mark.asyncio
-async def test_pending_excludes_inactive(authenticated_client, db_session, test_user: User):
+async def test_pending_excludes_inactive(authenticated_client, db_session, test_user: User, test_household: Household):
     """비활성화된 항목은 pending에 미포함"""
     recurring = RecurringTransaction(
         user_id=test_user.id,
+        household_id=test_household.id,
         type="expense",
         amount=17000,
         description="넷플릭스",
@@ -310,10 +314,11 @@ async def test_pending_excludes_inactive(authenticated_client, db_session, test_
 
 
 @pytest.mark.asyncio
-async def test_execute_expense(authenticated_client, db_session, test_user: User):
+async def test_execute_expense(authenticated_client, db_session, test_user: User, test_household: Household):
     """expense 정기 거래 실행 → Expense 생성"""
     recurring = RecurringTransaction(
         user_id=test_user.id,
+        household_id=test_household.id,
         type="expense",
         amount=17000,
         description="넷플릭스",
@@ -337,10 +342,11 @@ async def test_execute_expense(authenticated_client, db_session, test_user: User
 
 
 @pytest.mark.asyncio
-async def test_execute_income(authenticated_client, db_session, test_user: User):
+async def test_execute_income(authenticated_client, db_session, test_user: User, test_household: Household):
     """income 정기 거래 실행 → Income 생성"""
     recurring = RecurringTransaction(
         user_id=test_user.id,
+        household_id=test_household.id,
         type="income",
         amount=3500000,
         description="급여",
@@ -364,10 +370,11 @@ async def test_execute_income(authenticated_client, db_session, test_user: User)
 
 
 @pytest.mark.asyncio
-async def test_execute_inactive_fails(authenticated_client, db_session, test_user: User):
+async def test_execute_inactive_fails(authenticated_client, db_session, test_user: User, test_household: Household):
     """비활성화된 정기 거래 실행 시 400"""
     recurring = RecurringTransaction(
         user_id=test_user.id,
+        household_id=test_household.id,
         type="expense",
         amount=17000,
         description="넷플릭스",
@@ -389,10 +396,11 @@ async def test_execute_inactive_fails(authenticated_client, db_session, test_use
 
 
 @pytest.mark.asyncio
-async def test_skip_updates_next_due_date(authenticated_client, db_session, test_user: User):
+async def test_skip_updates_next_due_date(authenticated_client, db_session, test_user: User, test_household: Household):
     """skip 후 next_due_date 갱신"""
     recurring = RecurringTransaction(
         user_id=test_user.id,
+        household_id=test_household.id,
         type="expense",
         amount=17000,
         description="넷플릭스",
@@ -412,10 +420,11 @@ async def test_skip_updates_next_due_date(authenticated_client, db_session, test
 
 
 @pytest.mark.asyncio
-async def test_skip_end_date_deactivates(authenticated_client, db_session, test_user: User):
+async def test_skip_end_date_deactivates(authenticated_client, db_session, test_user: User, test_household: Household):
     """skip 시 end_date 초과하면 비활성화"""
     recurring = RecurringTransaction(
         user_id=test_user.id,
+        household_id=test_household.id,
         type="expense",
         amount=17000,
         description="넷플릭스",
@@ -442,10 +451,11 @@ async def test_skip_end_date_deactivates(authenticated_client, db_session, test_
 
 
 @pytest.mark.asyncio
-async def test_other_user_cannot_access(authenticated_client, authenticated_client2, db_session, test_user: User):
+async def test_other_user_cannot_access(authenticated_client, authenticated_client2, db_session, test_user: User, test_household: Household):
     """다른 사용자의 정기 거래 접근 불가"""
     recurring = RecurringTransaction(
         user_id=test_user.id,
+        household_id=test_household.id,
         type="expense",
         amount=17000,
         description="넷플릭스",

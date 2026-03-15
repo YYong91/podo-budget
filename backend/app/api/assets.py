@@ -212,6 +212,12 @@ async def get_asset(
     asset = await asset_service.get_asset_by_id(db, asset_id, current_user)
     if not asset:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="자산을 찾을 수 없습니다")
+    # 가구 멤버 여부 확인 (다른 가구 자산 접근 방지)
+    if asset.household_id is not None:
+        try:
+            await get_household_member(asset.household_id, current_user, db)
+        except HTTPException:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="자산을 찾을 수 없습니다") from None
     price_info = await price_service.get_asset_current_value(asset)
     return {**AssetResponse.model_validate(asset).model_dump(), **price_info}
 

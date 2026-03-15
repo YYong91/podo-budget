@@ -473,10 +473,13 @@ async def update_budget(
 
     # 접근 권한 확인: 가구 멤버인지 검증
     if budget.household_id is not None:
-        await get_household_member(budget.household_id, current_user, db)
+        try:
+            await get_household_member(budget.household_id, current_user, db)
+        except HTTPException:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="예산을 찾을 수 없습니다") from None
     else:
         if budget.user_id != current_user.id:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="예산을 찾을 수 없습니다")
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="예산을 찾을 수 없습니다") from None
 
     update_data = budget_data.model_dump(exclude_unset=True)
     for field, value in update_data.items():
@@ -508,10 +511,13 @@ async def delete_budget(
 
     # 접근 권한 확인: 가구 멤버인지 검증
     if budget.household_id is not None:
-        await get_household_member(budget.household_id, current_user, db)
+        try:
+            await get_household_member(budget.household_id, current_user, db)
+        except HTTPException:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="예산을 찾을 수 없습니다") from None
     else:
         if budget.user_id != current_user.id:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="예산을 찾을 수 없습니다")
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="예산을 찾을 수 없습니다") from None
 
     await db.delete(budget)
     await db.commit()

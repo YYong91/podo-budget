@@ -101,13 +101,13 @@ async def test_dashboard_stats_empty(authenticated_client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_dashboard_stats_with_transactions(authenticated_client: AsyncClient, db_session, test_user: User):
+async def test_dashboard_stats_with_transactions(authenticated_client: AsyncClient, db_session, test_user: User, test_household: Household):
     """거래 + 피드백이 있는 상태에서 대시보드 통계"""
     now = datetime.now(UTC)
 
     # 오늘 거래 추가
-    db_session.add(Expense(user_id=test_user.id, amount=10000, description="테스트 지출", date=now))
-    db_session.add(Income(user_id=test_user.id, amount=3000000, description="월급", date=now))
+    db_session.add(Expense(user_id=test_user.id, household_id=test_household.id, amount=10000, description="테스트 지출", date=now))
+    db_session.add(Income(user_id=test_user.id, household_id=test_household.id, amount=3000000, description="월급", date=now))
     db_session.add(Feedback(user_id=test_user.id, type="feature", title="요청1", content="내용1", status="new"))
     db_session.add(Feedback(user_id=test_user.id, type="bug", title="버그1", content="내용2", status="done"))
     await db_session.commit()
@@ -130,7 +130,7 @@ async def test_dashboard_stats_with_transactions(authenticated_client: AsyncClie
 
 
 @pytest.mark.asyncio
-async def test_dashboard_inactive_users(authenticated_client: AsyncClient, db_session, test_user: User):
+async def test_dashboard_inactive_users(authenticated_client: AsyncClient, db_session, test_user: User, test_household: Household):
     """이탈 감지 — 오래된 거래만 있는 사용자"""
     from tests.conftest import TEST_AUTH_USER_ID_2
 
@@ -142,12 +142,17 @@ async def test_dashboard_inactive_users(authenticated_client: AsyncClient, db_se
         is_active=True,
     )
     db_session.add(old_user)
+    await db_session.flush()
+
+    # 비활동 사용자도 가구 멤버십 추가
+    member = HouseholdMember(household_id=test_household.id, user_id=old_user.id, role="member")
+    db_session.add(member)
     await db_session.commit()
     await db_session.refresh(old_user)
 
     # 30일 전 거래
     old_date = datetime.now(UTC) - timedelta(days=30)
-    db_session.add(Expense(user_id=old_user.id, amount=5000, description="옛날 지출", date=old_date, created_at=old_date))
+    db_session.add(Expense(user_id=old_user.id, household_id=test_household.id, amount=5000, description="옛날 지출", date=old_date, created_at=old_date))
     await db_session.commit()
 
     response = await authenticated_client.get("/api/admin/stats/dashboard")

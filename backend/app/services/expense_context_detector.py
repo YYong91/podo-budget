@@ -69,21 +69,16 @@ async def resolve_household_id(
 ) -> int | None:
     """메시지 컨텍스트 + 명시적 ID + 활성 가구를 종합하여 household_id 결정
 
+    household_id는 필수(NOT NULL)이므로, 활성 가구가 있으면 항상 사용합니다.
+    자연어 컨텍스트(공유/개인)는 향후 다중 가구 지원 시 활용 예정입니다.
+
     우선순위:
     1. 요청에서 명시적으로 지정한 household_id
-    2. 자연어 컨텍스트 탐지 결과
-    3. 사용자의 활성 가구 (기본값)
+    2. 사용자의 활성 가구 (기본값)
     """
     # 1) 명시적 지정이 있으면 그대로 사용
     if explicit_household_id is not None:
         return explicit_household_id
 
-    # 2) 자연어 컨텍스트 분석
-    context = detect_expense_context(message)
-    if context == "personal":
-        return None
-    if context == "shared" and user_active_household_id is not None:
-        return user_active_household_id
-
-    # 3) 기본값: 활성 가구 사용
+    # 2) 활성 가구 사용 (household_id 필수이므로 컨텍스트와 무관하게 항상 적용)
     return user_active_household_id

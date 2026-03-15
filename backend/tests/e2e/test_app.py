@@ -11,6 +11,7 @@ import pytest
 
 from app.models.category import Category
 from app.models.expense import Expense
+from app.models.household import Household
 from app.models.user import User
 
 
@@ -159,7 +160,7 @@ async def test_category_management_workflow(authenticated_client, test_user: Use
 
 
 @pytest.mark.asyncio
-async def test_expense_filtering_workflow(authenticated_client, test_user: User, db_session):
+async def test_expense_filtering_workflow(authenticated_client, test_user: User, test_household: Household, db_session):
     """지출 필터링 워크플로우"""
     cat1 = Category(user_id=test_user.id, name="식비")
     cat2 = Category(user_id=test_user.id, name="교통비")
@@ -176,7 +177,7 @@ async def test_expense_filtering_workflow(authenticated_client, test_user: User,
     ]
 
     for amount, desc, cat_id, date in expenses_data:
-        expense = Expense(user_id=test_user.id, amount=amount, description=desc, category_id=cat_id, date=date)
+        expense = Expense(user_id=test_user.id, household_id=test_household.id, amount=amount, description=desc, category_id=cat_id, date=date)
         db_session.add(expense)
     await db_session.commit()
 
@@ -227,10 +228,12 @@ async def test_error_handling_workflow(authenticated_client, test_user: User, db
 
 
 @pytest.mark.asyncio
-async def test_pagination_workflow(authenticated_client, test_user: User, db_session):
+async def test_pagination_workflow(authenticated_client, test_user: User, test_household: Household, db_session):
     """페이지네이션 워크플로우"""
     for i in range(30):
-        expense = Expense(user_id=test_user.id, amount=1000 * (i + 1), description=f"지출{i}", date=datetime(2026, 2, 1 + (i % 28)))
+        expense = Expense(
+            user_id=test_user.id, household_id=test_household.id, amount=1000 * (i + 1), description=f"지출{i}", date=datetime(2026, 2, 1 + (i % 28))
+        )
         db_session.add(expense)
     await db_session.commit()
 

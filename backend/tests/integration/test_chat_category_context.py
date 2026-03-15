@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.category import Category
 from app.models.expense import Expense
+from app.models.household import Household
 from app.models.user import User
 
 
@@ -54,6 +55,7 @@ async def test_chat_passes_categories_to_llm(
 async def test_chat_passes_history_hints_to_llm(
     authenticated_client,
     test_user: User,
+    test_household: Household,
     db_session: AsyncSession,
     mock_llm_parse_expense,
 ):
@@ -65,6 +67,7 @@ async def test_chat_passes_history_hints_to_llm(
 
     past_expense = Expense(
         user_id=test_user.id,
+        household_id=test_household.id,
         amount=18100,
         description="쿠팡이츠",
         category_id=cat.id,
