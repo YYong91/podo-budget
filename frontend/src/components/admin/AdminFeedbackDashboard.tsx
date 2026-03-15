@@ -7,9 +7,9 @@ import { feedbackApi } from '../../api/feedback'
 import type { Feedback, FeedbackStatus, FeedbackType } from '../../types'
 
 const STATUS_META: Record<string, { label: string; color: string }> = {
-  new: { label: '신규', color: 'bg-red-100 text-red-700' },
-  read: { label: '확인', color: 'bg-yellow-100 text-yellow-700' },
-  done: { label: '완료', color: 'bg-green-100 text-green-700' },
+  new: { label: '신규', color: 'bg-red-100 text-red-600' },
+  read: { label: '확인', color: 'bg-yellow-100 text-yellow-600' },
+  done: { label: '완료', color: 'bg-green-100 text-green-600' },
 }
 
 const TYPE_META: Record<string, { label: string; icon: React.ComponentType<{ className?: string }> }> = {

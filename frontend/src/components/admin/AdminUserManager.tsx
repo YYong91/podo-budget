@@ -71,8 +71,8 @@ export default function AdminUserManager() {
               onClick={() => handleToggleActive(selectedUser.id, selectedUser.is_active)}
               className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium ${
                 selectedUser.is_active
-                  ? 'bg-green-50 text-green-700 hover:bg-green-100'
-                  : 'bg-red-50 text-red-700 hover:bg-red-100'
+                  ? 'bg-green-50 text-green-600 hover:bg-green-100'
+                  : 'bg-red-50 text-red-600 hover:bg-red-100'
               }`}
             >
               {selectedUser.is_active ? <ToggleRight className="w-4 h-4" /> : <ToggleLeft className="w-4 h-4" />}
@@ -141,7 +141,7 @@ export default function AdminUserManager() {
                     </td>
                     <td className="text-center px-4 py-3">
                       <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${
-                        u.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                        u.is_active ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'
                       }`}>
                         {u.is_active ? '활성' : '비활성'}
                       </span>

@@ -442,7 +442,7 @@ export default function ExpenseForm() {
           )}
 
           <div className="bg-grape-50 border border-grape-200 rounded-2xl p-4">
-            <p className="text-sm text-grape-800 font-medium">
+            <p className="text-sm text-grape-600 font-medium">
               {previewItems.length}건의 지출을 인식했습니다. 내용을 확인하고 수정한 뒤 저장하세요.
             </p>
           </div>
@@ -539,7 +539,7 @@ export default function ExpenseForm() {
                     <button
                       type="button"
                       onClick={() => { setShowNewCategoryFor(index); setNewCategoryName('') }}
-                      className="mt-1.5 text-xs text-grape-600 hover:text-grape-800 font-medium"
+                      className="mt-1.5 text-xs text-grape-600 hover:text-grape-600 font-medium"
                     >
                       + 새 카테고리
                     </button>
@@ -583,7 +583,7 @@ export default function ExpenseForm() {
       {mode === 'natural' && previewItems && (
         <div className="space-y-4">
           <div className="bg-grape-50 border border-grape-200 rounded-2xl p-4">
-            <p className="text-sm text-grape-800 font-medium">
+            <p className="text-sm text-grape-600 font-medium">
               {previewItems.length}건의 지출을 인식했습니다. 내용을 확인하고 수정한 뒤 저장하세요.
             </p>
           </div>
@@ -684,7 +684,7 @@ export default function ExpenseForm() {
                     <button
                       type="button"
                       onClick={() => { setShowNewCategoryFor(index); setNewCategoryName('') }}
-                      className="mt-1.5 text-xs text-grape-600 hover:text-grape-800 font-medium"
+                      className="mt-1.5 text-xs text-grape-600 hover:text-grape-600 font-medium"
                     >
                       + 새 카테고리
                     </button>
@@ -816,7 +816,7 @@ export default function ExpenseForm() {
               <button
                 type="button"
                 onClick={() => { setShowNewCategoryFor(-1); setNewCategoryName('') }}
-                className="mt-2 text-sm text-grape-600 hover:text-grape-800 font-medium"
+                className="mt-2 text-sm text-grape-600 hover:text-grape-600 font-medium"
               >
                 + 새 카테고리
               </button>

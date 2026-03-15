@@ -105,7 +105,7 @@ export default function RegisterRecurringModal({
           <div className="bg-[var(--surface-elevated)] rounded-xl p-4 space-y-2 text-sm">
             <div className="flex justify-between">
               <span className="text-[var(--text-tertiary)]">유형</span>
-              <span className={`font-medium ${type === 'expense' ? 'text-grape-700' : 'text-leaf-700'}`}>
+              <span className={`font-medium ${type === 'expense' ? 'text-grape-600' : 'text-leaf-600'}`}>
                 {type === 'expense' ? '지출' : '수입'}
               </span>
             </div>

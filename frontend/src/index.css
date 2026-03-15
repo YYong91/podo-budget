@@ -129,6 +129,16 @@
   --color-amber-100: #3a351f;
   --color-amber-200: #5c4d2d;
 
+  /* Yellow (경고) */
+  --color-yellow-50: #2d2a1a;
+  --color-yellow-100: #3a351f;
+  --color-yellow-200: #5c4d2d;
+
+  /* Green (성공/완료) */
+  --color-green-50: #1a2d1e;
+  --color-green-100: #1f3a26;
+  --color-green-200: #2d5c3a;
+
   color-scheme: dark;
 }
 

@@ -174,7 +174,7 @@ export default function IncomeDetail() {
               </button>
               <button
                 onClick={() => setShowDeleteModal(true)}
-                className="flex-1 sm:flex-none px-4 py-2 text-sm font-medium text-rose-700 bg-rose-50 rounded-xl hover:bg-rose-100 transition-colors"
+                className="flex-1 sm:flex-none px-4 py-2 text-sm font-medium text-rose-600 bg-rose-50 rounded-xl hover:bg-rose-100 transition-colors"
               >
                 삭제
               </button>

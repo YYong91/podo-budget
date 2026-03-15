@@ -71,7 +71,7 @@ export default function UnifiedSummaryCards({
       )}
 
       <div className="bg-gradient-to-br from-leaf-50 to-leaf-100 border border-leaf-200/60 rounded-2xl shadow-sm p-4 sm:p-5">
-        <p className="text-sm text-leaf-700/70">총 수입</p>
+        <p className="text-sm text-leaf-600/70">총 수입</p>
         <p className="text-xl sm:text-2xl font-bold tracking-tight text-[var(--text-primary)] mt-1">
           {formatAmount(incomeTotal)}
         </p>
@@ -80,7 +80,7 @@ export default function UnifiedSummaryCards({
         )}
       </div>
       <div className="bg-gradient-to-br from-grape-50 to-grape-100 border border-grape-200/60 rounded-2xl shadow-sm p-4 sm:p-5">
-        <p className="text-sm text-grape-700/70">총 지출</p>
+        <p className="text-sm text-grape-600/70">총 지출</p>
         <p className="text-xl sm:text-2xl font-bold tracking-tight text-[var(--text-primary)] mt-1">
           {formatAmount(expenseTotal)}
         </p>
