@@ -177,6 +177,7 @@ class InvitationResponse(BaseModel):
     created_at: datetime
     responded_at: datetime | None = None
     token: str | None = None  # 초대 생성 시에만 포함
+    email_sent: bool = True  # 이메일 발송 여부 (기본값 True — 기존 API 호환)
 
     model_config = ConfigDict(from_attributes=True)
 

@@ -2,7 +2,7 @@
 
 사용자별 수입 기록을 저장하는 Income 엔티티입니다.
 user_id를 통해 각 사용자의 수입을 격리하며,
-household_id가 있는 경우 해당 가구의 공유 수입으로 기록됩니다.
+household_id를 통해 소속 가구의 수입으로 기록됩니다.
 """
 
 from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Index, Integer, Numeric, String, Text
@@ -18,7 +18,7 @@ class Income(Base):
     Attributes:
         id: 수입 고유 식별자 (Primary Key)
         user_id: 수입을 기록한 사용자 ID (Foreign Key)
-        household_id: 공유 가구 ID (Foreign Key, nullable - None이면 개인 수입)
+        household_id: 소속 가구 ID (Foreign Key, NOT NULL)
         amount: 수입 금액
         description: 수입 설명
         category_id: 카테고리 ID (Foreign Key, nullable)
@@ -38,7 +38,7 @@ class Income(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
-    household_id = Column(Integer, ForeignKey("households.id", ondelete="SET NULL"), nullable=True, index=True)
+    household_id = Column(Integer, ForeignKey("households.id", ondelete="CASCADE"), nullable=False, index=True)
     amount = Column(Numeric(12, 2), nullable=False)
     description = Column(String, nullable=False)
     category_id = Column(Integer, ForeignKey("categories.id", ondelete="SET NULL"), nullable=True)

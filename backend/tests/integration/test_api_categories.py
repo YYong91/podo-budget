@@ -17,6 +17,7 @@ from sqlalchemy import select
 
 from app.models.category import Category
 from app.models.expense import Expense
+from app.models.household import Household
 from app.models.user import User
 
 
@@ -171,7 +172,7 @@ async def test_delete_category_not_found(authenticated_client, test_user: User, 
 
 
 @pytest.mark.asyncio
-async def test_category_cascade_with_expenses(authenticated_client, test_user: User, db_session):
+async def test_category_cascade_with_expenses(authenticated_client, test_user: User, test_household: Household, db_session):
     """카테고리에 연결된 지출이 있어도 삭제 가능한지 확인"""
     # 카테고리 생성
     category = Category(user_id=test_user.id, name="식비")
@@ -182,6 +183,7 @@ async def test_category_cascade_with_expenses(authenticated_client, test_user: U
     # 지출 생성
     expense = Expense(
         user_id=test_user.id,
+        household_id=test_household.id,
         amount=8000,
         description="김치찌개",
         category_id=category.id,

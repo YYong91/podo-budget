@@ -8,6 +8,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter, Routes, Route } from 'react-router-dom'
 import SettingsPage from '../SettingsPage'
+import { ThemeProvider } from '../../contexts/ThemeContext'
 import { changelogs } from '../../data/changelogs'
 
 // useAuth 모킹
@@ -40,12 +41,14 @@ globalThis.IntersectionObserver = class IntersectionObserver {
 
 function renderSettingsPage(path = '/settings') {
   return render(
-    <MemoryRouter initialEntries={[path]}>
-      <Routes>
-        <Route path="/settings" element={<SettingsPage />} />
-        <Route path="/settings/:section" element={<SettingsPage />} />
-      </Routes>
-    </MemoryRouter>
+    <ThemeProvider>
+      <MemoryRouter initialEntries={[path]}>
+        <Routes>
+          <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/settings/:section" element={<SettingsPage />} />
+        </Routes>
+      </MemoryRouter>
+    </ThemeProvider>
   )
 }
 
@@ -61,12 +64,13 @@ describe('SettingsPage', () => {
       expect(screen.getByText('카테고리')).toBeInTheDocument()
     })
 
-    it('8개 메뉴 항목을 표시한다', () => {
+    it('9개 메뉴 항목을 표시한다', () => {
       renderSettingsPage()
       expect(screen.getByText('카테고리')).toBeInTheDocument()
       expect(screen.getByText('예산 관리')).toBeInTheDocument()
       expect(screen.getByText('반복 거래')).toBeInTheDocument()
       expect(screen.getByText('공유 가계부')).toBeInTheDocument()
+      expect(screen.getByText('화면 모드')).toBeInTheDocument()
       expect(screen.getByText('내 계정')).toBeInTheDocument()
       expect(screen.getByText('새소식')).toBeInTheDocument()
       expect(screen.getByText('사용 가이드')).toBeInTheDocument()
@@ -76,7 +80,7 @@ describe('SettingsPage', () => {
     it('메뉴 설명을 표시한다', () => {
       renderSettingsPage()
       expect(screen.getByText('앱 업데이트 내역')).toBeInTheDocument()
-      expect(screen.getByText('프로필, 텔레그램 연동, 로그아웃')).toBeInTheDocument()
+      expect(screen.getByText('프로필, 텔레그램/카카오톡 연동, 로그아웃')).toBeInTheDocument()
       expect(screen.getByText('지출/수입 분류 카테고리 관리')).toBeInTheDocument()
     })
   })

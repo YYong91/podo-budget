@@ -79,7 +79,7 @@ export default function InsightsPage() {
       setStructuredInsights(null)
       try {
         const dateStr = `${monthStr}-15`
-        const hhId = activeHouseholdId ?? undefined
+        const hhId = activeHouseholdId!
 
         // 1차 병렬: 지출/수입 통계 + 비교 + 예산 + 자산
         const [expRes, incRes, compRes, budgetRes, assetRes, snapRes] = await Promise.allSettled([
@@ -247,11 +247,11 @@ export default function InsightsPage() {
           )}
 
           {/* 6. AI 심층 분석 */}
-          <div className="bg-white rounded-2xl shadow-sm border border-warm-200/60 p-4">
+          <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)]/60 p-4">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <Sparkles className="w-5 h-5 text-grape-600" />
-                <h2 className="text-base font-semibold text-warm-900">AI 심층 분석</h2>
+                <h2 className="text-base font-semibold text-[var(--text-primary)]">AI 심층 분석</h2>
               </div>
               {!structuredInsights && (
                 <button
@@ -271,7 +271,7 @@ export default function InsightsPage() {
             {aiLoading && (
               <div className="flex flex-col items-center gap-3 py-8">
                 <Loader2 className="animate-spin h-8 w-8 text-grape-600" />
-                <p className="text-sm text-warm-600">AI가 재무 데이터를 분석하고 있습니다...</p>
+                <p className="text-sm text-[var(--text-secondary)]">AI가 재무 데이터를 분석하고 있습니다...</p>
               </div>
             )}
 
@@ -284,7 +284,7 @@ export default function InsightsPage() {
 
             {/* 분석 전 안내 */}
             {!aiLoading && !structuredInsights && (
-              <p className="text-sm text-warm-500 mt-3">
+              <p className="text-sm text-[var(--text-tertiary)] mt-3">
                 AI가 수입, 지출, 예산, 자산을 종합 분석하여 맞춤 인사이트를 제공합니다.
               </p>
             )}

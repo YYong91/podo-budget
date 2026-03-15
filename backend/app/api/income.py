@@ -39,8 +39,7 @@ async def create_income(
     if household_id is None:
         household_id = await get_user_active_household_id(current_user, db)
 
-    if household_id is not None:
-        await get_household_member(household_id, current_user, db)
+    await get_household_member(household_id, current_user, db)
 
     income_data = income.model_dump(exclude={"household_id"})
     db_income = Income(**income_data, user_id=current_user.id, household_id=household_id)
@@ -63,13 +62,14 @@ async def get_incomes(
     db: AsyncSession = Depends(get_db),
 ):
     """수입 목록 조회 (필터링, 페이지네이션)"""
-    if household_id is not None:
-        await get_household_member(household_id, current_user, db)
-        query = select(Income).where(Income.household_id == household_id)
-        if member_user_id is not None:
-            query = query.where(Income.user_id == member_user_id)
-    else:
-        query = select(Income).where(Income.user_id == current_user.id)
+    # household_id 미지정 시 활성 가구 자동 감지
+    if household_id is None:
+        household_id = await get_user_active_household_id(current_user, db)
+
+    await get_household_member(household_id, current_user, db)
+    query = select(Income).where(Income.household_id == household_id)
+    if member_user_id is not None:
+        query = query.where(Income.user_id == member_user_id)
 
     if start_date:
         start_dt = datetime.fromisoformat(start_date)
@@ -111,10 +111,9 @@ def _get_year_range(d: date) -> tuple[date, date]:
     return date(d.year, 1, 1), date(d.year, 12, 31)
 
 
-def _build_income_scope_filter(household_id: int | None, current_user: User):
-    if household_id is not None:
-        return Income.household_id == household_id
-    return Income.user_id == current_user.id
+def _build_income_scope_filter(household_id: int):
+    """가구 스코프 필터 생성"""
+    return Income.household_id == household_id
 
 
 @router.get("/stats", response_model=StatsResponse)
@@ -143,9 +142,11 @@ async def get_income_stats(
     start_dt = datetime(start_d.year, start_d.month, start_d.day)
     end_dt = datetime(end_d.year, end_d.month, end_d.day, 23, 59, 59)
 
-    if household_id is not None:
-        await get_household_member(household_id, current_user, db)
-    scope_filter = _build_income_scope_filter(household_id, current_user)
+    # household_id 미지정 시 활성 가구 자동 감지
+    if household_id is None:
+        household_id = await get_user_active_household_id(current_user, db)
+    await get_household_member(household_id, current_user, db)
+    scope_filter = _build_income_scope_filter(household_id)
     stats_filter = Income.exclude_from_stats == False  # noqa: E712
     base_where = [scope_filter, stats_filter, Income.date >= start_dt, Income.date <= end_dt]
 
@@ -218,10 +219,16 @@ async def get_income(
     if not income:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="수입을 찾을 수 없습니다")
 
+    # 접근 권한 확인: 가구 멤버인지 검증
     if income.household_id is not None:
-        await get_household_member(income.household_id, current_user, db)
-    elif income.user_id != current_user.id:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="수입을 찾을 수 없습니다")
+        try:
+            await get_household_member(income.household_id, current_user, db)
+        except HTTPException:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="수입을 찾을 수 없습니다") from None
+    else:
+        # 레거시 데이터: household_id 없는 수입은 본인 것만 조회
+        if income.user_id != current_user.id:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="수입을 찾을 수 없습니다")
 
     return income
 

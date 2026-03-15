@@ -12,7 +12,7 @@ class Account(Base):
     __table_args__ = (Index("ix_accounts_household_id", "household_id"),)
 
     id = Column(Integer, primary_key=True, index=True)
-    household_id = Column(Integer, ForeignKey("households.id", ondelete="SET NULL"), nullable=True)
+    household_id = Column(Integer, ForeignKey("households.id", ondelete="CASCADE"), nullable=False)
     created_by = Column(Integer, ForeignKey("users.id"), nullable=False)
     name = Column(String, nullable=False)  # 예: "키움증권", "KB국민은행", "업비트"
     type = Column(String, nullable=False)  # brokerage, bank, crypto_exchange, other

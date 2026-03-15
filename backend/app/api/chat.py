@@ -33,7 +33,6 @@ from app.schemas.income import IncomeResponse
 from app.services.category_hint_service import get_category_hints, get_user_categories
 from app.services.category_service import get_or_create_category
 from app.services.exchange_rate import get_exchange_rate
-from app.services.expense_context_detector import resolve_household_id
 from app.services.llm_service import get_llm_provider
 
 router = APIRouter()
@@ -87,17 +86,13 @@ async def chat(
     자연어로 입력된 내용을 LLM이 파싱하여 현재 로그인한 사용자의 지출 또는 수입으로 기록합니다.
     LLM이 type=income을 반환하면 수입으로, 그 외에는 지출로 기록됩니다.
     """
-    # household_id 결정: 명시적 지정 → 자연어 컨텍스트 → 활성 가구
-    user_active = await get_user_active_household_id(current_user, db)
-    household_id = await resolve_household_id(
-        message=chat_request.message,
-        explicit_household_id=chat_request.household_id,
-        user_active_household_id=user_active,
-    )
+    # household_id 결정: 명시적 지정 → 활성 가구
+    household_id = chat_request.household_id
+    if household_id is None:
+        household_id = await get_user_active_household_id(current_user, db)
 
-    # 가구가 있으면 멤버 검증
-    if household_id is not None:
-        await get_household_member(household_id, current_user, db)
+    # 가구 멤버 검증
+    await get_household_member(household_id, current_user, db)
 
     llm = get_llm_provider("parse")
 

@@ -7,7 +7,7 @@
 import type { } from 'react'
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, Link2 } from 'lucide-react'
 import { useHouseholdStore } from '../stores/useHouseholdStore'
 import { useToast } from '../hooks/useToast'
 import { useAuth } from '../contexts/AuthContext'
@@ -45,13 +45,13 @@ function getRoleBadgeColor(role: string): string {
     case 'admin':
       return 'bg-blue-100 text-blue-800'
     case 'member':
-      return 'bg-warm-100 text-warm-800'
+      return 'bg-[var(--surface-hover)] text-[var(--text-primary)]'
     default:
-      return 'bg-warm-100 text-warm-800'
+      return 'bg-[var(--surface-hover)] text-[var(--text-primary)]'
   }
 }
 
-type TabType = 'members' | 'settings'
+type TabType = 'members' | 'invitations' | 'settings'
 
 export default function HouseholdDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -64,10 +64,13 @@ export default function HouseholdDetailPage() {
     currentHousehold,
     isLoading,
     error,
+    householdInvitations,
     fetchHouseholdDetail,
+    fetchHouseholdInvitations,
     updateHousehold,
     deleteHousehold,
     inviteMember,
+    cancelInvitation,
     updateMemberRole,
     removeMember,
     leaveHousehold,
@@ -105,6 +108,15 @@ export default function HouseholdDetailPage() {
   }, [id, fetchHouseholdDetail, addToast, clearCurrentHousehold])
 
   /**
+   * admin인 경우 초대 목록도 조회
+   */
+  useEffect(() => {
+    if (id && currentHousehold && (currentHousehold.my_role === 'owner' || currentHousehold.my_role === 'admin')) {
+      fetchHouseholdInvitations(Number(id)).catch(() => {})
+    }
+  }, [id, currentHousehold?.my_role, fetchHouseholdInvitations])
+
+  /**
    * 가구 정보가 로드되면 폼 데이터 초기화
    */
   useEffect(() => {
@@ -134,9 +146,18 @@ export default function HouseholdDetailPage() {
 
     setIsInviting(true)
     try {
-      await inviteMember(Number(id), data)
-      addToast('success', '초대를 전송했습니다')
+      const result = await inviteMember(Number(id), data)
+      if (result.email_sent === false && result.token) {
+        // 이메일 미발송 — 링크 복사 안내
+        const link = `${window.location.origin}/invitations/accept?token=${result.token}`
+        await navigator.clipboard.writeText(link)
+        addToast('warning', '이메일 발송 실패 — 초대 링크가 클립보드에 복사되었습니다')
+      } else {
+        addToast('success', '초대를 전송했습니다')
+      }
       setShowInviteModal(false)
+      // 초대 목록 새로고침
+      await fetchHouseholdInvitations(Number(id)).catch(() => {})
     } catch (err) {
       console.error('멤버 초대 실패:', err)
       addToast('error', '멤버 초대에 실패했습니다')
@@ -244,10 +265,10 @@ export default function HouseholdDetailPage() {
   if (error && !currentHousehold) {
     return (
       <div className="space-y-6">
-        <button onClick={() => navigate('/households')} className="p-1.5 -ml-1.5 rounded-lg hover:bg-warm-100 transition-colors">
-          <ArrowLeft className="w-5 h-5 text-warm-600" />
+        <button onClick={() => navigate('/households')} className="p-2.5 -ml-2.5 rounded-lg hover:bg-[var(--surface-hover)] transition-colors">
+          <ArrowLeft className="w-5 h-5 text-[var(--text-secondary)]" />
         </button>
-        <div className="bg-white rounded-2xl shadow-sm border border-warm-200">
+        <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)]">
           <ErrorState onRetry={() => id && fetchHouseholdDetail(Number(id))} />
         </div>
       </div>
@@ -281,7 +302,7 @@ export default function HouseholdDetailPage() {
           <div className="flex items-center gap-3">
             <button
               onClick={() => navigate('/households')}
-              className="text-warm-400 hover:text-warm-600 transition-colors"
+              className="text-[var(--text-muted)] hover:text-[var(--text-secondary)] transition-colors"
             >
               <ArrowLeft className="w-5 h-5" />
             </button>
@@ -294,7 +315,7 @@ export default function HouseholdDetailPage() {
             </span>
           </div>
           {currentHousehold.description && (
-            <p className="text-sm text-warm-500 mt-1">
+            <p className="text-sm text-[var(--text-tertiary)] mt-1">
               {currentHousehold.description}
             </p>
           )}
@@ -302,25 +323,42 @@ export default function HouseholdDetailPage() {
       </div>
 
       {/* 탭 */}
-      <div className="border-b border-warm-200">
+      <div className="border-b border-[var(--border-default)]">
         <div className="flex gap-6">
           <button
             onClick={() => setActiveTab('members')}
             className={`pb-3 px-1 text-sm font-medium border-b-2 transition-colors ${
               activeTab === 'members'
                 ? 'border-grape-600 text-grape-600'
-                : 'border-transparent text-warm-500 hover:text-warm-700'
+                : 'border-transparent text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]'
             }`}
           >
             멤버
           </button>
           {isAdmin && (
             <button
+              onClick={() => setActiveTab('invitations')}
+              className={`pb-3 px-1 text-sm font-medium border-b-2 transition-colors ${
+                activeTab === 'invitations'
+                  ? 'border-grape-600 text-grape-600'
+                  : 'border-transparent text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]'
+              }`}
+            >
+              초대
+              {householdInvitations.filter(i => i.status === 'pending').length > 0 && (
+                <span className="ml-1.5 inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-grape-500 rounded-full">
+                  {householdInvitations.filter(i => i.status === 'pending').length}
+                </span>
+              )}
+            </button>
+          )}
+          {isAdmin && (
+            <button
               onClick={() => setActiveTab('settings')}
               className={`pb-3 px-1 text-sm font-medium border-b-2 transition-colors ${
                 activeTab === 'settings'
                   ? 'border-grape-600 text-grape-600'
-                  : 'border-transparent text-warm-500 hover:text-warm-700'
+                  : 'border-transparent text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]'
               }`}
             >
               설정
@@ -332,55 +370,43 @@ export default function HouseholdDetailPage() {
       {/* 멤버 탭 */}
       {activeTab === 'members' && (
         <div className="space-y-4">
-          {/* 초대 버튼 (admin 이상) */}
-          {isAdmin && (
-            <div className="flex justify-end">
-              <button
-                onClick={() => setShowInviteModal(true)}
-                className="px-4 py-2 text-sm font-medium text-white bg-grape-600 rounded-lg hover:bg-grape-700 transition-colors"
-              >
-                + 멤버 초대
-              </button>
-            </div>
-          )}
-
           {/* 멤버 목록 */}
-          <div className="bg-white rounded-2xl shadow-sm border border-warm-200 overflow-hidden">
+          <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-warm-50 border-b border-warm-200">
+                <thead className="bg-[var(--surface-elevated)] border-b border-[var(--border-default)]">
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-warm-500 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-[var(--text-tertiary)] uppercase tracking-wider">
                       이름
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-warm-500 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-[var(--text-tertiary)] uppercase tracking-wider">
                       이메일
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-warm-500 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-[var(--text-tertiary)] uppercase tracking-wider">
                       역할
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-warm-500 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-[var(--text-tertiary)] uppercase tracking-wider">
                       가입일
                     </th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-warm-500 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-right text-xs font-medium text-[var(--text-tertiary)] uppercase tracking-wider">
                       관리
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-warm-200">
+                <tbody className="divide-y divide-[var(--border-default)]">
                   {currentHousehold.members.map((member) => {
                     const isMe = member.user_id === user?.id
                     const canManage = isOwner && !isMe && member.role !== 'owner'
 
                     return (
-                      <tr key={member.user_id} className="hover:bg-warm-50">
-                        <td className="px-4 py-3 text-sm font-medium text-warm-900">
+                      <tr key={member.user_id} className="hover:bg-[var(--surface-hover)]">
+                        <td className="px-4 py-3 text-sm font-medium text-[var(--text-primary)]">
                           {member.username}
                           {isMe && (
-                            <span className="ml-2 text-xs text-warm-500">(나)</span>
+                            <span className="ml-2 text-xs text-[var(--text-tertiary)]">(나)</span>
                           )}
                         </td>
-                        <td className="px-4 py-3 text-sm text-warm-600">
+                        <td className="px-4 py-3 text-sm text-[var(--text-secondary)]">
                           {member.email || '-'}
                         </td>
                         <td className="px-4 py-3">
@@ -393,7 +419,7 @@ export default function HouseholdDetailPage() {
                                   e.target.value as MemberRole
                                 )
                               }
-                              className="text-sm px-2 py-1 border border-warm-300 rounded bg-white focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
+                              className="text-sm px-2 py-1 border border-[var(--input-border)] rounded bg-[var(--surface-card)] focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
                             >
                               <option value="member">멤버</option>
                               <option value="admin">관리자</option>
@@ -408,7 +434,7 @@ export default function HouseholdDetailPage() {
                             </span>
                           )}
                         </td>
-                        <td className="px-4 py-3 text-sm text-warm-600">
+                        <td className="px-4 py-3 text-sm text-[var(--text-secondary)]">
                           {formatDate(member.joined_at)}
                         </td>
                         <td className="px-4 py-3 text-sm text-right">
@@ -429,7 +455,7 @@ export default function HouseholdDetailPage() {
                               탈퇴
                             </button>
                           ) : (
-                            <span className="text-warm-400">-</span>
+                            <span className="text-[var(--text-muted)]">-</span>
                           )}
                         </td>
                       </tr>
@@ -442,12 +468,102 @@ export default function HouseholdDetailPage() {
         </div>
       )}
 
+      {/* 초대 탭 */}
+      {activeTab === 'invitations' && isAdmin && (
+        <div className="space-y-4">
+          <div className="flex justify-end">
+            <button
+              onClick={() => setShowInviteModal(true)}
+              className="px-4 py-2 text-sm font-medium text-white bg-grape-600 rounded-lg hover:bg-grape-700 transition-colors"
+            >
+              + 멤버 초대
+            </button>
+          </div>
+
+          {householdInvitations.length === 0 ? (
+            <div className="text-center py-8 text-sm text-[var(--text-muted)]">
+              보낸 초대가 없습니다
+            </div>
+          ) : (
+            <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] overflow-hidden">
+              <div className="divide-y divide-[var(--border-default)]">
+                {householdInvitations.map((inv) => {
+                  const isPending = inv.status === 'pending'
+                  const statusText: Record<string, string> = {
+                    pending: '대기 중',
+                    accepted: '수락됨',
+                    rejected: '거절됨',
+                    expired: '만료됨',
+                  }
+                  const statusColor: Record<string, string> = {
+                    pending: 'bg-yellow-100 text-yellow-800',
+                    accepted: 'bg-green-100 text-green-800',
+                    rejected: 'bg-warm-100 text-warm-600',
+                    expired: 'bg-warm-100 text-[var(--text-muted)]',
+                  }
+
+                  return (
+                    <div key={inv.id} className="flex items-center justify-between p-4">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium text-[var(--text-primary)] truncate">
+                          {inv.invitee_email}
+                        </p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className={`text-xs px-2 py-0.5 rounded-full ${statusColor[inv.status] || ''}`}>
+                            {statusText[inv.status] || inv.status}
+                          </span>
+                          <span className="text-xs text-[var(--text-muted)]">
+                            {inv.role === 'admin' ? '관리자' : '멤버'}
+                          </span>
+                        </div>
+                      </div>
+                      {isPending && (
+                        <div className="flex items-center gap-2 ml-3">
+                          {inv.token && (
+                            <button
+                              onClick={async () => {
+                                const link = `${window.location.origin}/invitations/accept?token=${inv.token}`
+                                await navigator.clipboard.writeText(link)
+                                addToast('success', '초대 링크가 복사되었습니다')
+                              }}
+                              className="text-xs text-grape-600 hover:text-grape-700 font-medium flex items-center gap-1"
+                              title="초대 링크 복사"
+                            >
+                              <Link2 className="w-3.5 h-3.5" />
+                              링크 복사
+                            </button>
+                          )}
+                          <button
+                            onClick={async () => {
+                              if (!confirm(`${inv.invitee_email}의 초대를 취소하시겠습니까?`)) return
+                              try {
+                                await cancelInvitation(Number(id), inv.id)
+                                addToast('success', '초대를 취소했습니다')
+                              } catch {
+                                addToast('error', '초대 취소에 실패했습니다')
+                              }
+                            }}
+                            className="text-xs text-rose-600 hover:text-rose-700 font-medium"
+                          >
+                            취소
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* 설정 탭 */}
       {activeTab === 'settings' && isAdmin && (
         <div className="space-y-6">
           {/* 가구 정보 수정 */}
-          <div className="bg-white rounded-2xl shadow-sm border border-warm-200 p-6">
-            <h2 className="text-lg font-semibold text-warm-900 mb-4">
+          <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] p-6">
+            <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-4">
               가구 정보
             </h2>
 
@@ -455,7 +571,7 @@ export default function HouseholdDetailPage() {
               <div>
                 <label
                   htmlFor="name"
-                  className="block text-sm font-medium text-warm-700 mb-1"
+                  className="block text-sm font-medium text-[var(--text-secondary)] mb-1"
                 >
                   가구 이름
                 </label>
@@ -464,7 +580,7 @@ export default function HouseholdDetailPage() {
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full px-3 py-2 border border-warm-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
+                  className="w-full px-3 py-2 border border-[var(--input-border)] rounded-xl focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
                   disabled={!editMode}
                   required
                 />
@@ -473,7 +589,7 @@ export default function HouseholdDetailPage() {
               <div>
                 <label
                   htmlFor="description"
-                  className="block text-sm font-medium text-warm-700 mb-1"
+                  className="block text-sm font-medium text-[var(--text-secondary)] mb-1"
                 >
                   설명
                 </label>
@@ -483,7 +599,7 @@ export default function HouseholdDetailPage() {
                   onChange={(e) =>
                     setFormData({ ...formData, description: e.target.value })
                   }
-                  className="w-full px-3 py-2 border border-warm-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500 resize-none"
+                  className="w-full px-3 py-2 border border-[var(--input-border)] rounded-xl focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500 resize-none"
                   rows={3}
                   disabled={!editMode}
                 />
@@ -501,7 +617,7 @@ export default function HouseholdDetailPage() {
                           description: currentHousehold.description || '',
                         })
                       }}
-                      className="px-4 py-2 text-sm font-medium text-warm-700 bg-white border border-warm-300 rounded-lg hover:bg-warm-50 transition-colors"
+                      className="px-4 py-2 text-sm font-medium text-[var(--text-secondary)] bg-[var(--surface-card)] border border-[var(--input-border)] rounded-lg hover:bg-[var(--surface-hover)] transition-colors"
                     >
                       취소
                     </button>
@@ -527,11 +643,11 @@ export default function HouseholdDetailPage() {
 
           {/* 가구 삭제 (owner만) */}
           {isOwner && (
-            <div className="bg-white rounded-2xl shadow-sm border border-rose-200 p-6">
+            <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-rose-200 p-6">
               <h2 className="text-lg font-semibold text-rose-900 mb-2">
                 위험 영역
               </h2>
-              <p className="text-sm text-warm-600 mb-4">
+              <p className="text-sm text-[var(--text-secondary)] mb-4">
                 가구를 삭제하면 모든 데이터가 영구적으로 삭제됩니다. 이 작업은 되돌릴 수 없습니다.
               </p>
               <button

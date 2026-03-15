@@ -27,12 +27,18 @@ interface HouseholdState {
   currentHousehold: HouseholdDetail | null
   /** 내가 받은 초대 목록 */
   myInvitations: HouseholdInvitation[]
+  /** 현재 가구의 보낸 초대 목록 */
+  householdInvitations: HouseholdInvitation[]
   /** 활성 가구 ID (지출 연동용) */
   activeHouseholdId: number | null
   /** 로딩 상태 */
   isLoading: boolean
   /** 에러 메시지 */
   error: string | null
+  /** 초기 fetch 완료 여부 (새로고침 시 premature redirect 방지) */
+  hasInitialized: boolean
+  /** 초기 fetch 실패 에러 */
+  initError: string | null
 }
 
 /**
@@ -64,6 +70,8 @@ interface HouseholdActions {
   inviteMember: (householdId: number, data: InviteMemberDto) => Promise<HouseholdInvitation>
   /** 내가 받은 초대 목록 조회 */
   fetchMyInvitations: () => Promise<void>
+  /** 가구 초대 목록 조회 (admin용) */
+  fetchHouseholdInvitations: (householdId: number) => Promise<void>
   /** 초대 수락 */
   acceptInvitation: (token: string) => Promise<AcceptInvitationResponse>
   /** 초대 거절 */
@@ -80,6 +88,8 @@ interface HouseholdActions {
   getActiveHouseholdId: () => number | null
   /** 활성 가구 전환 */
   setActiveHouseholdId: (id: number | null) => void
+  /** 앱 초기화 (households + invitations 동시 fetch) */
+  initializeApp: () => Promise<void>
 }
 
 type HouseholdStore = HouseholdState & HouseholdActions
@@ -94,9 +104,12 @@ export const useHouseholdStore = create<HouseholdStore>((set, get) => ({
   households: [],
   currentHousehold: null,
   myInvitations: [],
+  householdInvitations: [],
   activeHouseholdId: null,
   isLoading: false,
   error: null,
+  hasInitialized: false,
+  initError: null,
 
   // ============================================================
   // Household CRUD
@@ -115,10 +128,10 @@ export const useHouseholdStore = create<HouseholdStore>((set, get) => ({
       const activeId = currentActive && households.some((h) => h.id === currentActive)
         ? currentActive
         : households.length > 0 ? households[0].id : null
-      set({ households, activeHouseholdId: activeId, isLoading: false })
+      set({ households, activeHouseholdId: activeId, isLoading: false, hasInitialized: true, initError: null })
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : '목록 조회 중 오류가 발생했습니다'
-      set({ error: errorMessage, isLoading: false })
+      set({ error: errorMessage, isLoading: false, hasInitialized: true, initError: errorMessage })
       throw error
     }
   },
@@ -338,11 +351,40 @@ export const useHouseholdStore = create<HouseholdStore>((set, get) => ({
     set({ isLoading: true, error: null })
     try {
       await householdApi.cancelInvitation(householdId, invitationId)
+      // 취소 후 목록 새로고침
+      await get().fetchHouseholdInvitations(householdId)
       set({ isLoading: false })
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : '초대 취소 중 오류가 발생했습니다'
       set({ error: errorMessage, isLoading: false })
       throw error
+    }
+  },
+
+  /**
+   * 가구 초대 목록 조회 (admin용)
+   */
+  fetchHouseholdInvitations: async (householdId: number) => {
+    try {
+      const response = await householdApi.getHouseholdInvitations(householdId)
+      set({ householdInvitations: response.data })
+    } catch {
+      set({ householdInvitations: [] })
+    }
+  },
+
+  /**
+   * 앱 초기화 (households + invitations 동시 fetch)
+   */
+  initializeApp: async () => {
+    if (get().hasInitialized) return // 중복 호출 방지
+    try {
+      await Promise.all([
+        get().fetchHouseholds(),
+        get().fetchMyInvitations(),
+      ])
+    } catch {
+      // fetchHouseholds에서 이미 hasInitialized=true 설정됨
     }
   },
 
@@ -376,6 +418,8 @@ export const useHouseholdStore = create<HouseholdStore>((set, get) => ({
    * 지출 목록/대시보드에서 해당 가구의 데이터만 표시하도록 변경한다.
    */
   setActiveHouseholdId: (id: number | null) => {
+    // 온보딩 완료 후 null 전환 방지
+    if (id === null) return
     set({ activeHouseholdId: id })
   },
 }))

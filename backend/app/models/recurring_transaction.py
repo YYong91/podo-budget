@@ -35,7 +35,7 @@ class RecurringTransaction(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
-    household_id = Column(Integer, ForeignKey("households.id", ondelete="SET NULL"), nullable=True)
+    household_id = Column(Integer, ForeignKey("households.id", ondelete="CASCADE"), nullable=False)
     type = Column(String(10), nullable=False)  # expense | income
     amount = Column(Numeric(12, 2), nullable=False)
     description = Column(String, nullable=False)

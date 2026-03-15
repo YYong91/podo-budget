@@ -327,6 +327,140 @@ export const mockAssetSnapshots: AssetSnapshot[] = [
 /**
  * 테스트용 구조화된 인사이트
  */
+/**
+ * 테스트용 자산 목록
+ */
+export const mockAssets = [
+  {
+    id: 1,
+    name: '삼성전자',
+    type: 'stock_kr',
+    is_liability: false,
+    ticker: '005930.KS',
+    quantity: 10,
+    purchase_price: 70000,
+    current_price: 72000,
+    currency: 'KRW',
+    memo: null,
+    household_id: null,
+    user_id: 1,
+    account_id: null,
+    created_at: '2026-01-01T00:00:00Z',
+    updated_at: '2026-03-01T00:00:00Z',
+  },
+  {
+    id: 2,
+    name: '비상금 통장',
+    type: 'deposit',
+    is_liability: false,
+    ticker: null,
+    quantity: null,
+    purchase_price: 5000000,
+    current_price: 5000000,
+    currency: 'KRW',
+    memo: null,
+    household_id: null,
+    user_id: 1,
+    account_id: null,
+    created_at: '2026-01-01T00:00:00Z',
+    updated_at: '2026-03-01T00:00:00Z',
+  },
+]
+
+/**
+ * 테스트용 자산 목표
+ */
+export const mockAssetGoal = {
+  id: 1,
+  target_net_worth: 100000000,
+  target_date: '2027-12-31',
+  household_id: null,
+  user_id: 1,
+  created_at: '2026-01-01T00:00:00Z',
+  updated_at: '2026-01-01T00:00:00Z',
+  pace_analysis: {
+    current_net_worth: 85000000,
+    monthly_required: 1250000,
+    months_remaining: 12,
+    on_track: true,
+  },
+}
+
+/**
+ * 테스트용 월별 저축 추이
+ */
+export const mockMonthlySavings = [
+  { month: '2026-01', total_income: 4000000, total_expense: 2500000, net_savings: 1500000 },
+  { month: '2026-02', total_income: 4000000, total_expense: 2800000, net_savings: 1200000 },
+]
+
+/**
+ * 테스트용 자연어 채팅 응답
+ */
+export const mockChatResponse = {
+  message: '김치찌개 8,000원을 식비로 저장했습니다.',
+  expenses_created: [
+    {
+      id: 10,
+      amount: 8000,
+      description: '김치찌개',
+      category_id: 1,
+      raw_input: '오늘 점심에 김치찌개 8000원 먹었어',
+      memo: null,
+      household_id: null,
+      user_id: 1,
+      exclude_from_stats: false,
+      date: '2026-03-14T12:00:00Z',
+      created_at: '2026-03-14T12:00:00Z',
+      updated_at: '2026-03-14T12:00:00Z',
+    },
+  ],
+  incomes_created: null,
+  parsed_items: null,
+  parsed_expenses: null,
+}
+
+/**
+ * 테스트용 피드백 목록
+ */
+export const mockFeedbacks = [
+  {
+    id: 1,
+    user_id: 1,
+    type: 'feature' as const,
+    title: '다크모드 추가',
+    content: '다크모드를 추가해주세요',
+    status: 'new' as const,
+    username: 'testuser',
+    created_at: '2026-03-01T00:00:00Z',
+    updated_at: '2026-03-01T00:00:00Z',
+  },
+  {
+    id: 2,
+    user_id: 1,
+    type: 'bug' as const,
+    title: '카테고리 안 보임',
+    content: '카테고리가 표시되지 않습니다',
+    status: 'read' as const,
+    username: 'testuser',
+    created_at: '2026-03-02T00:00:00Z',
+    updated_at: '2026-03-02T00:00:00Z',
+  },
+]
+
+/**
+ * 테스트용 관리자 대시보드 통계
+ */
+export const mockDashboardStats = {
+  total_users: 150,
+  active_users: 80,
+  telegram_linked_count: 30,
+  total_households: 20,
+  today_active_users: 15,
+  total_expenses_count: 5000,
+  total_income_count: 1500,
+}
+
 export const mockStructuredInsights: StructuredInsights = {
   findings: [
     {

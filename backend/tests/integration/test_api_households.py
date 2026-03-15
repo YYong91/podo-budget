@@ -54,34 +54,37 @@ async def test_list_households_내가_속한_가구만_조회(authenticated_clie
     """내가 속한 가구 목록 조회 테스트
 
     - 각 사용자는 자신이 속한 가구만 조회할 수 있음
+    - conftest에서 각 사용자에게 기본 가구(테스트 가구, 테스트 가구 2)가 이미 생성됨
     """
-    # 사용자1이 가구 생성
+    # 사용자1이 추가 가구 생성
     response1 = await authenticated_client.post(
         "/api/households",
         json={"name": "가구1"},
     )
     assert response1.status_code == 201
 
-    # 사용자2가 가구 생성
+    # 사용자2가 추가 가구 생성
     response2 = await authenticated_client2.post(
         "/api/households",
         json={"name": "가구2"},
     )
     assert response2.status_code == 201
 
-    # 사용자1 가구 목록 조회 (가구1만 보임)
+    # 사용자1 가구 목록 조회 (conftest 가구 + 가구1 = 2개)
     response = await authenticated_client.get("/api/households")
     assert response.status_code == 200
     data = response.json()
-    assert len(data) == 1
-    assert data[0]["name"] == "가구1"
+    assert len(data) == 2
+    names = [h["name"] for h in data]
+    assert "가구1" in names
 
-    # 사용자2 가구 목록 조회 (가구2만 보임)
+    # 사용자2 가구 목록 조회 (conftest 가구2 + 가구2 = 2개)
     response = await authenticated_client2.get("/api/households")
     assert response.status_code == 200
     data = response.json()
-    assert len(data) == 1
-    assert data[0]["name"] == "가구2"
+    assert len(data) == 2
+    names = [h["name"] for h in data]
+    assert "가구2" in names
 
 
 @pytest.mark.asyncio
@@ -178,9 +181,12 @@ async def test_delete_household_owner만_삭제_가능(authenticated_client: Asy
     household = result.scalar_one()
     assert household.deleted_at is not None
 
-    # 삭제된 가구는 목록에 표시되지 않음
+    # 삭제된 가구는 목록에 표시되지 않음 (conftest 기본 가구만 남음)
     list_response = await authenticated_client.get("/api/households")
-    assert len(list_response.json()) == 0
+    data = list_response.json()
+    # conftest에서 생성된 기본 가구(테스트 가구)는 남아있음
+    assert len(data) == 1
+    assert data[0]["name"] == "테스트 가구"
 
 
 @pytest.mark.asyncio
@@ -497,7 +503,8 @@ async def test_list_invitations_가구의_초대_목록_조회(authenticated_cli
     assert response.status_code == 200
     data = response.json()
     assert len(data) == 2
-    assert data[0]["token"] is None  # 목록 조회 시에는 토큰 미포함
+    # pending 초대는 토큰 포함 (링크 복사 기능용)
+    assert data[0]["token"] is not None
 
 
 @pytest.mark.asyncio

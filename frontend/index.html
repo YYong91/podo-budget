@@ -10,6 +10,17 @@
     <meta name="theme-color" content="#7c3aed" />
     <meta name="referrer" content="same-origin" />
     <title>포도가계부 - AI 가계부</title>
+    <!-- FOUC 방지: React 마운트 전에 다크모드 클래스 즉시 적용 -->
+    <script>
+      ;(function(){
+        var t = localStorage.getItem('theme')
+        var d = t === 'dark' || (t !== 'light' && matchMedia('(prefers-color-scheme:dark)').matches)
+        if (d) {
+          document.documentElement.classList.add('dark')
+          document.querySelector('meta[name="theme-color"]').content = '#1a1625'
+        }
+      })()
+    </script>
   </head>
   <body>
     <div id="root"></div>

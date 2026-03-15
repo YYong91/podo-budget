@@ -104,7 +104,7 @@ describe('expenseApi', () => {
 
   describe('getMonthlyStats', () => {
     it('특정 월의 통계를 조회한다', async () => {
-      const response = await expenseApi.getMonthlyStats('2024-01')
+      const response = await expenseApi.getMonthlyStats('2024-01', 1)
       expect(response.data).toEqual(mockMonthlyStats)
       expect(response.data.month).toBe('2024-01')
       expect(response.data.total).toBeGreaterThan(0)
@@ -113,7 +113,7 @@ describe('expenseApi', () => {
     })
 
     it('데이터가 없는 월의 통계를 조회하면 빈 데이터를 반환한다', async () => {
-      const response = await expenseApi.getMonthlyStats('2024-02')
+      const response = await expenseApi.getMonthlyStats('2024-02', 1)
       expect(response.data.total).toBe(0)
       expect(response.data.by_category).toHaveLength(0)
       expect(response.data.daily_trend).toHaveLength(0)

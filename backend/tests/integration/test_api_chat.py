@@ -7,6 +7,7 @@
 - 가구 컨텍스트: 자연어 키워드로 공유/개인 지출 자동 분류
 
 모든 엔드포인트는 JWT 인증이 필요합니다.
+household_id 필수 아키텍처: 모든 지출은 사용자의 활성 가구에 기록됩니다.
 """
 
 from datetime import datetime
@@ -17,7 +18,6 @@ from sqlalchemy import select
 from app.models.category import Category
 from app.models.expense import Expense
 from app.models.household import Household
-from app.models.household_member import HouseholdMember
 from app.models.user import User
 
 
@@ -252,18 +252,11 @@ async def test_chat_preview_mode_returns_parsed_items(authenticated_client, test
 
 
 @pytest.mark.asyncio
-async def test_chat_preview_includes_household_id(authenticated_client, test_user: User, db_session, mock_llm_parse_expense):
-    """Preview 모드에서 household_id가 응답에 포함됨"""
-    # 가구 생성
-    household = Household(name="테스트 가구")
-    db_session.add(household)
-    await db_session.commit()
-    await db_session.refresh(household)
+async def test_chat_preview_includes_household_id(authenticated_client, test_user: User, test_household: Household, db_session, mock_llm_parse_expense):
+    """Preview 모드에서 household_id가 응답에 포함됨
 
-    member = HouseholdMember(household_id=household.id, user_id=test_user.id, role="owner")
-    db_session.add(member)
-    await db_session.commit()
-
+    conftest에서 생성된 test_household을 사용합니다.
+    """
     mock_llm_parse_expense.return_value = {
         "amount": 50000,
         "category": "식비",
@@ -278,7 +271,7 @@ async def test_chat_preview_includes_household_id(authenticated_client, test_use
     assert response.status_code == 201
     data = response.json()
     assert data["parsed_expenses"] is not None
-    assert data["parsed_expenses"][0]["household_id"] == household.id
+    assert data["parsed_expenses"][0]["household_id"] == test_household.id
 
 
 # ──────────────────────────────────────────────
@@ -287,18 +280,12 @@ async def test_chat_preview_includes_household_id(authenticated_client, test_use
 
 
 @pytest.mark.asyncio
-async def test_chat_shared_keyword_sets_household_id(authenticated_client, test_user: User, db_session, mock_llm_parse_expense):
-    """'우리' 키워드 → 활성 가구의 공유 지출로 기록"""
-    # 가구 생성 + 멤버 등록
-    household = Household(name="우리 가족")
-    db_session.add(household)
-    await db_session.commit()
-    await db_session.refresh(household)
+async def test_chat_shared_keyword_sets_household_id(authenticated_client, test_user: User, test_household: Household, db_session, mock_llm_parse_expense):
+    """'우리' 키워드 → 활성 가구의 공유 지출로 기록
 
-    member = HouseholdMember(household_id=household.id, user_id=test_user.id, role="owner")
-    db_session.add(member)
-    await db_session.commit()
-
+    household_id 필수 아키텍처에서는 모든 지출이 활성 가구에 기록됩니다.
+    conftest에서 생성된 test_household을 사용합니다.
+    """
     mock_llm_parse_expense.return_value = {
         "amount": 80000,
         "category": "식비",
@@ -315,22 +302,16 @@ async def test_chat_shared_keyword_sets_household_id(authenticated_client, test_
     # DB에서 household_id가 설정되었는지 확인
     result = await db_session.execute(select(Expense))
     expense = result.scalar_one()
-    assert expense.household_id == household.id
+    assert expense.household_id == test_household.id
 
 
 @pytest.mark.asyncio
-async def test_chat_personal_keyword_no_household_id(authenticated_client, test_user: User, db_session, mock_llm_parse_expense):
-    """'내' 키워드 → 개인 지출 (household_id=None)"""
-    # 가구가 있어도 '내' 키워드면 개인으로 분류
-    household = Household(name="우리 가족")
-    db_session.add(household)
-    await db_session.commit()
-    await db_session.refresh(household)
+async def test_chat_personal_keyword_still_uses_household(authenticated_client, test_user: User, test_household: Household, db_session, mock_llm_parse_expense):
+    """'내' 키워드 → household_id 필수이므로 활성 가구에 기록
 
-    member = HouseholdMember(household_id=household.id, user_id=test_user.id, role="owner")
-    db_session.add(member)
-    await db_session.commit()
-
+    household_id 필수 아키텍처에서는 개인 키워드도 활성 가구에 기록됩니다.
+    개인/공유 구분은 DB 레벨이 아닌 애플리케이션 레벨에서 처리됩니다.
+    """
     mock_llm_parse_expense.return_value = {
         "amount": 5000,
         "category": "카페",
@@ -346,21 +327,15 @@ async def test_chat_personal_keyword_no_household_id(authenticated_client, test_
 
     result = await db_session.execute(select(Expense))
     expense = result.scalar_one()
-    assert expense.household_id is None
+    # household_id 필수 아키텍처: 모든 지출은 활성 가구에 기록
+    assert expense.household_id == test_household.id
 
 
 @pytest.mark.asyncio
-async def test_chat_explicit_household_id_overrides_context(authenticated_client, test_user: User, db_session, mock_llm_parse_expense):
+async def test_chat_explicit_household_id_overrides_context(
+    authenticated_client, test_user: User, test_household: Household, db_session, mock_llm_parse_expense
+):
     """명시적 household_id가 자연어 컨텍스트보다 우선"""
-    household = Household(name="우리 가족")
-    db_session.add(household)
-    await db_session.commit()
-    await db_session.refresh(household)
-
-    member = HouseholdMember(household_id=household.id, user_id=test_user.id, role="owner")
-    db_session.add(member)
-    await db_session.commit()
-
     mock_llm_parse_expense.return_value = {
         "amount": 10000,
         "category": "식비",
@@ -370,19 +345,22 @@ async def test_chat_explicit_household_id_overrides_context(authenticated_client
     }
 
     # '내' 키워드인데 household_id를 명시적으로 지정
-    payload = {"message": "내 점심 10000원", "household_id": household.id}
+    payload = {"message": "내 점심 10000원", "household_id": test_household.id}
     response = await authenticated_client.post("/api/chat", json=payload)
 
     assert response.status_code == 201
 
     result = await db_session.execute(select(Expense))
     expense = result.scalar_one()
-    assert expense.household_id == household.id  # 명시적 ID 우선
+    assert expense.household_id == test_household.id  # 명시적 ID 우선
 
 
 @pytest.mark.asyncio
-async def test_chat_no_household_defaults_to_personal(authenticated_client, test_user: User, db_session, mock_llm_parse_expense):
-    """가구 없는 사용자 → 항상 개인 지출"""
+async def test_chat_default_uses_active_household(authenticated_client, test_user: User, test_household: Household, db_session, mock_llm_parse_expense):
+    """키워드 없는 일반 지출 → 활성 가구에 기록
+
+    household_id 필수 아키텍처에서는 모든 지출이 활성 가구에 기록됩니다.
+    """
     mock_llm_parse_expense.return_value = {
         "amount": 3000,
         "category": "카페",
@@ -398,4 +376,5 @@ async def test_chat_no_household_defaults_to_personal(authenticated_client, test
 
     result = await db_session.execute(select(Expense))
     expense = result.scalar_one()
-    assert expense.household_id is None
+    # household_id 필수 아키텍처: 모든 지출은 활성 가구에 기록
+    assert expense.household_id == test_household.id

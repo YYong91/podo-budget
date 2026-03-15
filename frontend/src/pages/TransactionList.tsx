@@ -5,7 +5,7 @@
 
 import { useEffect, useState, useMemo, useCallback, useRef } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import PeriodNavigator from '../components/stats/PeriodNavigator'
 import toast from 'react-hot-toast'
 import { expenseApi } from '../api/expenses'
 import { incomeApi } from '../api/income'
@@ -115,13 +115,13 @@ export default function TransactionList() {
         start_date: start,
         end_date: end,
         limit: 1000,
-        ...(activeHouseholdId ? { household_id: activeHouseholdId } : {}),
+        household_id: activeHouseholdId!,
       }
 
       const [expRes, incRes, pendingRes] = await Promise.all([
         expenseApi.getAll(baseParams).catch(() => ({ data: [] as Expense[] })),
         incomeApi.getAll(baseParams).catch(() => ({ data: [] as Income[] })),
-        recurringApi.getPending(activeHouseholdId ?? undefined).catch(() => ({ data: [] as RecurringTransaction[] })),
+        recurringApi.getPending(activeHouseholdId!).catch(() => ({ data: [] as RecurringTransaction[] })),
       ])
 
       setExpenses(expRes.data)
@@ -232,21 +232,7 @@ export default function TransactionList() {
     <PullToRefresh onRefresh={handleRefresh}>
     <div className="space-y-4">
       {/* 월 네비게이션 */}
-      <div className="flex items-center justify-center gap-4">
-        <button
-          onClick={() => navigateMonth(-1)}
-          className="p-2 rounded-lg hover:bg-warm-100 transition-colors"
-        >
-          <ChevronLeft className="w-5 h-5 text-warm-600" />
-        </button>
-        <h1 className="text-lg font-bold text-warm-900">{monthLabel}</h1>
-        <button
-          onClick={() => navigateMonth(1)}
-          className="p-2 rounded-lg hover:bg-warm-100 transition-colors"
-        >
-          <ChevronRight className="w-5 h-5 text-warm-600" />
-        </button>
-      </div>
+      <PeriodNavigator label={monthLabel} onPrev={() => navigateMonth(-1)} onNext={() => navigateMonth(1)} />
 
       {/* 요약 + 필터 */}
       <div className="flex items-center justify-center gap-6">
@@ -256,20 +242,20 @@ export default function TransactionList() {
             filter === 'income' ? 'opacity-40' : ''
           }`}
         >
-          <div className="text-xs text-warm-500">지출</div>
-          <div className={`text-base font-bold ${filter !== 'income' ? 'text-grape-700' : 'text-warm-400'}`}>
+          <div className="text-xs text-[var(--text-tertiary)]">지출</div>
+          <div className={`text-base font-bold ${filter !== 'income' ? 'text-grape-600' : 'text-[var(--text-muted)]'}`}>
             {formatAmount(totalExpense)}
           </div>
         </button>
-        <div className="w-px h-8 bg-warm-200" />
+        <div className="w-px h-8 bg-[var(--border-default)]" />
         <button
           onClick={() => toggleFilter('income')}
           className={`text-center transition-opacity ${
             filter === 'expense' ? 'opacity-40' : ''
           }`}
         >
-          <div className="text-xs text-warm-500">수입</div>
-          <div className={`text-base font-bold ${filter !== 'expense' ? 'text-leaf-600' : 'text-warm-400'}`}>
+          <div className="text-xs text-[var(--text-tertiary)]">수입</div>
+          <div className={`text-base font-bold ${filter !== 'expense' ? 'text-leaf-600' : 'text-[var(--text-muted)]'}`}>
             {formatAmount(totalIncome)}
           </div>
         </button>
@@ -300,7 +286,7 @@ export default function TransactionList() {
       />
 
       {/* 미니 캘린더 */}
-      <div className="bg-white rounded-2xl shadow-sm border border-warm-200/60 p-3">
+      <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] p-3">
         <MiniCalendar
           year={currentYear}
           month={currentMonth}
@@ -312,47 +298,47 @@ export default function TransactionList() {
 
       {/* 거래 리스트 */}
       {loading ? (
-        <div className="bg-white rounded-2xl shadow-sm border border-warm-200/60 overflow-hidden">
+        <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] overflow-hidden">
           {/* 스켈레톤 UI */}
           {[1, 2, 3].map(i => (
             <div key={i}>
-              <div className="bg-warm-50 px-4 py-2 border-b border-warm-100">
-                <div className="h-3 w-24 bg-warm-200 rounded animate-pulse" />
+              <div className="bg-[var(--surface-elevated)] px-4 py-2 border-b border-[var(--border-subtle)]">
+                <div className="h-3 w-24 bg-[var(--surface-hover)] rounded animate-pulse" />
               </div>
               {[1, 2].map(j => (
                 <div key={j} className="px-4 py-3 space-y-2">
                   <div className="flex justify-between">
-                    <div className="h-4 w-32 bg-warm-100 rounded animate-pulse" />
-                    <div className="h-4 w-20 bg-warm-100 rounded animate-pulse" />
+                    <div className="h-4 w-32 bg-[var(--border-subtle)] rounded animate-pulse" />
+                    <div className="h-4 w-20 bg-[var(--border-subtle)] rounded animate-pulse" />
                   </div>
-                  <div className="h-3 w-12 bg-warm-100 rounded-full animate-pulse" />
+                  <div className="h-3 w-12 bg-[var(--border-subtle)] rounded-full animate-pulse" />
                 </div>
               ))}
             </div>
           ))}
         </div>
       ) : grouped.size === 0 ? (
-        <div className="bg-white rounded-2xl shadow-sm border border-warm-200/60">
+        <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)]">
           <EmptyState
             title={filter === 'all' ? '거래 내역이 없습니다' : `${filter === 'expense' ? '지출' : '수입'} 내역이 없습니다`}
             description="이번 달의 거래를 추가해보세요."
           />
         </div>
       ) : (
-        <div className="bg-white rounded-2xl shadow-sm border border-warm-200/60 overflow-hidden">
+        <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] overflow-hidden">
           {Array.from(grouped.entries()).map(([dateKey, txs]) => (
             <div key={dateKey}>
               {/* 스티키 날짜 헤더 */}
               <div
                 ref={(el) => { if (el) dateRefs.current.set(dateKey, el) }}
-                className="sticky top-0 md:top-0 z-10 bg-warm-50 px-4 py-2 border-b border-warm-100 scroll-mt-14 md:scroll-mt-0"
+                className="sticky top-0 md:top-0 z-10 bg-[var(--surface-elevated)] px-4 py-2 border-b border-[var(--border-subtle)] scroll-mt-14 md:scroll-mt-0"
               >
-                <span className="text-xs font-semibold text-warm-600">
+                <span className="text-xs font-semibold text-[var(--text-secondary)]">
                   {formatDateHeader(dateKey)}
                 </span>
               </div>
               {/* 거래 항목들 */}
-              <div className="divide-y divide-warm-50">
+              <div className="divide-y divide-[var(--border-subtle)]">
                 {txs.map(tx => (
                   <TransactionItem
                     key={`${tx.type}-${tx.id}`}

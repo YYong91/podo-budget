@@ -2,11 +2,13 @@
 카카오톡 채널 봇 Webhook API 통합 테스트
 
 - /help, /report, /budget 명령어 응답
+- /link 명령어 (웹 계정 연동)
 - LLM 파싱 → 지출 저장 플로우 (Mock)
 - 에러 처리 (파싱 실패, utterance 없음)
 - 카카오 응답 형식 검증
 """
 
+from datetime import UTC, datetime, timedelta
 from unittest.mock import patch
 
 import pytest
@@ -36,6 +38,20 @@ def make_kakao_request(utterance: str, user_id: str = "kakao_user_123") -> dict:
     }
 
 
+async def setup_kakao_bot_user_with_household(db_session, platform_user_id: str):
+    """카카오 봇 사용자에게 가구를 설정하는 헬퍼"""
+    from app.services.bot_user_service import get_or_create_bot_user
+
+    bot_user = await get_or_create_bot_user(db_session, platform="kakao", platform_user_id=platform_user_id)
+    household = Household(name=f"카카오 테스트 가구 {platform_user_id}")
+    db_session.add(household)
+    await db_session.flush()
+    member = HouseholdMember(household_id=household.id, user_id=bot_user.id, role="owner")
+    db_session.add(member)
+    await db_session.commit()
+    return bot_user, household
+
+
 @pytest.mark.asyncio
 async def test_kakao_webhook_help_command(client, db_session):
     """/help 명령어 시 도움말 메시지 반환"""
@@ -62,6 +78,9 @@ async def test_kakao_webhook_help_command(client, db_session):
 @pytest.mark.asyncio
 async def test_kakao_webhook_expense_input(client, db_session, mock_llm_parse_expense):
     """자연어 지출 입력 → LLM 파싱 → DB 저장 → 성공 응답"""
+    # 봇 사용자에게 가구 설정 (household_id 필수)
+    await setup_kakao_bot_user_with_household(db_session, "kakao_user_123")
+
     payload = make_kakao_request("점심에 김치찌개 8000원")
 
     response = await client.post("/api/kakao/webhook", json=payload)
@@ -107,7 +126,8 @@ async def test_kakao_webhook_parse_error(client, db_session, mock_llm_parse_expe
 @pytest.mark.asyncio
 async def test_kakao_webhook_report_command(client, db_session, mock_llm_parse_expense):
     """/report 명령어 시 지출 요약 반환"""
-    # 먼저 지출을 하나 생성
+    # 먼저 봇 사용자에게 가구 설정 후 지출을 하나 생성
+    await setup_kakao_bot_user_with_household(db_session, "kakao_user_123")
     payload1 = make_kakao_request("점심 5000원")
     await client.post("/api/kakao/webhook", json=payload1)
 
@@ -159,6 +179,7 @@ async def test_kakao_webhook_no_utterance(client, db_session):
 @pytest.mark.asyncio
 async def test_kakao_webhook_response_format(client, db_session, mock_llm_parse_expense):
     """카카오 응답 형식 (version, template, outputs) 검증"""
+    await setup_kakao_bot_user_with_household(db_session, "kakao_user_123")
     payload = make_kakao_request("커피 4500원")
 
     response = await client.post("/api/kakao/webhook", json=payload)
@@ -183,6 +204,7 @@ async def test_kakao_webhook_response_format(client, db_session, mock_llm_parse_
 @pytest.mark.asyncio
 async def test_kakao_webhook_expense_with_quick_replies(client, db_session, mock_llm_parse_expense):
     """지출 저장 성공 시 quickReplies 포함 여부 검증"""
+    await setup_kakao_bot_user_with_household(db_session, "kakao_user_123")
     payload = make_kakao_request("택시비 15000원")
 
     response = await client.post("/api/kakao/webhook", json=payload)
@@ -206,6 +228,9 @@ async def test_kakao_webhook_expense_with_quick_replies(client, db_session, mock
 @pytest.mark.asyncio
 async def test_kakao_webhook_multiple_expenses(client, db_session, mock_llm_parse_expense):
     """여러 지출 동시 입력 처리 (list 반환)"""
+    # 봇 사용자에게 가구 설정
+    await setup_kakao_bot_user_with_household(db_session, "kakao_user_123")
+
     # LLM이 여러 지출을 파싱한 경우
     mock_llm_parse_expense.return_value = [
         {"amount": 5000, "category": "식비", "description": "점심", "date": "2026-02-11", "memo": ""},
@@ -231,12 +256,16 @@ async def test_kakao_webhook_multiple_expenses(client, db_session, mock_llm_pars
 @pytest.mark.asyncio
 async def test_kakao_webhook_user_isolation(client, db_session, mock_llm_parse_expense):
     """서로 다른 Kakao 사용자는 데이터가 격리되어야 함"""
+    # 두 사용자 모두 가구 설정
+    await setup_kakao_bot_user_with_household(db_session, "kakao_user_111")
+
     # 사용자 1의 지출 생성
     payload1 = make_kakao_request("점심 5000원", user_id="kakao_user_111")
     response1 = await client.post("/api/kakao/webhook", json=payload1)
     assert response1.status_code == 200
 
     # 사용자 2의 지출 생성
+    await setup_kakao_bot_user_with_household(db_session, "kakao_user_222")
     mock_llm_parse_expense.return_value = {
         "amount": 10000,
         "category": "교통",
@@ -273,6 +302,9 @@ async def test_kakao_webhook_user_isolation(client, db_session, mock_llm_parse_e
 async def test_kakao_webhook_same_user_reuses_account(client, db_session, mock_llm_parse_expense):
     """동일한 Kakao 사용자는 같은 User 계정을 재사용해야 함"""
     kakao_user_id = "kakao_user_333"
+
+    # 봇 사용자에게 가구 설정
+    await setup_kakao_bot_user_with_household(db_session, kakao_user_id)
 
     # 첫 번째 지출
     payload1 = make_kakao_request("점심 5000원", user_id=kakao_user_id)
@@ -339,7 +371,7 @@ async def test_kakao_webhook_expense_with_household(client, db_session, mock_llm
 
 @pytest.mark.asyncio
 async def test_kakao_webhook_personal_keyword_no_household(client, db_session, mock_llm_parse_expense):
-    """가구에 속해있어도 개인 키워드 → household_id=None"""
+    """가구에 속해있어도 개인 키워드 → household_id는 활성 가구로 설정됨 (household_id 필수)"""
     from app.services.bot_user_service import get_or_create_bot_user
 
     # 봇 사용자 생성 + 가구 가입
@@ -358,7 +390,8 @@ async def test_kakao_webhook_personal_keyword_no_household(client, db_session, m
     result = await db_session.execute(select(Expense))
     expenses = result.scalars().all()
     assert len(expenses) == 1
-    assert expenses[0].household_id is None
+    # household_id는 필수 — 개인 키워드여도 활성 가구로 설정됨
+    assert expenses[0].household_id == household.id
 
 
 # ──────────────────────────────────────────────
@@ -430,3 +463,102 @@ async def test_kakao_webhook_llm_timeout(client, db_session, mock_llm_parse_expe
     # DB에 저장되지 않아야 함
     result = await db_session.execute(select(Expense))
     assert len(result.scalars().all()) == 0
+
+
+# ──────────────────────────────────────────────
+# /link 명령어 테스트
+# ──────────────────────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_kakao_webhook_link_without_code(client, db_session):
+    """/link 코드 없이 입력하면 사용법 안내 반환"""
+    payload = make_kakao_request("/link")
+
+    response = await client.post("/api/kakao/webhook", json=payload)
+    assert response.status_code == 200
+
+    data = response.json()
+    text = data["template"]["outputs"][0]["simpleText"]["text"]
+    assert "카카오톡" in text and "연동" in text
+
+
+@pytest.mark.asyncio
+async def test_kakao_webhook_link_invalid_code(client, db_session):
+    """/link 유효하지 않은 코드는 에러 메시지 반환"""
+    payload = make_kakao_request("/link INVALID")
+
+    response = await client.post("/api/kakao/webhook", json=payload)
+    assert response.status_code == 200
+
+    data = response.json()
+    text = data["template"]["outputs"][0]["simpleText"]["text"]
+    assert "유효하지 않은" in text
+
+
+@pytest.mark.asyncio
+async def test_kakao_webhook_link_valid_code(client, db_session):
+    """/link 유효한 코드로 연동 성공"""
+    from passlib.context import CryptContext
+
+    pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+    # 웹 사용자 생성 + 코드 발급
+    web_user = User(
+        username="web_user_kakao",
+        email="kakao@test.com",
+        hashed_password=pwd_context.hash("test"),
+        is_active=True,
+        kakao_link_code="ABC123",
+        kakao_link_code_expires_at=datetime.now(UTC) + timedelta(minutes=15),
+    )
+    db_session.add(web_user)
+    await db_session.flush()
+
+    # 웹 사용자에게 가구 설정 (household_id 필수 제약 충족)
+    household = Household(name="웹 사용자 가구")
+    db_session.add(household)
+    await db_session.flush()
+    member = HouseholdMember(household_id=household.id, user_id=web_user.id, role="owner")
+    db_session.add(member)
+    await db_session.commit()
+
+    payload = make_kakao_request("/link ABC123", user_id="kakao_linker_001")
+    response = await client.post("/api/kakao/webhook", json=payload)
+    assert response.status_code == 200
+
+    data = response.json()
+    text = data["template"]["outputs"][0]["simpleText"]["text"]
+    assert "연동 완료" in text
+
+    # DB에서 연동 확인
+    await db_session.refresh(web_user)
+    assert web_user.kakao_user_id == "kakao_linker_001"
+    assert web_user.kakao_link_code is None
+
+
+@pytest.mark.asyncio
+async def test_kakao_webhook_link_expired_code(client, db_session):
+    """/link 만료된 코드는 만료 메시지 반환"""
+    from passlib.context import CryptContext
+
+    pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+    web_user = User(
+        username="web_user_kakao_exp",
+        email="kakao_exp@test.com",
+        hashed_password=pwd_context.hash("test"),
+        is_active=True,
+        kakao_link_code="EXP123",
+        kakao_link_code_expires_at=datetime.now(UTC) - timedelta(minutes=1),
+    )
+    db_session.add(web_user)
+    await db_session.commit()
+
+    payload = make_kakao_request("/link EXP123", user_id="kakao_linker_002")
+    response = await client.post("/api/kakao/webhook", json=payload)
+    assert response.status_code == 200
+
+    data = response.json()
+    text = data["template"]["outputs"][0]["simpleText"]["text"]
+    assert "만료" in text

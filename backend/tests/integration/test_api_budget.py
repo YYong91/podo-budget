@@ -12,6 +12,7 @@ from httpx import AsyncClient
 from app.models.budget import Budget
 from app.models.category import Category
 from app.models.expense import Expense
+from app.models.household import Household
 from app.models.user import User
 
 
@@ -98,7 +99,7 @@ async def test_create_budget_invalid_dates(authenticated_client: AsyncClient, te
 
 
 @pytest.mark.asyncio
-async def test_get_budgets_list(authenticated_client: AsyncClient, test_user: User, db_session):
+async def test_get_budgets_list(authenticated_client: AsyncClient, test_user: User, test_household: Household, db_session):
     """예산 목록 조회 테스트"""
     category = Category(user_id=test_user.id, name="식비")
     db_session.add(category)
@@ -107,6 +108,7 @@ async def test_get_budgets_list(authenticated_client: AsyncClient, test_user: Us
 
     budget = Budget(
         user_id=test_user.id,
+        household_id=test_household.id,
         category_id=category.id,
         amount=200000,
         period="monthly",
@@ -126,7 +128,7 @@ async def test_get_budgets_list(authenticated_client: AsyncClient, test_user: Us
 
 
 @pytest.mark.asyncio
-async def test_update_budget_success(authenticated_client: AsyncClient, test_user: User, db_session):
+async def test_update_budget_success(authenticated_client: AsyncClient, test_user: User, test_household: Household, db_session):
     """예산 수정 성공 테스트"""
     category = Category(user_id=test_user.id, name="쇼핑")
     db_session.add(category)
@@ -135,6 +137,7 @@ async def test_update_budget_success(authenticated_client: AsyncClient, test_use
 
     budget = Budget(
         user_id=test_user.id,
+        household_id=test_household.id,
         category_id=category.id,
         amount=100000,
         period="monthly",
@@ -167,7 +170,7 @@ async def test_update_budget_not_found(authenticated_client: AsyncClient, test_u
 
 
 @pytest.mark.asyncio
-async def test_delete_budget_success(authenticated_client: AsyncClient, test_user: User, db_session):
+async def test_delete_budget_success(authenticated_client: AsyncClient, test_user: User, test_household: Household, db_session):
     """예산 삭제 성공 테스트"""
     category = Category(user_id=test_user.id, name="문화생활")
     db_session.add(category)
@@ -176,6 +179,7 @@ async def test_delete_budget_success(authenticated_client: AsyncClient, test_use
 
     budget = Budget(
         user_id=test_user.id,
+        household_id=test_household.id,
         category_id=category.id,
         amount=50000,
         period="monthly",
@@ -208,7 +212,7 @@ async def test_get_budget_alerts_no_budgets(authenticated_client: AsyncClient, t
 
 
 @pytest.mark.asyncio
-async def test_get_budget_alerts_with_expenses(authenticated_client: AsyncClient, test_user: User, db_session):
+async def test_get_budget_alerts_with_expenses(authenticated_client: AsyncClient, test_user: User, test_household: Household, db_session):
     """예산 알림 조회 - 지출이 있는 경우 테스트"""
     category = Category(user_id=test_user.id, name="식비")
     db_session.add(category)
@@ -218,6 +222,7 @@ async def test_get_budget_alerts_with_expenses(authenticated_client: AsyncClient
     start_date = datetime.now() - timedelta(days=5)
     budget = Budget(
         user_id=test_user.id,
+        household_id=test_household.id,
         category_id=category.id,
         amount=300000,
         period="monthly",
@@ -229,6 +234,7 @@ async def test_get_budget_alerts_with_expenses(authenticated_client: AsyncClient
 
     expense = Expense(
         user_id=test_user.id,
+        household_id=test_household.id,
         amount=250000,
         description="식비 지출",
         category_id=category.id,
@@ -254,7 +260,7 @@ async def test_get_budget_alerts_with_expenses(authenticated_client: AsyncClient
 
 
 @pytest.mark.asyncio
-async def test_get_budget_alerts_exceeded(authenticated_client: AsyncClient, test_user: User, db_session):
+async def test_get_budget_alerts_exceeded(authenticated_client: AsyncClient, test_user: User, test_household: Household, db_session):
     """예산 알림 조회 - 예산 초과 테스트"""
     category = Category(user_id=test_user.id, name="교통비")
     db_session.add(category)
@@ -264,6 +270,7 @@ async def test_get_budget_alerts_exceeded(authenticated_client: AsyncClient, tes
     start_date = datetime.now() - timedelta(days=5)
     budget = Budget(
         user_id=test_user.id,
+        household_id=test_household.id,
         category_id=category.id,
         amount=100000,
         period="monthly",
@@ -274,6 +281,7 @@ async def test_get_budget_alerts_exceeded(authenticated_client: AsyncClient, tes
 
     expense = Expense(
         user_id=test_user.id,
+        household_id=test_household.id,
         amount=150000,
         description="택시비",
         category_id=category.id,

@@ -29,12 +29,12 @@ export const expenseApi = {
   delete: (id: number) =>
     apiClient.delete(`/expenses/${id}`),
 
-  getMonthlyStats: (month: string, householdId?: number) =>
+  getMonthlyStats: (month: string, householdId: number) =>
     apiClient.get<MonthlyStats>('/expenses/stats/monthly', {
-      params: { month, ...(householdId != null && { household_id: householdId }) },
+      params: { month, household_id: householdId },
     }),
 
-  parseImage: (file: File, householdId?: number | null) => {
+  parseImage: (file: File, householdId: number | null) => {
     const formData = new FormData()
     formData.append('file', file)
     return apiClient.post<ChatResponse>('/expenses/ocr', formData, {

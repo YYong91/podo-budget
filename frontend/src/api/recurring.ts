@@ -7,9 +7,9 @@ export const recurringApi = {
   getAll: (params?: { type?: string; household_id?: number }) =>
     apiClient.get<RecurringTransaction[]>('/recurring', { params }),
 
-  getPending: (householdId?: number) =>
+  getPending: (householdId: number) =>
     apiClient.get<RecurringTransaction[]>('/recurring/pending', {
-      params: householdId != null ? { household_id: householdId } : undefined,
+      params: { household_id: householdId },
     }),
 
   getById: (id: number) =>

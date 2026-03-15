@@ -3,7 +3,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.dependencies import get_household_member
+from app.api.dependencies import get_household_member, get_user_active_household_id
 from app.core.auth import get_current_user
 from app.core.database import get_db
 from app.models.user import User
@@ -31,8 +31,9 @@ async def get_accounts(
     db: AsyncSession = Depends(get_db),
 ):
     """계좌 목록"""
-    if household_id is not None:
-        await get_household_member(household_id, current_user, db)
+    if household_id is None:
+        household_id = await get_user_active_household_id(current_user, db)
+    await get_household_member(household_id, current_user, db)
     return await account_service.get_accounts(db, current_user, household_id)
 
 

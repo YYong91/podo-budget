@@ -60,7 +60,7 @@ export default function MiniCalendar({
               <button
                 key={colIdx}
                 onClick={() => onDateClick(day.dateString)}
-                className="flex flex-col items-center py-1 px-0.5 rounded-lg hover:bg-warm-50 transition-colors min-h-[48px]"
+                className="flex flex-col items-center py-1 px-0.5 rounded-lg hover:bg-[var(--surface-hover)] transition-colors min-h-[48px]"
               >
                 <span
                   className={`text-xs w-6 h-6 flex items-center justify-center rounded-full ${
@@ -68,7 +68,7 @@ export default function MiniCalendar({
                       ? 'bg-grape-600 text-white font-bold'
                       : isWeekend
                         ? colIdx === 0 ? 'text-red-400' : 'text-blue-400'
-                        : 'text-warm-700'
+                        : 'text-[var(--text-secondary)]'
                   }`}
                 >
                   {day.date}

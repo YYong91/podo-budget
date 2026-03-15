@@ -25,7 +25,7 @@ export default function AccountManager() {
   const { activeHouseholdId } = useHouseholdStore()
 
   function loadAccounts() {
-    const hid = activeHouseholdId ?? undefined
+    const hid = activeHouseholdId!
     accountApi.getAll(hid)
       .then(res => setAccounts(res.data))
       .catch(() => addToast('error', '계좌 목록을 불러오지 못했습니다'))
@@ -72,7 +72,7 @@ export default function AccountManager() {
   return (
     <div className="max-w-xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
-        <Link to="/assets" aria-label="뒤로가기" className="p-2 -ml-2 rounded-lg hover:bg-warm-100 text-warm-500">
+        <Link to="/assets" aria-label="뒤로가기" className="p-2 -ml-2 rounded-lg hover:bg-[var(--surface-hover)] text-[var(--text-tertiary)]">
           <ArrowLeft className="w-5 h-5" />
         </Link>
         <button
@@ -86,14 +86,14 @@ export default function AccountManager() {
 
       {/* 추가 폼 */}
       {showForm && (
-        <form onSubmit={handleCreate} className="bg-white rounded-2xl border border-warm-200/60 shadow-sm p-5 space-y-3">
-          <h2 className="text-sm font-semibold text-warm-700">새 계좌</h2>
+        <form onSubmit={handleCreate} className="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)]/60 shadow-sm p-5 space-y-3">
+          <h2 className="text-sm font-semibold text-[var(--text-secondary)]">새 계좌</h2>
           <div>
-            <label className="block text-xs font-medium text-warm-600 mb-1">계좌 유형</label>
+            <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1">계좌 유형</label>
             <select
               value={form.type}
               onChange={e => setForm(f => ({ ...f, type: e.target.value as AccountType }))}
-              className="w-full border border-warm-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-grape-300"
+              className="w-full border border-[var(--border-default)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-grape-300"
             >
               {(Object.entries(ACCOUNT_TYPE_LABELS) as [AccountType, string][]).map(([v, label]) => (
                 <option key={v} value={v}>{label}</option>
@@ -101,13 +101,13 @@ export default function AccountManager() {
             </select>
           </div>
           <div>
-            <label className="block text-xs font-medium text-warm-600 mb-1">계좌명</label>
+            <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1">계좌명</label>
             <input
               type="text"
               value={form.name}
               onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
               placeholder="예) 키움증권, KB국민은행, 업비트"
-              className="w-full border border-warm-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-grape-300"
+              className="w-full border border-[var(--border-default)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-grape-300"
               autoFocus
             />
           </div>
@@ -115,7 +115,7 @@ export default function AccountManager() {
             <button
               type="button"
               onClick={() => setShowForm(false)}
-              className="flex-1 py-2 border border-warm-200 text-warm-600 rounded-lg text-sm font-medium hover:bg-warm-50 transition-colors"
+              className="flex-1 py-2 border border-[var(--border-default)] text-[var(--text-secondary)] rounded-lg text-sm font-medium hover:bg-[var(--surface-hover)] transition-colors"
             >
               취소
             </button>
@@ -137,23 +137,23 @@ export default function AccountManager() {
           <Loader2 className="w-6 h-6 text-grape-600 animate-spin" />
         </div>
       ) : accounts.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-warm-200/60 shadow-sm p-8 text-center">
+        <div className="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)]/60 shadow-sm p-8 text-center">
           <Wallet className="w-10 h-10 text-warm-300 mx-auto mb-3" />
-          <p className="text-warm-500 text-sm">등록된 계좌가 없습니다</p>
-          <p className="text-warm-400 text-xs mt-1">계좌를 등록하면 자산을 계좌별로 관리할 수 있습니다</p>
+          <p className="text-[var(--text-tertiary)] text-sm">등록된 계좌가 없습니다</p>
+          <p className="text-[var(--text-muted)] text-xs mt-1">계좌를 등록하면 자산을 계좌별로 관리할 수 있습니다</p>
         </div>
       ) : (
-        <div className="bg-white rounded-2xl border border-warm-200/60 shadow-sm overflow-hidden">
+        <div className="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)]/60 shadow-sm overflow-hidden">
           {accounts.map((account, i) => (
             <div
               key={account.id}
-              className={`flex items-center justify-between px-5 py-4 ${i < accounts.length - 1 ? 'border-b border-warm-100' : ''}`}
+              className={`flex items-center justify-between px-5 py-4 ${i < accounts.length - 1 ? 'border-b border-[var(--border-subtle)]' : ''}`}
             >
               <div className="flex items-center gap-3">
                 <Wallet className="w-4 h-4 text-grape-500 shrink-0" />
                 <div>
-                  <p className="text-sm font-medium text-warm-800">{account.name}</p>
-                  <p className="text-xs text-warm-400">{ACCOUNT_TYPE_LABELS[account.type] ?? account.type}</p>
+                  <p className="text-sm font-medium text-[var(--text-primary)]">{account.name}</p>
+                  <p className="text-xs text-[var(--text-muted)]">{ACCOUNT_TYPE_LABELS[account.type] ?? account.type}</p>
                 </div>
               </div>
               <button

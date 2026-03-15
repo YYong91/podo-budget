@@ -11,8 +11,8 @@ import { feedbackApi } from '../api/feedback'
 import type { Feedback, FeedbackStatus, FeedbackType } from '../types'
 
 const STATUS_LABELS: Record<FeedbackStatus, { text: string; className: string }> = {
-  new: { text: '접수', className: 'bg-warm-100 text-warm-700' },
-  read: { text: '확인', className: 'bg-grape-100 text-grape-700' },
+  new: { text: '접수', className: 'bg-[var(--surface-hover)] text-[var(--text-secondary)]' },
+  read: { text: '확인', className: 'bg-grape-100 text-grape-600' },
   done: { text: '완료', className: 'bg-leaf-100 text-leaf-700' },
 }
 
@@ -79,13 +79,13 @@ export default function FeedbackPage() {
 
   return (
     <div className="space-y-6">
-      <Link to="/settings" aria-label="뒤로가기" className="text-warm-500 hover:text-warm-700 inline-block">
+      <Link to="/settings" aria-label="뒤로가기" className="text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] inline-block">
         <ArrowLeft className="w-5 h-5" />
       </Link>
 
       {/* 제출 폼 */}
-      <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-sm border border-warm-200 p-6 space-y-4">
-        <h2 className="text-lg font-semibold text-warm-900">피드백 보내기</h2>
+      <form onSubmit={handleSubmit} className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] p-6 space-y-4">
+        <h2 className="text-lg font-semibold text-[var(--text-primary)]">피드백 보내기</h2>
 
         {/* 유형 토글 */}
         <div className="flex gap-2">
@@ -95,7 +95,7 @@ export default function FeedbackPage() {
             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
               type === 'feature'
                 ? 'bg-grape-600 text-white'
-                : 'bg-warm-100 text-warm-600 hover:bg-warm-200'
+                : 'bg-[var(--surface-hover)] text-[var(--text-secondary)] hover:bg-[var(--surface-hover)]'
             }`}
           >
             <Lightbulb className="w-4 h-4" />
@@ -107,7 +107,7 @@ export default function FeedbackPage() {
             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
               type === 'bug'
                 ? 'bg-red-600 text-white'
-                : 'bg-warm-100 text-warm-600 hover:bg-warm-200'
+                : 'bg-[var(--surface-hover)] text-[var(--text-secondary)] hover:bg-[var(--surface-hover)]'
             }`}
           >
             <Bug className="w-4 h-4" />
@@ -122,7 +122,7 @@ export default function FeedbackPage() {
           onChange={(e) => setTitle(e.target.value)}
           placeholder="제목"
           maxLength={200}
-          className="w-full px-4 py-2.5 rounded-xl border border-warm-200 text-sm focus:outline-none focus:ring-2 focus:ring-grape-300 focus:border-grape-300"
+          className="w-full px-4 py-2.5 rounded-xl border border-[var(--border-default)] text-sm focus:outline-none focus:ring-2 focus:ring-grape-300 focus:border-grape-300"
         />
 
         {/* 내용 */}
@@ -132,7 +132,7 @@ export default function FeedbackPage() {
           placeholder="자세한 내용을 적어주세요"
           rows={4}
           maxLength={5000}
-          className="w-full px-4 py-2.5 rounded-xl border border-warm-200 text-sm focus:outline-none focus:ring-2 focus:ring-grape-300 focus:border-grape-300 resize-none"
+          className="w-full px-4 py-2.5 rounded-xl border border-[var(--border-default)] text-sm focus:outline-none focus:ring-2 focus:ring-grape-300 focus:border-grape-300 resize-none"
         />
 
         <button
@@ -147,8 +147,8 @@ export default function FeedbackPage() {
 
       {/* 내 피드백 목록 */}
       {myFeedbacks.length > 0 && (
-        <div className="bg-white rounded-2xl shadow-sm border border-warm-200 p-6 space-y-4">
-          <h2 className="text-lg font-semibold text-warm-900">내 피드백</h2>
+        <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] p-6 space-y-4">
+          <h2 className="text-lg font-semibold text-[var(--text-primary)]">내 피드백</h2>
           <div className="space-y-3">
             {myFeedbacks.map((fb) => (
               <FeedbackCard key={fb.id} feedback={fb} />
@@ -159,10 +159,10 @@ export default function FeedbackPage() {
 
       {/* 관리자 영역 */}
       {isAdmin && adminFeedbacks && (
-        <div className="bg-white rounded-2xl shadow-sm border border-warm-200 p-6 space-y-4">
-          <h2 className="text-lg font-semibold text-warm-900">전체 피드백 (관리자)</h2>
+        <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] p-6 space-y-4">
+          <h2 className="text-lg font-semibold text-[var(--text-primary)]">전체 피드백 (관리자)</h2>
           {adminFeedbacks.length === 0 ? (
-            <p className="text-sm text-warm-500">아직 피드백이 없습니다</p>
+            <p className="text-sm text-[var(--text-tertiary)]">아직 피드백이 없습니다</p>
           ) : (
             <div className="space-y-3">
               {adminFeedbacks.map((fb) => (
@@ -195,22 +195,22 @@ function FeedbackCard({
   })
 
   return (
-    <div className="border border-warm-100 rounded-xl p-4 space-y-2">
+    <div className="border border-[var(--border-subtle)] rounded-xl p-4 space-y-2">
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-2 flex-1 min-w-0">
           <span className={`flex-shrink-0 text-xs px-2 py-0.5 rounded-full font-medium ${
-            isFeature ? 'bg-grape-100 text-grape-700' : 'bg-red-100 text-red-700'
+            isFeature ? 'bg-grape-50 text-grape-600' : 'bg-red-100 text-red-700'
           }`}>
             {isFeature ? '기능' : '버그'}
           </span>
-          <span className="text-sm font-medium text-warm-900 truncate">{feedback.title}</span>
+          <span className="text-sm font-medium text-[var(--text-primary)] truncate">{feedback.title}</span>
         </div>
         <span className={`flex-shrink-0 text-xs px-2 py-0.5 rounded-full font-medium ${statusInfo.className}`}>
           {statusInfo.text}
         </span>
       </div>
-      <p className="text-sm text-warm-600 whitespace-pre-wrap">{feedback.content}</p>
-      <div className="flex items-center justify-between text-xs text-warm-400">
+      <p className="text-sm text-[var(--text-secondary)] whitespace-pre-wrap">{feedback.content}</p>
+      <div className="flex items-center justify-between text-xs text-[var(--text-muted)]">
         <span>{showUser && feedback.username ? `${feedback.username} · ` : ''}{date}</span>
         {onStatusChange && (
           <div className="flex gap-1">
@@ -220,7 +220,7 @@ function FeedbackCard({
                 <button
                   key={s}
                   onClick={() => onStatusChange(feedback.id, s)}
-                  className="px-2 py-0.5 rounded text-xs border border-warm-200 hover:bg-warm-50 transition-colors"
+                  className="px-2 py-0.5 rounded text-xs border border-[var(--border-default)] hover:bg-[var(--surface-hover)] transition-colors"
                 >
                   {STATUS_LABELS[s].text}
                 </button>

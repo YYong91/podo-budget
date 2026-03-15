@@ -608,7 +608,7 @@ async def create_invitation(
     inviter = inviter_result.scalar_one()
 
     # 초대 이메일 발송 (비동기, 실패해도 초대 자체는 성공)
-    await send_invitation_email(
+    email_sent = await send_invitation_email(
         to_email=invitation.invitee_email,
         household_name=household.name,
         inviter_name=inviter.username,
@@ -627,6 +627,7 @@ async def create_invitation(
         created_at=invitation.created_at,
         responded_at=invitation.responded_at,
         token=token,  # 초대 생성 시에만 토큰 포함
+        email_sent=email_sent,
     )
 
 
@@ -682,7 +683,7 @@ async def list_invitations(
                 expires_at=inv.expires_at,
                 created_at=inv.created_at,
                 responded_at=inv.responded_at,
-                token=None,  # 목록 조회 시에는 토큰 미포함
+                token=inv.token if inv.status == "pending" else None,
             )
         )
 

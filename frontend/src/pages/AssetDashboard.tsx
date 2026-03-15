@@ -45,25 +45,25 @@ interface TypeGroup {
 }
 
 const TYPE_GROUPS: TypeGroup[] = [
-  { key: 'investment', label: '투자', icon: TrendingUp, types: ['stock_kr', 'stock_us', 'crypto'], colorClass: 'text-warm-700', iconColorClass: 'text-grape-500' },
-  { key: 'deposit', label: '예적금', icon: Landmark, types: ['deposit'], colorClass: 'text-warm-700', iconColorClass: 'text-leaf-600' },
-  { key: 'real_estate', label: '부동산/기타', icon: Building2, types: ['real_estate', 'other'], colorClass: 'text-warm-700', iconColorClass: 'text-warm-500' },
-  { key: 'liability', label: '부채', icon: TrendingDown, types: ['loan'], isLiability: true, colorClass: 'text-rose-700', iconColorClass: 'text-rose-500' },
+  { key: 'investment', label: '투자', icon: TrendingUp, types: ['stock_kr', 'stock_us', 'crypto'], colorClass: 'text-[var(--text-secondary)]', iconColorClass: 'text-grape-500' },
+  { key: 'deposit', label: '예적금', icon: Landmark, types: ['deposit'], colorClass: 'text-[var(--text-secondary)]', iconColorClass: 'text-leaf-600' },
+  { key: 'real_estate', label: '부동산/기타', icon: Building2, types: ['real_estate', 'other'], colorClass: 'text-[var(--text-secondary)]', iconColorClass: 'text-[var(--text-tertiary)]' },
+  { key: 'liability', label: '부채', icon: TrendingDown, types: ['loan'], isLiability: true, colorClass: 'text-rose-600', iconColorClass: 'text-rose-500' },
 ]
 
 function AssetRow({ asset }: { asset: Asset }) {
   return (
     <Link
       to={`/assets/${asset.id}`}
-      className="flex items-center justify-between py-2 border-b border-warm-100 last:border-0 hover:bg-warm-50 -mx-1 px-1 rounded transition-colors"
+      className="flex items-center justify-between py-2.5 border-b border-[var(--border-subtle)] last:border-0 hover:bg-[var(--surface-elevated)] rounded transition-colors"
     >
       <div>
-        <p className="text-sm font-medium text-warm-800">{asset.name}</p>
-        <p className="text-xs text-warm-400">{TYPE_LABELS[asset.type] ?? asset.type}</p>
+        <p className="text-sm font-medium text-[var(--text-primary)]">{asset.name}</p>
+        <p className="text-xs text-[var(--text-muted)]">{TYPE_LABELS[asset.type] ?? asset.type}</p>
       </div>
       <div className="flex items-center gap-1">
         <div className="text-right">
-          <p className={`text-sm font-semibold ${asset.is_liability ? 'text-rose-700' : 'text-warm-900'}`}>
+          <p className={`text-sm font-semibold ${asset.is_liability ? 'text-rose-600' : 'text-[var(--text-primary)]'}`}>
             {asset.current_value != null ? formatAmount(asset.current_value) : '-'}
           </p>
           {asset.profit_loss_pct != null && (
@@ -72,7 +72,7 @@ function AssetRow({ asset }: { asset: Asset }) {
             </p>
           )}
         </div>
-        <ChevronRight className="w-4 h-4 text-warm-300 shrink-0" />
+        <ChevronRight className="w-4 h-4 text-[var(--text-muted)] shrink-0" />
       </div>
     </Link>
   )
@@ -96,7 +96,7 @@ export default function AssetDashboard() {
   const fetchData = () => {
     setLoading(true)
     setError(null)
-    const hid = activeHouseholdId ?? undefined
+    const hid = activeHouseholdId!
     Promise.all([
       assetApi.getAll(hid),
       assetApi.getSummary(hid),
@@ -135,7 +135,7 @@ export default function AssetDashboard() {
       const res = await assetApi.setGoal({
         target_net_worth: amount,
         target_date: goalDate,
-        household_id: activeHouseholdId ?? undefined,
+        household_id: activeHouseholdId!,
       })
       setGoal(res.data)
       setShowGoalModal(false)
@@ -150,7 +150,7 @@ export default function AssetDashboard() {
   const handleDeleteGoal = async () => {
     setGoalSaving(true)
     try {
-      await assetApi.deleteGoal(activeHouseholdId ?? undefined)
+      await assetApi.deleteGoal(activeHouseholdId!)
       setGoal(null)
       setShowGoalModal(false)
     } catch {
@@ -182,7 +182,7 @@ export default function AssetDashboard() {
 
   if (error) {
     return (
-      <div className="text-center py-16 text-warm-500">{error}</div>
+      <div className="text-center py-16 text-[var(--text-tertiary)]">{error}</div>
     )
   }
 
@@ -243,28 +243,10 @@ export default function AssetDashboard() {
 
   return (
     <div className="space-y-6">
-      {/* 액션 버튼 */}
-      <div className="flex items-center justify-end gap-2">
-        <Link
-          to="/accounts"
-          className="flex items-center gap-1.5 px-3 py-2 border border-warm-200 text-warm-600 rounded-lg text-sm font-medium hover:bg-warm-50 transition-colors"
-        >
-          <Wallet className="w-4 h-4" />
-          계좌 관리
-        </Link>
-        <Link
-          to="/assets/new"
-          className="flex items-center gap-2 px-4 py-2 bg-grape-600 text-white rounded-lg text-sm font-medium hover:bg-grape-700 transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          자산 등록
-        </Link>
-      </div>
-
       {/* 1. 순자산 히어로 섹션 */}
       <div className={`rounded-2xl border shadow-sm p-6 ${netWorth >= 0 ? 'bg-gradient-to-br from-grape-50 to-grape-100 border-grape-200/60' : 'bg-gradient-to-br from-rose-50 to-red-50 border-rose-200/60'}`}>
-        <p className="text-sm text-warm-500 mb-1">순자산</p>
-        <p className={`text-3xl font-bold tracking-tight ${netWorth >= 0 ? 'text-grape-700' : 'text-rose-700'}`}>
+        <p className="text-sm text-[var(--text-tertiary)] mb-1">순자산</p>
+        <p className={`text-3xl font-bold tracking-tight ${netWorth >= 0 ? 'text-grape-600' : 'text-rose-600'}`}>
           {formatAmount(netWorth)}
         </p>
         {/* 전월 대비 변동 */}
@@ -274,24 +256,52 @@ export default function AssetDashboard() {
           </p>
         )}
         {/* 자산/부채 요약 */}
-        <div className="flex gap-4 mt-3 text-xs text-warm-500">
+        <div className="flex gap-4 mt-3 text-xs text-[var(--text-tertiary)]">
           <span>자산 {formatAmount(totalAssets)}</span>
           <span>부채 {formatAmount(totalLiabilities)}</span>
         </div>
-        {/* 월 저축 요약 */}
-        {monthlySavings && (
-          <p className="text-xs text-warm-400 mt-2">
-            {monthlySavings.month} 저축 {formatAmount(monthlySavings.net_savings)}
-            {monthlySavings.net_savings > 0 ? ' 👍' : ''}
-          </p>
-        )}
+        {/* 액션 버튼 — pill 스타일 */}
+        <div className="flex gap-2 mt-4">
+          <Link
+            to="/accounts"
+            className={`flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-full text-sm font-medium transition-colors ${netWorth >= 0 ? 'bg-grape-200/50 text-grape-600 hover:bg-grape-200/80' : 'bg-rose-200/50 text-rose-600 hover:bg-rose-200/80'}`}
+          >
+            <Wallet className="w-4 h-4" />
+            계좌 관리
+          </Link>
+          <Link
+            to="/assets/new"
+            className={`flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-full text-sm font-medium transition-colors ${netWorth >= 0 ? 'bg-grape-600 text-white hover:bg-grape-700' : 'bg-rose-600 text-white hover:bg-rose-700'}`}
+          >
+            <Plus className="w-4 h-4" />
+            자산 등록
+          </Link>
+        </div>
       </div>
+
+      {/* 월 저축 요약 */}
+      {monthlySavings && (
+        <div className="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)]/60 shadow-sm p-4 flex items-center justify-between">
+          <div>
+            <p className="text-xs text-[var(--text-muted)]">{monthlySavings.month} 저축</p>
+            <p className={`text-lg font-bold ${monthlySavings.net_savings >= 0 ? 'text-leaf-600' : 'text-rose-600'}`}>
+              {formatAmount(monthlySavings.net_savings)}
+            </p>
+          </div>
+          {monthlySavings.net_savings > 0 && (
+            <TrendingUp className="w-5 h-5 text-leaf-500" />
+          )}
+          {monthlySavings.net_savings < 0 && (
+            <TrendingDown className="w-5 h-5 text-rose-500" />
+          )}
+        </div>
+      )}
 
       {/* 2. 목표 진행률 */}
       {goal ? (
-        <div className="bg-white rounded-2xl border border-warm-200/60 shadow-sm p-5">
+        <div className="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)]/60 shadow-sm p-5">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-semibold text-warm-700 flex items-center gap-2">
+            <h2 className="text-sm font-semibold text-[var(--text-secondary)] flex items-center gap-2">
               <Target className="w-4 h-4 text-grape-500" />
               순자산 목표
             </h2>
@@ -303,17 +313,17 @@ export default function AssetDashboard() {
             </button>
           </div>
           <div className="flex items-center justify-between text-sm mb-2">
-            <span className="text-warm-500">목표 {formatAmount(goal.target_net_worth)}</span>
-            <span className="font-semibold text-grape-700">{goal.progress_pct.toFixed(1)}%</span>
+            <span className="text-[var(--text-tertiary)]">목표 {formatAmount(goal.target_net_worth)}</span>
+            <span className="font-semibold text-grape-600">{goal.progress_pct.toFixed(1)}%</span>
           </div>
           {/* 진행 바 */}
-          <div className="w-full h-2.5 bg-warm-100 rounded-full overflow-hidden">
+          <div className="w-full h-2.5 bg-[var(--surface-hover)] rounded-full overflow-hidden">
             <div
               className="h-full bg-grape-500 rounded-full transition-all duration-500"
               style={{ width: `${Math.min(goal.progress_pct, 100)}%` }}
             />
           </div>
-          <div className="flex items-center justify-between mt-2 text-xs text-warm-400">
+          <div className="flex items-center justify-between mt-2 text-xs text-[var(--text-muted)]">
             <span>{goal.pace_message}</span>
             {goal.monthly_required != null && (
               <span>월 {formatAmount(goal.monthly_required)} 필요</span>
@@ -323,7 +333,7 @@ export default function AssetDashboard() {
       ) : (
         <button
           onClick={openGoalModal}
-          className="w-full bg-white rounded-2xl border-2 border-dashed border-warm-200 p-5 flex items-center justify-center gap-2 text-warm-400 hover:border-grape-300 hover:text-grape-500 transition-colors"
+          className="w-full bg-[var(--surface-card)] rounded-2xl border-2 border-dashed border-[var(--border-default)] p-5 flex items-center justify-center gap-2 text-[var(--text-muted)] hover:border-grape-300 hover:text-grape-500 transition-colors"
         >
           <Target className="w-5 h-5" />
           <span className="text-sm font-medium">순자산 목표를 설정해보세요</span>
@@ -332,9 +342,9 @@ export default function AssetDashboard() {
 
       {/* 3. 순자산 추이 차트 */}
       {snapshots.length > 1 && (
-        <div className="bg-white rounded-2xl border border-warm-200/60 shadow-sm p-5">
-          <h2 className="text-sm font-semibold text-warm-700 mb-4">순자산 추이</h2>
-          <div className="h-48">
+        <div className="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)]/60 shadow-sm p-5">
+          <h2 className="text-sm font-semibold text-[var(--text-secondary)] mb-4">순자산 추이</h2>
+          <div className="h-56">
             <Line
               data={lineData}
               options={{
@@ -357,25 +367,25 @@ export default function AssetDashboard() {
             const Icon = group.icon
             const isCollapsed = collapsed[group.key] ?? false
             return (
-              <div key={group.key} className="bg-white rounded-2xl border border-warm-200/60 shadow-sm overflow-hidden">
+              <div key={group.key} className="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)]/60 shadow-sm overflow-hidden">
                 {/* 그룹 헤더 */}
                 <button
                   onClick={() => toggleGroup(group.key)}
-                  className="w-full flex items-center justify-between p-4 hover:bg-warm-50 transition-colors"
+                  className="w-full flex items-center justify-between p-4 hover:bg-[var(--surface-hover)] transition-colors"
                 >
                   <div className="flex items-center gap-2">
                     <Icon className={`w-4 h-4 ${group.iconColorClass}`} />
                     <span className={`text-sm font-semibold ${group.colorClass}`}>
-                      {group.label} ({group.items.length})
+                      {group.label}
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className={`text-sm font-semibold ${group.isLiability ? 'text-rose-700' : 'text-warm-900'}`}>
+                    <span className={`text-sm font-semibold ${group.isLiability ? 'text-rose-600' : 'text-[var(--text-primary)]'}`}>
                       {formatAmount(group.total)}
                     </span>
                     {isCollapsed
-                      ? <ChevronDown className="w-4 h-4 text-warm-400" />
-                      : <ChevronUp className="w-4 h-4 text-warm-400" />
+                      ? <ChevronDown className="w-4 h-4 text-[var(--text-muted)]" />
+                      : <ChevronUp className="w-4 h-4 text-[var(--text-muted)]" />
                     }
                   </div>
                 </button>
@@ -398,7 +408,7 @@ export default function AssetDashboard() {
         <div className="bg-amber-50 border border-amber-200/60 rounded-2xl p-4 flex items-start gap-3">
           <Bell className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
           <div>
-            <p className="text-sm font-medium text-amber-800">자산 현황을 업데이트해보세요</p>
+            <p className="text-sm font-medium text-amber-600">자산 현황을 업데이트해보세요</p>
             <p className="text-xs text-amber-600 mt-0.5">
               마지막 업데이트: {daysSinceUpdate}일 전
             </p>
@@ -409,8 +419,8 @@ export default function AssetDashboard() {
       {/* 빈 상태 */}
       {assets.length === 0 && (
         <div className="text-center py-16">
-          <Landmark className="w-12 h-12 text-warm-300 mx-auto mb-3" />
-          <p className="text-warm-500 mb-4">아직 등록된 자산이 없습니다</p>
+          <Landmark className="w-12 h-12 text-[var(--text-muted)] mx-auto mb-3" />
+          <p className="text-[var(--text-tertiary)] mb-4">아직 등록된 자산이 없습니다</p>
           <Link
             to="/assets/new"
             className="inline-flex items-center gap-2 px-4 py-2 bg-grape-600 text-white rounded-lg text-sm font-medium hover:bg-grape-700 transition-colors"
@@ -430,32 +440,32 @@ export default function AssetDashboard() {
             onClick={() => setShowGoalModal(false)}
           />
           {/* 모달 본체 */}
-          <div className="relative bg-white w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl p-6 space-y-5 animate-in slide-in-from-bottom sm:slide-in-from-bottom-0">
+          <div className="relative bg-[var(--surface-card)] w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl p-6 space-y-5 animate-in slide-in-from-bottom sm:slide-in-from-bottom-0">
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-bold text-warm-800">순자산 목표 설정</h2>
-              <button onClick={() => setShowGoalModal(false)} className="text-warm-400 hover:text-warm-600">
+              <h2 className="text-lg font-bold text-[var(--text-primary)]">순자산 목표 설정</h2>
+              <button onClick={() => setShowGoalModal(false)} className="text-[var(--text-muted)] hover:text-[var(--text-secondary)]">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-warm-700 mb-1">목표 금액</label>
+                <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">목표 금액</label>
                 <input
                   type="number"
                   value={goalAmount}
                   onChange={e => setGoalAmount(e.target.value)}
                   placeholder="예: 100000000"
-                  className="w-full px-3 py-2.5 border border-warm-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-grape-500/40 focus:border-grape-400"
+                  className="w-full px-3 py-2.5 border border-[var(--input-border)] bg-[var(--input-bg)] text-[var(--text-primary)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-grape-500/40 focus:border-grape-400"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-warm-700 mb-1">목표 날짜</label>
+                <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">목표 날짜</label>
                 <input
                   type="date"
                   value={goalDate}
                   onChange={e => setGoalDate(e.target.value)}
-                  className="w-full px-3 py-2.5 border border-warm-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-grape-500/40 focus:border-grape-400"
+                  className="w-full px-3 py-2.5 border border-[var(--input-border)] bg-[var(--input-bg)] text-[var(--text-primary)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-grape-500/40 focus:border-grape-400"
                 />
               </div>
             </div>
@@ -473,7 +483,7 @@ export default function AssetDashboard() {
               <div className="flex-1" />
               <button
                 onClick={() => setShowGoalModal(false)}
-                className="px-4 py-2.5 text-sm font-medium text-warm-500 border border-warm-200 rounded-lg hover:bg-warm-50 transition-colors"
+                className="px-4 py-2.5 text-sm font-medium text-[var(--text-tertiary)] border border-[var(--border-default)] rounded-lg hover:bg-[var(--surface-hover)] transition-colors"
               >
                 취소
               </button>

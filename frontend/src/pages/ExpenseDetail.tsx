@@ -133,7 +133,7 @@ export default function ExpenseDetail() {
   if (!expense) {
     return (
       <div className="text-center py-12">
-        <p className="text-warm-500 mb-4">지출 내역을 찾을 수 없습니다</p>
+        <p className="text-[var(--text-tertiary)] mb-4">지출 내역을 찾을 수 없습니다</p>
         <Link to="/expenses" className="text-grape-600 hover:text-grape-700">
           목록으로 돌아가기
         </Link>
@@ -151,9 +151,9 @@ export default function ExpenseDetail() {
         <Link
           to="/expenses"
           aria-label="목록으로"
-          className="p-2 -ml-2 rounded-lg hover:bg-warm-100 transition-colors"
+          className="p-2 -ml-2 rounded-lg hover:bg-[var(--surface-hover)] transition-colors"
         >
-          <ArrowLeft className="w-5 h-5 text-warm-600" />
+          <ArrowLeft className="w-5 h-5 text-[var(--text-secondary)]" />
         </Link>
 
         <div className="flex gap-2">
@@ -161,7 +161,7 @@ export default function ExpenseDetail() {
             <>
               <button
                 onClick={() => setIsEditing(false)}
-                className="flex-1 sm:flex-none px-4 py-2 text-sm font-medium text-warm-700 bg-white border border-warm-300 rounded-xl hover:bg-warm-50 transition-colors"
+                className="flex-1 sm:flex-none px-4 py-2 text-sm font-medium text-[var(--text-secondary)] bg-[var(--surface-card)] border border-[var(--input-border)] rounded-xl hover:bg-[var(--surface-elevated)] transition-colors"
               >
                 취소
               </button>
@@ -176,13 +176,13 @@ export default function ExpenseDetail() {
             <>
               <button
                 onClick={() => setShowRecurringModal(true)}
-                className="flex-1 sm:flex-none px-4 py-2 text-sm font-medium text-warm-700 bg-warm-100 rounded-xl hover:bg-warm-200 transition-colors"
+                className="flex-1 sm:flex-none px-4 py-2 text-sm font-medium text-[var(--text-secondary)] bg-[var(--surface-hover)] rounded-xl hover:bg-[var(--border-default)] transition-colors"
               >
                 반복 거래 등록
               </button>
               <button
                 onClick={() => setIsEditing(true)}
-                className="flex-1 sm:flex-none px-4 py-2 text-sm font-medium text-grape-700 bg-grape-50 rounded-xl hover:bg-grape-100 transition-colors"
+                className="flex-1 sm:flex-none px-4 py-2 text-sm font-medium text-grape-600 bg-grape-50 rounded-xl hover:bg-grape-100 transition-colors"
               >
                 수정
               </button>
@@ -198,10 +198,10 @@ export default function ExpenseDetail() {
       </div>
 
       {/* 지출 정보 카드 */}
-      <div className="bg-white rounded-2xl shadow-sm border border-warm-200/60 p-4 sm:p-6 space-y-5">
+      <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)]/60 p-4 sm:p-6 space-y-5">
         {/* 금액 */}
         <div>
-          <label className="block text-sm font-medium text-warm-500 mb-2">
+          <label className="block text-sm font-medium text-[var(--text-tertiary)] mb-2">
             금액
           </label>
           {isEditing ? (
@@ -211,11 +211,11 @@ export default function ExpenseDetail() {
               onChange={(e) =>
                 setEditForm({ ...editForm, amount: Number(e.target.value) })
               }
-              className="w-full px-4 py-2 text-xl sm:text-2xl font-bold text-warm-900 border border-warm-300 rounded-xl focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
+              className="w-full px-4 py-2 text-xl sm:text-2xl font-bold text-[var(--text-primary)] border border-[var(--input-border)] rounded-xl focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
               placeholder="10000"
             />
           ) : (
-            <p className="text-2xl sm:text-3xl font-bold text-warm-900">
+            <p className="text-2xl sm:text-3xl font-bold text-[var(--text-primary)]">
               {formatAmount(expense.amount)}
             </p>
           )}
@@ -223,7 +223,7 @@ export default function ExpenseDetail() {
 
         {/* 설명 */}
         <div>
-          <label className="block text-sm font-medium text-warm-500 mb-2">
+          <label className="block text-sm font-medium text-[var(--text-tertiary)] mb-2">
             설명
           </label>
           {isEditing ? (
@@ -233,17 +233,17 @@ export default function ExpenseDetail() {
               onChange={(e) =>
                 setEditForm({ ...editForm, description: e.target.value })
               }
-              className="w-full px-4 py-2 text-lg border border-warm-300 rounded-xl focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
+              className="w-full px-4 py-2 text-lg border border-[var(--input-border)] rounded-xl focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
               placeholder="김치찌개"
             />
           ) : (
-            <p className="text-lg text-warm-900">{expense.description}</p>
+            <p className="text-lg text-[var(--text-primary)]">{expense.description}</p>
           )}
         </div>
 
         {/* 카테고리 */}
         <div>
-          <label className="block text-sm font-medium text-warm-500 mb-2">
+          <label className="block text-sm font-medium text-[var(--text-tertiary)] mb-2">
             카테고리
           </label>
           {isEditing ? (
@@ -255,7 +255,7 @@ export default function ExpenseDetail() {
                   category_id: e.target.value ? Number(e.target.value) : null,
                 })
               }
-              className="w-full px-4 py-2 text-lg border border-warm-300 rounded-xl focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
+              className="w-full px-4 py-2 text-lg border border-[var(--input-border)] rounded-xl focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
             >
               <option value="">미분류</option>
               {categories.map((cat) => (
@@ -265,13 +265,13 @@ export default function ExpenseDetail() {
               ))}
             </select>
           ) : (
-            <p className="text-lg text-warm-900">{categoryName}</p>
+            <p className="text-lg text-[var(--text-primary)]">{categoryName}</p>
           )}
         </div>
 
         {/* 날짜 */}
         <div>
-          <label className="block text-sm font-medium text-warm-500 mb-2">
+          <label className="block text-sm font-medium text-[var(--text-tertiary)] mb-2">
             날짜
           </label>
           {isEditing ? (
@@ -281,16 +281,16 @@ export default function ExpenseDetail() {
               onChange={(e) =>
                 setEditForm({ ...editForm, date: e.target.value })
               }
-              className="w-full px-4 py-2 text-lg border border-warm-300 rounded-xl focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
+              className="w-full px-4 py-2 text-lg border border-[var(--input-border)] rounded-xl focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
             />
           ) : (
-            <p className="text-lg text-warm-900">{formatDate(expense.date)}</p>
+            <p className="text-lg text-[var(--text-primary)]">{formatDate(expense.date)}</p>
           )}
         </div>
 
         {/* 메모 */}
         <div>
-          <label className="block text-sm font-medium text-warm-500 mb-2">
+          <label className="block text-sm font-medium text-[var(--text-tertiary)] mb-2">
             메모
           </label>
           {isEditing ? (
@@ -301,18 +301,18 @@ export default function ExpenseDetail() {
                 setEditForm({ ...editForm, memo: e.target.value })
               }
               placeholder="추가 메모 (선택)"
-              className="w-full px-4 py-2 text-lg border border-warm-300 rounded-xl focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
+              className="w-full px-4 py-2 text-lg border border-[var(--input-border)] rounded-xl focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
             />
           ) : expense.memo ? (
-            <p className="text-lg text-warm-900">{expense.memo}</p>
+            <p className="text-lg text-[var(--text-primary)]">{expense.memo}</p>
           ) : (
-            <p className="text-lg text-warm-400">-</p>
+            <p className="text-lg text-[var(--text-muted)]">-</p>
           )}
         </div>
 
         {/* 통계 제외 */}
         <div>
-          <label className="block text-sm font-medium text-warm-500 mb-2">
+          <label className="block text-sm font-medium text-[var(--text-tertiary)] mb-2">
             통계 제외
           </label>
           {isEditing ? (
@@ -324,30 +324,30 @@ export default function ExpenseDetail() {
                   onChange={(e) => setEditForm({ ...editForm, exclude_from_stats: e.target.checked })}
                   className="sr-only"
                 />
-                <div className={`w-10 h-6 rounded-full transition-colors ${editForm.exclude_from_stats ? 'bg-warm-400' : 'bg-warm-200'}`} />
+                <div className={`w-10 h-6 rounded-full transition-colors ${editForm.exclude_from_stats ? 'bg-[var(--text-muted)]' : 'bg-[var(--border-default)]'}`} />
                 <div className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${editForm.exclude_from_stats ? 'translate-x-4' : ''}`} />
               </div>
-              <span className="text-sm text-warm-700">차트/통계에서 제외</span>
+              <span className="text-sm text-[var(--text-secondary)]">차트/통계에서 제외</span>
             </label>
           ) : (
-            <p className="text-lg text-warm-900">{expense.exclude_from_stats ? '제외됨' : '-'}</p>
+            <p className="text-lg text-[var(--text-primary)]">{expense.exclude_from_stats ? '제외됨' : '-'}</p>
           )}
         </div>
 
         {/* 원본 입력 (읽기 전용) */}
         {expense.raw_input && (
           <div>
-            <label className="block text-sm font-medium text-warm-500 mb-2">
+            <label className="block text-sm font-medium text-[var(--text-tertiary)] mb-2">
               원본 입력
             </label>
-            <p className="text-sm text-warm-600 bg-warm-50 rounded-lg p-3 font-mono">
+            <p className="text-sm text-[var(--text-secondary)] bg-[var(--surface-elevated)] rounded-lg p-3 font-mono">
               {expense.raw_input}
             </p>
           </div>
         )}
 
         {/* 메타 정보 */}
-        <div className="pt-4 border-t border-warm-100 flex gap-4 text-xs text-warm-400">
+        <div className="pt-4 border-t border-[var(--border-subtle)] flex gap-4 text-xs text-[var(--text-muted)]">
           <span>생성: {formatDate(expense.created_at)}</span>
           <span>수정: {formatDate(expense.updated_at)}</span>
         </div>
@@ -370,17 +370,17 @@ export default function ExpenseDetail() {
       {/* 삭제 확인 모달 */}
       {showDeleteModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6">
-            <h3 className="text-lg font-semibold text-warm-900 mb-2">
+          <div className="bg-[var(--surface-card)] rounded-2xl shadow-xl max-w-md w-full p-6">
+            <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-2">
               지출 내역 삭제
             </h3>
-            <p className="text-warm-600 mb-6">
+            <p className="text-[var(--text-secondary)] mb-6">
               정말로 이 지출 내역을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.
             </p>
             <div className="flex gap-3 justify-end">
               <button
                 onClick={() => setShowDeleteModal(false)}
-                className="px-4 py-2 text-sm font-medium text-warm-700 bg-warm-100 rounded-xl hover:bg-warm-200 transition-colors"
+                className="px-4 py-2 text-sm font-medium text-[var(--text-secondary)] bg-[var(--surface-hover)] rounded-xl hover:bg-[var(--border-default)] transition-colors"
               >
                 취소
               </button>

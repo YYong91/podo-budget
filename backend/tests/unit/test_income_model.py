@@ -3,15 +3,15 @@
 import pytest
 from sqlalchemy import select
 
+from app.models.household import Household
 from app.models.income import Income
 
 
 @pytest.mark.asyncio
-async def test_create_income(db_session):
+async def test_create_income(db_session, test_household: Household):
     """수입 레코드 생성 테스트"""
     from datetime import datetime
 
-    # hash_password removed - use auth_user_id pattern
     from app.models.user import User
 
     user = User(username="income_test_user", auth_user_id=None, hashed_password=None)  # pragma: allowlist secret
@@ -20,6 +20,7 @@ async def test_create_income(db_session):
 
     income = Income(
         user_id=user.id,
+        household_id=test_household.id,
         amount=3500000,
         description="월급",
         date=datetime(2026, 2, 1, 9, 0, 0),
@@ -33,15 +34,14 @@ async def test_create_income(db_session):
     assert incomes[0].amount == 3500000
     assert incomes[0].description == "월급"
     assert incomes[0].user_id == user.id
-    assert incomes[0].household_id is None
+    assert incomes[0].household_id == test_household.id
 
 
 @pytest.mark.asyncio
-async def test_income_with_category(db_session):
+async def test_income_with_category(db_session, test_household: Household):
     """카테고리가 있는 수입 테스트"""
     from datetime import datetime
 
-    # hash_password removed - use auth_user_id pattern
     from app.models.category import Category
     from app.models.user import User
 
@@ -55,6 +55,7 @@ async def test_income_with_category(db_session):
 
     income = Income(
         user_id=user.id,
+        household_id=test_household.id,
         amount=3500000,
         description="2월 월급",
         category_id=category.id,
@@ -72,8 +73,6 @@ async def test_income_with_household(db_session):
     """가구 공유 수입 테스트"""
     from datetime import datetime
 
-    # hash_password removed - use auth_user_id pattern
-    from app.models.household import Household
     from app.models.user import User
 
     user = User(username="income_hh_user", auth_user_id=None, hashed_password=None)  # pragma: allowlist secret

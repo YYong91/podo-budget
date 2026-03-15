@@ -25,13 +25,10 @@ export default function Layout() {
   const location = useLocation()
   const {
     households, activeHouseholdId, myInvitations,
-    fetchHouseholds, fetchMyInvitations, setActiveHouseholdId,
+    setActiveHouseholdId,
   } = useHouseholdStore()
 
-  useEffect(() => {
-    fetchHouseholds().catch(() => {})
-    fetchMyInvitations().catch(() => {})
-  }, [fetchHouseholds, fetchMyInvitations])
+  // 초기 fetch는 ProtectedRoute의 initializeApp()에서 수행
 
   useEffect(() => {
     if (!householdDropdownOpen) return
@@ -50,7 +47,7 @@ export default function Layout() {
   const isDev = import.meta.env.VITE_SENTRY_ENVIRONMENT === 'development'
 
   return (
-    <div className="min-h-screen bg-cream">
+    <div className="min-h-screen bg-[var(--surface)]">
       {/* 개발 환경 표시 배너 */}
       {isDev && (
         <div className="bg-amber-500 text-white text-center text-xs font-bold py-1 tracking-wide z-50 relative">
@@ -60,25 +57,25 @@ export default function Layout() {
 
       {/* 모바일 전용 미니 헤더 — 가구 전환/초대 배지가 있을 때만 표시 */}
       {(pendingInvitationCount > 0 || households.length > 1) && (
-        <header className="md:hidden bg-white border-b border-warm-200 sticky top-0 z-30 h-12 flex items-center justify-end px-4 gap-3">
+        <header className="md:hidden bg-[var(--surface-card)] border-b border-[var(--border-default)] sticky top-0 z-30 h-12 flex items-center justify-end px-4 gap-3">
           {households.length > 1 && (
             <div className="relative">
               <button
                 onClick={e => { e.stopPropagation(); setHouseholdDropdownOpen(!householdDropdownOpen) }}
-                className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs bg-grape-50 hover:bg-grape-100 text-grape-700 transition-colors"
+                className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs bg-grape-50 hover:bg-grape-100 text-grape-600 transition-colors"
               >
                 <Home className="w-3.5 h-3.5" />
                 <span className="font-medium truncate max-w-[100px]">{activeHousehold?.name ?? '가구'}</span>
-                <ChevronDown className="w-3 h-3 text-warm-400" />
+                <ChevronDown className="w-3 h-3 text-[var(--text-muted)]" />
               </button>
               {householdDropdownOpen && (
-                <div className="absolute right-0 top-full mt-1 bg-white border border-warm-200 rounded-lg shadow-lg z-50 py-1 min-w-[140px]">
+                <div className="absolute right-0 top-full mt-1 bg-[var(--surface-card)] border border-[var(--border-default)] rounded-lg shadow-lg z-50 py-1 min-w-[140px]">
                   {households.map(h => (
                     <button
                       key={h.id}
                       onClick={() => { setActiveHouseholdId(h.id); setHouseholdDropdownOpen(false) }}
-                      className={`w-full text-left px-3 py-2 text-sm hover:bg-warm-100 transition-colors truncate ${
-                        h.id === activeHouseholdId ? 'text-grape-700 font-medium bg-grape-50' : 'text-warm-700'
+                      className={`w-full text-left px-3 py-2 text-sm hover:bg-[var(--surface-hover)] transition-colors truncate ${
+                        h.id === activeHouseholdId ? 'text-grape-600 font-medium bg-grape-50' : 'text-[var(--text-secondary)]'
                       }`}
                     >
                       {h.name}
@@ -90,7 +87,7 @@ export default function Layout() {
           )}
           {pendingInvitationCount > 0 && (
             <Link to="/invitations" className="relative p-1.5">
-              <Mail className="w-5 h-5 text-warm-600" />
+              <Mail className="w-5 h-5 text-[var(--text-tertiary)]" />
               <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[10px] px-1 py-0.5 rounded-full min-w-[16px] text-center leading-none">
                 {pendingInvitationCount}
               </span>
@@ -101,24 +98,16 @@ export default function Layout() {
 
       <div className="flex">
         {/* 데스크톱 사이드바 (md 이상에서만 표시) */}
-        <aside className="hidden md:flex md:sticky md:top-0 md:h-screen w-60 bg-cream border-r border-warm-200 p-4 flex-col">
+        <aside className="hidden md:flex md:sticky md:top-0 md:h-screen w-60 bg-[var(--surface)] border-r border-[var(--border-default)] p-4 flex-col">
           {/* 앱 타이틀 */}
           <div className="mb-4">
-            <Link to="/" className="text-2xl font-bold text-grape-700 flex items-center gap-2"><img src="/pwa-192x192.png" alt="" className="w-8 h-8 rounded" />포도가계부</Link>
+            <Link to="/" className="text-2xl font-bold text-grape-600 flex items-center gap-2"><img src="/pwa-192x192.png" alt="" className="w-8 h-8 rounded dark:hidden" /><img src="/pwa-192x192-dark.png" alt="" className="w-8 h-8 rounded hidden dark:block" />포도가계부</Link>
           </div>
 
           {/* 가구 선택 드롭다운 */}
           <div className="mb-4">
-            {households.length === 0 ? (
-              <Link
-                to="/households"
-                className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm bg-grape-50 text-grape-700 hover:bg-grape-100 transition-colors"
-              >
-                <Home className="w-4 h-4" />
-                <span>가계부를 만들어주세요</span>
-              </Link>
-            ) : households.length === 1 ? (
-              <div className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm bg-grape-50 text-grape-700">
+            {households.length <= 1 ? (
+              <div className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm bg-grape-50 text-grape-600">
                 <Home className="w-4 h-4" />
                 <span className="font-medium truncate">{activeHousehold?.name ?? '가구'}</span>
               </div>
@@ -126,22 +115,22 @@ export default function Layout() {
               <div className="relative">
                 <button
                   onClick={e => { e.stopPropagation(); setHouseholdDropdownOpen(!householdDropdownOpen) }}
-                  className="flex items-center justify-between w-full px-3 py-2 rounded-lg text-sm bg-grape-50 hover:bg-grape-100 text-grape-700 transition-colors"
+                  className="flex items-center justify-between w-full px-3 py-2 rounded-lg text-sm bg-grape-50 hover:bg-grape-100 text-grape-600 transition-colors"
                 >
                   <div className="flex items-center gap-2 min-w-0">
                     <Home className="w-4 h-4" />
                     <span className="font-medium truncate">{activeHousehold?.name ?? '가구 선택'}</span>
                   </div>
-                  <ChevronDown className="w-3.5 h-3.5 text-warm-400 ml-1 flex-shrink-0" />
+                  <ChevronDown className="w-3.5 h-3.5 text-[var(--text-muted)] ml-1 flex-shrink-0" />
                 </button>
                 {householdDropdownOpen && (
-                  <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-warm-200 rounded-lg shadow-lg z-50 py-1">
+                  <div className="absolute left-0 right-0 top-full mt-1 bg-[var(--surface-card)] border border-[var(--border-default)] rounded-lg shadow-lg z-50 py-1">
                     {households.map(h => (
                       <button
                         key={h.id}
                         onClick={() => { setActiveHouseholdId(h.id); setHouseholdDropdownOpen(false) }}
-                        className={`w-full text-left px-3 py-2 text-sm hover:bg-warm-100 transition-colors truncate ${
-                          h.id === activeHouseholdId ? 'text-grape-700 font-medium bg-grape-50' : 'text-warm-700'
+                        className={`w-full text-left px-3 py-2 text-sm hover:bg-[var(--surface-hover)] transition-colors truncate ${
+                          h.id === activeHouseholdId ? 'text-grape-600 font-medium bg-grape-50' : 'text-[var(--text-secondary)]'
                         }`}
                       >
                         {h.name}
@@ -167,8 +156,8 @@ export default function Layout() {
                     flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium
                     transition-colors relative
                     ${active
-                      ? 'bg-grape-50 text-grape-700 border-l-3 border-grape-500'
-                      : 'text-warm-600 hover:bg-warm-100 hover:text-warm-800'
+                      ? 'bg-grape-50 text-grape-600 border-l-3 border-grape-500'
+                      : 'text-[var(--text-tertiary)] hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]'
                     }
                   `}
                 >
@@ -189,8 +178,8 @@ export default function Layout() {
                   flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium
                   transition-colors relative
                   ${location.pathname === '/invitations'
-                    ? 'bg-grape-50 text-grape-700 border-l-3 border-grape-500'
-                    : 'text-warm-600 hover:bg-warm-100 hover:text-warm-800'
+                    ? 'bg-grape-50 text-grape-600 border-l-3 border-grape-500'
+                    : 'text-[var(--text-tertiary)] hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]'
                   }
                 `}
               >
@@ -214,7 +203,7 @@ export default function Layout() {
       </div>
 
       {/* 모바일 하단 탭 바 */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-white border-t border-warm-200 safe-area-bottom">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-[var(--surface-card)] border-t border-[var(--border-default)] safe-area-bottom">
         <div className="flex items-center justify-around h-14 pwa-nav-container">
           {navItems.map(item => {
             const active = isActive(item.path)
@@ -229,7 +218,7 @@ export default function Layout() {
                   transition-colors
                   ${active
                     ? 'text-grape-600'
-                    : 'text-warm-400 active:text-warm-600'
+                    : 'text-[var(--text-muted)] active:text-[var(--text-tertiary)]'
                   }
                 `}
               >

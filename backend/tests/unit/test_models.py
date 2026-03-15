@@ -13,6 +13,7 @@ from sqlalchemy import select
 from app.models.budget import Budget
 from app.models.category import Category
 from app.models.expense import Expense
+from app.models.household import Household
 
 
 @pytest.mark.asyncio
@@ -30,7 +31,7 @@ async def test_create_category(db_session):
 
 
 @pytest.mark.asyncio
-async def test_create_expense_with_category(db_session):
+async def test_create_expense_with_category(db_session, test_household: Household):
     """카테고리와 연결된 지출 생성 테스트"""
     # 카테고리 생성
     category = Category(name="교통비", description="대중교통 및 택시")
@@ -45,6 +46,7 @@ async def test_create_expense_with_category(db_session):
         category_id=category.id,
         raw_input="택시 15000원",
         date=datetime(2026, 2, 11, 12, 0, 0),
+        household_id=test_household.id,
     )
     db_session.add(expense)
     await db_session.commit()
@@ -67,13 +69,14 @@ async def test_create_expense_with_category(db_session):
 
 
 @pytest.mark.asyncio
-async def test_expense_without_category(db_session):
+async def test_expense_without_category(db_session, test_household: Household):
     """카테고리 없는 지출 생성 테스트 (nullable=True)"""
     expense = Expense(
         amount=5000.0,
         description="기타 지출",
         category_id=None,
         date=datetime.now(),
+        household_id=test_household.id,
     )
     db_session.add(expense)
     await db_session.commit()
@@ -84,7 +87,7 @@ async def test_expense_without_category(db_session):
 
 
 @pytest.mark.asyncio
-async def test_budget_creation(db_session):
+async def test_budget_creation(db_session, test_household: Household):
     """예산 생성 테스트"""
     # 카테고리 생성
     category = Category(name="문화생활", description="여가 및 취미")
@@ -100,6 +103,7 @@ async def test_budget_creation(db_session):
         start_date=datetime(2026, 2, 1),
         end_date=datetime(2026, 2, 28),
         alert_threshold=0.8,
+        household_id=test_household.id,
     )
     db_session.add(budget)
     await db_session.commit()
@@ -114,7 +118,7 @@ async def test_budget_creation(db_session):
 
 
 @pytest.mark.asyncio
-async def test_category_expense_relationship(db_session):
+async def test_category_expense_relationship(db_session, test_household: Household):
     """카테고리-지출 관계(1:N) 테스트"""
     # 카테고리 생성
     category = Category(name="쇼핑")
@@ -123,8 +127,8 @@ async def test_category_expense_relationship(db_session):
     await db_session.refresh(category)
 
     # 여러 지출 생성
-    expense1 = Expense(amount=20000, description="옷", category_id=category.id, date=datetime.now())
-    expense2 = Expense(amount=15000, description="신발", category_id=category.id, date=datetime.now())
+    expense1 = Expense(amount=20000, description="옷", category_id=category.id, date=datetime.now(), household_id=test_household.id)
+    expense2 = Expense(amount=15000, description="신발", category_id=category.id, date=datetime.now(), household_id=test_household.id)
     db_session.add_all([expense1, expense2])
     await db_session.commit()
 
@@ -138,9 +142,9 @@ async def test_category_expense_relationship(db_session):
 
 
 @pytest.mark.asyncio
-async def test_expense_default_date(db_session):
+async def test_expense_default_date(db_session, test_household: Household):
     """지출의 기본 날짜(now) 테스트"""
-    expense = Expense(amount=3000, description="테스트")
+    expense = Expense(amount=3000, description="테스트", household_id=test_household.id)
     db_session.add(expense)
     await db_session.commit()
     await db_session.refresh(expense)
