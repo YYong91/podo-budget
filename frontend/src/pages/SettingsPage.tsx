@@ -25,7 +25,7 @@ const AUTH_URL = import.meta.env.VITE_AUTH_URL || 'https://auth.podonest.com'
 const TAG_STYLES: Record<ChangelogItem['tag'], string> = {
   '신규': 'bg-grape-100 text-grape-700 dark:text-grape-300',
   '개선': 'bg-leaf-100 text-leaf-700 dark:text-leaf-400',
-  '수정': 'bg-[var(--surface-hover)] text-warm-700 dark:text-warm-300',
+  '수정': 'bg-[var(--surface-hover)] text-[var(--text-secondary)]',
 }
 
 type SettingsSection = 'changelog' | 'my-account' | 'appearance'

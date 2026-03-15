@@ -69,7 +69,7 @@ export default function TransactionItem({
           {category?.name ?? '미분류'}
         </button>
         {isRecurring && (
-          <span className="text-xs bg-warm-200 text-[var(--text-secondary)] px-1.5 py-0.5 rounded-full">정기</span>
+          <span className="text-xs bg-[var(--border-default)] text-[var(--text-secondary)] px-1.5 py-0.5 rounded-full">정기</span>
         )}
         {excludeFromStats && (
           <span className="text-xs bg-[var(--surface-hover)] text-[var(--text-tertiary)] px-1.5 py-0.5 rounded-full">통계제외</span>

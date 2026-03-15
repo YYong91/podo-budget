@@ -121,7 +121,7 @@ export default function PullToRefresh({ onRefresh, children }: PullToRefreshProp
               }}
             />
           )}
-          <span className="text-xs text-warm-500">
+          <span className="text-xs text-[var(--text-tertiary)]">
             {refreshing ? '새로고침 중...' : progress >= 1 ? '놓으면 새로고침' : '당겨서 새로고침'}
           </span>
         </div>

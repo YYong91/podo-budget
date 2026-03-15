@@ -238,7 +238,7 @@ export default function BudgetManager() {
             step="10000"
             value={localTotalBudget}
             onChange={(e) => setLocalTotalBudget(e.target.value)}
-            className="w-44 px-3 py-2 text-sm border border-warm-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-grape-500 text-right"
+            className="w-44 px-3 py-2 text-sm border border-[var(--input-border)] rounded-lg focus:outline-none focus:ring-2 focus:ring-grape-500 text-right"
             placeholder="미설정"
             aria-label="월 총 예산"
           />
@@ -256,7 +256,7 @@ export default function BudgetManager() {
         {/* 배분 현황 */}
         {hasTotalBudget && (
           <div className="mt-4 space-y-2">
-            <div className="w-full bg-warm-200 rounded-full h-3">
+            <div className="w-full bg-[var(--border-default)] rounded-full h-3">
               <div
                 className={`h-3 rounded-full transition-all ${
                   allocationPercent > 100 ? 'bg-rose-500' : 'bg-grape-500'
@@ -309,7 +309,7 @@ export default function BudgetManager() {
                     {alert.usage_percentage.toFixed(1)}%
                   </span>
                 </div>
-                <div className="w-full bg-warm-200 rounded-full h-2 mb-2">
+                <div className="w-full bg-[var(--border-default)] rounded-full h-2 mb-2">
                   <div
                     className={`h-2 rounded-full ${getProgressColor(alert)}`}
                     style={{ width: `${Math.min(alert.usage_percentage, 100)}%` }}
@@ -393,7 +393,7 @@ export default function BudgetManager() {
                         step="1000"
                         value={localAmounts[item.category_id] ?? ''}
                         onChange={(e) => handleAmountChange(item.category_id, e.target.value)}
-                        className="w-28 px-2 py-1.5 text-sm border border-warm-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-grape-500 text-right"
+                        className="w-28 px-2 py-1.5 text-sm border border-[var(--input-border)] rounded-lg focus:outline-none focus:ring-2 focus:ring-grape-500 text-right"
                         placeholder="예산 없음"
                         aria-label={`${item.category_name} 예산`}
                       />

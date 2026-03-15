@@ -176,7 +176,7 @@ export default function ExpenseDetail() {
             <>
               <button
                 onClick={() => setShowRecurringModal(true)}
-                className="flex-1 sm:flex-none px-4 py-2 text-sm font-medium text-[var(--text-secondary)] bg-[var(--surface-hover)] rounded-xl hover:bg-warm-200 transition-colors"
+                className="flex-1 sm:flex-none px-4 py-2 text-sm font-medium text-[var(--text-secondary)] bg-[var(--surface-hover)] rounded-xl hover:bg-[var(--border-default)] transition-colors"
               >
                 반복 거래 등록
               </button>
@@ -324,7 +324,7 @@ export default function ExpenseDetail() {
                   onChange={(e) => setEditForm({ ...editForm, exclude_from_stats: e.target.checked })}
                   className="sr-only"
                 />
-                <div className={`w-10 h-6 rounded-full transition-colors ${editForm.exclude_from_stats ? 'bg-warm-400' : 'bg-warm-200'}`} />
+                <div className={`w-10 h-6 rounded-full transition-colors ${editForm.exclude_from_stats ? 'bg-[var(--text-muted)]' : 'bg-[var(--border-default)]'}`} />
                 <div className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${editForm.exclude_from_stats ? 'translate-x-4' : ''}`} />
               </div>
               <span className="text-sm text-[var(--text-secondary)]">차트/통계에서 제외</span>
@@ -380,7 +380,7 @@ export default function ExpenseDetail() {
             <div className="flex gap-3 justify-end">
               <button
                 onClick={() => setShowDeleteModal(false)}
-                className="px-4 py-2 text-sm font-medium text-[var(--text-secondary)] bg-[var(--surface-hover)] rounded-xl hover:bg-warm-200 transition-colors"
+                className="px-4 py-2 text-sm font-medium text-[var(--text-secondary)] bg-[var(--surface-hover)] rounded-xl hover:bg-[var(--border-default)] transition-colors"
               >
                 취소
               </button>
