@@ -109,15 +109,7 @@ export default function Layout() {
 
           {/* 가구 선택 드롭다운 */}
           <div className="mb-4">
-            {households.length === 0 ? (
-              <Link
-                to="/households"
-                className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm bg-grape-50 text-grape-700 hover:bg-grape-100 transition-colors"
-              >
-                <Home className="w-4 h-4" />
-                <span>가계부를 만들어주세요</span>
-              </Link>
-            ) : households.length === 1 ? (
+            {households.length <= 1 ? (
               <div className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm bg-grape-50 text-grape-700">
                 <Home className="w-4 h-4" />
                 <span className="font-medium truncate">{activeHousehold?.name ?? '가구'}</span>

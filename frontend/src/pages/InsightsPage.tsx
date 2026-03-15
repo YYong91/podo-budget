@@ -79,7 +79,7 @@ export default function InsightsPage() {
       setStructuredInsights(null)
       try {
         const dateStr = `${monthStr}-15`
-        const hhId = activeHouseholdId ?? undefined
+        const hhId = activeHouseholdId!
 
         // 1차 병렬: 지출/수입 통계 + 비교 + 예산 + 자산
         const [expRes, incRes, compRes, budgetRes, assetRes, snapRes] = await Promise.allSettled([

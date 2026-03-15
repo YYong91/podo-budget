@@ -28,7 +28,7 @@ describe('recurringApi', () => {
 
   describe('getPending', () => {
     it('대기 중인 정기 거래 목록을 조회한다', async () => {
-      const response = await recurringApi.getPending()
+      const response = await recurringApi.getPending(1)
       expect(Array.isArray(response.data)).toBe(true)
       expect(response.data.every((r) => r.is_active)).toBe(true)
     })

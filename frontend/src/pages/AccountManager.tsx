@@ -25,7 +25,7 @@ export default function AccountManager() {
   const { activeHouseholdId } = useHouseholdStore()
 
   function loadAccounts() {
-    const hid = activeHouseholdId ?? undefined
+    const hid = activeHouseholdId!
     accountApi.getAll(hid)
       .then(res => setAccounts(res.data))
       .catch(() => addToast('error', '계좌 목록을 불러오지 못했습니다'))

@@ -90,7 +90,7 @@ export default function AssetForm() {
 
   // 계좌 목록 로드
   useEffect(() => {
-    accountApi.getAll(activeHouseholdId ?? undefined)
+    accountApi.getAll(activeHouseholdId!)
       .then(res => setAccounts(res.data))
       .catch(() => {})
   }, [activeHouseholdId])
