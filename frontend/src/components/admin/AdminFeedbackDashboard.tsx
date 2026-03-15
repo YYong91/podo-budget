@@ -83,7 +83,7 @@ export default function AdminFeedbackDashboard() {
             className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
               statusFilter === key
                 ? 'bg-grape-600 text-white'
-                : 'bg-warm-100 text-warm-600 hover:bg-warm-200'
+                : 'bg-[var(--surface-hover)] text-[var(--text-secondary)] hover:bg-[var(--surface-elevated)]'
             }`}
           >
             {label} ({count})
@@ -104,7 +104,7 @@ export default function AdminFeedbackDashboard() {
             className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
               typeFilter === key
                 ? 'bg-warm-700 text-white'
-                : 'bg-warm-100 text-warm-600 hover:bg-warm-200'
+                : 'bg-[var(--surface-hover)] text-[var(--text-secondary)] hover:bg-[var(--surface-elevated)]'
             }`}
           >
             {label}
@@ -114,7 +114,7 @@ export default function AdminFeedbackDashboard() {
 
       {/* 피드백 목록 */}
       {filtered.length === 0 ? (
-        <div className="bg-white rounded-xl border border-warm-200 px-4 py-12 text-center text-warm-400 text-sm">
+        <div className="bg-[var(--surface-card)] rounded-xl border border-[var(--border-default)] px-4 py-12 text-center text-[var(--text-muted)] text-sm">
           <MessageSquare className="w-8 h-8 mx-auto mb-2 opacity-50" />
           피드백이 없습니다
         </div>
@@ -122,14 +122,14 @@ export default function AdminFeedbackDashboard() {
         <div className="space-y-3">
           {filtered.map(fb => {
             const typeMeta = TYPE_META[fb.type]
-            const statusMeta = STATUS_META[fb.status] ?? { label: fb.status, color: 'bg-warm-100 text-warm-700' }
+            const statusMeta = STATUS_META[fb.status] ?? { label: fb.status, color: 'bg-[var(--surface-hover)] text-[var(--text-secondary)]' }
             const TypeIcon = typeMeta?.icon ?? MessageSquare
 
             return (
-              <div key={fb.id} className="bg-white rounded-xl border border-warm-200 p-4">
+              <div key={fb.id} className="bg-[var(--surface-card)] rounded-xl border border-[var(--border-default)] p-4">
                 {/* 헤더: 유형 뱃지 + 상태 드롭다운 + 시간 */}
                 <div className="flex items-center gap-2 mb-2">
-                  <span className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-md bg-warm-100 text-warm-600">
+                  <span className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-md bg-[var(--surface-hover)] text-[var(--text-secondary)]">
                     <TypeIcon className="w-3 h-3" />
                     {typeMeta?.label ?? fb.type}
                   </span>
@@ -145,15 +145,15 @@ export default function AdminFeedbackDashboard() {
                     <option value="done">완료</option>
                   </select>
 
-                  <span className="text-[11px] text-warm-400 ml-auto">
+                  <span className="text-[11px] text-[var(--text-muted)] ml-auto">
                     {fb.username && <>{fb.username} · </>}
                     {new Date(fb.created_at).toLocaleDateString('ko-KR')}
                   </span>
                 </div>
 
                 {/* 제목 + 내용 */}
-                <h4 className="text-sm font-semibold text-warm-800 mb-1">{fb.title}</h4>
-                <p className="text-sm text-warm-600 whitespace-pre-wrap">{fb.content}</p>
+                <h4 className="text-sm font-semibold text-[var(--text-primary)] mb-1">{fb.title}</h4>
+                <p className="text-sm text-[var(--text-secondary)] whitespace-pre-wrap">{fb.content}</p>
               </div>
             )
           })}

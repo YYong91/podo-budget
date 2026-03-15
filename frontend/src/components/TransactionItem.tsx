@@ -72,7 +72,7 @@ export default function TransactionItem({
           <span className="text-xs bg-warm-200 text-[var(--text-secondary)] px-1.5 py-0.5 rounded-full">정기</span>
         )}
         {excludeFromStats && (
-          <span className="text-xs bg-warm-100 text-[var(--text-tertiary)] px-1.5 py-0.5 rounded-full">통계제외</span>
+          <span className="text-xs bg-[var(--surface-hover)] text-[var(--text-tertiary)] px-1.5 py-0.5 rounded-full">통계제외</span>
         )}
       </div>
     </Link>
