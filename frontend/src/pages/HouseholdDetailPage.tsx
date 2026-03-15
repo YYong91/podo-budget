@@ -7,7 +7,7 @@
 import type { } from 'react'
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, Link2 } from 'lucide-react'
 import { useHouseholdStore } from '../stores/useHouseholdStore'
 import { useToast } from '../hooks/useToast'
 import { useAuth } from '../contexts/AuthContext'
@@ -518,20 +518,36 @@ export default function HouseholdDetailPage() {
                         </div>
                       </div>
                       {isPending && (
-                        <button
-                          onClick={async () => {
-                            if (!confirm(`${inv.invitee_email}의 초대를 취소하시겠습니까?`)) return
-                            try {
-                              await cancelInvitation(Number(id), inv.id)
-                              addToast('success', '초대를 취소했습니다')
-                            } catch {
-                              addToast('error', '초대 취소에 실패했습니다')
-                            }
-                          }}
-                          className="ml-3 text-xs text-rose-600 hover:text-rose-700 font-medium"
-                        >
-                          취소
-                        </button>
+                        <div className="flex items-center gap-2 ml-3">
+                          {inv.token && (
+                            <button
+                              onClick={async () => {
+                                const link = `${window.location.origin}/invitations/accept?token=${inv.token}`
+                                await navigator.clipboard.writeText(link)
+                                addToast('success', '초대 링크가 복사되었습니다')
+                              }}
+                              className="text-xs text-grape-600 hover:text-grape-700 font-medium flex items-center gap-1"
+                              title="초대 링크 복사"
+                            >
+                              <Link2 className="w-3.5 h-3.5" />
+                              링크 복사
+                            </button>
+                          )}
+                          <button
+                            onClick={async () => {
+                              if (!confirm(`${inv.invitee_email}의 초대를 취소하시겠습니까?`)) return
+                              try {
+                                await cancelInvitation(Number(id), inv.id)
+                                addToast('success', '초대를 취소했습니다')
+                              } catch {
+                                addToast('error', '초대 취소에 실패했습니다')
+                              }
+                            }}
+                            className="text-xs text-rose-600 hover:text-rose-700 font-medium"
+                          >
+                            취소
+                          </button>
+                        </div>
                       )}
                     </div>
                   )
