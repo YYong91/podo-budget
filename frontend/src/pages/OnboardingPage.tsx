@@ -36,7 +36,6 @@ export default function OnboardingPage() {
       <div className="w-full max-w-sm space-y-6">
         {/* 아이콘 + 제목 */}
         <div className="text-center space-y-2">
-          <div className="text-5xl">🍇</div>
           <h1 className="text-2xl font-bold text-grape-900 dark:text-grape-200">포도가계부 시작하기</h1>
           <p className="text-sm text-[var(--text-tertiary)]">
             나만의 가계부를 만들어보세요
