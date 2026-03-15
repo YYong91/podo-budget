@@ -9,7 +9,6 @@
 
 import { useEffect } from 'react'
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
-import { Loader2 } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { useHouseholdStore } from '../stores/useHouseholdStore'
 
@@ -64,7 +63,7 @@ export default function ProtectedRoute() {
     return (
       <div className="min-h-screen bg-[var(--surface)] flex flex-col items-center justify-center gap-3">
         <div className="text-4xl">🍇</div>
-        <Loader2 className="w-6 h-6 text-grape-600 animate-spin" />
+        <div className="animate-spin rounded-full border-b-2 border-grape-600 w-6 h-6" />
       </div>
     )
   }

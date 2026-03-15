@@ -4,7 +4,7 @@
  */
 
 import { useEffect, useRef } from 'react'
-import { X, Loader2 } from 'lucide-react'
+import { X } from 'lucide-react'
 import type { Category } from '../types'
 
 interface CategoryBottomSheetProps {
@@ -76,7 +76,7 @@ export default function CategoryBottomSheet({
         <div className="overflow-y-auto p-2">
           {saving ? (
             <div className="flex items-center justify-center py-8">
-              <Loader2 className="w-5 h-5 animate-spin text-warm-400" />
+              <div className="animate-spin rounded-full border-b-2 border-warm-400 w-5 h-5" />
             </div>
           ) : (
             <>

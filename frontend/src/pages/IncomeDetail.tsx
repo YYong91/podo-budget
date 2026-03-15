@@ -5,7 +5,7 @@
 
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import { ArrowLeft, Loader2 } from 'lucide-react'
+import { ArrowLeft } from 'lucide-react'
 import { useToast } from '../hooks/useToast'
 import { incomeApi } from '../api/income'
 import { categoryApi } from '../api/categories'
@@ -112,7 +112,7 @@ export default function IncomeDetail() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="w-8 h-8 animate-spin text-leaf-600" />
+        <div className="animate-spin rounded-full border-b-2 border-leaf-600 w-8 h-8" />
       </div>
     )
   }

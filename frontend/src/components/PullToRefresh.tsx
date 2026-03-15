@@ -5,7 +5,6 @@
  */
 
 import { useRef, useState, useCallback, useEffect, type ReactNode } from 'react'
-import { Loader2 } from 'lucide-react'
 
 interface PullToRefreshProps {
   onRefresh: () => Promise<void>
@@ -111,7 +110,7 @@ export default function PullToRefresh({ onRefresh, children }: PullToRefreshProp
       >
         <div className="flex items-center gap-2">
           {refreshing ? (
-            <Loader2 className="w-5 h-5 animate-spin text-grape-500" />
+            <div className="animate-spin rounded-full border-b-2 border-grape-500 w-5 h-5" />
           ) : (
             <div
               className="w-5 h-5 rounded-full border-2 border-grape-400 border-t-transparent transition-transform"
