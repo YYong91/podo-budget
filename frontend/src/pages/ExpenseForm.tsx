@@ -348,7 +348,7 @@ export default function ExpenseForm() {
               onChange={(e) => setNaturalInput(e.target.value)}
               placeholder="예: 오늘 점심에 김치찌개 8000원 먹었어&#10;어제 스타벅스에서 아메리카노 4500원"
               rows={5}
-              className="w-full px-4 py-3 bg-grape-50/50 border border-warm-300 rounded-xl focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500 resize-none"
+              className="w-full px-4 py-3 bg-grape-50/50 dark:bg-grape-900/20 border border-[var(--input-border)] rounded-xl focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500 resize-none"
               disabled={loading}
             />
             <p className="mt-2 text-xs text-[var(--text-muted)]">
@@ -386,10 +386,10 @@ export default function ExpenseForm() {
 
             {/* 업로드 버튼 영역 */}
             <div
-              className="border-2 border-dashed border-warm-300 rounded-xl p-8 text-center cursor-pointer hover:border-grape-400 hover:bg-grape-50/30 transition-all"
+              className="border-2 border-dashed border-[var(--input-border)] rounded-xl p-8 text-center cursor-pointer hover:border-grape-400 hover:bg-grape-50/30 transition-all"
               onClick={() => fileInputRef.current?.click()}
             >
-              <Camera className="w-10 h-10 text-warm-300 mx-auto mb-3" />
+              <Camera className="w-10 h-10 text-[var(--text-muted)] mx-auto mb-3" />
               <p className="text-sm font-medium text-[var(--text-secondary)]">
                 {loading ? '인식 중...' : '이미지 선택 / 카메라 촬영'}
               </p>
@@ -424,7 +424,7 @@ export default function ExpenseForm() {
                 })
               }
             }}
-            className="w-full px-4 py-3 text-sm font-medium text-grape-700 dark:text-grape-300 border border-grape-300 bg-grape-50 rounded-xl hover:bg-grape-100 transition-colors disabled:opacity-50"
+            className="w-full px-4 py-3 text-sm font-medium text-grape-700 dark:text-grape-300 border border-grape-300 dark:border-grape-700 bg-grape-50 dark:bg-grape-900/20 rounded-xl hover:bg-grape-100 transition-colors disabled:opacity-50"
           >
             갤러리에서 선택
           </button>
@@ -441,7 +441,7 @@ export default function ExpenseForm() {
             </div>
           )}
 
-          <div className="bg-grape-50 border border-grape-200 rounded-2xl p-4">
+          <div className="bg-grape-50 dark:bg-grape-900/20 border border-grape-200 dark:border-grape-700 rounded-2xl p-4">
             <p className="text-sm text-grape-800 font-medium">
               {previewItems.length}건의 지출을 인식했습니다. 내용을 확인하고 수정한 뒤 저장하세요.
             </p>
@@ -470,7 +470,7 @@ export default function ExpenseForm() {
                       type="number"
                       value={item.amount}
                       onChange={(e) => updatePreviewItem(index, 'amount', Number(e.target.value))}
-                      className="w-full pl-7 pr-3 py-2 border border-warm-300 rounded-xl text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
+                      className="w-full pl-7 pr-3 py-2 border border-[var(--input-border)] rounded-xl text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
                       min="1"
                     />
                   </div>
@@ -482,7 +482,7 @@ export default function ExpenseForm() {
                     type="date"
                     value={item.date.slice(0, 10)}
                     onChange={(e) => updatePreviewItem(index, 'date', e.target.value)}
-                    className="w-full px-3 py-2 border border-warm-300 rounded-xl text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
+                    className="w-full px-3 py-2 border border-[var(--input-border)] rounded-xl text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
                   />
                 </div>
 
@@ -492,7 +492,7 @@ export default function ExpenseForm() {
                     type="text"
                     value={item.description}
                     onChange={(e) => updatePreviewItem(index, 'description', e.target.value)}
-                    className="w-full px-3 py-2 border border-warm-300 rounded-xl text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
+                    className="w-full px-3 py-2 border border-[var(--input-border)] rounded-xl text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
                   />
                 </div>
 
@@ -501,7 +501,7 @@ export default function ExpenseForm() {
                   <select
                     value={item.category_id ?? ''}
                     onChange={(e) => updatePreviewItem(index, 'category_id', e.target.value ? Number(e.target.value) : null)}
-                    className="w-full px-3 py-2 border border-warm-300 rounded-xl text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
+                    className="w-full px-3 py-2 border border-[var(--input-border)] rounded-xl text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
                   >
                     <option value="">미분류 ({item.category})</option>
                     {categories.map((cat) => (
@@ -515,7 +515,7 @@ export default function ExpenseForm() {
                         value={newCategoryName}
                         onChange={(e) => setNewCategoryName(e.target.value)}
                         placeholder="새 카테고리 이름"
-                        className="flex-1 px-2 py-1.5 border border-grape-300 rounded-lg text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
+                        className="flex-1 px-2 py-1.5 border border-grape-300 dark:border-grape-700 rounded-lg text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
                         onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleCreateCategory(index) } }}
                         autoFocus
                       />
@@ -553,7 +553,7 @@ export default function ExpenseForm() {
                     value={item.memo ?? ''}
                     onChange={(e) => updatePreviewItem(index, 'memo', e.target.value)}
                     placeholder="추가 메모 입력"
-                    className="w-full px-3 py-2 border border-warm-300 rounded-xl text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
+                    className="w-full px-3 py-2 border border-[var(--input-border)] rounded-xl text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
                   />
                 </div>
               </div>
@@ -582,7 +582,7 @@ export default function ExpenseForm() {
       {/* 파싱 결과 프리뷰 카드 */}
       {mode === 'natural' && previewItems && (
         <div className="space-y-4">
-          <div className="bg-grape-50 border border-grape-200 rounded-2xl p-4">
+          <div className="bg-grape-50 dark:bg-grape-900/20 border border-grape-200 dark:border-grape-700 rounded-2xl p-4">
             <p className="text-sm text-grape-800 font-medium">
               {previewItems.length}건의 지출을 인식했습니다. 내용을 확인하고 수정한 뒤 저장하세요.
             </p>
@@ -612,7 +612,7 @@ export default function ExpenseForm() {
                       type="number"
                       value={item.amount}
                       onChange={(e) => updatePreviewItem(index, 'amount', Number(e.target.value))}
-                      className="w-full pl-7 pr-3 py-2 border border-warm-300 rounded-xl text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
+                      className="w-full pl-7 pr-3 py-2 border border-[var(--input-border)] rounded-xl text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
                       min="1"
                     />
                   </div>
@@ -625,7 +625,7 @@ export default function ExpenseForm() {
                     type="date"
                     value={item.date.slice(0, 10)}
                     onChange={(e) => updatePreviewItem(index, 'date', e.target.value)}
-                    className="w-full px-3 py-2 border border-warm-300 rounded-xl text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
+                    className="w-full px-3 py-2 border border-[var(--input-border)] rounded-xl text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
                   />
                 </div>
 
@@ -636,7 +636,7 @@ export default function ExpenseForm() {
                     type="text"
                     value={item.description}
                     onChange={(e) => updatePreviewItem(index, 'description', e.target.value)}
-                    className="w-full px-3 py-2 border border-warm-300 rounded-xl text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
+                    className="w-full px-3 py-2 border border-[var(--input-border)] rounded-xl text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
                   />
                 </div>
 
@@ -646,7 +646,7 @@ export default function ExpenseForm() {
                   <select
                     value={item.category_id ?? ''}
                     onChange={(e) => updatePreviewItem(index, 'category_id', e.target.value ? Number(e.target.value) : null)}
-                    className="w-full px-3 py-2 border border-warm-300 rounded-xl text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
+                    className="w-full px-3 py-2 border border-[var(--input-border)] rounded-xl text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
                   >
                     <option value="">미분류 ({item.category})</option>
                     {categories.map((cat) => (
@@ -660,7 +660,7 @@ export default function ExpenseForm() {
                         value={newCategoryName}
                         onChange={(e) => setNewCategoryName(e.target.value)}
                         placeholder="새 카테고리 이름"
-                        className="flex-1 px-2 py-1.5 border border-grape-300 rounded-lg text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
+                        className="flex-1 px-2 py-1.5 border border-grape-300 dark:border-grape-700 rounded-lg text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
                         onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleCreateCategory(index) } }}
                         autoFocus
                       />
@@ -699,7 +699,7 @@ export default function ExpenseForm() {
                     value={item.memo ?? ''}
                     onChange={(e) => updatePreviewItem(index, 'memo', e.target.value)}
                     placeholder="추가 메모 입력"
-                    className="w-full px-3 py-2 border border-warm-300 rounded-xl text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
+                    className="w-full px-3 py-2 border border-[var(--input-border)] rounded-xl text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
                   />
                 </div>
               </div>
@@ -742,7 +742,7 @@ export default function ExpenseForm() {
                 value={formData.amount}
                 onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
                 placeholder="10000"
-                className="w-full pl-8 pr-4 py-3 border border-warm-300 rounded-xl focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
+                className="w-full pl-8 pr-4 py-3 border border-[var(--input-border)] rounded-xl focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
                 disabled={loading}
                 min="1"
                 step="any"
@@ -761,7 +761,7 @@ export default function ExpenseForm() {
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               placeholder="김치찌개"
-              className="w-full px-4 py-3 border border-warm-300 rounded-xl focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
+              className="w-full px-4 py-3 border border-[var(--input-border)] rounded-xl focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
               disabled={loading}
             />
           </div>
@@ -775,7 +775,7 @@ export default function ExpenseForm() {
               id="expense-category"
               value={formData.category_id}
               onChange={(e) => setFormData({ ...formData, category_id: e.target.value })}
-              className="w-full px-4 py-3 border border-warm-300 rounded-xl focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
+              className="w-full px-4 py-3 border border-[var(--input-border)] rounded-xl focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
               disabled={loading}
             >
               <option value="">미분류</option>
@@ -792,7 +792,7 @@ export default function ExpenseForm() {
                   value={newCategoryName}
                   onChange={(e) => setNewCategoryName(e.target.value)}
                   placeholder="새 카테고리 이름"
-                  className="flex-1 px-3 py-2 border border-grape-300 rounded-lg text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
+                  className="flex-1 px-3 py-2 border border-grape-300 dark:border-grape-700 rounded-lg text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
                   onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleCreateCategoryForForm() } }}
                   autoFocus
                 />
@@ -833,7 +833,7 @@ export default function ExpenseForm() {
               type="date"
               value={formData.date}
               onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-              className="w-full px-4 py-3 border border-warm-300 rounded-xl focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
+              className="w-full px-4 py-3 border border-[var(--input-border)] rounded-xl focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
               disabled={loading}
             />
           </div>
@@ -849,7 +849,7 @@ export default function ExpenseForm() {
               value={formData.memo}
               onChange={(e) => setFormData({ ...formData, memo: e.target.value })}
               placeholder="추가 메모 (선택)"
-              className="w-full px-4 py-3 border border-warm-300 rounded-xl focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
+              className="w-full px-4 py-3 border border-[var(--input-border)] rounded-xl focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
               disabled={loading}
             />
           </div>
@@ -864,7 +864,7 @@ export default function ExpenseForm() {
                 className="sr-only"
                 disabled={loading}
               />
-              <div className={`w-10 h-6 rounded-full transition-colors ${formData.exclude_from_stats ? 'bg-warm-400' : 'bg-warm-200'}`} />
+              <div className={`w-10 h-6 rounded-full transition-colors ${formData.exclude_from_stats ? 'bg-[var(--text-muted)]' : 'bg-[var(--surface-hover)]'}`} />
               <div className={`absolute top-1 left-1 w-4 h-4 bg-[var(--surface-card)] rounded-full shadow transition-transform ${formData.exclude_from_stats ? 'translate-x-4' : ''}`} />
             </div>
             <div>
