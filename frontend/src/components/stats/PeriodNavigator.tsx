@@ -21,7 +21,7 @@ export default function PeriodNavigator({ label, onPrev, onNext }: PeriodNavigat
       >
         <ChevronLeft className="w-5 h-5 text-[var(--text-secondary)]" />
       </button>
-      <span className="text-lg font-semibold text-warm-800 min-w-[160px] text-center">
+      <span className="text-lg font-semibold text-[var(--text-primary)] min-w-[160px] text-center">
         {label}
       </span>
       <button
