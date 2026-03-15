@@ -1,6 +1,6 @@
 /* Admin 현황 대시보드 — 헬스 카드 + 최근 활동 피드 + 이탈 감지 */
 
-import { Users, Activity, MessageSquare, Home, AlertTriangle } from 'lucide-react'
+import { Users, Activity, MessageSquare, Home, AlertTriangle, ExternalLink } from 'lucide-react'
 import type { DashboardStats } from '../../types'
 
 interface Props {
@@ -99,6 +99,20 @@ export default function AdminOverview({ data, onTabChange }: Props) {
           sub={`텔레그램 ${data.telegram_linked_count}명`}
         />
       </div>
+
+      {/* Anthropic Console 바로가기 */}
+      <a
+        href="https://console.anthropic.com/settings/billing"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="flex items-center justify-between bg-white rounded-xl p-4 border border-warm-200 hover:border-grape-300 transition-colors"
+      >
+        <div>
+          <div className="text-sm font-semibold text-warm-800">Anthropic Console</div>
+          <div className="text-xs text-warm-500 mt-0.5">잔액 확인 · 자동 충전 설정 · 사용량 조회</div>
+        </div>
+        <ExternalLink className="w-4 h-4 text-warm-400" />
+      </a>
 
       {/* 최근 활동 피드 */}
       <div className="bg-white rounded-xl border border-warm-200">
