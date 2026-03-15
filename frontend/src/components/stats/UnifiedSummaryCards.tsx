@@ -47,21 +47,21 @@ export default function UnifiedSummaryCards({
   const net = incomeTotal - expenseTotal
   const savingsRate = incomeTotal > 0 ? (net / incomeTotal) * 100 : null
 
-  const netColor = net >= 0 ? 'text-leaf-700' : 'text-red-600'
+  const netColor = net >= 0 ? 'text-leaf-700 dark:text-leaf-400' : 'text-red-600 dark:text-red-400'
   const rateColor =
     savingsRate === null
       ? 'text-[var(--text-muted)]'
       : savingsRate >= 20
-        ? 'text-leaf-700'
+        ? 'text-leaf-700 dark:text-leaf-400'
         : savingsRate >= 10
-          ? 'text-amber-600'
-          : 'text-red-600'
+          ? 'text-amber-600 dark:text-amber-400'
+          : 'text-red-600 dark:text-red-400'
 
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
       {/* 순자산 카드 (자산 데이터가 있을 때만) */}
       {netWorth != null && (
-        <div className="col-span-2 lg:col-span-4 bg-gradient-to-br from-warm-50 to-warm-100 border border-[var(--border-default)] rounded-2xl shadow-sm p-4 sm:p-5 text-center">
+        <div className="col-span-2 lg:col-span-4 bg-gradient-to-br from-warm-50 to-warm-100 dark:from-[var(--surface-elevated)] dark:to-[var(--surface-hover)] border border-[var(--border-default)] rounded-2xl shadow-sm p-4 sm:p-5 text-center">
           <p className="text-sm text-[var(--text-tertiary)] mb-0.5">순자산</p>
           <p className="text-xl sm:text-2xl font-bold text-[var(--text-primary)]">{formatLargeAmount(netWorth)}</p>
           {prevNetWorth != null && prevNetWorth !== 0 && (
@@ -70,8 +70,8 @@ export default function UnifiedSummaryCards({
         </div>
       )}
 
-      <div className="bg-gradient-to-br from-leaf-50 to-leaf-100 border border-leaf-200/60 rounded-2xl shadow-sm p-4 sm:p-5">
-        <p className="text-sm text-leaf-700/70">총 수입</p>
+      <div className="bg-gradient-to-br from-leaf-50 to-leaf-100 dark:from-leaf-900/30 dark:to-leaf-800/20 border border-leaf-200/60 dark:border-leaf-700/40 rounded-2xl shadow-sm p-4 sm:p-5">
+        <p className="text-sm text-leaf-700/70 dark:text-leaf-400/70">총 수입</p>
         <p className="text-xl sm:text-2xl font-bold tracking-tight text-[var(--text-primary)] mt-1">
           {formatAmount(incomeTotal)}
         </p>
@@ -79,8 +79,8 @@ export default function UnifiedSummaryCards({
           <ChangeIndicator current={incomeTotal} previous={prevIncome} />
         )}
       </div>
-      <div className="bg-gradient-to-br from-grape-50 to-grape-100 border border-grape-200/60 rounded-2xl shadow-sm p-4 sm:p-5">
-        <p className="text-sm text-grape-700/70">총 지출</p>
+      <div className="bg-gradient-to-br from-grape-50 to-grape-100 dark:from-grape-900/30 dark:to-grape-800/20 border border-grape-200/60 dark:border-grape-700/40 rounded-2xl shadow-sm p-4 sm:p-5">
+        <p className="text-sm text-grape-700/70 dark:text-grape-400/70">총 지출</p>
         <p className="text-xl sm:text-2xl font-bold tracking-tight text-[var(--text-primary)] mt-1">
           {formatAmount(expenseTotal)}
         </p>

@@ -21,8 +21,8 @@ const TYPE_LABELS: Record<string, string> = {
 export default function AssetChangeSummary({ summary, previousSnapshot }: AssetChangeSummaryProps) {
   if (!summary) {
     return (
-      <div className="bg-white rounded-2xl shadow-sm border border-warm-200/60 p-4 text-center">
-        <p className="text-sm text-warm-500 mb-2">자산을 등록하면 더 풍부한 리포트를 볼 수 있어요</p>
+      <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] p-4 text-center">
+        <p className="text-sm text-[var(--text-tertiary)] mb-2">자산을 등록하면 더 풍부한 리포트를 볼 수 있어요</p>
         <Link to="/assets" className="text-sm font-medium text-grape-600 hover:text-grape-700">
           자산 등록하기 →
         </Link>
@@ -59,24 +59,24 @@ export default function AssetChangeSummary({ summary, previousSnapshot }: AssetC
   }
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-warm-200/60 p-4">
-      <h3 className="text-sm font-semibold text-warm-700 mb-3">자산 변동</h3>
+    <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] p-4">
+      <h3 className="text-sm font-semibold text-[var(--text-secondary)] mb-3">자산 변동</h3>
 
       {/* 순자산 */}
       <div className="flex items-baseline justify-between mb-3">
         <div>
-          <p className="text-xs text-warm-500">순자산</p>
-          <p className="text-xl font-bold text-warm-900">{formatLargeAmount(summary.net_worth)}</p>
+          <p className="text-xs text-[var(--text-tertiary)]">순자산</p>
+          <p className="text-xl font-bold text-[var(--text-primary)]">{formatLargeAmount(summary.net_worth)}</p>
         </div>
         {change !== null && (
-          <div className={`flex items-center gap-1 ${change >= 0 ? 'text-leaf-600' : 'text-red-500'}`}>
+          <div className={`flex items-center gap-1 ${change >= 0 ? 'text-leaf-600 dark:text-leaf-400' : 'text-red-500'}`}>
             {change >= 0 ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
             <span className="text-sm font-medium">
               전월 대비 {change >= 0 ? '+' : ''}
               {formatLargeAmount(change)}
             </span>
             {changeRate !== null && (
-              <span className="text-xs text-warm-500">
+              <span className="text-xs text-[var(--text-tertiary)]">
                 ({changeRate >= 0 ? '+' : ''}
                 {changeRate.toFixed(1)}%)
               </span>
@@ -87,14 +87,14 @@ export default function AssetChangeSummary({ summary, previousSnapshot }: AssetC
 
       {/* 유형별 증감 */}
       {typeChanges.length > 0 && (
-        <div className="space-y-1.5 pt-3 border-t border-warm-100">
+        <div className="space-y-1.5 pt-3 border-t border-[var(--border-subtle)]">
           {typeChanges.slice(0, 5).map((tc) => (
             <div key={tc.type} className="flex items-center justify-between text-xs">
-              <span className="text-warm-600">{tc.label}</span>
+              <span className="text-[var(--text-secondary)]">{tc.label}</span>
               <div className="flex items-center gap-2">
-                <span className="text-warm-700">{formatLargeAmount(tc.current)}</span>
+                <span className="text-[var(--text-secondary)]">{formatLargeAmount(tc.current)}</span>
                 {tc.change !== 0 && (
-                  <span className={tc.change > 0 ? 'text-leaf-600' : 'text-red-500'}>
+                  <span className={tc.change > 0 ? 'text-leaf-600 dark:text-leaf-400' : 'text-red-500'}>
                     {tc.change > 0 ? '+' : ''}
                     {formatLargeAmount(tc.change)}
                   </span>

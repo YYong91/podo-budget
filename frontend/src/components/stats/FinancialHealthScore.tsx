@@ -62,7 +62,7 @@ export default function FinancialHealthScore({ score }: FinancialHealthScoreProp
         {LABELS.map(({ key, label }) => (
           <div key={key} className="flex items-center gap-2">
             <span className="text-xs text-[var(--text-secondary)] w-14 shrink-0">{label}</span>
-            <div className="flex-1 h-2 bg-warm-100 rounded-full overflow-hidden">
+            <div className="flex-1 h-2 bg-[var(--surface-hover)] rounded-full overflow-hidden">
               <div
                 className={`h-full rounded-full transition-all ${getBarColor(score[key])}`}
                 style={{ width: `${score[key]}%` }}

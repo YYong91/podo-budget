@@ -82,15 +82,15 @@ interface MonthlyHighlightsProps {
 }
 
 const iconMap = { warning: '⚠️', positive: '✅', info: '•' } as const
-const colorMap = { warning: 'text-amber-700', positive: 'text-leaf-700', info: 'text-warm-700' } as const
+const colorMap = { warning: 'text-amber-700 dark:text-amber-400', positive: 'text-leaf-700 dark:text-leaf-400', info: 'text-[var(--text-secondary)]' } as const
 
 export default function MonthlyHighlights(props: MonthlyHighlightsProps) {
   const highlights = generateHighlights(props)
   if (highlights.length === 0) return null
 
   return (
-    <div className="bg-white rounded-2xl border border-warm-200 shadow-sm p-4 sm:p-6">
-      <h2 className="text-base font-semibold text-warm-900 mb-3">💡 이번 달 주목할 점</h2>
+    <div className="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)] shadow-sm p-4 sm:p-6">
+      <h2 className="text-base font-semibold text-[var(--text-primary)] mb-3">💡 이번 달 주목할 점</h2>
       <ul className="space-y-2">
         {highlights.map((h, i) => (
           <li key={i} className={`text-sm flex items-start gap-2 ${colorMap[h.type]}`}>
