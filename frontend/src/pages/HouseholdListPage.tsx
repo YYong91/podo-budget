@@ -44,9 +44,9 @@ function getRoleBadgeColor(role: string): string {
     case 'admin':
       return 'bg-blue-50 text-blue-700 border-blue-200'
     case 'member':
-      return 'bg-warm-50 text-warm-700 border-warm-200'
+      return 'bg-[var(--surface-elevated)] text-[var(--text-secondary)] border-[var(--border-default)]'
     default:
-      return 'bg-warm-50 text-warm-700 border-warm-200'
+      return 'bg-[var(--surface-elevated)] text-[var(--text-secondary)] border-[var(--border-default)]'
   }
 }
 
@@ -125,10 +125,10 @@ export default function HouseholdListPage() {
   if (error && households.length === 0) {
     return (
       <div className="space-y-6">
-        <button onClick={() => navigate('/settings')} className="p-2.5 -ml-2.5 rounded-lg hover:bg-warm-100 transition-colors">
-          <ArrowLeft className="w-5 h-5 text-warm-600" />
+        <button onClick={() => navigate('/settings')} className="p-2.5 -ml-2.5 rounded-lg hover:bg-[var(--surface-hover)] transition-colors">
+          <ArrowLeft className="w-5 h-5 text-[var(--text-secondary)]" />
         </button>
-        <div className="bg-white rounded-2xl shadow-sm border border-warm-200">
+        <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)]">
           <ErrorState onRetry={fetchHouseholds} />
         </div>
       </div>
@@ -140,10 +140,10 @@ export default function HouseholdListPage() {
       {/* 헤더 */}
       <div className="flex items-center justify-between">
         <div>
-          <button onClick={() => navigate('/settings')} className="p-2.5 -ml-2.5 rounded-lg hover:bg-warm-100 transition-colors">
-          <ArrowLeft className="w-5 h-5 text-warm-600" />
+          <button onClick={() => navigate('/settings')} className="p-2.5 -ml-2.5 rounded-lg hover:bg-[var(--surface-hover)] transition-colors">
+          <ArrowLeft className="w-5 h-5 text-[var(--text-secondary)]" />
         </button>
-          <p className="text-sm text-warm-500 mt-1">
+          <p className="text-sm text-[var(--text-tertiary)] mt-1">
             가족이나 친구들과 함께 지출을 관리하세요
           </p>
         </div>
@@ -175,11 +175,11 @@ export default function HouseholdListPage() {
             <div
               key={household.id}
               onClick={() => handleCardClick(household.id)}
-              className="bg-white rounded-2xl shadow-sm border border-warm-200 p-5 hover:shadow-md hover:border-grape-300 transition-all cursor-pointer"
+              className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] p-5 hover:shadow-md hover:border-grape-300 transition-all cursor-pointer"
             >
               {/* 가구 이름 및 역할 */}
               <div className="flex items-start justify-between mb-3">
-                <h3 className="text-lg font-semibold text-warm-900">
+                <h3 className="text-lg font-semibold text-[var(--text-primary)]">
                   {household.name}
                 </h3>
                 <span
@@ -193,13 +193,13 @@ export default function HouseholdListPage() {
 
               {/* 설명 */}
               {household.description && (
-                <p className="text-sm text-warm-600 mb-4 line-clamp-2">
+                <p className="text-sm text-[var(--text-secondary)] mb-4 line-clamp-2">
                   {household.description}
                 </p>
               )}
 
               {/* 정보 */}
-              <div className="flex items-center justify-between text-xs text-warm-500 pt-3 border-t border-warm-100">
+              <div className="flex items-center justify-between text-xs text-[var(--text-tertiary)] pt-3 border-t border-[var(--border-subtle)]">
                 <div className="flex items-center gap-1">
                   <Users className="w-3.5 h-3.5" />
                   <span>{household.member_count}명</span>

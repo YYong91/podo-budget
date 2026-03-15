@@ -221,15 +221,15 @@ export default function BudgetManager() {
 
   return (
     <div className="space-y-6">
-      <button onClick={() => navigate('/settings')} className="p-2.5 -ml-2.5 rounded-lg hover:bg-warm-100 transition-colors">
-        <ArrowLeft className="w-5 h-5 text-warm-600" />
+      <button onClick={() => navigate('/settings')} className="p-2.5 -ml-2.5 rounded-lg hover:bg-[var(--surface-hover)] transition-colors">
+        <ArrowLeft className="w-5 h-5 text-[var(--text-secondary)]" />
       </button>
 
       {/* 월 총 예산 카드 */}
-      <div className="bg-white rounded-2xl shadow-sm border border-warm-200/60 p-5">
+      <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)]/60 p-5">
         <div className="flex items-center gap-2 mb-4">
           <Wallet className="w-5 h-5 text-grape-600" />
-          <h2 className="text-lg font-semibold text-warm-900">월 총 예산</h2>
+          <h2 className="text-lg font-semibold text-[var(--text-primary)]">월 총 예산</h2>
         </div>
         <div className="flex items-center gap-2">
           <input
@@ -242,7 +242,7 @@ export default function BudgetManager() {
             placeholder="미설정"
             aria-label="월 총 예산"
           />
-          <span className="text-sm text-warm-500">원</span>
+          <span className="text-sm text-[var(--text-tertiary)]">원</span>
           {isTotalDirty() && (
             <button
               onClick={handleSaveTotal}
@@ -264,7 +264,7 @@ export default function BudgetManager() {
                 style={{ width: `${Math.min(allocationPercent, 100)}%` }}
               />
             </div>
-            <div className="flex justify-between text-xs text-warm-600">
+            <div className="flex justify-between text-xs text-[var(--text-secondary)]">
               <span>
                 배정: {formatAmount(allocatedTotal)} / {formatAmount(totalNum)} ({allocationPercent.toFixed(1)}%)
               </span>
@@ -278,10 +278,10 @@ export default function BudgetManager() {
 
       {/* 예산 현황 카드 */}
       {alerts.length > 0 && (
-        <div className="bg-white rounded-2xl shadow-sm border border-warm-200/60 p-5">
+        <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)]/60 p-5">
           <div className="flex items-center gap-2 mb-4">
             <BarChart3 className="w-5 h-5 text-grape-600" />
-            <h2 className="text-lg font-semibold text-warm-900">예산 현황</h2>
+            <h2 className="text-lg font-semibold text-[var(--text-primary)]">예산 현황</h2>
           </div>
           <div className="space-y-3">
             {alerts.map((alert) => (
@@ -296,7 +296,7 @@ export default function BudgetManager() {
                 }`}
               >
                 <div className="flex items-center justify-between mb-2">
-                  <span className="font-medium text-warm-900">{alert.category_name}</span>
+                  <span className="font-medium text-[var(--text-primary)]">{alert.category_name}</span>
                   <span
                     className={`text-sm font-semibold ${
                       alert.is_exceeded
@@ -315,7 +315,7 @@ export default function BudgetManager() {
                     style={{ width: `${Math.min(alert.usage_percentage, 100)}%` }}
                   />
                 </div>
-                <div className="flex justify-between text-xs text-warm-600">
+                <div className="flex justify-between text-xs text-[var(--text-secondary)]">
                   <span>
                     사용: {formatAmount(alert.spent_amount)} / {formatAmount(alert.budget_amount)}
                   </span>
@@ -346,26 +346,26 @@ export default function BudgetManager() {
           description="카테고리 관리 페이지에서 카테고리를 먼저 추가해주세요"
         />
       ) : (
-        <div className="bg-white rounded-2xl shadow-sm border border-warm-200/60 overflow-hidden">
-          <div className="px-5 py-4 border-b border-warm-100">
-            <h2 className="text-base font-semibold text-warm-900">카테고리별 예산</h2>
-            <p className="text-xs text-warm-400 mt-0.5">
+        <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)]/60 overflow-hidden">
+          <div className="px-5 py-4 border-b border-[var(--border-subtle)]">
+            <h2 className="text-base font-semibold text-[var(--text-primary)]">카테고리별 예산</h2>
+            <p className="text-xs text-[var(--text-muted)] mt-0.5">
               금액을 입력 후 저장 버튼을 누르세요 · 비우면 예산 삭제
             </p>
           </div>
-          <div className="divide-y divide-warm-100">
+          <div className="divide-y divide-[var(--border-subtle)]">
             {overview.map((item) => {
               const pct = getCategoryPercent(item.category_id)
               return (
                 <div key={item.category_id} className="px-5 py-4">
                   <div className="flex items-center gap-3">
                     {/* 카테고리 이름 */}
-                    <span className="w-14 font-medium text-warm-900 shrink-0 text-sm truncate">
+                    <span className="w-14 font-medium text-[var(--text-primary)] shrink-0 text-sm truncate">
                       {item.category_name}
                     </span>
 
                     {/* 최근 3개월 지출 — 데스크톱 */}
-                    <div className="flex-1 text-xs text-warm-400 min-w-0">
+                    <div className="flex-1 text-xs text-[var(--text-muted)] min-w-0">
                       {item.monthly_spending.length > 0 ? (
                         <span>
                           {item.monthly_spending
@@ -397,7 +397,7 @@ export default function BudgetManager() {
                         placeholder="예산 없음"
                         aria-label={`${item.category_name} 예산`}
                       />
-                      <span className="text-xs text-warm-500 shrink-0">원</span>
+                      <span className="text-xs text-[var(--text-tertiary)] shrink-0">원</span>
                       {isDirty(item) && (
                         <button
                           onClick={() => handleSave(item)}

@@ -13,8 +13,8 @@ export default function PendingRecurring({ items, onExecute, onSkip }: PendingRe
   if (items.length === 0) return null
 
   return (
-    <div className="bg-white rounded-2xl border border-warm-200/60 shadow-sm p-5">
-      <h2 className="text-base font-semibold text-warm-700 mb-3">오늘의 반복 거래</h2>
+    <div className="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)] shadow-sm p-5">
+      <h2 className="text-base font-semibold text-[var(--text-secondary)] mb-3">오늘의 반복 거래</h2>
       <div className="space-y-3">
         {items.map((r) => (
           <div
@@ -26,8 +26,8 @@ export default function PendingRecurring({ items, onExecute, onSkip }: PendingRe
             }`}
           >
             <div className="min-w-0 flex-1">
-              <p className="font-medium text-warm-900 truncate">{r.description}</p>
-              <p className={`text-sm font-semibold ${r.type === 'expense' ? 'text-warm-700' : 'text-leaf-700'}`}>
+              <p className="font-medium text-[var(--text-primary)] truncate">{r.description}</p>
+              <p className={`text-sm font-semibold ${r.type === 'expense' ? 'text-[var(--text-secondary)]' : 'text-leaf-700'}`}>
                 {r.type === 'income' ? '+' : ''}{formatAmount(r.amount)}
               </p>
             </div>
@@ -44,7 +44,7 @@ export default function PendingRecurring({ items, onExecute, onSkip }: PendingRe
               </button>
               <button
                 onClick={() => onSkip(r.id)}
-                className="px-3 py-1.5 rounded-lg text-xs font-medium bg-warm-100 text-warm-600 hover:bg-warm-200 transition-colors"
+                className="px-3 py-1.5 rounded-lg text-xs font-medium bg-[var(--surface-elevated)] text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] transition-colors"
               >
                 건너뛰기
               </button>

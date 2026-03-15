@@ -260,20 +260,20 @@ export default function IncomeForm() {
       <Link
         to="/income"
         aria-label="뒤로가기"
-        className="p-2 -ml-2 rounded-lg hover:bg-warm-100 transition-colors inline-block"
+        className="p-2 -ml-2 rounded-lg hover:bg-[var(--surface-hover)] transition-colors inline-block"
       >
-        <ArrowLeft className="w-5 h-5 text-warm-600" />
+        <ArrowLeft className="w-5 h-5 text-[var(--text-secondary)]" />
       </Link>
 
       {/* 모드 전환 탭 */}
-      <div className="bg-white rounded-xl shadow-sm border border-warm-200/60 p-2 flex gap-2">
+      <div className="bg-[var(--surface-card)] rounded-xl shadow-sm border border-[var(--border-default)]/60 p-2 flex gap-2">
         <button
           onClick={() => { setMode('natural'); setPreviewItems(null) }}
           className={`
             flex-1 px-3 py-2.5 text-sm font-medium rounded-lg transition-all
             ${mode === 'natural'
               ? 'bg-leaf-600 text-white shadow-sm shadow-leaf-200'
-              : 'text-warm-600 hover:bg-warm-50'
+              : 'text-[var(--text-secondary)] hover:bg-[var(--surface-hover)]'
             }
           `}
         >
@@ -285,7 +285,7 @@ export default function IncomeForm() {
             flex-1 px-3 py-2.5 text-sm font-medium rounded-lg transition-all
             ${mode === 'form'
               ? 'bg-leaf-600 text-white shadow-sm shadow-leaf-200'
-              : 'text-warm-600 hover:bg-warm-50'
+              : 'text-[var(--text-secondary)] hover:bg-[var(--surface-hover)]'
             }
           `}
         >
@@ -295,9 +295,9 @@ export default function IncomeForm() {
 
       {/* 자연어 입력 모드 */}
       {mode === 'natural' && !previewItems && (
-        <form onSubmit={handlePreview} className="bg-white rounded-2xl shadow-sm border border-warm-200/60 p-6 space-y-4">
+        <form onSubmit={handlePreview} className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)]/60 p-6 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-warm-700 mb-2">
+            <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
               말하듯이 수입 입력하기
             </label>
             <textarea
@@ -308,7 +308,7 @@ export default function IncomeForm() {
               className="w-full px-4 py-3 bg-leaf-50/50 border border-warm-300 rounded-xl focus:ring-2 focus:ring-leaf-500/30 focus:border-leaf-500 resize-none"
               disabled={loading}
             />
-            <p className="mt-2 text-xs text-warm-400">
+            <p className="mt-2 text-xs text-[var(--text-muted)]">
               수입 내용을 편하게 입력하면 AI가 자동으로 분석합니다. 결과를 확인한 뒤 저장됩니다.
             </p>
           </div>
@@ -331,16 +331,16 @@ export default function IncomeForm() {
               {previewItems.length}건의 수입을 인식했습니다. 내용을 확인하고 수정한 뒤 저장하세요.
             </p>
             {expenseCount > 0 && (
-              <p className="text-xs text-warm-500 mt-1">
+              <p className="text-xs text-[var(--text-tertiary)] mt-1">
                 지출로 분류된 {expenseCount}건은 별도로 지출 입력 페이지에서 등록해주세요.
               </p>
             )}
           </div>
 
           {previewItems.map((item, index) => (
-            <div key={index} className="bg-white rounded-2xl shadow-sm border border-warm-200/60 border-l-4 border-l-leaf-400 p-5 space-y-4">
+            <div key={index} className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)]/60 border-l-4 border-l-leaf-400 p-5 space-y-4">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-warm-500">수입 #{index + 1}</span>
+                <span className="text-sm font-medium text-[var(--text-tertiary)]">수입 #{index + 1}</span>
                 {previewItems.length > 1 && (
                   <button
                     onClick={() => removePreviewItem(index)}
@@ -354,9 +354,9 @@ export default function IncomeForm() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {/* 금액 */}
                 <div>
-                  <label className="block text-xs text-warm-500 mb-1">금액</label>
+                  <label className="block text-xs text-[var(--text-tertiary)] mb-1">금액</label>
                   <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-warm-500 text-sm">₩</span>
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)] text-sm">₩</span>
                     <input
                       type="number"
                       value={item.amount}
@@ -369,7 +369,7 @@ export default function IncomeForm() {
 
                 {/* 날짜 */}
                 <div>
-                  <label className="block text-xs text-warm-500 mb-1">날짜</label>
+                  <label className="block text-xs text-[var(--text-tertiary)] mb-1">날짜</label>
                   <input
                     type="date"
                     value={item.date.slice(0, 10)}
@@ -380,7 +380,7 @@ export default function IncomeForm() {
 
                 {/* 설명 */}
                 <div>
-                  <label className="block text-xs text-warm-500 mb-1">설명</label>
+                  <label className="block text-xs text-[var(--text-tertiary)] mb-1">설명</label>
                   <input
                     type="text"
                     value={item.description}
@@ -391,7 +391,7 @@ export default function IncomeForm() {
 
                 {/* 카테고리 */}
                 <div>
-                  <label className="block text-xs text-warm-500 mb-1">카테고리</label>
+                  <label className="block text-xs text-[var(--text-tertiary)] mb-1">카테고리</label>
                   <select
                     value={item.category_id ?? ''}
                     onChange={(e) => updatePreviewItem(index, 'category_id', e.target.value ? Number(e.target.value) : null)}
@@ -424,7 +424,7 @@ export default function IncomeForm() {
                       <button
                         type="button"
                         onClick={() => { setShowNewCategoryFor(null); setNewCategoryName('') }}
-                        className="px-2.5 py-1.5 text-xs font-medium text-warm-600 bg-warm-100 rounded-lg hover:bg-warm-200"
+                        className="px-2.5 py-1.5 text-xs font-medium text-[var(--text-secondary)] bg-[var(--surface-hover)] rounded-lg hover:bg-[var(--surface-hover)]"
                       >
                         취소
                       </button>
@@ -433,7 +433,7 @@ export default function IncomeForm() {
                     <button
                       type="button"
                       onClick={() => { setShowNewCategoryFor(index); setNewCategoryName('') }}
-                      className="mt-1.5 text-xs text-leaf-600 hover:text-leaf-800 font-medium"
+                      className="mt-1.5 text-xs text-leaf-600 dark:text-leaf-400 hover:text-leaf-800 font-medium"
                     >
                       + 새 카테고리
                     </button>
@@ -442,7 +442,7 @@ export default function IncomeForm() {
 
                 {/* 메모 (선택) */}
                 <div className="sm:col-span-2">
-                  <label className="block text-xs text-warm-500 mb-1">메모 (선택)</label>
+                  <label className="block text-xs text-[var(--text-tertiary)] mb-1">메모 (선택)</label>
                   <input
                     type="text"
                     value={item.memo ?? ''}
@@ -459,7 +459,7 @@ export default function IncomeForm() {
           <div className="flex gap-3">
             <button
               onClick={() => { setPreviewItems(null) }}
-              className="flex-1 px-4 py-3 text-sm font-medium text-warm-700 bg-warm-100 rounded-xl hover:bg-warm-200 transition-colors"
+              className="flex-1 px-4 py-3 text-sm font-medium text-[var(--text-secondary)] bg-[var(--surface-hover)] rounded-xl hover:bg-[var(--surface-hover)] transition-colors"
               disabled={loading}
             >
               다시 입력
@@ -477,14 +477,14 @@ export default function IncomeForm() {
 
       {/* 폼 입력 모드 */}
       {mode === 'form' && (
-        <form onSubmit={handleFormSubmit} className="bg-white rounded-2xl shadow-sm border border-warm-200/60 p-6 space-y-5">
+        <form onSubmit={handleFormSubmit} className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)]/60 p-6 space-y-5">
           {/* 금액 (필수) */}
           <div>
-            <label htmlFor="income-amount" className="block text-sm font-medium text-warm-700 mb-2">
+            <label htmlFor="income-amount" className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
               금액 <span className="text-rose-500">*</span>
             </label>
             <div className="relative">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-warm-500">₩</span>
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)]">₩</span>
               <input
                 id="income-amount"
                 type="number"
@@ -501,7 +501,7 @@ export default function IncomeForm() {
 
           {/* 설명 (필수) */}
           <div>
-            <label htmlFor="income-description" className="block text-sm font-medium text-warm-700 mb-2">
+            <label htmlFor="income-description" className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
               설명 <span className="text-rose-500">*</span>
             </label>
             <input
@@ -517,7 +517,7 @@ export default function IncomeForm() {
 
           {/* 카테고리 (선택) — income/both만 표시 */}
           <div>
-            <label htmlFor="income-category" className="block text-sm font-medium text-warm-700 mb-2">
+            <label htmlFor="income-category" className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
               카테고리
             </label>
             <select
@@ -556,7 +556,7 @@ export default function IncomeForm() {
                 <button
                   type="button"
                   onClick={() => { setShowNewCategoryFor(null); setNewCategoryName('') }}
-                  className="px-3 py-2 text-sm font-medium text-warm-600 bg-warm-100 rounded-lg hover:bg-warm-200"
+                  className="px-3 py-2 text-sm font-medium text-[var(--text-secondary)] bg-[var(--surface-hover)] rounded-lg hover:bg-[var(--surface-hover)]"
                 >
                   취소
                 </button>
@@ -565,7 +565,7 @@ export default function IncomeForm() {
               <button
                 type="button"
                 onClick={() => { setShowNewCategoryFor(-1); setNewCategoryName('') }}
-                className="mt-2 text-sm text-leaf-600 hover:text-leaf-800 font-medium"
+                className="mt-2 text-sm text-leaf-600 dark:text-leaf-400 hover:text-leaf-800 font-medium"
               >
                 + 새 카테고리
               </button>
@@ -574,7 +574,7 @@ export default function IncomeForm() {
 
           {/* 날짜 (기본 오늘) */}
           <div>
-            <label htmlFor="income-date" className="block text-sm font-medium text-warm-700 mb-2">
+            <label htmlFor="income-date" className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
               날짜 <span className="text-rose-500">*</span>
             </label>
             <input
@@ -589,7 +589,7 @@ export default function IncomeForm() {
 
           {/* 메모 (선택) */}
           <div>
-            <label htmlFor="income-memo" className="block text-sm font-medium text-warm-700 mb-2">
+            <label htmlFor="income-memo" className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
               메모
             </label>
             <input
@@ -614,11 +614,11 @@ export default function IncomeForm() {
                 disabled={loading}
               />
               <div className={`w-10 h-6 rounded-full transition-colors ${formData.exclude_from_stats ? 'bg-warm-400' : 'bg-warm-200'}`} />
-              <div className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${formData.exclude_from_stats ? 'translate-x-4' : ''}`} />
+              <div className={`absolute top-1 left-1 w-4 h-4 bg-[var(--surface-card)] rounded-full shadow transition-transform ${formData.exclude_from_stats ? 'translate-x-4' : ''}`} />
             </div>
             <div>
-              <span className="text-sm font-medium text-warm-700">통계에서 제외</span>
-              <p className="text-xs text-warm-400">퇴직금, 일시금 등 비정형 수입을 차트/통계에서 제외합니다</p>
+              <span className="text-sm font-medium text-[var(--text-secondary)]">통계에서 제외</span>
+              <p className="text-xs text-[var(--text-muted)]">퇴직금, 일시금 등 비정형 수입을 차트/통계에서 제외합니다</p>
             </div>
           </label>
 
@@ -627,7 +627,7 @@ export default function IncomeForm() {
             <button
               type="button"
               onClick={() => navigate('/income')}
-              className="flex-1 px-4 py-3 text-sm font-medium text-warm-700 bg-warm-100 rounded-xl hover:bg-warm-200 transition-colors"
+              className="flex-1 px-4 py-3 text-sm font-medium text-[var(--text-secondary)] bg-[var(--surface-hover)] rounded-xl hover:bg-[var(--surface-hover)] transition-colors"
               disabled={loading}
             >
               취소

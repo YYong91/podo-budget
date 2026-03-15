@@ -166,10 +166,10 @@ export default function CategoryManager() {
   if (error) {
     return (
       <div className="space-y-6">
-        <button onClick={() => navigate('/settings')} className="p-2.5 -ml-2.5 rounded-lg hover:bg-warm-100 transition-colors">
-          <ArrowLeft className="w-5 h-5 text-warm-600" />
+        <button onClick={() => navigate('/settings')} className="p-2.5 -ml-2.5 rounded-lg hover:bg-[var(--surface-hover)] transition-colors">
+          <ArrowLeft className="w-5 h-5 text-[var(--text-secondary)]" />
         </button>
-        <div className="bg-white rounded-2xl shadow-sm border border-warm-200">
+        <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)]">
           <ErrorState onRetry={fetchCategories} />
         </div>
       </div>
@@ -179,8 +179,8 @@ export default function CategoryManager() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <button onClick={() => navigate('/settings')} className="p-2.5 -ml-2.5 rounded-lg hover:bg-warm-100 transition-colors">
-          <ArrowLeft className="w-5 h-5 text-warm-600" />
+        <button onClick={() => navigate('/settings')} className="p-2.5 -ml-2.5 rounded-lg hover:bg-[var(--surface-hover)] transition-colors">
+          <ArrowLeft className="w-5 h-5 text-[var(--text-secondary)]" />
         </button>
         <button
           onClick={() => setIsAdding(true)}
@@ -192,29 +192,29 @@ export default function CategoryManager() {
       </div>
 
       {/* 카테고리 목록 */}
-      <div className="bg-white rounded-2xl shadow-sm border border-warm-200/60 overflow-hidden">
+      <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)]/60 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
-              <tr className="border-b border-warm-200 bg-warm-50">
-                <th className="px-2 sm:px-3 py-3 text-center text-xs font-medium text-warm-500 uppercase tracking-wider w-16">
+              <tr className="border-b border-[var(--border-default)] bg-[var(--surface-elevated)]">
+                <th className="px-2 sm:px-3 py-3 text-center text-xs font-medium text-[var(--text-tertiary)] uppercase tracking-wider w-16">
                   순서
                 </th>
-                <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-warm-500 uppercase tracking-wider">
+                <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-[var(--text-tertiary)] uppercase tracking-wider">
                   이름
                 </th>
-                <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-warm-500 uppercase tracking-wider hidden md:table-cell">
+                <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-[var(--text-tertiary)] uppercase tracking-wider hidden md:table-cell">
                   설명
                 </th>
-                <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-warm-500 uppercase tracking-wider hidden sm:table-cell">
+                <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-[var(--text-tertiary)] uppercase tracking-wider hidden sm:table-cell">
                   생성일
                 </th>
-                <th className="px-4 sm:px-6 py-3 text-right text-xs font-medium text-warm-500 uppercase tracking-wider">
+                <th className="px-4 sm:px-6 py-3 text-right text-xs font-medium text-[var(--text-tertiary)] uppercase tracking-wider">
                   작업
                 </th>
               </tr>
             </thead>
-          <tbody className="divide-y divide-warm-100">
+          <tbody className="divide-y divide-[var(--border-subtle)]">
             {/* 추가 폼 (isAdding일 때) */}
             {isAdding && (
               <tr className="bg-grape-50">
@@ -253,7 +253,7 @@ export default function CategoryManager() {
                         setNewName('')
                         setNewDescription('')
                       }}
-                      className="px-3 py-1.5 text-sm font-medium text-warm-700 bg-warm-100 rounded-lg hover:bg-warm-200 transition-colors"
+                      className="px-3 py-1.5 text-sm font-medium text-[var(--text-secondary)] bg-warm-100 rounded-lg hover:bg-warm-200 transition-colors"
                     >
                       취소
                     </button>
@@ -269,14 +269,14 @@ export default function CategoryManager() {
                 return (
                   <tr
                     key={category.id}
-                    className={isEditing ? 'bg-grape-50' : 'hover:bg-warm-50 transition-colors'}
+                    className={isEditing ? 'bg-grape-50' : 'hover:bg-[var(--surface-elevated)] transition-colors'}
                   >
                     <td className="px-2 sm:px-3 py-4">
                       <div className="flex flex-col items-center gap-0.5">
                         <button
                           onClick={() => handleMove(index, 'up')}
                           disabled={index === 0 || reordering}
-                          className="p-0.5 text-warm-400 hover:text-grape-600 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                          className="p-0.5 text-[var(--text-muted)] hover:text-grape-600 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                           aria-label={`${category.name} 위로 이동`}
                         >
                           <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
@@ -286,7 +286,7 @@ export default function CategoryManager() {
                         <button
                           onClick={() => handleMove(index, 'down')}
                           disabled={index === categories.length - 1 || reordering}
-                          className="p-0.5 text-warm-400 hover:text-grape-600 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                          className="p-0.5 text-[var(--text-muted)] hover:text-grape-600 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                           aria-label={`${category.name} 아래로 이동`}
                         >
                           <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
@@ -308,11 +308,11 @@ export default function CategoryManager() {
                         />
                       ) : (
                         <div>
-                          <span className="font-medium text-warm-900">
+                          <span className="font-medium text-[var(--text-primary)]">
                             {category.name}
                           </span>
                           {/* 모바일에서만 설명 표시 */}
-                          <div className="md:hidden text-sm text-warm-600 mt-1">
+                          <div className="md:hidden text-sm text-[var(--text-secondary)] mt-1">
                             {category.description || '-'}
                           </div>
                         </div>
@@ -332,13 +332,13 @@ export default function CategoryManager() {
                           className="w-full px-3 py-2 border border-warm-300 rounded-lg focus:ring-2 focus:ring-grape-500 focus:border-transparent"
                         />
                       ) : (
-                        <span className="text-sm text-warm-600">
+                        <span className="text-sm text-[var(--text-secondary)]">
                           {category.description || '-'}
                         </span>
                       )}
                     </td>
                     <td className="px-4 sm:px-6 py-4 hidden sm:table-cell">
-                      <span className="text-sm text-warm-500">
+                      <span className="text-sm text-[var(--text-tertiary)]">
                         {category.created_at.slice(0, 10).replace(/-/g, '.')}
                       </span>
                     </td>
@@ -353,7 +353,7 @@ export default function CategoryManager() {
                           </button>
                           <button
                             onClick={() => setEditingId(null)}
-                            className="px-3 py-1.5 text-sm font-medium text-warm-700 bg-warm-100 rounded-lg hover:bg-warm-200 transition-colors"
+                            className="px-3 py-1.5 text-sm font-medium text-[var(--text-secondary)] bg-warm-100 rounded-lg hover:bg-warm-200 transition-colors"
                           >
                             취소
                           </button>
@@ -400,11 +400,11 @@ export default function CategoryManager() {
       {/* 삭제 확인 모달 */}
       {deleteTarget !== null && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6">
-            <h3 className="text-lg font-semibold text-warm-900 mb-2">
+          <div className="bg-[var(--surface-card)] rounded-2xl shadow-xl max-w-md w-full p-6">
+            <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-2">
               카테고리 삭제
             </h3>
-            <p className="text-warm-600 mb-6">
+            <p className="text-[var(--text-secondary)] mb-6">
               정말로 이 카테고리를 삭제하시겠습니까?
               <br />
               <span className="text-sm text-rose-600">
@@ -414,7 +414,7 @@ export default function CategoryManager() {
             <div className="flex gap-3 justify-end">
               <button
                 onClick={() => setDeleteTarget(null)}
-                className="px-4 py-2 text-sm font-medium text-warm-700 bg-warm-100 rounded-lg hover:bg-warm-200 transition-colors"
+                className="px-4 py-2 text-sm font-medium text-[var(--text-secondary)] bg-warm-100 rounded-lg hover:bg-warm-200 transition-colors"
               >
                 취소
               </button>

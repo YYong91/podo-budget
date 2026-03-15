@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* class 기반 다크모드 활성화 */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   /* Grape Purple (Primary) */
   --color-grape-50:  #faf5ff;
@@ -59,6 +62,47 @@
   }
 }
 
+/* ─── 시멘틱 테마 변수 (라이트 모드 기본값) ─── */
+:root {
+  --surface: var(--color-cream);
+  --surface-card: #ffffff;
+  --surface-elevated: var(--color-warm-50);
+  --surface-hover: var(--color-warm-100);
+  --border-default: var(--color-warm-200);
+  --border-subtle: var(--color-warm-100);
+  --text-primary: var(--color-warm-900);
+  --text-secondary: var(--color-warm-700);
+  --text-tertiary: var(--color-warm-500);
+  --text-muted: var(--color-warm-400);
+}
+
+/* ─── 다크모드 시멘틱 변수 ─── */
+.dark {
+  --surface: #1a1625;
+  --surface-card: #231e30;
+  --surface-elevated: #2d2640;
+  --surface-hover: #362f4a;
+  --border-default: #3d3452;
+  --border-subtle: #2d2640;
+  --text-primary: #f0edf5;
+  --text-secondary: #b8b0c8;
+  --text-tertiary: #8a7fa0;
+  --text-muted: #6b6080;
+
+  /* 다크모드에서 grape 색상 밝기 조절 */
+  --color-grape-50: #2d1f4e;
+  --color-grape-100: #3a2766;
+  --color-grape-200: #4a3280;
+  --color-warm-50: #231e30;
+  --color-warm-100: #2d2640;
+  --color-warm-200: #3d3452;
+  --color-warm-300: #4d4562;
+  --color-leaf-50: #1a2e1f;
+  --color-leaf-100: #1e3a24;
+
+  color-scheme: dark;
+}
+
 /* 모바일 하단 탭 바 safe area (노치/홈바 대응) */
 .safe-area-bottom {
   padding-bottom: env(safe-area-inset-bottom, 0px);
@@ -87,8 +131,9 @@ body {
   font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont,
     system-ui, Roboto, 'Helvetica Neue', 'Segoe UI', 'Apple SD Gothic Neo',
     'Noto Sans KR', 'Malgun Gothic', sans-serif;
-  background-color: var(--color-cream);
-  color: var(--color-warm-900);
+  background-color: var(--surface);
+  color: var(--text-primary);
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 @keyframes slide-up {
