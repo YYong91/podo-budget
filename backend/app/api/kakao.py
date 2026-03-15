@@ -13,7 +13,7 @@ import logging
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
-from sqlalchemy import extract, func, select
+from sqlalchemy import and_, extract, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import get_user_active_household_id_or_none
@@ -139,6 +139,10 @@ async def kakao_webhook(request: Request, db: AsyncSession = Depends(get_db)):
         if utterance.startswith("/undo"):
             return await handle_undo_command(db, bot_user)
 
+        # /change 명령어 처리 (마지막 지출 카테고리 변경)
+        if utterance.startswith("/change"):
+            return await handle_change_command(db, bot_user, utterance, active_household_id)
+
         # 자연어 지출 입력 → LLM 파싱 (4.5초 타임아웃)
         try:
             llm = get_llm_provider("parse")
@@ -201,8 +205,8 @@ async def kakao_webhook(request: Request, db: AsyncSession = Depends(get_db)):
                     ),
                     quick_replies=[
                         make_quick_reply("↩️ 방금 거 취소", "/undo"),
+                        make_quick_reply("🔄 카테고리 변경", "/change"),
                         make_quick_reply("📊 이번달 지출 보기", "/report"),
-                        make_quick_reply("💰 예산 현황", "/budget"),
                     ],
                 )
 
@@ -250,8 +254,8 @@ async def kakao_webhook(request: Request, db: AsyncSession = Depends(get_db)):
                     "\n".join(message_lines),
                     quick_replies=[
                         make_quick_reply("↩️ 방금 거 취소", "/undo"),
+                        make_quick_reply("🔄 카테고리 변경", "/change"),
                         make_quick_reply("📊 이번달 지출 보기", "/report"),
-                        make_quick_reply("💰 예산 현황", "/budget"),
                     ],
                 )
 
@@ -289,6 +293,100 @@ async def handle_undo_command(db: AsyncSession, bot_user) -> dict:
 
     return make_simple_text_response(
         f"✅ 마지막 지출이 삭제되었어요.\n\n🗑️ {amount:,.0f}원 - {description}",
+        quick_replies=[
+            make_quick_reply("📊 이번달 지출 보기", "/report"),
+            make_quick_reply("❓ 도움말", "/help"),
+        ],
+    )
+
+
+async def _get_accessible_categories(
+    db: AsyncSession,
+    user_id: int,
+    household_id: int | None,
+) -> list[Category]:
+    """사용자가 접근 가능한 카테고리 목록 (사용 빈도 순 정렬)"""
+    conditions = [
+        and_(Category.household_id.is_(None), Category.user_id.is_(None)),
+        and_(Category.user_id == user_id, Category.household_id.is_(None)),
+    ]
+    if household_id is not None:
+        conditions.append(Category.household_id == household_id)
+
+    result = await db.execute(
+        select(Category)
+        .outerjoin(Expense, and_(Expense.category_id == Category.id, Expense.user_id == user_id))
+        .where(or_(*conditions))
+        .group_by(Category.id)
+        .order_by(func.count(Expense.id).desc(), Category.name)
+    )
+    return list(result.scalars().all())
+
+
+async def handle_change_command(db: AsyncSession, bot_user, utterance: str, active_household_id: int | None) -> dict:
+    """마지막 지출의 카테고리 변경
+
+    - /change → 카테고리 목록을 quickReply로 표시
+    - /change 카테고리명 → 마지막 지출의 카테고리를 변경
+
+    Args:
+        db: 데이터베이스 세션
+        bot_user: 봇 사용자 객체
+        utterance: 사용자 입력 텍스트
+        active_household_id: 활성 가구 ID
+
+    Returns:
+        카카오 응답 형식 (version 2.0)
+    """
+    # 마지막 지출 조회
+    result = await db.execute(select(Expense).where(Expense.user_id == bot_user.id).order_by(Expense.id.desc()).limit(1))
+    expense = result.scalar_one_or_none()
+
+    if not expense:
+        return make_simple_text_response("변경할 지출이 없어요.")
+
+    # 현재 카테고리 조회
+    cat_result = await db.execute(select(Category).where(Category.id == expense.category_id))
+    current_category = cat_result.scalar_one_or_none()
+    current_cat_name = current_category.name if current_category else "기타"
+
+    parts = utterance.split(maxsplit=1)
+
+    # /change만 입력 → 카테고리 목록 표시
+    if len(parts) == 1:
+        categories = await _get_accessible_categories(db, bot_user.id, expense.household_id)
+
+        # 현재 카테고리를 제외한 목록으로 quickReply 생성
+        quick_replies = [make_quick_reply(cat.name, f"/change {cat.name}") for cat in categories if cat.name != current_cat_name][
+            :10
+        ]  # quickReply 최대 10개 제한
+
+        return make_simple_text_response(
+            f"📂 마지막 지출: {expense.amount:,.0f}원 - {current_cat_name}\n\n어떤 카테고리로 변경할까요?",
+            quick_replies=quick_replies or [make_quick_reply("❓ 도움말", "/help")],
+        )
+
+    # /change 카테고리명 → 카테고리 변경 실행
+    new_cat_name = parts[1].strip()
+    new_category = await get_or_create_category(db, new_cat_name, user_id=bot_user.id, household_id=expense.household_id)
+
+    # 매핑 저장: 같은 LLM 응답이 오면 다음부터 자동 적용
+    from app.services.category_mapping_service import save_category_mapping
+
+    if current_cat_name != new_cat_name:
+        await save_category_mapping(
+            db,
+            source_name=current_cat_name,
+            target_category_id=new_category.id,
+            user_id=bot_user.id if expense.household_id is None else None,
+            household_id=expense.household_id,
+        )
+
+    expense.category_id = new_category.id
+    await db.commit()
+
+    return make_simple_text_response(
+        f"✅ 카테고리가 변경되었어요.\n\n💰 {expense.amount:,.0f}원 - 📂 {current_cat_name} → {new_cat_name}",
         quick_replies=[
             make_quick_reply("📊 이번달 지출 보기", "/report"),
             make_quick_reply("❓ 도움말", "/help"),

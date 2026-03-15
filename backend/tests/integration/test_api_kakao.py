@@ -619,3 +619,80 @@ async def test_kakao_webhook_expense_has_undo_quick_reply(client, db_session, mo
     quick_replies = data["template"].get("quickReplies", [])
     labels = [qr["label"] for qr in quick_replies]
     assert any("취소" in label for label in labels)
+
+
+# ──────────────────────────────────────────────
+# /change 명령어 테스트
+# ──────────────────────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_kakao_webhook_change_shows_categories(client, db_session, mock_llm_parse_expense):
+    """/change 입력 시 카테고리 목록이 quickReply로 표시됨"""
+    # 먼저 지출 입력
+    payload = make_kakao_request("점심 8000원")
+    response = await client.post("/api/kakao/webhook", json=payload)
+    assert response.status_code == 200
+
+    # /change로 카테고리 목록 요청
+    payload = make_kakao_request("/change")
+    response = await client.post("/api/kakao/webhook", json=payload)
+    assert response.status_code == 200
+
+    data = response.json()
+    text = data["template"]["outputs"][0]["simpleText"]["text"]
+    assert "8,000" in text
+    assert "카테고리" in text
+
+
+@pytest.mark.asyncio
+async def test_kakao_webhook_change_category(client, db_session, mock_llm_parse_expense):
+    """/change 카테고리명으로 마지막 지출의 카테고리가 변경됨"""
+    # 먼저 지출 입력 (카테고리: 식비)
+    payload = make_kakao_request("점심 8000원")
+    response = await client.post("/api/kakao/webhook", json=payload)
+    assert response.status_code == 200
+
+    # 카테고리 변경
+    payload = make_kakao_request("/change 외식비")
+    response = await client.post("/api/kakao/webhook", json=payload)
+    assert response.status_code == 200
+
+    data = response.json()
+    text = data["template"]["outputs"][0]["simpleText"]["text"]
+    assert "변경" in text
+    assert "외식비" in text
+
+    # DB에서 카테고리 변경 확인
+    from app.models.category import Category
+
+    result = await db_session.execute(select(Expense))
+    expense = result.scalars().first()
+    cat_result = await db_session.execute(select(Category).where(Category.id == expense.category_id))
+    category = cat_result.scalar_one()
+    assert category.name == "외식비"
+
+
+@pytest.mark.asyncio
+async def test_kakao_webhook_change_no_expenses(client, db_session):
+    """/change 지출이 없으면 안내 메시지 반환"""
+    payload = make_kakao_request("/change")
+    response = await client.post("/api/kakao/webhook", json=payload)
+    assert response.status_code == 200
+
+    data = response.json()
+    text = data["template"]["outputs"][0]["simpleText"]["text"]
+    assert "없" in text
+
+
+@pytest.mark.asyncio
+async def test_kakao_webhook_expense_has_change_quick_reply(client, db_session, mock_llm_parse_expense):
+    """지출 저장 후 '카테고리 변경' quickReply 포함됨"""
+    payload = make_kakao_request("커피 5000원")
+    response = await client.post("/api/kakao/webhook", json=payload)
+    assert response.status_code == 200
+
+    data = response.json()
+    quick_replies = data["template"].get("quickReplies", [])
+    labels = [qr["label"] for qr in quick_replies]
+    assert any("카테고리" in label for label in labels)
