@@ -2,6 +2,7 @@
  * @file AcceptInvitationPage.test.tsx
  * @description 초대 수락 페이지 테스트
  * 토큰 기반 초대 수락/거절 기능을 테스트한다.
+ * Layout 밖에서 렌더링되는 독립 레이아웃 페이지.
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
@@ -42,9 +43,7 @@ function renderWithToken(token?: string) {
     <MemoryRouter initialEntries={[path]}>
       <Routes>
         <Route path="/invitations/accept" element={<AcceptInvitationPage />} />
-        <Route path="/households/:id" element={<div>가구 상세 페이지</div>} />
-        <Route path="/households" element={<div>가구 목록 페이지</div>} />
-        <Route path="/invitations" element={<div>초대 목록 페이지</div>} />
+        <Route path="/" element={<div>홈 페이지</div>} />
       </Routes>
     </MemoryRouter>
   )
@@ -61,9 +60,9 @@ describe('AcceptInvitationPage', () => {
       expect(screen.getByText('유효하지 않은 초대 링크입니다')).toBeInTheDocument()
     })
 
-    it('가구 목록으로 이동 버튼을 표시한다', () => {
+    it('홈으로 이동 버튼을 표시한다', () => {
       renderWithToken()
-      expect(screen.getByRole('button', { name: '가구 목록으로' })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: '홈으로' })).toBeInTheDocument()
     })
   })
 
@@ -99,7 +98,7 @@ describe('AcceptInvitationPage', () => {
       })
     })
 
-    it('수락 성공 시 토스트를 표시하고 가구 상세 페이지로 이동한다', async () => {
+    it('수락 성공 시 토스트를 표시하고 홈으로 이동한다', async () => {
       const user = userEvent.setup()
       mockAcceptInvitation.mockResolvedValue({
         household_id: 1,
@@ -115,7 +114,7 @@ describe('AcceptInvitationPage', () => {
       })
 
       await waitFor(() => {
-        expect(screen.getByText('가구 상세 페이지')).toBeInTheDocument()
+        expect(screen.getByText('홈 페이지')).toBeInTheDocument()
       })
     })
 
@@ -164,7 +163,7 @@ describe('AcceptInvitationPage', () => {
       expect(mockRejectInvitation).not.toHaveBeenCalled()
     })
 
-    it('거절 성공 시 토스트를 표시하고 가구 목록으로 이동한다', async () => {
+    it('거절 성공 시 토스트를 표시하고 홈으로 이동한다', async () => {
       const user = userEvent.setup()
       mockConfirm.mockReturnValue(true)
       mockRejectInvitation.mockResolvedValue(undefined)
@@ -178,13 +177,13 @@ describe('AcceptInvitationPage', () => {
       })
 
       await waitFor(() => {
-        expect(screen.getByText('가구 목록 페이지')).toBeInTheDocument()
+        expect(screen.getByText('홈 페이지')).toBeInTheDocument()
       })
     })
   })
 
   describe('나중에 결정', () => {
-    it('나중에 결정 버튼 클릭 시 가구 목록으로 이동한다', async () => {
+    it('나중에 결정 버튼 클릭 시 홈으로 이동한다', async () => {
       const user = userEvent.setup()
 
       renderWithToken('test-token')
@@ -192,7 +191,7 @@ describe('AcceptInvitationPage', () => {
       await user.click(screen.getByRole('button', { name: '나중에 결정' }))
 
       await waitFor(() => {
-        expect(screen.getByText('가구 목록 페이지')).toBeInTheDocument()
+        expect(screen.getByText('홈 페이지')).toBeInTheDocument()
       })
     })
   })

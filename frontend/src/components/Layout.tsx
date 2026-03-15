@@ -25,13 +25,10 @@ export default function Layout() {
   const location = useLocation()
   const {
     households, activeHouseholdId, myInvitations,
-    fetchHouseholds, fetchMyInvitations, setActiveHouseholdId,
+    setActiveHouseholdId,
   } = useHouseholdStore()
 
-  useEffect(() => {
-    fetchHouseholds().catch(() => {})
-    fetchMyInvitations().catch(() => {})
-  }, [fetchHouseholds, fetchMyInvitations])
+  // 초기 fetch는 ProtectedRoute의 initializeApp()에서 수행
 
   useEffect(() => {
     if (!householdDropdownOpen) return

@@ -58,6 +58,7 @@ function App() {
         {/* 인증이 필요한 라우트들을 ProtectedRoute로 감싼다 */}
         <Route element={<ProtectedRoute />}>
           <Route path="onboarding" element={<OnboardingPage />} />
+          <Route path="/invitations/accept" element={<AcceptInvitationPage />} />
           <Route element={<Layout />}>
             <Route path="/" element={<TransactionList />} />
             <Route path="/transactions" element={<TransactionsRedirect />} />
@@ -74,7 +75,6 @@ function App() {
             <Route path="/households" element={<HouseholdListPage />} />
             <Route path="/households/:id" element={<HouseholdDetailPage />} />
             <Route path="/invitations" element={<InvitationListPage />} />
-            <Route path="/invitations/accept" element={<AcceptInvitationPage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/settings/:section" element={<SettingsPage />} />
             <Route path="/assets" element={<AssetDashboard />} />
