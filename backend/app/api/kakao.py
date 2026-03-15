@@ -361,9 +361,15 @@ async def handle_change_command(db: AsyncSession, bot_user, utterance: str, acti
             :10
         ]  # quickReply 최대 10개 제한
 
+        msg = f"📂 마지막 지출: {expense.amount:,.0f}원 - {current_cat_name}\n\n"
+        if quick_replies:
+            msg += "어떤 카테고리로 변경할까요?"
+        else:
+            msg += "변경할 카테고리명을 입력해주세요.\n예: /change 외식비"
+
         return make_simple_text_response(
-            f"📂 마지막 지출: {expense.amount:,.0f}원 - {current_cat_name}\n\n어떤 카테고리로 변경할까요?",
-            quick_replies=quick_replies or [make_quick_reply("❓ 도움말", "/help")],
+            msg,
+            quick_replies=quick_replies or [make_quick_reply("↩️ 취소", "/report")],
         )
 
     # /change 카테고리명 → 카테고리 변경 실행
