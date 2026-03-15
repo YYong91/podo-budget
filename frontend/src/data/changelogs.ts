@@ -18,6 +18,16 @@ export interface Changelog {
 
 export const changelogs: Changelog[] = [
   {
+    version: '1.9.1',
+    date: '2026-03-15',
+    title: 'UI 일관성 개선',
+    items: [
+      { tag: '개선', text: '전체 페이지의 입력 필드, 버튼, 간격 스타일이 통일되었습니다' },
+      { tag: '수정', text: '모바일에서 자산 입력 날짜 선택이 잘리던 문제를 수정했습니다' },
+      { tag: '개선', text: '뒤로가기 버튼 터치 영역이 커져 모바일에서 더 쉽게 누를 수 있습니다' },
+    ],
+  },
+  {
     version: '1.9.0',
     date: '2026-03-14',
     title: '카카오톡 채널 봇 연동',

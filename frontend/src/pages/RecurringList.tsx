@@ -219,7 +219,7 @@ export default function RecurringList() {
   if (error) {
     return (
       <div className="space-y-6">
-        <button onClick={() => navigate('/settings')} className="p-1.5 -ml-1.5 rounded-lg hover:bg-warm-100 transition-colors">
+        <button onClick={() => navigate('/settings')} className="p-2.5 -ml-2.5 rounded-lg hover:bg-warm-100 transition-colors">
           <ArrowLeft className="w-5 h-5 text-warm-600" />
         </button>
         <div className="bg-white rounded-2xl shadow-sm border border-warm-200/60">
@@ -233,7 +233,7 @@ export default function RecurringList() {
     <div className="space-y-6">
       {/* 헤더 */}
       <div className="flex items-center justify-between">
-        <button onClick={() => navigate('/settings')} className="p-1.5 -ml-1.5 rounded-lg hover:bg-warm-100 transition-colors">
+        <button onClick={() => navigate('/settings')} className="p-2.5 -ml-2.5 rounded-lg hover:bg-warm-100 transition-colors">
           <ArrowLeft className="w-5 h-5 text-warm-600" />
         </button>
         <button
@@ -392,12 +392,12 @@ export default function RecurringList() {
               {/* 타입 선택 (추가 시에만) */}
               {!editingId && (
                 <div>
-                  <label className="block text-sm font-medium text-warm-700 mb-1">유형</label>
+                  <label className="block text-sm font-medium text-warm-700 mb-2">유형</label>
                   <div className="flex gap-2">
                     <button
                       type="button"
                       onClick={() => setFormData({ ...formData, type: 'expense', category_id: '' })}
-                      className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      className={`flex-1 py-2 rounded-xl text-sm font-medium transition-colors ${
                         formData.type === 'expense' ? 'bg-grape-100 text-grape-800' : 'bg-warm-100 text-warm-600'
                       }`}
                     >
@@ -406,7 +406,7 @@ export default function RecurringList() {
                     <button
                       type="button"
                       onClick={() => setFormData({ ...formData, type: 'income', category_id: '' })}
-                      className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      className={`flex-1 py-2 rounded-xl text-sm font-medium transition-colors ${
                         formData.type === 'income' ? 'bg-leaf-100 text-leaf-800' : 'bg-warm-100 text-warm-600'
                       }`}
                     >
@@ -418,36 +418,36 @@ export default function RecurringList() {
 
               {/* 설명 */}
               <div>
-                <label className="block text-sm font-medium text-warm-700 mb-1">설명</label>
+                <label className="block text-sm font-medium text-warm-700 mb-2">설명</label>
                 <input
                   type="text"
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   placeholder="예: 넷플릭스, 월급"
-                  className="w-full px-3 py-2 rounded-lg border border-warm-300 text-sm focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
+                  className="w-full px-3 py-2 rounded-xl border border-warm-300 text-sm focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
                 />
               </div>
 
               {/* 금액 */}
               <div>
-                <label className="block text-sm font-medium text-warm-700 mb-1">금액</label>
+                <label className="block text-sm font-medium text-warm-700 mb-2">금액</label>
                 <input
                   type="number"
                   value={formData.amount}
                   onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
                   placeholder="0"
                   min="1"
-                  className="w-full px-3 py-2 rounded-lg border border-warm-300 text-sm focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
+                  className="w-full px-3 py-2 rounded-xl border border-warm-300 text-sm focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
                 />
               </div>
 
               {/* 카테고리 */}
               <div>
-                <label className="block text-sm font-medium text-warm-700 mb-1">카테고리</label>
+                <label className="block text-sm font-medium text-warm-700 mb-2">카테고리</label>
                 <select
                   value={formData.category_id}
                   onChange={(e) => setFormData({ ...formData, category_id: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg border border-warm-300 text-sm focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
+                  className="w-full px-3 py-2 rounded-xl border border-warm-300 text-sm focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
                 >
                   <option value="">선택 안 함</option>
                   {filteredCategories.map((c) => (
@@ -460,11 +460,11 @@ export default function RecurringList() {
               {!editingId && (
                 <>
                   <div>
-                    <label className="block text-sm font-medium text-warm-700 mb-1">반복 빈도</label>
+                    <label className="block text-sm font-medium text-warm-700 mb-2">반복 빈도</label>
                     <select
                       value={formData.frequency}
                       onChange={(e) => setFormData({ ...formData, frequency: e.target.value as typeof formData.frequency })}
-                      className="w-full px-3 py-2 rounded-lg border border-warm-300 text-sm focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
+                      className="w-full px-3 py-2 rounded-xl border border-warm-300 text-sm focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
                     >
                       <option value="monthly">매월</option>
                       <option value="weekly">매주</option>
@@ -476,25 +476,25 @@ export default function RecurringList() {
                   {/* 빈도별 추가 필드 */}
                   {(formData.frequency === 'monthly' || formData.frequency === 'yearly') && (
                     <div>
-                      <label className="block text-sm font-medium text-warm-700 mb-1">반복일</label>
+                      <label className="block text-sm font-medium text-warm-700 mb-2">반복일</label>
                       <input
                         type="number"
                         value={formData.day_of_month}
                         onChange={(e) => setFormData({ ...formData, day_of_month: e.target.value })}
                         min="1"
                         max="31"
-                        className="w-full px-3 py-2 rounded-lg border border-warm-300 text-sm focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
+                        className="w-full px-3 py-2 rounded-xl border border-warm-300 text-sm focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
                       />
                     </div>
                   )}
 
                   {formData.frequency === 'weekly' && (
                     <div>
-                      <label className="block text-sm font-medium text-warm-700 mb-1">요일</label>
+                      <label className="block text-sm font-medium text-warm-700 mb-2">요일</label>
                       <select
                         value={formData.day_of_week}
                         onChange={(e) => setFormData({ ...formData, day_of_week: e.target.value })}
-                        className="w-full px-3 py-2 rounded-lg border border-warm-300 text-sm focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
+                        className="w-full px-3 py-2 rounded-xl border border-warm-300 text-sm focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
                       >
                         {['월', '화', '수', '목', '금', '토', '일'].map((d, i) => (
                           <option key={i} value={i}>{d}요일</option>
@@ -505,11 +505,11 @@ export default function RecurringList() {
 
                   {formData.frequency === 'yearly' && (
                     <div>
-                      <label className="block text-sm font-medium text-warm-700 mb-1">반복 월</label>
+                      <label className="block text-sm font-medium text-warm-700 mb-2">반복 월</label>
                       <select
                         value={formData.month_of_year}
                         onChange={(e) => setFormData({ ...formData, month_of_year: e.target.value })}
-                        className="w-full px-3 py-2 rounded-lg border border-warm-300 text-sm focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
+                        className="w-full px-3 py-2 rounded-xl border border-warm-300 text-sm focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
                       >
                         {Array.from({ length: 12 }, (_, i) => (
                           <option key={i + 1} value={i + 1}>{i + 1}월</option>
@@ -520,25 +520,25 @@ export default function RecurringList() {
 
                   {formData.frequency === 'custom' && (
                     <div>
-                      <label className="block text-sm font-medium text-warm-700 mb-1">반복 주기 (일)</label>
+                      <label className="block text-sm font-medium text-warm-700 mb-2">반복 주기 (일)</label>
                       <input
                         type="number"
                         value={formData.interval}
                         onChange={(e) => setFormData({ ...formData, interval: e.target.value })}
                         min="1"
-                        className="w-full px-3 py-2 rounded-lg border border-warm-300 text-sm focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
+                        className="w-full px-3 py-2 rounded-xl border border-warm-300 text-sm focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
                       />
                     </div>
                   )}
 
                   {/* 시작일 */}
                   <div>
-                    <label className="block text-sm font-medium text-warm-700 mb-1">시작일</label>
+                    <label className="block text-sm font-medium text-warm-700 mb-2">시작일</label>
                     <input
                       type="date"
                       value={formData.start_date}
                       onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
-                      className="w-full px-3 py-2 rounded-lg border border-warm-300 text-sm focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
+                      className="w-full px-3 py-2 rounded-xl border border-warm-300 text-sm focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
                     />
                   </div>
                 </>
@@ -546,12 +546,12 @@ export default function RecurringList() {
 
               {/* 종료일 (항상 표시) */}
               <div>
-                <label className="block text-sm font-medium text-warm-700 mb-1">종료일 (선택)</label>
+                <label className="block text-sm font-medium text-warm-700 mb-2">종료일 (선택)</label>
                 <input
                   type="date"
                   value={formData.end_date}
                   onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg border border-warm-300 text-sm focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
+                  className="w-full px-3 py-2 rounded-xl border border-warm-300 text-sm focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
                 />
               </div>
 
@@ -559,7 +559,7 @@ export default function RecurringList() {
               <button
                 type="submit"
                 disabled={submitting}
-                className="w-full py-2.5 bg-grape-600 text-white rounded-xl text-sm font-medium shadow-sm hover:bg-grape-700 transition-colors disabled:opacity-50"
+                className="w-full py-3 bg-grape-600 text-white rounded-xl text-sm font-medium shadow-sm hover:bg-grape-700 transition-colors disabled:opacity-50"
               >
                 {submitting ? '저장 중...' : editingId ? '수정하기' : '추가하기'}
               </button>
