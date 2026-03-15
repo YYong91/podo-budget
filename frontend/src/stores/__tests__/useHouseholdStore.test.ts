@@ -40,11 +40,12 @@ describe('useHouseholdStore', () => {
       expect(useHouseholdStore.getState().activeHouseholdId).toBe(1)
     })
 
-    it('활성 가구 ID를 null로 초기화한다', () => {
+    it('null 설정 시 기존 값을 유지한다 (가구 필수)', () => {
       useHouseholdStore.getState().setActiveHouseholdId(1)
       useHouseholdStore.getState().setActiveHouseholdId(null)
 
-      expect(useHouseholdStore.getState().activeHouseholdId).toBeNull()
+      // null은 무시됨 — 가구 필수화로 인해 activeHouseholdId는 항상 유지
+      expect(useHouseholdStore.getState().activeHouseholdId).toBe(1)
     })
 
     it('다른 가구로 전환한다', () => {

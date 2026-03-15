@@ -16,6 +16,13 @@ vi.mock('../../contexts/AuthContext', () => ({
   useAuth: () => mockUseAuth(),
 }))
 
+// useHouseholdStore 모킹 — 기본적으로 가구 있는 상태
+const mockHouseholdState = { households: [{ id: 1, name: '테스트 가계부' }], isLoading: false }
+vi.mock('../../stores/useHouseholdStore', () => ({
+  useHouseholdStore: (selector?: (s: Record<string, unknown>) => unknown) =>
+    selector ? selector(mockHouseholdState) : mockHouseholdState,
+}))
+
 // window.location.href 모킹
 const mockLocationHref = vi.fn()
 Object.defineProperty(window, 'location', {
