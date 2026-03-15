@@ -38,13 +38,6 @@ function TransactionsRedirect() {
   return <Navigate to={query ? `/?${query}` : '/'} replace />
 }
 
-/* /transactions → / 쿼리 보존 리다이렉트 */
-function TransactionsRedirect() {
-  const [searchParams] = useSearchParams()
-  const query = searchParams.toString()
-  return <Navigate to={query ? `/?${query}` : '/'} replace />
-}
-
 /* 로딩 스피너 */
 function PageLoading() {
   return (
