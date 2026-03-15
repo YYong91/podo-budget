@@ -683,7 +683,7 @@ async def list_invitations(
                 expires_at=inv.expires_at,
                 created_at=inv.created_at,
                 responded_at=inv.responded_at,
-                token=None,  # 목록 조회 시에는 토큰 미포함
+                token=inv.token if inv.status == "pending" else None,
             )
         )
 

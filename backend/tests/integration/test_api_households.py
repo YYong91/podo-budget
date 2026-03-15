@@ -503,7 +503,8 @@ async def test_list_invitations_가구의_초대_목록_조회(authenticated_cli
     assert response.status_code == 200
     data = response.json()
     assert len(data) == 2
-    assert data[0]["token"] is None  # 목록 조회 시에는 토큰 미포함
+    # pending 초대는 토큰 포함 (링크 복사 기능용)
+    assert data[0]["token"] is not None
 
 
 @pytest.mark.asyncio
