@@ -303,7 +303,7 @@ export default function AssetForm() {
               key={m}
               onClick={() => { setMode(m); setPreviewItems(null) }}
               className={`flex-1 py-2 text-sm font-medium rounded-lg transition-colors ${
-                mode === m ? 'bg-[var(--surface-card)] text-grape-700 shadow-sm' : 'text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]'
+                mode === m ? 'bg-[var(--surface-card)] text-grape-600 shadow-sm' : 'text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]'
               }`}
             >
               {m === 'natural' ? '간편 입력' : '직접 입력'}
@@ -457,7 +457,7 @@ export default function AssetForm() {
                         setForm(f => ({ ...f, name: '', ticker: undefined }))
                         setSearchQuery('')
                       }}
-                      className="text-xs text-grape-600 hover:text-grape-700 font-medium"
+                      className="text-xs text-grape-600 hover:text-grape-600 font-medium"
                     >
                       ← 검색으로 돌아가기
                     </button>
@@ -488,7 +488,7 @@ export default function AssetForm() {
                             <button
                               type="button"
                               onClick={() => setManualMode(true)}
-                              className="mt-2 text-xs text-grape-600 hover:text-grape-700 font-medium"
+                              className="mt-2 text-xs text-grape-600 hover:text-grape-600 font-medium"
                             >
                               직접 입력하기
                             </button>
@@ -500,7 +500,7 @@ export default function AssetForm() {
                             <button
                               type="button"
                               onClick={() => setManualMode(true)}
-                              className="mt-2 text-xs text-grape-600 hover:text-grape-700 font-medium"
+                              className="mt-2 text-xs text-grape-600 hover:text-grape-600 font-medium"
                             >
                               직접 입력하기
                             </button>

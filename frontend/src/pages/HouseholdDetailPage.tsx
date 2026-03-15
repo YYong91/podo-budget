@@ -496,8 +496,8 @@ export default function HouseholdDetailPage() {
                     expired: '만료됨',
                   }
                   const statusColor: Record<string, string> = {
-                    pending: 'bg-yellow-100 text-yellow-800',
-                    accepted: 'bg-green-100 text-green-800',
+                    pending: 'bg-yellow-100 text-yellow-600',
+                    accepted: 'bg-green-100 text-green-600',
                     rejected: 'bg-warm-100 text-warm-600',
                     expired: 'bg-warm-100 text-[var(--text-muted)]',
                   }
@@ -644,7 +644,7 @@ export default function HouseholdDetailPage() {
           {/* 가구 삭제 (owner만) */}
           {isOwner && (
             <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-rose-200 p-6">
-              <h2 className="text-lg font-semibold text-rose-900 mb-2">
+              <h2 className="text-lg font-semibold text-rose-600 mb-2">
                 위험 영역
               </h2>
               <p className="text-sm text-[var(--text-secondary)] mb-4">

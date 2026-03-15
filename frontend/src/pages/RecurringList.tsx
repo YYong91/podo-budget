@@ -253,7 +253,7 @@ export default function RecurringList() {
             onClick={() => setTypeFilter(t)}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
               typeFilter === t
-                ? 'bg-grape-100 text-grape-800'
+                ? 'bg-grape-100 text-grape-600'
                 : 'bg-[var(--surface-hover)] text-[var(--text-secondary)] hover:bg-[var(--surface-hover)]'
             }`}
           >
@@ -398,7 +398,7 @@ export default function RecurringList() {
                       type="button"
                       onClick={() => setFormData({ ...formData, type: 'expense', category_id: '' })}
                       className={`flex-1 py-2 rounded-xl text-sm font-medium transition-colors ${
-                        formData.type === 'expense' ? 'bg-grape-100 text-grape-800' : 'bg-[var(--surface-hover)] text-[var(--text-secondary)]'
+                        formData.type === 'expense' ? 'bg-grape-100 text-grape-600' : 'bg-[var(--surface-hover)] text-[var(--text-secondary)]'
                       }`}
                     >
                       지출
@@ -407,7 +407,7 @@ export default function RecurringList() {
                       type="button"
                       onClick={() => setFormData({ ...formData, type: 'income', category_id: '' })}
                       className={`flex-1 py-2 rounded-xl text-sm font-medium transition-colors ${
-                        formData.type === 'income' ? 'bg-leaf-100 text-leaf-800' : 'bg-[var(--surface-hover)] text-[var(--text-secondary)]'
+                        formData.type === 'income' ? 'bg-leaf-100 text-leaf-600' : 'bg-[var(--surface-hover)] text-[var(--text-secondary)]'
                       }`}
                     >
                       수입
