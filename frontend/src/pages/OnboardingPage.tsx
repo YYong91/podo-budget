@@ -56,10 +56,9 @@ export default function OnboardingPage() {
   return (
     <div className="min-h-screen bg-[var(--surface)] flex items-center justify-center p-4">
       <div className="w-full max-w-sm space-y-6">
-        {/* 아이콘 + 제목 */}
+        {/* 제목 */}
         <div className="text-center space-y-2">
-          <div className="text-5xl">🍇</div>
-          <h1 className="text-2xl font-bold text-[var(--text-primary)]">포도가계부 시작하기</h1>
+          <h1 className="text-2xl font-bold text-grape-600">포도가계부 시작하기</h1>
           <p className="text-sm text-[var(--text-tertiary)]">
             {pendingInvitations.length > 0
               ? '초대받은 가계부에 참여하거나 새로 만들어보세요'
@@ -78,7 +77,7 @@ export default function OnboardingPage() {
             {pendingInvitations.map((inv) => (
               <div
                 key={inv.id}
-                className="flex items-center justify-between p-3 bg-grape-50 dark:bg-grape-900/20 rounded-xl"
+                className="flex items-center justify-between p-3 bg-grape-50 rounded-xl"
               >
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-medium text-[var(--text-primary)] truncate">
@@ -123,7 +122,7 @@ export default function OnboardingPage() {
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="가계부 이름 (비워두면 기본 이름)"
-              className="w-full border border-[var(--border-default)] rounded-lg px-3 py-2.5 text-sm bg-[var(--surface)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-grape-500/40 focus:border-grape-400"
+              className="w-full border border-[var(--input-border)] bg-[var(--input-bg)] text-[var(--text-primary)] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-grape-500/40 focus:border-grape-400"
               disabled={isDisabled}
               onKeyDown={(e) => { if (e.key === 'Enter') handleCreate() }}
             />

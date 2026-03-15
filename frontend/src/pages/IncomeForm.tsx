@@ -305,7 +305,7 @@ export default function IncomeForm() {
               onChange={(e) => setNaturalInput(e.target.value)}
               placeholder={"예: 이번 달 월급 350만원 들어왔어\n부업으로 50만원 받았어"}
               rows={5}
-              className="w-full px-4 py-3 bg-leaf-50/50 border border-warm-300 rounded-xl focus:ring-2 focus:ring-leaf-500/30 focus:border-leaf-500 resize-none"
+              className="w-full px-4 py-3 bg-leaf-50/50 border border-[var(--input-border)] rounded-xl focus:ring-2 focus:ring-leaf-500/30 focus:border-leaf-500 resize-none"
               disabled={loading}
             />
             <p className="mt-2 text-xs text-[var(--text-muted)]">
@@ -361,7 +361,7 @@ export default function IncomeForm() {
                       type="number"
                       value={item.amount}
                       onChange={(e) => updatePreviewItem(index, 'amount', Number(e.target.value))}
-                      className="w-full pl-7 pr-3 py-2 border border-warm-300 rounded-xl text-sm focus:ring-2 focus:ring-leaf-500/30 focus:border-leaf-500"
+                      className="w-full pl-7 pr-3 py-2 border border-[var(--input-border)] rounded-xl text-sm focus:ring-2 focus:ring-leaf-500/30 focus:border-leaf-500"
                       min="1"
                     />
                   </div>
@@ -374,7 +374,7 @@ export default function IncomeForm() {
                     type="date"
                     value={item.date.slice(0, 10)}
                     onChange={(e) => updatePreviewItem(index, 'date', e.target.value)}
-                    className="w-full px-3 py-2 border border-warm-300 rounded-xl text-sm focus:ring-2 focus:ring-leaf-500/30 focus:border-leaf-500"
+                    className="w-full px-3 py-2 border border-[var(--input-border)] rounded-xl text-sm focus:ring-2 focus:ring-leaf-500/30 focus:border-leaf-500"
                   />
                 </div>
 
@@ -385,7 +385,7 @@ export default function IncomeForm() {
                     type="text"
                     value={item.description}
                     onChange={(e) => updatePreviewItem(index, 'description', e.target.value)}
-                    className="w-full px-3 py-2 border border-warm-300 rounded-xl text-sm focus:ring-2 focus:ring-leaf-500/30 focus:border-leaf-500"
+                    className="w-full px-3 py-2 border border-[var(--input-border)] rounded-xl text-sm focus:ring-2 focus:ring-leaf-500/30 focus:border-leaf-500"
                   />
                 </div>
 
@@ -395,7 +395,7 @@ export default function IncomeForm() {
                   <select
                     value={item.category_id ?? ''}
                     onChange={(e) => updatePreviewItem(index, 'category_id', e.target.value ? Number(e.target.value) : null)}
-                    className="w-full px-3 py-2 border border-warm-300 rounded-xl text-sm focus:ring-2 focus:ring-leaf-500/30 focus:border-leaf-500"
+                    className="w-full px-3 py-2 border border-[var(--input-border)] rounded-xl text-sm focus:ring-2 focus:ring-leaf-500/30 focus:border-leaf-500"
                   >
                     <option value="">미분류 ({item.category})</option>
                     {incomeCategories.map((cat) => (
@@ -433,7 +433,7 @@ export default function IncomeForm() {
                     <button
                       type="button"
                       onClick={() => { setShowNewCategoryFor(index); setNewCategoryName('') }}
-                      className="mt-1.5 text-xs text-leaf-600 dark:text-leaf-400 hover:text-leaf-800 font-medium"
+                      className="mt-1.5 text-xs text-leaf-600 hover:text-leaf-800 font-medium"
                     >
                       + 새 카테고리
                     </button>
@@ -448,7 +448,7 @@ export default function IncomeForm() {
                     value={item.memo ?? ''}
                     onChange={(e) => updatePreviewItem(index, 'memo', e.target.value)}
                     placeholder="추가 메모 입력"
-                    className="w-full px-3 py-2 border border-warm-300 rounded-xl text-sm focus:ring-2 focus:ring-leaf-500/30 focus:border-leaf-500"
+                    className="w-full px-3 py-2 border border-[var(--input-border)] rounded-xl text-sm focus:ring-2 focus:ring-leaf-500/30 focus:border-leaf-500"
                   />
                 </div>
               </div>
@@ -491,7 +491,7 @@ export default function IncomeForm() {
                 value={formData.amount}
                 onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
                 placeholder="3500000"
-                className="w-full pl-8 pr-4 py-3 border border-warm-300 rounded-xl focus:ring-2 focus:ring-leaf-500/30 focus:border-leaf-500"
+                className="w-full pl-8 pr-4 py-3 border border-[var(--input-border)] rounded-xl focus:ring-2 focus:ring-leaf-500/30 focus:border-leaf-500"
                 disabled={loading}
                 min="1"
                 step="any"
@@ -510,7 +510,7 @@ export default function IncomeForm() {
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               placeholder="월급"
-              className="w-full px-4 py-3 border border-warm-300 rounded-xl focus:ring-2 focus:ring-leaf-500/30 focus:border-leaf-500"
+              className="w-full px-4 py-3 border border-[var(--input-border)] rounded-xl focus:ring-2 focus:ring-leaf-500/30 focus:border-leaf-500"
               disabled={loading}
             />
           </div>
@@ -524,7 +524,7 @@ export default function IncomeForm() {
               id="income-category"
               value={formData.category_id}
               onChange={(e) => setFormData({ ...formData, category_id: e.target.value })}
-              className="w-full px-4 py-3 border border-warm-300 rounded-xl focus:ring-2 focus:ring-leaf-500/30 focus:border-leaf-500"
+              className="w-full px-4 py-3 border border-[var(--input-border)] rounded-xl focus:ring-2 focus:ring-leaf-500/30 focus:border-leaf-500"
               disabled={loading}
             >
               <option value="">미분류</option>
@@ -565,7 +565,7 @@ export default function IncomeForm() {
               <button
                 type="button"
                 onClick={() => { setShowNewCategoryFor(-1); setNewCategoryName('') }}
-                className="mt-2 text-sm text-leaf-600 dark:text-leaf-400 hover:text-leaf-800 font-medium"
+                className="mt-2 text-sm text-leaf-600 hover:text-leaf-800 font-medium"
               >
                 + 새 카테고리
               </button>
@@ -582,7 +582,7 @@ export default function IncomeForm() {
               type="date"
               value={formData.date}
               onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-              className="w-full px-4 py-3 border border-warm-300 rounded-xl focus:ring-2 focus:ring-leaf-500/30 focus:border-leaf-500"
+              className="w-full px-4 py-3 border border-[var(--input-border)] rounded-xl focus:ring-2 focus:ring-leaf-500/30 focus:border-leaf-500"
               disabled={loading}
             />
           </div>
@@ -598,7 +598,7 @@ export default function IncomeForm() {
               value={formData.memo}
               onChange={(e) => setFormData({ ...formData, memo: e.target.value })}
               placeholder="추가 메모 (선택)"
-              className="w-full px-4 py-3 border border-warm-300 rounded-xl focus:ring-2 focus:ring-leaf-500/30 focus:border-leaf-500"
+              className="w-full px-4 py-3 border border-[var(--input-border)] rounded-xl focus:ring-2 focus:ring-leaf-500/30 focus:border-leaf-500"
               disabled={loading}
             />
           </div>
@@ -613,7 +613,7 @@ export default function IncomeForm() {
                 className="sr-only"
                 disabled={loading}
               />
-              <div className={`w-10 h-6 rounded-full transition-colors ${formData.exclude_from_stats ? 'bg-warm-400' : 'bg-warm-200'}`} />
+              <div className={`w-10 h-6 rounded-full transition-colors ${formData.exclude_from_stats ? 'bg-[var(--text-muted)]' : 'bg-[var(--surface-hover)]'}`} />
               <div className={`absolute top-1 left-1 w-4 h-4 bg-[var(--surface-card)] rounded-full shadow transition-transform ${formData.exclude_from_stats ? 'translate-x-4' : ''}`} />
             </div>
             <div>

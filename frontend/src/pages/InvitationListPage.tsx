@@ -246,7 +246,7 @@ export default function InvitationListPage() {
 
                   {/* 상태 배지 */}
                   {expiryStatus.isExpired && (
-                    <span className="text-xs px-2 py-1 rounded-full bg-warm-100 text-[var(--text-secondary)]">
+                    <span className="text-xs px-2 py-1 rounded-full bg-[var(--surface-hover)] text-[var(--text-secondary)]">
                       만료됨
                     </span>
                   )}
@@ -258,7 +258,7 @@ export default function InvitationListPage() {
                     <button
                       onClick={() => handleReject(invitation.token!)}
                       disabled={isProcessing}
-                      className="flex-1 px-4 py-2 text-sm font-medium text-[var(--text-secondary)] bg-[var(--surface-card)] border border-warm-300 rounded-lg hover:bg-[var(--surface-hover)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="flex-1 px-4 py-2 text-sm font-medium text-[var(--text-secondary)] bg-[var(--surface-card)] border border-[var(--input-border)] rounded-lg hover:bg-[var(--surface-hover)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {isProcessing ? '처리 중...' : '거절'}
                     </button>

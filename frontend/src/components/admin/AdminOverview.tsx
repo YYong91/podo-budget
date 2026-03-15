@@ -17,15 +17,15 @@ function StatCard({ icon: Icon, label, value, sub, onClick }: {
 }) {
   return (
     <div
-      className={`bg-white rounded-xl p-4 border border-warm-200 ${onClick ? 'cursor-pointer hover:border-grape-300 transition-colors' : ''}`}
+      className={`bg-[var(--surface-card)] rounded-xl p-4 border border-[var(--border-default)] ${onClick ? 'cursor-pointer hover:border-grape-300 transition-colors' : ''}`}
       onClick={onClick}
     >
-      <div className="flex items-center gap-2 text-warm-500 mb-1">
+      <div className="flex items-center gap-2 text-[var(--text-tertiary)] mb-1">
         <Icon className="w-4 h-4" />
         <span className="text-xs font-medium">{label}</span>
       </div>
-      <div className="text-2xl font-bold text-warm-900">{value}</div>
-      {sub && <div className="text-xs text-warm-500 mt-1">{sub}</div>}
+      <div className="text-2xl font-bold text-[var(--text-primary)]">{value}</div>
+      {sub && <div className="text-xs text-[var(--text-tertiary)] mt-1">{sub}</div>}
     </div>
   )
 }
@@ -105,38 +105,38 @@ export default function AdminOverview({ data, onTabChange }: Props) {
         href="https://console.anthropic.com/settings/billing"
         target="_blank"
         rel="noopener noreferrer"
-        className="flex items-center justify-between bg-white rounded-xl p-4 border border-warm-200 hover:border-grape-300 transition-colors"
+        className="flex items-center justify-between bg-[var(--surface-card)] rounded-xl p-4 border border-[var(--border-default)] hover:border-grape-300 transition-colors"
       >
         <div>
-          <div className="text-sm font-semibold text-warm-800">Anthropic Console</div>
-          <div className="text-xs text-warm-500 mt-0.5">잔액 확인 · 자동 충전 설정 · 사용량 조회</div>
+          <div className="text-sm font-semibold text-[var(--text-primary)]">Anthropic Console</div>
+          <div className="text-xs text-[var(--text-tertiary)] mt-0.5">잔액 확인 · 자동 충전 설정 · 사용량 조회</div>
         </div>
-        <ExternalLink className="w-4 h-4 text-warm-400" />
+        <ExternalLink className="w-4 h-4 text-[var(--text-muted)]" />
       </a>
 
       {/* 최근 활동 피드 */}
-      <div className="bg-white rounded-xl border border-warm-200">
-        <div className="px-4 py-3 border-b border-warm-100">
-          <h3 className="text-sm font-semibold text-warm-700">최근 활동</h3>
+      <div className="bg-[var(--surface-card)] rounded-xl border border-[var(--border-default)]">
+        <div className="px-4 py-3 border-b border-[var(--border-subtle)]">
+          <h3 className="text-sm font-semibold text-[var(--text-secondary)]">최근 활동</h3>
         </div>
         {data.recent_activity.length === 0 ? (
-          <div className="px-4 py-8 text-center text-warm-400 text-sm">
+          <div className="px-4 py-8 text-center text-[var(--text-muted)] text-sm">
             아직 활동이 없습니다
           </div>
         ) : (
-          <div className="divide-y divide-warm-100">
+          <div className="divide-y divide-[var(--border-subtle)]">
             {data.recent_activity.map((activity, i) => {
-              const meta = ACTIVITY_TYPE_LABELS[activity.type] ?? { label: activity.type, color: 'bg-warm-100 text-warm-700' }
+              const meta = ACTIVITY_TYPE_LABELS[activity.type] ?? { label: activity.type, color: 'bg-[var(--surface-hover)] text-[var(--text-secondary)]' }
               return (
                 <div key={`${activity.type}-${activity.created_at}-${i}`} className="px-4 py-3 flex items-start gap-3">
                   <span className={`${meta.color} text-[10px] font-medium px-1.5 py-0.5 rounded-md shrink-0 mt-0.5`}>
                     {meta.label}
                   </span>
                   <div className="flex-1 min-w-0">
-                    <div className="text-sm text-warm-800">
+                    <div className="text-sm text-[var(--text-primary)]">
                       <span className="font-medium">{activity.username}</span>
                       {' '}
-                      <span className="text-warm-600">
+                      <span className="text-[var(--text-secondary)]">
                         {activity.description}
                         {activity.amount != null && (
                           <> · <span className={activity.type === 'income' ? 'text-green-600' : 'text-red-500'}>{formatAmount(activity.amount)}</span></>
@@ -144,7 +144,7 @@ export default function AdminOverview({ data, onTabChange }: Props) {
                       </span>
                     </div>
                   </div>
-                  <span className="text-[11px] text-warm-400 shrink-0">
+                  <span className="text-[11px] text-[var(--text-muted)] shrink-0">
                     {formatRelativeTime(activity.created_at)}
                   </span>
                 </div>
@@ -156,19 +156,19 @@ export default function AdminOverview({ data, onTabChange }: Props) {
 
       {/* 이탈 감지 */}
       {data.inactive_users.length > 0 && (
-        <div className="bg-white rounded-xl border border-warm-200">
-          <div className="px-4 py-3 border-b border-warm-100 flex items-center gap-2">
+        <div className="bg-[var(--surface-card)] rounded-xl border border-[var(--border-default)]">
+          <div className="px-4 py-3 border-b border-[var(--border-subtle)] flex items-center gap-2">
             <AlertTriangle className="w-4 h-4 text-orange-500" />
-            <h3 className="text-sm font-semibold text-warm-700">이탈 감지</h3>
-            <span className="text-xs text-warm-400">7일 이상 비활동</span>
+            <h3 className="text-sm font-semibold text-[var(--text-secondary)]">이탈 감지</h3>
+            <span className="text-xs text-[var(--text-muted)]">7일 이상 비활동</span>
           </div>
-          <div className="divide-y divide-warm-100">
+          <div className="divide-y divide-[var(--border-subtle)]">
             {data.inactive_users.map(user => (
               <div key={user.id} className={`px-4 py-3 flex items-center justify-between ${getInactiveBg(user.days_inactive)}`}>
                 <div>
-                  <span className="text-sm font-medium text-warm-800">{user.username}</span>
+                  <span className="text-sm font-medium text-[var(--text-primary)]">{user.username}</span>
                   {user.last_activity_at && (
-                    <span className="text-xs text-warm-400 ml-2">
+                    <span className="text-xs text-[var(--text-muted)] ml-2">
                       마지막: {new Date(user.last_activity_at).toLocaleDateString('ko-KR')}
                     </span>
                   )}

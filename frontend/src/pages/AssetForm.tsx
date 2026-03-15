@@ -297,7 +297,7 @@ export default function AssetForm() {
 
       {/* 모드 탭 (신규 모드에서만) */}
       {!isEdit && (
-        <div className="flex rounded-xl bg-warm-100 p-1">
+        <div className="flex rounded-xl bg-[var(--surface-hover)] p-1">
           {(['natural', 'direct'] as Mode[]).map(m => (
             <button
               key={m}
@@ -327,7 +327,7 @@ export default function AssetForm() {
               onChange={e => setNaturalInput(e.target.value)}
               placeholder="보유 자산을 입력하세요..."
               rows={4}
-              className="w-full border border-warm-300 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500 resize-none"
+              className="w-full border border-[var(--input-border)] rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500 resize-none"
             />
             <button
               onClick={handleNaturalParse}
@@ -385,7 +385,7 @@ export default function AssetForm() {
                 setAssetType(t)
                 if (isEdit) setForm(f => ({ ...f, type: t, is_liability: isLiabilityType(t) }))
               }}
-              className="w-full border border-warm-300 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
+              className="w-full border border-[var(--input-border)] rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
             >
               {(Object.entries(TYPE_LABELS) as [AssetType, string][]).map(([v, label]) => (
                 <option key={v} value={v}>{label}</option>
@@ -402,7 +402,7 @@ export default function AssetForm() {
                 value={form.name ?? ''}
                 onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
                 placeholder="예) 내 적금, 주택담보대출"
-                className="w-full border border-warm-300 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
+                className="w-full border border-[var(--input-border)] rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
                 required
               />
             </div>
@@ -440,7 +440,7 @@ export default function AssetForm() {
                       value={form.name ?? ''}
                       onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
                       placeholder="종목명 (예: 삼성전자)"
-                      className="w-full border border-warm-300 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
+                      className="w-full border border-[var(--input-border)] rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
                       required
                     />
                     <input
@@ -448,7 +448,7 @@ export default function AssetForm() {
                       value={form.ticker ?? ''}
                       onChange={e => setForm(f => ({ ...f, ticker: e.target.value || undefined }))}
                       placeholder="티커/코드 (선택, 예: 005930)"
-                      className="w-full border border-warm-300 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
+                      className="w-full border border-[var(--input-border)] rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
                     />
                     <button
                       type="button"
@@ -477,10 +477,10 @@ export default function AssetForm() {
                       onFocus={() => { if (searchResults.length > 0 || searchError) setShowDropdown(true) }}
                       onKeyDown={e => { if (e.key === 'Enter') e.preventDefault() }}
                       placeholder={assetType === 'crypto' ? 'BTC, 비트코인...' : '종목명 또는 코드 검색'}
-                      className="w-full border border-warm-300 rounded-xl pl-9 pr-4 py-3 text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
+                      className="w-full border border-[var(--input-border)] rounded-xl pl-9 pr-4 py-3 text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
                     />
                     {showDropdown && (
-                      <div className="absolute z-10 left-0 right-0 top-full mt-1 bg-[var(--surface-card)] border border-warm-300 rounded-xl shadow-lg py-1 max-h-48 overflow-y-auto">
+                      <div className="absolute z-10 left-0 right-0 top-full mt-1 bg-[var(--surface-card)] border border-[var(--input-border)] rounded-xl shadow-lg py-1 max-h-48 overflow-y-auto">
                         {searchError ? (
                           /* 에러 상태 */
                           <div className="px-3 py-4 text-center">
@@ -538,7 +538,7 @@ export default function AssetForm() {
                     value={form.quantity ?? ''}
                     onChange={e => setForm(f => ({ ...f, quantity: e.target.value ? Number(e.target.value) : null }))}
                     placeholder="0"
-                    className="w-full border border-warm-300 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
+                    className="w-full border border-[var(--input-border)] rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
                   />
                 </div>
                 <div>
@@ -549,7 +549,7 @@ export default function AssetForm() {
                     value={form.avg_buy_price ?? ''}
                     onChange={e => setForm(f => ({ ...f, avg_buy_price: e.target.value ? Number(e.target.value) : null }))}
                     placeholder="0"
-                    className="w-full border border-warm-300 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
+                    className="w-full border border-[var(--input-border)] rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
                   />
                 </div>
               </div>
@@ -569,7 +569,7 @@ export default function AssetForm() {
                   value={form.manual_value ?? ''}
                   onChange={e => setForm(f => ({ ...f, manual_value: e.target.value ? Number(e.target.value) : null }))}
                   placeholder="0"
-                  className="w-full border border-warm-300 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
+                  className="w-full border border-[var(--input-border)] rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
                 />
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -581,7 +581,7 @@ export default function AssetForm() {
                     value={form.interest_rate ?? ''}
                     onChange={e => setForm(f => ({ ...f, interest_rate: e.target.value ? Number(e.target.value) : null }))}
                     placeholder="연 이율"
-                    className="w-full border border-warm-300 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
+                    className="w-full border border-[var(--input-border)] rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
                   />
                 </div>
                 <div>
@@ -590,7 +590,7 @@ export default function AssetForm() {
                     type="date"
                     value={form.maturity_date ?? ''}
                     onChange={e => setForm(f => ({ ...f, maturity_date: e.target.value || null }))}
-                    className="w-full border border-warm-300 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
+                    className="w-full border border-[var(--input-border)] rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
                   />
                 </div>
               </div>
@@ -601,7 +601,7 @@ export default function AssetForm() {
                     <select
                       value={form.repayment_type ?? ''}
                       onChange={e => setForm(f => ({ ...f, repayment_type: e.target.value || null }))}
-                      className="w-full border border-warm-300 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
+                      className="w-full border border-[var(--input-border)] rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
                     >
                       <option value="">선택</option>
                       <option value="equal_principal_interest">원리금균등</option>
@@ -617,7 +617,7 @@ export default function AssetForm() {
                       value={form.monthly_payment ?? ''}
                       onChange={e => setForm(f => ({ ...f, monthly_payment: e.target.value ? Number(e.target.value) : null }))}
                       placeholder="0"
-                      className="w-full border border-warm-300 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
+                      className="w-full border border-[var(--input-border)] rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
                     />
                   </div>
                 </div>
@@ -632,7 +632,7 @@ export default function AssetForm() {
               <select
                 value={form.account_id ?? ''}
                 onChange={e => setForm(f => ({ ...f, account_id: e.target.value ? Number(e.target.value) : null }))}
-                className="w-full border border-warm-300 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
+                className="w-full border border-[var(--input-border)] rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
               >
                 <option value="">계좌 미지정</option>
                 {accounts.map(acc => (
@@ -650,7 +650,7 @@ export default function AssetForm() {
               value={form.memo ?? ''}
               onChange={e => setForm(f => ({ ...f, memo: e.target.value || null }))}
               placeholder="메모"
-              className="w-full border border-warm-300 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
+              className="w-full border border-[var(--input-border)] rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
             />
           </div>
 

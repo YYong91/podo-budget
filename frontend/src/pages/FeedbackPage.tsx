@@ -11,8 +11,8 @@ import { feedbackApi } from '../api/feedback'
 import type { Feedback, FeedbackStatus, FeedbackType } from '../types'
 
 const STATUS_LABELS: Record<FeedbackStatus, { text: string; className: string }> = {
-  new: { text: '접수', className: 'bg-warm-100 text-[var(--text-secondary)]' },
-  read: { text: '확인', className: 'bg-grape-100 text-grape-700' },
+  new: { text: '접수', className: 'bg-[var(--surface-hover)] text-[var(--text-secondary)]' },
+  read: { text: '확인', className: 'bg-grape-100 text-grape-600' },
   done: { text: '완료', className: 'bg-leaf-100 text-leaf-700' },
 }
 
@@ -95,7 +95,7 @@ export default function FeedbackPage() {
             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
               type === 'feature'
                 ? 'bg-grape-600 text-white'
-                : 'bg-warm-100 text-[var(--text-secondary)] hover:bg-warm-200'
+                : 'bg-[var(--surface-hover)] text-[var(--text-secondary)] hover:bg-[var(--surface-hover)]'
             }`}
           >
             <Lightbulb className="w-4 h-4" />
@@ -107,7 +107,7 @@ export default function FeedbackPage() {
             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
               type === 'bug'
                 ? 'bg-red-600 text-white'
-                : 'bg-warm-100 text-[var(--text-secondary)] hover:bg-warm-200'
+                : 'bg-[var(--surface-hover)] text-[var(--text-secondary)] hover:bg-[var(--surface-hover)]'
             }`}
           >
             <Bug className="w-4 h-4" />
@@ -199,7 +199,7 @@ function FeedbackCard({
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-2 flex-1 min-w-0">
           <span className={`flex-shrink-0 text-xs px-2 py-0.5 rounded-full font-medium ${
-            isFeature ? 'bg-grape-100 text-grape-700' : 'bg-red-100 text-red-700'
+            isFeature ? 'bg-grape-50 text-grape-600' : 'bg-red-100 text-red-700'
           }`}>
             {isFeature ? '기능' : '버그'}
           </span>

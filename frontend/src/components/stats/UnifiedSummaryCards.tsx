@@ -27,7 +27,7 @@ function formatLargeAmount(amount: number): string {
 
 function ChangeIndicator({ current, previous }: { current: number; previous: number }) {
   const pct = ((current - previous) / Math.abs(previous)) * 100
-  const color = pct >= 0 ? 'text-leaf-600 dark:text-leaf-400' : 'text-red-500'
+  const color = pct >= 0 ? 'text-leaf-600' : 'text-red-600'
   return (
     <p className={`text-[10px] mt-0.5 ${color}`}>
       전월 {pct >= 0 ? '+' : ''}
@@ -47,12 +47,12 @@ export default function UnifiedSummaryCards({
   const net = incomeTotal - expenseTotal
   const savingsRate = incomeTotal > 0 ? (net / incomeTotal) * 100 : null
 
-  const netColor = net >= 0 ? 'text-leaf-700' : 'text-red-600'
+  const netColor = net >= 0 ? 'text-leaf-600' : 'text-red-600'
   const rateColor =
     savingsRate === null
       ? 'text-[var(--text-muted)]'
       : savingsRate >= 20
-        ? 'text-leaf-700'
+        ? 'text-leaf-600'
         : savingsRate >= 10
           ? 'text-amber-600'
           : 'text-red-600'

@@ -147,7 +147,7 @@ export default function IncomeDetail() {
             <>
               <button
                 onClick={() => setIsEditing(false)}
-                className="flex-1 sm:flex-none px-4 py-2 text-sm font-medium text-[var(--text-secondary)] bg-[var(--surface-card)] border border-warm-300 rounded-xl hover:bg-[var(--surface-elevated)] transition-colors"
+                className="flex-1 sm:flex-none px-4 py-2 text-sm font-medium text-[var(--text-secondary)] bg-[var(--surface-card)] border border-[var(--input-border)] rounded-xl hover:bg-[var(--surface-elevated)] transition-colors"
               >
                 취소
               </button>
@@ -162,13 +162,13 @@ export default function IncomeDetail() {
             <>
               <button
                 onClick={() => setShowRecurringModal(true)}
-                className="flex-1 sm:flex-none px-4 py-2 text-sm font-medium text-[var(--text-secondary)] bg-warm-100 rounded-xl hover:bg-warm-200 transition-colors"
+                className="flex-1 sm:flex-none px-4 py-2 text-sm font-medium text-[var(--text-secondary)] bg-[var(--surface-hover)] rounded-xl hover:bg-[var(--border-default)] transition-colors"
               >
                 반복 거래 등록
               </button>
               <button
                 onClick={() => setIsEditing(true)}
-                className="flex-1 sm:flex-none px-4 py-2 text-sm font-medium text-leaf-700 dark:text-leaf-400 bg-leaf-50 rounded-xl hover:bg-leaf-100 transition-colors"
+                className="flex-1 sm:flex-none px-4 py-2 text-sm font-medium text-leaf-600 bg-leaf-50 rounded-xl hover:bg-leaf-100 transition-colors"
               >
                 수정
               </button>
@@ -193,11 +193,11 @@ export default function IncomeDetail() {
               type="number"
               value={editForm.amount}
               onChange={(e) => setEditForm({ ...editForm, amount: Number(e.target.value) })}
-              className="w-full px-4 py-2 text-xl sm:text-2xl font-bold text-[var(--text-primary)] border border-warm-300 rounded-xl focus:ring-2 focus:ring-leaf-500/30 focus:border-leaf-500"
+              className="w-full px-4 py-2 text-xl sm:text-2xl font-bold text-[var(--text-primary)] border border-[var(--input-border)] rounded-xl focus:ring-2 focus:ring-leaf-500/30 focus:border-leaf-500"
               placeholder="10000"
             />
           ) : (
-            <p className="text-2xl sm:text-3xl font-bold text-leaf-700 dark:text-leaf-400">
+            <p className="text-2xl sm:text-3xl font-bold text-leaf-600">
               +{formatAmount(income.amount)}
             </p>
           )}
@@ -211,7 +211,7 @@ export default function IncomeDetail() {
               type="text"
               value={editForm.description}
               onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
-              className="w-full px-4 py-2 text-lg border border-warm-300 rounded-xl focus:ring-2 focus:ring-leaf-500/30 focus:border-leaf-500"
+              className="w-full px-4 py-2 text-lg border border-[var(--input-border)] rounded-xl focus:ring-2 focus:ring-leaf-500/30 focus:border-leaf-500"
               placeholder="월급"
             />
           ) : (
@@ -231,7 +231,7 @@ export default function IncomeDetail() {
                   category_id: e.target.value ? Number(e.target.value) : null,
                 })
               }
-              className="w-full px-4 py-2 text-lg border border-warm-300 rounded-xl focus:ring-2 focus:ring-leaf-500/30 focus:border-leaf-500"
+              className="w-full px-4 py-2 text-lg border border-[var(--input-border)] rounded-xl focus:ring-2 focus:ring-leaf-500/30 focus:border-leaf-500"
             >
               <option value="">미분류</option>
               {categories.map((cat) => (
@@ -253,7 +253,7 @@ export default function IncomeDetail() {
               type="date"
               value={editForm.date}
               onChange={(e) => setEditForm({ ...editForm, date: e.target.value })}
-              className="w-full px-4 py-2 text-lg border border-warm-300 rounded-xl focus:ring-2 focus:ring-leaf-500/30 focus:border-leaf-500"
+              className="w-full px-4 py-2 text-lg border border-[var(--input-border)] rounded-xl focus:ring-2 focus:ring-leaf-500/30 focus:border-leaf-500"
             />
           ) : (
             <p className="text-lg text-[var(--text-primary)]">{formatDate(income.date)}</p>
@@ -269,7 +269,7 @@ export default function IncomeDetail() {
               value={editForm.memo}
               onChange={(e) => setEditForm({ ...editForm, memo: e.target.value })}
               placeholder="추가 메모 (선택)"
-              className="w-full px-4 py-2 text-lg border border-warm-300 rounded-xl focus:ring-2 focus:ring-leaf-500/30 focus:border-leaf-500"
+              className="w-full px-4 py-2 text-lg border border-[var(--input-border)] rounded-xl focus:ring-2 focus:ring-leaf-500/30 focus:border-leaf-500"
             />
           ) : income.memo ? (
             <p className="text-lg text-[var(--text-primary)]">{income.memo}</p>
@@ -290,7 +290,7 @@ export default function IncomeDetail() {
                   onChange={(e) => setEditForm({ ...editForm, exclude_from_stats: e.target.checked })}
                   className="sr-only"
                 />
-                <div className={`w-10 h-6 rounded-full transition-colors ${editForm.exclude_from_stats ? 'bg-warm-400' : 'bg-warm-200'}`} />
+                <div className={`w-10 h-6 rounded-full transition-colors ${editForm.exclude_from_stats ? 'bg-[var(--text-muted)]' : 'bg-[var(--border-default)]'}`} />
                 <div className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${editForm.exclude_from_stats ? 'translate-x-4' : ''}`} />
               </div>
               <span className="text-sm text-[var(--text-secondary)]">차트/통계에서 제외</span>
@@ -342,7 +342,7 @@ export default function IncomeDetail() {
             <div className="flex gap-3 justify-end">
               <button
                 onClick={() => setShowDeleteModal(false)}
-                className="px-4 py-2 text-sm font-medium text-[var(--text-secondary)] bg-warm-100 rounded-xl hover:bg-warm-200 transition-colors"
+                className="px-4 py-2 text-sm font-medium text-[var(--text-secondary)] bg-[var(--surface-hover)] rounded-xl hover:bg-[var(--border-default)] transition-colors"
               >
                 취소
               </button>

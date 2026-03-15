@@ -5,10 +5,10 @@ interface FinancialHealthScoreProps {
 }
 
 function getGradeColor(grade: string): string {
-  if (grade.startsWith('A')) return 'text-leaf-600 dark:text-leaf-400'
-  if (grade.startsWith('B')) return 'text-grape-600 dark:text-grape-400'
-  if (grade.startsWith('C')) return 'text-amber-600 dark:text-amber-400'
-  return 'text-red-600 dark:text-red-400'
+  if (grade.startsWith('A')) return 'text-leaf-600'
+  if (grade.startsWith('B')) return 'text-grape-600'
+  if (grade.startsWith('C')) return 'text-amber-600'
+  return 'text-red-600'
 }
 
 function getBarColor(value: number): string {
@@ -62,7 +62,7 @@ export default function FinancialHealthScore({ score }: FinancialHealthScoreProp
         {LABELS.map(({ key, label }) => (
           <div key={key} className="flex items-center gap-2">
             <span className="text-xs text-[var(--text-secondary)] w-14 shrink-0">{label}</span>
-            <div className="flex-1 h-2 bg-warm-100 rounded-full overflow-hidden">
+            <div className="flex-1 h-2 bg-[var(--surface-hover)] rounded-full overflow-hidden">
               <div
                 className={`h-full rounded-full transition-all ${getBarColor(score[key])}`}
                 style={{ width: `${score[key]}%` }}

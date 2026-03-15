@@ -225,7 +225,7 @@ export default function CategoryManager() {
                     value={newName}
                     onChange={(e) => setNewName(e.target.value)}
                     placeholder="카테고리 이름"
-                    className="w-full px-3 py-2 border border-warm-300 rounded-lg focus:ring-2 focus:ring-grape-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-[var(--input-border)] rounded-lg focus:ring-2 focus:ring-grape-500 focus:border-transparent"
                     autoFocus
                   />
                 </td>
@@ -235,7 +235,7 @@ export default function CategoryManager() {
                     value={newDescription}
                     onChange={(e) => setNewDescription(e.target.value)}
                     placeholder="설명 (선택)"
-                    className="w-full px-3 py-2 border border-warm-300 rounded-lg focus:ring-2 focus:ring-grape-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-[var(--input-border)] rounded-lg focus:ring-2 focus:ring-grape-500 focus:border-transparent"
                   />
                 </td>
                 <td className="px-4 sm:px-6 py-4 hidden sm:table-cell"></td>
@@ -253,7 +253,7 @@ export default function CategoryManager() {
                         setNewName('')
                         setNewDescription('')
                       }}
-                      className="px-3 py-1.5 text-sm font-medium text-[var(--text-secondary)] bg-warm-100 rounded-lg hover:bg-warm-200 transition-colors"
+                      className="px-3 py-1.5 text-sm font-medium text-[var(--text-secondary)] bg-[var(--surface-hover)] rounded-lg hover:bg-[var(--surface-hover)] transition-colors"
                     >
                       취소
                     </button>
@@ -303,7 +303,7 @@ export default function CategoryManager() {
                           onChange={(e) =>
                             setEditForm({ ...editForm, name: e.target.value })
                           }
-                          className="w-full px-3 py-2 border border-warm-300 rounded-lg focus:ring-2 focus:ring-grape-500 focus:border-transparent"
+                          className="w-full px-3 py-2 border border-[var(--input-border)] rounded-lg focus:ring-2 focus:ring-grape-500 focus:border-transparent"
                           autoFocus
                         />
                       ) : (
@@ -329,7 +329,7 @@ export default function CategoryManager() {
                               description: e.target.value,
                             })
                           }
-                          className="w-full px-3 py-2 border border-warm-300 rounded-lg focus:ring-2 focus:ring-grape-500 focus:border-transparent"
+                          className="w-full px-3 py-2 border border-[var(--input-border)] rounded-lg focus:ring-2 focus:ring-grape-500 focus:border-transparent"
                         />
                       ) : (
                         <span className="text-sm text-[var(--text-secondary)]">
@@ -353,7 +353,7 @@ export default function CategoryManager() {
                           </button>
                           <button
                             onClick={() => setEditingId(null)}
-                            className="px-3 py-1.5 text-sm font-medium text-[var(--text-secondary)] bg-warm-100 rounded-lg hover:bg-warm-200 transition-colors"
+                            className="px-3 py-1.5 text-sm font-medium text-[var(--text-secondary)] bg-[var(--surface-hover)] rounded-lg hover:bg-[var(--surface-hover)] transition-colors"
                           >
                             취소
                           </button>
@@ -362,7 +362,7 @@ export default function CategoryManager() {
                         <div className="flex justify-end gap-2">
                           <button
                             onClick={() => startEdit(category)}
-                            className="px-3 py-1.5 text-sm font-medium text-grape-700 bg-grape-50 rounded-lg hover:bg-grape-100 transition-colors"
+                            className="px-3 py-1.5 text-sm font-medium text-grape-600 bg-grape-50 rounded-lg hover:bg-grape-100 transition-colors"
                           >
                             수정
                           </button>
@@ -414,7 +414,7 @@ export default function CategoryManager() {
             <div className="flex gap-3 justify-end">
               <button
                 onClick={() => setDeleteTarget(null)}
-                className="px-4 py-2 text-sm font-medium text-[var(--text-secondary)] bg-warm-100 rounded-lg hover:bg-warm-200 transition-colors"
+                className="px-4 py-2 text-sm font-medium text-[var(--text-secondary)] bg-[var(--surface-hover)] rounded-lg hover:bg-[var(--surface-hover)] transition-colors"
               >
                 취소
               </button>

@@ -74,6 +74,8 @@
   --text-secondary: var(--color-warm-700);
   --text-tertiary: var(--color-warm-500);
   --text-muted: var(--color-warm-400);
+  --input-border: var(--color-warm-300);
+  --input-bg: #ffffff;
 }
 
 /* ─── 다크모드 시멘틱 변수 ─── */
@@ -88,17 +90,44 @@
   --text-secondary: #b8b0c8;
   --text-tertiary: #8a7fa0;
   --text-muted: #6b6080;
+  --input-border: #4d4562;
+  --input-bg: #1e1a2a;
 
-  /* 다크모드에서 grape 색상 밝기 조절 */
+  /* ─── 다크모드 색상 팔레트 오버라이드 ─── */
+  /* 배경용 (50-200): 어둡게, 보더/악센트용 (300): 중간톤 */
+
+  /* Grape */
   --color-grape-50: #2d1f4e;
   --color-grape-100: #3a2766;
   --color-grape-200: #4a3280;
+  --color-grape-300: #5d3d99;
+
+  /* Leaf */
+  --color-leaf-50: #1a2e1f;
+  --color-leaf-100: #1e3a24;
+  --color-leaf-200: #254a2e;
+  --color-leaf-300: #2d6637;
+
+  /* Warm */
   --color-warm-50: #231e30;
   --color-warm-100: #2d2640;
   --color-warm-200: #3d3452;
   --color-warm-300: #4d4562;
-  --color-leaf-50: #1a2e1f;
-  --color-leaf-100: #1e3a24;
+
+  /* Rose (에러/부정) */
+  --color-rose-50: #2d1a1e;
+  --color-rose-100: #3a1f26;
+  --color-rose-200: #5c2d3a;
+
+  /* Red (에러/부정) */
+  --color-red-50: #2d1a1a;
+  --color-red-100: #3a1f1f;
+  --color-red-200: #5c2d2d;
+
+  /* Amber (경고) */
+  --color-amber-50: #2d2a1a;
+  --color-amber-100: #3a351f;
+  --color-amber-200: #5c4d2d;
 
   color-scheme: dark;
 }

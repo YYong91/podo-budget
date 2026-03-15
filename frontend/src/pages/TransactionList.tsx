@@ -243,7 +243,7 @@ export default function TransactionList() {
           }`}
         >
           <div className="text-xs text-[var(--text-tertiary)]">지출</div>
-          <div className={`text-base font-bold ${filter !== 'income' ? 'text-grape-700 dark:text-grape-400' : 'text-[var(--text-muted)]'}`}>
+          <div className={`text-base font-bold ${filter !== 'income' ? 'text-grape-600' : 'text-[var(--text-muted)]'}`}>
             {formatAmount(totalExpense)}
           </div>
         </button>
@@ -255,7 +255,7 @@ export default function TransactionList() {
           }`}
         >
           <div className="text-xs text-[var(--text-tertiary)]">수입</div>
-          <div className={`text-base font-bold ${filter !== 'expense' ? 'text-leaf-600 dark:text-leaf-400' : 'text-[var(--text-muted)]'}`}>
+          <div className={`text-base font-bold ${filter !== 'expense' ? 'text-leaf-600' : 'text-[var(--text-muted)]'}`}>
             {formatAmount(totalIncome)}
           </div>
         </button>
@@ -303,15 +303,15 @@ export default function TransactionList() {
           {[1, 2, 3].map(i => (
             <div key={i}>
               <div className="bg-[var(--surface-elevated)] px-4 py-2 border-b border-[var(--border-subtle)]">
-                <div className="h-3 w-24 bg-warm-200 rounded animate-pulse" />
+                <div className="h-3 w-24 bg-[var(--surface-hover)] rounded animate-pulse" />
               </div>
               {[1, 2].map(j => (
                 <div key={j} className="px-4 py-3 space-y-2">
                   <div className="flex justify-between">
-                    <div className="h-4 w-32 bg-warm-100 rounded animate-pulse" />
-                    <div className="h-4 w-20 bg-warm-100 rounded animate-pulse" />
+                    <div className="h-4 w-32 bg-[var(--border-subtle)] rounded animate-pulse" />
+                    <div className="h-4 w-20 bg-[var(--border-subtle)] rounded animate-pulse" />
                   </div>
-                  <div className="h-3 w-12 bg-warm-100 rounded-full animate-pulse" />
+                  <div className="h-3 w-12 bg-[var(--border-subtle)] rounded-full animate-pulse" />
                 </div>
               ))}
             </div>

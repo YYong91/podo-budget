@@ -23,9 +23,9 @@ import type { ChangelogItem } from '../data/changelogs'
 const AUTH_URL = import.meta.env.VITE_AUTH_URL || 'https://auth.podonest.com'
 
 const TAG_STYLES: Record<ChangelogItem['tag'], string> = {
-  '신규': 'bg-grape-100 text-grape-700 dark:text-grape-300',
-  '개선': 'bg-leaf-100 text-leaf-700 dark:text-leaf-400',
-  '수정': 'bg-warm-100 text-warm-700 dark:text-warm-300',
+  '신규': 'bg-grape-100 text-grape-600',
+  '개선': 'bg-leaf-100 text-leaf-600',
+  '수정': 'bg-[var(--surface-hover)] text-[var(--text-secondary)]',
 }
 
 type SettingsSection = 'changelog' | 'my-account' | 'appearance'
@@ -123,9 +123,9 @@ function AppearanceSection() {
                     : 'bg-[var(--surface-elevated)] border-2 border-transparent hover:border-[var(--border-default)]'
                 }`}
               >
-                <Icon className={`w-5 h-5 ${isSelected ? 'text-grape-600 dark:text-grape-400' : 'text-[var(--text-muted)]'}`} />
+                <Icon className={`w-5 h-5 ${isSelected ? 'text-grape-600' : 'text-[var(--text-muted)]'}`} />
                 <div className="flex-1 text-left">
-                  <p className={`text-sm font-medium ${isSelected ? 'text-grape-700 dark:text-grape-300' : 'text-[var(--text-primary)]'}`}>
+                  <p className={`text-sm font-medium ${isSelected ? 'text-grape-600' : 'text-[var(--text-primary)]'}`}>
                     {opt.label}
                   </p>
                   <p className="text-xs text-[var(--text-tertiary)]">{opt.description}</p>
@@ -321,7 +321,7 @@ function MyAccountSection() {
 
         {user.is_telegram_linked ? (
           <div className="flex items-center justify-between py-2 px-3 bg-leaf-50 rounded-xl">
-            <span className="text-sm text-leaf-600 dark:text-leaf-400 font-medium">✅ 연동됨</span>
+            <span className="text-sm text-leaf-600 font-medium">✅ 연동됨</span>
             <button
               onClick={handleUnlink}
               disabled={loadingUnlink}
@@ -336,20 +336,20 @@ function MyAccountSection() {
               <p className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wide">연동 방법</p>
               <ol className="space-y-2 text-sm text-[var(--text-secondary)]">
                 <li className="flex gap-2">
-                  <span className="flex-shrink-0 w-5 h-5 rounded-full bg-grape-100 text-grape-700 dark:text-grape-300 text-xs font-bold flex items-center justify-center">1</span>
-                  <span>텔레그램 앱에서 <span className="font-mono bg-warm-100 px-1 rounded">@homenrich_bot</span>을 검색하거나 <a href="https://t.me/homenrich_bot" target="_blank" rel="noopener noreferrer" className="text-grape-600 dark:text-grape-400 underline">t.me/homenrich_bot</a> 으로 접속하세요</span>
+                  <span className="flex-shrink-0 w-5 h-5 rounded-full bg-grape-100 text-grape-600 text-xs font-bold flex items-center justify-center">1</span>
+                  <span>텔레그램 앱에서 <span className="font-mono bg-[var(--surface-hover)] px-1 rounded">@homenrich_bot</span>을 검색하거나 <a href="https://t.me/homenrich_bot" target="_blank" rel="noopener noreferrer" className="text-grape-600 underline">t.me/homenrich_bot</a> 으로 접속하세요</span>
                 </li>
                 <li className="flex gap-2">
-                  <span className="flex-shrink-0 w-5 h-5 rounded-full bg-grape-100 text-grape-700 dark:text-grape-300 text-xs font-bold flex items-center justify-center">2</span>
-                  <span>봇에서 <span className="font-mono bg-warm-100 px-1 rounded">/start</span>를 입력해 시작하세요</span>
+                  <span className="flex-shrink-0 w-5 h-5 rounded-full bg-grape-100 text-grape-600 text-xs font-bold flex items-center justify-center">2</span>
+                  <span>봇에서 <span className="font-mono bg-[var(--surface-hover)] px-1 rounded">/start</span>를 입력해 시작하세요</span>
                 </li>
                 <li className="flex gap-2">
-                  <span className="flex-shrink-0 w-5 h-5 rounded-full bg-grape-100 text-grape-700 dark:text-grape-300 text-xs font-bold flex items-center justify-center">3</span>
+                  <span className="flex-shrink-0 w-5 h-5 rounded-full bg-grape-100 text-grape-600 text-xs font-bold flex items-center justify-center">3</span>
                   <span>아래 <strong>연동 코드 발급</strong> 버튼을 눌러 코드를 받으세요 (15분 유효)</span>
                 </li>
                 <li className="flex gap-2">
-                  <span className="flex-shrink-0 w-5 h-5 rounded-full bg-grape-100 text-grape-700 dark:text-grape-300 text-xs font-bold flex items-center justify-center">4</span>
-                  <span>봇에 <span className="font-mono bg-warm-100 px-1 rounded">/link 발급된코드</span>를 입력하면 연동 완료!</span>
+                  <span className="flex-shrink-0 w-5 h-5 rounded-full bg-grape-100 text-grape-600 text-xs font-bold flex items-center justify-center">4</span>
+                  <span>봇에 <span className="font-mono bg-[var(--surface-hover)] px-1 rounded">/link 발급된코드</span>를 입력하면 연동 완료!</span>
                 </li>
               </ol>
               <div className="mt-3 bg-grape-50 rounded-lg p-3 text-xs text-[var(--text-secondary)] space-y-1">
@@ -364,12 +364,12 @@ function MyAccountSection() {
               <div className="bg-grape-50 rounded-xl p-4 space-y-3">
                 <p className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wide">발급된 연동 코드</p>
                 <div className="flex items-center justify-between">
-                  <span className="font-mono text-2xl font-bold text-grape-700 dark:text-grape-300 tracking-widest">
+                  <span className="font-mono text-2xl font-bold text-grape-600 tracking-widest">
                     {linkCode.code}
                   </span>
                   <button
                     onClick={handleCopyCode}
-                    className="text-xs text-grape-600 dark:text-grape-400 border border-grape-300 rounded-lg px-3 py-1 hover:bg-grape-100"
+                    className="text-xs text-grape-600 border border-grape-300 rounded-lg px-3 py-1 hover:bg-grape-100"
                   >
                     /link {linkCode.code} 복사
                   </button>
@@ -389,7 +389,7 @@ function MyAccountSection() {
                   }}
                 >
                   <p className="text-xs text-[var(--text-tertiary)] mb-1">텔레그램 봇에 아래 명령어를 입력하세요: (탭하면 선택됩니다)</p>
-                  <p className="selectable font-mono text-sm text-grape-700 dark:text-grape-300 font-bold select-all">/link {linkCode.code}</p>
+                  <p className="selectable font-mono text-sm text-grape-600 font-bold select-all">/link {linkCode.code}</p>
                 </div>
               </div>
             ) : (
@@ -418,7 +418,7 @@ function MyAccountSection() {
 
         {user.is_kakao_linked ? (
           <div className="flex items-center justify-between py-2 px-3 bg-leaf-50 rounded-xl">
-            <span className="text-sm text-leaf-600 dark:text-leaf-400 font-medium">✅ 연동됨</span>
+            <span className="text-sm text-leaf-600 font-medium">✅ 연동됨</span>
             <button
               onClick={handleUnlinkKakao}
               disabled={loadingKakaoUnlink}
@@ -433,20 +433,20 @@ function MyAccountSection() {
               <p className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wide">연동 방법</p>
               <ol className="space-y-2 text-sm text-[var(--text-secondary)]">
                 <li className="flex gap-2">
-                  <span className="flex-shrink-0 w-5 h-5 rounded-full bg-grape-100 text-grape-700 dark:text-grape-300 text-xs font-bold flex items-center justify-center">1</span>
-                  <span>카카오톡에서 <span className="font-mono bg-warm-100 px-1 rounded">포도가계부</span> 채널을 검색하여 추가하세요</span>
+                  <span className="flex-shrink-0 w-5 h-5 rounded-full bg-grape-100 text-grape-600 text-xs font-bold flex items-center justify-center">1</span>
+                  <span>카카오톡에서 <span className="font-mono bg-[var(--surface-hover)] px-1 rounded">포도가계부</span> 채널을 검색하여 추가하세요</span>
                 </li>
                 <li className="flex gap-2">
-                  <span className="flex-shrink-0 w-5 h-5 rounded-full bg-grape-100 text-grape-700 dark:text-grape-300 text-xs font-bold flex items-center justify-center">2</span>
+                  <span className="flex-shrink-0 w-5 h-5 rounded-full bg-grape-100 text-grape-600 text-xs font-bold flex items-center justify-center">2</span>
                   <span>채널 채팅에서 아무 메시지나 보내 시작하세요</span>
                 </li>
                 <li className="flex gap-2">
-                  <span className="flex-shrink-0 w-5 h-5 rounded-full bg-grape-100 text-grape-700 dark:text-grape-300 text-xs font-bold flex items-center justify-center">3</span>
+                  <span className="flex-shrink-0 w-5 h-5 rounded-full bg-grape-100 text-grape-600 text-xs font-bold flex items-center justify-center">3</span>
                   <span>아래 <strong>연동 코드 발급</strong> 버튼을 눌러 코드를 받으세요 (15분 유효)</span>
                 </li>
                 <li className="flex gap-2">
-                  <span className="flex-shrink-0 w-5 h-5 rounded-full bg-grape-100 text-grape-700 dark:text-grape-300 text-xs font-bold flex items-center justify-center">4</span>
-                  <span>채널 채팅에 <span className="font-mono bg-warm-100 px-1 rounded">/link 발급된코드</span>를 입력하면 연동 완료!</span>
+                  <span className="flex-shrink-0 w-5 h-5 rounded-full bg-grape-100 text-grape-600 text-xs font-bold flex items-center justify-center">4</span>
+                  <span>채널 채팅에 <span className="font-mono bg-[var(--surface-hover)] px-1 rounded">/link 발급된코드</span>를 입력하면 연동 완료!</span>
                 </li>
               </ol>
               <div className="mt-3 bg-grape-50 rounded-lg p-3 text-xs text-[var(--text-secondary)] space-y-1">
@@ -461,12 +461,12 @@ function MyAccountSection() {
               <div className="bg-grape-50 rounded-xl p-4 space-y-3">
                 <p className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wide">발급된 연동 코드</p>
                 <div className="flex items-center justify-between">
-                  <span className="font-mono text-2xl font-bold text-grape-700 dark:text-grape-300 tracking-widest">
+                  <span className="font-mono text-2xl font-bold text-grape-600 tracking-widest">
                     {kakaoLinkCode.code}
                   </span>
                   <button
                     onClick={handleCopyKakaoCode}
-                    className="text-xs text-grape-600 dark:text-grape-400 border border-grape-300 rounded-lg px-3 py-1 hover:bg-grape-100"
+                    className="text-xs text-grape-600 border border-grape-300 rounded-lg px-3 py-1 hover:bg-grape-100"
                   >
                     /link {kakaoLinkCode.code} 복사
                   </button>
@@ -486,7 +486,7 @@ function MyAccountSection() {
                   }}
                 >
                   <p className="text-xs text-[var(--text-tertiary)] mb-1">카카오톡 채널 채팅에 아래 명령어를 입력하세요: (탭하면 선택됩니다)</p>
-                  <p className="selectable font-mono text-sm text-grape-700 dark:text-grape-300 font-bold select-all">/link {kakaoLinkCode.code}</p>
+                  <p className="selectable font-mono text-sm text-grape-600 font-bold select-all">/link {kakaoLinkCode.code}</p>
                 </div>
               </div>
             ) : (
@@ -509,13 +509,13 @@ function MyAccountSection() {
             href={AUTH_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-grape-300 text-grape-700 dark:text-grape-300 text-sm font-medium hover:bg-grape-50 transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-grape-300 text-grape-600 text-sm font-medium hover:bg-grape-50 transition-colors"
           >
             포도 통합 계정 관리 →
           </a>
           <button
             onClick={logout}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-[var(--border-default)] text-[var(--text-secondary)] text-sm font-medium hover:bg-red-50 dark:hover:bg-red-900/20 hover:border-red-300 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-[var(--border-default)] text-[var(--text-secondary)] text-sm font-medium hover:bg-red-50 hover:border-red-300 hover:text-red-600 transition-colors"
           >
             <LogOut className="w-4 h-4" />
             로그아웃
