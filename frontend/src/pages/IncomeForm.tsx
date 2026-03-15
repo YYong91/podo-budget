@@ -270,7 +270,7 @@ export default function IncomeForm() {
         <button
           onClick={() => { setMode('natural'); setPreviewItems(null) }}
           className={`
-            flex-1 px-4 py-3 text-sm font-medium rounded-lg transition-all
+            flex-1 px-3 py-2.5 text-sm font-medium rounded-lg transition-all
             ${mode === 'natural'
               ? 'bg-leaf-600 text-white shadow-sm shadow-leaf-200'
               : 'text-[var(--text-secondary)] hover:bg-[var(--surface-hover)]'
@@ -282,7 +282,7 @@ export default function IncomeForm() {
         <button
           onClick={() => { setMode('form'); setPreviewItems(null) }}
           className={`
-            flex-1 px-4 py-3 text-sm font-medium rounded-lg transition-all
+            flex-1 px-3 py-2.5 text-sm font-medium rounded-lg transition-all
             ${mode === 'form'
               ? 'bg-leaf-600 text-white shadow-sm shadow-leaf-200'
               : 'text-[var(--text-secondary)] hover:bg-[var(--surface-hover)]'

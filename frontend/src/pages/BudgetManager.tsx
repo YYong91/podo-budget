@@ -221,12 +221,12 @@ export default function BudgetManager() {
 
   return (
     <div className="space-y-6">
-      <button onClick={() => navigate('/settings')} className="p-1.5 -ml-1.5 rounded-lg hover:bg-[var(--surface-hover)] transition-colors">
+      <button onClick={() => navigate('/settings')} className="p-2.5 -ml-2.5 rounded-lg hover:bg-[var(--surface-hover)] transition-colors">
         <ArrowLeft className="w-5 h-5 text-[var(--text-secondary)]" />
       </button>
 
       {/* 월 총 예산 카드 */}
-      <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] p-5">
+      <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)]/60 p-5">
         <div className="flex items-center gap-2 mb-4">
           <Wallet className="w-5 h-5 text-grape-600" />
           <h2 className="text-lg font-semibold text-[var(--text-primary)]">월 총 예산</h2>
@@ -278,7 +278,7 @@ export default function BudgetManager() {
 
       {/* 예산 현황 카드 */}
       {alerts.length > 0 && (
-        <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] p-5">
+        <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)]/60 p-5">
           <div className="flex items-center gap-2 mb-4">
             <BarChart3 className="w-5 h-5 text-grape-600" />
             <h2 className="text-lg font-semibold text-[var(--text-primary)]">예산 현황</h2>
@@ -346,7 +346,7 @@ export default function BudgetManager() {
           description="카테고리 관리 페이지에서 카테고리를 먼저 추가해주세요"
         />
       ) : (
-        <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] overflow-hidden">
+        <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)]/60 overflow-hidden">
           <div className="px-5 py-4 border-b border-[var(--border-subtle)]">
             <h2 className="text-base font-semibold text-[var(--text-primary)]">카테고리별 예산</h2>
             <p className="text-xs text-[var(--text-muted)] mt-0.5">

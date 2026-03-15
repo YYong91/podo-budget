@@ -86,7 +86,7 @@ function SubPageWrapper({ children }: { children: React.ReactNode }) {
     <div className="space-y-6">
       <button
         onClick={() => navigate('/settings')}
-        className="p-1.5 -ml-1.5 rounded-lg hover:bg-[var(--surface-hover)] transition-colors"
+        className="p-2.5 -ml-2.5 rounded-lg hover:bg-[var(--surface-hover)] transition-colors"
       >
         <ArrowLeft className="w-5 h-5 text-[var(--text-secondary)]" />
       </button>
