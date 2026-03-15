@@ -320,7 +320,16 @@ export default function GuidePage() {
           </p>
         </ExampleBox>
         <p className="text-[var(--text-tertiary)] text-xs">
-          카카오톡에서 <span className="font-mono">포도가계부</span> 채널을 검색하여 추가하세요.
+          카카오톡에서 <span className="font-mono">포도가계부</span> 채널을 검색하거나{' '}
+          <a
+            href="http://pf.kakao.com/_JsxnxhX/chat"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-grape-600 underline"
+          >
+            채팅 바로가기
+          </a>
+          를 눌러 시작하세요.
         </p>
       </SectionCard>
 
