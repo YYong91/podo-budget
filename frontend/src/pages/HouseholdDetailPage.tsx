@@ -51,7 +51,7 @@ function getRoleBadgeColor(role: string): string {
   }
 }
 
-type TabType = 'members' | 'settings'
+type TabType = 'members' | 'invitations' | 'settings'
 
 export default function HouseholdDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -64,10 +64,13 @@ export default function HouseholdDetailPage() {
     currentHousehold,
     isLoading,
     error,
+    householdInvitations,
     fetchHouseholdDetail,
+    fetchHouseholdInvitations,
     updateHousehold,
     deleteHousehold,
     inviteMember,
+    cancelInvitation,
     updateMemberRole,
     removeMember,
     leaveHousehold,
@@ -105,6 +108,15 @@ export default function HouseholdDetailPage() {
   }, [id, fetchHouseholdDetail, addToast, clearCurrentHousehold])
 
   /**
+   * admin인 경우 초대 목록도 조회
+   */
+  useEffect(() => {
+    if (id && currentHousehold && (currentHousehold.my_role === 'owner' || currentHousehold.my_role === 'admin')) {
+      fetchHouseholdInvitations(Number(id)).catch(() => {})
+    }
+  }, [id, currentHousehold?.my_role, fetchHouseholdInvitations])
+
+  /**
    * 가구 정보가 로드되면 폼 데이터 초기화
    */
   useEffect(() => {
@@ -137,6 +149,8 @@ export default function HouseholdDetailPage() {
       await inviteMember(Number(id), data)
       addToast('success', '초대를 전송했습니다')
       setShowInviteModal(false)
+      // 초대 목록 새로고침
+      await fetchHouseholdInvitations(Number(id)).catch(() => {})
     } catch (err) {
       console.error('멤버 초대 실패:', err)
       addToast('error', '멤버 초대에 실패했습니다')
@@ -316,6 +330,23 @@ export default function HouseholdDetailPage() {
           </button>
           {isAdmin && (
             <button
+              onClick={() => setActiveTab('invitations')}
+              className={`pb-3 px-1 text-sm font-medium border-b-2 transition-colors ${
+                activeTab === 'invitations'
+                  ? 'border-grape-600 text-grape-600'
+                  : 'border-transparent text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]'
+              }`}
+            >
+              초대
+              {householdInvitations.filter(i => i.status === 'pending').length > 0 && (
+                <span className="ml-1.5 inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-grape-500 rounded-full">
+                  {householdInvitations.filter(i => i.status === 'pending').length}
+                </span>
+              )}
+            </button>
+          )}
+          {isAdmin && (
+            <button
               onClick={() => setActiveTab('settings')}
               className={`pb-3 px-1 text-sm font-medium border-b-2 transition-colors ${
                 activeTab === 'settings'
@@ -332,18 +363,6 @@ export default function HouseholdDetailPage() {
       {/* 멤버 탭 */}
       {activeTab === 'members' && (
         <div className="space-y-4">
-          {/* 초대 버튼 (admin 이상) */}
-          {isAdmin && (
-            <div className="flex justify-end">
-              <button
-                onClick={() => setShowInviteModal(true)}
-                className="px-4 py-2 text-sm font-medium text-white bg-grape-600 rounded-lg hover:bg-grape-700 transition-colors"
-              >
-                + 멤버 초대
-              </button>
-            </div>
-          )}
-
           {/* 멤버 목록 */}
           <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] overflow-hidden">
             <div className="overflow-x-auto">
@@ -439,6 +458,80 @@ export default function HouseholdDetailPage() {
               </table>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* 초대 탭 */}
+      {activeTab === 'invitations' && isAdmin && (
+        <div className="space-y-4">
+          <div className="flex justify-end">
+            <button
+              onClick={() => setShowInviteModal(true)}
+              className="px-4 py-2 text-sm font-medium text-white bg-grape-600 rounded-lg hover:bg-grape-700 transition-colors"
+            >
+              + 멤버 초대
+            </button>
+          </div>
+
+          {householdInvitations.length === 0 ? (
+            <div className="text-center py-8 text-sm text-[var(--text-muted)]">
+              보낸 초대가 없습니다
+            </div>
+          ) : (
+            <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] overflow-hidden">
+              <div className="divide-y divide-[var(--border-default)]">
+                {householdInvitations.map((inv) => {
+                  const isPending = inv.status === 'pending'
+                  const statusText: Record<string, string> = {
+                    pending: '대기 중',
+                    accepted: '수락됨',
+                    rejected: '거절됨',
+                    expired: '만료됨',
+                  }
+                  const statusColor: Record<string, string> = {
+                    pending: 'bg-yellow-100 text-yellow-800',
+                    accepted: 'bg-green-100 text-green-800',
+                    rejected: 'bg-warm-100 text-warm-600',
+                    expired: 'bg-warm-100 text-[var(--text-muted)]',
+                  }
+
+                  return (
+                    <div key={inv.id} className="flex items-center justify-between p-4">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium text-[var(--text-primary)] truncate">
+                          {inv.invitee_email}
+                        </p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className={`text-xs px-2 py-0.5 rounded-full ${statusColor[inv.status] || ''}`}>
+                            {statusText[inv.status] || inv.status}
+                          </span>
+                          <span className="text-xs text-[var(--text-muted)]">
+                            {inv.role === 'admin' ? '관리자' : '멤버'}
+                          </span>
+                        </div>
+                      </div>
+                      {isPending && (
+                        <button
+                          onClick={async () => {
+                            if (!confirm(`${inv.invitee_email}의 초대를 취소하시겠습니까?`)) return
+                            try {
+                              await cancelInvitation(Number(id), inv.id)
+                              addToast('success', '초대를 취소했습니다')
+                            } catch {
+                              addToast('error', '초대 취소에 실패했습니다')
+                            }
+                          }}
+                          className="ml-3 text-xs text-rose-600 hover:text-rose-700 font-medium"
+                        >
+                          취소
+                        </button>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
