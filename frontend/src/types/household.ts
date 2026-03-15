@@ -47,6 +47,7 @@ export interface HouseholdInvitation {
   role: 'member' | 'admin'
   status: 'pending' | 'accepted' | 'rejected' | 'expired'
   token?: string
+  email_sent?: boolean
   expires_at: string
   created_at: string
 }

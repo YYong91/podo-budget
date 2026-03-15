@@ -146,8 +146,15 @@ export default function HouseholdDetailPage() {
 
     setIsInviting(true)
     try {
-      await inviteMember(Number(id), data)
-      addToast('success', '초대를 전송했습니다')
+      const result = await inviteMember(Number(id), data)
+      if (result.email_sent === false && result.token) {
+        // 이메일 미발송 — 링크 복사 안내
+        const link = `${window.location.origin}/invitations/accept?token=${result.token}`
+        await navigator.clipboard.writeText(link)
+        addToast('warning', '이메일 발송 실패 — 초대 링크가 클립보드에 복사되었습니다')
+      } else {
+        addToast('success', '초대를 전송했습니다')
+      }
       setShowInviteModal(false)
       // 초대 목록 새로고침
       await fetchHouseholdInvitations(Number(id)).catch(() => {})
