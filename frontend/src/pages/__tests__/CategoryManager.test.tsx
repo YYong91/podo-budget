@@ -54,14 +54,14 @@ describe('CategoryManager', () => {
     it('추가 버튼과 테이블을 포함한 페이지를 표시한다', async () => {
       renderCategoryManager()
       await waitFor(() => {
-        expect(screen.getByRole('button', { name: '+ 추가' })).toBeInTheDocument()
+        expect(screen.getByRole('button', { name: '추가' })).toBeInTheDocument()
       })
     })
 
     it('추가 버튼을 표시한다', async () => {
       renderCategoryManager()
       await waitFor(() => {
-        expect(screen.getByRole('button', { name: '+ 추가' })).toBeInTheDocument()
+        expect(screen.getByRole('button', { name: '추가' })).toBeInTheDocument()
       })
     })
 
@@ -114,10 +114,10 @@ describe('CategoryManager', () => {
       renderCategoryManager()
 
       await waitFor(() => {
-        expect(screen.getByRole('button', { name: '+ 추가' })).toBeInTheDocument()
+        expect(screen.getByRole('button', { name: '추가' })).toBeInTheDocument()
       })
 
-      const addButton = screen.getByRole('button', { name: '+ 추가' })
+      const addButton = screen.getByRole('button', { name: '추가' })
       await user.click(addButton)
 
       await waitFor(() => {
@@ -132,10 +132,10 @@ describe('CategoryManager', () => {
       renderCategoryManager()
 
       await waitFor(() => {
-        expect(screen.getByRole('button', { name: '+ 추가' })).toBeInTheDocument()
+        expect(screen.getByRole('button', { name: '추가' })).toBeInTheDocument()
       })
 
-      const addButton = screen.getByRole('button', { name: '+ 추가' })
+      const addButton = screen.getByRole('button', { name: '추가' })
       await user.click(addButton)
 
       await waitFor(() => {
@@ -159,10 +159,10 @@ describe('CategoryManager', () => {
       renderCategoryManager()
 
       await waitFor(() => {
-        expect(screen.getByRole('button', { name: '+ 추가' })).toBeInTheDocument()
+        expect(screen.getByRole('button', { name: '추가' })).toBeInTheDocument()
       })
 
-      const addButton = screen.getByRole('button', { name: '+ 추가' })
+      const addButton = screen.getByRole('button', { name: '추가' })
       await user.click(addButton)
 
       await waitFor(() => {
@@ -180,10 +180,10 @@ describe('CategoryManager', () => {
       renderCategoryManager()
 
       await waitFor(() => {
-        expect(screen.getByRole('button', { name: '+ 추가' })).toBeInTheDocument()
+        expect(screen.getByRole('button', { name: '추가' })).toBeInTheDocument()
       })
 
-      const addButton = screen.getByRole('button', { name: '+ 추가' })
+      const addButton = screen.getByRole('button', { name: '추가' })
       await user.click(addButton)
 
       await waitFor(() => {

@@ -29,7 +29,7 @@ const THEME_COLOR_LIGHT = '#7c3aed'
 const THEME_COLOR_DARK = '#1a1625'
 
 function getSystemTheme(): 'light' | 'dark' {
-  if (typeof window === 'undefined') return 'light'
+  if (typeof window === 'undefined' || !window.matchMedia) return 'light'
   return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
 }
 
@@ -71,7 +71,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   // system 모드일 때 OS 설정 변경 감지
   useEffect(() => {
-    if (mode !== 'system') return
+    if (mode !== 'system' || !window.matchMedia) return
     const mq = window.matchMedia('(prefers-color-scheme: dark)')
     const handler = (e: MediaQueryListEvent) => {
       applyTheme(e.matches ? 'dark' : 'light')
