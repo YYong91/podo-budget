@@ -45,9 +45,9 @@ function getRoleBadgeColor(role: string): string {
     case 'admin':
       return 'bg-blue-100 text-blue-800'
     case 'member':
-      return 'bg-warm-100 text-warm-800'
+      return 'bg-warm-100 text-[var(--text-primary)]'
     default:
-      return 'bg-warm-100 text-warm-800'
+      return 'bg-warm-100 text-[var(--text-primary)]'
   }
 }
 
@@ -244,10 +244,10 @@ export default function HouseholdDetailPage() {
   if (error && !currentHousehold) {
     return (
       <div className="space-y-6">
-        <button onClick={() => navigate('/households')} className="p-1.5 -ml-1.5 rounded-lg hover:bg-warm-100 transition-colors">
-          <ArrowLeft className="w-5 h-5 text-warm-600" />
+        <button onClick={() => navigate('/households')} className="p-1.5 -ml-1.5 rounded-lg hover:bg-[var(--surface-hover)] transition-colors">
+          <ArrowLeft className="w-5 h-5 text-[var(--text-secondary)]" />
         </button>
-        <div className="bg-white rounded-2xl shadow-sm border border-warm-200">
+        <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)]">
           <ErrorState onRetry={() => id && fetchHouseholdDetail(Number(id))} />
         </div>
       </div>
@@ -281,7 +281,7 @@ export default function HouseholdDetailPage() {
           <div className="flex items-center gap-3">
             <button
               onClick={() => navigate('/households')}
-              className="text-warm-400 hover:text-warm-600 transition-colors"
+              className="text-[var(--text-muted)] hover:text-[var(--text-secondary)] transition-colors"
             >
               <ArrowLeft className="w-5 h-5" />
             </button>
@@ -294,7 +294,7 @@ export default function HouseholdDetailPage() {
             </span>
           </div>
           {currentHousehold.description && (
-            <p className="text-sm text-warm-500 mt-1">
+            <p className="text-sm text-[var(--text-tertiary)] mt-1">
               {currentHousehold.description}
             </p>
           )}
@@ -302,14 +302,14 @@ export default function HouseholdDetailPage() {
       </div>
 
       {/* 탭 */}
-      <div className="border-b border-warm-200">
+      <div className="border-b border-[var(--border-default)]">
         <div className="flex gap-6">
           <button
             onClick={() => setActiveTab('members')}
             className={`pb-3 px-1 text-sm font-medium border-b-2 transition-colors ${
               activeTab === 'members'
                 ? 'border-grape-600 text-grape-600'
-                : 'border-transparent text-warm-500 hover:text-warm-700'
+                : 'border-transparent text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]'
             }`}
           >
             멤버
@@ -320,7 +320,7 @@ export default function HouseholdDetailPage() {
               className={`pb-3 px-1 text-sm font-medium border-b-2 transition-colors ${
                 activeTab === 'settings'
                   ? 'border-grape-600 text-grape-600'
-                  : 'border-transparent text-warm-500 hover:text-warm-700'
+                  : 'border-transparent text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]'
               }`}
             >
               설정
@@ -345,42 +345,42 @@ export default function HouseholdDetailPage() {
           )}
 
           {/* 멤버 목록 */}
-          <div className="bg-white rounded-2xl shadow-sm border border-warm-200 overflow-hidden">
+          <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-warm-50 border-b border-warm-200">
+                <thead className="bg-[var(--surface-elevated)] border-b border-[var(--border-default)]">
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-warm-500 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-[var(--text-tertiary)] uppercase tracking-wider">
                       이름
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-warm-500 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-[var(--text-tertiary)] uppercase tracking-wider">
                       이메일
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-warm-500 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-[var(--text-tertiary)] uppercase tracking-wider">
                       역할
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-warm-500 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-[var(--text-tertiary)] uppercase tracking-wider">
                       가입일
                     </th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-warm-500 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-right text-xs font-medium text-[var(--text-tertiary)] uppercase tracking-wider">
                       관리
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-warm-200">
+                <tbody className="divide-y divide-[var(--border-default)]">
                   {currentHousehold.members.map((member) => {
                     const isMe = member.user_id === user?.id
                     const canManage = isOwner && !isMe && member.role !== 'owner'
 
                     return (
-                      <tr key={member.user_id} className="hover:bg-warm-50">
-                        <td className="px-4 py-3 text-sm font-medium text-warm-900">
+                      <tr key={member.user_id} className="hover:bg-[var(--surface-hover)]">
+                        <td className="px-4 py-3 text-sm font-medium text-[var(--text-primary)]">
                           {member.username}
                           {isMe && (
-                            <span className="ml-2 text-xs text-warm-500">(나)</span>
+                            <span className="ml-2 text-xs text-[var(--text-tertiary)]">(나)</span>
                           )}
                         </td>
-                        <td className="px-4 py-3 text-sm text-warm-600">
+                        <td className="px-4 py-3 text-sm text-[var(--text-secondary)]">
                           {member.email || '-'}
                         </td>
                         <td className="px-4 py-3">
@@ -393,7 +393,7 @@ export default function HouseholdDetailPage() {
                                   e.target.value as MemberRole
                                 )
                               }
-                              className="text-sm px-2 py-1 border border-warm-300 rounded bg-white focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
+                              className="text-sm px-2 py-1 border border-warm-300 rounded bg-[var(--surface-card)] focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
                             >
                               <option value="member">멤버</option>
                               <option value="admin">관리자</option>
@@ -408,7 +408,7 @@ export default function HouseholdDetailPage() {
                             </span>
                           )}
                         </td>
-                        <td className="px-4 py-3 text-sm text-warm-600">
+                        <td className="px-4 py-3 text-sm text-[var(--text-secondary)]">
                           {formatDate(member.joined_at)}
                         </td>
                         <td className="px-4 py-3 text-sm text-right">
@@ -429,7 +429,7 @@ export default function HouseholdDetailPage() {
                               탈퇴
                             </button>
                           ) : (
-                            <span className="text-warm-400">-</span>
+                            <span className="text-[var(--text-muted)]">-</span>
                           )}
                         </td>
                       </tr>
@@ -446,8 +446,8 @@ export default function HouseholdDetailPage() {
       {activeTab === 'settings' && isAdmin && (
         <div className="space-y-6">
           {/* 가구 정보 수정 */}
-          <div className="bg-white rounded-2xl shadow-sm border border-warm-200 p-6">
-            <h2 className="text-lg font-semibold text-warm-900 mb-4">
+          <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] p-6">
+            <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-4">
               가구 정보
             </h2>
 
@@ -455,7 +455,7 @@ export default function HouseholdDetailPage() {
               <div>
                 <label
                   htmlFor="name"
-                  className="block text-sm font-medium text-warm-700 mb-1"
+                  className="block text-sm font-medium text-[var(--text-secondary)] mb-1"
                 >
                   가구 이름
                 </label>
@@ -473,7 +473,7 @@ export default function HouseholdDetailPage() {
               <div>
                 <label
                   htmlFor="description"
-                  className="block text-sm font-medium text-warm-700 mb-1"
+                  className="block text-sm font-medium text-[var(--text-secondary)] mb-1"
                 >
                   설명
                 </label>
@@ -501,7 +501,7 @@ export default function HouseholdDetailPage() {
                           description: currentHousehold.description || '',
                         })
                       }}
-                      className="px-4 py-2 text-sm font-medium text-warm-700 bg-white border border-warm-300 rounded-lg hover:bg-warm-50 transition-colors"
+                      className="px-4 py-2 text-sm font-medium text-[var(--text-secondary)] bg-[var(--surface-card)] border border-warm-300 rounded-lg hover:bg-[var(--surface-hover)] transition-colors"
                     >
                       취소
                     </button>
@@ -527,11 +527,11 @@ export default function HouseholdDetailPage() {
 
           {/* 가구 삭제 (owner만) */}
           {isOwner && (
-            <div className="bg-white rounded-2xl shadow-sm border border-rose-200 p-6">
+            <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-rose-200 p-6">
               <h2 className="text-lg font-semibold text-rose-900 mb-2">
                 위험 영역
               </h2>
-              <p className="text-sm text-warm-600 mb-4">
+              <p className="text-sm text-[var(--text-secondary)] mb-4">
                 가구를 삭제하면 모든 데이터가 영구적으로 삭제됩니다. 이 작업은 되돌릴 수 없습니다.
               </p>
               <button

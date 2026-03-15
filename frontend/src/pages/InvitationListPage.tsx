@@ -170,10 +170,10 @@ export default function InvitationListPage() {
   if (error && myInvitations.length === 0) {
     return (
       <div className="space-y-6">
-        <button onClick={() => navigate('/households')} className="p-1.5 -ml-1.5 rounded-lg hover:bg-warm-100 transition-colors">
-          <ArrowLeft className="w-5 h-5 text-warm-600" />
+        <button onClick={() => navigate('/households')} className="p-1.5 -ml-1.5 rounded-lg hover:bg-[var(--surface-hover)] transition-colors">
+          <ArrowLeft className="w-5 h-5 text-[var(--text-secondary)]" />
         </button>
-        <div className="bg-white rounded-2xl shadow-sm border border-warm-200">
+        <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)]">
           <ErrorState onRetry={fetchMyInvitations} />
         </div>
       </div>
@@ -188,11 +188,11 @@ export default function InvitationListPage() {
       <div>
         <button
           onClick={() => navigate('/households')}
-          className="text-warm-400 hover:text-warm-600 transition-colors"
+          className="text-[var(--text-muted)] hover:text-[var(--text-secondary)] transition-colors"
         >
           <ArrowLeft className="w-5 h-5" />
         </button>
-        <p className="text-sm text-warm-500 mt-2">
+        <p className="text-sm text-[var(--text-tertiary)] mt-2">
           다른 사람이 보낸 가구 초대를 확인하고 수락하세요
         </p>
       </div>
@@ -216,14 +216,14 @@ export default function InvitationListPage() {
             return (
               <div
                 key={invitation.id}
-                className="bg-white rounded-2xl shadow-sm border border-warm-200 p-5"
+                className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] p-5"
               >
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-warm-900 mb-1">
+                    <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-1">
                       {invitation.household_name || '가구 이름 없음'}
                     </h3>
-                    <div className="space-y-1 text-sm text-warm-600">
+                    <div className="space-y-1 text-sm text-[var(--text-secondary)]">
                       {invitation.inviter_username && (
                         <p>
                           <span className="font-medium">초대자:</span>{' '}
@@ -246,7 +246,7 @@ export default function InvitationListPage() {
 
                   {/* 상태 배지 */}
                   {expiryStatus.isExpired && (
-                    <span className="text-xs px-2 py-1 rounded-full bg-warm-100 text-warm-600">
+                    <span className="text-xs px-2 py-1 rounded-full bg-warm-100 text-[var(--text-secondary)]">
                       만료됨
                     </span>
                   )}
@@ -254,11 +254,11 @@ export default function InvitationListPage() {
 
                 {/* 버튼 */}
                 {!expiryStatus.isExpired && invitation.token && (
-                  <div className="flex gap-3 pt-3 border-t border-warm-100">
+                  <div className="flex gap-3 pt-3 border-t border-[var(--border-subtle)]">
                     <button
                       onClick={() => handleReject(invitation.token!)}
                       disabled={isProcessing}
-                      className="flex-1 px-4 py-2 text-sm font-medium text-warm-700 bg-white border border-warm-300 rounded-lg hover:bg-warm-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="flex-1 px-4 py-2 text-sm font-medium text-[var(--text-secondary)] bg-[var(--surface-card)] border border-warm-300 rounded-lg hover:bg-[var(--surface-hover)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {isProcessing ? '처리 중...' : '거절'}
                     </button>

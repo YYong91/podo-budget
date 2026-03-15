@@ -290,20 +290,20 @@ export default function ExpenseForm() {
       <Link
         to="/expenses"
         aria-label="뒤로가기"
-        className="p-2 -ml-2 rounded-lg hover:bg-warm-100 transition-colors inline-block"
+        className="p-2 -ml-2 rounded-lg hover:bg-[var(--surface-hover)] transition-colors inline-block"
       >
-        <ArrowLeft className="w-5 h-5 text-warm-600" />
+        <ArrowLeft className="w-5 h-5 text-[var(--text-secondary)]" />
       </Link>
 
       {/* 모드 전환 탭 */}
-      <div className="bg-white rounded-xl shadow-sm border border-warm-200/60 p-2 flex gap-2">
+      <div className="bg-[var(--surface-card)] rounded-xl shadow-sm border border-[var(--border-default)]/60 p-2 flex gap-2">
         <button
           onClick={() => { setMode('natural'); setPreviewItems(null) }}
           className={`
             flex-1 px-3 py-2.5 text-sm font-medium rounded-lg transition-all
             ${mode === 'natural'
               ? 'bg-grape-600 text-white shadow-sm shadow-grape-200'
-              : 'text-warm-600 hover:bg-warm-50'
+              : 'text-[var(--text-secondary)] hover:bg-[var(--surface-hover)]'
             }
           `}
         >
@@ -315,7 +315,7 @@ export default function ExpenseForm() {
             flex-1 px-3 py-2.5 text-sm font-medium rounded-lg transition-all
             ${mode === 'form'
               ? 'bg-grape-600 text-white shadow-sm shadow-grape-200'
-              : 'text-warm-600 hover:bg-warm-50'
+              : 'text-[var(--text-secondary)] hover:bg-[var(--surface-hover)]'
             }
           `}
         >
@@ -327,7 +327,7 @@ export default function ExpenseForm() {
             flex-1 px-3 py-2.5 text-sm font-medium rounded-lg transition-all flex items-center justify-center gap-1.5
             ${mode === 'ocr'
               ? 'bg-grape-600 text-white shadow-sm shadow-grape-200'
-              : 'text-warm-600 hover:bg-warm-50'
+              : 'text-[var(--text-secondary)] hover:bg-[var(--surface-hover)]'
             }
           `}
         >
@@ -338,9 +338,9 @@ export default function ExpenseForm() {
 
       {/* 자연어 입력 모드 */}
       {mode === 'natural' && !previewItems && (
-        <form onSubmit={handlePreview} className="bg-white rounded-2xl shadow-sm border border-warm-200/60 p-6 space-y-4">
+        <form onSubmit={handlePreview} className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)]/60 p-6 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-warm-700 mb-2">
+            <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
               말하듯이 지출 입력하기
             </label>
             <textarea
@@ -351,7 +351,7 @@ export default function ExpenseForm() {
               className="w-full px-4 py-3 bg-grape-50/50 border border-warm-300 rounded-xl focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500 resize-none"
               disabled={loading}
             />
-            <p className="mt-2 text-xs text-warm-400">
+            <p className="mt-2 text-xs text-[var(--text-muted)]">
               날짜, 내용, 금액을 편하게 입력하면 AI가 자동으로 분석합니다. 결과를 확인한 뒤 저장됩니다.
             </p>
           </div>
@@ -368,19 +368,19 @@ export default function ExpenseForm() {
 
       {/* OCR 입력 모드 */}
       {mode === 'ocr' && !previewItems && (
-        <div className="bg-white rounded-2xl shadow-sm border border-warm-200/60 p-6 space-y-4">
+        <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)]/60 p-6 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-warm-700 mb-2">
+            <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
               결제 화면 이미지 인식
             </label>
-            <p className="text-xs text-warm-400 mb-4">
+            <p className="text-xs text-[var(--text-muted)] mb-4">
               토스, 카카오페이, 카드사 앱 결제 화면이나 영수증 사진을 업로드하면 AI가 자동으로 금액과 가맹점을 인식합니다.
             </p>
 
             {/* 이미지 미리보기 */}
             {ocrPreview && (
-              <div className="mb-4 rounded-xl overflow-hidden border border-warm-200">
-                <img src={ocrPreview} alt="업로드된 이미지" className="w-full max-h-64 object-contain bg-warm-50" />
+              <div className="mb-4 rounded-xl overflow-hidden border border-[var(--border-default)]">
+                <img src={ocrPreview} alt="업로드된 이미지" className="w-full max-h-64 object-contain bg-[var(--surface-elevated)]" />
               </div>
             )}
 
@@ -390,10 +390,10 @@ export default function ExpenseForm() {
               onClick={() => fileInputRef.current?.click()}
             >
               <Camera className="w-10 h-10 text-warm-300 mx-auto mb-3" />
-              <p className="text-sm font-medium text-warm-600">
+              <p className="text-sm font-medium text-[var(--text-secondary)]">
                 {loading ? '인식 중...' : '이미지 선택 / 카메라 촬영'}
               </p>
-              <p className="text-xs text-warm-400 mt-1">
+              <p className="text-xs text-[var(--text-muted)] mt-1">
                 JPG, PNG, WEBP · 최대 10MB
               </p>
             </div>
@@ -424,7 +424,7 @@ export default function ExpenseForm() {
                 })
               }
             }}
-            className="w-full px-4 py-3 text-sm font-medium text-grape-700 border border-grape-300 bg-grape-50 rounded-xl hover:bg-grape-100 transition-colors disabled:opacity-50"
+            className="w-full px-4 py-3 text-sm font-medium text-grape-700 dark:text-grape-300 border border-grape-300 bg-grape-50 rounded-xl hover:bg-grape-100 transition-colors disabled:opacity-50"
           >
             갤러리에서 선택
           </button>
@@ -436,8 +436,8 @@ export default function ExpenseForm() {
         <div className="space-y-4">
           {/* OCR 원본 이미지 */}
           {ocrPreview && (
-            <div className="bg-white rounded-2xl border border-warm-200/60 overflow-hidden">
-              <img src={ocrPreview} alt="인식된 이미지" className="w-full max-h-40 object-contain bg-warm-50" />
+            <div className="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)]/60 overflow-hidden">
+              <img src={ocrPreview} alt="인식된 이미지" className="w-full max-h-40 object-contain bg-[var(--surface-elevated)]" />
             </div>
           )}
 
@@ -448,9 +448,9 @@ export default function ExpenseForm() {
           </div>
 
           {previewItems.map((item, index) => (
-            <div key={index} className="bg-white rounded-2xl shadow-sm border border-warm-200/60 border-l-4 border-l-grape-400 p-5 space-y-4">
+            <div key={index} className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)]/60 border-l-4 border-l-grape-400 p-5 space-y-4">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-warm-500">지출 #{index + 1}</span>
+                <span className="text-sm font-medium text-[var(--text-tertiary)]">지출 #{index + 1}</span>
                 {previewItems.length > 1 && (
                   <button
                     onClick={() => removePreviewItem(index)}
@@ -463,9 +463,9 @@ export default function ExpenseForm() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs text-warm-500 mb-1">금액</label>
+                  <label className="block text-xs text-[var(--text-tertiary)] mb-1">금액</label>
                   <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-warm-500 text-sm">₩</span>
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)] text-sm">₩</span>
                     <input
                       type="number"
                       value={item.amount}
@@ -477,7 +477,7 @@ export default function ExpenseForm() {
                 </div>
 
                 <div>
-                  <label className="block text-xs text-warm-500 mb-1">날짜</label>
+                  <label className="block text-xs text-[var(--text-tertiary)] mb-1">날짜</label>
                   <input
                     type="date"
                     value={item.date.slice(0, 10)}
@@ -487,7 +487,7 @@ export default function ExpenseForm() {
                 </div>
 
                 <div>
-                  <label className="block text-xs text-warm-500 mb-1">설명</label>
+                  <label className="block text-xs text-[var(--text-tertiary)] mb-1">설명</label>
                   <input
                     type="text"
                     value={item.description}
@@ -497,7 +497,7 @@ export default function ExpenseForm() {
                 </div>
 
                 <div>
-                  <label className="block text-xs text-warm-500 mb-1">카테고리</label>
+                  <label className="block text-xs text-[var(--text-tertiary)] mb-1">카테고리</label>
                   <select
                     value={item.category_id ?? ''}
                     onChange={(e) => updatePreviewItem(index, 'category_id', e.target.value ? Number(e.target.value) : null)}
@@ -530,7 +530,7 @@ export default function ExpenseForm() {
                       <button
                         type="button"
                         onClick={() => { setShowNewCategoryFor(null); setNewCategoryName('') }}
-                        className="px-2.5 py-1.5 text-xs font-medium text-warm-600 bg-warm-100 rounded-lg hover:bg-warm-200"
+                        className="px-2.5 py-1.5 text-xs font-medium text-[var(--text-secondary)] bg-[var(--surface-hover)] rounded-lg hover:bg-[var(--surface-hover)]"
                       >
                         취소
                       </button>
@@ -547,7 +547,7 @@ export default function ExpenseForm() {
                 </div>
 
                 <div className="sm:col-span-2">
-                  <label className="block text-xs text-warm-500 mb-1">메모 (선택)</label>
+                  <label className="block text-xs text-[var(--text-tertiary)] mb-1">메모 (선택)</label>
                   <input
                     type="text"
                     value={item.memo ?? ''}
@@ -563,7 +563,7 @@ export default function ExpenseForm() {
           <div className="flex gap-3">
             <button
               onClick={() => { setPreviewItems(null); setOcrPreview(null) }}
-              className="flex-1 px-4 py-3 text-sm font-medium text-warm-700 bg-warm-100 rounded-xl hover:bg-warm-200 transition-colors"
+              className="flex-1 px-4 py-3 text-sm font-medium text-[var(--text-secondary)] bg-[var(--surface-hover)] rounded-xl hover:bg-[var(--surface-hover)] transition-colors"
               disabled={loading}
             >
               다시 선택
@@ -589,9 +589,9 @@ export default function ExpenseForm() {
           </div>
 
           {previewItems.map((item, index) => (
-            <div key={index} className="bg-white rounded-2xl shadow-sm border border-warm-200/60 border-l-4 border-l-grape-400 p-5 space-y-4">
+            <div key={index} className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)]/60 border-l-4 border-l-grape-400 p-5 space-y-4">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-warm-500">지출 #{index + 1}</span>
+                <span className="text-sm font-medium text-[var(--text-tertiary)]">지출 #{index + 1}</span>
                 {previewItems.length > 1 && (
                   <button
                     onClick={() => removePreviewItem(index)}
@@ -605,9 +605,9 @@ export default function ExpenseForm() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {/* 금액 */}
                 <div>
-                  <label className="block text-xs text-warm-500 mb-1">금액</label>
+                  <label className="block text-xs text-[var(--text-tertiary)] mb-1">금액</label>
                   <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-warm-500 text-sm">₩</span>
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)] text-sm">₩</span>
                     <input
                       type="number"
                       value={item.amount}
@@ -620,7 +620,7 @@ export default function ExpenseForm() {
 
                 {/* 날짜 */}
                 <div>
-                  <label className="block text-xs text-warm-500 mb-1">날짜</label>
+                  <label className="block text-xs text-[var(--text-tertiary)] mb-1">날짜</label>
                   <input
                     type="date"
                     value={item.date.slice(0, 10)}
@@ -631,7 +631,7 @@ export default function ExpenseForm() {
 
                 {/* 설명 */}
                 <div>
-                  <label className="block text-xs text-warm-500 mb-1">설명</label>
+                  <label className="block text-xs text-[var(--text-tertiary)] mb-1">설명</label>
                   <input
                     type="text"
                     value={item.description}
@@ -642,7 +642,7 @@ export default function ExpenseForm() {
 
                 {/* 카테고리 */}
                 <div>
-                  <label className="block text-xs text-warm-500 mb-1">카테고리</label>
+                  <label className="block text-xs text-[var(--text-tertiary)] mb-1">카테고리</label>
                   <select
                     value={item.category_id ?? ''}
                     onChange={(e) => updatePreviewItem(index, 'category_id', e.target.value ? Number(e.target.value) : null)}
@@ -675,7 +675,7 @@ export default function ExpenseForm() {
                       <button
                         type="button"
                         onClick={() => { setShowNewCategoryFor(null); setNewCategoryName('') }}
-                        className="px-2.5 py-1.5 text-xs font-medium text-warm-600 bg-warm-100 rounded-lg hover:bg-warm-200"
+                        className="px-2.5 py-1.5 text-xs font-medium text-[var(--text-secondary)] bg-[var(--surface-hover)] rounded-lg hover:bg-[var(--surface-hover)]"
                       >
                         취소
                       </button>
@@ -693,7 +693,7 @@ export default function ExpenseForm() {
 
                 {/* 메모 (선택) */}
                 <div className="sm:col-span-2">
-                  <label className="block text-xs text-warm-500 mb-1">메모 (선택)</label>
+                  <label className="block text-xs text-[var(--text-tertiary)] mb-1">메모 (선택)</label>
                   <input
                     type="text"
                     value={item.memo ?? ''}
@@ -710,7 +710,7 @@ export default function ExpenseForm() {
           <div className="flex gap-3">
             <button
               onClick={() => { setPreviewItems(null) }}
-              className="flex-1 px-4 py-3 text-sm font-medium text-warm-700 bg-warm-100 rounded-xl hover:bg-warm-200 transition-colors"
+              className="flex-1 px-4 py-3 text-sm font-medium text-[var(--text-secondary)] bg-[var(--surface-hover)] rounded-xl hover:bg-[var(--surface-hover)] transition-colors"
               disabled={loading}
             >
               다시 입력
@@ -728,14 +728,14 @@ export default function ExpenseForm() {
 
       {/* 폼 입력 모드 */}
       {mode === 'form' && (
-        <form onSubmit={handleFormSubmit} className="bg-white rounded-2xl shadow-sm border border-warm-200/60 p-6 space-y-5">
+        <form onSubmit={handleFormSubmit} className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)]/60 p-6 space-y-5">
           {/* 금액 (필수) */}
           <div>
-            <label htmlFor="expense-amount" className="block text-sm font-medium text-warm-700 mb-2">
+            <label htmlFor="expense-amount" className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
               금액 <span className="text-rose-500">*</span>
             </label>
             <div className="relative">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-warm-500">₩</span>
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)]">₩</span>
               <input
                 id="expense-amount"
                 type="number"
@@ -752,7 +752,7 @@ export default function ExpenseForm() {
 
           {/* 설명 (필수) */}
           <div>
-            <label htmlFor="expense-description" className="block text-sm font-medium text-warm-700 mb-2">
+            <label htmlFor="expense-description" className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
               설명 <span className="text-rose-500">*</span>
             </label>
             <input
@@ -768,7 +768,7 @@ export default function ExpenseForm() {
 
           {/* 카테고리 (선택) */}
           <div>
-            <label htmlFor="expense-category" className="block text-sm font-medium text-warm-700 mb-2">
+            <label htmlFor="expense-category" className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
               카테고리
             </label>
             <select
@@ -807,7 +807,7 @@ export default function ExpenseForm() {
                 <button
                   type="button"
                   onClick={() => { setShowNewCategoryFor(null); setNewCategoryName('') }}
-                  className="px-3 py-2 text-sm font-medium text-warm-600 bg-warm-100 rounded-lg hover:bg-warm-200"
+                  className="px-3 py-2 text-sm font-medium text-[var(--text-secondary)] bg-[var(--surface-hover)] rounded-lg hover:bg-[var(--surface-hover)]"
                 >
                   취소
                 </button>
@@ -825,7 +825,7 @@ export default function ExpenseForm() {
 
           {/* 날짜 (기본 오늘) */}
           <div>
-            <label htmlFor="expense-date" className="block text-sm font-medium text-warm-700 mb-2">
+            <label htmlFor="expense-date" className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
               날짜 <span className="text-rose-500">*</span>
             </label>
             <input
@@ -840,7 +840,7 @@ export default function ExpenseForm() {
 
           {/* 메모 (선택) */}
           <div>
-            <label htmlFor="expense-memo" className="block text-sm font-medium text-warm-700 mb-2">
+            <label htmlFor="expense-memo" className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
               메모
             </label>
             <input
@@ -865,11 +865,11 @@ export default function ExpenseForm() {
                 disabled={loading}
               />
               <div className={`w-10 h-6 rounded-full transition-colors ${formData.exclude_from_stats ? 'bg-warm-400' : 'bg-warm-200'}`} />
-              <div className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${formData.exclude_from_stats ? 'translate-x-4' : ''}`} />
+              <div className={`absolute top-1 left-1 w-4 h-4 bg-[var(--surface-card)] rounded-full shadow transition-transform ${formData.exclude_from_stats ? 'translate-x-4' : ''}`} />
             </div>
             <div>
-              <span className="text-sm font-medium text-warm-700">통계에서 제외</span>
-              <p className="text-xs text-warm-400">저축, 퇴직금 등 비정형 거래를 차트/통계에서 제외합니다</p>
+              <span className="text-sm font-medium text-[var(--text-secondary)]">통계에서 제외</span>
+              <p className="text-xs text-[var(--text-muted)]">저축, 퇴직금 등 비정형 거래를 차트/통계에서 제외합니다</p>
             </div>
           </label>
 
@@ -878,7 +878,7 @@ export default function ExpenseForm() {
             <button
               type="button"
               onClick={() => navigate('/expenses')}
-              className="flex-1 px-4 py-3 text-sm font-medium text-warm-700 bg-warm-100 rounded-xl hover:bg-warm-200 transition-colors"
+              className="flex-1 px-4 py-3 text-sm font-medium text-[var(--text-secondary)] bg-[var(--surface-hover)] rounded-xl hover:bg-[var(--surface-hover)] transition-colors"
               disabled={loading}
             >
               취소

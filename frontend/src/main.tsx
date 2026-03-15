@@ -4,6 +4,7 @@ import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import { ToastProvider } from './contexts/ToastContext'
 import { AuthProvider } from './contexts/AuthContext'
+import { ThemeProvider } from './contexts/ThemeContext'
 import { initSentry, getErrorBoundary } from './utils/sentry'
 import './index.css'
 import App from './App.tsx'
@@ -41,11 +42,13 @@ async function bootstrap() {
   const appTree = (
     <StrictMode>
       <BrowserRouter>
-        <AuthProvider>
-          <ToastProvider>
-            <App />
-          </ToastProvider>
-        </AuthProvider>
+        <ThemeProvider>
+          <AuthProvider>
+            <ToastProvider>
+              <App />
+            </ToastProvider>
+          </AuthProvider>
+        </ThemeProvider>
       </BrowserRouter>
     </StrictMode>
   )

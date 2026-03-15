@@ -18,6 +18,14 @@ export interface Changelog {
 
 export const changelogs: Changelog[] = [
   {
+    version: '1.10.0',
+    date: '2026-03-15',
+    title: '다크모드 지원',
+    items: [
+      { tag: '신규', text: '다크모드 지원 — 설정 > 화면 모드에서 라이트/다크/시스템 설정 선택 가능' },
+    ],
+  },
+  {
     version: '1.9.0',
     date: '2026-03-14',
     title: '카카오톡 채널 봇 연동',

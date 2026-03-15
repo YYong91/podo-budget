@@ -41,21 +41,21 @@ export default function FloatingActionButton() {
         <div className="flex flex-col gap-2 mb-1 animate-in fade-in slide-in-from-bottom-2 duration-150">
           <button
             onClick={() => handleAction('/expenses/new')}
-            className="flex items-center gap-3 pl-4 pr-5 py-3 bg-white rounded-2xl shadow-lg border border-warm-200 hover:bg-grape-50 transition-colors"
+            className="flex items-center gap-3 pl-4 pr-5 py-3 bg-[var(--surface-card)] rounded-2xl shadow-lg border border-[var(--border-default)] hover:bg-grape-50 transition-colors"
           >
             <div className="w-9 h-9 rounded-full bg-grape-100 flex items-center justify-center">
               <Receipt className="w-4.5 h-4.5 text-grape-600" />
             </div>
-            <span className="text-sm font-medium text-warm-800">지출 입력</span>
+            <span className="text-sm font-medium text-[var(--text-primary)]">지출 입력</span>
           </button>
           <button
             onClick={() => handleAction('/income/new')}
-            className="flex items-center gap-3 pl-4 pr-5 py-3 bg-white rounded-2xl shadow-lg border border-warm-200 hover:bg-leaf-50 transition-colors"
+            className="flex items-center gap-3 pl-4 pr-5 py-3 bg-[var(--surface-card)] rounded-2xl shadow-lg border border-[var(--border-default)] hover:bg-leaf-50 transition-colors"
           >
             <div className="w-9 h-9 rounded-full bg-leaf-100 flex items-center justify-center">
               <Wallet className="w-4.5 h-4.5 text-leaf-600" />
             </div>
-            <span className="text-sm font-medium text-warm-800">수입 입력</span>
+            <span className="text-sm font-medium text-[var(--text-primary)]">수입 입력</span>
           </button>
         </div>
       )}

@@ -34,7 +34,7 @@ const sections = [
 ] as const
 
 function ExampleBox({ children }: { children: React.ReactNode }) {
-  return <div className="bg-warm-50 rounded-lg p-3 text-sm text-warm-700 space-y-1">{children}</div>
+  return <div className="bg-[var(--surface-elevated)] rounded-lg p-3 text-sm text-[var(--text-secondary)] space-y-1">{children}</div>
 }
 
 function SectionCard({
@@ -49,14 +49,14 @@ function SectionCard({
   children: React.ReactNode
 }) {
   return (
-    <section id={id} className="bg-white rounded-2xl shadow-sm border border-warm-200 p-6 scroll-mt-4">
+    <section id={id} className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] p-6 scroll-mt-4">
       <div className="flex items-center gap-3 mb-4">
         <div className="w-9 h-9 rounded-xl bg-grape-100 flex items-center justify-center">
           <Icon className="w-5 h-5 text-grape-600" />
         </div>
-        <h2 className="text-lg font-semibold text-warm-900">{title}</h2>
+        <h2 className="text-lg font-semibold text-[var(--text-primary)]">{title}</h2>
       </div>
-      <div className="space-y-3 text-sm text-warm-700 leading-relaxed">{children}</div>
+      <div className="space-y-3 text-sm text-[var(--text-secondary)] leading-relaxed">{children}</div>
     </section>
   )
 }
@@ -68,22 +68,22 @@ export default function GuidePage() {
     <div className="space-y-6">
       <button
         onClick={() => navigate('/settings')}
-        className="w-9 h-9 flex items-center justify-center rounded-xl border border-warm-200 hover:bg-warm-50 transition-colors"
+        className="w-9 h-9 flex items-center justify-center rounded-xl border border-[var(--border-default)] hover:bg-[var(--surface-hover)] transition-colors"
       >
-        <ArrowLeft className="w-5 h-5 text-warm-600" />
+        <ArrowLeft className="w-5 h-5 text-[var(--text-secondary)]" />
       </button>
 
       {/* 목차 */}
       <div className="bg-grape-50 rounded-2xl border border-grape-100 p-5">
-        <h2 className="text-sm font-semibold text-grape-700 mb-3">목차</h2>
+        <h2 className="text-sm font-semibold text-grape-700 dark:text-grape-300 mb-3">목차</h2>
         <ol className="space-y-1.5">
           {sections.map((s, i) => (
             <li key={s.id}>
               <a
                 href={`#${s.id}`}
-                className="flex items-center gap-2 text-sm text-warm-700 hover:text-grape-600 transition-colors"
+                className="flex items-center gap-2 text-sm text-[var(--text-secondary)] hover:text-grape-600 transition-colors"
               >
-                <span className="w-5 text-right text-warm-400 text-xs">{i + 1}.</span>
+                <span className="w-5 text-right text-[var(--text-muted)] text-xs">{i + 1}.</span>
                 <s.icon className="w-4 h-4 text-grape-400" />
                 <span>{s.label}</span>
               </a>
@@ -112,7 +112,7 @@ export default function GuidePage() {
             <code className="bg-warm-100 px-1.5 rounded">"월급 320만원 받았어"</code> → 수입 3,200,000원 자동 등록
           </p>
         </ExampleBox>
-        <p className="text-warm-500 text-xs">
+        <p className="text-[var(--text-tertiary)] text-xs">
           AI가 분류한 결과를 프리뷰로 보여주므로, 확인 후 저장하면 됩니다. 카테고리나 금액이 다르면 수정할 수 있어요.
         </p>
       </SectionCard>
@@ -217,7 +217,7 @@ export default function GuidePage() {
           <p>
             <strong>AI 심층 분석:</strong> 수입/지출/예산/자산을 종합 분석하여 맞춤 인사이트 제공
           </p>
-          <p className="text-xs text-warm-500 mt-1">
+          <p className="text-xs text-[var(--text-tertiary)] mt-1">
             자산 정보를 연동하면 더 풍부한 분석을 받을 수 있어요.
           </p>
         </ExampleBox>
@@ -280,7 +280,7 @@ export default function GuidePage() {
             <strong>조회:</strong> <code className="bg-warm-100 px-1 rounded">"이번 달 얼마 썼어?"</code>로 현황 확인
           </p>
         </ExampleBox>
-        <p className="text-warm-500 text-xs">
+        <p className="text-[var(--text-tertiary)] text-xs">
           봇 주소: <span className="font-mono">@homenrich_bot</span> (
           <a
             href="https://t.me/homenrich_bot"
@@ -310,7 +310,7 @@ export default function GuidePage() {
             <strong>조회:</strong> <code className="bg-warm-100 px-1 rounded">/report</code>로 이번 달 지출 요약 확인
           </p>
         </ExampleBox>
-        <p className="text-warm-500 text-xs">
+        <p className="text-[var(--text-tertiary)] text-xs">
           카카오톡에서 <span className="font-mono">포도가계부</span> 채널을 검색하여 추가하세요.
         </p>
       </SectionCard>
@@ -319,25 +319,25 @@ export default function GuidePage() {
       <SectionCard id="tips" icon={Lightbulb} title="팁과 단축키">
         <div className="space-y-3">
           <div>
-            <p className="font-semibold text-warm-800 mb-1">홈 화면에 추가하기 (PWA)</p>
+            <p className="font-semibold text-[var(--text-primary)] mb-1">홈 화면에 추가하기 (PWA)</p>
             <p>
               Safari(iOS) 또는 Chrome(Android)에서 <strong>"홈 화면에 추가"</strong>를 누르면 앱처럼 사용할 수
               있습니다.
             </p>
           </div>
           <div>
-            <p className="font-semibold text-warm-800 mb-1">가계부가 첫 화면</p>
+            <p className="font-semibold text-[var(--text-primary)] mb-1">가계부가 첫 화면</p>
             <p>앱을 열면 바로 이번 달 거래 내역이 표시됩니다. 캘린더와 함께 소비 패턴을 한눈에 파악하세요.</p>
           </div>
           <div>
-            <p className="font-semibold text-warm-800 mb-1">새소식 (업데이트 알림)</p>
+            <p className="font-semibold text-[var(--text-primary)] mb-1">새소식 (업데이트 알림)</p>
             <p>
               새로운 기능이 추가되면 사이드바의 <strong>설정</strong> 아이콘에 빨간 점이 표시됩니다.
               설정 → <strong>새소식</strong>에서 전체 업데이트 내역을 확인할 수 있어요.
             </p>
           </div>
           <div>
-            <p className="font-semibold text-warm-800 mb-1">자연어 입력 팁</p>
+            <p className="font-semibold text-[var(--text-primary)] mb-1">자연어 입력 팁</p>
             <ExampleBox>
               <p>
                 여러 건 한 번에: <code className="bg-warm-100 px-1 rounded">"택시 2만원, 점심 9천원"</code>

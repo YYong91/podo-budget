@@ -37,17 +37,17 @@ export default function TransactionItem({
   return (
     <Link
       to={detailPath}
-      className={`flex flex-col gap-1 px-4 py-3 hover:bg-warm-50/50 transition-colors ${
+      className={`flex flex-col gap-1 px-4 py-3 hover:bg-[var(--surface-hover)] transition-colors ${
         excludeFromStats ? 'opacity-50' : ''
       }`}
     >
       <div className="flex items-center justify-between gap-2">
-        <span className="text-sm font-medium text-warm-900 truncate">
+        <span className="text-sm font-medium text-[var(--text-primary)] truncate">
           {description}
         </span>
         <span
           className={`text-sm font-semibold whitespace-nowrap ${
-            type === 'income' ? 'text-leaf-600' : 'text-warm-900'
+            type === 'income' ? 'text-leaf-600 dark:text-leaf-400' : 'text-[var(--text-primary)]'
           }`}
         >
           {type === 'expense' ? '-' : '+'}{formatAmount(amount)}
@@ -62,17 +62,17 @@ export default function TransactionItem({
           }}
           className={`text-xs px-2 py-0.5 rounded-full transition-colors ${
             type === 'income'
-              ? 'bg-leaf-50 text-leaf-700 hover:bg-leaf-100'
-              : 'bg-grape-50 text-grape-700 hover:bg-grape-100'
+              ? 'bg-leaf-50 text-leaf-700 dark:text-leaf-400 hover:bg-leaf-100'
+              : 'bg-grape-50 text-grape-700 dark:text-grape-300 hover:bg-grape-100'
           }`}
         >
           {category?.name ?? '미분류'}
         </button>
         {isRecurring && (
-          <span className="text-xs bg-warm-200 text-warm-600 px-1.5 py-0.5 rounded-full">정기</span>
+          <span className="text-xs bg-warm-200 text-[var(--text-secondary)] px-1.5 py-0.5 rounded-full">정기</span>
         )}
         {excludeFromStats && (
-          <span className="text-xs bg-warm-100 text-warm-500 px-1.5 py-0.5 rounded-full">통계제외</span>
+          <span className="text-xs bg-warm-100 text-[var(--text-tertiary)] px-1.5 py-0.5 rounded-full">통계제외</span>
         )}
       </div>
     </Link>

@@ -291,7 +291,7 @@ export default function AssetForm() {
 
   return (
     <div className="max-w-xl mx-auto space-y-6">
-      <Link to="/assets" aria-label="뒤로가기" className="p-2 -ml-2 rounded-lg hover:bg-warm-100 text-warm-500 inline-block">
+      <Link to="/assets" aria-label="뒤로가기" className="p-2 -ml-2 rounded-lg hover:bg-[var(--surface-hover)] text-[var(--text-tertiary)] inline-block">
         <ArrowLeft className="w-5 h-5" />
       </Link>
 
@@ -303,7 +303,7 @@ export default function AssetForm() {
               key={m}
               onClick={() => { setMode(m); setPreviewItems(null) }}
               className={`flex-1 py-2 text-sm font-medium rounded-lg transition-colors ${
-                mode === m ? 'bg-white text-grape-700 shadow-sm' : 'text-warm-500 hover:text-warm-700'
+                mode === m ? 'bg-[var(--surface-card)] text-grape-700 shadow-sm' : 'text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]'
               }`}
             >
               {m === 'natural' ? '간편 입력' : '직접 입력'}
@@ -315,11 +315,11 @@ export default function AssetForm() {
       {/* 자연어 모드 */}
       {mode === 'natural' && !isEdit && (
         <div className="space-y-4">
-          <div className="bg-white rounded-2xl border border-warm-200/60 shadow-sm p-5 space-y-3">
-            <p className="text-sm text-warm-500">
+          <div className="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)]/60 shadow-sm p-5 space-y-3">
+            <p className="text-sm text-[var(--text-tertiary)]">
               보유 자산을 자유롭게 입력하면 자동으로 분석해드립니다.
             </p>
-            <p className="text-xs text-warm-400">
+            <p className="text-xs text-[var(--text-muted)]">
               예) "삼성전자 100주 7만원에 매수, 비트코인 0.5개, 신한 적금 500만원, 주담대 2억 3.5%"
             </p>
             <textarea
@@ -327,7 +327,7 @@ export default function AssetForm() {
               onChange={e => setNaturalInput(e.target.value)}
               placeholder="보유 자산을 입력하세요..."
               rows={4}
-              className="w-full border border-warm-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-grape-300 resize-none"
+              className="w-full border border-[var(--border-default)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-grape-300 resize-none"
             />
             <button
               onClick={handleNaturalParse}
@@ -341,17 +341,17 @@ export default function AssetForm() {
 
           {/* 프리뷰 */}
           {previewItems && (
-            <div className="bg-white rounded-2xl border border-warm-200/60 shadow-sm p-5 space-y-3">
-              <h3 className="text-sm font-semibold text-warm-700">분석 결과 ({previewItems.length}건)</h3>
+            <div className="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)]/60 shadow-sm p-5 space-y-3">
+              <h3 className="text-sm font-semibold text-[var(--text-secondary)]">분석 결과 ({previewItems.length}건)</h3>
               <div className="space-y-2">
                 {previewItems.map((item, i) => (
-                  <div key={i} className="flex items-center justify-between p-3 bg-warm-50 rounded-lg text-sm">
+                  <div key={i} className="flex items-center justify-between p-3 bg-[var(--surface-elevated)] rounded-lg text-sm">
                     <div>
-                      <span className="font-medium text-warm-800">{item.name}</span>
-                      <span className="ml-2 text-xs text-warm-400">{TYPE_LABELS[item.type as AssetType] ?? item.type}</span>
+                      <span className="font-medium text-[var(--text-primary)]">{item.name}</span>
+                      <span className="ml-2 text-xs text-[var(--text-muted)]">{TYPE_LABELS[item.type as AssetType] ?? item.type}</span>
                       {item.ticker && <span className="ml-1 text-xs text-grape-600">{item.ticker}</span>}
                     </div>
-                    <div className="text-right text-xs text-warm-500">
+                    <div className="text-right text-xs text-[var(--text-tertiary)]">
                       {item.quantity != null && <div>수량 {item.quantity}</div>}
                       {item.manual_value != null && <div>₩{item.manual_value.toLocaleString()}</div>}
                       {item.avg_buy_price != null && <div>매입가 ₩{item.avg_buy_price.toLocaleString()}</div>}
@@ -374,10 +374,10 @@ export default function AssetForm() {
 
       {/* 직접 입력 모드 */}
       {(mode === 'direct' || isEdit) && (
-        <form onSubmit={handleDirectSave} className="bg-white rounded-2xl border border-warm-200/60 shadow-sm p-5 space-y-4">
+        <form onSubmit={handleDirectSave} className="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)]/60 shadow-sm p-5 space-y-4">
           {/* 자산 유형 선택 */}
           <div>
-            <label className="block text-sm font-medium text-warm-700 mb-1.5">자산 유형</label>
+            <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1.5">자산 유형</label>
             <select
               value={assetType}
               onChange={e => {
@@ -385,7 +385,7 @@ export default function AssetForm() {
                 setAssetType(t)
                 if (isEdit) setForm(f => ({ ...f, type: t, is_liability: isLiabilityType(t) }))
               }}
-              className="w-full border border-warm-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-grape-300"
+              className="w-full border border-[var(--border-default)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-grape-300"
             >
               {(Object.entries(TYPE_LABELS) as [AssetType, string][]).map(([v, label]) => (
                 <option key={v} value={v}>{label}</option>
@@ -396,13 +396,13 @@ export default function AssetForm() {
           {/* 자산명 (수동형에서만) */}
           {!isInvestmentType && (
             <div>
-              <label className="block text-sm font-medium text-warm-700 mb-1.5">자산명</label>
+              <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1.5">자산명</label>
               <input
                 type="text"
                 value={form.name ?? ''}
                 onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
                 placeholder="예) 내 적금, 주택담보대출"
-                className="w-full border border-warm-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-grape-300"
+                className="w-full border border-[var(--border-default)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-grape-300"
                 required
               />
             </div>
@@ -412,12 +412,12 @@ export default function AssetForm() {
           {isInvestmentType && (
             <>
               <div className="relative" ref={dropdownRef}>
-                <label className="block text-sm font-medium text-warm-700 mb-1.5">종목명</label>
+                <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1.5">종목명</label>
                 {form.ticker && !manualMode ? (
                   /* 선택된 상태 */
                   <div className="flex items-center gap-2 p-2.5 border border-grape-200 bg-grape-50 rounded-lg">
                     <div className="flex-1">
-                      <span className="text-sm font-medium text-warm-800">{form.name}</span>
+                      <span className="text-sm font-medium text-[var(--text-primary)]">{form.name}</span>
                       <span className="ml-2 text-xs text-grape-600 font-mono">{form.ticker}</span>
                     </div>
                     <button
@@ -427,7 +427,7 @@ export default function AssetForm() {
                         setSearchQuery('')
                         setManualMode(false)
                       }}
-                      className="text-xs text-warm-400 hover:text-warm-600 px-2 py-0.5 rounded hover:bg-warm-100"
+                      className="text-xs text-[var(--text-muted)] hover:text-[var(--text-secondary)] px-2 py-0.5 rounded hover:bg-[var(--surface-hover)]"
                     >
                       변경
                     </button>
@@ -440,7 +440,7 @@ export default function AssetForm() {
                       value={form.name ?? ''}
                       onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
                       placeholder="종목명 (예: 삼성전자)"
-                      className="w-full border border-warm-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-grape-300"
+                      className="w-full border border-[var(--border-default)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-grape-300"
                       required
                     />
                     <input
@@ -448,7 +448,7 @@ export default function AssetForm() {
                       value={form.ticker ?? ''}
                       onChange={e => setForm(f => ({ ...f, ticker: e.target.value || undefined }))}
                       placeholder="티커/코드 (선택, 예: 005930)"
-                      className="w-full border border-warm-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-grape-300"
+                      className="w-full border border-[var(--border-default)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-grape-300"
                     />
                     <button
                       type="button"
@@ -468,7 +468,7 @@ export default function AssetForm() {
                     {searchLoading ? (
                       <Loader2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-grape-500 animate-spin" />
                     ) : (
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-warm-400" />
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]" />
                     )}
                     <input
                       type="text"
@@ -477,10 +477,10 @@ export default function AssetForm() {
                       onFocus={() => { if (searchResults.length > 0 || searchError) setShowDropdown(true) }}
                       onKeyDown={e => { if (e.key === 'Enter') e.preventDefault() }}
                       placeholder={assetType === 'crypto' ? 'BTC, 비트코인...' : '종목명 또는 코드 검색'}
-                      className="w-full border border-warm-200 rounded-lg pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-grape-300"
+                      className="w-full border border-[var(--border-default)] rounded-lg pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-grape-300"
                     />
                     {showDropdown && (
-                      <div className="absolute z-10 left-0 right-0 top-full mt-1 bg-white border border-warm-200 rounded-lg shadow-lg py-1 max-h-48 overflow-y-auto">
+                      <div className="absolute z-10 left-0 right-0 top-full mt-1 bg-[var(--surface-card)] border border-[var(--border-default)] rounded-lg shadow-lg py-1 max-h-48 overflow-y-auto">
                         {searchError ? (
                           /* 에러 상태 */
                           <div className="px-3 py-4 text-center">
@@ -496,7 +496,7 @@ export default function AssetForm() {
                         ) : searchResults.length === 0 ? (
                           /* 빈 결과 */
                           <div className="px-3 py-4 text-center">
-                            <p className="text-sm text-warm-500">"{searchQuery}"에 대한 검색 결과가 없습니다</p>
+                            <p className="text-sm text-[var(--text-tertiary)]">"{searchQuery}"에 대한 검색 결과가 없습니다</p>
                             <button
                               type="button"
                               onClick={() => setManualMode(true)}
@@ -516,10 +516,10 @@ export default function AssetForm() {
                                 setSearchQuery(r.name || r.ticker)
                                 setShowDropdown(false)
                               }}
-                              className="w-full text-left px-3 py-2 text-sm hover:bg-warm-100 flex items-center justify-between"
+                              className="w-full text-left px-3 py-2 text-sm hover:bg-[var(--surface-hover)] flex items-center justify-between"
                             >
-                              <span className="font-medium text-warm-800">{r.name}</span>
-                              <span className="text-xs text-warm-400">{r.ticker}</span>
+                              <span className="font-medium text-[var(--text-primary)]">{r.name}</span>
+                              <span className="text-xs text-[var(--text-muted)]">{r.ticker}</span>
                             </button>
                           ))
                         )}
@@ -531,25 +531,25 @@ export default function AssetForm() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-warm-700 mb-1.5">수량</label>
+                  <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1.5">수량</label>
                   <input
                     type="number"
                     step="any"
                     value={form.quantity ?? ''}
                     onChange={e => setForm(f => ({ ...f, quantity: e.target.value ? Number(e.target.value) : null }))}
                     placeholder="0"
-                    className="w-full border border-warm-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-grape-300"
+                    className="w-full border border-[var(--border-default)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-grape-300"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-warm-700 mb-1.5">매입 평균가 (원)</label>
+                  <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1.5">매입 평균가 (원)</label>
                   <input
                     type="number"
                     step="any"
                     value={form.avg_buy_price ?? ''}
                     onChange={e => setForm(f => ({ ...f, avg_buy_price: e.target.value ? Number(e.target.value) : null }))}
                     placeholder="0"
-                    className="w-full border border-warm-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-grape-300"
+                    className="w-full border border-[var(--border-default)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-grape-300"
                   />
                 </div>
               </div>
@@ -560,7 +560,7 @@ export default function AssetForm() {
           {isManualType && (
             <>
               <div>
-                <label className="block text-sm font-medium text-warm-700 mb-1.5">
+                <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1.5">
                   {assetType === 'loan' ? '대출 잔액 (원)' : '금액 (원)'}
                 </label>
                 <input
@@ -569,39 +569,39 @@ export default function AssetForm() {
                   value={form.manual_value ?? ''}
                   onChange={e => setForm(f => ({ ...f, manual_value: e.target.value ? Number(e.target.value) : null }))}
                   placeholder="0"
-                  className="w-full border border-warm-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-grape-300"
+                  className="w-full border border-[var(--border-default)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-grape-300"
                 />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-warm-700 mb-1.5">이율 (%)</label>
+                  <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1.5">이율 (%)</label>
                   <input
                     type="number"
                     step="0.01"
                     value={form.interest_rate ?? ''}
                     onChange={e => setForm(f => ({ ...f, interest_rate: e.target.value ? Number(e.target.value) : null }))}
                     placeholder="연 이율"
-                    className="w-full border border-warm-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-grape-300"
+                    className="w-full border border-[var(--border-default)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-grape-300"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-warm-700 mb-1.5">만기일</label>
+                  <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1.5">만기일</label>
                   <input
                     type="date"
                     value={form.maturity_date ?? ''}
                     onChange={e => setForm(f => ({ ...f, maturity_date: e.target.value || null }))}
-                    className="w-full border border-warm-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-grape-300"
+                    className="w-full border border-[var(--border-default)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-grape-300"
                   />
                 </div>
               </div>
               {assetType === 'loan' && (
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-sm font-medium text-warm-700 mb-1.5">상환방식</label>
+                    <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1.5">상환방식</label>
                     <select
                       value={form.repayment_type ?? ''}
                       onChange={e => setForm(f => ({ ...f, repayment_type: e.target.value || null }))}
-                      className="w-full border border-warm-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-grape-300"
+                      className="w-full border border-[var(--border-default)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-grape-300"
                     >
                       <option value="">선택</option>
                       <option value="equal_principal_interest">원리금균등</option>
@@ -610,14 +610,14 @@ export default function AssetForm() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-warm-700 mb-1.5">월 상환액 (원)</label>
+                    <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1.5">월 상환액 (원)</label>
                     <input
                       type="number"
                       step="any"
                       value={form.monthly_payment ?? ''}
                       onChange={e => setForm(f => ({ ...f, monthly_payment: e.target.value ? Number(e.target.value) : null }))}
                       placeholder="0"
-                      className="w-full border border-warm-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-grape-300"
+                      className="w-full border border-[var(--border-default)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-grape-300"
                     />
                   </div>
                 </div>
@@ -628,11 +628,11 @@ export default function AssetForm() {
           {/* 계좌 선택 (선택) */}
           {accounts.length > 0 && (
             <div>
-              <label className="block text-sm font-medium text-warm-700 mb-1.5">계좌 (선택)</label>
+              <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1.5">계좌 (선택)</label>
               <select
                 value={form.account_id ?? ''}
                 onChange={e => setForm(f => ({ ...f, account_id: e.target.value ? Number(e.target.value) : null }))}
-                className="w-full border border-warm-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-grape-300"
+                className="w-full border border-[var(--border-default)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-grape-300"
               >
                 <option value="">계좌 미지정</option>
                 {accounts.map(acc => (
@@ -644,13 +644,13 @@ export default function AssetForm() {
 
           {/* 메모 */}
           <div>
-            <label className="block text-sm font-medium text-warm-700 mb-1.5">메모 (선택)</label>
+            <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1.5">메모 (선택)</label>
             <input
               type="text"
               value={form.memo ?? ''}
               onChange={e => setForm(f => ({ ...f, memo: e.target.value || null }))}
               placeholder="메모"
-              className="w-full border border-warm-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-grape-300"
+              className="w-full border border-[var(--border-default)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-grape-300"
             />
           </div>
 
@@ -667,7 +667,7 @@ export default function AssetForm() {
 
       {/* 삭제 버튼 (수정 모드에서만) */}
       {isEdit && (
-        <div className="bg-white rounded-2xl border border-warm-200/60 shadow-sm p-5">
+        <div className="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)]/60 shadow-sm p-5">
           {!confirmDelete ? (
             <button
               onClick={() => setConfirmDelete(true)}
@@ -678,7 +678,7 @@ export default function AssetForm() {
             </button>
           ) : (
             <div className="space-y-3">
-              <p className="text-sm text-warm-700">정말 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.</p>
+              <p className="text-sm text-[var(--text-secondary)]">정말 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.</p>
               <div className="flex gap-2">
                 <button
                   onClick={handleDelete}
@@ -689,7 +689,7 @@ export default function AssetForm() {
                 </button>
                 <button
                   onClick={() => setConfirmDelete(false)}
-                  className="flex-1 py-2 border border-warm-200 text-warm-600 rounded-lg text-sm font-medium hover:bg-warm-50 transition-colors"
+                  className="flex-1 py-2 border border-[var(--border-default)] text-[var(--text-secondary)] rounded-lg text-sm font-medium hover:bg-[var(--surface-elevated)] transition-colors"
                 >
                   취소
                 </button>
