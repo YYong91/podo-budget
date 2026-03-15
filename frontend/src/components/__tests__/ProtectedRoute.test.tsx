@@ -16,8 +16,14 @@ vi.mock('../../contexts/AuthContext', () => ({
   useAuth: () => mockUseAuth(),
 }))
 
-// useHouseholdStore 모킹 — 기본적으로 가구 있는 상태
-const mockHouseholdState = { households: [{ id: 1, name: '테스트 가계부' }], isLoading: false }
+// useHouseholdStore 모킹 — 기본적으로 가구 있는 상태 + 초기화 완료
+const mockHouseholdState = {
+  households: [{ id: 1, name: '테스트 가계부' }],
+  isLoading: false,
+  hasInitialized: true,
+  initError: null,
+  initializeApp: vi.fn().mockResolvedValue(undefined),
+}
 vi.mock('../../stores/useHouseholdStore', () => ({
   useHouseholdStore: (selector?: (s: Record<string, unknown>) => unknown) =>
     selector ? selector(mockHouseholdState) : mockHouseholdState,

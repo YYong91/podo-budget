@@ -40,10 +40,13 @@ vi.mock('../../stores/useHouseholdStore', () => ({
     currentHousehold: mockHousehold,
     isLoading: false,
     error: null,
+    householdInvitations: [],
     fetchHouseholdDetail,
+    fetchHouseholdInvitations: vi.fn().mockResolvedValue(undefined),
     updateHousehold: vi.fn(),
     deleteHousehold: vi.fn(),
     inviteMember: vi.fn(),
+    cancelInvitation: vi.fn(),
     updateMemberRole: vi.fn(),
     removeMember: vi.fn(),
     leaveHousehold: vi.fn(),
@@ -100,13 +103,9 @@ describe('HouseholdDetailPage', () => {
     expect(screen.getByText('kim@example.com')).toBeInTheDocument()
   })
 
-  it('소유자에게 멤버 초대 버튼을 표시한다', () => {
+  it('소유자에게 초대 탭과 설정 탭을 표시한다', () => {
     renderPage()
-    expect(screen.getByText('+ 멤버 초대')).toBeInTheDocument()
-  })
-
-  it('소유자에게 설정 탭을 표시한다', () => {
-    renderPage()
+    expect(screen.getByRole('button', { name: /초대/ })).toBeInTheDocument()
     expect(screen.getByText('설정')).toBeInTheDocument()
   })
 
