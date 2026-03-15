@@ -2,7 +2,6 @@ import { lazy, Suspense } from 'react'
 import { Routes, Route, Navigate, useSearchParams } from 'react-router-dom'
 import Layout from './components/Layout'
 import ProtectedRoute from './components/ProtectedRoute'
-import { Loader2 } from 'lucide-react'
 
 /* 코드 스플리팅: 페이지별 lazy loading으로 초기 번들 크기 축소 */
 const ExpenseForm = lazy(() => import('./pages/ExpenseForm'))
@@ -42,7 +41,7 @@ function TransactionsRedirect() {
 function PageLoading() {
   return (
     <div className="flex items-center justify-center min-h-[50vh]">
-      <Loader2 className="w-8 h-8 text-grape-600 animate-spin" />
+      <div className="animate-spin rounded-full border-b-2 border-grape-600 w-8 h-8" />
     </div>
   )
 }

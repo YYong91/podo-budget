@@ -27,7 +27,7 @@ export default function PendingRecurring({ items, onExecute, onSkip }: PendingRe
           >
             <div className="min-w-0 flex-1">
               <p className="font-medium text-[var(--text-primary)] truncate">{r.description}</p>
-              <p className={`text-sm font-semibold ${r.type === 'expense' ? 'text-[var(--text-secondary)]' : 'text-leaf-700'}`}>
+              <p className={`text-sm font-semibold ${r.type === 'expense' ? 'text-[var(--text-secondary)]' : 'text-leaf-600'}`}>
                 {r.type === 'income' ? '+' : ''}{formatAmount(r.amount)}
               </p>
             </div>

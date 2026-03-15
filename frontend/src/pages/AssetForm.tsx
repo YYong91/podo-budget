@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate, useParams, Link } from 'react-router-dom'
-import { ArrowLeft, Search, Loader2, Trash2 } from 'lucide-react'
+import { ArrowLeft, Search, Trash2 } from 'lucide-react'
 import { useToast } from '../hooks/useToast'
 import { assetApi } from '../api/assets'
 import { accountApi } from '../api/accounts'
@@ -284,7 +284,7 @@ export default function AssetForm() {
   if (initialLoading) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
-        <Loader2 className="w-8 h-8 text-grape-600 animate-spin" />
+        <div className="animate-spin rounded-full border-b-2 border-grape-600 w-8 h-8" />
       </div>
     )
   }
@@ -303,7 +303,7 @@ export default function AssetForm() {
               key={m}
               onClick={() => { setMode(m); setPreviewItems(null) }}
               className={`flex-1 py-2 text-sm font-medium rounded-lg transition-colors ${
-                mode === m ? 'bg-[var(--surface-card)] text-grape-700 shadow-sm' : 'text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]'
+                mode === m ? 'bg-[var(--surface-card)] text-grape-600 shadow-sm' : 'text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]'
               }`}
             >
               {m === 'natural' ? '간편 입력' : '직접 입력'}
@@ -334,7 +334,7 @@ export default function AssetForm() {
               disabled={loading || !naturalInput.trim()}
               className="w-full py-3 bg-grape-600 text-white rounded-xl text-sm font-medium hover:bg-grape-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
             >
-              {loading && !previewItems ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+              {loading && !previewItems ? <div className="animate-spin rounded-full border-b-2 border-current w-4 h-4" /> : null}
               분석하기
             </button>
           </div>
@@ -364,7 +364,7 @@ export default function AssetForm() {
                 disabled={loading}
                 className="w-full py-3 bg-grape-600 text-white rounded-xl text-sm font-medium hover:bg-grape-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
               >
-                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                {loading ? <div className="animate-spin rounded-full border-b-2 border-current w-4 h-4" /> : null}
                 저장하기
               </button>
             </div>
@@ -457,7 +457,7 @@ export default function AssetForm() {
                         setForm(f => ({ ...f, name: '', ticker: undefined }))
                         setSearchQuery('')
                       }}
-                      className="text-xs text-grape-600 hover:text-grape-700 font-medium"
+                      className="text-xs text-grape-600 hover:text-grape-600 font-medium"
                     >
                       ← 검색으로 돌아가기
                     </button>
@@ -466,7 +466,7 @@ export default function AssetForm() {
                   /* 검색 상태 */
                   <div className="relative">
                     {searchLoading ? (
-                      <Loader2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-grape-500 animate-spin" />
+                      <div className="animate-spin rounded-full border-b-2 border-grape-500 w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2" />
                     ) : (
                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]" />
                     )}
@@ -488,7 +488,7 @@ export default function AssetForm() {
                             <button
                               type="button"
                               onClick={() => setManualMode(true)}
-                              className="mt-2 text-xs text-grape-600 hover:text-grape-700 font-medium"
+                              className="mt-2 text-xs text-grape-600 hover:text-grape-600 font-medium"
                             >
                               직접 입력하기
                             </button>
@@ -500,7 +500,7 @@ export default function AssetForm() {
                             <button
                               type="button"
                               onClick={() => setManualMode(true)}
-                              className="mt-2 text-xs text-grape-600 hover:text-grape-700 font-medium"
+                              className="mt-2 text-xs text-grape-600 hover:text-grape-600 font-medium"
                             >
                               직접 입력하기
                             </button>
@@ -659,7 +659,7 @@ export default function AssetForm() {
             disabled={loading}
             className="w-full py-3 bg-grape-600 text-white rounded-xl text-sm font-medium hover:bg-grape-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
           >
-            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+            {loading ? <div className="animate-spin rounded-full w-4 h-4 border-b-2 border-current" /> : null}
             {isEdit ? '수정하기' : '저장하기'}
           </button>
         </form>
@@ -685,7 +685,7 @@ export default function AssetForm() {
                   disabled={loading}
                   className="flex-1 py-2 bg-rose-600 text-white rounded-lg text-sm font-medium hover:bg-rose-700 disabled:opacity-50 transition-colors"
                 >
-                  {loading ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : '삭제'}
+                  {loading ? <div className="animate-spin rounded-full border-b-2 border-current w-4 h-4 mx-auto" /> : '삭제'}
                 </button>
                 <button
                   onClick={() => setConfirmDelete(false)}

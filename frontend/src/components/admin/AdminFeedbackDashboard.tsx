@@ -1,15 +1,15 @@
 /* Admin 피드백 관리 — 피드백 목록 + 상태 필터 + 상태 변경 */
 
 import { useEffect, useState } from 'react'
-import { Loader2, MessageSquare, Bug, Lightbulb } from 'lucide-react'
+import { MessageSquare, Bug, Lightbulb } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { feedbackApi } from '../../api/feedback'
 import type { Feedback, FeedbackStatus, FeedbackType } from '../../types'
 
 const STATUS_META: Record<string, { label: string; color: string }> = {
-  new: { label: '신규', color: 'bg-red-100 text-red-700' },
-  read: { label: '확인', color: 'bg-yellow-100 text-yellow-700' },
-  done: { label: '완료', color: 'bg-green-100 text-green-700' },
+  new: { label: '신규', color: 'bg-red-100 text-red-600' },
+  read: { label: '확인', color: 'bg-yellow-100 text-yellow-600' },
+  done: { label: '완료', color: 'bg-green-100 text-green-600' },
 }
 
 const TYPE_META: Record<string, { label: string; icon: React.ComponentType<{ className?: string }> }> = {
@@ -62,7 +62,7 @@ export default function AdminFeedbackDashboard() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="w-6 h-6 text-grape-600 animate-spin" />
+        <div className="animate-spin rounded-full border-b-2 border-grape-600 w-6 h-6" />
       </div>
     )
   }

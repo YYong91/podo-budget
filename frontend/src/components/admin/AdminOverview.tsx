@@ -31,10 +31,10 @@ function StatCard({ icon: Icon, label, value, sub, onClick }: {
 }
 
 const ACTIVITY_TYPE_LABELS: Record<string, { label: string; color: string }> = {
-  expense: { label: '지출', color: 'bg-red-100 text-red-700' },
-  income: { label: '수입', color: 'bg-green-100 text-green-700' },
-  signup: { label: '가입', color: 'bg-grape-100 text-grape-700' },
-  feedback: { label: '피드백', color: 'bg-yellow-100 text-yellow-700' },
+  expense: { label: '지출', color: 'bg-red-100 text-red-600' },
+  income: { label: '수입', color: 'bg-green-100 text-green-600' },
+  signup: { label: '가입', color: 'bg-grape-100 text-grape-600' },
+  feedback: { label: '피드백', color: 'bg-yellow-100 text-yellow-600' },
 }
 
 function formatRelativeTime(dateStr: string): string {

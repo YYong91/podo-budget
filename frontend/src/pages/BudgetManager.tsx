@@ -302,7 +302,7 @@ export default function BudgetManager() {
                       alert.is_exceeded
                         ? 'text-rose-600'
                         : alert.is_warning
-                        ? 'text-yellow-700'
+                        ? 'text-yellow-600'
                         : 'text-leaf-600'
                     }`}
                   >
@@ -329,8 +329,8 @@ export default function BudgetManager() {
                 )}
                 {alert.is_warning && !alert.is_exceeded && (
                   <div className="flex items-center gap-1 mt-2">
-                    <AlertTriangle className="w-3 h-3 text-yellow-700" />
-                    <p className="text-xs text-yellow-700">예산의 80%를 사용했습니다</p>
+                    <AlertTriangle className="w-3 h-3 text-yellow-600" />
+                    <p className="text-xs text-yellow-600">예산의 80%를 사용했습니다</p>
                   </div>
                 )}
               </div>

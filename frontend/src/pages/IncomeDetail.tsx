@@ -5,7 +5,7 @@
 
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import { ArrowLeft, Loader2 } from 'lucide-react'
+import { ArrowLeft } from 'lucide-react'
 import { useToast } from '../hooks/useToast'
 import { incomeApi } from '../api/income'
 import { categoryApi } from '../api/categories'
@@ -112,7 +112,7 @@ export default function IncomeDetail() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="w-8 h-8 animate-spin text-leaf-600" />
+        <div className="animate-spin rounded-full border-b-2 border-leaf-600 w-8 h-8" />
       </div>
     )
   }
@@ -174,7 +174,7 @@ export default function IncomeDetail() {
               </button>
               <button
                 onClick={() => setShowDeleteModal(true)}
-                className="flex-1 sm:flex-none px-4 py-2 text-sm font-medium text-rose-700 bg-rose-50 rounded-xl hover:bg-rose-100 transition-colors"
+                className="flex-1 sm:flex-none px-4 py-2 text-sm font-medium text-rose-600 bg-rose-50 rounded-xl hover:bg-rose-100 transition-colors"
               >
                 삭제
               </button>

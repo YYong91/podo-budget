@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Loader2, Plus, Wallet, Trash2, ArrowLeft } from 'lucide-react'
+import { Plus, Wallet, Trash2, ArrowLeft } from 'lucide-react'
 import { useToast } from '../hooks/useToast'
 import { accountApi } from '../api/accounts'
 import { useHouseholdStore } from '../stores/useHouseholdStore'
@@ -124,7 +124,7 @@ export default function AccountManager() {
               disabled={saving}
               className="flex-1 py-2 bg-grape-600 text-white rounded-lg text-sm font-medium hover:bg-grape-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-1.5"
             >
-              {saving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+              {saving && <div className="animate-spin rounded-full border-b-2 border-current w-3.5 h-3.5" />}
               저장
             </button>
           </div>
@@ -134,7 +134,7 @@ export default function AccountManager() {
       {/* 계좌 목록 */}
       {loading ? (
         <div className="flex justify-center py-12">
-          <Loader2 className="w-6 h-6 text-grape-600 animate-spin" />
+          <div className="animate-spin rounded-full border-b-2 border-grape-600 w-6 h-6" />
         </div>
       ) : accounts.length === 0 ? (
         <div className="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)]/60 shadow-sm p-8 text-center">

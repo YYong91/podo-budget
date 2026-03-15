@@ -368,7 +368,7 @@ export default function CategoryManager() {
                           </button>
                           <button
                             onClick={() => setDeleteTarget(category.id)}
-                            className="px-3 py-1.5 text-sm font-medium text-rose-700 bg-rose-50 rounded-lg hover:bg-rose-100 transition-colors"
+                            className="px-3 py-1.5 text-sm font-medium text-rose-600 bg-rose-50 rounded-lg hover:bg-rose-100 transition-colors"
                           >
                             삭제
                           </button>
