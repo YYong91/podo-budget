@@ -74,6 +74,8 @@
   --text-secondary: var(--color-warm-700);
   --text-tertiary: var(--color-warm-500);
   --text-muted: var(--color-warm-400);
+  --input-border: var(--color-warm-300);
+  --input-bg: #ffffff;
 }
 
 /* ─── 다크모드 시멘틱 변수 ─── */
@@ -88,6 +90,8 @@
   --text-secondary: #b8b0c8;
   --text-tertiary: #8a7fa0;
   --text-muted: #6b6080;
+  --input-border: #4d4562;
+  --input-bg: #1e1a2a;
 
   /* 다크모드에서 grape 색상 밝기 조절 */
   --color-grape-50: #2d1f4e;
