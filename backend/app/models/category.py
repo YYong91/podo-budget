@@ -30,7 +30,7 @@ class Category(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)  # None이면 시스템 카테고리
-    household_id = Column(Integer, ForeignKey("households.id", ondelete="SET NULL"), nullable=True, index=True)  # 가구 공유 카테고리
+    household_id = Column(Integer, ForeignKey("households.id", ondelete="CASCADE"), nullable=True, index=True)  # 가구 카테고리 (시스템 카테고리는 NULL)
     name = Column(String, nullable=False)
     description = Column(String, nullable=True)
     type = Column(String(10), nullable=False, default="expense")  # expense | income | both

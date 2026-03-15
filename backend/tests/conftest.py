@@ -23,6 +23,8 @@ from app.core.config import settings
 from app.core.database import Base, get_db
 from app.core.rate_limit import limiter
 from app.main import app
+from app.models.household import Household
+from app.models.household_member import HouseholdMember
 from app.models.user import User
 
 # 테스트용 SQLite 데이터베이스 URL (in-memory, StaticPool로 연결 공유)
@@ -110,10 +112,28 @@ async def db_session() -> AsyncGenerator[AsyncSession, None]:
 
 
 @pytest_asyncio.fixture
-async def test_user(db_session: AsyncSession) -> User:
+async def test_household(db_session: AsyncSession) -> Household:
+    """테스트용 기본 가구 생성
+
+    모든 테스트에서 사용하는 기본 가구입니다.
+    household_id NOT NULL 제약을 충족하기 위해 필요합니다.
+
+    Returns:
+        생성된 Household 객체
+    """
+    household = Household(name="테스트 가구")
+    db_session.add(household)
+    await db_session.commit()
+    await db_session.refresh(household)
+    return household
+
+
+@pytest_asyncio.fixture
+async def test_user(db_session: AsyncSession, test_household: Household) -> User:
     """테스트용 사용자 생성 (Shadow User 패턴)
 
     podo-auth SSO로 최초 로그인한 사용자처럼 auth_user_id가 설정된 사용자를 생성합니다.
+    기본 가구에 owner로 가입됩니다.
 
     Returns:
         생성된 User 객체
@@ -126,14 +146,39 @@ async def test_user(db_session: AsyncSession) -> User:
         is_active=True,
     )
     db_session.add(user)
+    await db_session.flush()
+
+    # 가구 멤버십 추가 (household_id 필수 제약 충족)
+    member = HouseholdMember(
+        household_id=test_household.id,
+        user_id=user.id,
+        role="owner",
+    )
+    db_session.add(member)
     await db_session.commit()
     await db_session.refresh(user)
     return user
 
 
 @pytest_asyncio.fixture
-async def test_user2(db_session: AsyncSession) -> User:
+async def test_household2(db_session: AsyncSession) -> Household:
+    """두 번째 테스트용 가구 생성 (데이터 격리 테스트용)
+
+    Returns:
+        생성된 Household 객체
+    """
+    household = Household(name="테스트 가구 2")
+    db_session.add(household)
+    await db_session.commit()
+    await db_session.refresh(household)
+    return household
+
+
+@pytest_asyncio.fixture
+async def test_user2(db_session: AsyncSession, test_household2: Household) -> User:
     """두 번째 테스트용 사용자 생성 (데이터 격리 테스트용)
+
+    두 번째 가구에 owner로 가입됩니다.
 
     Returns:
         생성된 User 객체
@@ -146,6 +191,14 @@ async def test_user2(db_session: AsyncSession) -> User:
         is_active=True,
     )
     db_session.add(user)
+    await db_session.flush()
+
+    member = HouseholdMember(
+        household_id=test_household2.id,
+        user_id=user.id,
+        role="owner",
+    )
+    db_session.add(member)
     await db_session.commit()
     await db_session.refresh(user)
     return user

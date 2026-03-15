@@ -2,19 +2,20 @@
 
 import pytest
 
+from app.models.household import Household
 from app.models.income import Income
 from app.models.user import User
 
 
 @pytest.mark.asyncio
-async def test_income_stats_monthly(authenticated_client, test_user: User, db_session):
+async def test_income_stats_monthly(authenticated_client, test_user: User, test_household: Household, db_session):
     """월간 수입 통계"""
     from datetime import datetime
 
     db_session.add_all(
         [
-            Income(user_id=test_user.id, amount=3500000, description="월급", date=datetime(2026, 2, 1)),
-            Income(user_id=test_user.id, amount=500000, description="보너스", date=datetime(2026, 2, 15)),
+            Income(user_id=test_user.id, household_id=test_household.id, amount=3500000, description="월급", date=datetime(2026, 2, 1)),
+            Income(user_id=test_user.id, household_id=test_household.id, amount=500000, description="보너스", date=datetime(2026, 2, 15)),
         ]
     )
     await db_session.commit()
@@ -28,11 +29,11 @@ async def test_income_stats_monthly(authenticated_client, test_user: User, db_se
 
 
 @pytest.mark.asyncio
-async def test_income_stats_weekly(authenticated_client, test_user: User, db_session):
+async def test_income_stats_weekly(authenticated_client, test_user: User, test_household: Household, db_session):
     """주간 수입 통계"""
     from datetime import datetime
 
-    db_session.add(Income(user_id=test_user.id, amount=100000, description="용돈", date=datetime(2026, 2, 10)))
+    db_session.add(Income(user_id=test_user.id, household_id=test_household.id, amount=100000, description="용돈", date=datetime(2026, 2, 10)))
     await db_session.commit()
 
     response = await authenticated_client.get("/api/income/stats?period=weekly&date=2026-02-10")
@@ -53,7 +54,7 @@ async def test_income_stats_empty(authenticated_client):
 
 
 @pytest.mark.asyncio
-async def test_income_stats_by_category(authenticated_client, test_user: User, db_session):
+async def test_income_stats_by_category(authenticated_client, test_user: User, test_household: Household, db_session):
     """카테고리별 수입 통계"""
     from datetime import datetime
 
@@ -66,9 +67,10 @@ async def test_income_stats_by_category(authenticated_client, test_user: User, d
 
     db_session.add_all(
         [
-            Income(user_id=test_user.id, amount=3500000, description="월급", category_id=cat1.id, date=datetime(2026, 2, 1)),
+            Income(user_id=test_user.id, household_id=test_household.id, amount=3500000, description="월급", category_id=cat1.id, date=datetime(2026, 2, 1)),
             Income(
                 user_id=test_user.id,
+                household_id=test_household.id,
                 amount=200000,
                 description="프리랜스",
                 category_id=cat2.id,
@@ -86,14 +88,14 @@ async def test_income_stats_by_category(authenticated_client, test_user: User, d
 
 
 @pytest.mark.asyncio
-async def test_income_stats_trend(authenticated_client, test_user: User, db_session):
+async def test_income_stats_trend(authenticated_client, test_user: User, test_household: Household, db_session):
     """수입 추이 데이터"""
     from datetime import datetime
 
     db_session.add_all(
         [
-            Income(user_id=test_user.id, amount=3500000, description="월급", date=datetime(2026, 2, 1)),
-            Income(user_id=test_user.id, amount=100000, description="용돈", date=datetime(2026, 2, 10)),
+            Income(user_id=test_user.id, household_id=test_household.id, amount=3500000, description="월급", date=datetime(2026, 2, 1)),
+            Income(user_id=test_user.id, household_id=test_household.id, amount=100000, description="용돈", date=datetime(2026, 2, 10)),
         ]
     )
     await db_session.commit()

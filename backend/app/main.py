@@ -21,6 +21,7 @@ from app.api import (
     insights,
     invitations,
     kakao,
+    onboarding,
     recurring,
     telegram,
 )
@@ -179,6 +180,7 @@ app.include_router(recurring.router, prefix="/api/recurring", tags=["recurring"]
 app.include_router(assets.router, prefix="/api/assets", tags=["assets"])
 app.include_router(accounts.router, prefix="/api/accounts", tags=["accounts"])
 app.include_router(admin.router, prefix="/api/admin", tags=["admin"])
+app.include_router(onboarding.router, prefix="/api/onboarding", tags=["onboarding"])
 
 
 @app.get("/")

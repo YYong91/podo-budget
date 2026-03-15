@@ -1,7 +1,7 @@
 """예산 엔티티 모델
 
 사용자별/가구별 카테고리별 예산을 관리하는 엔티티입니다.
-household_id가 없으면 개인 예산, 있으면 가구 공유 예산입니다.
+모든 예산은 가구(household)에 소속됩니다.
 """
 
 from sqlalchemy import Column, DateTime, Float, ForeignKey, Integer, Numeric, String
@@ -17,7 +17,7 @@ class Budget(Base):
     Attributes:
         id: 예산 고유 식별자 (Primary Key)
         user_id: 예산 소유자 ID (Foreign Key, nullable=True for migration)
-        household_id: 공유 가구 예산 ID (Foreign Key, nullable - None이면 개인 예산)
+        household_id: 소속 가구 예산 ID (Foreign Key, NOT NULL)
         category_id: 카테고리 ID (Foreign Key)
         amount: 예산 금액
         period: 예산 기간 (monthly, weekly, daily)
@@ -32,7 +32,7 @@ class Budget(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)  # 점진적 마이그레이션을 위해 nullable=True
-    household_id = Column(Integer, ForeignKey("households.id", ondelete="SET NULL"), nullable=True, index=True)  # 공유 가구 예산
+    household_id = Column(Integer, ForeignKey("households.id", ondelete="CASCADE"), nullable=False, index=True)  # 소속 가구 예산 (필수)
     category_id = Column(Integer, ForeignKey("categories.id"), nullable=False)
     amount = Column(Numeric(12, 2), nullable=False)
     period = Column(String, nullable=False)  # monthly, weekly, daily

@@ -13,11 +13,12 @@ import pytest
 
 from app.models.category import Category
 from app.models.expense import Expense
+from app.models.household import Household
 from app.models.user import User
 
 
 @pytest.mark.asyncio
-async def test_generate_insights_success(authenticated_client, test_user: User, db_session, mock_llm_generate_insights):
+async def test_generate_insights_success(authenticated_client, test_user: User, test_household: Household, db_session, mock_llm_generate_insights):
     """인사이트 생성 성공 케이스"""
     cat1 = Category(user_id=test_user.id, name="식비")
     cat2 = Category(user_id=test_user.id, name="교통비")
@@ -26,9 +27,13 @@ async def test_generate_insights_success(authenticated_client, test_user: User, 
     await db_session.refresh(cat1)
     await db_session.refresh(cat2)
 
-    expense1 = Expense(user_id=test_user.id, amount=8000, description="김치찌개", category_id=cat1.id, date=datetime(2026, 2, 10))
-    expense2 = Expense(user_id=test_user.id, amount=15000, description="택시", category_id=cat2.id, date=datetime(2026, 2, 15))
-    expense3 = Expense(user_id=test_user.id, amount=12000, description="비빔밥", category_id=cat1.id, date=datetime(2026, 2, 20))
+    expense1 = Expense(
+        user_id=test_user.id, household_id=test_household.id, amount=8000, description="김치찌개", category_id=cat1.id, date=datetime(2026, 2, 10)
+    )
+    expense2 = Expense(user_id=test_user.id, household_id=test_household.id, amount=15000, description="택시", category_id=cat2.id, date=datetime(2026, 2, 15))
+    expense3 = Expense(
+        user_id=test_user.id, household_id=test_household.id, amount=12000, description="비빔밥", category_id=cat1.id, date=datetime(2026, 2, 20)
+    )
     db_session.add_all([expense1, expense2, expense3])
     await db_session.commit()
 
@@ -64,16 +69,22 @@ async def test_generate_insights_no_data(authenticated_client, test_user: User, 
 
 
 @pytest.mark.asyncio
-async def test_generate_insights_filter_by_month(authenticated_client, test_user: User, db_session, mock_llm_generate_insights):
+async def test_generate_insights_filter_by_month(authenticated_client, test_user: User, test_household: Household, db_session, mock_llm_generate_insights):
     """특정 월 데이터만 필터링하여 인사이트 생성"""
     category = Category(user_id=test_user.id, name="식비")
     db_session.add(category)
     await db_session.commit()
     await db_session.refresh(category)
 
-    expense1 = Expense(user_id=test_user.id, amount=10000, description="1월 지출", category_id=category.id, date=datetime(2026, 1, 15))
-    expense2 = Expense(user_id=test_user.id, amount=20000, description="2월 지출", category_id=category.id, date=datetime(2026, 2, 15))
-    expense3 = Expense(user_id=test_user.id, amount=30000, description="3월 지출", category_id=category.id, date=datetime(2026, 3, 15))
+    expense1 = Expense(
+        user_id=test_user.id, household_id=test_household.id, amount=10000, description="1월 지출", category_id=category.id, date=datetime(2026, 1, 15)
+    )
+    expense2 = Expense(
+        user_id=test_user.id, household_id=test_household.id, amount=20000, description="2월 지출", category_id=category.id, date=datetime(2026, 2, 15)
+    )
+    expense3 = Expense(
+        user_id=test_user.id, household_id=test_household.id, amount=30000, description="3월 지출", category_id=category.id, date=datetime(2026, 3, 15)
+    )
     db_session.add_all([expense1, expense2, expense3])
     await db_session.commit()
 
@@ -88,7 +99,7 @@ async def test_generate_insights_filter_by_month(authenticated_client, test_user
 
 
 @pytest.mark.asyncio
-async def test_generate_insights_top_expenses(authenticated_client, test_user: User, db_session, mock_llm_generate_insights):
+async def test_generate_insights_top_expenses(authenticated_client, test_user: User, test_household: Household, db_session, mock_llm_generate_insights):
     """인사이트 생성 시 상위 지출 내역 포함"""
     category = Category(user_id=test_user.id, name="쇼핑")
     db_session.add(category)
@@ -98,6 +109,7 @@ async def test_generate_insights_top_expenses(authenticated_client, test_user: U
     for i in range(25):
         expense = Expense(
             user_id=test_user.id,
+            household_id=test_household.id,
             amount=1000 * (i + 1),
             description=f"지출{i}",
             category_id=category.id,
@@ -125,14 +137,16 @@ async def test_generate_insights_invalid_month_format(authenticated_client, test
 
 
 @pytest.mark.asyncio
-async def test_generate_insights_december(authenticated_client, test_user: User, db_session, mock_llm_generate_insights):
+async def test_generate_insights_december(authenticated_client, test_user: User, test_household: Household, db_session, mock_llm_generate_insights):
     """12월 데이터 요청 시 year 전환 처리 확인"""
     category = Category(user_id=test_user.id, name="식비")
     db_session.add(category)
     await db_session.commit()
     await db_session.refresh(category)
 
-    expense1 = Expense(user_id=test_user.id, amount=10000, description="12월 지출", category_id=category.id, date=datetime(2026, 12, 25))
+    expense1 = Expense(
+        user_id=test_user.id, household_id=test_household.id, amount=10000, description="12월 지출", category_id=category.id, date=datetime(2026, 12, 25)
+    )
     db_session.add(expense1)
     await db_session.commit()
 
@@ -146,7 +160,7 @@ async def test_generate_insights_december(authenticated_client, test_user: User,
 
 
 @pytest.mark.asyncio
-async def test_generate_insights_category_by_category(authenticated_client, test_user: User, db_session, mock_llm_generate_insights):
+async def test_generate_insights_category_by_category(authenticated_client, test_user: User, test_household: Household, db_session, mock_llm_generate_insights):
     """카테고리별 합계가 내림차순 정렬되는지 확인"""
     cat1 = Category(user_id=test_user.id, name="식비")
     cat2 = Category(user_id=test_user.id, name="교통비")
@@ -157,9 +171,11 @@ async def test_generate_insights_category_by_category(authenticated_client, test
     await db_session.refresh(cat2)
     await db_session.refresh(cat3)
 
-    expense1 = Expense(user_id=test_user.id, amount=5000, description="버스", category_id=cat2.id, date=datetime(2026, 2, 10))
-    expense2 = Expense(user_id=test_user.id, amount=20000, description="영화", category_id=cat3.id, date=datetime(2026, 2, 15))
-    expense3 = Expense(user_id=test_user.id, amount=15000, description="김치찌개", category_id=cat1.id, date=datetime(2026, 2, 20))
+    expense1 = Expense(user_id=test_user.id, household_id=test_household.id, amount=5000, description="버스", category_id=cat2.id, date=datetime(2026, 2, 10))
+    expense2 = Expense(user_id=test_user.id, household_id=test_household.id, amount=20000, description="영화", category_id=cat3.id, date=datetime(2026, 2, 15))
+    expense3 = Expense(
+        user_id=test_user.id, household_id=test_household.id, amount=15000, description="김치찌개", category_id=cat1.id, date=datetime(2026, 2, 20)
+    )
     db_session.add_all([expense1, expense2, expense3])
     await db_session.commit()
 

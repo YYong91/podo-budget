@@ -84,7 +84,7 @@ export default function ExpenseForm() {
 
     setLoading(true)
     try {
-      const res = await chatApi.sendMessage(naturalInput.trim(), activeHouseholdId ?? undefined, true)
+      const res = await chatApi.sendMessage(naturalInput.trim(), activeHouseholdId!, true)
 
       if (res.data.parsed_expenses && res.data.parsed_expenses.length > 0) {
         // 파싱 결과를 편집 가능한 형태로 변환

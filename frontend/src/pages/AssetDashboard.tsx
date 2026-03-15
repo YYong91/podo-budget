@@ -96,7 +96,7 @@ export default function AssetDashboard() {
   const fetchData = () => {
     setLoading(true)
     setError(null)
-    const hid = activeHouseholdId ?? undefined
+    const hid = activeHouseholdId!
     Promise.all([
       assetApi.getAll(hid),
       assetApi.getSummary(hid),
@@ -135,7 +135,7 @@ export default function AssetDashboard() {
       const res = await assetApi.setGoal({
         target_net_worth: amount,
         target_date: goalDate,
-        household_id: activeHouseholdId ?? undefined,
+        household_id: activeHouseholdId!,
       })
       setGoal(res.data)
       setShowGoalModal(false)
@@ -150,7 +150,7 @@ export default function AssetDashboard() {
   const handleDeleteGoal = async () => {
     setGoalSaving(true)
     try {
-      await assetApi.deleteGoal(activeHouseholdId ?? undefined)
+      await assetApi.deleteGoal(activeHouseholdId!)
       setGoal(null)
       setShowGoalModal(false)
     } catch {

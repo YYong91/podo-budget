@@ -22,17 +22,21 @@ from app.models.user import User
 async def get_user_active_household_id(
     user: User,
     db: AsyncSession,
-) -> int | None:
-    """사용자의 활성 가구 ID 조회
+) -> int:
+    """사용자의 활성 가구 ID 조회 (필수)
 
     사용자가 속한 활성 가구(left_at is None) 중 첫 번째 household_id를 반환합니다.
+    가구에 소속되어 있지 않으면 403 에러를 발생시킵니다.
 
     Args:
         user: 현재 로그인한 사용자
         db: 데이터베이스 세션
 
     Returns:
-        활성 가구 ID 또는 None (가구에 속하지 않은 경우)
+        활성 가구 ID (int)
+
+    Raises:
+        HTTPException 403: 가구에 소속되어 있지 않은 경우
     """
     result = await db.execute(
         select(HouseholdMember.household_id)
@@ -45,6 +49,47 @@ async def get_user_active_household_id(
             )
         )
         .order_by(HouseholdMember.joined_at.asc())  # 가장 먼저 가입한 가구를 기본값으로 (결정적 정렬)
+        .limit(1)
+    )
+    household_id = result.scalar_one_or_none()
+    if household_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail={
+                "code": "NO_HOUSEHOLD",
+                "message": "가구에 소속되어 있지 않습니다. 온보딩이 필요합니다.",
+            },
+        )
+    return household_id
+
+
+async def get_user_active_household_id_or_none(
+    user: User,
+    db: AsyncSession,
+) -> int | None:
+    """사용자의 활성 가구 ID 조회 (선택적)
+
+    봇 핸들러 등에서 가구 미소속 사용자를 별도 처리할 때 사용합니다.
+    가구에 소속되어 있지 않으면 None을 반환합니다 (예외 발생 안 함).
+
+    Args:
+        user: 현재 로그인한 사용자
+        db: 데이터베이스 세션
+
+    Returns:
+        활성 가구 ID (int) 또는 None
+    """
+    result = await db.execute(
+        select(HouseholdMember.household_id)
+        .join(Household, HouseholdMember.household_id == Household.id)
+        .where(
+            and_(
+                HouseholdMember.user_id == user.id,
+                HouseholdMember.left_at.is_(None),
+                Household.deleted_at.is_(None),
+            )
+        )
+        .order_by(HouseholdMember.joined_at.asc())
         .limit(1)
     )
     return result.scalar_one_or_none()

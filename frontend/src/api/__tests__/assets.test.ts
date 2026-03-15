@@ -16,7 +16,7 @@ import {
 describe('assetApi', () => {
   describe('getAll', () => {
     it('모든 자산 목록을 조회한다', async () => {
-      const response = await assetApi.getAll()
+      const response = await assetApi.getAll(1)
       expect(response.data).toEqual(mockAssets)
       expect(Array.isArray(response.data)).toBe(true)
     })
@@ -71,7 +71,7 @@ describe('assetApi', () => {
 
   describe('getSummary', () => {
     it('자산 요약을 조회한다', async () => {
-      const response = await assetApi.getSummary()
+      const response = await assetApi.getSummary(1)
       expect(response.data).toEqual(mockAssetSummary)
       expect(response.data.net_worth).toBeDefined()
     })
@@ -79,7 +79,7 @@ describe('assetApi', () => {
 
   describe('getSnapshots', () => {
     it('자산 스냅샷을 조회한다', async () => {
-      const response = await assetApi.getSnapshots()
+      const response = await assetApi.getSnapshots(1)
       expect(response.data).toEqual(mockAssetSnapshots)
       expect(Array.isArray(response.data)).toBe(true)
     })
@@ -102,7 +102,7 @@ describe('assetApi', () => {
 
   describe('goal', () => {
     it('자산 목표를 조회한다', async () => {
-      const response = await assetApi.getGoal()
+      const response = await assetApi.getGoal(1)
       expect(response.data).toEqual(mockAssetGoal)
       expect(response.data!.target_net_worth).toBeDefined()
     })
@@ -116,14 +116,14 @@ describe('assetApi', () => {
     })
 
     it('자산 목표를 삭제한다', async () => {
-      const response = await assetApi.deleteGoal()
+      const response = await assetApi.deleteGoal(1)
       expect(response.status).toBe(204)
     })
   })
 
   describe('getMonthlySavings', () => {
     it('월별 저축 추이를 조회한다', async () => {
-      const response = await assetApi.getMonthlySavings()
+      const response = await assetApi.getMonthlySavings(1)
       expect(response.data).toEqual(mockMonthlySavings)
       expect(Array.isArray(response.data)).toBe(true)
     })

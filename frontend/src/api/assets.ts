@@ -4,9 +4,9 @@ import apiClient from './client'
 import type { Asset, AssetSummary, AssetSnapshot, AssetSearchResult, AssetGoal, MonthlySavings, CreateAssetParams } from '../types'
 
 export const assetApi = {
-  getAll: (householdId?: number) =>
+  getAll: (householdId: number) =>
     apiClient.get<Asset[]>('/assets', {
-      params: householdId != null ? { household_id: householdId } : undefined,
+      params: { household_id: householdId },
     }),
 
   getById: (id: number) =>
@@ -21,15 +21,15 @@ export const assetApi = {
   delete: (id: number) =>
     apiClient.delete(`/assets/${id}`),
 
-  getSummary: (householdId?: number) =>
+  getSummary: (householdId: number) =>
     apiClient.get<AssetSummary>('/assets/summary', {
-      params: householdId != null ? { household_id: householdId } : undefined,
+      params: { household_id: householdId },
     }),
 
-  getSnapshots: (householdId?: number, months?: number) =>
+  getSnapshots: (householdId: number, months?: number) =>
     apiClient.get<AssetSnapshot[]>('/assets/snapshots', {
       params: {
-        ...(householdId != null && { household_id: householdId }),
+        household_id: householdId,
         ...(months && { months }),
       },
     }),
@@ -43,22 +43,22 @@ export const assetApi = {
     apiClient.post<{ items: CreateAssetParams[] }>('/assets/parse', { text }),
 
   /* 목표 관리 */
-  getGoal: (householdId?: number) =>
+  getGoal: (householdId: number) =>
     apiClient.get<AssetGoal | null>('/assets/goal', {
-      params: householdId != null ? { household_id: householdId } : undefined,
+      params: { household_id: householdId },
     }),
 
   setGoal: (data: { target_net_worth: number; target_date: string; household_id?: number }) =>
     apiClient.post<AssetGoal>('/assets/goal', data),
 
-  deleteGoal: (householdId?: number) =>
+  deleteGoal: (householdId: number) =>
     apiClient.delete('/assets/goal', {
-      params: householdId != null ? { household_id: householdId } : undefined,
+      params: { household_id: householdId },
     }),
 
   /* 월별 저축 추이 */
-  getMonthlySavings: (householdId?: number) =>
+  getMonthlySavings: (householdId: number) =>
     apiClient.get<MonthlySavings[]>('/assets/monthly-savings', {
-      params: householdId != null ? { household_id: householdId } : undefined,
+      params: { household_id: householdId },
     }),
 }

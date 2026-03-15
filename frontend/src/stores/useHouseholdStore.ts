@@ -376,6 +376,8 @@ export const useHouseholdStore = create<HouseholdStore>((set, get) => ({
    * 지출 목록/대시보드에서 해당 가구의 데이터만 표시하도록 변경한다.
    */
   setActiveHouseholdId: (id: number | null) => {
+    // 온보딩 완료 후 null 전환 방지
+    if (id === null) return
     set({ activeHouseholdId: id })
   },
 }))

@@ -16,7 +16,7 @@ from app.services.asset_service import get_asset_summary
 async def get_goal(user_id: int, household_id: int | None, db: AsyncSession) -> AssetGoal | None:
     """활성 목표 조회 (사용자/가구 당 최신 1개)"""
     q = select(AssetGoal).where(AssetGoal.user_id == user_id)
-    q = q.where(AssetGoal.household_id == household_id) if household_id else q.where(AssetGoal.household_id.is_(None))
+    q = q.where(AssetGoal.household_id == household_id) if household_id is not None else q.where(AssetGoal.household_id.is_(None))
     q = q.order_by(AssetGoal.created_at.desc()).limit(1)
     result = await db.execute(q)
     return result.scalar_one_or_none()
@@ -123,7 +123,7 @@ async def get_goal_with_insight(
 async def _get_recent_snapshots(user_id: int, household_id: int | None, db: AsyncSession, months: int = 4) -> list[AssetSnapshot]:
     """최근 N개월 스냅샷 조회"""
     q = select(AssetSnapshot).where(AssetSnapshot.user_id == user_id)
-    q = q.where(AssetSnapshot.household_id == household_id) if household_id else q.where(AssetSnapshot.household_id.is_(None))
+    q = q.where(AssetSnapshot.household_id == household_id) if household_id is not None else q.where(AssetSnapshot.household_id.is_(None))
     q = q.order_by(AssetSnapshot.snapshot_date.desc()).limit(months)
     result = await db.execute(q)
     return list(result.scalars().all())
@@ -156,6 +156,7 @@ async def get_monthly_savings(user_id: int, household_id: int | None, db: AsyncS
         extract("month", Expense.date) == month,
     )
 
+    # household_id가 있으면 가구 기반, 없으면 개인 기반 (레거시 폴백)
     if household_id is not None:
         income_q = income_q.where(Income.household_id == household_id)
         expense_q = expense_q.where(Expense.household_id == household_id)

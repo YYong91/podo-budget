@@ -73,9 +73,8 @@ export default function RecurringList() {
       setLoading(true)
       setError(null)
 
-      const params: { type?: string; household_id?: number } = {}
+      const params: { type?: string; household_id: number } = { household_id: activeHouseholdId! }
       if (typeFilter !== 'all') params.type = typeFilter
-      if (activeHouseholdId) params.household_id = activeHouseholdId
 
       const [recurringRes, categoriesRes] = await Promise.all([
         recurringApi.getAll(params),

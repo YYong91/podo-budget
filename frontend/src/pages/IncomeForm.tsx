@@ -86,7 +86,7 @@ export default function IncomeForm() {
 
     setLoading(true)
     try {
-      const res = await chatApi.sendMessage(naturalInput.trim(), activeHouseholdId ?? undefined, true)
+      const res = await chatApi.sendMessage(naturalInput.trim(), activeHouseholdId!, true)
 
       const allItems = res.data.parsed_expenses ?? res.data.parsed_items ?? []
       const incomeItems = allItems.filter((item) => item.type === 'income')

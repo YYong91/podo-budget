@@ -115,13 +115,13 @@ export default function TransactionList() {
         start_date: start,
         end_date: end,
         limit: 1000,
-        ...(activeHouseholdId ? { household_id: activeHouseholdId } : {}),
+        household_id: activeHouseholdId!,
       }
 
       const [expRes, incRes, pendingRes] = await Promise.all([
         expenseApi.getAll(baseParams).catch(() => ({ data: [] as Expense[] })),
         incomeApi.getAll(baseParams).catch(() => ({ data: [] as Income[] })),
-        recurringApi.getPending(activeHouseholdId ?? undefined).catch(() => ({ data: [] as RecurringTransaction[] })),
+        recurringApi.getPending(activeHouseholdId!).catch(() => ({ data: [] as RecurringTransaction[] })),
       ])
 
       setExpenses(expRes.data)

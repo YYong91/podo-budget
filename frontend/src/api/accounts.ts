@@ -4,9 +4,9 @@ import apiClient from './client'
 import type { Account, CreateAccountParams } from '../types'
 
 export const accountApi = {
-  getAll: (householdId?: number) =>
+  getAll: (householdId: number) =>
     apiClient.get<Account[]>('/accounts', {
-      params: householdId != null ? { household_id: householdId } : undefined,
+      params: { household_id: householdId },
     }),
 
   getById: (id: number) =>

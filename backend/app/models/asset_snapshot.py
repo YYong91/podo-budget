@@ -9,7 +9,7 @@ class AssetSnapshot(Base):
     __table_args__ = (Index("ix_asset_snapshots_household_date", "household_id", "snapshot_date"),)
 
     id = Column(Integer, primary_key=True, index=True)
-    household_id = Column(Integer, ForeignKey("households.id", ondelete="CASCADE"), nullable=True)
+    household_id = Column(Integer, ForeignKey("households.id", ondelete="CASCADE"), nullable=False)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     snapshot_date = Column(Date, nullable=False)
     total_assets = Column(Numeric(18, 2), nullable=False, default=0)

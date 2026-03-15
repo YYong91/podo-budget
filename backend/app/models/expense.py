@@ -2,7 +2,7 @@
 
 사용자별 지출 기록을 저장하는 Expense 엔티티입니다.
 user_id를 통해 각 사용자의 지출을 격리하며,
-household_id가 있는 경우 해당 가구의 공유 지출로 기록됩니다.
+household_id를 통해 소속 가구의 지출로 기록됩니다.
 """
 
 from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Index, Integer, Numeric, String, Text
@@ -18,7 +18,7 @@ class Expense(Base):
     Attributes:
         id: 지출 고유 식별자 (Primary Key)
         user_id: 지출을 기록한 사용자 ID (Foreign Key, nullable=True for migration)
-        household_id: 공유 가구 ID (Foreign Key, nullable - None이면 개인 지출)
+        household_id: 소속 가구 ID (Foreign Key, NOT NULL)
         amount: 지출 금액
         description: 지출 설명
         category_id: 카테고리 ID (Foreign Key, nullable)
@@ -38,7 +38,7 @@ class Expense(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)  # 점진적 마이그레이션을 위해 nullable=True
-    household_id = Column(Integer, ForeignKey("households.id", ondelete="SET NULL"), nullable=True, index=True)  # 공유 가계부용
+    household_id = Column(Integer, ForeignKey("households.id", ondelete="CASCADE"), nullable=False, index=True)  # 소속 가구 (필수)
     amount = Column(Numeric(12, 2), nullable=False)
     description = Column(String, nullable=False)
     category_id = Column(Integer, ForeignKey("categories.id"), nullable=True)

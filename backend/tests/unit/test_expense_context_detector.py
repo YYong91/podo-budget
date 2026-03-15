@@ -139,14 +139,14 @@ class TestResolveHouseholdId:
         assert result == 10
 
     @pytest.mark.asyncio
-    async def test_personal_context_returns_none(self):
-        """개인 키워드 → None (개인 지출)"""
+    async def test_personal_context_still_uses_active_household(self):
+        """개인 키워드 → household_id 필수이므로 활성 가구 사용"""
         result = await resolve_household_id(
             message="내 점심 8000원",
             explicit_household_id=None,
             user_active_household_id=10,
         )
-        assert result is None
+        assert result == 10
 
     @pytest.mark.asyncio
     async def test_no_context_defaults_to_active(self):
@@ -179,11 +179,11 @@ class TestResolveHouseholdId:
         assert result is None
 
     @pytest.mark.asyncio
-    async def test_explicit_none_still_checks_context(self):
-        """explicit_household_id=None 일 때 컨텍스트 탐지 수행"""
+    async def test_explicit_none_uses_active_household(self):
+        """explicit_household_id=None → 활성 가구 사용 (household_id 필수)"""
         result = await resolve_household_id(
             message="혼자 커피 5000원",
             explicit_household_id=None,
             user_active_household_id=5,
         )
-        assert result is None
+        assert result == 5

@@ -17,7 +17,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy import and_, extract, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.dependencies import get_user_active_household_id
+from app.api.dependencies import get_user_active_household_id_or_none
 from app.core.config import settings
 from app.core.database import get_db
 from app.models.budget import Budget
@@ -211,8 +211,8 @@ async def telegram_webhook(request: Request, db: AsyncSession = Depends(get_db))
     # 봇 사용자 생성 또는 조회 (데이터 격리를 위함)
     bot_user = await get_or_create_bot_user(db, platform="telegram", platform_user_id=str(chat_id))
 
-    # 사용자의 활성 가구 ID 조회
-    active_household_id = await get_user_active_household_id(bot_user, db)
+    # 사용자의 활성 가구 ID 조회 (봇은 미연동 사용자를 별도 처리해야 하므로 or_none 사용)
+    active_household_id = await get_user_active_household_id_or_none(bot_user, db)
 
     # /start 명령어 처리
     if user_text.startswith("/start"):

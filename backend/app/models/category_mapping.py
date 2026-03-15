@@ -29,7 +29,7 @@ class CategoryMapping(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)
-    household_id = Column(Integer, ForeignKey("households.id", ondelete="SET NULL"), nullable=True, index=True)
+    household_id = Column(Integer, ForeignKey("households.id", ondelete="CASCADE"), nullable=False, index=True)
     source_name = Column(String, nullable=False)  # LLM이 제안한 이름
     target_category_id = Column(Integer, ForeignKey("categories.id", ondelete="CASCADE"), nullable=False)
     created_at = Column(DateTime, default=func.now())

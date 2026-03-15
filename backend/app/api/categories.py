@@ -20,19 +20,18 @@ from app.schemas.category import CategoryCreate, CategoryReorderRequest, Categor
 router = APIRouter()
 
 
-async def _get_household_id(current_user: User, db: AsyncSession) -> int | None:
-    """현재 사용자의 활성 가구 ID 조회"""
+async def _get_household_id(current_user: User, db: AsyncSession) -> int:
+    """현재 사용자의 활성 가구 ID 조회 (필수)"""
     return await get_user_active_household_id(current_user, db)
 
 
-def _build_accessible_filter(user_id: int, household_id: int | None):
+def _build_accessible_filter(user_id: int, household_id: int):
     """접근 가능한 카테고리 필터 (3-scope)"""
     conditions = [
         and_(Category.household_id.is_(None), Category.user_id.is_(None)),  # 시스템
         and_(Category.user_id == user_id, Category.household_id.is_(None)),  # 솔로 폴백
+        Category.household_id == household_id,  # 가계
     ]
-    if household_id is not None:
-        conditions.append(Category.household_id == household_id)  # 가계
     return or_(*conditions)
 
 
@@ -70,10 +69,8 @@ async def create_category(
     if existing.scalar_one_or_none():
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="이미 존재하는 카테고리입니다")
 
-    if household_id is not None:
-        db_category = Category(**category.model_dump(), household_id=household_id, user_id=None)
-    else:
-        db_category = Category(**category.model_dump(), user_id=current_user.id)
+    # 가구 소속이 필수이므로 항상 가계 카테고리로 생성
+    db_category = Category(**category.model_dump(), household_id=household_id, user_id=None)
 
     db.add(db_category)
     await db.commit()
@@ -143,7 +140,7 @@ async def update_category(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="시스템 카테고리는 수정할 수 없습니다")
 
     # 소유권 확인: 가계 카테고리(멤버이면 OK) 또는 솔로 개인 카테고리(본인만)
-    is_household_owner = household_id is not None and db_category.household_id == household_id
+    is_household_owner = db_category.household_id == household_id
     is_solo_owner = db_category.user_id == current_user.id
     if not (is_household_owner or is_solo_owner):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="카테고리를 찾을 수 없습니다")
@@ -180,7 +177,7 @@ async def delete_category(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="시스템 카테고리는 삭제할 수 없습니다")
 
     # 소유권 확인
-    is_household_owner = household_id is not None and db_category.household_id == household_id
+    is_household_owner = db_category.household_id == household_id
     is_solo_owner = db_category.user_id == current_user.id
     if not (is_household_owner or is_solo_owner):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="카테고리를 찾을 수 없습니다")
