@@ -6,7 +6,7 @@
 
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, Plus } from 'lucide-react'
 import { useToast } from '../hooks/useToast'
 import { categoryApi } from '../api/categories'
 import EmptyState from '../components/EmptyState'
@@ -166,7 +166,7 @@ export default function CategoryManager() {
   if (error) {
     return (
       <div className="space-y-6">
-        <button onClick={() => navigate('/settings')} className="p-1.5 -ml-1.5 rounded-lg hover:bg-warm-100 transition-colors">
+        <button onClick={() => navigate('/settings')} className="p-2.5 -ml-2.5 rounded-lg hover:bg-warm-100 transition-colors">
           <ArrowLeft className="w-5 h-5 text-warm-600" />
         </button>
         <div className="bg-white rounded-2xl shadow-sm border border-warm-200">
@@ -179,19 +179,20 @@ export default function CategoryManager() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <button onClick={() => navigate('/settings')} className="p-1.5 -ml-1.5 rounded-lg hover:bg-warm-100 transition-colors">
+        <button onClick={() => navigate('/settings')} className="p-2.5 -ml-2.5 rounded-lg hover:bg-warm-100 transition-colors">
           <ArrowLeft className="w-5 h-5 text-warm-600" />
         </button>
         <button
           onClick={() => setIsAdding(true)}
-          className="w-full sm:w-auto px-4 py-2 text-sm font-medium text-white bg-grape-600 rounded-lg hover:bg-grape-700 transition-colors"
+          className="flex items-center gap-1.5 px-4 py-2 bg-grape-600 text-white rounded-xl text-sm font-medium shadow-sm hover:bg-grape-700 transition-colors"
         >
-          + 추가
+          <Plus className="w-4 h-4" />
+          추가
         </button>
       </div>
 
       {/* 카테고리 목록 */}
-      <div className="bg-white rounded-2xl shadow-sm border border-warm-200 overflow-hidden">
+      <div className="bg-white rounded-2xl shadow-sm border border-warm-200/60 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>

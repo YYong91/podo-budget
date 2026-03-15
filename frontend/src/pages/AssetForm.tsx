@@ -315,7 +315,7 @@ export default function AssetForm() {
       {/* 자연어 모드 */}
       {mode === 'natural' && !isEdit && (
         <div className="space-y-4">
-          <div className="bg-white rounded-2xl border border-warm-200/60 shadow-sm p-5 space-y-3">
+          <div className="bg-white rounded-2xl border border-warm-200/60 shadow-sm p-6 space-y-3">
             <p className="text-sm text-warm-500">
               보유 자산을 자유롭게 입력하면 자동으로 분석해드립니다.
             </p>
@@ -327,12 +327,12 @@ export default function AssetForm() {
               onChange={e => setNaturalInput(e.target.value)}
               placeholder="보유 자산을 입력하세요..."
               rows={4}
-              className="w-full border border-warm-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-grape-300 resize-none"
+              className="w-full border border-warm-300 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500 resize-none"
             />
             <button
               onClick={handleNaturalParse}
               disabled={loading || !naturalInput.trim()}
-              className="w-full py-2.5 bg-grape-600 text-white rounded-lg text-sm font-medium hover:bg-grape-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+              className="w-full py-3 bg-grape-600 text-white rounded-xl text-sm font-medium hover:bg-grape-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
             >
               {loading && !previewItems ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
               분석하기
@@ -341,7 +341,7 @@ export default function AssetForm() {
 
           {/* 프리뷰 */}
           {previewItems && (
-            <div className="bg-white rounded-2xl border border-warm-200/60 shadow-sm p-5 space-y-3">
+            <div className="bg-white rounded-2xl border border-warm-200/60 shadow-sm p-6 space-y-3">
               <h3 className="text-sm font-semibold text-warm-700">분석 결과 ({previewItems.length}건)</h3>
               <div className="space-y-2">
                 {previewItems.map((item, i) => (
@@ -362,7 +362,7 @@ export default function AssetForm() {
               <button
                 onClick={handleNaturalSave}
                 disabled={loading}
-                className="w-full py-2.5 bg-grape-600 text-white rounded-lg text-sm font-medium hover:bg-grape-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
+                className="w-full py-3 bg-grape-600 text-white rounded-xl text-sm font-medium hover:bg-grape-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
               >
                 {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
                 저장하기
@@ -374,10 +374,10 @@ export default function AssetForm() {
 
       {/* 직접 입력 모드 */}
       {(mode === 'direct' || isEdit) && (
-        <form onSubmit={handleDirectSave} className="bg-white rounded-2xl border border-warm-200/60 shadow-sm p-5 space-y-4">
+        <form onSubmit={handleDirectSave} className="bg-white rounded-2xl border border-warm-200/60 shadow-sm p-6 space-y-5">
           {/* 자산 유형 선택 */}
           <div>
-            <label className="block text-sm font-medium text-warm-700 mb-1.5">자산 유형</label>
+            <label className="block text-sm font-medium text-warm-700 mb-2">자산 유형</label>
             <select
               value={assetType}
               onChange={e => {
@@ -385,7 +385,7 @@ export default function AssetForm() {
                 setAssetType(t)
                 if (isEdit) setForm(f => ({ ...f, type: t, is_liability: isLiabilityType(t) }))
               }}
-              className="w-full border border-warm-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-grape-300"
+              className="w-full border border-warm-300 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
             >
               {(Object.entries(TYPE_LABELS) as [AssetType, string][]).map(([v, label]) => (
                 <option key={v} value={v}>{label}</option>
@@ -396,13 +396,13 @@ export default function AssetForm() {
           {/* 자산명 (수동형에서만) */}
           {!isInvestmentType && (
             <div>
-              <label className="block text-sm font-medium text-warm-700 mb-1.5">자산명</label>
+              <label className="block text-sm font-medium text-warm-700 mb-2">자산명</label>
               <input
                 type="text"
                 value={form.name ?? ''}
                 onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
                 placeholder="예) 내 적금, 주택담보대출"
-                className="w-full border border-warm-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-grape-300"
+                className="w-full border border-warm-300 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
                 required
               />
             </div>
@@ -412,7 +412,7 @@ export default function AssetForm() {
           {isInvestmentType && (
             <>
               <div className="relative" ref={dropdownRef}>
-                <label className="block text-sm font-medium text-warm-700 mb-1.5">종목명</label>
+                <label className="block text-sm font-medium text-warm-700 mb-2">종목명</label>
                 {form.ticker && !manualMode ? (
                   /* 선택된 상태 */
                   <div className="flex items-center gap-2 p-2.5 border border-grape-200 bg-grape-50 rounded-lg">
@@ -440,7 +440,7 @@ export default function AssetForm() {
                       value={form.name ?? ''}
                       onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
                       placeholder="종목명 (예: 삼성전자)"
-                      className="w-full border border-warm-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-grape-300"
+                      className="w-full border border-warm-300 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
                       required
                     />
                     <input
@@ -448,7 +448,7 @@ export default function AssetForm() {
                       value={form.ticker ?? ''}
                       onChange={e => setForm(f => ({ ...f, ticker: e.target.value || undefined }))}
                       placeholder="티커/코드 (선택, 예: 005930)"
-                      className="w-full border border-warm-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-grape-300"
+                      className="w-full border border-warm-300 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
                     />
                     <button
                       type="button"
@@ -477,10 +477,10 @@ export default function AssetForm() {
                       onFocus={() => { if (searchResults.length > 0 || searchError) setShowDropdown(true) }}
                       onKeyDown={e => { if (e.key === 'Enter') e.preventDefault() }}
                       placeholder={assetType === 'crypto' ? 'BTC, 비트코인...' : '종목명 또는 코드 검색'}
-                      className="w-full border border-warm-200 rounded-lg pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-grape-300"
+                      className="w-full border border-warm-300 rounded-xl pl-9 pr-4 py-3 text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
                     />
                     {showDropdown && (
-                      <div className="absolute z-10 left-0 right-0 top-full mt-1 bg-white border border-warm-200 rounded-lg shadow-lg py-1 max-h-48 overflow-y-auto">
+                      <div className="absolute z-10 left-0 right-0 top-full mt-1 bg-white border border-warm-300 rounded-xl shadow-lg py-1 max-h-48 overflow-y-auto">
                         {searchError ? (
                           /* 에러 상태 */
                           <div className="px-3 py-4 text-center">
@@ -529,27 +529,27 @@ export default function AssetForm() {
                 )}
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-warm-700 mb-1.5">수량</label>
+                  <label className="block text-sm font-medium text-warm-700 mb-2">수량</label>
                   <input
                     type="number"
                     step="any"
                     value={form.quantity ?? ''}
                     onChange={e => setForm(f => ({ ...f, quantity: e.target.value ? Number(e.target.value) : null }))}
                     placeholder="0"
-                    className="w-full border border-warm-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-grape-300"
+                    className="w-full border border-warm-300 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-warm-700 mb-1.5">매입 평균가 (원)</label>
+                  <label className="block text-sm font-medium text-warm-700 mb-2">매입 평균가 (원)</label>
                   <input
                     type="number"
                     step="any"
                     value={form.avg_buy_price ?? ''}
                     onChange={e => setForm(f => ({ ...f, avg_buy_price: e.target.value ? Number(e.target.value) : null }))}
                     placeholder="0"
-                    className="w-full border border-warm-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-grape-300"
+                    className="w-full border border-warm-300 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
                   />
                 </div>
               </div>
@@ -560,7 +560,7 @@ export default function AssetForm() {
           {isManualType && (
             <>
               <div>
-                <label className="block text-sm font-medium text-warm-700 mb-1.5">
+                <label className="block text-sm font-medium text-warm-700 mb-2">
                   {assetType === 'loan' ? '대출 잔액 (원)' : '금액 (원)'}
                 </label>
                 <input
@@ -569,39 +569,39 @@ export default function AssetForm() {
                   value={form.manual_value ?? ''}
                   onChange={e => setForm(f => ({ ...f, manual_value: e.target.value ? Number(e.target.value) : null }))}
                   placeholder="0"
-                  className="w-full border border-warm-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-grape-300"
+                  className="w-full border border-warm-300 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
                 />
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-warm-700 mb-1.5">이율 (%)</label>
+                  <label className="block text-sm font-medium text-warm-700 mb-2">이율 (%)</label>
                   <input
                     type="number"
                     step="0.01"
                     value={form.interest_rate ?? ''}
                     onChange={e => setForm(f => ({ ...f, interest_rate: e.target.value ? Number(e.target.value) : null }))}
                     placeholder="연 이율"
-                    className="w-full border border-warm-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-grape-300"
+                    className="w-full border border-warm-300 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-warm-700 mb-1.5">만기일</label>
+                  <label className="block text-sm font-medium text-warm-700 mb-2">만기일</label>
                   <input
                     type="date"
                     value={form.maturity_date ?? ''}
                     onChange={e => setForm(f => ({ ...f, maturity_date: e.target.value || null }))}
-                    className="w-full border border-warm-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-grape-300"
+                    className="w-full border border-warm-300 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
                   />
                 </div>
               </div>
               {assetType === 'loan' && (
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-sm font-medium text-warm-700 mb-1.5">상환방식</label>
+                    <label className="block text-sm font-medium text-warm-700 mb-2">상환방식</label>
                     <select
                       value={form.repayment_type ?? ''}
                       onChange={e => setForm(f => ({ ...f, repayment_type: e.target.value || null }))}
-                      className="w-full border border-warm-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-grape-300"
+                      className="w-full border border-warm-300 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
                     >
                       <option value="">선택</option>
                       <option value="equal_principal_interest">원리금균등</option>
@@ -610,14 +610,14 @@ export default function AssetForm() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-warm-700 mb-1.5">월 상환액 (원)</label>
+                    <label className="block text-sm font-medium text-warm-700 mb-2">월 상환액 (원)</label>
                     <input
                       type="number"
                       step="any"
                       value={form.monthly_payment ?? ''}
                       onChange={e => setForm(f => ({ ...f, monthly_payment: e.target.value ? Number(e.target.value) : null }))}
                       placeholder="0"
-                      className="w-full border border-warm-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-grape-300"
+                      className="w-full border border-warm-300 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
                     />
                   </div>
                 </div>
@@ -628,11 +628,11 @@ export default function AssetForm() {
           {/* 계좌 선택 (선택) */}
           {accounts.length > 0 && (
             <div>
-              <label className="block text-sm font-medium text-warm-700 mb-1.5">계좌 (선택)</label>
+              <label className="block text-sm font-medium text-warm-700 mb-2">계좌 (선택)</label>
               <select
                 value={form.account_id ?? ''}
                 onChange={e => setForm(f => ({ ...f, account_id: e.target.value ? Number(e.target.value) : null }))}
-                className="w-full border border-warm-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-grape-300"
+                className="w-full border border-warm-300 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
               >
                 <option value="">계좌 미지정</option>
                 {accounts.map(acc => (
@@ -644,20 +644,20 @@ export default function AssetForm() {
 
           {/* 메모 */}
           <div>
-            <label className="block text-sm font-medium text-warm-700 mb-1.5">메모 (선택)</label>
+            <label className="block text-sm font-medium text-warm-700 mb-2">메모 (선택)</label>
             <input
               type="text"
               value={form.memo ?? ''}
               onChange={e => setForm(f => ({ ...f, memo: e.target.value || null }))}
               placeholder="메모"
-              className="w-full border border-warm-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-grape-300"
+              className="w-full border border-warm-300 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
             />
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-2.5 bg-grape-600 text-white rounded-lg text-sm font-medium hover:bg-grape-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
+            className="w-full py-3 bg-grape-600 text-white rounded-xl text-sm font-medium hover:bg-grape-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
           >
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
             {isEdit ? '수정하기' : '저장하기'}

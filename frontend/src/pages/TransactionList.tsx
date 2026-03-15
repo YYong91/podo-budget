@@ -5,7 +5,7 @@
 
 import { useEffect, useState, useMemo, useCallback, useRef } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import PeriodNavigator from '../components/stats/PeriodNavigator'
 import toast from 'react-hot-toast'
 import { expenseApi } from '../api/expenses'
 import { incomeApi } from '../api/income'
@@ -232,21 +232,7 @@ export default function TransactionList() {
     <PullToRefresh onRefresh={handleRefresh}>
     <div className="space-y-4">
       {/* 월 네비게이션 */}
-      <div className="flex items-center justify-center gap-4">
-        <button
-          onClick={() => navigateMonth(-1)}
-          className="p-2 rounded-lg hover:bg-warm-100 transition-colors"
-        >
-          <ChevronLeft className="w-5 h-5 text-warm-600" />
-        </button>
-        <h1 className="text-lg font-bold text-warm-900">{monthLabel}</h1>
-        <button
-          onClick={() => navigateMonth(1)}
-          className="p-2 rounded-lg hover:bg-warm-100 transition-colors"
-        >
-          <ChevronRight className="w-5 h-5 text-warm-600" />
-        </button>
-      </div>
+      <PeriodNavigator label={monthLabel} onPrev={() => navigateMonth(-1)} onNext={() => navigateMonth(1)} />
 
       {/* 요약 + 필터 */}
       <div className="flex items-center justify-center gap-6">
