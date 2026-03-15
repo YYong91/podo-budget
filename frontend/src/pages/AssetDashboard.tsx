@@ -55,7 +55,7 @@ function AssetRow({ asset }: { asset: Asset }) {
   return (
     <Link
       to={`/assets/${asset.id}`}
-      className="flex items-center justify-between py-2 border-b border-warm-100 last:border-0 hover:bg-warm-50 -mx-1 px-1 rounded transition-colors"
+      className="flex items-center justify-between py-2.5 border-b border-warm-100 last:border-0 hover:bg-warm-50 rounded transition-colors"
     >
       <div>
         <p className="text-sm font-medium text-warm-800">{asset.name}</p>
@@ -245,25 +245,7 @@ export default function AssetDashboard() {
     <div className="space-y-6">
       {/* 1. 순자산 히어로 섹션 */}
       <div className={`rounded-2xl border shadow-sm p-6 ${netWorth >= 0 ? 'bg-gradient-to-br from-grape-50 to-grape-100 border-grape-200/60' : 'bg-gradient-to-br from-rose-50 to-red-50 border-rose-200/60'}`}>
-        <div className="flex items-start justify-between mb-1">
-          <p className="text-sm text-warm-500">순자산</p>
-          <div className="flex items-center gap-2">
-            <Link
-              to="/accounts"
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${netWorth >= 0 ? 'text-grape-600 hover:bg-grape-200/50' : 'text-rose-600 hover:bg-rose-200/50'}`}
-            >
-              <Wallet className="w-3.5 h-3.5" />
-              계좌 관리
-            </Link>
-            <Link
-              to="/assets/new"
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${netWorth >= 0 ? 'bg-grape-600 text-white hover:bg-grape-700' : 'bg-rose-600 text-white hover:bg-rose-700'}`}
-            >
-              <Plus className="w-3.5 h-3.5" />
-              자산 등록
-            </Link>
-          </div>
-        </div>
+        <p className="text-sm text-warm-500 mb-1">순자산</p>
         <p className={`text-3xl font-bold tracking-tight ${netWorth >= 0 ? 'text-grape-700' : 'text-rose-700'}`}>
           {formatAmount(netWorth)}
         </p>
@@ -278,14 +260,42 @@ export default function AssetDashboard() {
           <span>자산 {formatAmount(totalAssets)}</span>
           <span>부채 {formatAmount(totalLiabilities)}</span>
         </div>
-        {/* 월 저축 요약 */}
-        {monthlySavings && (
-          <p className="text-xs text-warm-400 mt-2">
-            {monthlySavings.month} 저축 {formatAmount(monthlySavings.net_savings)}
-            {monthlySavings.net_savings > 0 ? ' 👍' : ''}
-          </p>
-        )}
+        {/* 액션 버튼 — pill 스타일 */}
+        <div className="flex gap-2 mt-4">
+          <Link
+            to="/accounts"
+            className={`flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-full text-sm font-medium transition-colors ${netWorth >= 0 ? 'bg-grape-200/50 text-grape-700 hover:bg-grape-200/80' : 'bg-rose-200/50 text-rose-700 hover:bg-rose-200/80'}`}
+          >
+            <Wallet className="w-4 h-4" />
+            계좌 관리
+          </Link>
+          <Link
+            to="/assets/new"
+            className={`flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-full text-sm font-medium transition-colors ${netWorth >= 0 ? 'bg-grape-600 text-white hover:bg-grape-700' : 'bg-rose-600 text-white hover:bg-rose-700'}`}
+          >
+            <Plus className="w-4 h-4" />
+            자산 등록
+          </Link>
+        </div>
       </div>
+
+      {/* 월 저축 요약 */}
+      {monthlySavings && (
+        <div className="bg-white rounded-2xl border border-warm-200/60 shadow-sm p-4 flex items-center justify-between">
+          <div>
+            <p className="text-xs text-warm-400">{monthlySavings.month} 저축</p>
+            <p className={`text-lg font-bold ${monthlySavings.net_savings >= 0 ? 'text-leaf-600' : 'text-rose-600'}`}>
+              {formatAmount(monthlySavings.net_savings)}
+            </p>
+          </div>
+          {monthlySavings.net_savings > 0 && (
+            <TrendingUp className="w-5 h-5 text-leaf-500" />
+          )}
+          {monthlySavings.net_savings < 0 && (
+            <TrendingDown className="w-5 h-5 text-rose-500" />
+          )}
+        </div>
+      )}
 
       {/* 2. 목표 진행률 */}
       {goal ? (
@@ -334,7 +344,7 @@ export default function AssetDashboard() {
       {snapshots.length > 1 && (
         <div className="bg-white rounded-2xl border border-warm-200/60 shadow-sm p-5">
           <h2 className="text-sm font-semibold text-warm-700 mb-4">순자산 추이</h2>
-          <div className="h-48">
+          <div className="h-56">
             <Line
               data={lineData}
               options={{
@@ -366,7 +376,7 @@ export default function AssetDashboard() {
                   <div className="flex items-center gap-2">
                     <Icon className={`w-4 h-4 ${group.iconColorClass}`} />
                     <span className={`text-sm font-semibold ${group.colorClass}`}>
-                      {group.label} ({group.items.length})
+                      {group.label}
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
