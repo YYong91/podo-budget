@@ -560,3 +560,62 @@ async def test_kakao_webhook_link_expired_code(client, db_session):
     data = response.json()
     text = data["template"]["outputs"][0]["simpleText"]["text"]
     assert "만료" in text
+
+
+# ──────────────────────────────────────────────
+# /undo 명령어 테스트
+# ──────────────────────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_kakao_webhook_undo_deletes_last_expense(client, db_session, mock_llm_parse_expense):
+    """/undo 명령어로 마지막 지출이 삭제됨"""
+    # 먼저 지출 입력
+    payload = make_kakao_request("점심 8000원")
+    response = await client.post("/api/kakao/webhook", json=payload)
+    assert response.status_code == 200
+
+    # 지출이 저장됐는지 확인
+    result = await db_session.execute(select(Expense))
+    expenses = result.scalars().all()
+    assert len(expenses) == 1
+
+    # /undo로 삭제
+    payload = make_kakao_request("/undo")
+    response = await client.post("/api/kakao/webhook", json=payload)
+    assert response.status_code == 200
+
+    data = response.json()
+    text = data["template"]["outputs"][0]["simpleText"]["text"]
+    assert "삭제" in text
+    assert "8,000" in text
+
+    # DB에서 삭제 확인
+    result = await db_session.execute(select(Expense))
+    expenses = result.scalars().all()
+    assert len(expenses) == 0
+
+
+@pytest.mark.asyncio
+async def test_kakao_webhook_undo_no_expenses(client, db_session):
+    """/undo 지출이 없으면 안내 메시지 반환"""
+    payload = make_kakao_request("/undo")
+    response = await client.post("/api/kakao/webhook", json=payload)
+    assert response.status_code == 200
+
+    data = response.json()
+    text = data["template"]["outputs"][0]["simpleText"]["text"]
+    assert "없" in text
+
+
+@pytest.mark.asyncio
+async def test_kakao_webhook_expense_has_undo_quick_reply(client, db_session, mock_llm_parse_expense):
+    """지출 저장 후 '방금 거 취소' 빠른 답장 버튼이 포함됨"""
+    payload = make_kakao_request("커피 5000원")
+    response = await client.post("/api/kakao/webhook", json=payload)
+    assert response.status_code == 200
+
+    data = response.json()
+    quick_replies = data["template"].get("quickReplies", [])
+    labels = [qr["label"] for qr in quick_replies]
+    assert any("취소" in label for label in labels)

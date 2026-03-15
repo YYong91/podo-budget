@@ -33,6 +33,8 @@ from app.services.bot_messages import (
     format_timeout_message,
 )
 from app.services.bot_user_service import get_or_create_bot_user, link_kakao_account_by_code
+from app.services.category_hint_service import get_category_hints, get_user_categories
+from app.services.category_mapping_service import get_category_mappings_for_prompt, get_mapped_category
 from app.services.category_service import get_or_create_category
 from app.services.expense_context_detector import resolve_household_id
 from app.services.llm_service import get_llm_provider
@@ -133,12 +135,23 @@ async def kakao_webhook(request: Request, db: AsyncSession = Depends(get_db)):
             success, message = await link_kakao_account_by_code(db, code, str(kakao_user_id))
             return make_simple_text_response(message)
 
+        # /undo 명령어 처리 (마지막 지출 삭제)
+        if utterance.startswith("/undo"):
+            return await handle_undo_command(db, bot_user)
+
         # 자연어 지출 입력 → LLM 파싱 (4.5초 타임아웃)
         try:
             llm = get_llm_provider("parse")
+
+            # 사용자 카테고리 목록 + 히스토리 힌트 + 매핑 로드 (정확도 향상)
+            household_id_for_hints = active_household_id
+            user_categories = await get_user_categories(db, bot_user.id, household_id_for_hints)
+            history_hints = await get_category_hints(db, bot_user.id, household_id_for_hints)
+            cat_mappings = await get_category_mappings_for_prompt(db, user_id=bot_user.id, household_id=household_id_for_hints)
+
             try:
                 async with asyncio.timeout(4.5):
-                    parsed = await llm.parse_expense(utterance)
+                    parsed = await llm.parse_expense(utterance, categories=user_categories, history_hints=history_hints, category_mappings=cat_mappings)
             except TimeoutError:
                 logger.warning(f"카카오 LLM 파싱 타임아웃: {utterance}")
                 return make_simple_text_response(
@@ -155,9 +168,13 @@ async def kakao_webhook(request: Request, db: AsyncSession = Depends(get_db)):
                 if "error" in parsed:
                     return make_simple_text_response(format_parse_error(utterance), quick_replies=[make_quick_reply("❓ 도움말", "/help")])
 
-                # 카테고리 매칭/생성 (사용자별 카테고리 관리)
+                # 카테고리 매핑 확인 → 기존 카테고리 → 새로 생성
                 category_name = parsed.get("category", "기타")
-                category = await get_or_create_category(db, category_name, user_id=bot_user.id, household_id=household_id)
+                mapped = await get_mapped_category(db, category_name, user_id=bot_user.id, household_id=household_id)
+                if mapped:
+                    category = mapped
+                else:
+                    category = await get_or_create_category(db, category_name, user_id=bot_user.id, household_id=household_id)
 
                 # Expense 생성 (user_id + household_id 연결)
                 expense_date = datetime.fromisoformat(parsed.get("date", datetime.now().isoformat()))
@@ -178,11 +195,15 @@ async def kakao_webhook(request: Request, db: AsyncSession = Depends(get_db)):
                 return make_simple_text_response(
                     format_expense_saved(
                         amount=parsed["amount"],
-                        category=category_name,
+                        category=category.name,
                         description=parsed.get("description", utterance),
                         date=expense_date.strftime("%Y-%m-%d"),
                     ),
-                    quick_replies=[make_quick_reply("📊 이번달 지출 보기", "/report"), make_quick_reply("💰 예산 현황", "/budget")],
+                    quick_replies=[
+                        make_quick_reply("↩️ 방금 거 취소", "/undo"),
+                        make_quick_reply("📊 이번달 지출 보기", "/report"),
+                        make_quick_reply("💰 예산 현황", "/budget"),
+                    ],
                 )
 
             # 여러 지출 (list) 처리
@@ -190,9 +211,13 @@ async def kakao_webhook(request: Request, db: AsyncSession = Depends(get_db)):
                 created_expenses = []
 
                 for item in parsed:
-                    # 카테고리 매칭/생성 (사용자별 카테고리 관리)
+                    # 카테고리 매핑 확인 → 기존 카테고리 → 새로 생성
                     category_name = item.get("category", "기타")
-                    category = await get_or_create_category(db, category_name, user_id=bot_user.id, household_id=household_id)
+                    mapped = await get_mapped_category(db, category_name, user_id=bot_user.id, household_id=household_id)
+                    if mapped:
+                        category = mapped
+                    else:
+                        category = await get_or_create_category(db, category_name, user_id=bot_user.id, household_id=household_id)
 
                     # Expense 생성 (user_id + household_id 연결)
                     expense_date = datetime.fromisoformat(item.get("date", datetime.now().isoformat()))
@@ -222,7 +247,12 @@ async def kakao_webhook(request: Request, db: AsyncSession = Depends(get_db)):
                 message_lines.append(f"\n💰 총 {total_amount:,.0f}원")
 
                 return make_simple_text_response(
-                    "\n".join(message_lines), quick_replies=[make_quick_reply("📊 이번달 지출 보기", "/report"), make_quick_reply("💰 예산 현황", "/budget")]
+                    "\n".join(message_lines),
+                    quick_replies=[
+                        make_quick_reply("↩️ 방금 거 취소", "/undo"),
+                        make_quick_reply("📊 이번달 지출 보기", "/report"),
+                        make_quick_reply("💰 예산 현황", "/budget"),
+                    ],
                 )
 
         except Exception as e:
@@ -232,6 +262,38 @@ async def kakao_webhook(request: Request, db: AsyncSession = Depends(get_db)):
     except Exception as e:
         logger.error(f"카카오 webhook 처리 실패: {e}")
         return make_simple_text_response(format_server_error())
+
+
+async def handle_undo_command(db: AsyncSession, bot_user) -> dict:
+    """마지막 지출 삭제
+
+    사용자의 가장 최근 지출을 삭제합니다.
+
+    Args:
+        db: 데이터베이스 세션
+        bot_user: 봇 사용자 객체
+
+    Returns:
+        카카오 응답 형식 (version 2.0)
+    """
+    result = await db.execute(select(Expense).where(Expense.user_id == bot_user.id).order_by(Expense.id.desc()).limit(1))
+    expense = result.scalar_one_or_none()
+
+    if not expense:
+        return make_simple_text_response("삭제할 지출이 없어요.")
+
+    amount = expense.amount
+    description = expense.description
+    await db.delete(expense)
+    await db.commit()
+
+    return make_simple_text_response(
+        f"✅ 마지막 지출이 삭제되었어요.\n\n🗑️ {amount:,.0f}원 - {description}",
+        quick_replies=[
+            make_quick_reply("📊 이번달 지출 보기", "/report"),
+            make_quick_reply("❓ 도움말", "/help"),
+        ],
+    )
 
 
 async def handle_report_command(db: AsyncSession, user_id: int) -> dict:
