@@ -18,6 +18,16 @@ export interface Changelog {
 
 export const changelogs: Changelog[] = [
   {
+    version: '1.11.0',
+    date: '2026-03-16',
+    title: '온보딩 & 초대 개선',
+    items: [
+      { tag: '개선', text: '초대받은 가계부에 바로 참여할 수 있습니다' },
+      { tag: '신규', text: '가계부 상세에서 보낸 초대를 관리할 수 있습니다' },
+      { tag: '수정', text: '새로고침 시 온보딩 페이지가 다시 나오는 문제를 수정했습니다' },
+    ],
+  },
+  {
     version: '1.10.0',
     date: '2026-03-15',
     title: '다크모드 지원',
