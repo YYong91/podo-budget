@@ -115,7 +115,11 @@ async def kakao_webhook(request: Request, db: AsyncSession = Depends(get_db)):
         # /help 명령어 처리
         if utterance.startswith("/help"):
             return make_simple_text_response(
-                format_help_message(), quick_replies=[make_quick_reply("📊 이번달 지출 보기", "/report"), make_quick_reply("💰 예산 현황", "/budget")]
+                format_help_message(platform="kakao"),
+                quick_replies=[
+                    make_quick_reply("📊 이번달 지출 보기", "/report"),
+                    make_quick_reply("💰 예산 현황", "/budget"),
+                ],
             )
 
         # /report 명령어 처리 (이번 달 지출 요약)
