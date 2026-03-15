@@ -88,8 +88,8 @@ export default function InviteMemberModal({
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6">
-        <h2 className="text-xl font-bold text-warm-900 mb-4">
+      <div className="bg-[var(--surface-card)] rounded-2xl shadow-xl max-w-md w-full p-6">
+        <h2 className="text-xl font-bold text-[var(--text-primary)] mb-4">
           멤버 초대
         </h2>
 
@@ -98,7 +98,7 @@ export default function InviteMemberModal({
           <div>
             <label
               htmlFor="email"
-              className="block text-sm font-medium text-warm-700 mb-1"
+              className="block text-sm font-medium text-[var(--text-secondary)] mb-1"
             >
               이메일 <span className="text-rose-500">*</span>
             </label>
@@ -107,7 +107,7 @@ export default function InviteMemberModal({
               type="email"
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              className="w-full px-3 py-2 border border-warm-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
+              className="w-full px-3 py-2 border border-[var(--input-border)] rounded-xl focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
               placeholder="example@email.com"
               disabled={isLoading}
               required
@@ -118,7 +118,7 @@ export default function InviteMemberModal({
           <div>
             <label
               htmlFor="role"
-              className="block text-sm font-medium text-warm-700 mb-1"
+              className="block text-sm font-medium text-[var(--text-secondary)] mb-1"
             >
               역할
             </label>
@@ -131,21 +131,21 @@ export default function InviteMemberModal({
                   role: e.target.value as 'member' | 'admin',
                 })
               }
-              className="w-full px-3 py-2 border border-warm-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
+              className="w-full px-3 py-2 border border-[var(--input-border)] rounded-xl focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
               disabled={isLoading}
             >
               <option value="member">멤버</option>
               <option value="admin">관리자</option>
             </select>
-            <p className="text-xs text-warm-500 mt-1">
+            <p className="text-xs text-[var(--text-tertiary)] mt-1">
               관리자는 멤버 초대 및 가구 설정을 수정할 수 있습니다
             </p>
           </div>
 
           {/* 에러 메시지 */}
           {error && (
-            <div className="p-3 bg-rose-50 border border-rose-200 rounded-lg">
-              <p className="text-sm text-rose-600">{error}</p>
+            <div className="p-3 bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800/40 rounded-lg">
+              <p className="text-sm text-rose-600 dark:text-rose-400">{error}</p>
             </div>
           )}
 
@@ -155,7 +155,7 @@ export default function InviteMemberModal({
               type="button"
               onClick={handleClose}
               disabled={isLoading}
-              className="flex-1 px-4 py-2 text-sm font-medium text-warm-700 bg-white border border-warm-300 rounded-lg hover:bg-warm-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 px-4 py-2 text-sm font-medium text-[var(--text-secondary)] bg-[var(--surface-card)] border border-[var(--input-border)] rounded-lg hover:bg-[var(--surface)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               취소
             </button>

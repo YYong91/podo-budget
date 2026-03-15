@@ -92,35 +92,35 @@ export default function RegisterRecurringModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between p-5 border-b border-warm-100">
-          <h2 className="text-lg font-semibold text-warm-800">반복 거래 등록</h2>
-          <button onClick={onClose} className="p-1 rounded-md hover:bg-warm-100">
-            <X className="w-5 h-5 text-warm-500" />
+      <div className="bg-[var(--surface-card)] rounded-2xl shadow-xl w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between p-5 border-b border-[var(--border-subtle)]">
+          <h2 className="text-lg font-semibold text-[var(--text-primary)]">반복 거래 등록</h2>
+          <button onClick={onClose} className="p-1 rounded-md hover:bg-[var(--surface-hover)]">
+            <X className="w-5 h-5 text-[var(--text-tertiary)]" />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
           {/* 미리 채워진 정보 (읽기 전용) */}
-          <div className="bg-warm-50 rounded-xl p-4 space-y-2 text-sm">
+          <div className="bg-[var(--surface-elevated)] rounded-xl p-4 space-y-2 text-sm">
             <div className="flex justify-between">
-              <span className="text-warm-500">유형</span>
+              <span className="text-[var(--text-tertiary)]">유형</span>
               <span className={`font-medium ${type === 'expense' ? 'text-grape-700' : 'text-leaf-700'}`}>
                 {type === 'expense' ? '지출' : '수입'}
               </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-warm-500">설명</span>
-              <span className="font-medium text-warm-900 truncate ml-4 max-w-48">{description}</span>
+              <span className="text-[var(--text-tertiary)]">설명</span>
+              <span className="font-medium text-[var(--text-primary)] truncate ml-4 max-w-48">{description}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-warm-500">금액</span>
-              <span className="font-medium text-warm-900">₩{amount.toLocaleString('ko-KR')}</span>
+              <span className="text-[var(--text-tertiary)]">금액</span>
+              <span className="font-medium text-[var(--text-primary)]">₩{amount.toLocaleString('ko-KR')}</span>
             </div>
             {category_id && (
               <div className="flex justify-between">
-                <span className="text-warm-500">카테고리</span>
-                <span className="font-medium text-warm-900">
+                <span className="text-[var(--text-tertiary)]">카테고리</span>
+                <span className="font-medium text-[var(--text-primary)]">
                   {filteredCategories.find((c) => c.id === category_id)?.name ?? ''}
                 </span>
               </div>
@@ -129,13 +129,13 @@ export default function RegisterRecurringModal({
 
           {/* 반복 빈도 */}
           <div>
-            <label className="block text-sm font-medium text-warm-700 mb-2">반복 빈도</label>
+            <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">반복 빈도</label>
             <select
               value={formData.frequency}
               onChange={(e) =>
                 setFormData({ ...formData, frequency: e.target.value as typeof formData.frequency })
               }
-              className="w-full px-3 py-2 rounded-xl border border-warm-300 text-sm focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
+              className="w-full px-3 py-2 rounded-xl border border-[var(--input-border)] text-sm focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
             >
               <option value="monthly">매월</option>
               <option value="weekly">매주</option>
@@ -147,7 +147,7 @@ export default function RegisterRecurringModal({
           {/* 빈도별 추가 필드 */}
           {(formData.frequency === 'monthly' || formData.frequency === 'yearly') && (
             <div>
-              <label className="block text-sm font-medium text-warm-700 mb-2">반복 날짜</label>
+              <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">반복 날짜</label>
               <div className="flex items-center gap-2">
                 <input
                   type="number"
@@ -155,20 +155,20 @@ export default function RegisterRecurringModal({
                   onChange={(e) => setFormData({ ...formData, day_of_month: e.target.value })}
                   min="1"
                   max="31"
-                  className="w-24 px-3 py-2 rounded-xl border border-warm-300 text-sm focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
+                  className="w-24 px-3 py-2 rounded-xl border border-[var(--input-border)] text-sm focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
                 />
-                <span className="text-sm text-warm-600">일</span>
+                <span className="text-sm text-[var(--text-secondary)]">일</span>
               </div>
             </div>
           )}
 
           {formData.frequency === 'weekly' && (
             <div>
-              <label className="block text-sm font-medium text-warm-700 mb-2">요일</label>
+              <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">요일</label>
               <select
                 value={formData.day_of_week}
                 onChange={(e) => setFormData({ ...formData, day_of_week: e.target.value })}
-                className="w-full px-3 py-2 rounded-xl border border-warm-300 text-sm focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
+                className="w-full px-3 py-2 rounded-xl border border-[var(--input-border)] text-sm focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
               >
                 {['월', '화', '수', '목', '금', '토', '일'].map((d, i) => (
                   <option key={i} value={i}>{d}요일</option>
@@ -179,11 +179,11 @@ export default function RegisterRecurringModal({
 
           {formData.frequency === 'yearly' && (
             <div>
-              <label className="block text-sm font-medium text-warm-700 mb-2">반복 월</label>
+              <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">반복 월</label>
               <select
                 value={formData.month_of_year}
                 onChange={(e) => setFormData({ ...formData, month_of_year: e.target.value })}
-                className="w-full px-3 py-2 rounded-xl border border-warm-300 text-sm focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
+                className="w-full px-3 py-2 rounded-xl border border-[var(--input-border)] text-sm focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
               >
                 {Array.from({ length: 12 }, (_, i) => (
                   <option key={i + 1} value={i + 1}>{i + 1}월</option>
@@ -194,39 +194,39 @@ export default function RegisterRecurringModal({
 
           {formData.frequency === 'custom' && (
             <div>
-              <label className="block text-sm font-medium text-warm-700 mb-2">반복 주기</label>
+              <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">반복 주기</label>
               <div className="flex items-center gap-2">
                 <input
                   type="number"
                   value={formData.interval}
                   onChange={(e) => setFormData({ ...formData, interval: e.target.value })}
                   min="1"
-                  className="w-24 px-3 py-2 rounded-xl border border-warm-300 text-sm focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
+                  className="w-24 px-3 py-2 rounded-xl border border-[var(--input-border)] text-sm focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
                 />
-                <span className="text-sm text-warm-600">일마다</span>
+                <span className="text-sm text-[var(--text-secondary)]">일마다</span>
               </div>
             </div>
           )}
 
           {/* 시작일 */}
           <div>
-            <label className="block text-sm font-medium text-warm-700 mb-2">시작일</label>
+            <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">시작일</label>
             <input
               type="date"
               value={formData.start_date}
               onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
-              className="w-full px-3 py-2 rounded-xl border border-warm-300 text-sm focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
+              className="w-full px-3 py-2 rounded-xl border border-[var(--input-border)] text-sm focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
             />
           </div>
 
           {/* 종료일 */}
           <div>
-            <label className="block text-sm font-medium text-warm-700 mb-2">종료일 (선택)</label>
+            <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">종료일 (선택)</label>
             <input
               type="date"
               value={formData.end_date}
               onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
-              className="w-full px-3 py-2 rounded-xl border border-warm-300 text-sm focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
+              className="w-full px-3 py-2 rounded-xl border border-[var(--input-border)] text-sm focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
             />
           </div>
 
