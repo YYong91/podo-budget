@@ -16,26 +16,42 @@ def format_unknown_input(raw_input: str) -> str:
     return f'😅 무슨 뜻인지 이해하지 못했어요.\n\n입력하신 내용: "{raw_input}"\n\n이렇게 입력해보세요:\n"점심에 김치찌개 8000원"\n"스타벅스 아메리카노 4500원"'
 
 
-def format_help_message() -> str:
-    """도움말 메시지"""
-    return (
+def format_help_message(platform: str = "telegram") -> str:
+    """도움말 메시지
+
+    Args:
+        platform: 플랫폼 이름 ("telegram" 또는 "kakao")
+    """
+    base = (
         "📖 포도가계부 사용 가이드\n\n"
         "🗣️ 자연어로 입력하세요:\n"
         '· "점심에 김치찌개 8000원"\n'
         '· "스타벅스 아메리카노 4500원"\n'
         '· "어제 택시비 2만원"\n'
-        '· "점심 8천원, 커피 5천원" (여러 지출 동시 입력)\n\n'
+        '· "점심 8천원, 커피 5천원" (여러 건 동시 입력)\n\n'
         "🤖 AI가 자동으로:\n"
         "✓ 금액 추출\n"
         "✓ 날짜 파악\n"
-        "✓ 카테고리 분류\n\n"
-        "📱 명령어:\n"
-        "/help - 도움말\n"
-        "/start - 시작하기\n"
-        "/report - 이번 달 지출 요약\n"
-        "/budget - 예산 현황\n"
-        "/link 코드 - 웹 계정 연동 (설정 페이지에서 코드 발급)"
+        "✓ 카테고리 분류\n"
     )
+
+    if platform == "kakao":
+        commands = (
+            "\n📱 명령어:\n"
+            "/report - 이번 달 지출 요약\n"
+            "/budget - 예산 현황\n"
+            "/undo - 마지막 지출 삭제\n"
+            "/change - 마지막 지출 카테고리 변경\n"
+            "/change 카테고리명 - 직접 카테고리 지정\n"
+            "/link 코드 - 웹 계정 연동\n"
+            "/help - 이 도움말"
+        )
+    else:
+        commands = (
+            "\n📱 명령어:\n" "/report - 이번 달 지출 요약\n" "/budget - 예산 현황\n" "/link 코드 - 웹 계정 연동\n" "/start - 시작하기\n" "/help - 이 도움말"
+        )
+
+    return base + commands
 
 
 def format_welcome_message() -> str:

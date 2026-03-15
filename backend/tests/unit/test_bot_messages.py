@@ -53,14 +53,25 @@ def test_format_unknown_input():
     assert "입력해보세요" in result
 
 
-def test_format_help_message():
-    """도움말 메시지에 필수 내용 포함"""
+def test_format_help_message_telegram():
+    """텔레그램 도움말 메시지에 필수 내용 포함"""
     result = format_help_message()
 
     assert "사용 가이드" in result
     assert "/help" in result
     assert "/start" in result
     assert "자연어" in result
+
+
+def test_format_help_message_kakao():
+    """카카오 도움말 메시지에 카카오 전용 명령어 포함"""
+    result = format_help_message(platform="kakao")
+
+    assert "사용 가이드" in result
+    assert "/undo" in result
+    assert "/change" in result
+    assert "/report" in result
+    assert "/start" not in result
 
 
 def test_format_welcome_message():

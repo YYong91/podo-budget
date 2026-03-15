@@ -347,17 +347,16 @@ async def test_kakao_webhook_same_user_reuses_account(client, db_session, mock_l
 
 @pytest.mark.asyncio
 async def test_kakao_webhook_expense_with_household(client, db_session, mock_llm_parse_expense):
-    """가구에 속한 사용자의 공유 키워드 지출"""
+    """가구에 속한 사용자의 공유 키워드 지출 — 자동 생성된 기본 가구에 저장"""
     from app.services.bot_user_service import get_or_create_bot_user
 
-    # 봇 사용자 생성 + 가구 가입
-    bot_user = await get_or_create_bot_user(db_session, platform="kakao", platform_user_id="kakao_hh_111")
-    household = Household(name="테스트 가구")
-    db_session.add(household)
-    await db_session.flush()
-    member = HouseholdMember(household_id=household.id, user_id=bot_user.id, role="owner")
-    db_session.add(member)
+    # 봇 사용자 생성 (기본 가구 자동 생성됨)
+    bot_user = await get_or_create_bot_user(db_session, platform="kakao", platform_user_id="kakao_hh_111", auto_create_household=True)
     await db_session.commit()
+
+    # 자동 생성된 가구 ID 조회
+    result = await db_session.execute(select(HouseholdMember.household_id).where(HouseholdMember.user_id == bot_user.id))
+    auto_household_id = result.scalar_one()
 
     payload = make_kakao_request("우리 저녁 50000원", user_id="kakao_hh_111")
     response = await client.post("/api/kakao/webhook", json=payload)
@@ -366,22 +365,21 @@ async def test_kakao_webhook_expense_with_household(client, db_session, mock_llm
     result = await db_session.execute(select(Expense))
     expenses = result.scalars().all()
     assert len(expenses) == 1
-    assert expenses[0].household_id == household.id
+    assert expenses[0].household_id == auto_household_id
 
 
 @pytest.mark.asyncio
 async def test_kakao_webhook_personal_keyword_no_household(client, db_session, mock_llm_parse_expense):
-    """가구에 속해있어도 개인 키워드 → household_id는 활성 가구로 설정됨 (household_id 필수)"""
+    """개인 키워드여도 household_id는 활성 가구로 설정됨 (household_id 필수)"""
     from app.services.bot_user_service import get_or_create_bot_user
 
-    # 봇 사용자 생성 + 가구 가입
-    bot_user = await get_or_create_bot_user(db_session, platform="kakao", platform_user_id="kakao_hh_222")
-    household = Household(name="테스트 가구2")
-    db_session.add(household)
-    await db_session.flush()
-    member = HouseholdMember(household_id=household.id, user_id=bot_user.id, role="owner")
-    db_session.add(member)
+    # 봇 사용자 생성 (기본 가구 자동 생성됨)
+    bot_user = await get_or_create_bot_user(db_session, platform="kakao", platform_user_id="kakao_hh_222", auto_create_household=True)
     await db_session.commit()
+
+    # 자동 생성된 가구 ID 조회
+    result = await db_session.execute(select(HouseholdMember.household_id).where(HouseholdMember.user_id == bot_user.id))
+    auto_household_id = result.scalar_one()
 
     payload = make_kakao_request("내 커피 5000원", user_id="kakao_hh_222")
     response = await client.post("/api/kakao/webhook", json=payload)
@@ -391,7 +389,7 @@ async def test_kakao_webhook_personal_keyword_no_household(client, db_session, m
     expenses = result.scalars().all()
     assert len(expenses) == 1
     # household_id는 필수 — 개인 키워드여도 활성 가구로 설정됨
-    assert expenses[0].household_id == household.id
+    assert expenses[0].household_id == auto_household_id
 
 
 # ──────────────────────────────────────────────
@@ -562,3 +560,139 @@ async def test_kakao_webhook_link_expired_code(client, db_session):
     data = response.json()
     text = data["template"]["outputs"][0]["simpleText"]["text"]
     assert "만료" in text
+
+
+# ──────────────────────────────────────────────
+# /undo 명령어 테스트
+# ──────────────────────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_kakao_webhook_undo_deletes_last_expense(client, db_session, mock_llm_parse_expense):
+    """/undo 명령어로 마지막 지출이 삭제됨"""
+    # 먼저 지출 입력
+    payload = make_kakao_request("점심 8000원")
+    response = await client.post("/api/kakao/webhook", json=payload)
+    assert response.status_code == 200
+
+    # 지출이 저장됐는지 확인
+    result = await db_session.execute(select(Expense))
+    expenses = result.scalars().all()
+    assert len(expenses) == 1
+
+    # /undo로 삭제
+    payload = make_kakao_request("/undo")
+    response = await client.post("/api/kakao/webhook", json=payload)
+    assert response.status_code == 200
+
+    data = response.json()
+    text = data["template"]["outputs"][0]["simpleText"]["text"]
+    assert "삭제" in text
+    assert "8,000" in text
+
+    # DB에서 삭제 확인
+    result = await db_session.execute(select(Expense))
+    expenses = result.scalars().all()
+    assert len(expenses) == 0
+
+
+@pytest.mark.asyncio
+async def test_kakao_webhook_undo_no_expenses(client, db_session):
+    """/undo 지출이 없으면 안내 메시지 반환"""
+    payload = make_kakao_request("/undo")
+    response = await client.post("/api/kakao/webhook", json=payload)
+    assert response.status_code == 200
+
+    data = response.json()
+    text = data["template"]["outputs"][0]["simpleText"]["text"]
+    assert "없" in text
+
+
+@pytest.mark.asyncio
+async def test_kakao_webhook_expense_has_undo_quick_reply(client, db_session, mock_llm_parse_expense):
+    """지출 저장 후 '방금 거 취소' 빠른 답장 버튼이 포함됨"""
+    payload = make_kakao_request("커피 5000원")
+    response = await client.post("/api/kakao/webhook", json=payload)
+    assert response.status_code == 200
+
+    data = response.json()
+    quick_replies = data["template"].get("quickReplies", [])
+    labels = [qr["label"] for qr in quick_replies]
+    assert any("취소" in label for label in labels)
+
+
+# ──────────────────────────────────────────────
+# /change 명령어 테스트
+# ──────────────────────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_kakao_webhook_change_shows_categories(client, db_session, mock_llm_parse_expense):
+    """/change 입력 시 카테고리 목록이 quickReply로 표시됨"""
+    # 먼저 지출 입력
+    payload = make_kakao_request("점심 8000원")
+    response = await client.post("/api/kakao/webhook", json=payload)
+    assert response.status_code == 200
+
+    # /change로 카테고리 목록 요청
+    payload = make_kakao_request("/change")
+    response = await client.post("/api/kakao/webhook", json=payload)
+    assert response.status_code == 200
+
+    data = response.json()
+    text = data["template"]["outputs"][0]["simpleText"]["text"]
+    assert "8,000" in text
+    assert "카테고리" in text
+
+
+@pytest.mark.asyncio
+async def test_kakao_webhook_change_category(client, db_session, mock_llm_parse_expense):
+    """/change 카테고리명으로 마지막 지출의 카테고리가 변경됨"""
+    # 먼저 지출 입력 (카테고리: 식비)
+    payload = make_kakao_request("점심 8000원")
+    response = await client.post("/api/kakao/webhook", json=payload)
+    assert response.status_code == 200
+
+    # 카테고리 변경
+    payload = make_kakao_request("/change 외식비")
+    response = await client.post("/api/kakao/webhook", json=payload)
+    assert response.status_code == 200
+
+    data = response.json()
+    text = data["template"]["outputs"][0]["simpleText"]["text"]
+    assert "변경" in text
+    assert "외식비" in text
+
+    # DB에서 카테고리 변경 확인
+    from app.models.category import Category
+
+    result = await db_session.execute(select(Expense))
+    expense = result.scalars().first()
+    cat_result = await db_session.execute(select(Category).where(Category.id == expense.category_id))
+    category = cat_result.scalar_one()
+    assert category.name == "외식비"
+
+
+@pytest.mark.asyncio
+async def test_kakao_webhook_change_no_expenses(client, db_session):
+    """/change 지출이 없으면 안내 메시지 반환"""
+    payload = make_kakao_request("/change")
+    response = await client.post("/api/kakao/webhook", json=payload)
+    assert response.status_code == 200
+
+    data = response.json()
+    text = data["template"]["outputs"][0]["simpleText"]["text"]
+    assert "없" in text
+
+
+@pytest.mark.asyncio
+async def test_kakao_webhook_expense_has_change_quick_reply(client, db_session, mock_llm_parse_expense):
+    """지출 저장 후 '카테고리 변경' quickReply 포함됨"""
+    payload = make_kakao_request("커피 5000원")
+    response = await client.post("/api/kakao/webhook", json=payload)
+    assert response.status_code == 200
+
+    data = response.json()
+    quick_replies = data["template"].get("quickReplies", [])
+    labels = [qr["label"] for qr in quick_replies]
+    assert any("카테고리" in label for label in labels)

@@ -307,7 +307,16 @@ export default function GuidePage() {
             전송
           </p>
           <p>
-            <strong>조회:</strong> <code className="bg-[var(--surface-hover)] px-1 rounded">/report</code>로 이번 달 지출 요약 확인
+            <strong>취소:</strong> <code className="bg-[var(--surface-hover)] px-1 rounded">/undo</code> 또는 저장 후 "방금 거 취소"
+            버튼으로 마지막 지출 삭제
+          </p>
+          <p>
+            <strong>카테고리 변경:</strong> 저장 후 "카테고리 변경" 버튼 또는{' '}
+            <code className="bg-[var(--surface-hover)] px-1 rounded">/change 외식비</code>로 직접 변경
+          </p>
+          <p>
+            <strong>조회:</strong> <code className="bg-[var(--surface-hover)] px-1 rounded">/report</code> 이번 달 지출 요약,{' '}
+            <code className="bg-[var(--surface-hover)] px-1 rounded">/budget</code> 예산 현황
           </p>
         </ExampleBox>
         <p className="text-[var(--text-tertiary)] text-xs">
