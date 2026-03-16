@@ -1,6 +1,6 @@
-/** 금액을 ₩ 형식으로 포맷 */
+/** 금액을 ₩ 형식으로 포맷 (소수점 제거) */
 export function formatAmount(amount: number): string {
-  return `₩${amount.toLocaleString('ko-KR')}`
+  return `₩${Math.round(amount).toLocaleString('ko-KR')}`
 }
 
 /** 금액을 ₩ 형식으로 포맷 (수입이면 + 접두사 추가) */
