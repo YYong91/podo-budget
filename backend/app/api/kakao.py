@@ -139,7 +139,8 @@ async def kakao_webhook(request: Request, db: AsyncSession = Depends(get_db)):
         # userRequest에서 utterance와 user.id 추출
         user_request = data.get("userRequest", {})
         utterance = user_request.get("utterance", "").strip()
-        user_info = data.get("user", {})
+        # 카카오 오픈빌더: user 정보는 userRequest.user에 위치
+        user_info = user_request.get("user", {}) or data.get("user", {})
         kakao_user_id = user_info.get("id", "unknown")
 
         # 봇 사용자 생성 또는 조회 (데이터 격리를 위함)
