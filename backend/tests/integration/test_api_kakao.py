@@ -32,9 +32,13 @@ def make_kakao_request(utterance: str, user_id: str = "kakao_user_123") -> dict:
     """
     return {
         "intent": {"id": "test_intent", "name": "TestIntent"},
-        "userRequest": {"utterance": utterance, "params": {}, "block": {"id": "test_block", "name": "TestBlock"}},
+        "userRequest": {
+            "utterance": utterance,
+            "params": {},
+            "block": {"id": "test_block", "name": "TestBlock"},
+            "user": {"id": user_id, "type": "botUserKey"},
+        },
         "bot": {"id": "test_bot", "name": "HomeNRich"},
-        "user": {"id": user_id, "type": "accountId"},
     }
 
 
@@ -163,9 +167,9 @@ async def test_kakao_webhook_no_utterance(client, db_session):
             "utterance": "",  # 빈 문자열
             "params": {},
             "block": {"id": "test_block", "name": "TestBlock"},
+            "user": {"id": "kakao_user_123", "type": "botUserKey"},
         },
         "bot": {"id": "test_bot", "name": "HomeNRich"},
-        "user": {"id": "kakao_user_123", "type": "accountId"},
     }
 
     response = await client.post("/api/kakao/webhook", json=payload)
@@ -696,3 +700,228 @@ async def test_kakao_webhook_expense_has_change_quick_reply(client, db_session, 
     quick_replies = data["template"].get("quickReplies", [])
     labels = [qr["label"] for qr in quick_replies]
     assert any("카테고리" in label for label in labels)
+
+
+# ──────────────────────────────────────────────
+# 한글 명령어 테스트
+# ──────────────────────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_kakao_korean_command_help(client, db_session):
+    """'도움말' 한글 명령어가 /help과 동일하게 동작"""
+    payload = make_kakao_request("도움말")
+    response = await client.post("/api/kakao/webhook", json=payload)
+    assert response.status_code == 200
+
+    data = response.json()
+    text = data["template"]["outputs"][0]["simpleText"]["text"]
+    assert "사용" in text or "도움말" in text or "가이드" in text
+    assert "quickReplies" in data["template"]
+
+
+@pytest.mark.asyncio
+async def test_kakao_korean_command_help_alias(client, db_session):
+    """'도움' 한글 명령어도 /help과 동일하게 동작"""
+    payload = make_kakao_request("도움")
+    response = await client.post("/api/kakao/webhook", json=payload)
+    assert response.status_code == 200
+
+    data = response.json()
+    text = data["template"]["outputs"][0]["simpleText"]["text"]
+    assert "사용" in text or "도움말" in text or "가이드" in text
+
+
+@pytest.mark.asyncio
+async def test_kakao_korean_command_report(client, db_session, mock_llm_parse_expense):
+    """'리포트' 한글 명령어가 /report와 동일하게 동작"""
+    payload = make_kakao_request("리포트")
+    response = await client.post("/api/kakao/webhook", json=payload)
+    assert response.status_code == 200
+
+    data = response.json()
+    text = data["template"]["outputs"][0]["simpleText"]["text"]
+    assert "지출 리포트" in text or "총 지출" in text
+
+
+@pytest.mark.asyncio
+async def test_kakao_korean_command_report_alias(client, db_session, mock_llm_parse_expense):
+    """'요약' 한글 명령어가 /report와 동일하게 동작"""
+    payload = make_kakao_request("요약")
+    response = await client.post("/api/kakao/webhook", json=payload)
+    assert response.status_code == 200
+
+    data = response.json()
+    text = data["template"]["outputs"][0]["simpleText"]["text"]
+    assert "지출 리포트" in text or "총 지출" in text
+
+
+@pytest.mark.asyncio
+async def test_kakao_korean_command_budget(client, db_session):
+    """'예산' 한글 명령어가 /budget과 동일하게 동작"""
+    payload = make_kakao_request("예산")
+    response = await client.post("/api/kakao/webhook", json=payload)
+    assert response.status_code == 200
+
+    data = response.json()
+    text = data["template"]["outputs"][0]["simpleText"]["text"]
+    assert "예산 현황" in text or "예산이 없" in text
+
+
+@pytest.mark.asyncio
+async def test_kakao_korean_command_undo(client, db_session, mock_llm_parse_expense):
+    """'취소' 한글 명령어가 /undo와 동일하게 동작"""
+    # 먼저 지출 입력
+    payload = make_kakao_request("점심 8000원")
+    await client.post("/api/kakao/webhook", json=payload)
+
+    # 한글 '취소'로 삭제
+    payload = make_kakao_request("취소")
+    response = await client.post("/api/kakao/webhook", json=payload)
+    assert response.status_code == 200
+
+    data = response.json()
+    text = data["template"]["outputs"][0]["simpleText"]["text"]
+    assert "삭제" in text
+
+    # DB에서 삭제 확인
+    result = await db_session.execute(select(Expense))
+    assert len(result.scalars().all()) == 0
+
+
+@pytest.mark.asyncio
+async def test_kakao_korean_command_undo_alias(client, db_session, mock_llm_parse_expense):
+    """'삭제' 한글 명령어가 /undo와 동일하게 동작"""
+    payload = make_kakao_request("점심 8000원")
+    await client.post("/api/kakao/webhook", json=payload)
+
+    payload = make_kakao_request("삭제")
+    response = await client.post("/api/kakao/webhook", json=payload)
+    assert response.status_code == 200
+
+    data = response.json()
+    text = data["template"]["outputs"][0]["simpleText"]["text"]
+    assert "삭제" in text
+
+
+@pytest.mark.asyncio
+async def test_kakao_korean_command_change_shows_categories(client, db_session, mock_llm_parse_expense):
+    """'변경' 한글 명령어가 /change와 동일하게 카테고리 목록 표시"""
+    payload = make_kakao_request("점심 8000원")
+    await client.post("/api/kakao/webhook", json=payload)
+
+    payload = make_kakao_request("변경")
+    response = await client.post("/api/kakao/webhook", json=payload)
+    assert response.status_code == 200
+
+    data = response.json()
+    text = data["template"]["outputs"][0]["simpleText"]["text"]
+    assert "8,000" in text
+    assert "카테고리" in text
+
+
+@pytest.mark.asyncio
+async def test_kakao_korean_command_change_with_category(client, db_session, mock_llm_parse_expense):
+    """'변경 외식비' 한글 명령어가 /change 외식비와 동일하게 카테고리 변경"""
+    payload = make_kakao_request("점심 8000원")
+    await client.post("/api/kakao/webhook", json=payload)
+
+    payload = make_kakao_request("변경 외식비")
+    response = await client.post("/api/kakao/webhook", json=payload)
+    assert response.status_code == 200
+
+    data = response.json()
+    text = data["template"]["outputs"][0]["simpleText"]["text"]
+    assert "변경" in text
+    assert "외식비" in text
+
+
+@pytest.mark.asyncio
+async def test_kakao_korean_command_change_alias(client, db_session, mock_llm_parse_expense):
+    """'바꿔' 한글 명령어가 /change와 동일하게 동작"""
+    payload = make_kakao_request("점심 8000원")
+    await client.post("/api/kakao/webhook", json=payload)
+
+    payload = make_kakao_request("바꿔")
+    response = await client.post("/api/kakao/webhook", json=payload)
+    assert response.status_code == 200
+
+    data = response.json()
+    text = data["template"]["outputs"][0]["simpleText"]["text"]
+    assert "8,000" in text
+    assert "카테고리" in text
+
+
+@pytest.mark.asyncio
+async def test_kakao_korean_command_link_without_code(client, db_session):
+    """'연동' 한글 명령어가 /link과 동일하게 사용법 안내"""
+    payload = make_kakao_request("연동")
+    response = await client.post("/api/kakao/webhook", json=payload)
+    assert response.status_code == 200
+
+    data = response.json()
+    text = data["template"]["outputs"][0]["simpleText"]["text"]
+    assert "카카오톡" in text and "연동" in text
+
+
+@pytest.mark.asyncio
+async def test_kakao_korean_command_link_with_code(client, db_session):
+    """'연동 코드' 한글 명령어가 /link 코드와 동일하게 동작"""
+    payload = make_kakao_request("연동 INVALID")
+    response = await client.post("/api/kakao/webhook", json=payload)
+    assert response.status_code == 200
+
+    data = response.json()
+    text = data["template"]["outputs"][0]["simpleText"]["text"]
+    assert "유효하지 않은" in text
+
+
+@pytest.mark.asyncio
+async def test_kakao_korean_command_no_false_positive(client, db_session, mock_llm_parse_expense):
+    """'취소해줘' 같은 부분 매칭은 명령어로 처리하지 않고 LLM 파싱으로 넘어감"""
+    await setup_kakao_bot_user_with_household(db_session, "kakao_user_123")
+
+    payload = make_kakao_request("취소해줘")
+    response = await client.post("/api/kakao/webhook", json=payload)
+    assert response.status_code == 200
+
+    # LLM 파싱으로 넘어가므로 지출 저장 또는 파싱 에러 응답이어야 함
+    data = response.json()
+    text = data["template"]["outputs"][0]["simpleText"]["text"]
+    # /undo의 "삭제되었어요" 메시지가 아니어야 함
+    assert "마지막 지출이 삭제되었어요" not in text
+
+
+@pytest.mark.asyncio
+async def test_kakao_korean_command_no_false_positive_with_suffix(client, db_session, mock_llm_parse_expense):
+    """'예산 현황 보여줘' 같은 인자 있는 입력은 명령어로 처리하지 않음 (인자 비허용 명령어)"""
+    await setup_kakao_bot_user_with_household(db_session, "kakao_user_123")
+
+    # "예산"은 인자 비허용이므로 "예산 현황 보여줘"는 LLM 파싱으로 넘어감
+    payload = make_kakao_request("예산 현황 보여줘")
+    response = await client.post("/api/kakao/webhook", json=payload)
+    assert response.status_code == 200
+
+    # LLM 파싱으로 처리됨 (예산 현황 메시지가 아님)
+    data = response.json()
+    text = data["template"]["outputs"][0]["simpleText"]["text"]
+    assert "예산 현황" not in text
+
+
+@pytest.mark.asyncio
+async def test_kakao_quickreply_uses_korean_commands(client, db_session, mock_llm_parse_expense):
+    """quickReply 버튼의 messageText가 한글 명령어로 전송됨"""
+    await setup_kakao_bot_user_with_household(db_session, "kakao_user_123")
+
+    payload = make_kakao_request("커피 5000원")
+    response = await client.post("/api/kakao/webhook", json=payload)
+    assert response.status_code == 200
+
+    data = response.json()
+    quick_replies = data["template"].get("quickReplies", [])
+    message_texts = [qr["messageText"] for qr in quick_replies]
+
+    # 슬래시 명령어 대신 한글 명령어가 사용되어야 함
+    assert "취소" in message_texts
+    assert "변경" in message_texts
+    assert "리포트" in message_texts

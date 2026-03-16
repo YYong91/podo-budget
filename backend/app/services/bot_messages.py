@@ -37,14 +37,15 @@ def format_help_message(platform: str = "telegram") -> str:
 
     if platform == "kakao":
         commands = (
-            "\n📱 명령어:\n"
-            "/report - 이번 달 지출 요약\n"
-            "/budget - 예산 현황\n"
-            "/undo - 마지막 지출 삭제\n"
-            "/change - 마지막 지출 카테고리 변경\n"
-            "/change 카테고리명 - 직접 카테고리 지정\n"
-            "/link 코드 - 웹 계정 연동\n"
-            "/help - 이 도움말"
+            "\n📱 명령어 (한글로 편하게!):\n"
+            "리포트 - 이번 달 지출 요약\n"
+            "예산 - 예산 현황\n"
+            "취소 - 마지막 지출 삭제\n"
+            "변경 - 마지막 지출 카테고리 변경\n"
+            "변경 카테고리명 - 직접 카테고리 지정\n"
+            "연동 코드 - 웹 계정 연동\n"
+            "도움말 - 이 도움말\n\n"
+            "💡 /report, /change 등 슬래시 명령어도 사용 가능해요"
         )
     else:
         commands = (
@@ -91,7 +92,7 @@ def format_kakao_link_usage_message() -> str:
         "1. 포도가계부 웹사이트에서 로그인\n"
         "2. 설정 → 내 계정 → 카카오톡 연동 → 코드 발급\n"
         "3. 아래 형식으로 입력:\n\n"
-        "/link ABC123\n\n"
+        "연동 ABC123\n\n"
         "⏰ 코드는 15분 후 만료됩니다."
     )
 

@@ -43,6 +43,46 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
+# 한글 명령어 → 슬래시 명령어 매핑 (모바일 입력 편의)
+# 인자를 받는 명령어: /change, /link
+# 인자를 받지 않는 명령어: /help, /report, /budget, /undo
+COMMAND_ALIASES: dict[str, tuple[str, bool]] = {
+    # 한글 키워드: (슬래시 명령어, 인자 허용 여부)
+    "도움말": ("/help", False),
+    "도움": ("/help", False),
+    "리포트": ("/report", False),
+    "요약": ("/report", False),
+    "예산": ("/budget", False),
+    "취소": ("/undo", False),
+    "삭제": ("/undo", False),
+    "변경": ("/change", True),
+    "바꿔": ("/change", True),
+    "연동": ("/link", True),
+}
+
+
+def normalize_command(utterance: str) -> str:
+    """한글 명령어를 슬래시 명령어로 정규화
+
+    "변경 외식비" → "/change 외식비"
+    "리포트" → "/report"
+    "취소해줘" → 그대로 (정확히 일치하지 않으므로 LLM 파싱으로 넘어감)
+    """
+    parts = utterance.split(maxsplit=1)
+    first_word = parts[0]
+
+    if first_word not in COMMAND_ALIASES:
+        return utterance
+
+    command, allows_args = COMMAND_ALIASES[first_word]
+    rest = parts[1].strip() if len(parts) > 1 else ""
+
+    # 인자를 허용하지 않는 명령어는 정확히 일치할 때만 정규화
+    if not allows_args and rest:
+        return utterance
+
+    return f"{command} {rest}" if rest else command
+
 
 def make_simple_text_response(text: str, quick_replies: list[dict] | None = None) -> dict:
     """카카오 i 오픈빌더 simpleText 응답 생성
@@ -99,7 +139,8 @@ async def kakao_webhook(request: Request, db: AsyncSession = Depends(get_db)):
         # userRequest에서 utterance와 user.id 추출
         user_request = data.get("userRequest", {})
         utterance = user_request.get("utterance", "").strip()
-        user_info = data.get("user", {})
+        # 카카오 오픈빌더: user 정보는 userRequest.user에 위치
+        user_info = user_request.get("user", {}) or data.get("user", {})
         kakao_user_id = user_info.get("id", "unknown")
 
         # 봇 사용자 생성 또는 조회 (데이터 격리를 위함)
@@ -112,13 +153,16 @@ async def kakao_webhook(request: Request, db: AsyncSession = Depends(get_db)):
         if not utterance:
             return make_simple_text_response('❓ 메시지를 입력해주세요.\n\n예: "점심에 김치찌개 8000원"')
 
+        # 한글 명령어 정규화 (예: "변경" → "/change", "리포트" → "/report")
+        utterance = normalize_command(utterance)
+
         # /help 명령어 처리
         if utterance.startswith("/help"):
             return make_simple_text_response(
                 format_help_message(platform="kakao"),
                 quick_replies=[
-                    make_quick_reply("📊 이번달 지출 보기", "/report"),
-                    make_quick_reply("💰 예산 현황", "/budget"),
+                    make_quick_reply("📊 이번달 지출 보기", "리포트"),
+                    make_quick_reply("💰 예산 현황", "예산"),
                 ],
             )
 
@@ -164,7 +208,7 @@ async def kakao_webhook(request: Request, db: AsyncSession = Depends(get_db)):
                 logger.warning(f"카카오 LLM 파싱 타임아웃: {utterance}")
                 return make_simple_text_response(
                     format_timeout_message(),
-                    quick_replies=[make_quick_reply("🔄 다시 시도", utterance), make_quick_reply("❓ 도움말", "/help")],
+                    quick_replies=[make_quick_reply("🔄 다시 시도", utterance), make_quick_reply("❓ 도움말", "도움말")],
                 )
 
             # 자연어 컨텍스트 기반 household_id 결정
@@ -174,7 +218,7 @@ async def kakao_webhook(request: Request, db: AsyncSession = Depends(get_db)):
             if isinstance(parsed, dict):
                 # 파싱 실패
                 if "error" in parsed:
-                    return make_simple_text_response(format_parse_error(utterance), quick_replies=[make_quick_reply("❓ 도움말", "/help")])
+                    return make_simple_text_response(format_parse_error(utterance), quick_replies=[make_quick_reply("❓ 도움말", "도움말")])
 
                 # 카테고리 매핑 확인 → 기존 카테고리 → 새로 생성
                 category_name = parsed.get("category", "기타")
@@ -208,9 +252,9 @@ async def kakao_webhook(request: Request, db: AsyncSession = Depends(get_db)):
                         date=expense_date.strftime("%Y-%m-%d"),
                     ),
                     quick_replies=[
-                        make_quick_reply("↩️ 방금 거 취소", "/undo"),
-                        make_quick_reply("🔄 카테고리 변경", "/change"),
-                        make_quick_reply("📊 이번달 지출 보기", "/report"),
+                        make_quick_reply("↩️ 방금 거 취소", "취소"),
+                        make_quick_reply("🔄 카테고리 변경", "변경"),
+                        make_quick_reply("📊 이번달 지출 보기", "리포트"),
                     ],
                 )
 
@@ -257,15 +301,15 @@ async def kakao_webhook(request: Request, db: AsyncSession = Depends(get_db)):
                 return make_simple_text_response(
                     "\n".join(message_lines),
                     quick_replies=[
-                        make_quick_reply("↩️ 방금 거 취소", "/undo"),
-                        make_quick_reply("🔄 카테고리 변경", "/change"),
-                        make_quick_reply("📊 이번달 지출 보기", "/report"),
+                        make_quick_reply("↩️ 방금 거 취소", "취소"),
+                        make_quick_reply("🔄 카테고리 변경", "변경"),
+                        make_quick_reply("📊 이번달 지출 보기", "리포트"),
                     ],
                 )
 
         except Exception as e:
             logger.error(f"카카오 webhook LLM 파싱 실패: {e}")
-            return make_simple_text_response(format_server_error(), quick_replies=[make_quick_reply("❓ 도움말", "/help")])
+            return make_simple_text_response(format_server_error(), quick_replies=[make_quick_reply("❓ 도움말", "도움말")])
 
     except Exception as e:
         logger.error(f"카카오 webhook 처리 실패: {e}")
@@ -298,8 +342,8 @@ async def handle_undo_command(db: AsyncSession, bot_user) -> dict:
     return make_simple_text_response(
         f"✅ 마지막 지출이 삭제되었어요.\n\n🗑️ {amount:,.0f}원 - {description}",
         quick_replies=[
-            make_quick_reply("📊 이번달 지출 보기", "/report"),
-            make_quick_reply("❓ 도움말", "/help"),
+            make_quick_reply("📊 이번달 지출 보기", "리포트"),
+            make_quick_reply("❓ 도움말", "도움말"),
         ],
     )
 
@@ -361,7 +405,7 @@ async def handle_change_command(db: AsyncSession, bot_user, utterance: str, acti
         categories = await _get_accessible_categories(db, bot_user.id, expense.household_id)
 
         # 현재 카테고리를 제외한 목록으로 quickReply 생성
-        quick_replies = [make_quick_reply(cat.name, f"/change {cat.name}") for cat in categories if cat.name != current_cat_name][
+        quick_replies = [make_quick_reply(cat.name, f"변경 {cat.name}") for cat in categories if cat.name != current_cat_name][
             :10
         ]  # quickReply 최대 10개 제한
 
@@ -369,11 +413,11 @@ async def handle_change_command(db: AsyncSession, bot_user, utterance: str, acti
         if quick_replies:
             msg += "어떤 카테고리로 변경할까요?"
         else:
-            msg += "변경할 카테고리명을 입력해주세요.\n예: /change 외식비"
+            msg += "변경할 카테고리명을 입력해주세요.\n예: 변경 외식비"
 
         return make_simple_text_response(
             msg,
-            quick_replies=quick_replies or [make_quick_reply("↩️ 취소", "/report")],
+            quick_replies=quick_replies or [make_quick_reply("↩️ 취소", "리포트")],
         )
 
     # /change 카테고리명 → 카테고리 변경 실행
@@ -398,8 +442,8 @@ async def handle_change_command(db: AsyncSession, bot_user, utterance: str, acti
     return make_simple_text_response(
         f"✅ 카테고리가 변경되었어요.\n\n💰 {expense.amount:,.0f}원 - 📂 {current_cat_name} → {new_cat_name}",
         quick_replies=[
-            make_quick_reply("📊 이번달 지출 보기", "/report"),
-            make_quick_reply("❓ 도움말", "/help"),
+            make_quick_reply("📊 이번달 지출 보기", "리포트"),
+            make_quick_reply("❓ 도움말", "도움말"),
         ],
     )
 
@@ -438,7 +482,7 @@ async def handle_report_command(db: AsyncSession, user_id: int) -> dict:
         report_data = [{"category": row.name, "total": row.total, "count": row.count} for row in rows]
 
         message = format_report_message(report_data)
-        return make_simple_text_response(message, quick_replies=[make_quick_reply("💰 예산 현황", "/budget"), make_quick_reply("❓ 도움말", "/help")])
+        return make_simple_text_response(message, quick_replies=[make_quick_reply("💰 예산 현황", "예산"), make_quick_reply("❓ 도움말", "도움말")])
 
     except Exception as e:
         logger.error(f"리포트 생성 실패: {e}")
@@ -466,7 +510,7 @@ async def handle_budget_command(db: AsyncSession, user_id: int) -> dict:
         if not budgets:
             return make_simple_text_response(
                 "💵 예산 현황\n\n아직 설정된 예산이 없어요.",
-                quick_replies=[make_quick_reply("📊 이번달 지출 보기", "/report"), make_quick_reply("❓ 도움말", "/help")],
+                quick_replies=[make_quick_reply("📊 이번달 지출 보기", "리포트"), make_quick_reply("❓ 도움말", "도움말")],
             )
 
         budget_data = []
@@ -509,7 +553,7 @@ async def handle_budget_command(db: AsyncSession, user_id: int) -> dict:
             )
 
         message = format_budget_status(budget_data)
-        return make_simple_text_response(message, quick_replies=[make_quick_reply("📊 이번달 지출 보기", "/report"), make_quick_reply("❓ 도움말", "/help")])
+        return make_simple_text_response(message, quick_replies=[make_quick_reply("📊 이번달 지출 보기", "리포트"), make_quick_reply("❓ 도움말", "도움말")])
 
     except Exception as e:
         logger.error(f"예산 현황 생성 실패: {e}")
