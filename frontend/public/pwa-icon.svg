@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
   <!-- 포도가계부 PWA 아이콘 (크림 배경 + 포도책) -->
   <rect width="512" height="512" fill="#fefce8"/>
-  <g transform="translate(256, 240)">
+  <g transform="translate(256, 240) scale(0.82)">
     <!-- 책 몸체 -->
     <rect x="-100" y="-110" width="200" height="220" rx="16" fill="#e9d5ff" stroke="#c4b5fd" stroke-width="4"/>
     <!-- 책 옆면 (페이지) -->
