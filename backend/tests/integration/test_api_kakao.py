@@ -32,9 +32,13 @@ def make_kakao_request(utterance: str, user_id: str = "kakao_user_123") -> dict:
     """
     return {
         "intent": {"id": "test_intent", "name": "TestIntent"},
-        "userRequest": {"utterance": utterance, "params": {}, "block": {"id": "test_block", "name": "TestBlock"}},
+        "userRequest": {
+            "utterance": utterance,
+            "params": {},
+            "block": {"id": "test_block", "name": "TestBlock"},
+            "user": {"id": user_id, "type": "botUserKey"},
+        },
         "bot": {"id": "test_bot", "name": "HomeNRich"},
-        "user": {"id": user_id, "type": "accountId"},
     }
 
 
@@ -163,9 +167,9 @@ async def test_kakao_webhook_no_utterance(client, db_session):
             "utterance": "",  # 빈 문자열
             "params": {},
             "block": {"id": "test_block", "name": "TestBlock"},
+            "user": {"id": "kakao_user_123", "type": "botUserKey"},
         },
         "bot": {"id": "test_bot", "name": "HomeNRich"},
-        "user": {"id": "kakao_user_123", "type": "accountId"},
     }
 
     response = await client.post("/api/kakao/webhook", json=payload)
