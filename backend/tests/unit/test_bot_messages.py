@@ -64,14 +64,16 @@ def test_format_help_message_telegram():
 
 
 def test_format_help_message_kakao():
-    """카카오 도움말 메시지에 카카오 전용 명령어 포함"""
+    """카카오 도움말 메시지에 한글 명령어 포함"""
     result = format_help_message(platform="kakao")
 
     assert "사용 가이드" in result
-    assert "/undo" in result
-    assert "/change" in result
-    assert "/report" in result
+    assert "취소" in result
+    assert "변경" in result
+    assert "리포트" in result
     assert "/start" not in result
+    # 슬래시 명령어도 사용 가능하다는 안내
+    assert "슬래시 명령어" in result
 
 
 def test_format_welcome_message():
