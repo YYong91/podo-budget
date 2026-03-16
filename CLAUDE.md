@@ -124,7 +124,10 @@ frontend/src/
 ### 브랜치 전략
 - `feature/*`, `fix/*` → `develop`에 PR (CI 테스트)
 - develop 머지 → 개발환경 자동 배포 (CD)
-- `develop` → `main` PR → 운영 배포 (CI+CD)
+- `develop` → `release/x.x.x` 분기 → `main` PR → 운영 배포 + 자동 태그 (vX.X.X)
+- `hotfix/*` → `main` PR → 운영 배포 + 자동 패치 태그 (vX.X.Z)
+- main 머지 시 develop 역머지 PR 자동 생성
+- 버전: SemVer 0.x.x (정식 출시 시 v1.0.0)
 
 ## Environment Variables
 

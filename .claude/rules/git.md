@@ -7,10 +7,18 @@
 - 예시: `feat: 자연어 지출 파싱 기능 추가`
 
 ## 브랜치 전략
-- main: 운영 브랜치 (직접 push 금지, develop → main PR로만)
+- main: 운영 브랜치 (직접 push 금지)
 - develop: 개발 브랜치 (feature/fix 브랜치의 머지 대상)
 - feature/기능명: 기능 개발 (develop에서 분기)
 - fix/버그명: 버그 수정 (develop에서 분기)
+- release/x.x.x: 릴리즈 안정화 (develop에서 분기 → main 머지)
+- hotfix/xxx: 운영 긴급 수정 (main에서 분기 → main 머지)
+
+## 버전 관리
+- SemVer (x.y.z) 기반, 현재 0.x.x (정식 출시 전)
+- release → main 머지 시: minor bump (0.6.0 → 0.7.0) — 자동
+- hotfix → main 머지 시: patch bump (0.7.0 → 0.7.1) — 자동
+- 정식 출시 시 v1.0.0으로 전환
 
 ## 워크트리 활용
 - 독립 작업은 워크트리로 분리: `git worktree add -b feature/xxx ../podo-budget-xxx develop`
@@ -41,7 +49,43 @@
                     (워크트리: git worktree remove ../podo-budget-xxx)
 ```
 
+## 릴리즈 플로우
+
+```
+1. 릴리즈 분기    git checkout develop && git pull origin develop
+                  git checkout -b release/x.x.x
+
+2. 안정화         버그 수정만 (새 기능 X)
+
+3. dev 테스트     release push → dev 환경 자동 배포
+
+4. main 머지      gh pr create --base main
+                  CI 통과 후 머지
+
+5. 자동 처리      운영 배포 + vX.X.X 태그 + develop 역머지 PR (모두 자동)
+
+6. 정리           git branch -d release/x.x.x
+```
+
+## 핫픽스 플로우
+
+```
+1. 핫픽스 분기    git checkout main && git pull origin main
+                  git checkout -b hotfix/xxx
+
+2. 수정 + 테스트
+
+3. main 머지      gh pr create --base main
+                  CI 통과 후 머지
+
+4. 자동 처리      운영 배포 + vX.X.Z 태그 + develop 역머지 PR (모두 자동)
+
+5. 정리           git branch -d hotfix/xxx
+```
+
 ## 배포 흐름
-- develop 머지 → dev 환경 자동 배포 (fly.dev.toml)
-- develop → main PR 머지 → 운영 환경 자동 배포 (fly.toml)
+- develop/release 머지 → dev 환경 자동 배포 (fly.dev.toml)
+- main 머지 → 운영 환경 자동 배포 (fly.toml)
+- release/hotfix → main 머지 시 자동 태그 + GitHub Release
+- main → develop 역머지 PR 자동 생성
 - 배포 시 `alembic upgrade head` 자동 실행 (Fly.io release_command)
