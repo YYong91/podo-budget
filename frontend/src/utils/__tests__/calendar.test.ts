@@ -3,7 +3,7 @@ import { getMonthRange, getCalendarGrid, formatDateHeader, getDayOfWeek } from '
 
 describe('getMonthRange', () => {
   it('3월의 시작일과 마지막일을 반환', () => {
-    const { start, end } = getMonthRange(2026, 2)
+    const { start, end } = getMonthRange(2026, 2) // 0-indexed: 2 = 3월
     expect(start).toBe('2026-03-01')
     expect(end).toBe('2026-03-31')
   })
