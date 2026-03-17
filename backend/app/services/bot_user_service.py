@@ -13,6 +13,8 @@ from passlib.context import CryptContext
 from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.models.budget import Budget
+from app.models.category import Category
 from app.models.expense import Expense
 from app.models.household import Household
 from app.models.household_member import HouseholdMember
@@ -81,6 +83,10 @@ async def get_or_create_bot_user(db: AsyncSession, platform: str, platform_user_
             await db.flush()
             logger.info(f"봇 사용자 기본 가구 생성: user_id={user.id}, household_id={household.id}")
 
+            # PR #105 이후: 레거시 {platform}_unknown 데이터를 실제 유저로 이관
+            if platform_user_id != "unknown":
+                await _migrate_unknown_bot_data(db, platform, user, household.id)
+
     return user
 
 
@@ -136,6 +142,52 @@ async def link_telegram_account_by_code(db: AsyncSession, code: str, telegram_ch
     return True, f"✅ 연동 완료! 이제 이 채팅의 지출이 '{user.username}' 계정에 기록됩니다.{suffix}"
 
 
+async def _migrate_unknown_bot_data(db: AsyncSession, platform: str, target_user: "User", target_household_id: int) -> int:
+    """레거시 {platform}_unknown 사용자의 데이터를 실제 사용자로 이관한다.
+
+    PR #105 이전에 사용자 ID 추출 버그로 모든 데이터가 {platform}_unknown에 쌓였던 문제 해결.
+    첫 번째 실제 사용자 생성 시 또는 웹 계정 연동 시 호출된다.
+
+    Args:
+        db: 데이터베이스 세션
+        platform: 플랫폼 이름 (예: "telegram", "kakao")
+        target_user: 데이터를 받을 User 객체
+        target_household_id: 데이터를 이관할 가구 ID
+
+    Returns:
+        이관된 지출 건수
+    """
+    unknown_username = f"{platform}_unknown"
+    result = await db.execute(select(User).where(User.username == unknown_username))
+    unknown_user = result.scalar_one_or_none()
+
+    if unknown_user is None:
+        return 0
+
+    # 이관할 지출 건수 조회
+    count_result = await db.execute(select(func.count()).where(Expense.user_id == unknown_user.id))
+    migrated_count = count_result.scalar() or 0
+
+    if migrated_count == 0:
+        return 0
+
+    # Expense 이관
+    await db.execute(update(Expense).where(Expense.user_id == unknown_user.id).values(user_id=target_user.id, household_id=target_household_id))
+
+    # Income 이관
+    await db.execute(update(Income).where(Income.user_id == unknown_user.id).values(user_id=target_user.id, household_id=target_household_id))
+
+    # Budget 이관
+    await db.execute(update(Budget).where(Budget.user_id == unknown_user.id).values(user_id=target_user.id, household_id=target_household_id))
+
+    # Category 이관 (user_id 기반 개인 카테고리)
+    await db.execute(update(Category).where(Category.user_id == unknown_user.id).values(user_id=target_user.id, household_id=target_household_id))
+
+    logger.info(f"레거시 unknown 데이터 이관: {unknown_username} → user_id={target_user.id}, household_id={target_household_id}, {migrated_count}건")
+
+    return migrated_count
+
+
 async def _migrate_bot_user_data(db: AsyncSession, platform: str, platform_user_id: str, web_user: "User") -> int:
     """기존 봇 유저의 지출/수입을 연동된 웹 계정으로 이관한다.
 
@@ -175,6 +227,10 @@ async def _migrate_bot_user_data(db: AsyncSession, platform: str, platform_user_
 
     if migrated_count > 0:
         logger.info(f"봇 유저 데이터 이관: {bot_username} → user_id={web_user.id}, {migrated_count}건")
+
+    # 레거시 {platform}_unknown 데이터도 이관 시도
+    unknown_count = await _migrate_unknown_bot_data(db, platform, web_user, household_id)
+    migrated_count += unknown_count
 
     return migrated_count
 

@@ -226,12 +226,12 @@ async def telegram_webhook(request: Request, db: AsyncSession = Depends(get_db))
 
     # /report 명령어 처리 (이번 달 지출 요약)
     if user_text.startswith("/report"):
-        await handle_report_command(chat_id, db, user_id=bot_user.id)
+        await handle_report_command(chat_id, db, household_id=active_household_id)
         return {"ok": True}
 
     # /budget 명령어 처리 (예산 현황)
     if user_text.startswith("/budget"):
-        await handle_budget_command(chat_id, db, user_id=bot_user.id)
+        await handle_budget_command(chat_id, db, household_id=active_household_id)
         return {"ok": True}
 
     # /link 명령어 처리 (코드 기반 연동)
@@ -646,19 +646,23 @@ async def answer_callback_query(callback_id: str, text: str):
         await client.post(url, json={"callback_query_id": callback_id, "text": text})
 
 
-async def handle_report_command(chat_id: int, db: AsyncSession, user_id: int):
+async def handle_report_command(chat_id: int, db: AsyncSession, household_id: int | None):
     """이번 달 지출 요약 리포트 전송
 
     카테고리별 지출 합계와 건수를 집계하여 메시지로 보냅니다.
-    사용자별로 데이터를 격리하여 조회합니다.
+    가구 단위로 데이터를 조회합니다 (웹 리포트와 동일한 스코프).
 
     Args:
         chat_id: 메시지를 보낼 채팅방 ID
         db: 데이터베이스 세션
-        user_id: 조회할 사용자 ID
+        household_id: 조회할 가구 ID
     """
+    if household_id is None:
+        await send_telegram_message(chat_id, "🏠 가구 설정이 필요합니다.\n웹에서 계정을 연동해주세요.")
+        return
+
     try:
-        # 이번 달 1일부터 현재까지 지출 집계 (해당 사용자만)
+        # 이번 달 1일부터 현재까지 지출 집계 (가구 단위)
         now = datetime.now()
         result = await db.execute(
             select(
@@ -667,7 +671,7 @@ async def handle_report_command(chat_id: int, db: AsyncSession, user_id: int):
                 func.count(Expense.id).label("count"),
             )
             .join(Category, Expense.category_id == Category.id)
-            .where(Expense.user_id == user_id)
+            .where(Expense.household_id == household_id)
             .where(extract("year", Expense.date) == now.year)
             .where(extract("month", Expense.date) == now.month)
             .group_by(Category.name)
@@ -685,20 +689,24 @@ async def handle_report_command(chat_id: int, db: AsyncSession, user_id: int):
         await send_telegram_message(chat_id, format_server_error())
 
 
-async def handle_budget_command(chat_id: int, db: AsyncSession, user_id: int):
+async def handle_budget_command(chat_id: int, db: AsyncSession, household_id: int | None):
     """예산 현황 전송
 
     설정된 예산과 현재 지출을 비교하여 메시지로 보냅니다.
-    사용자별로 데이터를 격리하여 조회합니다.
+    가구 단위로 데이터를 조회합니다 (웹 리포트와 동일한 스코프).
 
     Args:
         chat_id: 메시지를 보낼 채팅방 ID
         db: 데이터베이스 세션
-        user_id: 조회할 사용자 ID
+        household_id: 조회할 가구 ID
     """
+    if household_id is None:
+        await send_telegram_message(chat_id, "🏠 가구 설정이 필요합니다.\n웹에서 계정을 연동해주세요.")
+        return
+
     try:
-        # 해당 사용자의 활성 예산 조회
-        budget_result = await db.execute(select(Budget).where(Budget.user_id == user_id))
+        # 해당 가구의 활성 예산 조회
+        budget_result = await db.execute(select(Budget).where(Budget.household_id == household_id))
         budgets = budget_result.scalars().all()
 
         if not budgets:
@@ -721,10 +729,10 @@ async def handle_budget_command(chat_id: int, db: AsyncSession, user_id: int):
             if not category:
                 continue
 
-            # 지출 합계 (해당 사용자만)
+            # 지출 합계 (가구 단위)
             expense_result = await db.execute(
                 select(func.sum(Expense.amount))
-                .where(Expense.user_id == user_id)
+                .where(Expense.household_id == household_id)
                 .where(Expense.category_id == budget.category_id)
                 .where(Expense.date >= budget.start_date)
                 .where(Expense.date <= end_date)
