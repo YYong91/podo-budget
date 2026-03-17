@@ -92,8 +92,13 @@ export default function IncomeDetail() {
       setIncome(updated.data)
       setIsEditing(false)
       addToast('success', '저장되었습니다')
-    } catch {
-      addToast('error', '저장에 실패했습니다')
+    } catch (err: unknown) {
+      const status = (err as { response?: { status?: number } })?.response?.status
+      if (status === 403) {
+        addToast('error', '이 항목을 수정할 권한이 없습니다')
+      } else {
+        addToast('error', '저장에 실패했습니다')
+      }
     }
   }
 
@@ -104,8 +109,13 @@ export default function IncomeDetail() {
       await incomeApi.delete(income.id)
       addToast('success', '삭제되었습니다')
       navigate('/income')
-    } catch {
-      addToast('error', '삭제에 실패했습니다')
+    } catch (err: unknown) {
+      const status = (err as { response?: { status?: number } })?.response?.status
+      if (status === 403) {
+        addToast('error', '이 항목을 삭제할 권한이 없습니다')
+      } else {
+        addToast('error', '삭제에 실패했습니다')
+      }
     }
   }
 
