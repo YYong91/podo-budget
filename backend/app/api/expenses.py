@@ -594,12 +594,23 @@ async def update_expense(
 ):
     """지출 수정
 
-    본인이 입력한 지출만 수정할 수 있습니다 (user_id == current_user.id).
+    본인 거래는 무조건 수정 가능.
+    타인 거래는 admin/owner만 수정 가능, member는 403.
     """
-    result = await db.execute(select(Expense).where(Expense.id == expense_id, Expense.user_id == current_user.id))
+    result = await db.execute(select(Expense).where(Expense.id == expense_id))
     expense = result.scalar_one_or_none()
     if not expense:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="지출을 찾을 수 없습니다")
+
+    # 가구 멤버 검증 + 역할 확인
+    member = await get_household_member(expense.household_id, current_user, db)
+
+    # 본인 거래가 아니면 admin/owner만 수정 가능
+    if expense.user_id != current_user.id and member.role not in ("admin", "owner"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="이 항목을 수정할 권한이 없습니다",
+        )
 
     update_data = expense_update.model_dump(exclude_unset=True)
     for key, value in update_data.items():
@@ -618,12 +629,23 @@ async def delete_expense(
 ):
     """지출 삭제
 
-    본인이 입력한 지출만 삭제할 수 있습니다 (user_id == current_user.id).
+    본인 거래는 무조건 삭제 가능.
+    타인 거래는 admin/owner만 삭제 가능, member는 403.
     """
-    result = await db.execute(select(Expense).where(Expense.id == expense_id, Expense.user_id == current_user.id))
+    result = await db.execute(select(Expense).where(Expense.id == expense_id))
     expense = result.scalar_one_or_none()
     if not expense:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="지출을 찾을 수 없습니다")
+
+    # 가구 멤버 검증 + 역할 확인
+    member = await get_household_member(expense.household_id, current_user, db)
+
+    # 본인 거래가 아니면 admin/owner만 삭제 가능
+    if expense.user_id != current_user.id and member.role not in ("admin", "owner"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="이 항목을 삭제할 권한이 없습니다",
+        )
 
     await db.delete(expense)
     await db.commit()
