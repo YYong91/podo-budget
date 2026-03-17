@@ -101,7 +101,7 @@ export default function Layout() {
         <aside className="hidden md:flex md:sticky md:top-0 md:h-screen w-60 bg-[var(--surface)] border-r border-[var(--border-default)] p-4 flex-col">
           {/* 앱 타이틀 */}
           <div className="mb-4">
-            <Link to="/" className="text-2xl font-bold text-grape-600 flex items-center gap-2"><img src="/pwa-192x192.png" alt="" className="w-8 h-8 rounded dark:hidden" /><img src="/pwa-192x192-dark.png" alt="" className="w-8 h-8 rounded hidden dark:block" />포도가계부</Link>
+            <Link to="/" className="text-2xl font-bold text-grape-600 flex items-center gap-2"><img src="/favicon-book-192.png" alt="" className="w-8 h-8" />포도가계부</Link>
           </div>
 
           {/* 가구 선택 드롭다운 */}
