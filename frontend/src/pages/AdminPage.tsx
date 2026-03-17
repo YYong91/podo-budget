@@ -10,6 +10,7 @@ import toast from 'react-hot-toast'
 import { useAuth } from '../contexts/AuthContext'
 import { adminApi } from '../api/admin'
 
+import LoadingSpinner from '../components/LoadingSpinner'
 import AdminOverview from '../components/admin/AdminOverview'
 import AdminFeedbackDashboard from '../components/admin/AdminFeedbackDashboard'
 import AdminUserManager from '../components/admin/AdminUserManager'
@@ -55,11 +56,7 @@ export default function AdminPage() {
   }
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="animate-spin rounded-full border-b-2 border-grape-600 w-8 h-8" />
-      </div>
-    )
+    return <LoadingSpinner className="min-h-[50vh]" />
   }
 
   return (

@@ -9,7 +9,7 @@ import toast from 'react-hot-toast'
 import {
   Tags, PiggyBank, Repeat, Users, LogOut, BookOpen, MessageSquarePlus,
   Megaphone, ChevronRight, ArrowLeft, User, Send, MessageCircle, ShieldCheck,
-  Sun, Moon, Monitor,
+  Sun, Moon, Monitor, FileText, ScrollText,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { generateTelegramLinkCode, unlinkTelegram } from '../api/telegram'
@@ -45,6 +45,7 @@ interface MenuItem {
   icon: LucideIcon
   badge?: React.ReactNode
   section?: SettingsSection
+  external?: boolean
 }
 
 /* ─── 메뉴 목록 (설정 메인) ─── */
@@ -54,14 +55,11 @@ function SettingsMenu({ menuItems }: { menuItems: MenuItem[] }) {
       <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] overflow-hidden">
         {menuItems.map((item, idx) => {
           const Icon = item.icon
-          return (
-            <Link
-              key={item.to}
-              to={item.to}
-              className={`flex items-center gap-4 px-5 py-4 hover:bg-grape-50 transition-colors ${
-                idx < menuItems.length - 1 ? 'border-b border-[var(--border-subtle)]' : ''
-              }`}
-            >
+          const className = `flex items-center gap-4 px-5 py-4 hover:bg-grape-50 transition-colors ${
+            idx < menuItems.length - 1 ? 'border-b border-[var(--border-subtle)]' : ''
+          }`
+          const content = (
+            <>
               <div className="relative flex-shrink-0">
                 <Icon className="w-5 h-5 text-grape-500" />
                 {item.badge}
@@ -71,6 +69,25 @@ function SettingsMenu({ menuItems }: { menuItems: MenuItem[] }) {
                 <p className="text-xs text-[var(--text-tertiary)] truncate">{item.description}</p>
               </div>
               <ChevronRight className="w-4 h-4 text-[var(--text-muted)] flex-shrink-0" />
+            </>
+          )
+          return item.external ? (
+            <a
+              key={item.to}
+              href={item.to}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={className}
+            >
+              {content}
+            </a>
+          ) : (
+            <Link
+              key={item.to}
+              to={item.to}
+              className={className}
+            >
+              {content}
             </Link>
           )
         })}
@@ -594,6 +611,20 @@ export default function SettingsPage() {
       label: '피드백',
       description: '기능 요청/버그 신고',
       icon: MessageSquarePlus,
+    },
+    {
+      to: 'https://auth.podonest.com/privacy',
+      label: '개인정보 처리방침',
+      description: '개인정보 수집·이용 안내',
+      icon: FileText,
+      external: true,
+    },
+    {
+      to: 'https://auth.podonest.com/terms',
+      label: '서비스 이용약관',
+      description: '서비스 이용 조건',
+      icon: ScrollText,
+      external: true,
     },
     ...(user?.is_admin ? [{
       to: '/admin',

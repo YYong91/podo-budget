@@ -64,7 +64,7 @@ describe('SettingsPage', () => {
       expect(screen.getByText('카테고리')).toBeInTheDocument()
     })
 
-    it('9개 메뉴 항목을 표시한다', () => {
+    it('11개 메뉴 항목을 표시한다', () => {
       renderSettingsPage()
       expect(screen.getByText('카테고리')).toBeInTheDocument()
       expect(screen.getByText('예산 관리')).toBeInTheDocument()
@@ -75,6 +75,8 @@ describe('SettingsPage', () => {
       expect(screen.getByText('새소식')).toBeInTheDocument()
       expect(screen.getByText('사용 가이드')).toBeInTheDocument()
       expect(screen.getByText('피드백')).toBeInTheDocument()
+      expect(screen.getByText('개인정보 처리방침')).toBeInTheDocument()
+      expect(screen.getByText('서비스 이용약관')).toBeInTheDocument()
     })
 
     it('메뉴 설명을 표시한다', () => {
@@ -82,6 +84,16 @@ describe('SettingsPage', () => {
       expect(screen.getByText('앱 업데이트 내역')).toBeInTheDocument()
       expect(screen.getByText('프로필, 텔레그램/카카오톡 연동, 로그아웃')).toBeInTheDocument()
       expect(screen.getByText('지출/수입 분류 카테고리 관리')).toBeInTheDocument()
+    })
+
+    it('개인정보/약관 링크가 외부 링크로 렌더링된다', () => {
+      renderSettingsPage()
+      const privacyLink = screen.getByText('개인정보 처리방침').closest('a')
+      const termsLink = screen.getByText('서비스 이용약관').closest('a')
+      expect(privacyLink).toHaveAttribute('href', 'https://auth.podonest.com/privacy')
+      expect(privacyLink).toHaveAttribute('target', '_blank')
+      expect(termsLink).toHaveAttribute('href', 'https://auth.podonest.com/terms')
+      expect(termsLink).toHaveAttribute('target', '_blank')
     })
   })
 

@@ -7,6 +7,7 @@ import { useToast } from '../hooks/useToast'
 import { assetApi } from '../api/assets'
 import { accountApi } from '../api/accounts'
 import { useHouseholdStore } from '../stores/useHouseholdStore'
+import LoadingSpinner from '../components/LoadingSpinner'
 import type { AssetSearchResult, CreateAssetParams, Account } from '../types'
 
 // 한국 주식 정적 종목 리스트 (lazy load)
@@ -282,11 +283,7 @@ export default function AssetForm() {
   const isManualType = ['deposit', 'real_estate', 'other', 'loan'].includes(assetType)
 
   if (initialLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="animate-spin rounded-full border-b-2 border-grape-600 w-8 h-8" />
-      </div>
-    )
+    return <LoadingSpinner className="min-h-[50vh]" />
   }
 
   return (

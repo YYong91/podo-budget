@@ -1,6 +1,8 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { server } from '../../mocks/server'
+import { http, HttpResponse } from 'msw'
 import InsightsPage from '../InsightsPage'
 
 vi.mock('react-chartjs-2', () => ({
@@ -82,5 +84,40 @@ describe('InsightsPage', () => {
       expect(screen.queryByText('주간')).not.toBeInTheDocument()
       expect(screen.queryByText('연간')).not.toBeInTheDocument()
     })
+  })
+
+  it('로딩 중 스켈레톤 UI를 표시한다', () => {
+    render(<InsightsPage />)
+    const skeletons = document.querySelectorAll('.animate-pulse')
+    expect(skeletons.length).toBeGreaterThan(0)
+  })
+
+  it('API 에러 시 에러 상태를 표시한다', async () => {
+    server.use(
+      http.get('/api/expenses/stats', () => {
+        return HttpResponse.json({ detail: 'Server Error' }, { status: 500 })
+      }),
+      http.get('/api/income/stats', () => {
+        return HttpResponse.json({ detail: 'Server Error' }, { status: 500 })
+      }),
+      http.get('/api/expenses/stats/comparison', () => {
+        return HttpResponse.json({ detail: 'Server Error' }, { status: 500 })
+      }),
+      http.get('/api/budgets/stats/monthly', () => {
+        return HttpResponse.json({ detail: 'Server Error' }, { status: 500 })
+      }),
+      http.get('/api/assets/summary', () => {
+        return HttpResponse.json({ detail: 'Server Error' }, { status: 500 })
+      }),
+      http.get('/api/assets/snapshots', () => {
+        return HttpResponse.json({ detail: 'Server Error' }, { status: 500 })
+      }),
+    )
+
+    render(<InsightsPage />)
+    await waitFor(() => {
+      expect(screen.getByText('문제가 발생했습니다')).toBeInTheDocument()
+    })
+    expect(screen.getByText('다시 시도')).toBeInTheDocument()
   })
 })

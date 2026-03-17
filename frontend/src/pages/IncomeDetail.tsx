@@ -3,13 +3,15 @@
  * @description 수입 상세 정보 페이지 - 조회, 수정(인라인 편집), 삭제
  */
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
 import { useToast } from '../hooks/useToast'
 import { incomeApi } from '../api/income'
 import { categoryApi } from '../api/categories'
 import RegisterRecurringModal from '../components/RegisterRecurringModal'
+import ErrorState from '../components/ErrorState'
+import LoadingSpinner from '../components/LoadingSpinner'
 import type { Income, Category } from '../types'
 import { formatAmount } from '../utils/format'
 
@@ -25,6 +27,7 @@ export default function IncomeDetail() {
   const [income, setIncome] = useState<Income | null>(null)
   const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [showRecurringModal, setShowRecurringModal] = useState(false)
@@ -38,34 +41,37 @@ export default function IncomeDetail() {
     exclude_from_stats: false,
   })
 
-  useEffect(() => {
-    async function fetchData() {
-      if (!id) return
+  const fetchData = useCallback(async () => {
+    if (!id) return
+    setLoading(true)
+    setError(false)
 
-      try {
-        const [incomeRes, categoriesRes] = await Promise.all([
-          incomeApi.getById(Number(id)),
-          categoryApi.getAll(),
-        ])
-        setIncome(incomeRes.data)
-        setCategories(categoriesRes.data)
+    try {
+      const [incomeRes, categoriesRes] = await Promise.all([
+        incomeApi.getById(Number(id)),
+        categoryApi.getAll(),
+      ])
+      setIncome(incomeRes.data)
+      setCategories(categoriesRes.data)
 
-        setEditForm({
-          amount: incomeRes.data.amount,
-          description: incomeRes.data.description,
-          category_id: incomeRes.data.category_id,
-          date: incomeRes.data.date.slice(0, 10),
-          memo: incomeRes.data.memo ?? '',
-          exclude_from_stats: incomeRes.data.exclude_from_stats ?? false,
-        })
-      } catch {
-        addToast('error', '수입 내역을 불러오는데 실패했습니다')
-      } finally {
-        setLoading(false)
-      }
+      setEditForm({
+        amount: incomeRes.data.amount,
+        description: incomeRes.data.description,
+        category_id: incomeRes.data.category_id,
+        date: incomeRes.data.date.slice(0, 10),
+        memo: incomeRes.data.memo ?? '',
+        exclude_from_stats: incomeRes.data.exclude_from_stats ?? false,
+      })
+    } catch {
+      setError(true)
+    } finally {
+      setLoading(false)
     }
-    fetchData()
   }, [id])
+
+  useEffect(() => {
+    fetchData()
+  }, [fetchData])
 
   const handleSave = async () => {
     if (!income) return
@@ -120,11 +126,11 @@ export default function IncomeDetail() {
   }
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full border-b-2 border-leaf-600 w-8 h-8" />
-      </div>
-    )
+    return <LoadingSpinner />
+  }
+
+  if (error) {
+    return <ErrorState onRetry={fetchData} />
   }
 
   if (!income) {
@@ -152,7 +158,7 @@ export default function IncomeDetail() {
           <ArrowLeft className="w-5 h-5 text-[var(--text-secondary)]" />
         </Link>
 
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           {isEditing ? (
             <>
               <button
@@ -172,19 +178,19 @@ export default function IncomeDetail() {
             <>
               <button
                 onClick={() => setShowRecurringModal(true)}
-                className="flex-1 sm:flex-none px-4 py-2 text-sm font-medium text-[var(--text-secondary)] bg-[var(--surface-hover)] rounded-xl hover:bg-[var(--border-default)] transition-colors"
+                className="shrink-0 whitespace-nowrap px-4 py-2 text-sm font-medium text-[var(--text-secondary)] bg-[var(--surface-hover)] rounded-xl hover:bg-[var(--border-default)] transition-colors"
               >
                 반복 거래 등록
               </button>
               <button
                 onClick={() => setIsEditing(true)}
-                className="flex-1 sm:flex-none px-4 py-2 text-sm font-medium text-leaf-600 bg-leaf-50 rounded-xl hover:bg-leaf-100 transition-colors"
+                className="shrink-0 px-4 py-2 text-sm font-medium text-leaf-600 bg-leaf-50 rounded-xl hover:bg-leaf-100 transition-colors"
               >
                 수정
               </button>
               <button
                 onClick={() => setShowDeleteModal(true)}
-                className="flex-1 sm:flex-none px-4 py-2 text-sm font-medium text-rose-600 bg-rose-50 rounded-xl hover:bg-rose-100 transition-colors"
+                className="shrink-0 px-4 py-2 text-sm font-medium text-rose-600 bg-rose-50 rounded-xl hover:bg-rose-100 transition-colors"
               >
                 삭제
               </button>

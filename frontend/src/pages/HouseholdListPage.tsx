@@ -13,6 +13,7 @@ import { useToast } from '../hooks/useToast'
 import CreateHouseholdModal from '../components/CreateHouseholdModal'
 import EmptyState from '../components/EmptyState'
 import ErrorState from '../components/ErrorState'
+import LoadingSpinner from '../components/LoadingSpinner'
 import type { CreateHouseholdDto } from '../types'
 
 /**
@@ -112,11 +113,7 @@ export default function HouseholdListPage() {
    * 로딩 상태
    */
   if (isLoading && households.length === 0) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-grape-600" />
-      </div>
-    )
+    return <LoadingSpinner />
   }
 
   /**

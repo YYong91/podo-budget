@@ -11,6 +11,7 @@ import { useToast } from '../hooks/useToast'
 import { categoryApi } from '../api/categories'
 import EmptyState from '../components/EmptyState'
 import ErrorState from '../components/ErrorState'
+import LoadingSpinner from '../components/LoadingSpinner'
 import type { Category } from '../types'
 
 export default function CategoryManager() {
@@ -155,11 +156,7 @@ export default function CategoryManager() {
   }
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-grape-600" />
-      </div>
-    )
+    return <LoadingSpinner />
   }
 
   /* 에러 발생 시 */
