@@ -15,9 +15,9 @@ import { useChangelog } from '../hooks/useChangelog'
 
 const navItems: { path: string; label: string; icon: LucideIcon }[] = [
   { path: '/', label: '가계부', icon: Receipt },
-  { path: '/insights', label: '리포트', icon: TrendingUp },
   { path: '/assets', label: '자산', icon: Landmark },
-  { path: '/settings', label: '설정', icon: SettingsIcon },
+  { path: '/insights', label: '돌아보기', icon: TrendingUp },
+  { path: '/settings', label: '더보기', icon: SettingsIcon },
 ]
 
 export default function Layout() {
