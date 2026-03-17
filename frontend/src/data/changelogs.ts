@@ -18,6 +18,16 @@ export interface Changelog {
 
 export const changelogs: Changelog[] = [
   {
+    version: '0.7.0',
+    date: '2026-03-18',
+    title: 'UX 안정성 개선',
+    items: [
+      { tag: '개선', text: '에러 발생 시 자동으로 안내 메시지가 표시됩니다' },
+      { tag: '개선', text: '리포트 페이지 로딩 시 스켈레톤 UI가 표시됩니다' },
+      { tag: '개선', text: '모든 페이지에서 에러/빈 상태 안내가 일관되게 동작합니다' },
+    ],
+  },
+  {
     version: '0.6.0',
     date: '2026-03-16',
     title: '온보딩 개선 + 카카오 봇 강화',
