@@ -49,6 +49,8 @@ class Settings(BaseSettings):
     # Sentry 에러 트래킹 (DSN 미설정 시 비활성화)
     SENTRY_DSN: str = ""
     SENTRY_ENVIRONMENT: str = "development"
+    SENTRY_WEBHOOK_SECRET: str = ""  # Sentry → 텔레그램 알림 webhook 인증용
+    SENTRY_ALERT_CHAT_ID: str = ""  # Sentry 알림 수신할 텔레그램 채팅 ID
 
     # 관리자 설정
     ADMIN_USER_ID: int = 1  # 피드백 관리 등 관리자 기능용 사용자 ID
