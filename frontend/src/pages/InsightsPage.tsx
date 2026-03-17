@@ -7,6 +7,8 @@
 import { useEffect, useState, useCallback } from 'react'
 import { Sparkles } from 'lucide-react'
 import toast from 'react-hot-toast'
+import ErrorState from '../components/ErrorState'
+import EmptyState from '../components/EmptyState'
 
 // API
 import { statsApi, insightsApi } from '../api/insights'
@@ -56,6 +58,7 @@ function getNavLabel(monthStr: string): string {
 export default function InsightsPage() {
   const [monthStr, setMonthStr] = useState(toMonthStr(new Date()))
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(false)
   const activeHouseholdId = useHouseholdStore((s) => s.activeHouseholdId)
 
   // 데이터 상태
@@ -76,6 +79,7 @@ export default function InsightsPage() {
     let cancelled = false
     async function fetchAll() {
       setLoading(true)
+      setError(false)
       setStructuredInsights(null)
       try {
         const dateStr = `${monthStr}-15`
@@ -99,6 +103,12 @@ export default function InsightsPage() {
         const budget = budgetRes.status === 'fulfilled' ? budgetRes.value.data : null
         const asset = assetRes.status === 'fulfilled' ? assetRes.value.data : null
         const snaps = snapRes.status === 'fulfilled' ? snapRes.value.data : []
+
+        // 핵심 데이터(지출+수입) 모두 실패하면 에러 상태
+        if (!exp && !inc && expRes.status === 'rejected' && incRes.status === 'rejected') {
+          setError(true)
+          return
+        }
 
         setExpenseStats(exp)
         setIncomeStats(inc)
@@ -126,7 +136,7 @@ export default function InsightsPage() {
           setHealthScore(score)
         }
       } catch {
-        toast.error('데이터를 불러오는데 실패했습니다')
+        setError(true)
       } finally {
         if (!cancelled) setLoading(false)
       }
@@ -206,14 +216,38 @@ export default function InsightsPage() {
       {/* 월 네비게이션 */}
       <PeriodNavigator label={getNavLabel(monthStr)} onPrev={handlePrev} onNext={handleNext} />
 
-      {/* 로딩 */}
+      {/* 로딩 — 스켈레톤 UI */}
       {loading && (
-        <div className="flex items-center justify-center h-40">
-          <div className="animate-spin rounded-full border-b-2 border-grape-600 w-8 h-8" />
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-3">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="bg-[var(--surface-card)] rounded-2xl p-4 animate-pulse">
+                <div className="h-3 w-16 bg-warm-200 rounded mb-3" />
+                <div className="h-6 w-24 bg-warm-200 rounded" />
+              </div>
+            ))}
+          </div>
+          <div className="bg-[var(--surface-card)] rounded-2xl p-5 animate-pulse">
+            <div className="h-4 w-32 bg-warm-200 rounded mb-4" />
+            <div className="h-48 bg-warm-100 rounded-xl" />
+          </div>
         </div>
       )}
 
-      {!loading && (
+      {/* 에러 상태 */}
+      {!loading && error && (
+        <ErrorState onRetry={() => { setError(false); setLoading(true) }} />
+      )}
+
+      {/* 빈 상태 */}
+      {!loading && !error && !expenseStats?.total && !incomeStats?.total && (
+        <EmptyState
+          title="이번 달 거래 내역이 없습니다"
+          description="가계부에 수입이나 지출을 기록하면 리포트가 생성됩니다"
+        />
+      )}
+
+      {!loading && !error && (expenseStats?.total || incomeStats?.total) && (
         <>
           {/* 1. 종합 요약 */}
           {(expenseStats || incomeStats) && (
