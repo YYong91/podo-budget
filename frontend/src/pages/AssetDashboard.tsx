@@ -13,6 +13,7 @@ import {
 import { Line } from 'react-chartjs-2'
 import { assetApi } from '../api/assets'
 import { useHouseholdStore } from '../stores/useHouseholdStore'
+import LoadingSpinner from '../components/LoadingSpinner'
 import type { Asset, AssetSummary, AssetSnapshot, AssetGoal, MonthlySavings } from '../types'
 import { formatAmount } from '../utils/format'
 
@@ -173,11 +174,7 @@ export default function AssetDashboard() {
   }
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="animate-spin rounded-full border-b-2 border-grape-600 w-8 h-8" />
-      </div>
-    )
+    return <LoadingSpinner className="min-h-[50vh]" />
   }
 
   if (error) {

@@ -13,6 +13,7 @@ import { useToast } from '../hooks/useToast'
 import budgetApi from '../api/budgets'
 import EmptyState from '../components/EmptyState'
 import ErrorState from '../components/ErrorState'
+import LoadingSpinner from '../components/LoadingSpinner'
 import type { BudgetAlert, CategoryBudgetOverview } from '../types'
 import { formatAmount } from '../utils/format'
 
@@ -204,11 +205,7 @@ export default function BudgetManager() {
   }
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-grape-600" />
-      </div>
-    )
+    return <LoadingSpinner />
   }
 
   if (error) {

@@ -11,6 +11,7 @@ import { incomeApi } from '../api/income'
 import { categoryApi } from '../api/categories'
 import RegisterRecurringModal from '../components/RegisterRecurringModal'
 import ErrorState from '../components/ErrorState'
+import LoadingSpinner from '../components/LoadingSpinner'
 import type { Income, Category } from '../types'
 import { formatAmount } from '../utils/format'
 
@@ -125,11 +126,7 @@ export default function IncomeDetail() {
   }
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full border-b-2 border-leaf-600 w-8 h-8" />
-      </div>
-    )
+    return <LoadingSpinner />
   }
 
   if (error) {
