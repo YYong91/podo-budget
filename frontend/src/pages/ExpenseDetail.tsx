@@ -4,13 +4,14 @@
  * 지출 내역 조회, 수정(인라인 편집), 삭제 기능을 제공한다.
  */
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
 import { useToast } from '../hooks/useToast'
 import { expenseApi } from '../api/expenses'
 import { categoryApi } from '../api/categories'
 import RegisterRecurringModal from '../components/RegisterRecurringModal'
+import ErrorState from '../components/ErrorState'
 import type { Expense, Category } from '../types'
 import { formatAmount } from '../utils/format'
 
@@ -29,6 +30,7 @@ export default function ExpenseDetail() {
   const [expense, setExpense] = useState<Expense | null>(null)
   const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [showRecurringModal, setShowRecurringModal] = useState(false)
@@ -43,35 +45,38 @@ export default function ExpenseDetail() {
     exclude_from_stats: false,
   })
 
-  useEffect(() => {
-    async function fetchData() {
-      if (!id) return
+  const fetchData = useCallback(async () => {
+    if (!id) return
+    setLoading(true)
+    setError(false)
 
-      try {
-        const [expenseRes, categoriesRes] = await Promise.all([
-          expenseApi.getById(Number(id)),
-          categoryApi.getAll(),
-        ])
-        setExpense(expenseRes.data)
-        setCategories(categoriesRes.data)
+    try {
+      const [expenseRes, categoriesRes] = await Promise.all([
+        expenseApi.getById(Number(id)),
+        categoryApi.getAll(),
+      ])
+      setExpense(expenseRes.data)
+      setCategories(categoriesRes.data)
 
-        // 편집 폼 초기화
-        setEditForm({
-          amount: expenseRes.data.amount,
-          description: expenseRes.data.description,
-          category_id: expenseRes.data.category_id,
-          date: expenseRes.data.date.slice(0, 10), // YYYY-MM-DD
-          memo: expenseRes.data.memo ?? '',
-          exclude_from_stats: expenseRes.data.exclude_from_stats ?? false,
-        })
-      } catch {
-        addToast('error', '지출 내역을 불러오는데 실패했습니다')
-      } finally {
-        setLoading(false)
-      }
+      // 편집 폼 초기화
+      setEditForm({
+        amount: expenseRes.data.amount,
+        description: expenseRes.data.description,
+        category_id: expenseRes.data.category_id,
+        date: expenseRes.data.date.slice(0, 10), // YYYY-MM-DD
+        memo: expenseRes.data.memo ?? '',
+        exclude_from_stats: expenseRes.data.exclude_from_stats ?? false,
+      })
+    } catch {
+      setError(true)
+    } finally {
+      setLoading(false)
     }
-    fetchData()
   }, [id])
+
+  useEffect(() => {
+    fetchData()
+  }, [fetchData])
 
   /**
    * 저장 버튼 클릭 - PUT /api/expenses/{id}
@@ -138,6 +143,10 @@ export default function ExpenseDetail() {
         <div className="animate-spin rounded-full border-b-2 border-grape-600 w-8 h-8" />
       </div>
     )
+  }
+
+  if (error) {
+    return <ErrorState onRetry={fetchData} />
   }
 
   if (!expense) {

@@ -388,7 +388,7 @@ describe('ExpenseDetail', () => {
   })
 
   describe('에러 처리', () => {
-    it('존재하지 않는 지출 ID로 접근하면 에러 메시지를 표시한다', async () => {
+    it('존재하지 않는 지출 ID로 접근하면 에러 상태를 표시한다', async () => {
       server.use(
         http.get('/api/expenses/999', () => {
           return HttpResponse.json({ detail: 'Not found' }, { status: 404 })
@@ -398,8 +398,37 @@ describe('ExpenseDetail', () => {
       renderExpenseDetail('999')
 
       await waitFor(() => {
-        expect(mockAddToast).toHaveBeenCalledWith('error', '지출 내역을 불러오는데 실패했습니다')
-        expect(screen.getByText('지출 내역을 찾을 수 없습니다')).toBeInTheDocument()
+        expect(screen.getByText('문제가 발생했습니다')).toBeInTheDocument()
+      })
+      expect(screen.getByText('다시 시도')).toBeInTheDocument()
+    })
+
+    it('403 에러로 저장 실패 시 권한 없음 toast를 표시한다', async () => {
+      const user = userEvent.setup()
+      renderExpenseDetail()
+
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: '수정' })).toBeInTheDocument()
+      })
+
+      await user.click(screen.getByRole('button', { name: '수정' }))
+
+      await waitFor(() => {
+        expect(screen.getByDisplayValue(mockExpenses[0].description)).toBeInTheDocument()
+      })
+
+      // 403 에러를 반환하도록 핸들러 오버라이드
+      server.use(
+        http.put('/api/expenses/:id', () => {
+          return HttpResponse.json({ detail: '이 항목을 수정할 권한이 없습니다' }, { status: 403 })
+        })
+      )
+
+      const saveButton = screen.getByRole('button', { name: '저장' })
+      await user.click(saveButton)
+
+      await waitFor(() => {
+        expect(mockAddToast).toHaveBeenCalledWith('error', '이 항목을 수정할 권한이 없습니다')
       })
     })
   })
