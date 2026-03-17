@@ -164,6 +164,12 @@
   }
 }
 
+/* iOS Safari date input 오버플로 방지 */
+input[type="date"] {
+  min-width: 0;
+  max-width: 100%;
+}
+
 body {
   margin: 0;
   min-width: 320px;

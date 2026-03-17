@@ -168,11 +168,11 @@ async def kakao_webhook(request: Request, db: AsyncSession = Depends(get_db)):
 
         # /report 명령어 처리 (이번 달 지출 요약)
         if utterance.startswith("/report"):
-            return await handle_report_command(db, user_id=bot_user.id)
+            return await handle_report_command(db, household_id=active_household_id)
 
         # /budget 명령어 처리 (예산 현황)
         if utterance.startswith("/budget"):
-            return await handle_budget_command(db, user_id=bot_user.id)
+            return await handle_budget_command(db, household_id=active_household_id)
 
         # /link 명령어 처리 (웹 계정 연동)
         if utterance.startswith("/link"):
@@ -405,9 +405,7 @@ async def handle_change_command(db: AsyncSession, bot_user, utterance: str, acti
         categories = await _get_accessible_categories(db, bot_user.id, expense.household_id)
 
         # 현재 카테고리를 제외한 목록으로 quickReply 생성
-        quick_replies = [make_quick_reply(cat.name, f"변경 {cat.name}") for cat in categories if cat.name != current_cat_name][
-            :10
-        ]  # quickReply 최대 10개 제한
+        quick_replies = [make_quick_reply(cat.name, f"변경 {cat.name}") for cat in categories if cat.name != current_cat_name][:10]  # quickReply 최대 10개 제한
 
         msg = f"📂 마지막 지출: {expense.amount:,.0f}원 - {current_cat_name}\n\n"
         if quick_replies:
@@ -448,21 +446,27 @@ async def handle_change_command(db: AsyncSession, bot_user, utterance: str, acti
     )
 
 
-async def handle_report_command(db: AsyncSession, user_id: int) -> dict:
+async def handle_report_command(db: AsyncSession, household_id: int | None) -> dict:
     """이번 달 지출 요약 리포트 생성
 
     카테고리별 지출 합계와 건수를 집계하여 카카오 응답 형식으로 반환합니다.
-    사용자별로 데이터를 격리하여 조회합니다.
+    가구 단위로 데이터를 조회합니다 (웹 리포트와 동일한 스코프).
 
     Args:
         db: 데이터베이스 세션
-        user_id: 조회할 사용자 ID
+        household_id: 조회할 가구 ID
 
     Returns:
         카카오 응답 형식 (version 2.0)
     """
+    if household_id is None:
+        return make_simple_text_response(
+            "🏠 가구 설정이 필요합니다.\n웹에서 계정을 연동해주세요.",
+            quick_replies=[make_quick_reply("❓ 도움말", "도움말")],
+        )
+
     try:
-        # 이번 달 1일부터 현재까지 지출 집계 (해당 사용자만)
+        # 이번 달 1일부터 현재까지 지출 집계 (가구 단위)
         now = datetime.now()
         result = await db.execute(
             select(
@@ -471,7 +475,7 @@ async def handle_report_command(db: AsyncSession, user_id: int) -> dict:
                 func.count(Expense.id).label("count"),
             )
             .join(Category, Expense.category_id == Category.id)
-            .where(Expense.user_id == user_id)
+            .where(Expense.household_id == household_id)
             .where(extract("year", Expense.date) == now.year)
             .where(extract("month", Expense.date) == now.month)
             .group_by(Category.name)
@@ -489,22 +493,28 @@ async def handle_report_command(db: AsyncSession, user_id: int) -> dict:
         return make_simple_text_response(format_server_error())
 
 
-async def handle_budget_command(db: AsyncSession, user_id: int) -> dict:
+async def handle_budget_command(db: AsyncSession, household_id: int | None) -> dict:
     """예산 현황 생성
 
     설정된 예산과 현재 지출을 비교하여 카카오 응답 형식으로 반환합니다.
-    사용자별로 데이터를 격리하여 조회합니다.
+    가구 단위로 데이터를 조회합니다 (웹 리포트와 동일한 스코프).
 
     Args:
         db: 데이터베이스 세션
-        user_id: 조회할 사용자 ID
+        household_id: 조회할 가구 ID
 
     Returns:
         카카오 응답 형식 (version 2.0)
     """
+    if household_id is None:
+        return make_simple_text_response(
+            "🏠 가구 설정이 필요합니다.\n웹에서 계정을 연동해주세요.",
+            quick_replies=[make_quick_reply("❓ 도움말", "도움말")],
+        )
+
     try:
-        # 해당 사용자의 활성 예산 조회
-        budget_result = await db.execute(select(Budget).where(Budget.user_id == user_id))
+        # 해당 가구의 활성 예산 조회
+        budget_result = await db.execute(select(Budget).where(Budget.household_id == household_id))
         budgets = budget_result.scalars().all()
 
         if not budgets:
@@ -529,10 +539,10 @@ async def handle_budget_command(db: AsyncSession, user_id: int) -> dict:
             if not category:
                 continue
 
-            # 지출 합계 (해당 사용자만)
+            # 지출 합계 (가구 단위)
             expense_result = await db.execute(
                 select(func.sum(Expense.amount))
-                .where(Expense.user_id == user_id)
+                .where(Expense.household_id == household_id)
                 .where(Expense.category_id == budget.category_id)
                 .where(Expense.date >= budget.start_date)
                 .where(Expense.date <= end_date)

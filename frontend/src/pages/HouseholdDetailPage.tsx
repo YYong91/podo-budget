@@ -13,6 +13,7 @@ import { useToast } from '../hooks/useToast'
 import { useAuth } from '../contexts/AuthContext'
 import InviteMemberModal from '../components/InviteMemberModal'
 import EmptyState from '../components/EmptyState'
+import LoadingSpinner from '../components/LoadingSpinner'
 import ErrorState from '../components/ErrorState'
 import type { InviteMemberDto, UpdateHouseholdDto, MemberRole } from '../types'
 
@@ -252,11 +253,7 @@ export default function HouseholdDetailPage() {
    * 로딩 상태
    */
   if (isLoading && !currentHousehold) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-grape-600" />
-      </div>
-    )
+    return <LoadingSpinner />
   }
 
   /**

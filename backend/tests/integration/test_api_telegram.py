@@ -650,7 +650,20 @@ async def test_webhook_report_command(client, db_session, mock_telegram_send, mo
 
 @pytest.mark.asyncio
 async def test_webhook_report_empty(client, db_session, mock_telegram_send):
-    """/report 명령어 — 지출이 없을 때"""
+    """/report 명령어 — 가구 미설정 시 안내 메시지"""
+    payload = {"message": {"chat": {"id": 44444}, "text": "/report"}}
+    response = await client.post("/api/telegram/webhook", json=payload)
+    assert response.status_code == 200
+
+    mock_telegram_send.assert_called_once()
+    sent_message = mock_telegram_send.call_args[0][1]
+    assert "가구 설정" in sent_message
+
+
+@pytest.mark.asyncio
+async def test_webhook_report_empty_with_household(client, db_session, mock_telegram_send):
+    """/report 명령어 — 가구 있지만 지출이 없을 때"""
+    await setup_bot_user_with_household(db_session, chat_id=44444)
     payload = {"message": {"chat": {"id": 44444}, "text": "/report"}}
     response = await client.post("/api/telegram/webhook", json=payload)
     assert response.status_code == 200
@@ -662,7 +675,20 @@ async def test_webhook_report_empty(client, db_session, mock_telegram_send):
 
 @pytest.mark.asyncio
 async def test_webhook_budget_command(client, db_session, mock_telegram_send):
-    """/budget 명령어 — 예산 없을 때"""
+    """/budget 명령어 — 가구 미설정 시 안내 메시지"""
+    payload = {"message": {"chat": {"id": 44444}, "text": "/budget"}}
+    response = await client.post("/api/telegram/webhook", json=payload)
+    assert response.status_code == 200
+
+    mock_telegram_send.assert_called_once()
+    sent_message = mock_telegram_send.call_args[0][1]
+    assert "가구 설정" in sent_message
+
+
+@pytest.mark.asyncio
+async def test_webhook_budget_command_with_household(client, db_session, mock_telegram_send):
+    """/budget 명령어 — 가구 있지만 예산 없을 때"""
+    await setup_bot_user_with_household(db_session, chat_id=44444)
     payload = {"message": {"chat": {"id": 44444}, "text": "/budget"}}
     response = await client.post("/api/telegram/webhook", json=payload)
     assert response.status_code == 200

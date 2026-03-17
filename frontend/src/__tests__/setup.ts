@@ -8,6 +8,23 @@ import '@testing-library/jest-dom'
 import { afterAll, afterEach, beforeAll } from 'vitest'
 import { server } from '../mocks/server'
 
+// jsdom에 window.matchMedia가 없으므로 polyfill
+if (typeof window.matchMedia === 'undefined') {
+  Object.defineProperty(window, 'matchMedia', {
+    writable: true,
+    value: (query: string) => ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addListener: () => {},
+      removeListener: () => {},
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      dispatchEvent: () => false,
+    }),
+  })
+}
+
 // CI 환경(Node.js)에서 ProgressEvent가 없는 경우 polyfill (MSW + jsdom 호환)
 if (typeof globalThis.ProgressEvent === 'undefined') {
   globalThis.ProgressEvent = class ProgressEvent extends Event {

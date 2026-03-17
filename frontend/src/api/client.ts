@@ -1,6 +1,7 @@
 /* API 클라이언트 설정 */
 
 import axios from 'axios'
+import toast from 'react-hot-toast'
 import { captureException } from '../utils/sentry'
 
 const apiClient = axios.create({
@@ -34,15 +35,22 @@ apiClient.interceptors.request.use(
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
+    const status = error.response?.status
     const message = error.response?.data?.detail || '요청 처리 중 오류가 발생했습니다'
-    console.error('API Error:', message)
+
+    // 401은 AuthContext에서 처리 (SSO 리디렉션)
+    // 나머지 에러는 글로벌 toast로 표시
+    if (status !== 401) {
+      const toastMsg = typeof message === 'string' ? message : '요청 처리 중 오류가 발생했습니다'
+      toast.error(toastMsg)
+    }
 
     // 5xx 서버 에러 또는 네트워크 에러만 Sentry에 보고
-    const status = error.response?.status
     if (!status || status >= 500) {
       captureException(error)
     }
 
+    console.error('API Error:', message)
     return Promise.reject(error)
   }
 )

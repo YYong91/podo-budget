@@ -12,6 +12,7 @@ import { useHouseholdStore } from '../stores/useHouseholdStore'
 import { useToast } from '../hooks/useToast'
 import EmptyState from '../components/EmptyState'
 import ErrorState from '../components/ErrorState'
+import LoadingSpinner from '../components/LoadingSpinner'
 
 /**
  * 날짜 포맷팅 함수 (YYYY.MM.DD HH:mm)
@@ -157,11 +158,7 @@ export default function InvitationListPage() {
    * 로딩 상태
    */
   if (isLoading && myInvitations.length === 0) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-grape-600" />
-      </div>
-    )
+    return <LoadingSpinner />
   }
 
   /**

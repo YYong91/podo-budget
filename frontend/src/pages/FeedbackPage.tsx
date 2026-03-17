@@ -3,11 +3,12 @@
  * @description 피드백 페이지 - 기능 요청/버그 신고 제출 및 조회
  */
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { ArrowLeft, Bug, Lightbulb, Send } from 'lucide-react'
 import { feedbackApi } from '../api/feedback'
+import ErrorState from '../components/ErrorState'
 import type { Feedback, FeedbackStatus, FeedbackType } from '../types'
 
 const STATUS_LABELS: Record<FeedbackStatus, { text: string; className: string }> = {
@@ -25,13 +26,18 @@ export default function FeedbackPage() {
   const [myFeedbacks, setMyFeedbacks] = useState<Feedback[]>([])
   const [adminFeedbacks, setAdminFeedbacks] = useState<Feedback[] | null>(null)
   const [isAdmin, setIsAdmin] = useState(false)
+  const [error, setError] = useState(false)
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
+    setError(false)
     try {
       const mine = await feedbackApi.getMine()
       setMyFeedbacks(mine.data)
-    } catch {
-      /* 무시 */
+    } catch (err: unknown) {
+      const status = (err as { response?: { status?: number } })?.response?.status
+      if (status !== 403) {
+        setError(true)
+      }
     }
 
     try {
@@ -42,11 +48,11 @@ export default function FeedbackPage() {
       // 403이면 관리자가 아님 — 정상
       setIsAdmin(false)
     }
-  }
+  }, [])
 
   useEffect(() => {
     loadData()
-  }, [])
+  }, [loadData])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -75,6 +81,17 @@ export default function FeedbackPage() {
     } catch {
       toast.error('상태 변경에 실패했습니다')
     }
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <Link to="/settings" aria-label="뒤로가기" className="text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] inline-block">
+          <ArrowLeft className="w-5 h-5" />
+        </Link>
+        <ErrorState onRetry={loadData} />
+      </div>
+    )
   }
 
   return (

@@ -67,9 +67,9 @@ describe('Layout', () => {
       renderLayout()
       // 데스크톱 사이드바 + 모바일 하단 탭 바에 각각 존재 (4탭)
       expect(screen.getAllByRole('link', { name: '가계부' }).length).toBe(2)
-      expect(screen.getAllByRole('link', { name: /리포트/i }).length).toBe(2)
+      expect(screen.getAllByRole('link', { name: /돌아보기/i }).length).toBe(2)
       expect(screen.getAllByRole('link', { name: /^자산$/i }).length).toBe(2)
-      expect(screen.getAllByRole('link', { name: /설정/i }).length).toBe(2)
+      expect(screen.getAllByRole('link', { name: /더보기/i }).length).toBe(2)
     })
 
     it('현재 경로에 해당하는 네비게이션 항목에 aria-current를 설정한다', () => {
@@ -83,7 +83,7 @@ describe('Layout', () => {
 
     it('다른 경로의 네비게이션 항목에는 aria-current가 없다', () => {
       renderLayout('/')
-      const reportLinks = screen.getAllByRole('link', { name: /리포트/i })
+      const reportLinks = screen.getAllByRole('link', { name: /돌아보기/i })
       reportLinks.forEach(link => {
         expect(link).not.toHaveAttribute('aria-current')
       })
@@ -112,7 +112,7 @@ describe('Layout', () => {
   describe('새소식 알림 dot', () => {
     it('미확인 업데이트가 있으면 설정 아이콘에 빨간 점을 표시한다', () => {
       renderLayout()
-      const settingsLinks = screen.getAllByRole('link', { name: /설정/i })
+      const settingsLinks = screen.getAllByRole('link', { name: /더보기/i })
       // 사이드바와 하단 탭 바 모두 빨간 점 표시
       settingsLinks.forEach(link => {
         const dot = link.querySelector('.bg-red-500.rounded-full')
@@ -123,7 +123,7 @@ describe('Layout', () => {
     it('이미 확인한 버전이면 빨간 점이 없다', () => {
       localStorage.setItem(STORAGE_KEY, changelogs[0].version)
       renderLayout()
-      const settingsLinks = screen.getAllByRole('link', { name: /설정/i })
+      const settingsLinks = screen.getAllByRole('link', { name: /더보기/i })
       settingsLinks.forEach(link => {
         const dot = link.querySelector('.bg-red-500.rounded-full')
         expect(dot).toBeNull()
