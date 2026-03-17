@@ -122,4 +122,16 @@ describe('FeedbackPage', () => {
     const backLink = screen.getByRole('link', { name: '뒤로가기' })
     expect(backLink).toHaveAttribute('href', '/settings')
   })
+
+  it('getMine 에러 시 에러 상태를 표시한다', async () => {
+    const { feedbackApi } = await import('../../api/feedback')
+    vi.mocked(feedbackApi.getMine).mockRejectedValueOnce({ response: { status: 500 } })
+
+    renderPage()
+
+    await waitFor(() => {
+      expect(screen.getByText('문제가 발생했습니다')).toBeInTheDocument()
+    })
+    expect(screen.getByText('다시 시도')).toBeInTheDocument()
+  })
 })
