@@ -166,7 +166,7 @@ export default function ExpenseDetail() {
           <ArrowLeft className="w-5 h-5 text-[var(--text-secondary)]" />
         </Link>
 
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           {isEditing ? (
             <>
               <button
@@ -186,19 +186,19 @@ export default function ExpenseDetail() {
             <>
               <button
                 onClick={() => setShowRecurringModal(true)}
-                className="flex-1 sm:flex-none px-4 py-2 text-sm font-medium text-[var(--text-secondary)] bg-[var(--surface-hover)] rounded-xl hover:bg-[var(--border-default)] transition-colors"
+                className="shrink-0 whitespace-nowrap px-4 py-2 text-sm font-medium text-[var(--text-secondary)] bg-[var(--surface-hover)] rounded-xl hover:bg-[var(--border-default)] transition-colors"
               >
                 반복 거래 등록
               </button>
               <button
                 onClick={() => setIsEditing(true)}
-                className="flex-1 sm:flex-none px-4 py-2 text-sm font-medium text-grape-600 bg-grape-50 rounded-xl hover:bg-grape-100 transition-colors"
+                className="shrink-0 px-4 py-2 text-sm font-medium text-grape-600 bg-grape-50 rounded-xl hover:bg-grape-100 transition-colors"
               >
                 수정
               </button>
               <button
                 onClick={() => setShowDeleteModal(true)}
-                className="flex-1 sm:flex-none px-4 py-2 text-sm font-medium text-rose-600 bg-rose-50 rounded-xl hover:bg-rose-100 transition-colors"
+                className="shrink-0 px-4 py-2 text-sm font-medium text-rose-600 bg-rose-50 rounded-xl hover:bg-rose-100 transition-colors"
               >
                 삭제
               </button>
