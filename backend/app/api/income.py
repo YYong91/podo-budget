@@ -246,16 +246,18 @@ async def update_income(
     if not income:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="수입을 찾을 수 없습니다")
 
-    # 본인이 아닌 경우 admin/owner 권한 필요
-    if income.user_id != current_user.id:
+    # 가구 멤버 검증 (비멤버는 존재 여부 노출 방지를 위해 404)
+    try:
         member = await get_household_member(income.household_id, current_user, db)
-        if member.role not in ("admin", "owner"):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="이 항목을 수정할 권한이 없습니다",
-            )
-    else:
-        await get_household_member(income.household_id, current_user, db)
+    except HTTPException:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="수입을 찾을 수 없습니다") from None
+
+    # 본인이 아닌 경우 admin/owner 권한 필요
+    if income.user_id != current_user.id and member.role not in ("admin", "owner"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="이 항목을 수정할 권한이 없습니다",
+        )
 
     update_data = income_update.model_dump(exclude_unset=True)
     for key, value in update_data.items():
@@ -278,16 +280,18 @@ async def delete_income(
     if not income:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="수입을 찾을 수 없습니다")
 
-    # 본인이 아닌 경우 admin/owner 권한 필요
-    if income.user_id != current_user.id:
+    # 가구 멤버 검증 (비멤버는 존재 여부 노출 방지를 위해 404)
+    try:
         member = await get_household_member(income.household_id, current_user, db)
-        if member.role not in ("admin", "owner"):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="이 항목을 삭제할 권한이 없습니다",
-            )
-    else:
-        await get_household_member(income.household_id, current_user, db)
+    except HTTPException:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="수입을 찾을 수 없습니다") from None
+
+    # 본인이 아닌 경우 admin/owner 권한 필요
+    if income.user_id != current_user.id and member.role not in ("admin", "owner"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="이 항목을 삭제할 권한이 없습니다",
+        )
 
     await db.delete(income)
     await db.commit()

@@ -602,8 +602,11 @@ async def update_expense(
     if not expense:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="지출을 찾을 수 없습니다")
 
-    # 가구 멤버 검증 + 역할 확인
-    member = await get_household_member(expense.household_id, current_user, db)
+    # 가구 멤버 검증 (비멤버는 존재 여부 노출 방지를 위해 404)
+    try:
+        member = await get_household_member(expense.household_id, current_user, db)
+    except HTTPException:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="지출을 찾을 수 없습니다") from None
 
     # 본인 거래가 아니면 admin/owner만 수정 가능
     if expense.user_id != current_user.id and member.role not in ("admin", "owner"):
@@ -637,8 +640,11 @@ async def delete_expense(
     if not expense:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="지출을 찾을 수 없습니다")
 
-    # 가구 멤버 검증 + 역할 확인
-    member = await get_household_member(expense.household_id, current_user, db)
+    # 가구 멤버 검증 (비멤버는 존재 여부 노출 방지를 위해 404)
+    try:
+        member = await get_household_member(expense.household_id, current_user, db)
+    except HTTPException:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="지출을 찾을 수 없습니다") from None
 
     # 본인 거래가 아니면 admin/owner만 삭제 가능
     if expense.user_id != current_user.id and member.role not in ("admin", "owner"):
