@@ -62,7 +62,7 @@ export default function ProtectedRoute() {
   if (!hasInitialized) {
     return (
       <div className="min-h-screen bg-[var(--surface)] flex flex-col items-center justify-center gap-3">
-        <img src="/favicon-book-192.png" alt="포도가계부" className="w-12 h-12" />
+        <img src="/logo-transparent-192.png" alt="포도가계부" className="w-12 h-12" />
         <div className="animate-spin rounded-full border-b-2 border-grape-600 w-6 h-6" />
       </div>
     )
@@ -72,7 +72,7 @@ export default function ProtectedRoute() {
   if (initError) {
     return (
       <div className="min-h-screen bg-[var(--surface)] flex flex-col items-center justify-center gap-4 p-4">
-        <img src="/favicon-book-192.png" alt="포도가계부" className="w-12 h-12" />
+        <img src="/logo-transparent-192.png" alt="포도가계부" className="w-12 h-12" />
         <p className="text-sm text-[var(--text-tertiary)]">서버에 연결할 수 없습니다</p>
         <button
           onClick={() => {
