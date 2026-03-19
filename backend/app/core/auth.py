@@ -11,6 +11,7 @@ podo-auth에서 발급된 JWT를 검증하고, 로컬 users 테이블의 Shadow 
   5. 기존 FK 관계는 users.id (Integer)로 그대로 유지
 """
 
+from cachetools import TTLCache
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError
@@ -24,6 +25,10 @@ from app.models.user import User
 
 # HTTPBearer 스키마 (auto_error=False → 토큰 없을 때 None 반환, 직접 401 처리)
 security = HTTPBearer(auto_error=False)
+
+# JWT 사용자 캐시: auth_user_id → local user.id (TTL 60초, 최대 1024명)
+# 매 요청 auth_user_id WHERE 조회 → PK 조회로 최적화 (#162)
+_auth_id_cache: TTLCache[int, int] = TTLCache(maxsize=1024, ttl=60)
 
 
 async def get_current_user(
@@ -71,6 +76,16 @@ async def get_current_user(
     except (JWTError, ValueError) as err:
         raise credentials_exception from err
 
+    # 캐시 히트: PK로 직접 조회 (auth_user_id → email 조회 스킵, #162)
+    if auth_user_id in _auth_id_cache:
+        user = await db.get(User, _auth_id_cache[auth_user_id])
+        if user:
+            if not user.is_active:
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="비활성화된 계정입니다")
+            return user
+        # 캐시 stale (유저 삭제 등) → 제거 후 재조회
+        del _auth_id_cache[auth_user_id]
+
     # 1단계: auth_user_id로 기존 Shadow User 조회
     result = await db.execute(select(User).where(User.auth_user_id == auth_user_id))
     user = result.scalar_one_or_none()
@@ -78,6 +93,7 @@ async def get_current_user(
     if user:
         if not user.is_active:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="비활성화된 계정입니다")
+        _auth_id_cache[auth_user_id] = user.id
         return user
 
     # 2단계: email로 기존 유저 매칭 (기존 데이터 보존)
@@ -91,6 +107,7 @@ async def get_current_user(
         await db.refresh(user)
         if not user.is_active:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="비활성화된 계정입니다")
+        _auth_id_cache[auth_user_id] = user.id
         return user
 
     # 3단계: 완전히 새로운 유저 자동 생성
@@ -103,4 +120,5 @@ async def get_current_user(
     db.add(new_user)
     await db.commit()
     await db.refresh(new_user)
+    _auth_id_cache[auth_user_id] = new_user.id
     return new_user
