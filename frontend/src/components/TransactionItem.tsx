@@ -13,7 +13,8 @@ interface TransactionItemProps {
   description: string
   amount: number
   categoryId: number | null
-  categories: Category[]
+  /** O(1) 카테고리 조회를 위해 Map으로 전달 (#180) */
+  categoryMap: Map<number, Category>
   excludeFromStats?: boolean
   rawInput?: string | null
   onCategoryClick: (e: React.MouseEvent) => void
@@ -25,12 +26,13 @@ export default function TransactionItem({
   description,
   amount,
   categoryId,
-  categories,
+  categoryMap,
   excludeFromStats,
   rawInput,
   onCategoryClick,
 }: TransactionItemProps) {
-  const category = categoryId != null ? categories.find(c => c.id === categoryId) : null
+  // O(1) 조회 — 이전 O(n) find 대비 300건×20카테고리=6,000비교 → 300번 해시 조회 (#180)
+  const category = categoryId != null ? categoryMap.get(categoryId) : null
   const detailPath = type === 'expense' ? `/expenses/${id}` : `/income/${id}`
   const isRecurring = rawInput?.startsWith('[정기]')
 

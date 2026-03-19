@@ -10,6 +10,9 @@ import { MemoryRouter } from 'react-router-dom'
 import TransactionItem from '../TransactionItem'
 import { mockCategories } from '../../mocks/fixtures'
 
+// O(1) 조회용 Map (#180)
+const mockCategoryMap = new Map(mockCategories.map(c => [c.id, c]))
+
 function renderItem(props: Partial<React.ComponentProps<typeof TransactionItem>> = {}) {
   const defaultProps = {
     id: 1,
@@ -17,7 +20,7 @@ function renderItem(props: Partial<React.ComponentProps<typeof TransactionItem>>
     description: '김치찌개',
     amount: 8000,
     categoryId: 1,
-    categories: mockCategories,
+    categoryMap: mockCategoryMap,
     onCategoryClick: vi.fn(),
     ...props,
   }
