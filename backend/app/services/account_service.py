@@ -36,14 +36,13 @@ async def get_accounts(db: AsyncSession, user: User, household_id: int | None = 
 
 
 async def get_account_by_id(db: AsyncSession, account_id: int, user: User) -> Account | None:
-    """계좌 상세 조회 (권한 체크)"""
+    """계좌 상세 조회 — household 멤버십은 API 레이어에서 get_household_member()로 검증 (#137)"""
     result = await db.execute(select(Account).where(Account.id == account_id))
     account = result.scalar_one_or_none()
     if not account:
         return None
-    if account.household_id:
-        return account
-    elif account.created_by != user.id:
+    # household 없는 레거시 데이터: created_by 기반 소유권 확인
+    if account.household_id is None and account.created_by != user.id:
         return None
     return account
 

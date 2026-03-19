@@ -4,7 +4,7 @@ get_user_identifier 함수의 다양한 시나리오를 테스트합니다:
 - 유효한 podo-auth JWT 토큰 → auth_user_id 반환
 - 유효하지 않은 토큰 → IP 폴백
 - 토큰 없음 → IP 폴백
-- X-Forwarded-For 헤더 → 첫 번째 IP 사용
+- Fly-Client-IP 헤더 → 해당 IP 사용 (X-Forwarded-For 대신, #132)
 """
 
 from unittest.mock import MagicMock
@@ -15,7 +15,7 @@ from tests.conftest import TEST_AUTH_USER_ID_1, create_test_token
 
 def _make_request(
     auth_header: str | None = None,
-    forwarded_for: str | None = None,
+    fly_client_ip: str | None = None,
     client_host: str = "127.0.0.1",
 ) -> MagicMock:
     """테스트용 Request 객체 생성"""
@@ -23,8 +23,8 @@ def _make_request(
     headers = {}
     if auth_header:
         headers["Authorization"] = auth_header
-    if forwarded_for:
-        headers["X-Forwarded-For"] = forwarded_for
+    if fly_client_ip:
+        headers["Fly-Client-IP"] = fly_client_ip
     request.headers = headers
     request.client = MagicMock()
     request.client.host = client_host
@@ -64,12 +64,23 @@ def test_non_bearer_auth_header():
     assert result == "ip:127.0.0.1"
 
 
-def test_x_forwarded_for_uses_first_ip():
-    """X-Forwarded-For 헤더가 있으면 첫 번째 IP 사용"""
-    request = _make_request(forwarded_for="10.0.0.1, 10.0.0.2, 10.0.0.3")
+def test_fly_client_ip_used_when_present():
+    """Fly-Client-IP 헤더가 있으면 해당 IP 사용 (X-Forwarded-For 스푸핑 방지, #132)"""
+    request = _make_request(fly_client_ip="203.0.113.1")
 
     result = get_user_identifier(request)
-    assert result == "ip:10.0.0.1"
+    assert result == "ip:203.0.113.1"
+
+
+def test_x_forwarded_for_ignored():
+    """X-Forwarded-For 헤더는 무시 — 스푸핑 가능하므로 rate limit 기준으로 사용 안 함 (#132)"""
+    request = MagicMock()
+    request.headers = {"X-Forwarded-For": "10.0.0.1, 10.0.0.2"}
+    request.client = MagicMock()
+    request.client.host = "127.0.0.1"
+
+    result = get_user_identifier(request)
+    assert result == "ip:127.0.0.1"  # client.host 사용, X-Forwarded-For 무시
 
 
 def test_no_client_returns_unknown():

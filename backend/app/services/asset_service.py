@@ -32,12 +32,9 @@ async def create_asset(db: AsyncSession, asset_data: dict, user: User) -> Asset:
     return asset
 
 
-async def get_assets(db: AsyncSession, user: User, household_id: int | None = None) -> list[Asset]:
-    """자산 목록 조회 (household 기반)"""
-    query = (
-        select(Asset).where(Asset.household_id == household_id) if household_id is not None else select(Asset).where(Asset.created_by == user.id)
-    )  # 레거시 폴백
-    query = query.order_by(Asset.type, Asset.name)
+async def get_assets(db: AsyncSession, user: User, household_id: int) -> list[Asset]:
+    """자산 목록 조회 (household 기반) — household_id는 API 레이어에서 반드시 resolve (#135)"""
+    query = select(Asset).where(Asset.household_id == household_id).order_by(Asset.type, Asset.name)
     result = await db.execute(query)
     return list(result.scalars().all())
 
