@@ -9,6 +9,16 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 
+@pytest.fixture(autouse=True)
+def clear_price_cache():
+    """각 테스트 전후로 price_cache 초기화 — 모듈 레벨 상태 격리"""
+    from app.services import price_service
+
+    price_service._price_cache.clear()
+    yield
+    price_service._price_cache.clear()
+
+
 def _make_asset(**kwargs) -> MagicMock:
     """테스트용 Asset 객체 생성"""
     asset = MagicMock()
