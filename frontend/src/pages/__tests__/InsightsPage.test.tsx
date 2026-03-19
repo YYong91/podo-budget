@@ -26,8 +26,8 @@ vi.mock('chart.js', () => ({
 }))
 
 vi.mock('../../stores/useHouseholdStore', () => ({
-  useHouseholdStore: (selector: (s: { activeHouseholdId: null }) => unknown) =>
-    selector({ activeHouseholdId: null }),
+  useHouseholdStore: (selector: (s: { activeHouseholdId: number }) => unknown) =>
+    selector({ activeHouseholdId: 1 }),
 }))
 
 describe('InsightsPage', () => {

@@ -82,8 +82,9 @@ export default function InsightsPage() {
       setError(false)
       setStructuredInsights(null)
       try {
+        if (!activeHouseholdId) return  // 가구 로딩 전 API 호출 방지 (#149)
         const dateStr = `${monthStr}-15`
-        const hhId = activeHouseholdId!
+        const hhId = activeHouseholdId
 
         // 1차 병렬: 지출/수입 통계 + 비교 + 예산 + 자산
         const [expRes, incRes, compRes, budgetRes, assetRes, snapRes] = await Promise.allSettled([

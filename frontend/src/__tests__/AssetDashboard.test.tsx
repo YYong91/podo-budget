@@ -13,7 +13,7 @@ vi.mock('react-chartjs-2', () => ({
 
 // HouseholdStore 모킹
 vi.mock('../stores/useHouseholdStore', () => ({
-  useHouseholdStore: () => ({ activeHouseholdId: null }),
+  useHouseholdStore: () => ({ activeHouseholdId: 1 }),
 }))
 
 // assets API 모킹

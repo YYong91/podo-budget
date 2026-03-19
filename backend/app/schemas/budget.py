@@ -6,7 +6,7 @@
 from datetime import date, datetime
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class BudgetCreate(BaseModel):
@@ -51,13 +51,21 @@ class BudgetResponse(BaseModel):
     category_id: int
     amount: float
     period: str
-    start_date: datetime
-    end_date: datetime | None
+    start_date: date  # date 타입 — BudgetCreate/Update와 일치 (#156)
+    end_date: date | None  # date 타입 (#156)
     alert_threshold: float
     created_at: datetime
     updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+    # DB 컬럼이 DateTime으로 저장되어 datetime 객체가 반환됨 → date로 변환 (#156)
+    @field_validator("start_date", "end_date", mode="before")
+    @classmethod
+    def coerce_to_date(cls, v: object) -> object:
+        if isinstance(v, datetime):
+            return v.date()
+        return v
 
 
 class MonthlySpending(BaseModel):
