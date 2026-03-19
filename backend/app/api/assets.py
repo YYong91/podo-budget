@@ -95,6 +95,7 @@ async def get_snapshots(
 async def search_assets(
     q: str = Query(..., min_length=1),
     market: str = Query("all", pattern="^(all|kr|us|crypto)$"),
+    current_user: User = Depends(get_current_user),  # 비인증 외부 API 프록시 차단 (#205)
 ):
     """종목/코인 검색"""
     results = []

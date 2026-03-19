@@ -11,7 +11,7 @@ primary_region = "nrt"
 [env]
   PORT = "8000"
   APP_NAME = "PodoBudget-Dev"
-  DEBUG = "True"
+  # DEBUG는 Fly.io secrets로 관리 — 스택 트레이스 공개 노출 방지 (#157)
   DATABASE_URL = "sqlite+aiosqlite:////app/data/db.sqlite3"
   SENTRY_ENVIRONMENT = "development"
 
