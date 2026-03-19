@@ -5,7 +5,7 @@
 
 from datetime import datetime
 
-from pydantic import ConfigDict, BaseModel
+from pydantic import BaseModel, ConfigDict
 
 # ── 대시보드 (현황 탭) ──
 

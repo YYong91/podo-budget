@@ -6,7 +6,7 @@ podo-auth SSO 연동 후 사용되는 응답 DTO들입니다.
 
 from datetime import datetime
 
-from pydantic import ConfigDict, BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class UserResponse(BaseModel):
