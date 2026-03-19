@@ -71,10 +71,13 @@ async def delete_asset(db: AsyncSession, asset: Asset) -> None:
 
 async def get_assets_with_prices(db: AsyncSession, user: User, household_id: int | None = None) -> list[dict]:
     """시세 포함 자산 목록"""
+    import asyncio
+
     assets = await get_assets(db, user, household_id)
+    # 시세 조회 병렬화 — 자산 수만큼 직렬 await → asyncio.gather 동시 실행 (#166)
+    price_infos = await asyncio.gather(*[get_asset_current_value(asset) for asset in assets])
     results = []
-    for asset in assets:
-        price_info = await get_asset_current_value(asset)
+    for asset, price_info in zip(assets, price_infos, strict=False):
         asset_dict = {
             "id": asset.id,
             "household_id": asset.household_id,
