@@ -215,35 +215,23 @@ async def test_crypto_no_price_returns_none():
 
 
 def test_price_cache_ttl():
-    """시세 캐시는 TTL(5분) 이내에는 동일 값을 반환한다"""
-    from app.services.price_service import _get_cached, _set_cached
+    """시세 캐시 동작 검증: TTL 히트 / 미스 / 만료 (#197)
 
-    _set_cached("test:CACHE", 12345.0)
-    cached = _get_cached("test:CACHE")
-
-    assert cached == 12345.0
-
-
-def test_price_cache_miss_returns_none(monkeypatch):
-    """캐시에 없는 키는 None 반환"""
-    from app.services import price_service
-
-    # monkeypatch로 캐시를 완전히 격리 — autouse fixture 보완 (#197)
-    monkeypatch.setattr(price_service, "_price_cache", {})
-    result = price_service._get_cached("test:NONEXISTENT_KEY_XYZ")
-    assert result is None
-
-
-def test_price_cache_expired_returns_none(monkeypatch):
-    """TTL 만료된 캐시는 None 반환"""
+    단일 테스트 내에서 순차 실행하여 테스트 간 상태 오염 문제 완전 방지.
+    """
     import time
 
     from app.services import price_service
+    from app.services.price_service import _get_cached, _set_cached
 
-    # monkeypatch로 캐시를 완전히 격리 — autouse fixture 보완 (#197)
-    monkeypatch.setattr(price_service, "_price_cache", {})
-    # 만료된 캐시 직접 삽입 (타임스탬프를 과거로 설정)
+    # 1. 히트: 설정된 키는 TTL 이내에 동일 값 반환
+    _set_cached("test:CACHE", 12345.0)
+    assert _get_cached("test:CACHE") == 12345.0
+
+    # 2. 미스: 설정한 키와 다른 키는 None 반환 (빈 캐시 가정 불필요)
+    assert _get_cached("test:CACHE_DIFFERENT_KEY") is None
+
+    # 3. 만료: TTL 초과 항목은 None 반환 + 캐시에서 삭제
     price_service._price_cache["test:EXPIRED"] = (9999.0, time.time() - price_service.CACHE_TTL - 1)
-
-    result = price_service._get_cached("test:EXPIRED")
-    assert result is None
+    assert _get_cached("test:EXPIRED") is None
+    assert "test:EXPIRED" not in price_service._price_cache
