@@ -188,7 +188,10 @@ async def telegram_webhook(request: Request, db: AsyncSession = Depends(get_db))
 
     보안: TELEGRAM_WEBHOOK_SECRET 설정 시 X-Telegram-Bot-Api-Secret-Token 헤더 검증
     """
-    # Webhook 시크릿 토큰 검증 (설정된 경우에만)
+    # 봇 토큰이 활성화된 경우 시크릿도 반드시 설정되어야 함
+    # 미설정 시 누구나 webhook을 호출하여 LLM 비용 발생 및 임의 데이터 생성 가능
+    if settings.TELEGRAM_BOT_TOKEN and not settings.TELEGRAM_WEBHOOK_SECRET:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Webhook 시크릿이 설정되지 않았습니다")
     if settings.TELEGRAM_WEBHOOK_SECRET:
         token = request.headers.get("X-Telegram-Bot-Api-Secret-Token", "")
         if token != settings.TELEGRAM_WEBHOOK_SECRET:

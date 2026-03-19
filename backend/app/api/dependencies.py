@@ -186,7 +186,8 @@ async def require_admin(
     """
     from app.core.config import settings
 
-    if current_user.id != settings.ADMIN_USER_ID:
+    # ADMIN_USER_ID <= 0은 "미설정" — 환경변수 미설정 시 관리자 기능 완전 비활성화
+    if settings.ADMIN_USER_ID <= 0 or current_user.id != settings.ADMIN_USER_ID:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="관리자만 접근할 수 있습니다",

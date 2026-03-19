@@ -12,12 +12,53 @@ from datetime import UTC, datetime, timedelta
 from unittest.mock import patch
 
 import pytest
+import pytest_asyncio
+from httpx import ASGITransport, AsyncClient
 from sqlalchemy import select
 
+from app.core.config import settings as _app_settings
+from app.core.database import get_db
+from app.main import app as _app
 from app.models.expense import Expense
 from app.models.household import Household
 from app.models.household_member import HouseholdMember
 from app.models.user import User
+
+# 테스트용 API 키 (실제 운영 키와 완전히 다른 값)
+_KAKAO_TEST_API_KEY = "kakao-test-key-for-pytest"  # pragma: allowlist secret
+
+
+@pytest.fixture(autouse=True)
+def _kakao_api_key():
+    """모든 카카오 테스트에서 KAKAO_BOT_API_KEY를 테스트 값으로 설정.
+
+    #131 보안 패치: API 키 미설정 시 503을 반환하므로 테스트 환경에서도 설정 필요.
+    """
+    with patch.object(_app_settings, "KAKAO_BOT_API_KEY", _KAKAO_TEST_API_KEY):
+        yield
+
+
+@pytest_asyncio.fixture
+async def client(db_session):
+    """카카오 테스트용 HTTP 클라이언트 (Authorization 헤더 자동 포함).
+
+    #131 보안 패치: API 키 검증이 필수화되었으므로 모든 요청에 올바른 키를 전송.
+    기존 보안 테스트는 patch("app.api.kakao.settings")로 키를 직접 제어하므로 영향 없음.
+    """
+
+    async def override_get_db():
+        yield db_session
+
+    _app.dependency_overrides[get_db] = override_get_db
+
+    async with AsyncClient(
+        transport=ASGITransport(app=_app),
+        base_url="http://test",
+        headers={"Authorization": _KAKAO_TEST_API_KEY},
+    ) as ac:
+        yield ac
+
+    _app.dependency_overrides.clear()
 
 
 def make_kakao_request(utterance: str, user_id: str = "kakao_user_123") -> dict:

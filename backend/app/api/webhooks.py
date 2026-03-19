@@ -70,6 +70,11 @@ async def sentry_webhook(
 
     body = await request.body()
 
+    # 텔레그램이 활성화된 경우 Sentry webhook 시크릿도 반드시 필요
+    # 미설정 시 누구나 관리자 텔레그램에 스팸/피싱 메시지 주입 가능
+    if not settings.SENTRY_WEBHOOK_SECRET:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Webhook 시크릿이 설정되지 않았습니다")
+
     # 서명 검증
     if settings.SENTRY_WEBHOOK_SECRET and (
         not sentry_hook_signature or not _verify_sentry_signature(body, sentry_hook_signature, settings.SENTRY_WEBHOOK_SECRET)

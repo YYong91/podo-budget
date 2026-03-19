@@ -127,11 +127,12 @@ async def kakao_webhook(request: Request, db: AsyncSession = Depends(get_db)):
 
     보안: KAKAO_BOT_API_KEY 설정 시 Authorization 헤더 검증
     """
-    # Webhook API 키 검증 (설정된 경우에만)
-    if settings.KAKAO_BOT_API_KEY:
-        auth_header = request.headers.get("Authorization", "")
-        if auth_header != settings.KAKAO_BOT_API_KEY:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="유효하지 않은 API 키")
+    # KAKAO_BOT_API_KEY가 곧 인증 수단 — 미설정 시 무인증 상태이므로 모든 요청 거부
+    if not settings.KAKAO_BOT_API_KEY:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="카카오 봇 API 키가 설정되지 않았습니다")
+    auth_header = request.headers.get("Authorization", "")
+    if auth_header != settings.KAKAO_BOT_API_KEY:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="유효하지 않은 API 키")
 
     try:
         data = await request.json()
