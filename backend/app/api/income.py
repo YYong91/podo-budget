@@ -9,8 +9,7 @@
 - 가구 멤버 전체의 수입을 함께 조회할 수 있음
 """
 
-from calendar import monthrange
-from datetime import date, datetime, timedelta
+from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import func, select
@@ -24,6 +23,7 @@ from app.models.income import Income
 from app.models.user import User
 from app.schemas.expense import CategoryStats, StatsPeriod, StatsResponse, TrendPoint
 from app.schemas.income import IncomeCreate, IncomeResponse, IncomeUpdate
+from app.utils.date_utils import get_month_range, get_week_label, get_week_range, get_year_range
 
 router = APIRouter()
 
@@ -88,29 +88,6 @@ async def get_incomes(
     return result.scalars().all()
 
 
-def _get_week_range(d: date) -> tuple[date, date]:
-    monday = d - timedelta(days=d.weekday())
-    sunday = monday + timedelta(days=6)
-    return monday, sunday
-
-
-def _get_week_label(d: date) -> str:
-    first_day = d.replace(day=1)
-    week_num = (d.day + first_day.weekday() - 1) // 7 + 1
-    return f"{d.month}월 {week_num}주차"
-
-
-def _get_month_range(d: date) -> tuple[date, date]:
-    first = d.replace(day=1)
-    _, last_day = monthrange(d.year, d.month)
-    last = d.replace(day=last_day)
-    return first, last
-
-
-def _get_year_range(d: date) -> tuple[date, date]:
-    return date(d.year, 1, 1), date(d.year, 12, 31)
-
-
 def _build_income_scope_filter(household_id: int):
     """가구 스코프 필터 생성"""
     return Income.household_id == household_id
@@ -130,13 +107,13 @@ async def get_income_stats(
     ref_date = date_type.fromisoformat(date) if date else date_type.today()
 
     if period == StatsPeriod.weekly:
-        start_d, end_d = _get_week_range(ref_date)
-        label = _get_week_label(ref_date)
+        start_d, end_d = get_week_range(ref_date)
+        label = get_week_label(ref_date)
     elif period == StatsPeriod.monthly:
-        start_d, end_d = _get_month_range(ref_date)
+        start_d, end_d = get_month_range(ref_date)
         label = f"{ref_date.year}년 {ref_date.month}월"
     else:
-        start_d, end_d = _get_year_range(ref_date)
+        start_d, end_d = get_year_range(ref_date)
         label = f"{ref_date.year}년"
 
     start_dt = datetime(start_d.year, start_d.month, start_d.day)
