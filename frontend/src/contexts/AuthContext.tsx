@@ -215,13 +215,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setToken(newToken)
   }, []) // setToken은 React가 안정적 참조를 보장하므로 deps 불필요
 
-  const logout = () => {
+  // useCallback으로 참조 안정화 — Context value 재생성 최소화 (#167)
+  const logout = useCallback(() => {
     clearCookieToken()
     const authUrl = import.meta.env.VITE_AUTH_URL || 'https://auth.podonest.com'
     window.location.href = `${authUrl}/logout`
-  }
+  }, [])
 
-  const refreshUser = async () => {
+  const refreshUser = useCallback(async () => {
     if (!token) return
     try {
       const response = await authApi.getCurrentUser()
@@ -229,10 +230,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch {
       // 무시 (interceptor에서 401 처리)
     }
-  }
+  }, [token])
+
+  // useMemo로 Context value 안정화 — 의존값이 바뀔 때만 재생성 (#167)
+  const contextValue = useMemo(
+    () => ({ user, isAuthenticated, loading, logout, refreshUser, setTokenFromCallback }),
+    [user, isAuthenticated, loading, logout, refreshUser, setTokenFromCallback],
+  )
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated, loading, logout, refreshUser, setTokenFromCallback }}>
+    <AuthContext.Provider value={contextValue}>
       {children}
     </AuthContext.Provider>
   )

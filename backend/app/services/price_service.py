@@ -6,6 +6,7 @@
 환율: exchangerate-api
 """
 
+import asyncio
 import logging
 import time
 
@@ -18,6 +19,17 @@ logger = logging.getLogger(__name__)
 # 시세 캐시 (5분)
 _price_cache: dict[str, tuple[float, float]] = {}  # key → (price, timestamp)
 CACHE_TTL = 300  # 5분
+
+# singleflight 락 — 동시 요청이 같은 ticker 외부 API를 중복 호출하는 것을 방지 (#166)
+_price_locks: dict[str, asyncio.Lock] = {}
+
+
+def _lock_for(key: str) -> asyncio.Lock:
+    """키별 락 반환 (없으면 생성) — asyncio 단일 스레드이므로 race-free"""
+    if key not in _price_locks:
+        _price_locks[key] = asyncio.Lock()
+    return _price_locks[key]
+
 
 # 한투 API 토큰 캐시
 _kis_token: str | None = None
@@ -66,23 +78,25 @@ async def _get_kis_token() -> str | None:
 
 async def get_stock_kr_price(ticker: str) -> float | None:
     """한국 주식/ETF 현재가 조회 (한투 API 우선, 네이버 fallback)"""
-    cached = _get_cached(f"kr:{ticker}")
+    key = f"kr:{ticker}"
+    cached = _get_cached(key)
     if cached is not None:
         return cached
 
-    # 1차: 한투 API
-    price = await _get_stock_kr_price_kis(ticker)
-    if price:
-        _set_cached(f"kr:{ticker}", price)
-        return price
+    async with _lock_for(key):
+        # 락 획득 후 재확인 — 대기 중에 다른 코루틴이 이미 채웠을 수 있음
+        cached = _get_cached(key)
+        if cached is not None:
+            return cached
 
-    # 2차: 네이버 금융 fallback
-    price = await _get_stock_kr_price_naver(ticker)
-    if price:
-        _set_cached(f"kr:{ticker}", price)
+        # 1차: 한투 API
+        price = await _get_stock_kr_price_kis(ticker)
+        if not price:
+            # 2차: 네이버 금융 fallback
+            price = await _get_stock_kr_price_naver(ticker)
+        if price:
+            _set_cached(key, price)
         return price
-
-    return None
 
 
 async def _get_stock_kr_price_kis(ticker: str) -> float | None:
@@ -141,28 +155,34 @@ async def _get_stock_kr_price_naver(ticker: str) -> float | None:
 
 async def get_stock_us_price(ticker: str) -> tuple[float | None, float | None]:
     """미국 주식/ETF 현재가 조회 (USD + KRW 환산)"""
-    cached_usd = _get_cached(f"us:{ticker}")
+    key = f"us:{ticker}"
+    cached_usd = _get_cached(key)
     exchange_rate = await get_usd_krw_rate()
 
     if cached_usd is not None and exchange_rate is not None:
         return cached_usd, cached_usd * exchange_rate
 
-    try:
-        async with httpx.AsyncClient(timeout=10) as client:
-            resp = await client.get(
-                f"https://query1.finance.yahoo.com/v8/finance/chart/{ticker}",
-                params={"interval": "1d", "range": "1d"},
-                headers={"User-Agent": "Mozilla/5.0"},
-            )
-            if resp.status_code == 200:
-                data = resp.json()
-                meta = data["chart"]["result"][0]["meta"]
-                price_usd = float(meta["regularMarketPrice"])
-                _set_cached(f"us:{ticker}", price_usd)
-                krw_price = price_usd * exchange_rate if exchange_rate else None
-                return price_usd, krw_price
-    except Exception:
-        pass
+    async with _lock_for(key):
+        cached_usd = _get_cached(key)
+        if cached_usd is not None and exchange_rate is not None:
+            return cached_usd, cached_usd * exchange_rate
+
+        try:
+            async with httpx.AsyncClient(timeout=10) as client:
+                resp = await client.get(
+                    f"https://query1.finance.yahoo.com/v8/finance/chart/{ticker}",
+                    params={"interval": "1d", "range": "1d"},
+                    headers={"User-Agent": "Mozilla/5.0"},
+                )
+                if resp.status_code == 200:
+                    data = resp.json()
+                    meta = data["chart"]["result"][0]["meta"]
+                    price_usd = float(meta["regularMarketPrice"])
+                    _set_cached(key, price_usd)
+                    krw_price = price_usd * exchange_rate if exchange_rate else None
+                    return price_usd, krw_price
+        except Exception:
+            pass
     return None, None
 
 
@@ -171,25 +191,31 @@ async def get_stock_us_price(ticker: str) -> tuple[float | None, float | None]:
 
 async def get_crypto_price(symbol: str) -> float | None:
     """업비트 코인 현재가 조회 (KRW)"""
-    cached = _get_cached(f"crypto:{symbol}")
+    key = f"crypto:{symbol}"
+    cached = _get_cached(key)
     if cached is not None:
         return cached
 
-    market = f"KRW-{symbol.upper()}"
-    try:
-        async with httpx.AsyncClient(timeout=10) as client:
-            resp = await client.get(
-                "https://api.upbit.com/v1/ticker",
-                params={"markets": market},
-            )
-            if resp.status_code == 200:
-                data = resp.json()
-                if data and len(data) > 0:
-                    price = float(data[0]["trade_price"])
-                    _set_cached(f"crypto:{symbol}", price)
-                    return price
-    except Exception:
-        pass
+    async with _lock_for(key):
+        cached = _get_cached(key)
+        if cached is not None:
+            return cached
+
+        market = f"KRW-{symbol.upper()}"
+        try:
+            async with httpx.AsyncClient(timeout=10) as client:
+                resp = await client.get(
+                    "https://api.upbit.com/v1/ticker",
+                    params={"markets": market},
+                )
+                if resp.status_code == 200:
+                    data = resp.json()
+                    if data and len(data) > 0:
+                        price = float(data[0]["trade_price"])
+                        _set_cached(key, price)
+                        return price
+        except Exception:
+            pass
     return None
 
 
