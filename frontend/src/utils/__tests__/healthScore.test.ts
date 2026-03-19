@@ -54,4 +54,86 @@ describe('calculateHealthScore', () => {
     })
     expect(grades).toContain(score.grade)
   })
+
+  it('spending: 예산 사용률 80% 구간 경계 (정확히 80%) → 100점', () => {
+    const score = calculateHealthScore({
+      incomeTotal: 5000000,
+      expenseTotal: 3200000,
+      budgetTotal: 4000000,
+      budgetSpent: 3200000, // 80% 정확히
+    })
+    expect(score.spending).toBe(100)
+  })
+
+  it('spending: 예산 사용률 90% 구간 → 75점 부근', () => {
+    // usageRate = 0.9 → 100 - (0.9 - 0.8) * 250 = 75
+    const score = calculateHealthScore({
+      incomeTotal: 5000000,
+      expenseTotal: 3600000,
+      budgetTotal: 4000000,
+      budgetSpent: 3600000, // 90%
+    })
+    expect(score.spending).toBe(75)
+  })
+
+  it('spending: 예산 사용률 100% 구간 경계 → 50점', () => {
+    // usageRate = 1.0 → 100 - (1.0 - 0.8) * 250 = 50
+    const score = calculateHealthScore({
+      incomeTotal: 5000000,
+      expenseTotal: 4000000,
+      budgetTotal: 4000000,
+      budgetSpent: 4000000, // 100%
+    })
+    expect(score.spending).toBe(50)
+  })
+
+  it('totalAssets=0이어도 부채 점수를 계산한다 (부채비율 2 적용)', () => {
+    // totalAssets=0이면 debtRatio=2 → ratioScore=20
+    const score = calculateHealthScore({
+      incomeTotal: 3000000,
+      expenseTotal: 2000000,
+      totalLiabilities: 10000000,
+      totalAssets: 0,
+      avgLoanRate: 0,
+    })
+    // ratioScore=20, rateScore=100 → debt = 20*0.6 + 100*0.4 = 52
+    expect(score.debt).toBe(52)
+  })
+
+  it('점수 범위는 항상 0-100 사이다', () => {
+    // 극단적 케이스: 수입 없이 지출만 있음
+    const worst = calculateHealthScore({
+      incomeTotal: 100,
+      expenseTotal: 10000000,
+      budgetTotal: 1000,
+      budgetSpent: 10000000,
+      totalLiabilities: 100000000,
+      totalAssets: 1,
+      avgLoanRate: 20,
+    })
+    expect(worst.savings).toBeGreaterThanOrEqual(0)
+    expect(worst.savings).toBeLessThanOrEqual(100)
+    expect(worst.spending).toBeGreaterThanOrEqual(0)
+    expect(worst.spending).toBeLessThanOrEqual(100)
+    expect(worst.debt).toBeGreaterThanOrEqual(0)
+    expect(worst.debt).toBeLessThanOrEqual(100)
+    expect(worst.overall).toBeGreaterThanOrEqual(0)
+    expect(worst.overall).toBeLessThanOrEqual(100)
+
+    // 극단적 케이스: 모든 조건 완벽
+    const best = calculateHealthScore({
+      incomeTotal: 5000000,
+      expenseTotal: 0,
+      budgetTotal: 5000000,
+      budgetSpent: 0,
+      totalLiabilities: 0,
+      totalAssets: 100000000,
+      avgLoanRate: 0,
+    })
+    expect(best.savings).toBeGreaterThanOrEqual(0)
+    expect(best.savings).toBeLessThanOrEqual(100)
+    expect(best.spending).toBe(100)
+    expect(best.debt).toBe(100)
+    expect(best.overall).toBeLessThanOrEqual(100)
+  })
 })
