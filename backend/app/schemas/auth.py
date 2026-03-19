@@ -6,7 +6,7 @@ podo-auth SSO 연동 후 사용되는 응답 DTO들입니다.
 
 from datetime import datetime
 
-from pydantic import BaseModel
+from pydantic import ConfigDict, BaseModel
 
 
 class UserResponse(BaseModel):
@@ -24,8 +24,7 @@ class UserResponse(BaseModel):
     is_kakao_linked: bool = False  # 카카오톡 연동 여부
     is_admin: bool = False  # 관리자 여부
 
-    class Config:
-        from_attributes = True  # SQLAlchemy 모델을 Pydantic으로 변환 허용
+    model_config = ConfigDict(from_attributes=True)
 
 
 class MessageResponse(BaseModel):

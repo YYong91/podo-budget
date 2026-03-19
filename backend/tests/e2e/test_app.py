@@ -29,7 +29,7 @@ async def test_root_endpoint(client):
     response = await client.get("/")
     assert response.status_code == 200
     data = response.json()
-    assert "HomeNRich" in data["message"]
+    assert "포도가계부" in data["message"]
 
 
 @pytest.mark.asyncio

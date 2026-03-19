@@ -17,7 +17,7 @@ def test_settings_default_values():
     with patch.dict("os.environ", {}, clear=True):
         settings = Settings(_env_file=None)
 
-        assert settings.APP_NAME == "HomeNRich"
+        assert settings.APP_NAME == "포도가계부"
         assert settings.DEBUG is False
         assert settings.SECRET_KEY == ""  # 프로덕션에서는 반드시 설정 필요
         assert settings.LLM_PROVIDER == "anthropic"
@@ -71,7 +71,7 @@ def test_settings_case_sensitive():
     # 소문자 환경변수는 무시됨
     with patch.dict("os.environ", {"app_name": "lowercase"}, clear=True):
         settings = Settings(_env_file=None)
-        assert settings.APP_NAME == "HomeNRich"  # 기본값 유지
+        assert settings.APP_NAME == "포도가계부"  # 기본값 유지
 
     # 대문자 환경변수는 반영됨
     with patch.dict("os.environ", {"APP_NAME": "UPPERCASE"}, clear=True):
