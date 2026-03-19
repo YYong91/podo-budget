@@ -169,7 +169,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => { active = false }
   }, [token, loadedToken])
 
-  // 주기적으로 토큰 만료 체크 (5분마다, podo-bookshelf 패턴)
+  // 주기적으로 토큰 만료 체크 (30초마다 — #153: 5분에서 축소, 만료 후 최대 30초 이내 감지)
   useEffect(() => {
     const checkToken = () => {
       const current = getCookieToken()
@@ -179,7 +179,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setToken(current)
       }
     }
-    const interval = setInterval(checkToken, 5 * 60 * 1000)
+    const interval = setInterval(checkToken, 30 * 1000)
     return () => clearInterval(interval)
   }, [token])
 
