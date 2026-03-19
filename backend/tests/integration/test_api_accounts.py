@@ -161,3 +161,42 @@ async def test_other_user_cannot_modify_account(
     # user2가 삭제 시도 → 404 (권한 없음)
     del_res = await authenticated_client2.delete(f"/api/accounts/{account_id}")
     assert del_res.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_other_household_user_cannot_read_account(
+    authenticated_client,
+    authenticated_client2,
+    test_user: User,
+    test_user2: User,
+):
+    """다른 가구 사용자는 계좌 단건 조회를 할 수 없다 (#201)
+
+    test_user와 test_user2는 서로 다른 가구(test_household, test_household2)에 소속되어 있어
+    cross-household 계좌 접근이 차단되어야 한다.
+    """
+    # user1(test_household)이 계좌 생성
+    create_res = await authenticated_client.post("/api/accounts", json=_account_payload())
+    assert create_res.status_code == 201
+    account_id = create_res.json()["id"]
+
+    # user2(test_household2)가 user1의 계좌 조회 시도 → 404 (다른 가구)
+    get_res = await authenticated_client2.get(f"/api/accounts/{account_id}")
+    assert get_res.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_other_household_accounts_not_in_list(
+    authenticated_client,
+    authenticated_client2,
+    test_user: User,
+    test_user2: User,
+):
+    """다른 가구 사용자의 계좌는 목록에 포함되지 않는다 (#201)"""
+    # user1이 계좌 생성
+    await authenticated_client.post("/api/accounts", json=_account_payload())
+
+    # user2가 계좌 목록 조회 — user1 계좌는 보이지 않아야 함
+    list_res = await authenticated_client2.get("/api/accounts")
+    assert list_res.status_code == 200
+    assert len(list_res.json()) == 0
