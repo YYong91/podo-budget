@@ -14,6 +14,7 @@ from datetime import UTC, datetime
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import and_, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.core.auth import get_current_user
 from app.core.database import get_db
@@ -52,44 +53,42 @@ async def list_my_invitations(
     if current_user.email:
         conditions.append(HouseholdInvitation.invitee_email == current_user.email)
 
-    query = select(HouseholdInvitation).where(or_(*conditions)).order_by(HouseholdInvitation.created_at.desc())
+    # 초대+가구+초대자 일괄 로드 — 초대 건수만큼 개별 조회 제거 (#165)
+    query = (
+        select(HouseholdInvitation)
+        .where(or_(*conditions))
+        .options(
+            selectinload(HouseholdInvitation.household),
+            selectinload(HouseholdInvitation.inviter),
+        )
+        .order_by(HouseholdInvitation.created_at.desc())
+    )
 
     result = await db.execute(query)
     invitations = result.scalars().all()
 
-    # 응답 생성
+    # 응답 생성 (household, inviter 이미 로드됨)
     response_list = []
     for inv in invitations:
-        # 가구 정보 조회
-        household_query = select(Household).where(Household.id == inv.household_id)
-        household_result = await db.execute(household_query)
-        household = household_result.scalar_one_or_none()
-
         # 가구가 소프트 삭제된 경우 건너뛰기
-        if not household or household.deleted_at is not None:
+        if not inv.household or inv.household.deleted_at is not None:
             continue
-
-        # 초대자 정보 조회
-        inviter_query = select(User).where(User.id == inv.inviter_id)
-        inviter_result = await db.execute(inviter_query)
-        inviter = inviter_result.scalar_one()
 
         # pending 상태인 초대에는 토큰 포함 (수락/거절에 필요)
         # 이 엔드포인트는 인증 필요이고 본인 초대만 반환하므로 안전
-        include_token = inv.status == "pending"
         response_list.append(
             InvitationResponse(
                 id=inv.id,
-                household_id=household.id,
-                household_name=household.name,
+                household_id=inv.household.id,
+                household_name=inv.household.name,
                 invitee_email=inv.invitee_email,
-                inviter_username=inviter.username,
+                inviter_username=inv.inviter.username,
                 role=inv.role,
                 status=inv.status,
                 expires_at=inv.expires_at,
                 created_at=inv.created_at,
                 responded_at=inv.responded_at,
-                token=inv.token if include_token else None,
+                token=inv.token if inv.status == "pending" else None,
             )
         )
 

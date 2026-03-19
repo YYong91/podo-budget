@@ -92,6 +92,16 @@ def _disable_rate_limit():
     limiter.enabled = True
 
 
+@pytest.fixture(autouse=True)
+def _clear_auth_cache():
+    """테스트마다 JWT 사용자 캐시 초기화 — in-memory DB 교체 시 캐시 stale 방지 (#162)"""
+    from app.core.auth import _auth_id_cache
+
+    _auth_id_cache.clear()
+    yield
+    _auth_id_cache.clear()
+
+
 @pytest_asyncio.fixture(scope="function")
 async def db_session() -> AsyncGenerator[AsyncSession, None]:
     """
