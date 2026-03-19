@@ -46,7 +46,12 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 function isTokenExpired(token: string): boolean {
   try {
-    const payload = JSON.parse(atob(token.split('.')[1]))
+    // JWT는 base64url 인코딩 — atob()은 base64만 지원 (#153)
+    // base64url → base64: '-'→'+', '_'→'/', 패딩 추가
+    const base64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/').padEnd(
+      Math.ceil(token.split('.')[1].length / 4) * 4, '='
+    )
+    const payload = JSON.parse(atob(base64))
     return payload.exp * 1000 < Date.now()
   } catch {
     return true

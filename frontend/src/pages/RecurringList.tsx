@@ -73,7 +73,8 @@ export default function RecurringList() {
       setLoading(true)
       setError(null)
 
-      const params: { type?: string; household_id: number } = { household_id: activeHouseholdId! }
+      if (!activeHouseholdId) return  // 가구 로딩 전 API 호출 방지 (#149)
+      const params: { type?: string; household_id: number } = { household_id: activeHouseholdId }
       if (typeFilter !== 'all') params.type = typeFilter
 
       const [recurringRes, categoriesRes] = await Promise.all([
