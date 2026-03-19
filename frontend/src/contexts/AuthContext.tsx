@@ -22,6 +22,7 @@ import type { ReactNode } from 'react'
 import type { User } from '../types'
 import authApi from '../api/auth'
 import apiClient from '../api/client'
+import { getCookieToken } from '../utils/token'
 
 interface AuthContextType {
   /** 현재 로그인한 사용자 프로필 (API로 로드, null이면 로딩 중이거나 미로그인) */
@@ -58,17 +59,6 @@ function isTokenExpired(token: string): boolean {
   }
 }
 
-function getCookieToken(): string | null {
-  // 1. 쿠키 우선 (Chrome/Android 등)
-  const cookieMatch = document.cookie.match(/(?:^|; )podo_access_token=([^;]+)/)
-  if (cookieMatch) return cookieMatch[1]
-  // 2. localStorage 폴백 (iOS Safari ITP가 JS 쿠키를 공유 못하는 경우)
-  try {
-    return localStorage.getItem('podo_access_token')
-  } catch {
-    return null
-  }
-}
 
 function clearCookieToken(): void {
   const hostname = window.location?.hostname || ''

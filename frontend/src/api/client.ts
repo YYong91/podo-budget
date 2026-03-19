@@ -3,20 +3,13 @@
 import axios from 'axios'
 import toast from 'react-hot-toast'
 import { captureException } from '../utils/sentry'
+import { getCookieToken } from '../utils/token'
 
 const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_URL || '/api',
   timeout: 30000, // Fly.io 콜드 스타트 대기 시간 고려 (10s → 30s)
   headers: { 'Content-Type': 'application/json' },
 })
-
-function getCookieToken(): string | null {
-  // 1. 쿠키 우선 (Chrome/Android 등)
-  const match = document.cookie.match(/(?:^|; )podo_access_token=([^;]+)/)
-  if (match) return match[1]
-  // 2. localStorage 폴백 (Safari ITP로 쿠키 공유 불가 시)
-  try { return localStorage.getItem('podo_access_token') } catch { return null }
-}
 
 // 요청 인터셉터: 쿠키/localStorage에서 토큰을 읽어 Authorization 헤더에 자동 추가
 // 참고: AuthContext에도 동일 인터셉터가 등록되며 LIFO로 먼저 실행됨
