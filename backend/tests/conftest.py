@@ -250,8 +250,10 @@ async def auth_token2(test_user2: User) -> str:
 
 def _db_override(db_session: AsyncSession):
     """DB 의존성 오버라이드 팩토리 — 세션을 클로저로 캡처 (#202)"""
+
     async def override():
         yield db_session
+
     return override
 
 
