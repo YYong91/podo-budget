@@ -29,7 +29,7 @@ jobs:
       - name: uv 설치
         uses: astral-sh/setup-uv@v4
         with:
-          version: "latest"
+          version: "0.5.20"  # 버전 고정 — 공급망 보안 (#139)
           enable-cache: true
 
       - name: Python 설정

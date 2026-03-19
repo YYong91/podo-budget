@@ -36,7 +36,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: superfly/flyctl-actions/setup-flyctl@master
+      - uses: superfly/flyctl-actions/setup-flyctl@v1  # 버전 고정 — 공급망 보안 (#139)
 
       - name: 백엔드 배포
         run: |
