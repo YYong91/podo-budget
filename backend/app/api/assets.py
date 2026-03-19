@@ -3,11 +3,13 @@
 import json
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import get_household_member, get_user_active_household_id
 from app.core.auth import get_current_user
 from app.core.database import get_db
+from app.models.asset import Asset
 from app.models.user import User
 from app.schemas.asset import (
     AssetCreate,
@@ -233,10 +235,6 @@ async def update_asset(
     db: AsyncSession = Depends(get_db),
 ):
     """자산 수정 (본인 생성분만 + 현재 가구 멤버만)"""
-    from sqlalchemy import select
-
-    from app.models.asset import Asset
-
     result = await db.execute(select(Asset).where(Asset.id == asset_id, Asset.created_by == current_user.id))
     asset = result.scalar_one_or_none()
     if not asset:
@@ -258,10 +256,6 @@ async def delete_asset(
     db: AsyncSession = Depends(get_db),
 ):
     """자산 삭제 (본인 생성분만 + 현재 가구 멤버만)"""
-    from sqlalchemy import select
-
-    from app.models.asset import Asset
-
     result = await db.execute(select(Asset).where(Asset.id == asset_id, Asset.created_by == current_user.id))
     asset = result.scalar_one_or_none()
     if not asset:
