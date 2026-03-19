@@ -16,9 +16,11 @@ from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
-# 시세 캐시 (5분)
-_price_cache: dict[str, tuple[float, float]] = {}  # key → (price, timestamp)
-CACHE_TTL = 300  # 5분
+# 시세 캐시
+_CACHE_MISS = object()  # "캐시 미스" sentinel — None(실패 캐시)과 구분 (#159)
+_price_cache: dict[str, tuple[float | None, float]] = {}  # key → (price_or_none, timestamp)
+CACHE_TTL = 300  # 성공 캐시 5분
+NEGATIVE_CACHE_TTL = 30  # 실패 캐시 30초 — 외부 API rate limit 방어 (#159)
 
 # singleflight 락 — 동시 요청이 같은 ticker 외부 API를 중복 호출하는 것을 방지 (#166)
 _price_locks: dict[str, asyncio.Lock] = {}
@@ -80,22 +82,22 @@ async def get_stock_kr_price(ticker: str) -> float | None:
     """한국 주식/ETF 현재가 조회 (한투 API 우선, 네이버 fallback)"""
     key = f"kr:{ticker}"
     cached = _get_cached(key)
-    if cached is not None:
-        return cached
+    if cached is not _CACHE_MISS:
+        return cached  # type: ignore[return-value]  # None(실패 캐시) 또는 float
 
     async with _lock_for(key):
         # 락 획득 후 재확인 — 대기 중에 다른 코루틴이 이미 채웠을 수 있음
         cached = _get_cached(key)
-        if cached is not None:
-            return cached
+        if cached is not _CACHE_MISS:
+            return cached  # type: ignore[return-value]
 
         # 1차: 한투 API
         price = await _get_stock_kr_price_kis(ticker)
         if not price:
             # 2차: 네이버 금융 fallback
             price = await _get_stock_kr_price_naver(ticker)
-        if price:
-            _set_cached(key, price)
+        # 성공·실패 모두 캐시 (실패 시 None → NEGATIVE_CACHE_TTL 30초 적용, #159)
+        _set_cached(key, price)
         return price
 
 
@@ -159,13 +161,19 @@ async def get_stock_us_price(ticker: str) -> tuple[float | None, float | None]:
     cached_usd = _get_cached(key)
     exchange_rate = await get_usd_krw_rate()
 
-    if cached_usd is not None and exchange_rate is not None:
-        return cached_usd, cached_usd * exchange_rate
+    if cached_usd is not _CACHE_MISS:
+        if cached_usd is None:
+            return None, None  # 실패 캐시 hit
+        usd = cached_usd  # type: ignore[assignment]
+        return usd, usd * exchange_rate if exchange_rate else None  # type: ignore[operator]
 
     async with _lock_for(key):
         cached_usd = _get_cached(key)
-        if cached_usd is not None and exchange_rate is not None:
-            return cached_usd, cached_usd * exchange_rate
+        if cached_usd is not _CACHE_MISS:
+            if cached_usd is None:
+                return None, None
+            usd = cached_usd  # type: ignore[assignment]
+            return usd, usd * exchange_rate if exchange_rate else None  # type: ignore[operator]
 
         try:
             async with httpx.AsyncClient(timeout=10) as client:
@@ -183,6 +191,7 @@ async def get_stock_us_price(ticker: str) -> tuple[float | None, float | None]:
                     return price_usd, krw_price
         except Exception:
             pass
+        _set_cached(key, None)  # 실패 캐시 (#159)
     return None, None
 
 
@@ -193,13 +202,13 @@ async def get_crypto_price(symbol: str) -> float | None:
     """업비트 코인 현재가 조회 (KRW)"""
     key = f"crypto:{symbol}"
     cached = _get_cached(key)
-    if cached is not None:
-        return cached
+    if cached is not _CACHE_MISS:
+        return cached  # type: ignore[return-value]
 
     async with _lock_for(key):
         cached = _get_cached(key)
-        if cached is not None:
-            return cached
+        if cached is not _CACHE_MISS:
+            return cached  # type: ignore[return-value]
 
         market = f"KRW-{symbol.upper()}"
         try:
@@ -216,6 +225,7 @@ async def get_crypto_price(symbol: str) -> float | None:
                         return price
         except Exception:
             pass
+        _set_cached(key, None)  # 실패 캐시 (#159)
     return None
 
 
@@ -225,8 +235,8 @@ async def get_crypto_price(symbol: str) -> float | None:
 async def get_usd_krw_rate() -> float | None:
     """USD/KRW 환율 조회"""
     cached = _get_cached("fx:USDKRW")
-    if cached is not None:
-        return cached
+    if cached is not _CACHE_MISS:
+        return cached  # type: ignore[return-value]
 
     try:
         async with httpx.AsyncClient(timeout=10) as client:
@@ -238,6 +248,7 @@ async def get_usd_krw_rate() -> float | None:
                 return rate
     except Exception:
         pass
+    _set_cached("fx:USDKRW", None)  # 실패 캐시 (#159)
     return None
 
 
@@ -392,14 +403,17 @@ async def search_crypto(query: str) -> list[dict]:
 # ── 캐시 유틸 ──────────────────────────────────────────────────
 
 
-def _get_cached(key: str) -> float | None:
+def _get_cached(key: str) -> "float | None | object":
+    """캐시 조회 — _CACHE_MISS 반환 시 캐시 없음, None 반환 시 실패 캐시 (#159)"""
     if key in _price_cache:
         price, ts = _price_cache[key]
-        if time.time() - ts < CACHE_TTL:
-            return price
+        ttl = NEGATIVE_CACHE_TTL if price is None else CACHE_TTL
+        if time.time() - ts < ttl:
+            return price  # None(실패 캐시) 또는 float
         del _price_cache[key]
-    return None
+    return _CACHE_MISS
 
 
-def _set_cached(key: str, price: float) -> None:
+def _set_cached(key: str, price: float | None) -> None:
+    """캐시 저장 — None이면 실패 캐시 (NEGATIVE_CACHE_TTL 적용) (#159)"""
     _price_cache[key] = (price, time.time())

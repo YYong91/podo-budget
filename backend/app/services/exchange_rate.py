@@ -12,8 +12,9 @@ import httpx
 logger = logging.getLogger(__name__)
 
 # 환율 캐시 (API 호출 최소화)
-_rate_cache: dict[str, tuple[float, datetime]] = {}
+_rate_cache: dict[str, tuple[float | None, datetime]] = {}
 CACHE_TTL = timedelta(minutes=30)
+NEGATIVE_CACHE_TTL = timedelta(seconds=30)  # 실패 캐시 30초 — 외부 API rate limit 방어 (#159)
 
 
 async def get_exchange_rate(currency: str) -> float | None:
@@ -33,7 +34,10 @@ async def get_exchange_rate(currency: str) -> float | None:
     now = datetime.now()
     if currency in _rate_cache:
         rate, cached_at = _rate_cache[currency]
-        if now - cached_at < CACHE_TTL:
+        ttl = NEGATIVE_CACHE_TTL if rate is None else CACHE_TTL
+        if now - cached_at < ttl:
+            if rate is None:
+                return None  # 실패 캐시 hit (#159)
             logger.info(f"환율 캐시 사용: 1 {currency} = {rate:,.2f} KRW")
             return rate
 
@@ -52,6 +56,7 @@ async def get_exchange_rate(currency: str) -> float | None:
 
     except Exception as e:
         logger.error(f"환율 조회 실패 ({currency}): {e}")
+        _rate_cache[currency] = (None, now)  # 실패 캐시 (NEGATIVE_CACHE_TTL 적용, #159)
         return None
 
 
