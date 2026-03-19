@@ -1,13 +1,14 @@
 """수입 스키마"""
 
 from datetime import datetime
+from decimal import Decimal
 from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class IncomeBase(BaseModel):
-    amount: float = Field(..., gt=0, description="수입 금액 (0보다 커야 함)")
+    amount: Decimal = Field(..., gt=0, description="수입 금액 (0보다 커야 함)")
     description: str
     category_id: int | None = None
     date: datetime
@@ -34,7 +35,7 @@ class IncomeCreate(IncomeBase):
 
 
 class IncomeUpdate(BaseModel):
-    amount: float | None = Field(None, gt=0, description="수입 금액 (0보다 커야 함)")
+    amount: Decimal | None = Field(None, gt=0, description="수입 금액 (0보다 커야 함)")
     description: str | None = None
     category_id: int | None = None
     date: datetime | None = None
@@ -43,6 +44,8 @@ class IncomeUpdate(BaseModel):
 
 
 class IncomeResponse(IncomeBase):
+    # 응답 시 float으로 직렬화 (JSON 호환성) — 입력은 IncomeBase의 Decimal로 정밀도 보장 (#146)
+    amount: float
     id: int
     raw_input: str | None = None
     memo: str | None = None
