@@ -112,6 +112,7 @@ class AnthropicProvider(LLMProvider):
                     max_tokens=8192,  # Haiku 최대값 — 월간 40건+ 파싱 대응
                     system=get_expense_parser_prompt(categories=categories, history_hints=history_hints, category_mappings=category_mappings),
                     messages=[{"role": "user", "content": user_input}],
+                    timeout=25.0,  # LLM 응답 타임아웃 (#172)
                 )
 
                 # 토큰 한도 초과 감지 — JSON이 중간에 잘린 경우
@@ -346,6 +347,7 @@ class OpenAIProvider(LLMProvider):
                         },
                         {"role": "user", "content": user_input},
                     ],
+                    timeout=25.0,  # LLM 응답 타임아웃 (#172)
                 )
 
                 # 토큰 한도 초과 감지

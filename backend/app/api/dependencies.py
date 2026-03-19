@@ -13,6 +13,7 @@ from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.auth import get_current_user
+from app.core.config import settings
 from app.core.database import get_db
 from app.models.household import Household
 from app.models.household_member import HouseholdMember
@@ -184,8 +185,6 @@ async def require_admin(
     Raises:
         HTTPException 403: 관리자 권한이 없음
     """
-    from app.core.config import settings
-
     # ADMIN_USER_ID <= 0은 "미설정" — 환경변수 미설정 시 관리자 기능 완전 비활성화
     if settings.ADMIN_USER_ID <= 0 or current_user.id != settings.ADMIN_USER_ID:
         raise HTTPException(
