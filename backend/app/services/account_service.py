@@ -7,19 +7,9 @@ from app.models.account import Account
 from app.models.user import User
 
 
-async def get_user_active_household_id(user: User, db: AsyncSession) -> int:
-    """사용자의 활성 household_id 가져오기 (필수)"""
-    from app.api.dependencies import get_user_active_household_id as _get
-
-    return await _get(user, db)
-
-
-async def create_account(db: AsyncSession, account_data: dict, user: User) -> Account:
-    """계좌 생성"""
-    household_id = account_data.pop("household_id", None)
-    if household_id is None:
-        household_id = await get_user_active_household_id(user, db)
-
+async def create_account(db: AsyncSession, account_data: dict, user: User, household_id: int) -> Account:
+    """계좌 생성 — household_id는 API 레이어에서 resolve 후 전달 (#193)"""
+    account_data.pop("household_id", None)  # schema에 포함된 경우 제거
     account = Account(**account_data, created_by=user.id, household_id=household_id)
     db.add(account)
     await db.commit()
@@ -27,10 +17,9 @@ async def create_account(db: AsyncSession, account_data: dict, user: User) -> Ac
     return account
 
 
-async def get_accounts(db: AsyncSession, user: User, household_id: int | None = None) -> list[Account]:
-    """계좌 목록 조회"""
-    query = select(Account).where(Account.household_id == household_id) if household_id is not None else select(Account).where(Account.created_by == user.id)
-    query = query.order_by(Account.type, Account.name)
+async def get_accounts(db: AsyncSession, household_id: int) -> list[Account]:
+    """계좌 목록 조회 — household_id는 API 레이어에서 resolve 후 전달 (#193)"""
+    query = select(Account).where(Account.household_id == household_id).order_by(Account.type, Account.name)
     result = await db.execute(query)
     return list(result.scalars().all())
 
