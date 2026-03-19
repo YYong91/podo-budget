@@ -24,18 +24,25 @@ SENTRY_PAYLOAD = {
 @pytest.mark.asyncio
 async def test_sentry_webhook_전송_성공(authenticated_client: AsyncClient):
     """Sentry webhook → 텔레그램 메시지 전송"""
+    # #131 보안 패치: SENTRY_WEBHOOK_SECRET 미설정 시 503 반환
+    # 테스트에서도 시크릿을 설정하고 올바른 HMAC 서명을 함께 전송해야 함
+    _secret = "test-sentry-secret"  # pragma: allowlist secret
+    _body = json.dumps(SENTRY_PAYLOAD).encode()
+    _sig = hmac.new(_secret.encode(), _body, hashlib.sha256).hexdigest()
+
     with (
         patch("app.api.webhooks.settings") as mock_settings,
         patch("app.api.telegram.send_telegram_message", new_callable=AsyncMock) as mock_send,
     ):
         mock_settings.TELEGRAM_BOT_TOKEN = "fake-token"
         mock_settings.SENTRY_ALERT_CHAT_ID = "12345"
-        mock_settings.SENTRY_WEBHOOK_SECRET = ""
+        mock_settings.SENTRY_WEBHOOK_SECRET = _secret
         mock_settings.SENTRY_ENVIRONMENT = "production"
 
         response = await authenticated_client.post(
             "/api/webhooks/sentry",
-            json=SENTRY_PAYLOAD,
+            content=_body,
+            headers={"content-type": "application/json", "sentry-hook-signature": _sig},
         )
 
     assert response.status_code == 200

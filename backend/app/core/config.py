@@ -52,11 +52,13 @@ class Settings(BaseSettings):
     SENTRY_WEBHOOK_SECRET: str = ""  # Sentry → 텔레그램 알림 webhook 인증용
     SENTRY_ALERT_CHAT_ID: str = ""  # Sentry 알림 수신할 텔레그램 채팅 ID
 
-    # 관리자 설정
-    ADMIN_USER_ID: int = 1  # 피드백 관리 등 관리자 기능용 사용자 ID
+    # 관리자 설정 — 기본값 -1은 "미설정" 의미 (DB에 존재하지 않는 ID)
+    # .env에서 실제 사용자 ID를 설정하지 않으면 관리자 기능이 비활성화됨
+    ADMIN_USER_ID: int = -1
 
     # CORS — 허용할 프론트엔드 오리진 (쉼표로 구분)
-    CORS_ORIGINS: str = "http://localhost:5173,https://budget.podonest.com"
+    # 기본값은 프로덕션 도메인만. 로컬 개발 시 .env에서 http://localhost:5173 추가
+    CORS_ORIGINS: str = "https://budget.podonest.com"
 
     # Email (Resend) — 빈 문자열이면 이메일 발송 비활성화
     RESEND_API_KEY: str = ""
