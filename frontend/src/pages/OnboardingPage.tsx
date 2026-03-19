@@ -90,8 +90,8 @@ export default function OnboardingPage() {
                   )}
                 </div>
                 <button
-                  onClick={() => handleAccept(inv.token!, inv.household_name)}
-                  disabled={isDisabled}
+                  onClick={() => inv.token && handleAccept(inv.token, inv.household_name)}
+                  disabled={isDisabled || !inv.token}
                   className="ml-3 shrink-0 px-3 py-1.5 text-xs font-medium text-white bg-grape-600 rounded-lg hover:bg-grape-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-1"
                 >
                   {acceptingToken === inv.token && <div className="animate-spin rounded-full border-b-2 border-current w-3 h-3" />}
