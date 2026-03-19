@@ -6,7 +6,6 @@
 import { useEffect, useState, useMemo, useCallback, useRef } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import PeriodNavigator from '../components/stats/PeriodNavigator'
-import toast from 'react-hot-toast'
 import { expenseApi } from '../api/expenses'
 import { incomeApi } from '../api/income'
 import { recurringApi } from '../api/recurring'
@@ -208,7 +207,7 @@ export default function TransactionList() {
       }
       setSheetOpen(false)
     } catch {
-      toast.error('카테고리 변경에 실패했습니다')
+      addToast('error', '카테고리 변경에 실패했습니다')
     } finally {
       setSheetSaving(false)
     }

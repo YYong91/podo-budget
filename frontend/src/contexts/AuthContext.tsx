@@ -112,8 +112,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const t = tokenRef.current ?? getCookieToken()
         if (t) {
           config.headers.Authorization = `Bearer ${t}`
-        } else {
-          // 토큰 없이 요청 — 디버깅용 (Safari ITP/Private 모드 추적)
+        } else if (import.meta.env.DEV) {
+          // 토큰 없이 요청 — 개발 환경 디버깅용 (Safari ITP/Private 모드 추적)
           console.warn('[podo-auth] 요청 토큰 없음:', config.url, {
             tokenRef: tokenRef.current,
             cookie: !!document.cookie.match(/podo_access_token/),

@@ -15,10 +15,11 @@ export function formatCompactAmount(amount: number): string {
     return amount.toLocaleString('ko-KR')
   }
   if (amount < 1000000) {
-    const man = amount / 10000
-    const formatted = man % 1 === 0 ? man.toFixed(0) : man.toFixed(1)
-    return `${formatted}만`
+    // Math.floor로 반올림 방지 (예: 999,999원 → "99.9만", "100.0만" 아님)
+    const man = Math.floor(amount / 10000)
+    const tenths = Math.floor((amount % 10000) / 1000)
+    return tenths === 0 ? `${man}만` : `${man}.${tenths}만`
   }
-  const man = Math.round(amount / 10000)
+  const man = Math.floor(amount / 10000)
   return `${man}만`
 }

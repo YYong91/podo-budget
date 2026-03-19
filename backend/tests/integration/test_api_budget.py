@@ -4,7 +4,7 @@
 모든 엔드포인트는 JWT 인증이 필요합니다.
 """
 
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 
 import pytest
 from httpx import AsyncClient
@@ -33,14 +33,13 @@ async def test_create_budget_success(authenticated_client: AsyncClient, test_use
     await db_session.commit()
     await db_session.refresh(category)
 
-    start_date = datetime.now()
     response = await authenticated_client.post(
         "/api/budgets",
         json={
             "category_id": category.id,
             "amount": 300000,
             "period": "monthly",
-            "start_date": start_date.isoformat(),
+            "start_date": date.today().isoformat(),
             "end_date": None,
             "alert_threshold": 0.8,
         },
@@ -64,7 +63,7 @@ async def test_create_budget_nonexistent_category(authenticated_client: AsyncCli
             "category_id": 99999,
             "amount": 100000,
             "period": "monthly",
-            "start_date": datetime.now().isoformat(),
+            "start_date": date.today().isoformat(),
         },
     )
 
@@ -80,7 +79,7 @@ async def test_create_budget_invalid_dates(authenticated_client: AsyncClient, te
     await db_session.commit()
     await db_session.refresh(category)
 
-    start_date = datetime.now()
+    start_date = date.today()
     end_date = start_date - timedelta(days=1)
 
     response = await authenticated_client.post(

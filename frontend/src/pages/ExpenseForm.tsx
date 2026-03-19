@@ -11,6 +11,7 @@ import { useNavigate, Link } from 'react-router-dom'
 import { ArrowLeft, Camera } from 'lucide-react'
 import { useToast } from '../hooks/useToast'
 import { expenseApi } from '../api/expenses'
+import { incomeApi } from '../api/income'
 import { categoryApi } from '../api/categories'
 import { chatApi } from '../api/chat'
 import { useHouseholdStore } from '../stores/useHouseholdStore'
@@ -115,19 +116,25 @@ export default function ExpenseForm() {
     try {
       let savedCount = 0
       for (const item of previewItems) {
-        await expenseApi.create({
+        // date input은 YYYY-MM-DD 형식이므로 datetime으로 변환 (Pydantic v2는 날짜 전용 문자열 거부)
+        const dateValue = item.date.includes('T') ? item.date : `${item.date}T00:00:00`
+        const payload = {
           amount: item.amount,
           description: item.description,
           category_id: item.category_id,
-          // date input은 YYYY-MM-DD 형식이므로 datetime으로 변환 (Pydantic v2는 날짜 전용 문자열 거부)
-          date: item.date.includes('T') ? item.date : `${item.date}T00:00:00`,
+          date: dateValue,
           household_id: activeHouseholdId,
           raw_input: rawInput,
           memo: item.memo || undefined,
-        })
+        }
+        if (item.type === 'income') {
+          await incomeApi.create(payload)
+        } else {
+          await expenseApi.create(payload)
+        }
         savedCount++
       }
-      addToast('success', `🍇 포도알 +${savedCount}! 지출이 저장되었습니다`)
+      addToast('success', `🍇 포도알 +${savedCount}! 거래가 저장되었습니다`)
       setPreviewItems(null)
       setNaturalInput('')
       setTimeout(() => navigate('/expenses'), 500)

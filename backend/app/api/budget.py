@@ -5,7 +5,7 @@ household_id가 있으면 가구 공유 예산, 없으면 개인 예산으로 �
 expenses/recurring과 동일한 household 패턴을 따릅니다.
 """
 
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import and_, extract, func, or_, select
@@ -485,7 +485,13 @@ async def update_budget(
     for field, value in update_data.items():
         setattr(budget, field, value)
 
-    if budget.end_date and budget.end_date < budget.start_date:
+    # DB 컬럼(DateTime)과 스키마(date) 혼용 방지: 둘 다 date로 정규화 후 비교
+    def _as_date(val: datetime | date | None) -> date | None:
+        if val is None:
+            return None
+        return val.date() if isinstance(val, datetime) else val
+
+    if budget.end_date and _as_date(budget.end_date) < _as_date(budget.start_date):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="종료일은 시작일 이후여야 합니다")
 
     await db.commit()
