@@ -21,7 +21,11 @@ async def create_account(
 ):
     """계좌 등록"""
     account_data = account.model_dump()
-    return await account_service.create_account(db, account_data, current_user)
+    household_id = account_data.get("household_id")
+    if household_id is None:
+        household_id = await get_user_active_household_id(current_user, db)
+    await get_household_member(household_id, current_user, db)
+    return await account_service.create_account(db, account_data, current_user, household_id)
 
 
 @router.get("", response_model=list[AccountResponse])
@@ -34,7 +38,7 @@ async def get_accounts(
     if household_id is None:
         household_id = await get_user_active_household_id(current_user, db)
     await get_household_member(household_id, current_user, db)
-    return await account_service.get_accounts(db, current_user, household_id)
+    return await account_service.get_accounts(db, household_id)
 
 
 @router.get("/{account_id}", response_model=AccountResponse)

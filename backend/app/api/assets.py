@@ -34,7 +34,11 @@ async def create_asset(
 ):
     """자산/부채 등록"""
     asset_data = asset.model_dump()
-    result = await asset_service.create_asset(db, asset_data, current_user)
+    household_id = asset_data.get("household_id")
+    if household_id is None:
+        household_id = await get_user_active_household_id(current_user, db)
+    await get_household_member(household_id, current_user, db)
+    result = await asset_service.create_asset(db, asset_data, current_user, household_id)
     return result
 
 
