@@ -137,6 +137,9 @@ export default function TransactionList() {
 
   useEffect(() => { fetchData() }, [fetchData])
 
+  // 카테고리 O(1) 조회용 Map — TransactionItem에 배열 대신 전달 (#180)
+  const categoryMap = useMemo(() => new Map(categories.map(c => [c.id, c])), [categories])
+
   // 통합 + 정렬 + 그룹핑
   const { grouped, totalExpense, totalIncome, daySummaries } = useMemo(() => {
     const all: UnifiedTransaction[] = [
@@ -348,7 +351,7 @@ export default function TransactionList() {
                     description={tx.description}
                     amount={tx.amount}
                     categoryId={tx.category_id}
-                    categories={categories}
+                    categoryMap={categoryMap}
                     excludeFromStats={tx.exclude_from_stats}
                     rawInput={tx.raw_input}
                     onCategoryClick={() => {
