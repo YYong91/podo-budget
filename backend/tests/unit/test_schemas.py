@@ -12,6 +12,7 @@ from datetime import datetime
 import pytest
 from pydantic import ValidationError
 
+from app.schemas.asset import AssetParseRequest
 from app.schemas.category import CategoryCreate, CategoryResponse, CategoryUpdate
 from app.schemas.chat import ChatRequest, ChatResponse
 from app.schemas.expense import ExpenseCreate, ExpenseResponse, ExpenseUpdate
@@ -166,3 +167,27 @@ def test_chat_response_with_insights():
     assert response.message == "분석 완료"
     assert response.expenses_created is None
     assert "총 지출" in response.insights
+
+
+def test_chat_request_message_too_long():
+    """ChatRequest 2000자 초과 시 ValidationError — 프롬프트 인젝션 방어 (#138)"""
+    with pytest.raises(ValidationError):
+        ChatRequest(message="x" * 2001)
+
+
+def test_chat_request_max_length_ok():
+    """ChatRequest 2000자 이하는 허용"""
+    request = ChatRequest(message="x" * 2000)
+    assert len(request.message) == 2000
+
+
+def test_asset_parse_request_text_too_long():
+    """AssetParseRequest 2000자 초과 시 ValidationError — 프롬프트 인젝션 방어 (#138)"""
+    with pytest.raises(ValidationError):
+        AssetParseRequest(text="x" * 2001)
+
+
+def test_asset_parse_request_max_length_ok():
+    """AssetParseRequest 2000자 이하는 허용"""
+    request = AssetParseRequest(text="삼성전자 10주 매입가 75000원")
+    assert request.text is not None

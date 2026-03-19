@@ -32,10 +32,16 @@ ASSET_PARSE_PROMPT = """사용자가 보유 자산이나 부채를 자연어로 
 {input_text}"""
 
 
+def _sanitize_input(text: str) -> str:
+    """프롬프트 인젝션 방어 — 개행 정규화, 길이 제한 (#138)"""
+    return text.replace("\r\n", "\n").replace("\r", "\n")[:2000]
+
+
 async def parse_asset_input(text: str) -> list[dict]:
     """자연어 → 자산 정보 파싱"""
     llm = get_llm_provider()
-    prompt = ASSET_PARSE_PROMPT.replace("{input_text}", text)
+    safe_text = _sanitize_input(text)
+    prompt = ASSET_PARSE_PROMPT.replace("{input_text}", safe_text)
 
     response = await llm.generate(prompt)
 

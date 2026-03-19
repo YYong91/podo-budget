@@ -121,8 +121,8 @@ async def accept_invitation(
         - 초대 상태를 "accepted"로 변경
         - 이미 멤버인 경우 에러 반환
     """
-    # 토큰으로 초대 조회
-    invitation_query = select(HouseholdInvitation).where(HouseholdInvitation.token == token)
+    # 토큰으로 초대 조회 — FOR UPDATE로 행 잠금 (동시 수락 레이스 컨디션 방어, #134)
+    invitation_query = select(HouseholdInvitation).where(HouseholdInvitation.token == token).with_for_update()
     result = await db.execute(invitation_query)
     invitation = result.scalar_one_or_none()
 
@@ -133,7 +133,7 @@ async def accept_invitation(
     if invitation.invitee_user_id != current_user.id and (not current_user.email or invitation.invitee_email != current_user.email):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="이 초대를 수락할 권한이 없습니다")
 
-    # 상태 확인
+    # 상태 확인 — FOR UPDATE 잠금 이후 재확인 (동시 요청에서 첫 번째 commit 후 두 번째가 감지)
     if invitation.status != "pending":
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"이미 처리된 초대입니다 (상태: {invitation.status})")
 
