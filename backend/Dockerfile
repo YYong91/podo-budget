@@ -2,8 +2,8 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
-# uv 설치
-COPY --from=ghcr.io/astral-sh/uv:0.5.20 /uv /uvx /bin/  # 버전 고정 — 공급망 보안 (#139)
+# uv 설치 — 버전 고정으로 공급망 보안 확보 (#139)
+COPY --from=ghcr.io/astral-sh/uv:0.5.20 /uv /uvx /bin/
 
 # 의존성 파일 복사 (build context = 프로젝트 루트)
 COPY pyproject.toml uv.lock ./
