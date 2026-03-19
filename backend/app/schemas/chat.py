@@ -6,14 +6,14 @@ preview 모드: LLM 파싱 결과만 반환 (저장하지 않음)
 
 from __future__ import annotations
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from app.schemas.expense import ExpenseResponse
 from app.schemas.income import IncomeResponse
 
 
 class ChatRequest(BaseModel):
-    message: str
+    message: str = Field(..., max_length=2000)  # 프롬프트 인젝션 방어 — 길이 제한 (#138)
     household_id: int | None = None
     preview: bool = False
 

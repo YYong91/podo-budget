@@ -82,7 +82,7 @@ class AssetSnapshotResponse(BaseModel):
 class AssetParseRequest(BaseModel):
     """자연어 입력"""
 
-    text: str
+    text: str = Field(..., max_length=2000)  # 프롬프트 인젝션 방어 — 길이 제한 (#138)
 
 
 class AssetParseResponse(BaseModel):

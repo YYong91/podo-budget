@@ -167,7 +167,12 @@ async def execute_recurring_transaction(
     db: AsyncSession = Depends(get_db),
 ):
     """정기 거래 실행 → Expense 또는 Income 생성"""
-    recurring = await _get_user_recurring(recurring_id, current_user, db)
+    # 권한 확인 (가구 멤버십 포함)
+    await _get_user_recurring(recurring_id, current_user, db)
+
+    # FOR UPDATE 잠금으로 더블 클릭/네트워크 재시도 시 중복 실행 방지 (#136)
+    result = await db.execute(select(RecurringTransaction).where(RecurringTransaction.id == recurring_id).with_for_update())
+    recurring = result.scalar_one()
 
     if not recurring.is_active:
         raise HTTPException(
