@@ -293,8 +293,7 @@ async def kakao_webhook(request: Request, db: AsyncSession = Depends(get_db)):
                 count = len(parsed)
                 message_lines = [f"✅ {count}건의 지출이 기록되었어요!\n"]
 
-                for idx, (expense, item) in enumerate(zip(created_expenses, parsed, strict=False), 1):
-                    await db.refresh(expense)
+                for idx, (_expense, item) in enumerate(zip(created_expenses, parsed, strict=False), 1):
                     message_lines.append(f"{idx}. 💰 {item['amount']:,.0f}원 - 📂 {item.get('category', '기타')} - {item.get('description', '')}")
 
                 message_lines.append(f"\n💰 총 {total_amount:,.0f}원")
@@ -514,11 +513,13 @@ async def handle_budget_command(db: AsyncSession, household_id: int | None) -> d
         )
 
     try:
-        # 해당 가구의 활성 예산 조회
-        budget_result = await db.execute(select(Budget).where(Budget.household_id == household_id))
-        budgets = budget_result.scalars().all()
+        # Budget + Category JOIN으로 카테고리 개별 조회 제거 (N번 → 0번, #168)
+        budget_cat_result = await db.execute(
+            select(Budget, Category).join(Category, Budget.category_id == Category.id).where(Budget.household_id == household_id)
+        )
+        budget_cats = budget_cat_result.all()
 
-        if not budgets:
+        if not budget_cats:
             return make_simple_text_response(
                 "💵 예산 현황\n\n아직 설정된 예산이 없어요.",
                 quick_replies=[make_quick_reply("📊 이번달 지출 보기", "리포트"), make_quick_reply("❓ 도움말", "도움말")],
@@ -527,20 +528,14 @@ async def handle_budget_command(db: AsyncSession, household_id: int | None) -> d
         budget_data = []
         now = datetime.now()
 
-        for budget in budgets:
+        for budget, category in budget_cats:
             # 예산 기간 내의 지출 집계
             end_date = budget.end_date if budget.end_date else now
 
             if budget.start_date > now:
                 continue
 
-            # 카테고리 정보
-            category_result = await db.execute(select(Category).where(Category.id == budget.category_id))
-            category = category_result.scalar_one_or_none()
-            if not category:
-                continue
-
-            # 지출 합계 (가구 단위)
+            # 지출 합계 (예산별 날짜 범위가 다르므로 개별 집계 유지)
             expense_result = await db.execute(
                 select(func.sum(Expense.amount))
                 .where(Expense.household_id == household_id)

@@ -419,8 +419,7 @@ async def _handle_multiple_expenses(
     count = len(created_expenses)
     message_lines = [f"✅ {count}건의 지출이 기록되었어요!\n"]
 
-    for idx, (expense, item, cat_name) in enumerate(created_expenses, 1):
-        await db.refresh(expense)
+    for idx, (_expense, item, cat_name) in enumerate(created_expenses, 1):
         message_lines.append(f"{idx}. 💰 {item['amount']:,.0f}원 - 📂 {cat_name} - {item.get('description', '')}")
 
     message_lines.append(f"\n💰 총 {total_amount:,.0f}원")
@@ -645,7 +644,7 @@ async def answer_callback_query(callback_id: str, text: str):
     import httpx
 
     url = f"{TELEGRAM_API.format(token=settings.TELEGRAM_BOT_TOKEN)}/answerCallbackQuery"
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient(timeout=10.0) as client:
         await client.post(url, json={"callback_query_id": callback_id, "text": text})
 
 
@@ -719,20 +718,19 @@ async def handle_budget_command(chat_id: int, db: AsyncSession, household_id: in
         budget_data = []
         now = datetime.now()
 
-        for budget in budgets:
-            # 예산 기간 내의 지출 집계
+        # Budget + Category JOIN으로 카테고리 개별 조회 제거 (N번 → 0번, #168)
+        budget_cat_result = await db.execute(
+            select(Budget, Category).join(Category, Budget.category_id == Category.id).where(Budget.household_id == household_id)
+        )
+        budget_cats = budget_cat_result.all()
+
+        for budget, category in budget_cats:
             end_date = budget.end_date if budget.end_date else now
 
             if budget.start_date > now:
                 continue
 
-            # 카테고리 정보
-            category_result = await db.execute(select(Category).where(Category.id == budget.category_id))
-            category = category_result.scalar_one_or_none()
-            if not category:
-                continue
-
-            # 지출 합계 (가구 단위)
+            # 지출 합계 (예산별 날짜 범위가 다르므로 개별 집계 유지)
             expense_result = await db.execute(
                 select(func.sum(Expense.amount))
                 .where(Expense.household_id == household_id)
