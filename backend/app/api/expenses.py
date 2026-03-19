@@ -612,18 +612,23 @@ async def update_expense(
     if not expense:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="지출을 찾을 수 없습니다")
 
-    # 가구 멤버 검증 (비멤버는 존재 여부 노출 방지를 위해 404)
-    try:
-        member = await get_household_member(expense.household_id, current_user, db)
-    except HTTPException:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="지출을 찾을 수 없습니다") from None
+    if expense.household_id is None:
+        # 레거시 데이터(마이그레이션 이전): household_id=None → 본인 확인만으로 수정 허용 (#147)
+        if expense.user_id != current_user.id:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="지출을 찾을 수 없습니다")
+    else:
+        # 가구 멤버 검증 (비멤버는 존재 여부 노출 방지를 위해 404)
+        try:
+            member = await get_household_member(expense.household_id, current_user, db)
+        except HTTPException:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="지출을 찾을 수 없습니다") from None
 
-    # 본인 거래가 아니면 admin/owner만 수정 가능
-    if expense.user_id != current_user.id and member.role not in ("admin", "owner"):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="이 항목을 수정할 권한이 없습니다",
-        )
+        # 본인 거래가 아니면 admin/owner만 수정 가능
+        if expense.user_id != current_user.id and member.role not in ("admin", "owner"):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="이 항목을 수정할 권한이 없습니다",
+            )
 
     update_data = expense_update.model_dump(exclude_unset=True)
     for key, value in update_data.items():
@@ -650,18 +655,23 @@ async def delete_expense(
     if not expense:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="지출을 찾을 수 없습니다")
 
-    # 가구 멤버 검증 (비멤버는 존재 여부 노출 방지를 위해 404)
-    try:
-        member = await get_household_member(expense.household_id, current_user, db)
-    except HTTPException:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="지출을 찾을 수 없습니다") from None
+    if expense.household_id is None:
+        # 레거시 데이터(마이그레이션 이전): household_id=None → 본인 확인만으로 삭제 허용 (#147)
+        if expense.user_id != current_user.id:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="지출을 찾을 수 없습니다")
+    else:
+        # 가구 멤버 검증 (비멤버는 존재 여부 노출 방지를 위해 404)
+        try:
+            member = await get_household_member(expense.household_id, current_user, db)
+        except HTTPException:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="지출을 찾을 수 없습니다") from None
 
-    # 본인 거래가 아니면 admin/owner만 삭제 가능
-    if expense.user_id != current_user.id and member.role not in ("admin", "owner"):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="이 항목을 삭제할 권한이 없습니다",
-        )
+        # 본인 거래가 아니면 admin/owner만 삭제 가능
+        if expense.user_id != current_user.id and member.role not in ("admin", "owner"):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="이 항목을 삭제할 권한이 없습니다",
+            )
 
     await db.delete(expense)
     await db.commit()
