@@ -3,7 +3,7 @@
 한국 주식/ETF: 한국투자증권 Open API (1차), 네이버 금융 (fallback)
 미국 주식/ETF: Yahoo Finance
 코인: 업비트 공개 API
-환율: exchangerate-api
+환율: exchange_rate 서비스 위임 (USD/KRW 전용, #195)
 """
 
 import asyncio
@@ -13,6 +13,7 @@ import time
 import httpx
 
 from app.core.config import settings
+from app.services.exchange_rate import get_exchange_rate
 
 logger = logging.getLogger(__name__)
 
@@ -156,24 +157,22 @@ async def _get_stock_kr_price_naver(ticker: str) -> float | None:
 
 
 async def get_stock_us_price(ticker: str) -> tuple[float | None, float | None]:
-    """미국 주식/ETF 현재가 조회 (USD + KRW 환산)"""
+    """미국 주식/ETF 현재가 조회 (USD + KRW 환산, #195: USD/KRW는 exchange_rate 서비스 위임)"""
     key = f"us:{ticker}"
     cached_usd = _get_cached(key)
-    exchange_rate = await get_usd_krw_rate()
+    usd_krw = await get_exchange_rate("USD")
 
     if cached_usd is not _CACHE_MISS:
         if cached_usd is None:
             return None, None  # 실패 캐시 hit
-        usd = cached_usd  # type: ignore[assignment]
-        return usd, usd * exchange_rate if exchange_rate else None  # type: ignore[operator]
+        return cached_usd, cached_usd * usd_krw if usd_krw else None
 
     async with _lock_for(key):
         cached_usd = _get_cached(key)
         if cached_usd is not _CACHE_MISS:
             if cached_usd is None:
                 return None, None
-            usd = cached_usd  # type: ignore[assignment]
-            return usd, usd * exchange_rate if exchange_rate else None  # type: ignore[operator]
+            return cached_usd, cached_usd * usd_krw if usd_krw else None
 
         try:
             async with httpx.AsyncClient(timeout=10) as client:
@@ -187,7 +186,7 @@ async def get_stock_us_price(ticker: str) -> tuple[float | None, float | None]:
                     meta = data["chart"]["result"][0]["meta"]
                     price_usd = float(meta["regularMarketPrice"])
                     _set_cached(key, price_usd)
-                    krw_price = price_usd * exchange_rate if exchange_rate else None
+                    krw_price = price_usd * usd_krw if usd_krw else None
                     return price_usd, krw_price
         except Exception:
             pass
@@ -229,30 +228,20 @@ async def get_crypto_price(symbol: str) -> float | None:
     return None
 
 
-# ── 환율 ───────────────────────────────────────────────────────
-
-
-async def get_usd_krw_rate() -> float | None:
-    """USD/KRW 환율 조회"""
-    cached = _get_cached("fx:USDKRW")
-    if cached is not _CACHE_MISS:
-        return cached  # type: ignore[return-value]
-
-    try:
-        async with httpx.AsyncClient(timeout=10) as client:
-            resp = await client.get("https://open.er-api.com/v6/latest/USD")
-            if resp.status_code == 200:
-                data = resp.json()
-                rate = float(data["rates"]["KRW"])
-                _set_cached("fx:USDKRW", rate)
-                return rate
-    except Exception:
-        pass
-    _set_cached("fx:USDKRW", None)  # 실패 캐시 (#159)
-    return None
-
-
 # ── 자산 평가액 계산 ───────────────────────────────────────────
+
+
+def _calc_profit(current_value: float, quantity: float, avg_buy_price: float | None) -> tuple[float | None, float | None]:
+    """수익/손실 계산 헬퍼 (#196)
+
+    Returns: (profit_loss, profit_loss_pct) — avg_buy_price 없으면 (None, None)
+    """
+    if not avg_buy_price:
+        return None, None
+    cost = quantity * avg_buy_price
+    profit_loss = current_value - cost
+    profit_loss_pct = (profit_loss / cost) * 100 if cost > 0 else 0
+    return profit_loss, profit_loss_pct
 
 
 async def get_asset_current_value(asset) -> dict:
@@ -267,30 +256,27 @@ async def get_asset_current_value(asset) -> dict:
         if price:
             result["current_price"] = price
             result["current_value"] = float(asset.quantity) * price
-            if asset.avg_buy_price:
-                cost = float(asset.quantity) * float(asset.avg_buy_price)
-                result["profit_loss"] = result["current_value"] - cost
-                result["profit_loss_pct"] = (result["profit_loss"] / cost) * 100 if cost > 0 else 0
+            result["profit_loss"], result["profit_loss_pct"] = _calc_profit(
+                result["current_value"], float(asset.quantity), float(asset.avg_buy_price) if asset.avg_buy_price else None
+            )
 
     elif asset.type == "stock_us" and asset.ticker and asset.quantity:
         _price_usd, price_krw = await get_stock_us_price(asset.ticker)
         if price_krw:
             result["current_price"] = price_krw
             result["current_value"] = float(asset.quantity) * price_krw
-            if asset.avg_buy_price:
-                cost = float(asset.quantity) * float(asset.avg_buy_price)
-                result["profit_loss"] = result["current_value"] - cost
-                result["profit_loss_pct"] = (result["profit_loss"] / cost) * 100 if cost > 0 else 0
+            result["profit_loss"], result["profit_loss_pct"] = _calc_profit(
+                result["current_value"], float(asset.quantity), float(asset.avg_buy_price) if asset.avg_buy_price else None
+            )
 
     elif asset.type == "crypto" and asset.ticker and asset.quantity:
         price = await get_crypto_price(asset.ticker)
         if price:
             result["current_price"] = price
             result["current_value"] = float(asset.quantity) * price
-            if asset.avg_buy_price:
-                cost = float(asset.quantity) * float(asset.avg_buy_price)
-                result["profit_loss"] = result["current_value"] - cost
-                result["profit_loss_pct"] = (result["profit_loss"] / cost) * 100 if cost > 0 else 0
+            result["profit_loss"], result["profit_loss_pct"] = _calc_profit(
+                result["current_value"], float(asset.quantity), float(asset.avg_buy_price) if asset.avg_buy_price else None
+            )
 
     elif asset.type in ("deposit", "real_estate", "other", "loan"):
         value = float(asset.manual_value) if asset.manual_value else 0

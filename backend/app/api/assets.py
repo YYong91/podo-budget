@@ -206,7 +206,7 @@ async def get_monthly_savings(
     if household_id is None:
         household_id = await get_user_active_household_id(current_user, db)
     await get_household_member(household_id, current_user, db)
-    return await asset_goal_service.get_monthly_savings(current_user.id, household_id, db)
+    return await asset_goal_service.get_monthly_savings(household_id, db)
 
 
 @router.get("/{asset_id}", response_model=AssetWithPrice)
