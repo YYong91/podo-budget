@@ -70,7 +70,7 @@ export const deleteHousehold = (id: number) =>
  * @param role - 변경할 역할
  */
 export const updateMemberRole = (householdId: number, userId: number, role: MemberRole) =>
-  apiClient.put(`/households/${householdId}/members/${userId}/role`, { role })
+  apiClient.patch(`/households/${householdId}/members/${userId}/role`, { role })
 
 /**
  * 멤버 추방 API (관리자/소유자가 다른 멤버를 추방)

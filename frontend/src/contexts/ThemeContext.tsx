@@ -44,41 +44,55 @@ function getInitialMode(): ThemeMode {
   return 'system'
 }
 
+/** DOM에만 테마를 적용하는 순수 함수 (state 변경 없음)
+ *
+ * useEffect 내부에서 호출해도 cascading render가 발생하지 않는다.
+ * setResolvedTheme은 외부 이벤트(사용자 액션, OS 변경) 핸들러에서만 호출한다.
+ */
+function applyThemeToDom(resolved: 'light' | 'dark') {
+  const root = document.documentElement
+  if (resolved === 'dark') {
+    root.classList.add('dark')
+  } else {
+    root.classList.remove('dark')
+  }
+  // PWA 상태바 색상 변경
+  const meta = document.querySelector('meta[name="theme-color"]')
+  if (meta) {
+    meta.setAttribute('content', resolved === 'dark' ? THEME_COLOR_DARK : THEME_COLOR_LIGHT)
+  }
+}
+
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [mode, setModeState] = useState<ThemeMode>(getInitialMode)
   const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>(() => resolveTheme(getInitialMode()))
 
-  const applyTheme = useCallback((resolved: 'light' | 'dark') => {
-    const root = document.documentElement
-    if (resolved === 'dark') {
-      root.classList.add('dark')
-    } else {
-      root.classList.remove('dark')
-    }
-    // PWA 상태바 색상 변경
-    const meta = document.querySelector('meta[name="theme-color"]')
-    if (meta) {
-      meta.setAttribute('content', resolved === 'dark' ? THEME_COLOR_DARK : THEME_COLOR_LIGHT)
-    }
+  const setMode = useCallback((newMode: ThemeMode) => {
+    const resolved = resolveTheme(newMode)
+    setModeState(newMode)
     setResolvedTheme(resolved)
+    localStorage.setItem(STORAGE_KEY, newMode)
+    applyThemeToDom(resolved)
   }, [])
 
-  const setMode = useCallback((newMode: ThemeMode) => {
-    setModeState(newMode)
-    localStorage.setItem(STORAGE_KEY, newMode)
-    applyTheme(resolveTheme(newMode))
-  }, [applyTheme])
+  // 마운트 시 초기 테마 DOM 적용 (FOUC 방지)
+  // state는 이미 초기화되어 있으므로 DOM 업데이트만 수행한다
+  useEffect(() => {
+    applyThemeToDom(resolvedTheme)
+  }, [resolvedTheme])
 
   // system 모드일 때 OS 설정 변경 감지
   useEffect(() => {
     if (mode !== 'system' || !window.matchMedia) return
     const mq = window.matchMedia('(prefers-color-scheme: dark)')
     const handler = (e: MediaQueryListEvent) => {
-      applyTheme(e.matches ? 'dark' : 'light')
+      const resolved = e.matches ? 'dark' : 'light'
+      setResolvedTheme(resolved)
+      applyThemeToDom(resolved)
     }
     mq.addEventListener('change', handler)
     return () => mq.removeEventListener('change', handler)
-  }, [mode, applyTheme])
+  }, [mode])
 
   return (
     <ThemeContext.Provider value={{ mode, resolvedTheme, setMode }}>

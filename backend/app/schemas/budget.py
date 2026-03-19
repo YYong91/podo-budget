@@ -3,7 +3,7 @@
 예산 설정 및 초과 알림에 사용되는 DTO들입니다.
 """
 
-from datetime import datetime
+from datetime import date, datetime
 from typing import Literal
 
 from pydantic import BaseModel, Field
@@ -26,8 +26,8 @@ class BudgetCreate(BaseModel):
     category_id: int = Field(..., description="카테고리 ID")
     amount: float = Field(..., gt=0, description="예산 금액 (양수)")
     period: Literal["monthly", "weekly", "daily"] = Field(..., description="예산 기간")
-    start_date: datetime = Field(..., description="예산 시작일")
-    end_date: datetime | None = Field(None, description="예산 종료일 (None이면 무기한)")
+    start_date: date = Field(..., description="예산 시작일")
+    end_date: date | None = Field(None, description="예산 종료일 (None이면 무기한)")
     alert_threshold: float = Field(default=0.8, ge=0.0, le=1.0, description="알림 임계값 (0~1, 기본 0.8)")
 
 
@@ -39,8 +39,8 @@ class BudgetUpdate(BaseModel):
 
     amount: float | None = Field(None, gt=0, description="예산 금액")
     period: Literal["monthly", "weekly", "daily"] | None = Field(None, description="예산 기간")
-    start_date: datetime | None = Field(None, description="예산 시작일")
-    end_date: datetime | None = Field(None, description="예산 종료일")
+    start_date: date | None = Field(None, description="예산 시작일")
+    end_date: date | None = Field(None, description="예산 종료일")
     alert_threshold: float | None = Field(None, ge=0.0, le=1.0, description="알림 임계값")
 
 

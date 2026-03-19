@@ -5,7 +5,7 @@
  * 토스트 알림을 추가/제거할 수 있는 기능을 제공한다.
  */
 
-import { createContext, useContext, useState } from 'react'
+import { createContext, useContext, useState, useCallback } from 'react'
 import type { ReactNode } from 'react'
 import Toast from '../components/Toast'
 import type { ToastType } from '../components/Toast'
@@ -46,9 +46,11 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     setToasts((prev) => [...prev, { id, type, message, duration }])
   }
 
-  const removeToast = (id: string) => {
+  // useCallback으로 참조 안정화: Toast의 useEffect deps에 onClose가 포함되어
+  // removeToast가 재생성될 때마다 타이머가 리셋되는 stale closure 방지
+  const removeToast = useCallback((id: string) => {
     setToasts((prev) => prev.filter((toast) => toast.id !== id))
-  }
+  }, [])
 
   return (
     <ToastContext.Provider value={{ addToast, removeToast }}>

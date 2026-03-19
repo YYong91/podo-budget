@@ -16,9 +16,14 @@ logger = logging.getLogger(__name__)
 
 
 def _verify_sentry_signature(body: bytes, signature: str, secret: str) -> bool:
-    """Sentry HMAC-SHA256 서명 검증"""
+    """Sentry HMAC-SHA256 서명 검증
+
+    Sentry는 'sha256=<hex>' 형식으로 서명을 전송하므로 prefix를 제거 후 비교한다.
+    """
+    # 'sha256=hexdigest' 형식에서 hex 값만 추출
+    hex_signature = signature.removeprefix("sha256=")
     expected = hmac.new(secret.encode(), body, hashlib.sha256).hexdigest()
-    return hmac.compare_digest(expected, signature)
+    return hmac.compare_digest(expected, hex_signature)
 
 
 def _format_sentry_alert(payload: dict) -> str:
