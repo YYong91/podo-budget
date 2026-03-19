@@ -60,7 +60,7 @@ class BudgetResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     # DB 컬럼이 DateTime으로 저장되어 datetime 객체가 반환됨 → date로 변환 (#156)
-    @field_validator('start_date', 'end_date', mode='before')
+    @field_validator("start_date", "end_date", mode="before")
     @classmethod
     def coerce_to_date(cls, v: object) -> object:
         if isinstance(v, datetime):
