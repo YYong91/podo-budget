@@ -1,5 +1,5 @@
 [project]
-name = "homenrich"
+name = "podo-budget"
 version = "0.1.0"
 description = "AI 가계부 - 채팅하듯 말하면 알아서 정리되는 가계부 앱"
 requires-python = ">=3.12"
