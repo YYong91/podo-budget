@@ -218,20 +218,21 @@ def test_price_cache_ttl():
     """시세 캐시 동작 검증: TTL 히트 / 미스 / 만료 (#197)
 
     단일 테스트 내에서 순차 실행하여 테스트 간 상태 오염 문제 완전 방지.
+    _get_cached: 미스 → _CACHE_MISS sentinel, 히트 → 값, 만료 → _CACHE_MISS (#159)
     """
     import time
 
     from app.services import price_service
-    from app.services.price_service import _get_cached, _set_cached
+    from app.services.price_service import _CACHE_MISS, _get_cached, _set_cached
 
     # 1. 히트: 설정된 키는 TTL 이내에 동일 값 반환
     _set_cached("test:CACHE", 12345.0)
     assert _get_cached("test:CACHE") == 12345.0
 
-    # 2. 미스: 설정한 키와 다른 키는 None 반환 (빈 캐시 가정 불필요)
-    assert _get_cached("test:CACHE_DIFFERENT_KEY") is None
+    # 2. 미스: 설정한 키와 다른 키는 _CACHE_MISS sentinel 반환 (#159)
+    assert _get_cached("test:CACHE_DIFFERENT_KEY") is _CACHE_MISS
 
-    # 3. 만료: TTL 초과 항목은 None 반환 + 캐시에서 삭제
+    # 3. 만료: TTL 초과 항목은 _CACHE_MISS 반환 + 캐시에서 삭제
     price_service._price_cache["test:EXPIRED"] = (9999.0, time.time() - price_service.CACHE_TTL - 1)
-    assert _get_cached("test:EXPIRED") is None
+    assert _get_cached("test:EXPIRED") is _CACHE_MISS
     assert "test:EXPIRED" not in price_service._price_cache
