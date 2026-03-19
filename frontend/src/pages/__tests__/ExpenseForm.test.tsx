@@ -434,5 +434,151 @@ describe('ExpenseForm', () => {
         expect(mockAddToast).toHaveBeenCalledWith('error', expect.any(String))
       })
     })
+
+    /**
+     * #148: LLM이 type:'income' 항목 반환 시 프리뷰 카드 레이블이 "수입"으로 표시되어야 한다
+     * 기존 버그: label="지출" 하드코딩으로 수입 항목도 "지출 #N"으로 표시
+     */
+    it('income 타입 항목은 "수입" 레이블로 표시한다 (#148)', async () => {
+      server.use(
+        http.post('/api/chat', () => {
+          return HttpResponse.json({
+            message: '파싱 완료',
+            parsed_expenses: [
+              {
+                amount: 3500000,
+                description: '월급',
+                category: '급여',
+                date: '2026-03-19',
+                memo: '',
+                type: 'income',
+              },
+            ],
+            parsed_items: null,
+            expenses_created: null,
+            incomes_created: null,
+            insights: null,
+          })
+        })
+      )
+
+      const user = userEvent.setup()
+      renderExpenseForm()
+
+      const textarea = screen.getByPlaceholderText(/오늘 점심/)
+      await user.type(textarea, '월급 350만원')
+      await user.click(screen.getByText('분석하기'))
+
+      await waitFor(() => {
+        // income 타입은 "수입 #1"로 표시되어야 함 (하드코딩 "지출 #1"이면 실패)
+        expect(screen.getByText('수입 #1')).toBeInTheDocument()
+      })
+    })
+
+    /**
+     * #148: LLM이 type:'expense' 항목 반환 시 프리뷰 카드 레이블이 "지출"로 표시되어야 한다
+     */
+    it('expense 타입 항목은 "지출" 레이블로 표시한다 (#148)', async () => {
+      server.use(
+        http.post('/api/chat', () => {
+          return HttpResponse.json({
+            message: '파싱 완료',
+            parsed_expenses: [
+              {
+                amount: 8000,
+                description: '점심',
+                category: '식비',
+                date: '2026-03-19',
+                memo: '',
+                type: 'expense',
+              },
+            ],
+            parsed_items: null,
+            expenses_created: null,
+            incomes_created: null,
+            insights: null,
+          })
+        })
+      )
+
+      const user = userEvent.setup()
+      renderExpenseForm()
+
+      const textarea = screen.getByPlaceholderText(/오늘 점심/)
+      await user.type(textarea, '점심 8000원')
+      await user.click(screen.getByText('분석하기'))
+
+      await waitFor(() => {
+        expect(screen.getByText('지출 #1')).toBeInTheDocument()
+      })
+    })
+
+    /**
+     * #148: income 항목은 incomeApi로, expense 항목은 expenseApi로 저장된다
+     * 기존 버그: 모든 항목을 expenseApi로 저장
+     */
+    it('income 항목은 incomeApi.create로 저장된다 (#148)', async () => {
+      let incomeApiCalled = false
+      let expenseApiCalled = false
+
+      server.use(
+        http.post('/api/chat', () => {
+          return HttpResponse.json({
+            message: '파싱 완료',
+            parsed_expenses: [
+              {
+                amount: 3500000,
+                description: '월급',
+                category: '급여',
+                date: '2026-03-19',
+                memo: '',
+                type: 'income',
+              },
+            ],
+            parsed_items: null,
+            expenses_created: null,
+            incomes_created: null,
+            insights: null,
+          })
+        }),
+        http.post('/api/income', async () => {
+          incomeApiCalled = true
+          return HttpResponse.json(
+            {
+              id: 1, amount: 3500000, description: '월급',
+              category_id: null, household_id: null, user_id: null,
+              raw_input: null, memo: null,
+              date: '2026-03-19T00:00:00',
+              created_at: '2026-03-19T00:00:00',
+              updated_at: '2026-03-19T00:00:00',
+            },
+            { status: 201 }
+          )
+        }),
+        http.post('/api/expenses', async () => {
+          expenseApiCalled = true
+          return HttpResponse.json({}, { status: 201 })
+        })
+      )
+
+      const user = userEvent.setup()
+      renderExpenseForm()
+
+      const textarea = screen.getByPlaceholderText(/오늘 점심/)
+      await user.type(textarea, '월급 350만원')
+      await user.click(screen.getByText('분석하기'))
+
+      await waitFor(() => {
+        expect(screen.getByText(/1건 저장하기/)).toBeInTheDocument()
+      })
+
+      await user.click(screen.getByText(/1건 저장하기/))
+
+      await waitFor(() => {
+        // income 타입은 incomeApi로 저장되어야 함
+        expect(incomeApiCalled).toBe(true)
+        expect(expenseApiCalled).toBe(false)
+      })
+    })
   })
 })

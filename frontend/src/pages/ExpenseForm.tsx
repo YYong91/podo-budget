@@ -462,8 +462,8 @@ export default function ExpenseForm() {
               index={index}
               totalCount={previewItems.length}
               categories={categories}
-              colorScheme="grape"
-              label="지출"
+              colorScheme={item.type === 'income' ? 'leaf' : 'grape'}
+              label={item.type === 'income' ? '수입' : '지출'}
               onUpdate={updatePreviewItem}
               onRemove={removePreviewItem}
               showNewCategoryFor={showNewCategoryFor}
@@ -510,8 +510,8 @@ export default function ExpenseForm() {
               index={index}
               totalCount={previewItems.length}
               categories={categories}
-              colorScheme="grape"
-              label="지출"
+              colorScheme={item.type === 'income' ? 'leaf' : 'grape'}
+              label={item.type === 'income' ? '수입' : '지출'}
               onUpdate={updatePreviewItem}
               onRemove={removePreviewItem}
               showNewCategoryFor={showNewCategoryFor}
