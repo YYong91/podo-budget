@@ -4,7 +4,7 @@
 프론트엔드 온보딩 플로우에서 사용됩니다.
 """
 
-from datetime import datetime
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, status
 from sqlalchemy import and_, func, select
@@ -70,7 +70,7 @@ async def create_default_household(
         household_id=household.id,
         user_id=current_user.id,
         role="owner",
-        joined_at=datetime.now(),
+        joined_at=datetime.now(UTC).replace(tzinfo=None),
     )
     db.add(member)
     await db.commit()
