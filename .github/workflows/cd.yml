@@ -100,18 +100,19 @@ jobs:
           REASON=$(grep -iE "error|failed" /tmp/deploy.log 2>/dev/null | tail -3 | sed 's/\x1b\[[0-9;]*m//g' | tr '\n' ' ' | cut -c1-300)
           echo "reason=${REASON:-Cloudflare Pages 배포 실패}" >> $GITHUB_OUTPUT
 
-  # ── 배포 결과 알림 ─────────────────────────────────
-  notify-deploy-result:
-    name: 배포 결과 알림
+  # ── 배포 결과 메시지 빌드 ──────────────────────────
+  build-deploy-result-message:
+    name: 결과 메시지 빌드
     needs: [deploy-backend, deploy-frontend]
     runs-on: ubuntu-latest
     timeout-minutes: 2
     if: always()
+    outputs:
+      message: ${{ steps.build.outputs.message }}
     steps:
-      - name: 텔레그램 전송
+      - name: 메시지 빌드
+        id: build
         env:
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           BACKEND_STATUS: ${{ needs.deploy-backend.result }}
           FRONTEND_STATUS: ${{ needs.deploy-frontend.result }}
           BACKEND_FAILURE: ${{ needs.deploy-backend.outputs.failure_reason }}
@@ -131,8 +132,7 @@ jobs:
           if [ "$BACKEND_STATUS" = "success" ] && [ "$FRONTEND_STATUS" = "success" ]; then
             KST_TIME="$(TZ=Asia/Seoul date '+%Y-%m-%d %H:%M KST')"
             MESSAGE="$(printf '[PROD] ✅ podo-budget 배포 완료\n📝 %s\n🕐 %s' \
-              "${DISPLAY_MSG}" \
-              "${KST_TIME}")"
+              "${DISPLAY_MSG}" "${KST_TIME}")"
             [ -n "$PR_LINK" ] && MESSAGE="${MESSAGE}"$'\n'"🔗 ${PR_LINK}"
           else
             MESSAGE="[PROD] ❌ podo-budget 배포 실패 (backend: ${BACKEND_STATUS}, frontend: ${FRONTEND_STATUS})"
@@ -141,6 +141,18 @@ jobs:
             MESSAGE="${MESSAGE}"$'\n'"🔗 https://github.com/${REPO}/actions/runs/${RUN_ID}"
           fi
 
-          curl -sf -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
-            -d chat_id="${TELEGRAM_CHAT_ID}" \
-            --data-urlencode "text=${MESSAGE}" || true
+          echo "message<<EOF" >> "$GITHUB_OUTPUT"
+          echo "${MESSAGE}" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+
+  # ── 배포 결과 알림 ─────────────────────────────────
+  notify-deploy-result:
+    name: 배포 결과 알림
+    needs: [build-deploy-result-message]
+    if: always()
+    uses: ./.github/workflows/notify.yml
+    with:
+      message: ${{ needs.build-deploy-result-message.outputs.message }}
+    secrets:
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}

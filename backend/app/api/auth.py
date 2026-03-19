@@ -24,6 +24,19 @@ from app.schemas.auth import KakaoLinkCodeResponse, MessageResponse, TelegramLin
 router = APIRouter()
 
 
+def _generate_link_code() -> tuple[str, datetime]:
+    """텔레그램/카카오 연동용 단기 코드 생성 (6자리 대문자+숫자, 15분 유효)
+
+    텔레그램과 카카오 연동 코드 생성 로직이 동일 (#186)
+
+    Returns:
+        (code, expires_at) 튜플
+    """
+    code = "".join(secrets.choice(string.ascii_uppercase + string.digits) for _ in range(6))
+    expires_at = datetime.now(UTC) + timedelta(minutes=15)
+    return code, expires_at
+
+
 @router.get("/me", response_model=UserResponse)
 async def get_me(current_user: User = Depends(get_current_user)):
     """현재 로그인한 사용자 정보 조회
@@ -58,8 +71,7 @@ async def generate_telegram_link_code(
     Returns:
         연동 코드와 만료 시각
     """
-    code = "".join(secrets.choice(string.ascii_uppercase + string.digits) for _ in range(6))
-    expires_at = datetime.now(UTC) + timedelta(minutes=15)
+    code, expires_at = _generate_link_code()
     # ORM 객체 트래킹 의존 없이 명시적 UPDATE 사용 (세션 상태와 무관하게 안전)
     await db.execute(update(User).where(User.id == current_user.id).values(telegram_link_code=code, telegram_link_code_expires_at=expires_at))
     await db.commit()
@@ -95,8 +107,7 @@ async def generate_kakao_link_code(
     Returns:
         연동 코드와 만료 시각
     """
-    code = "".join(secrets.choice(string.ascii_uppercase + string.digits) for _ in range(6))
-    expires_at = datetime.now(UTC) + timedelta(minutes=15)
+    code, expires_at = _generate_link_code()
     await db.execute(update(User).where(User.id == current_user.id).values(kakao_link_code=code, kakao_link_code_expires_at=expires_at))
     await db.commit()
     return KakaoLinkCodeResponse(code=code, expires_at=expires_at)

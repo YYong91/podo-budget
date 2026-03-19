@@ -62,7 +62,7 @@ jobs:
           VITE_API_URL: http://localhost:8000/api
 
       - name: Install Playwright
-        run: npm ci && npx playwright install --with-deps chromium
+        run: cd frontend && npm ci && npx playwright install --with-deps chromium
 
       - name: Run E2E tests
         env:
