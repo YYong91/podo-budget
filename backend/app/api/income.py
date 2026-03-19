@@ -179,14 +179,14 @@ async def get_income_stats(
     # 추이 데이터
     trend: list[TrendPoint] = []
     if period == StatsPeriod.yearly:
+        # 월별 12포인트 — 단일 GROUP BY 쿼리 (12번 직렬 → 1번, #164)
+        month_col = func.extract("month", Income.date).label("month")
+        monthly_result = await db.execute(
+            select(month_col, func.coalesce(func.sum(Income.amount), 0).label("amount")).where(*base_where).group_by(month_col).order_by(month_col)
+        )
+        monthly_map = {int(r.month): float(r.amount) for r in monthly_result.all()}
         for m in range(1, 13):
-            m_start = datetime(ref_date.year, m, 1)
-            _, m_last = monthrange(ref_date.year, m)
-            m_end = datetime(ref_date.year, m, m_last, 23, 59, 59)
-            r = await db.execute(
-                select(func.coalesce(func.sum(Income.amount), 0)).where(scope_filter, stats_filter, Income.date >= m_start, Income.date <= m_end)
-            )
-            trend.append(TrendPoint(label=f"{m}월", amount=float(r.scalar())))
+            trend.append(TrendPoint(label=f"{m}월", amount=monthly_map.get(m, 0.0)))
     else:
         day_col = func.date(Income.date).label("day")
         daily_result = await db.execute(select(day_col, func.sum(Income.amount).label("amount")).where(*base_where).group_by(day_col).order_by(day_col))

@@ -228,15 +228,14 @@ async def get_stats(
     # 트렌드
     trend: list[TrendPoint] = []
     if period == StatsPeriod.yearly:
-        # 월별 12포인트
+        # 월별 12포인트 — 단일 GROUP BY 쿼리 (12번 직렬 → 1번, #164)
+        month_col = func.extract("month", Expense.date).label("month")
+        monthly_result = await db.execute(
+            select(month_col, func.coalesce(func.sum(Expense.amount), 0).label("amount")).where(*base_where).group_by(month_col).order_by(month_col)
+        )
+        monthly_map = {int(r.month): float(r.amount) for r in monthly_result.all()}
         for m in range(1, 13):
-            m_start = datetime(ref_date.year, m, 1)
-            _, m_last = monthrange(ref_date.year, m)
-            m_end = datetime(ref_date.year, m, m_last, 23, 59, 59)
-            r = await db.execute(
-                select(func.coalesce(func.sum(Expense.amount), 0)).where(scope_filter, stats_filter, Expense.date >= m_start, Expense.date <= m_end)
-            )
-            trend.append(TrendPoint(label=f"{m}월", amount=float(r.scalar())))
+            trend.append(TrendPoint(label=f"{m}월", amount=monthly_map.get(m, 0.0)))
     else:
         # 일별
         day_col = func.date(Expense.date).label("day")
@@ -336,19 +335,30 @@ async def get_stats_comparison(
             current_label = f"{cur_y}년 {cur_m}월"
             previous_label = f"{prev_y}년 {prev_m}월"
 
-        # N개월 트렌드 (현재 월 포함 과거 N개월) — 트렌드는 전체 달 기준 유지
+        # N개월 트렌드 (현재 월 포함 과거 N개월) — 단일 GROUP BY 쿼리 (#164)
         trend_data: list[PeriodTotal] = []
         y, m = cur_y, cur_m
-        # months-1 만큼 뒤로
         for _ in range(months - 1):
             m -= 1
             if m < 1:
                 m = 12
                 y -= 1
-        # 시작점부터 현재까지 순서대로
+        start_y, start_m = y, m
+        _, end_last = monthrange(cur_y, cur_m)
+        trend_start = datetime(start_y, start_m, 1)
+        trend_end = datetime(cur_y, cur_m, end_last, 23, 59, 59)
+
+        yr_col = func.extract("year", Expense.date).label("year")
+        mo_col = func.extract("month", Expense.date).label("month")
+        trend_result = await db.execute(
+            select(yr_col, mo_col, func.coalesce(func.sum(Expense.amount), 0).label("amount"))
+            .where(scope_filter, excl_filter, Expense.date >= trend_start, Expense.date <= trend_end)
+            .group_by(yr_col, mo_col)
+            .order_by(yr_col, mo_col)
+        )
+        trend_map = {(int(r.year), int(r.month)): float(r.amount) for r in trend_result.all()}
         for _ in range(months):
-            t = await _month_total(y, m)
-            trend_data.append(PeriodTotal(label=f"{y}년 {m}월", total=t))
+            trend_data.append(PeriodTotal(label=f"{y}년 {m}월", total=trend_map.get((y, m), 0.0)))
             m += 1
             if m > 12:
                 m = 1
