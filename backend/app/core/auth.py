@@ -11,6 +11,8 @@ podo-auth에서 발급된 JWT를 검증하고, 로컬 users 테이블의 Shadow 
   5. 기존 FK 관계는 users.id (Integer)로 그대로 유지
 """
 
+import logging
+
 from cachetools import TTLCache
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -22,6 +24,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import settings
 from app.core.database import get_db
 from app.models.user import User
+
+logger = logging.getLogger(__name__)
 
 # HTTPBearer 스키마 (auto_error=False → 토큰 없을 때 None 반환, 직접 401 처리)
 security = HTTPBearer(auto_error=False)
@@ -101,7 +105,14 @@ async def get_current_user(
     user = result.scalar_one_or_none()
 
     if user:
-        # 기존 유저에 auth_user_id 연결
+        # 기존 유저에 auth_user_id 연결 — 보안 감사 로그 (#141)
+        # 이메일 매칭으로 계정 연결 시 로그 기록 (podo-auth 이메일 검증 강도에 의존)
+        logger.warning(
+            "Shadow User 이메일 매칭으로 계정 연결: user_id=%s email=%s auth_user_id=%s",
+            user.id,
+            email,
+            auth_user_id,
+        )
         user.auth_user_id = auth_user_id
         await db.commit()
         await db.refresh(user)

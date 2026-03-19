@@ -427,6 +427,10 @@ async def remove_member(
     if target_member.role == "owner":
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="소유자는 추방할 수 없습니다")
 
+    # admin은 다른 admin 추방 불가 — owner 권한 필요 (#154)
+    if member.role == "admin" and target_member.role == "admin":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="관리자는 다른 관리자를 추방할 수 없습니다. 소유자 권한이 필요합니다")
+
     # 소프트 삭제 (left_at 설정)
     target_member.left_at = datetime.now(UTC).replace(tzinfo=None)
     await db.commit()

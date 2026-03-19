@@ -9,6 +9,7 @@ LLM 호출을 4.5초로 제한하고 타임아웃 시 안내 메시지를 반환
 """
 
 import asyncio
+import hmac
 import logging
 from datetime import datetime
 
@@ -131,7 +132,10 @@ async def kakao_webhook(request: Request, db: AsyncSession = Depends(get_db)):
     if not settings.KAKAO_BOT_API_KEY:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="카카오 봇 API 키가 설정되지 않았습니다")
     auth_header = request.headers.get("Authorization", "")
-    if auth_header != settings.KAKAO_BOT_API_KEY:
+    # 카카오 오픈빌더는 "Bearer TOKEN" 형식으로 전송할 수 있으므로 prefix 제거 (#145)
+    api_key = auth_header.removeprefix("Bearer ").strip()
+    # hmac.compare_digest로 timing attack 방지 (#145)
+    if not hmac.compare_digest(api_key, settings.KAKAO_BOT_API_KEY):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="유효하지 않은 API 키")
 
     try:
