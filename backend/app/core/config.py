@@ -6,7 +6,7 @@ LLMProviderType = Literal["openai", "anthropic", "google", "local"]
 
 
 class Settings(BaseSettings):
-    APP_NAME: str = "HomeNRich"
+    APP_NAME: str = "포도가계부"
     DEBUG: bool = False
     SECRET_KEY: str = ""  # 레거시 호환성 유지 (lifespan에서 검증)
 
@@ -60,7 +60,7 @@ class Settings(BaseSettings):
 
     # Email (Resend) — 빈 문자열이면 이메일 발송 비활성화
     RESEND_API_KEY: str = ""
-    RESEND_FROM_EMAIL: str = "HomeNRich <noreply@homenrich.app>"
+    RESEND_FROM_EMAIL: str = "포도가계부 <noreply@podonest.com>"
 
     model_config = SettingsConfigDict(
         env_file=".env",

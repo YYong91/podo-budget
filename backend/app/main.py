@@ -187,7 +187,7 @@ app.include_router(webhooks.router, prefix="/api/webhooks", tags=["webhooks"])
 
 @app.get("/")
 async def root():
-    return {"message": "Welcome to HomeNRich API"}
+    return {"message": "Welcome to 포도가계부 API"}
 
 
 @app.get("/health")
