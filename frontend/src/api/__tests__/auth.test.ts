@@ -40,5 +40,25 @@ describe('authApi', () => {
       expect(response.data.id).toBe(1)
       expect(response.data.username).toBe('test')
     })
+
+    it('401 에러 응답 시 예외를 던진다', async () => {
+      server.use(
+        http.get(`${BASE_URL}/auth/me`, () =>
+          HttpResponse.json({ detail: 'Unauthorized' }, { status: 401 })
+        )
+      )
+
+      await expect(authApi.getCurrentUser()).rejects.toThrow()
+    })
+
+    it('네트워크 에러 시 예외를 던진다', async () => {
+      server.use(
+        http.get(`${BASE_URL}/auth/me`, () => {
+          throw new Error('Network Error')
+        })
+      )
+
+      await expect(authApi.getCurrentUser()).rejects.toThrow()
+    })
   })
 })

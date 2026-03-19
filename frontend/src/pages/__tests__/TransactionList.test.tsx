@@ -7,6 +7,8 @@ import { describe, it, expect, vi } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
+import { http, HttpResponse } from 'msw'
+import { server } from '../../mocks/server'
 import TransactionList from '../TransactionList'
 
 vi.mock('../../hooks/useToast', () => ({
@@ -23,6 +25,50 @@ function renderPage(initialRoute = '/') {
     <MemoryRouter initialEntries={[initialRoute]}>
       <TransactionList />
     </MemoryRouter>,
+  )
+}
+
+/** 현재 월 날짜 기준의 mock 거래 데이터를 MSW로 제공하는 헬퍼 */
+function setupCurrentMonthHandlers() {
+  const now = new Date()
+  const pad = (n: number) => String(n).padStart(2, '0')
+  const todayDate = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`
+  const currentMonthISO = `${todayDate}T12:00:00Z`
+
+  server.use(
+    http.get('/api/expenses', () =>
+      HttpResponse.json([
+        {
+          id: 101,
+          amount: 8000,
+          description: '김치찌개',
+          category_id: 1,
+          raw_input: null,
+          memo: null,
+          household_id: 1,
+          user_id: null,
+          exclude_from_stats: false,
+          date: currentMonthISO,
+          created_at: currentMonthISO,
+          updated_at: currentMonthISO,
+        },
+        {
+          id: 102,
+          amount: 3500,
+          description: '버스',
+          category_id: 2,
+          raw_input: null,
+          memo: null,
+          household_id: 1,
+          user_id: null,
+          exclude_from_stats: false,
+          date: currentMonthISO,
+          created_at: currentMonthISO,
+          updated_at: currentMonthISO,
+        },
+      ])
+    ),
+    http.get('/api/income', () => HttpResponse.json([])),
   )
 }
 
@@ -95,6 +141,80 @@ describe('TransactionList', () => {
     await waitFor(() => {
       expect(screen.getByText('일')).toBeInTheDocument()
       expect(screen.getByText('토')).toBeInTheDocument()
+    })
+  })
+
+  describe('MSW 데이터 표시 검증', () => {
+    it('MSW가 반환한 지출 description이 화면에 표시된다', async () => {
+      setupCurrentMonthHandlers()
+      renderPage()
+
+      await waitFor(() => {
+        expect(screen.getByText('김치찌개')).toBeInTheDocument()
+        expect(screen.getByText('버스')).toBeInTheDocument()
+      })
+    })
+
+    it('지출 필터 클릭 후 수입만 있을 때 지출 항목이 숨겨진다', async () => {
+      // 수입 1건, 지출 1건 반환하도록 설정
+      const now = new Date()
+      const pad = (n: number) => String(n).padStart(2, '0')
+      const currentMonthISO = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T12:00:00Z`
+
+      server.use(
+        http.get('/api/expenses', () =>
+          HttpResponse.json([
+            {
+              id: 201,
+              amount: 8000,
+              description: '점심식사',
+              category_id: 1,
+              raw_input: null,
+              memo: null,
+              household_id: 1,
+              user_id: null,
+              exclude_from_stats: false,
+              date: currentMonthISO,
+              created_at: currentMonthISO,
+              updated_at: currentMonthISO,
+            },
+          ])
+        ),
+        http.get('/api/income', () =>
+          HttpResponse.json([
+            {
+              id: 301,
+              amount: 3000000,
+              description: '월급',
+              category_id: null,
+              raw_input: null,
+              memo: null,
+              household_id: 1,
+              user_id: null,
+              date: currentMonthISO,
+              created_at: currentMonthISO,
+              updated_at: currentMonthISO,
+            },
+          ])
+        ),
+      )
+
+      const user = userEvent.setup()
+      renderPage()
+
+      // 데이터 로드 대기
+      await waitFor(() => {
+        expect(screen.getByText('점심식사')).toBeInTheDocument()
+      })
+
+      // 수입 필터 클릭 → 수입 항목만 표시
+      const incomeBtn = screen.getByText('수입')
+      await user.click(incomeBtn)
+
+      await waitFor(() => {
+        expect(screen.getByText('월급')).toBeInTheDocument()
+        expect(screen.queryByText('점심식사')).not.toBeInTheDocument()
+      })
     })
   })
 })

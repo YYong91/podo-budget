@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { formatCompactAmount } from '../format'
+import { formatAmount, formatAmountWithSign, formatCompactAmount } from '../format'
 
 describe('formatCompactAmount', () => {
   it('1만 미만은 그대로 표시', () => {
@@ -24,5 +24,34 @@ describe('formatCompactAmount', () => {
   it('소수점 불필요 시 제거', () => {
     expect(formatCompactAmount(20000)).toBe('2만')
     expect(formatCompactAmount(3000000)).toBe('300만')
+  })
+})
+
+describe('formatAmount', () => {
+  it('₩ 기호와 쉼표 형식으로 포맷한다', () => {
+    expect(formatAmount(8000)).toBe('₩8,000')
+    expect(formatAmount(1000000)).toBe('₩1,000,000')
+    expect(formatAmount(0)).toBe('₩0')
+  })
+
+  it('소수점은 반올림하여 표시한다', () => {
+    expect(formatAmount(8000.7)).toBe('₩8,001')
+    expect(formatAmount(8000.3)).toBe('₩8,000')
+  })
+
+  it('음수 금액도 포맷한다', () => {
+    expect(formatAmount(-5000)).toBe('₩-5,000')
+  })
+})
+
+describe('formatAmountWithSign', () => {
+  it('수입(income)이면 + 접두사를 추가한다', () => {
+    expect(formatAmountWithSign(50000, 'income')).toBe('+₩50,000')
+    expect(formatAmountWithSign(0, 'income')).toBe('+₩0')
+  })
+
+  it('지출(expense)이면 접두사 없이 표시한다', () => {
+    expect(formatAmountWithSign(8000, 'expense')).toBe('₩8,000')
+    expect(formatAmountWithSign(100000, 'expense')).toBe('₩100,000')
   })
 })
