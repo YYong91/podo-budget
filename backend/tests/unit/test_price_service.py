@@ -224,20 +224,24 @@ def test_price_cache_ttl():
     assert cached == 12345.0
 
 
-def test_price_cache_miss_returns_none():
+def test_price_cache_miss_returns_none(monkeypatch):
     """캐시에 없는 키는 None 반환"""
-    from app.services.price_service import _get_cached
+    from app.services import price_service
 
-    result = _get_cached("test:NONEXISTENT_KEY_XYZ")
+    # monkeypatch로 캐시를 완전히 격리 — autouse fixture 보완 (#197)
+    monkeypatch.setattr(price_service, "_price_cache", {})
+    result = price_service._get_cached("test:NONEXISTENT_KEY_XYZ")
     assert result is None
 
 
-def test_price_cache_expired_returns_none():
+def test_price_cache_expired_returns_none(monkeypatch):
     """TTL 만료된 캐시는 None 반환"""
     import time
 
     from app.services import price_service
 
+    # monkeypatch로 캐시를 완전히 격리 — autouse fixture 보완 (#197)
+    monkeypatch.setattr(price_service, "_price_cache", {})
     # 만료된 캐시 직접 삽입 (타임스탬프를 과거로 설정)
     price_service._price_cache["test:EXPIRED"] = (9999.0, time.time() - price_service.CACHE_TTL - 1)
 
