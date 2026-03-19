@@ -47,6 +47,12 @@ async def get_account(
     account = await account_service.get_account_by_id(db, account_id, current_user)
     if not account:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="계좌를 찾을 수 없습니다")
+    # household 멤버십 검증 — IDOR 방지 (#137)
+    if account.household_id is not None:
+        try:
+            await get_household_member(account.household_id, current_user, db)
+        except HTTPException:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="계좌를 찾을 수 없습니다") from None
     return account
 
 

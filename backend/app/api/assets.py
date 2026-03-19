@@ -75,6 +75,7 @@ async def get_snapshots(
     """월별 스냅샷 (순자산 추이)"""
     if household_id is None:
         household_id = await get_user_active_household_id(current_user, db)
+    await get_household_member(household_id, current_user, db)  # 가구 접근 권한 검증 (#135)
     snapshots = await asset_service.get_snapshots(db, current_user, household_id, months)
     results = []
     for s in snapshots:
@@ -127,6 +128,7 @@ async def get_all_prices(
     """보유 투자형 자산 일괄 시세"""
     if household_id is None:
         household_id = await get_user_active_household_id(current_user, db)
+    await get_household_member(household_id, current_user, db)  # 가구 접근 권한 검증 (#135)
     assets = await asset_service.get_assets(db, current_user, household_id)
     prices = {}
     for asset in assets:
@@ -230,7 +232,7 @@ async def update_asset(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """자산 수정 (본인 생성분만)"""
+    """자산 수정 (본인 생성분만 + 현재 가구 멤버만)"""
     from sqlalchemy import select
 
     from app.models.asset import Asset
@@ -239,6 +241,12 @@ async def update_asset(
     asset = result.scalar_one_or_none()
     if not asset:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="자산을 찾을 수 없습니다")
+    # 탈퇴 멤버가 이전 가구 자산 수정 방지 (#135)
+    if asset.household_id is not None:
+        try:
+            await get_household_member(asset.household_id, current_user, db)
+        except HTTPException:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="자산을 찾을 수 없습니다") from None
     update_data = asset_update.model_dump(exclude_unset=True)
     return await asset_service.update_asset(db, asset, update_data)
 
@@ -249,7 +257,7 @@ async def delete_asset(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """자산 삭제 (본인 생성분만)"""
+    """자산 삭제 (본인 생성분만 + 현재 가구 멤버만)"""
     from sqlalchemy import select
 
     from app.models.asset import Asset
@@ -258,4 +266,10 @@ async def delete_asset(
     asset = result.scalar_one_or_none()
     if not asset:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="자산을 찾을 수 없습니다")
+    # 탈퇴 멤버가 이전 가구 자산 삭제 방지 (#135)
+    if asset.household_id is not None:
+        try:
+            await get_household_member(asset.household_id, current_user, db)
+        except HTTPException:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="자산을 찾을 수 없습니다") from None
     await asset_service.delete_asset(db, asset)
