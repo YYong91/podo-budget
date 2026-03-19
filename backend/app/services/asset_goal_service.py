@@ -13,18 +13,17 @@ from app.models.user import User
 from app.services.asset_service import get_asset_summary
 
 
-async def get_goal(user_id: int, household_id: int | None, db: AsyncSession) -> AssetGoal | None:
+async def get_goal(user_id: int, household_id: int, db: AsyncSession) -> AssetGoal | None:
     """활성 목표 조회 (사용자/가구 당 최신 1개)"""
-    q = select(AssetGoal).where(AssetGoal.user_id == user_id)
-    q = q.where(AssetGoal.household_id == household_id) if household_id is not None else q.where(AssetGoal.household_id.is_(None))
-    q = q.order_by(AssetGoal.created_at.desc()).limit(1)
-    result = await db.execute(q)
+    result = await db.execute(
+        select(AssetGoal).where(AssetGoal.user_id == user_id, AssetGoal.household_id == household_id).order_by(AssetGoal.created_at.desc()).limit(1)
+    )
     return result.scalar_one_or_none()
 
 
 async def upsert_goal(
     user_id: int,
-    household_id: int | None,
+    household_id: int,
     target_net_worth: float,
     target_date: date,
     db: AsyncSession,
@@ -49,7 +48,7 @@ async def upsert_goal(
     return goal
 
 
-async def delete_goal(user_id: int, household_id: int | None, db: AsyncSession) -> bool:
+async def delete_goal(user_id: int, household_id: int, db: AsyncSession) -> bool:
     """목표 삭제"""
     goal = await get_goal(user_id, household_id, db)
     if not goal:
@@ -60,7 +59,7 @@ async def delete_goal(user_id: int, household_id: int | None, db: AsyncSession) 
 
 async def get_goal_with_insight(
     user: User,
-    household_id: int | None,
+    household_id: int,
     db: AsyncSession,
 ) -> dict | None:
     """목표 + 페이스 인사이트 계산"""
@@ -120,12 +119,14 @@ async def get_goal_with_insight(
     }
 
 
-async def _get_recent_snapshots(user_id: int, household_id: int | None, db: AsyncSession, months: int = 4) -> list[AssetSnapshot]:
+async def _get_recent_snapshots(user_id: int, household_id: int, db: AsyncSession, months: int = 4) -> list[AssetSnapshot]:
     """최근 N개월 스냅샷 조회"""
-    q = select(AssetSnapshot).where(AssetSnapshot.user_id == user_id)
-    q = q.where(AssetSnapshot.household_id == household_id) if household_id is not None else q.where(AssetSnapshot.household_id.is_(None))
-    q = q.order_by(AssetSnapshot.snapshot_date.desc()).limit(months)
-    result = await db.execute(q)
+    result = await db.execute(
+        select(AssetSnapshot)
+        .where(AssetSnapshot.user_id == user_id, AssetSnapshot.household_id == household_id)
+        .order_by(AssetSnapshot.snapshot_date.desc())
+        .limit(months)
+    )
     return list(result.scalars().all())
 
 
@@ -139,30 +140,26 @@ def _calc_avg_monthly_growth(snapshots: list[AssetSnapshot]) -> float | None:
     return (newest - oldest) / months if months > 0 else None
 
 
-async def get_monthly_savings(user_id: int, household_id: int | None, db: AsyncSession) -> dict:
-    """이번 달 수입 - 지출 = 순저축액"""
+async def get_monthly_savings(household_id: int, db: AsyncSession) -> dict:
+    """이번 달 수입 - 지출 = 순저축액 (exclude_from_stats 항목 제외, #182)"""
     today = date.today()
     year = today.year
     month = today.month
 
-    # 이번 달 수입 합산
+    # 이번 달 수입 합산 (통계 제외 항목 제외)
     income_q = select(func.coalesce(func.sum(Income.amount), 0)).where(
         extract("year", Income.date) == year,
         extract("month", Income.date) == month,
+        Income.household_id == household_id,
+        Income.exclude_from_stats.is_(False),
     )
-    # 이번 달 지출 합산
+    # 이번 달 지출 합산 (통계 제외 항목 제외)
     expense_q = select(func.coalesce(func.sum(Expense.amount), 0)).where(
         extract("year", Expense.date) == year,
         extract("month", Expense.date) == month,
+        Expense.household_id == household_id,
+        Expense.exclude_from_stats.is_(False),
     )
-
-    # household_id가 있으면 가구 기반, 없으면 개인 기반 (레거시 폴백)
-    if household_id is not None:
-        income_q = income_q.where(Income.household_id == household_id)
-        expense_q = expense_q.where(Expense.household_id == household_id)
-    else:
-        income_q = income_q.where(Income.user_id == user_id)
-        expense_q = expense_q.where(Expense.user_id == user_id)
 
     income_result = await db.execute(income_q)
     expense_result = await db.execute(expense_q)

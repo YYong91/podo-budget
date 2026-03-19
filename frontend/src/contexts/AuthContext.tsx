@@ -46,7 +46,12 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 function isTokenExpired(token: string): boolean {
   try {
-    const payload = JSON.parse(atob(token.split('.')[1]))
+    // JWT는 base64url 인코딩 — atob()은 base64만 지원 (#153)
+    // base64url → base64: '-'→'+', '_'→'/', 패딩 추가
+    const base64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/').padEnd(
+      Math.ceil(token.split('.')[1].length / 4) * 4, '='
+    )
+    const payload = JSON.parse(atob(base64))
     return payload.exp * 1000 < Date.now()
   } catch {
     return true
@@ -215,13 +220,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setToken(newToken)
   }, []) // setToken은 React가 안정적 참조를 보장하므로 deps 불필요
 
-  const logout = () => {
+  // useCallback으로 참조 안정화 — Context value 재생성 최소화 (#167)
+  const logout = useCallback(() => {
     clearCookieToken()
     const authUrl = import.meta.env.VITE_AUTH_URL || 'https://auth.podonest.com'
     window.location.href = `${authUrl}/logout`
-  }
+  }, [])
 
-  const refreshUser = async () => {
+  const refreshUser = useCallback(async () => {
     if (!token) return
     try {
       const response = await authApi.getCurrentUser()
@@ -229,10 +235,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch {
       // 무시 (interceptor에서 401 처리)
     }
-  }
+  }, [token])
+
+  // useMemo로 Context value 안정화 — 의존값이 바뀔 때만 재생성 (#167)
+  const contextValue = useMemo(
+    () => ({ user, isAuthenticated, loading, logout, refreshUser, setTokenFromCallback }),
+    [user, isAuthenticated, loading, logout, refreshUser, setTokenFromCallback],
+  )
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated, loading, logout, refreshUser, setTokenFromCallback }}>
+    <AuthContext.Provider value={contextValue}>
       {children}
     </AuthContext.Provider>
   )

@@ -36,7 +36,11 @@ async def create_asset(
 ):
     """자산/부채 등록"""
     asset_data = asset.model_dump()
-    result = await asset_service.create_asset(db, asset_data, current_user)
+    household_id = asset_data.get("household_id")
+    if household_id is None:
+        household_id = await get_user_active_household_id(current_user, db)
+    await get_household_member(household_id, current_user, db)
+    result = await asset_service.create_asset(db, asset_data, current_user, household_id)
     return result
 
 
@@ -204,7 +208,7 @@ async def get_monthly_savings(
     if household_id is None:
         household_id = await get_user_active_household_id(current_user, db)
     await get_household_member(household_id, current_user, db)
-    return await asset_goal_service.get_monthly_savings(current_user.id, household_id, db)
+    return await asset_goal_service.get_monthly_savings(household_id, db)
 
 
 @router.get("/{asset_id}", response_model=AssetWithPrice)

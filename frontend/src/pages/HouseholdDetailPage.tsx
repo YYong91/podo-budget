@@ -444,7 +444,7 @@ export default function HouseholdDetailPage() {
                             >
                               추방
                             </button>
-                          ) : isMe && member.role !== 'owner' ? (
+                          ) : isMe && (member.role !== 'owner' || currentHousehold.members.length > 1) ? (
                             <button
                               onClick={handleLeave}
                               className="text-rose-600 hover:text-rose-700 font-medium"

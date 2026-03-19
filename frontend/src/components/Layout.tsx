@@ -23,10 +23,11 @@ const navItems: { path: string; label: string; icon: LucideIcon }[] = [
 export default function Layout() {
   const [householdDropdownOpen, setHouseholdDropdownOpen] = useState(false)
   const location = useLocation()
-  const {
-    households, activeHouseholdId, myInvitations,
-    setActiveHouseholdId,
-  } = useHouseholdStore()
+  // selector로 필요한 값만 구독 — isLoading 등 미사용 필드 변경 시 불필요한 리렌더 방지 (#167)
+  const households = useHouseholdStore((s) => s.households)
+  const activeHouseholdId = useHouseholdStore((s) => s.activeHouseholdId)
+  const myInvitations = useHouseholdStore((s) => s.myInvitations)
+  const setActiveHouseholdId = useHouseholdStore((s) => s.setActiveHouseholdId)
 
   // 초기 fetch는 ProtectedRoute의 initializeApp()에서 수행
 

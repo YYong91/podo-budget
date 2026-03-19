@@ -11,6 +11,7 @@ asyncpg==0.29.0
 python-multipart>=0.0.18
 httpx==0.26.0
 slowapi>=0.1.9
+cachetools>=5.3.0  # JWT 사용자 캐시 TTLCache (#162)
 
 # 인증 (JWT) — python-jose(CVE-2024-33663, CVE-2024-33664) 대신 PyJWT 사용
 pyjwt>=2.9.0

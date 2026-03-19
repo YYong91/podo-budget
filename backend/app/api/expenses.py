@@ -10,7 +10,7 @@
 """
 
 from calendar import monthrange
-from datetime import date, datetime, timedelta
+from datetime import datetime
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
 from sqlalchemy import extract, func, select
@@ -36,6 +36,7 @@ from app.schemas.expense import (
     TrendPoint,
 )
 from app.services.llm_service import get_llm_provider
+from app.utils.date_utils import get_month_range, get_week_label, get_week_range, get_year_range
 
 router = APIRouter()
 
@@ -113,36 +114,6 @@ async def get_expenses(
     return result.scalars().all()
 
 
-# ── 날짜 유틸 ──
-
-
-def _get_week_range(d: date) -> tuple[date, date]:
-    """주어진 날짜가 속한 주의 월요일~일요일 반환"""
-    monday = d - timedelta(days=d.weekday())
-    sunday = monday + timedelta(days=6)
-    return monday, sunday
-
-
-def _get_week_label(d: date) -> str:
-    """주차 라벨 생성 (예: '2월 3주차')"""
-    first_day = d.replace(day=1)
-    week_num = (d.day + first_day.weekday() - 1) // 7 + 1
-    return f"{d.month}월 {week_num}주차"
-
-
-def _get_month_range(d: date) -> tuple[date, date]:
-    """주어진 날짜가 속한 월의 첫날~마지막날 반환"""
-    first = d.replace(day=1)
-    _, last_day = monthrange(d.year, d.month)
-    last = d.replace(day=last_day)
-    return first, last
-
-
-def _get_year_range(d: date) -> tuple[date, date]:
-    """주어진 날짜가 속한 연도의 첫날~마지막날 반환"""
-    return date(d.year, 1, 1), date(d.year, 12, 31)
-
-
 def _build_scope_filter(household_id: int):
     """가구 스코프 필터 생성"""
     return Expense.household_id == household_id
@@ -169,13 +140,13 @@ async def get_stats(
 
     # 기간 범위 결정
     if period == StatsPeriod.weekly:
-        start_d, end_d = _get_week_range(ref_date)
-        label = _get_week_label(ref_date)
+        start_d, end_d = get_week_range(ref_date)
+        label = get_week_label(ref_date)
     elif period == StatsPeriod.monthly:
-        start_d, end_d = _get_month_range(ref_date)
+        start_d, end_d = get_month_range(ref_date)
         label = f"{ref_date.year}년 {ref_date.month}월"
     else:  # yearly
-        start_d, end_d = _get_year_range(ref_date)
+        start_d, end_d = get_year_range(ref_date)
         label = f"{ref_date.year}년"
 
     start_dt = datetime(start_d.year, start_d.month, start_d.day)
@@ -612,18 +583,23 @@ async def update_expense(
     if not expense:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="지출을 찾을 수 없습니다")
 
-    # 가구 멤버 검증 (비멤버는 존재 여부 노출 방지를 위해 404)
-    try:
-        member = await get_household_member(expense.household_id, current_user, db)
-    except HTTPException:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="지출을 찾을 수 없습니다") from None
+    if expense.household_id is None:
+        # 레거시 데이터(마이그레이션 이전): household_id=None → 본인 확인만으로 수정 허용 (#147)
+        if expense.user_id != current_user.id:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="지출을 찾을 수 없습니다")
+    else:
+        # 가구 멤버 검증 (비멤버는 존재 여부 노출 방지를 위해 404)
+        try:
+            member = await get_household_member(expense.household_id, current_user, db)
+        except HTTPException:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="지출을 찾을 수 없습니다") from None
 
-    # 본인 거래가 아니면 admin/owner만 수정 가능
-    if expense.user_id != current_user.id and member.role not in ("admin", "owner"):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="이 항목을 수정할 권한이 없습니다",
-        )
+        # 본인 거래가 아니면 admin/owner만 수정 가능
+        if expense.user_id != current_user.id and member.role not in ("admin", "owner"):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="이 항목을 수정할 권한이 없습니다",
+            )
 
     update_data = expense_update.model_dump(exclude_unset=True)
     for key, value in update_data.items():
@@ -650,18 +626,23 @@ async def delete_expense(
     if not expense:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="지출을 찾을 수 없습니다")
 
-    # 가구 멤버 검증 (비멤버는 존재 여부 노출 방지를 위해 404)
-    try:
-        member = await get_household_member(expense.household_id, current_user, db)
-    except HTTPException:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="지출을 찾을 수 없습니다") from None
+    if expense.household_id is None:
+        # 레거시 데이터(마이그레이션 이전): household_id=None → 본인 확인만으로 삭제 허용 (#147)
+        if expense.user_id != current_user.id:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="지출을 찾을 수 없습니다")
+    else:
+        # 가구 멤버 검증 (비멤버는 존재 여부 노출 방지를 위해 404)
+        try:
+            member = await get_household_member(expense.household_id, current_user, db)
+        except HTTPException:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="지출을 찾을 수 없습니다") from None
 
-    # 본인 거래가 아니면 admin/owner만 삭제 가능
-    if expense.user_id != current_user.id and member.role not in ("admin", "owner"):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="이 항목을 삭제할 권한이 없습니다",
-        )
+        # 본인 거래가 아니면 admin/owner만 삭제 가능
+        if expense.user_id != current_user.id and member.role not in ("admin", "owner"):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="이 항목을 삭제할 권한이 없습니다",
+            )
 
     await db.delete(expense)
     await db.commit()

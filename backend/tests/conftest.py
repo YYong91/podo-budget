@@ -92,6 +92,16 @@ def _disable_rate_limit():
     limiter.enabled = True
 
 
+@pytest.fixture(autouse=True)
+def _clear_auth_cache():
+    """테스트마다 JWT 사용자 캐시 초기화 — in-memory DB 교체 시 캐시 stale 방지 (#162)"""
+    from app.core.auth import _auth_id_cache
+
+    _auth_id_cache.clear()
+    yield
+    _auth_id_cache.clear()
+
+
 @pytest_asyncio.fixture(scope="function")
 async def db_session() -> AsyncGenerator[AsyncSession, None]:
     """
@@ -238,6 +248,15 @@ async def auth_token2(test_user2: User) -> str:
     )
 
 
+def _db_override(db_session: AsyncSession):
+    """DB 의존성 오버라이드 팩토리 — 세션을 클로저로 캡처 (#202)"""
+
+    async def override():
+        yield db_session
+
+    return override
+
+
 @pytest_asyncio.fixture
 async def client(db_session: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
     """테스트용 HTTP 클라이언트 (FastAPI 앱과 연동)
@@ -251,19 +270,15 @@ async def client(db_session: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
     Yields:
         AsyncClient 인스턴스
     """
-
-    async def override_get_db():
-        yield db_session
-
-    app.dependency_overrides[get_db] = override_get_db
-
-    async with AsyncClient(
-        transport=ASGITransport(app=app),  # type: ignore
-        base_url="http://test",
-    ) as ac:
-        yield ac
-
-    app.dependency_overrides.clear()
+    app.dependency_overrides[get_db] = _db_override(db_session)
+    try:
+        async with AsyncClient(
+            transport=ASGITransport(app=app),  # type: ignore
+            base_url="http://test",
+        ) as ac:
+            yield ac
+    finally:
+        app.dependency_overrides.clear()
 
 
 @pytest_asyncio.fixture
@@ -281,20 +296,16 @@ async def authenticated_client(db_session: AsyncSession, test_user: User, auth_t
     Yields:
         인증 헤더가 포함된 AsyncClient 인스턴스
     """
-
-    async def override_get_db():
-        yield db_session
-
-    app.dependency_overrides[get_db] = override_get_db
-
-    async with AsyncClient(
-        transport=ASGITransport(app=app),  # type: ignore
-        base_url="http://test",
-        headers={"Authorization": f"Bearer {auth_token}"},
-    ) as ac:
-        yield ac
-
-    app.dependency_overrides.clear()
+    app.dependency_overrides[get_db] = _db_override(db_session)
+    try:
+        async with AsyncClient(
+            transport=ASGITransport(app=app),  # type: ignore
+            base_url="http://test",
+            headers={"Authorization": f"Bearer {auth_token}"},
+        ) as ac:
+            yield ac
+    finally:
+        app.dependency_overrides.clear()
 
 
 @pytest_asyncio.fixture
@@ -311,20 +322,16 @@ async def authenticated_client2(db_session: AsyncSession, test_user2: User, auth
     Yields:
         인증 헤더가 포함된 AsyncClient 인스턴스
     """
-
-    async def override_get_db():
-        yield db_session
-
-    app.dependency_overrides[get_db] = override_get_db
-
-    async with AsyncClient(
-        transport=ASGITransport(app=app),  # type: ignore
-        base_url="http://test",
-        headers={"Authorization": f"Bearer {auth_token2}"},
-    ) as ac:
-        yield ac
-
-    app.dependency_overrides.clear()
+    app.dependency_overrides[get_db] = _db_override(db_session)
+    try:
+        async with AsyncClient(
+            transport=ASGITransport(app=app),  # type: ignore
+            base_url="http://test",
+            headers={"Authorization": f"Bearer {auth_token2}"},
+        ) as ac:
+            yield ac
+    finally:
+        app.dependency_overrides.clear()
 
 
 @pytest.fixture

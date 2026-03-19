@@ -95,9 +95,10 @@ export default function AssetDashboard() {
   const { activeHouseholdId } = useHouseholdStore()
 
   const fetchData = () => {
+    if (!activeHouseholdId) return  // 가구 로딩 전 API 호출 방지 (#149)
     setLoading(true)
     setError(null)
-    const hid = activeHouseholdId!
+    const hid = activeHouseholdId
     Promise.all([
       assetApi.getAll(hid),
       assetApi.getSummary(hid),

@@ -104,6 +104,7 @@ async def get_household_member(
     """가구 멤버 정보 조회 및 검증
 
     현재 사용자가 해당 가구의 활성 멤버인지 확인합니다.
+    Household LEFT JOIN HouseholdMember 단일 쿼리로 404/403 구분 (#178)
 
     Args:
         household_id: 가구 ID
@@ -117,34 +118,34 @@ async def get_household_member(
         HTTPException 404: 가구가 존재하지 않거나 소프트 삭제됨
         HTTPException 403: 사용자가 해당 가구의 멤버가 아님
     """
-    # 가구 존재 여부 확인 (소프트 삭제되지 않은 가구)
-    household_query = select(Household).where(
-        and_(
-            Household.id == household_id,
-            Household.deleted_at.is_(None),  # 소프트 삭제되지 않은 가구만
+    # Household LEFT JOIN HouseholdMember 단일 쿼리
+    # - Household 없음 → row is None → 404
+    # - Household 있지만 멤버 아님 → row.HouseholdMember is None → 403
+    result = await db.execute(
+        select(Household.id, HouseholdMember)
+        .outerjoin(
+            HouseholdMember,
+            and_(
+                HouseholdMember.household_id == Household.id,
+                HouseholdMember.user_id == current_user.id,
+                HouseholdMember.left_at.is_(None),
+            ),
+        )
+        .where(
+            and_(
+                Household.id == household_id,
+                Household.deleted_at.is_(None),
+            )
         )
     )
-    result = await db.execute(household_query)
-    household = result.scalar_one_or_none()
+    row = result.first()
 
-    if not household:
+    if row is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="가구를 찾을 수 없습니다")
-
-    # 멤버 자격 확인 (탈퇴하지 않은 활성 멤버)
-    member_query = select(HouseholdMember).where(
-        and_(
-            HouseholdMember.household_id == household_id,
-            HouseholdMember.user_id == current_user.id,
-            HouseholdMember.left_at.is_(None),  # 탈퇴하지 않은 멤버만
-        )
-    )
-    result = await db.execute(member_query)
-    member = result.scalar_one_or_none()
-
-    if not member:
+    if row.HouseholdMember is None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="이 가구에 접근할 권한이 없습니다")
 
-    return member
+    return row.HouseholdMember
 
 
 async def require_household_admin(
