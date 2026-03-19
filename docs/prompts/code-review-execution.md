@@ -56,15 +56,18 @@
 ### GitHub 프로젝트 Status 업데이트
 프로젝트 ID: `PVT_kwHOA_DHDM4BR2r9`
 Status 필드 ID: `PVTSSF_lAHOA_DHDM4BR2r9zg_jvIk`
-- In Progress: `10c2ffb2`
-- Ready to Deploy: `437604c7`
+- Backlog: `ea30c82b`
+- Todo: `7035a95e`
+- In Progress: `f0cbf5cb`
+- On Dev: `56de7120` (develop 머지 완료)
+- Done: `313b659e` (main 머지 완료)
 
 이슈 시작 시 In Progress로 업데이트:
 ```bash
 ITEM_ID=$(gh api graphql -f query='{ repository(owner: "YYong91", name: "podo-budget") { issue(number: NUMBER) { projectItems(first: 5) { nodes { id } } } } }' --jq '.data.repository.issue.projectItems.nodes[0].id')
-gh api graphql -f query="mutation { updateProjectV2ItemFieldValue(input: { projectId: \"PVT_kwHOA_DHDM4BR2r9\" itemId: \"$ITEM_ID\" fieldId: \"PVTSSF_lAHOA_DHDM4BR2r9zg_jvIk\" value: { singleSelectOptionId: \"10c2ffb2\" } }) { projectV2Item { id } } }"
+gh api graphql -f query="mutation { updateProjectV2ItemFieldValue(input: { projectId: \"PVT_kwHOA_DHDM4BR2r9\" itemId: \"$ITEM_ID\" fieldId: \"PVTSSF_lAHOA_DHDM4BR2r9zg_jvIk\" value: { singleSelectOptionId: \"f0cbf5cb\" } }) { projectV2Item { id } } }"
 ```
-그룹 완료 PR 생성 후 → Ready to Deploy (옵션 ID: `437604c7`)
+그룹 완료 PR 생성 후 → On Dev (옵션 ID: `56de7120`)
 
 ---
 
@@ -84,7 +87,7 @@ gh api graphql -f query="mutation { updateProjectV2ItemFieldValue(input: { proje
 4. 자기 코드 리뷰 — 불필요한 변경 없는지, 네이밍 명확한지, 중복 없는지
 5. `git push -u origin 브랜치명`
 6. `gh pr create --base develop`
-7. 이슈들 Ready to Deploy 상태 업데이트
+7. 이슈들 On Dev 상태 업데이트
 8. 다음 그룹 worktree 생성 → 진행
 
 ---
