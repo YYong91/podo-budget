@@ -287,7 +287,8 @@ function MyAccountSection() {
   const handleCopyKakaoCode = async () => {
     if (!kakaoLinkCode) return
     try {
-      await navigator.clipboard.writeText(`/link ${kakaoLinkCode.code}`)
+      // 카카오 봇은 "연동 {code}" 형식 사용 (한글 명령어 = /link 슬래시 명령어) (#200)
+      await navigator.clipboard.writeText(`연동 ${kakaoLinkCode.code}`)
       toast.success('복사되었습니다!')
     } catch {
       toast.error('자동 복사 실패 — 아래 명령어를 직접 복사해주세요')
@@ -503,7 +504,7 @@ function MyAccountSection() {
                   }}
                 >
                   <p className="text-xs text-[var(--text-tertiary)] mb-1">카카오톡 채널 채팅에 아래 명령어를 입력하세요: (탭하면 선택됩니다)</p>
-                  <p className="selectable font-mono text-sm text-grape-600 font-bold select-all">/link {kakaoLinkCode.code}</p>
+                  <p className="selectable font-mono text-sm text-grape-600 font-bold select-all">연동 {kakaoLinkCode.code}</p>
                 </div>
               </div>
             ) : (

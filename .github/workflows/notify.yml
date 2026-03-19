@@ -24,7 +24,9 @@ jobs:
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          # shell injection 방지: inputs.message를 직접 shell에 삽입하지 않고 환경변수로 전달 (#161)
+          TELEGRAM_MESSAGE: ${{ inputs.message }}
         run: |
           curl -sf -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
             -d chat_id="${TELEGRAM_CHAT_ID}" \
-            --data-urlencode "text=${{ inputs.message }}" || true
+            --data-urlencode "text=${TELEGRAM_MESSAGE}" || true

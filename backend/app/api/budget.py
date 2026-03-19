@@ -5,7 +5,7 @@ household_id가 있으면 가구 공유 예산, 없으면 개인 예산으로 �
 expenses/recurring과 동일한 household 패턴을 따릅니다.
 """
 
-from datetime import date, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import and_, extract, func, or_, select
@@ -158,7 +158,7 @@ async def get_budget_alerts(
     budgets = result.scalars().all()
 
     alerts = []
-    now = datetime.now()
+    now = datetime.now(UTC).replace(tzinfo=None)
 
     # 유효한 예산만 필터 (기간 미시작 제외)
     active_budgets = [b for b in budgets if b.start_date <= now]
@@ -250,7 +250,7 @@ async def get_category_overview(
     budget_scope = _budget_scope_filter(household_id)
     expense_scope = _expense_scope_filter(household_id)
 
-    now = datetime.now()
+    now = datetime.now(UTC).replace(tzinfo=None)
 
     # 최근 3개월 시작일 계산 (현재 월 포함 3개월)
     start_month = now.month - 2

@@ -43,6 +43,9 @@ jobs:
       - name: 린트
         run: uv run ruff check backend/
 
+      - name: 포맷 검증
+        run: uv run ruff format --check backend/  # 포맷 미준수 코드 CI 차단 (#177)
+
       - name: 테스트 실행
         env:
           DATABASE_URL: sqlite+aiosqlite:///./test.db
