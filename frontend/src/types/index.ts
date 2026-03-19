@@ -203,21 +203,6 @@ export interface User {
   is_admin: boolean
 }
 
-export interface LoginRequest {
-  email: string
-  password: string
-}
-
-export interface RegisterRequest {
-  username: string
-  password: string
-  email: string
-}
-
-export interface AuthResponse {
-  access_token: string
-  token_type: string
-}
 
 export interface Budget {
   id: number
