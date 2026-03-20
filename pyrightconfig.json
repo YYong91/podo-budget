@@ -1,0 +1,17 @@
+{
+  "include": ["backend/app"],
+  "pythonVersion": "3.12",
+  "pythonPlatform": "Linux",
+  "typeCheckingMode": "basic",
+  "reportMissingImports": true,
+  "reportMissingTypeStubs": false,
+  "reportUnusedImport": false,
+  "reportUnusedVariable": false,
+  "reportGeneralClassIssues": false,
+  "executionEnvironments": [
+    {
+      "root": "backend",
+      "extraPaths": ["backend"]
+    }
+  ]
+}
