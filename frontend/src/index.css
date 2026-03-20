@@ -193,3 +193,12 @@ body {
 .animate-slide-up {
   animation: slide-up 0.25s ease-out;
 }
+
+/* iOS 네이티브 date input이 w-full을 무시하고 컨테이너 밖으로 넘치는 버그 수정 (#114) */
+input[type="date"],
+input[type="datetime-local"] {
+  max-width: 100%;
+  box-sizing: border-box;
+  -webkit-appearance: none;
+  appearance: none;
+}
