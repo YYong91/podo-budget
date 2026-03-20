@@ -4,11 +4,12 @@
 모든 엔드포인트는 ADMIN_USER_ID 사용자만 접근 가능합니다.
 """
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import require_admin
 from app.core.database import get_db
+from app.core.rate_limit import limiter
 from app.models.user import User
 from app.schemas.admin import (
     AdminUserDetailResponse,
@@ -31,7 +32,9 @@ async def get_dashboard_stats(
 
 
 @router.get("/users", response_model=AdminUserListResponse)
+@limiter.limit("30/minute")  # 토큰 탈취 시 대량 조회 방지 (#234)
 async def get_user_list(
+    request: Request,
     page: int = Query(1, ge=1, description="페이지 번호"),
     page_size: int = Query(20, ge=1, le=100, description="페이지 크기"),
     search: str | None = Query(None, description="이름/이메일 검색"),
