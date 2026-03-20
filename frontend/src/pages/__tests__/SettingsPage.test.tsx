@@ -17,6 +17,11 @@ import { changelogs } from '../../data/changelogs'
 // refreshUser는 테스트마다 호출 여부를 검증할 수 있도록 vi.fn()으로 분리
 const mockRefreshUser = vi.fn()
 
+// useToast 모킹 (react-hot-toast 대신 커스텀 훅 사용)
+vi.mock('../../hooks/useToast', () => ({
+  useToast: () => ({ addToast: vi.fn(), removeToast: vi.fn() }),
+}))
+
 // useAuth 모킹
 vi.mock('../../contexts/AuthContext', () => ({
   useAuth: () => ({
