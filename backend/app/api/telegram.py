@@ -218,13 +218,16 @@ async def _save_and_respond_single(
 
 
 def _build_expense_saved_keyboard(expense_id: int) -> dict:
-    """지출 저장 후 수정/삭제 인라인 키보드 생성"""
+    """지출 저장 후 수정/삭제/변환 인라인 키보드 생성"""
     return {
         "inline_keyboard": [
             [
                 {"text": "🔄 카테고리 변경", "callback_data": f"change_category:{expense_id}"},
                 {"text": "🗑️ 삭제", "callback_data": f"delete_expense:{expense_id}"},
-            ]
+            ],
+            [
+                {"text": "💰 수입으로 변경", "callback_data": f"convert_to_income:{expense_id}"},
+            ],
         ]
     }
 
