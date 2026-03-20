@@ -50,6 +50,13 @@ jobs:
         # CVE-2024-23342(ecdsa): python-jose의 transitive dep, 최신 버전(0.19.1)에도 수정 없음 — ignore (#237)
         run: uv run pip-audit --ignore-vuln CVE-2024-23342
 
+      - name: 시크릿 스캔
+        run: |
+          if [ ! -f .secrets.baseline ]; then
+            uv run detect-secrets scan --exclude-files 'uv\.lock|package-lock\.json' > .secrets.baseline
+          fi
+          uv run detect-secrets scan --exclude-files 'uv\.lock|package-lock\.json' --baseline .secrets.baseline
+
       - name: 테스트 + 커버리지
         env:
           DATABASE_URL: sqlite+aiosqlite:///./test.db

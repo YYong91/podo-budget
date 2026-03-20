@@ -3,7 +3,7 @@ name: Radon 주간 스캔
 
 on:
   schedule:
-    - cron: '0 0 * * 1'  # 매주 월요일 00:00 UTC (한국시간 09:00)
+    - cron: '0 0 * * 5'  # 매주 금요일 00:00 UTC (한국시간 09:00)
   workflow_dispatch:  # 수동 실행 가능
 
 jobs:

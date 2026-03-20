@@ -1,0 +1,48 @@
+# 머지된 리모트 브랜치 자동 정리 — 2주 경과 시 삭제
+name: 브랜치 정리
+
+on:
+  schedule:
+    - cron: '0 1 * * 5'  # 매주 금요일 01:00 UTC (한국시간 10:00)
+  workflow_dispatch:
+
+jobs:
+  cleanup:
+    name: 머지된 브랜치 삭제
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 오래된 머지 브랜치 정리
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # 보호 브랜치 (절대 삭제 안 함)
+          PROTECTED="main|develop|release/.*|hotfix/.*"
+          CUTOFF=$(date -d '14 days ago' -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || date -v-14d -u +%Y-%m-%dT%H:%M:%SZ)
+          DELETED=0
+
+          echo "기준일: $CUTOFF (14일 전)"
+          echo "보호 브랜치: $PROTECTED"
+          echo "---"
+
+          # 머지된 PR의 head branch 중 오래된 것 삭제
+          for branch in $(git branch -r --merged origin/develop | grep -v 'origin/HEAD' | sed 's|origin/||' | grep -Ev "^($PROTECTED)$"); do
+            # 마지막 커밋 날짜 확인
+            LAST_COMMIT=$(git log -1 --format=%cI "origin/$branch" 2>/dev/null || echo "")
+            if [ -z "$LAST_COMMIT" ]; then
+              continue
+            fi
+
+            if [[ "$LAST_COMMIT" < "$CUTOFF" ]]; then
+              echo "삭제: $branch (마지막 커밋: $LAST_COMMIT)"
+              git push origin --delete "$branch" 2>/dev/null && DELETED=$((DELETED + 1)) || echo "  → 삭제 실패 (이미 삭제됨?)"
+            fi
+          done
+
+          echo "---"
+          echo "총 ${DELETED}개 브랜치 삭제 완료"
