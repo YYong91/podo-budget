@@ -16,6 +16,7 @@ jobs:
 
     steps:
       - uses: actions/stale@v9
+        id: stale
         with:
           # 60일 미활동 → stale 라벨
           days-before-stale: 60
@@ -39,3 +40,21 @@ jobs:
 
           # Phase 라벨 있는 것도 면제 (로드맵 항목)
           exempt-all-issue-assignees: true
+
+      - name: 텔레그램 알림
+        if: always()
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          STALED="${{ steps.stale.outputs.staled-issues-prs }}"
+          CLOSED="${{ steps.stale.outputs.closed-issues-prs }}"
+          if [ -n "$STALED" ] || [ -n "$CLOSED" ]; then
+            MESSAGE="$(printf '[주간] 📋 Stale 이슈 관리\n⏰ stale 라벨: %s개\n🔒 자동 close: %s개' \
+              "${STALED:-0}" "${CLOSED:-0}")"
+          else
+            MESSAGE="[주간] ✅ Stale 이슈 없음"
+          fi
+          curl -sf -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            -d chat_id="${TELEGRAM_CHAT_ID}" \
+            --data-urlencode "text=${MESSAGE}" || true

@@ -97,3 +97,20 @@ jobs:
       - name: 깨끗함 로그
         if: env.be_count == '0' && env.fe_count == '0'
         run: echo "✅ Dead code 없음"
+
+      - name: 텔레그램 알림
+        if: always()
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          BE="${{ env.be_count }}"
+          FE="${{ env.fe_count }}"
+          if [ "$BE" != "0" ] || [ "$FE" != "0" ]; then
+            MESSAGE="[월간] 🧟 Dead code 감지: BE ${BE}건, FE ${FE}건 → 이슈 생성됨"
+          else
+            MESSAGE="[월간] ✅ Dead code 없음"
+          fi
+          curl -sf -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            -d chat_id="${TELEGRAM_CHAT_ID}" \
+            --data-urlencode "text=${MESSAGE}" || true

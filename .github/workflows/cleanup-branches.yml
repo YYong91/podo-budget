@@ -18,6 +18,7 @@ jobs:
           fetch-depth: 0
 
       - name: 오래된 머지 브랜치 정리
+        id: cleanup
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -46,3 +47,20 @@ jobs:
 
           echo "---"
           echo "총 ${DELETED}개 브랜치 삭제 완료"
+          echo "deleted=$DELETED" >> "$GITHUB_OUTPUT"
+
+      - name: 텔레그램 알림
+        if: always()
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          DELETED="${{ steps.cleanup.outputs.deleted || '0' }}"
+          if [ "$DELETED" != "0" ]; then
+            MESSAGE="[주간] 🧹 브랜치 정리: ${DELETED}개 삭제"
+          else
+            MESSAGE="[주간] ✅ 정리할 브랜치 없음"
+          fi
+          curl -sf -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            -d chat_id="${TELEGRAM_CHAT_ID}" \
+            --data-urlencode "text=${MESSAGE}" || true

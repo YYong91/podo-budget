@@ -79,3 +79,19 @@ jobs:
       - name: 깨끗함 로그
         if: steps.scan.outputs.count == '0'
         run: echo "✅ 3개월 이상 된 TODO/FIXME 없음"
+
+      - name: 텔레그램 알림
+        if: always()
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          COUNT="${{ steps.scan.outputs.count }}"
+          if [ "$COUNT" != "0" ]; then
+            MESSAGE="[월간] 📝 오래된 TODO/FIXME ${COUNT}개 발견 → 이슈 생성됨"
+          else
+            MESSAGE="[월간] ✅ 오래된 TODO/FIXME 없음"
+          fi
+          curl -sf -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            -d chat_id="${TELEGRAM_CHAT_ID}" \
+            --data-urlencode "text=${MESSAGE}" || true
