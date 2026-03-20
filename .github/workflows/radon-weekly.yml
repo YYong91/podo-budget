@@ -89,3 +89,24 @@ jobs:
       - name: 변화 없음 로그
         if: steps.scan.outputs.worsened == '0' && steps.scan.outputs.new == '0'
         run: echo "✅ 복잡도 변화 없음 (고복잡도 함수 ${{ steps.scan.outputs.total }}개 유지)"
+
+      - name: 텔레그램 알림
+        if: always()
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          TOTAL="${{ steps.scan.outputs.total }}"
+          WORSENED="${{ steps.scan.outputs.worsened }}"
+          NEW="${{ steps.scan.outputs.new }}"
+
+          if [ "$WORSENED" != "0" ] || [ "$NEW" != "0" ]; then
+            MESSAGE="$(printf '[주간] 🔍 Radon 코드 품질 스캔\n⚠️ 변화 감지: 악화 %s개, 신규 %s개\n📊 고복잡도 함수: %s개\n→ GitHub 이슈 생성됨' \
+              "$WORSENED" "$NEW" "$TOTAL")"
+          else
+            MESSAGE="$(printf '[주간] ✅ Radon 코드 품질 양호\n📊 고복잡도 함수: %s개 (변화 없음)' "$TOTAL")"
+          fi
+
+          curl -sf -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            -d chat_id="${TELEGRAM_CHAT_ID}" \
+            --data-urlencode "text=${MESSAGE}" || true
