@@ -1,0 +1,41 @@
+# Stale 이슈 자동 라벨링 + 정리
+name: Stale 이슈 관리
+
+on:
+  schedule:
+    - cron: '0 3 * * 5'  # 매주 금요일 03:00 UTC (한국시간 12:00)
+  workflow_dispatch:
+
+jobs:
+  stale:
+    name: Stale 이슈 처리
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      issues: write
+
+    steps:
+      - uses: actions/stale@v9
+        with:
+          # 60일 미활동 → stale 라벨
+          days-before-stale: 60
+          stale-issue-label: 'stale'
+          stale-issue-message: >
+            이 이슈가 60일간 활동이 없어 `stale` 라벨이 추가되었습니다.
+            아직 유효하면 코멘트를 남겨주세요. 30일 후 자동으로 닫힙니다.
+
+          # 90일 미활동 → 자동 close
+          days-before-close: 30
+          close-issue-message: >
+            90일간 활동이 없어 자동으로 닫습니다.
+            다시 필요하면 언제든 reopen 해주세요.
+
+          # PR은 건드리지 않음
+          days-before-stale-pr: -1
+          days-before-close-pr: -1
+
+          # 이 라벨이 있으면 stale 처리 안 함
+          exempt-issue-labels: 'P0: critical,P1: high,pinned'
+
+          # Phase 라벨 있는 것도 면제 (로드맵 항목)
+          exempt-all-issue-assignees: true

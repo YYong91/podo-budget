@@ -1,0 +1,81 @@
+# TODO/FIXME 만료 추적 — 3개월 이상 된 항목 이슈화
+name: TODO 추적
+
+on:
+  schedule:
+    - cron: '0 2 1 * *'  # 매월 1일 02:00 UTC (한국시간 11:00)
+  workflow_dispatch:
+
+jobs:
+  track-todos:
+    name: 오래된 TODO 탐지
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      issues: write
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # git blame에 필요
+
+      - name: TODO/FIXME 수집 + 나이 계산
+        id: scan
+        run: |
+          CUTOFF=$(date -d '90 days ago' +%s 2>/dev/null || date -v-90d +%s)
+          STALE_ITEMS=""
+          COUNT=0
+
+          # backend + frontend에서 TODO/FIXME 검색
+          grep -rn "TODO\|FIXME\|HACK\|XXX" \
+            --include="*.py" --include="*.ts" --include="*.tsx" \
+            backend/app/ frontend/src/ 2>/dev/null | while IFS=: read -r file line content; do
+
+            # git blame으로 해당 라인의 마지막 수정일 확인
+            COMMIT_DATE=$(git blame -L "$line,$line" --format='%ct' "$file" 2>/dev/null | head -1 | awk '{print $1}')
+
+            if [ -n "$COMMIT_DATE" ] && [ "$COMMIT_DATE" -lt "$CUTOFF" ] 2>/dev/null; then
+              HUMAN_DATE=$(date -d "@$COMMIT_DATE" +%Y-%m-%d 2>/dev/null || date -r "$COMMIT_DATE" +%Y-%m-%d)
+              TRIMMED=$(echo "$content" | sed 's/^[[:space:]]*//' | cut -c1-100)
+              echo "${file}:${line}|${HUMAN_DATE}|${TRIMMED}" >> /tmp/stale-todos.txt
+            fi
+          done
+
+          if [ -f /tmp/stale-todos.txt ]; then
+            COUNT=$(wc -l < /tmp/stale-todos.txt | tr -d ' ')
+          fi
+          echo "count=$COUNT" >> "$GITHUB_OUTPUT"
+
+      - name: 오래된 TODO 이슈 생성
+        if: steps.scan.outputs.count != '0'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          COUNT=${{ steps.scan.outputs.count }}
+
+          # 이슈 본문 생성
+          BODY="## 3개월 이상 된 TODO/FIXME ($COUNT개)\n\n"
+          BODY+="| 위치 | 작성일 | 내용 |\n|------|--------|------|\n"
+
+          while IFS='|' read -r location date content; do
+            BODY+="| \`$location\` | $date | $content |\n"
+          done < /tmp/stale-todos.txt
+
+          BODY+="\n---\n🤖 월간 자동 스캔"
+
+          # 같은 제목의 열린 이슈가 있으면 건너뛰기
+          EXISTING=$(gh issue list --label "code-quality" --search "[월간] 오래된 TODO" --state open --json number --jq '.[0].number // empty')
+          if [ -n "$EXISTING" ]; then
+            echo "기존 이슈 #$EXISTING에 코멘트 추가"
+            printf "$BODY" | gh issue comment "$EXISTING" --body-file -
+          else
+            printf "$BODY" | gh issue create \
+              --title "[월간] 오래된 TODO/FIXME 정리 필요 ($COUNT개)" \
+              --label "code-quality" \
+              --body-file -
+          fi
+
+      - name: 깨끗함 로그
+        if: steps.scan.outputs.count == '0'
+        run: echo "✅ 3개월 이상 된 TODO/FIXME 없음"

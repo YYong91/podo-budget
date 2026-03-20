@@ -36,6 +36,7 @@ dev = [
     "ruff==0.8.6",
     "detect-secrets==1.5.0",
     "pip-audit>=2.7,<3.0",  # CI 의존성 취약점 스캔 (#237)
+    "radon>=6.0,<7.0",  # 코드 복잡도 분석 (#252)
 ]
 
 [tool.ruff]

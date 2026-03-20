@@ -1,0 +1,91 @@
+# 주간 코드 품질 스캔 — Radon 복잡도 변화 감지
+name: Radon 주간 스캔
+
+on:
+  schedule:
+    - cron: '0 0 * * 5'  # 매주 금요일 00:00 UTC (한국시간 09:00)
+  workflow_dispatch:  # 수동 실행 가능
+
+jobs:
+  radon-scan:
+    name: 코드 품질 스캔
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      issues: write
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: uv 설치
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: "0.5.20"
+          enable-cache: true
+
+      - name: Python 설정
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: 의존성 설치
+        run: uv sync --all-extras
+
+      - name: 이전 스캔 결과 복원
+        uses: actions/cache@v4
+        with:
+          path: .radon/history.json
+          key: radon-history-${{ github.ref_name }}
+          restore-keys: radon-history-
+
+      - name: Radon 스캔
+        id: scan
+        run: |
+          uv run python scripts/radon_scan.py --json > /tmp/radon-result.json
+          uv run python scripts/radon_scan.py > /tmp/radon-report.txt
+
+          # 변화 요약 추출
+          WORSENED=$(python3 -c "import json; d=json.load(open('/tmp/radon-result.json')); print(len(d['diff']['worsened']))")
+          NEW=$(python3 -c "import json; d=json.load(open('/tmp/radon-result.json')); print(len(d['diff']['new_issues']))")
+          TOTAL=$(python3 -c "import json; d=json.load(open('/tmp/radon-result.json')); print(d['summary']['total_high_cc'])")
+
+          echo "worsened=$WORSENED" >> "$GITHUB_OUTPUT"
+          echo "new=$NEW" >> "$GITHUB_OUTPUT"
+          echo "total=$TOTAL" >> "$GITHUB_OUTPUT"
+
+      - name: 악화 감지 시 이슈 생성
+        if: steps.scan.outputs.worsened != '0' || steps.scan.outputs.new != '0'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          REPORT=$(cat /tmp/radon-report.txt)
+          TITLE="[주간 품질] 코드 복잡도 변화 감지 — 악화 ${{ steps.scan.outputs.worsened }}개, 신규 ${{ steps.scan.outputs.new }}개"
+
+          gh issue create \
+            --title "$TITLE" \
+            --label "code-quality" \
+            --body "$(cat <<EOF
+          ## Radon 주간 스캔 결과
+
+          - 고복잡도 함수: **${{ steps.scan.outputs.total }}개**
+          - 악화: **${{ steps.scan.outputs.worsened }}개**
+          - 신규: **${{ steps.scan.outputs.new }}개**
+
+          <details>
+          <summary>전체 리포트</summary>
+
+          \`\`\`
+          ${REPORT}
+          \`\`\`
+
+          </details>
+
+          ---
+          🤖 Radon 주간 자동 스캔
+          EOF
+          )"
+
+      - name: 변화 없음 로그
+        if: steps.scan.outputs.worsened == '0' && steps.scan.outputs.new == '0'
+        run: echo "✅ 복잡도 변화 없음 (고복잡도 함수 ${{ steps.scan.outputs.total }}개 유지)"
