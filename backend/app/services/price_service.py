@@ -13,6 +13,7 @@ import time
 import httpx
 
 from app.core.config import settings
+from app.core.metrics import record_external_api_call
 from app.services.exchange_rate import get_exchange_rate
 
 logger = logging.getLogger(__name__)
@@ -47,7 +48,7 @@ async def _get_kis_token() -> str | None:
     """한투 API OAuth 토큰 발급/캐싱 (24시간 유효, 1시간 전 갱신)"""
     global _kis_token, _kis_token_expires
 
-    if _kis_token and time.time() < _kis_token_expires - 3600:
+    if _kis_token and time.monotonic() < _kis_token_expires - 3600:
         return _kis_token
 
     if not settings.KIS_APPKEY or not settings.KIS_APPSECRET:
@@ -68,7 +69,7 @@ async def _get_kis_token() -> str | None:
                 _kis_token = data["access_token"]
                 # token_token_expired: "YYYY-MM-DD HH:MM:SS" 형식이지만
                 # 안전하게 현재 + 23시간으로 설정
-                _kis_token_expires = time.time() + 23 * 3600
+                _kis_token_expires = time.monotonic() + 23 * 3600
                 logger.info("한투 API 토큰 발급 성공")
                 return _kis_token
     except Exception:
@@ -104,10 +105,12 @@ async def get_stock_kr_price(ticker: str) -> float | None:
 
 async def _get_stock_kr_price_kis(ticker: str) -> float | None:
     """한투 API 한국 주식 현재가 조회"""
+
     token = await _get_kis_token()
     if not token:
         return None
 
+    t0 = time.monotonic()
     try:
         async with httpx.AsyncClient(timeout=10) as client:
             resp = await client.get(
@@ -124,32 +127,43 @@ async def _get_stock_kr_price_kis(ticker: str) -> float | None:
                     "FID_INPUT_ISCD": ticker,
                 },
             )
+            latency = (time.monotonic() - t0) * 1000
             if resp.status_code == 200:
                 data = resp.json()
                 output = data.get("output", {})
                 price = float(output.get("stck_prpr", 0))
                 if price > 0:
+                    record_external_api_call(service="kis", success=True, latency_ms=latency)
                     return price
+            record_external_api_call(service="kis", success=False, latency_ms=latency)
     except Exception:
+        latency = (time.monotonic() - t0) * 1000
+        record_external_api_call(service="kis", success=False, latency_ms=latency)
         logger.warning("한투 API 시세 조회 실패: %s", ticker)
     return None
 
 
 async def _get_stock_kr_price_naver(ticker: str) -> float | None:
     """네이버 금융 한국 주식 현재가 조회 (fallback)"""
+
+    t0 = time.monotonic()
     try:
         async with httpx.AsyncClient(timeout=10) as client:
             resp = await client.get(
                 f"https://m.stock.naver.com/api/stock/{ticker}/basic",
                 headers={"User-Agent": "Mozilla/5.0"},
             )
+            latency = (time.monotonic() - t0) * 1000
             if resp.status_code == 200:
                 data = resp.json()
                 price = float(data.get("currentPrice", 0))
                 if price > 0:
+                    record_external_api_call(service="naver", success=True, latency_ms=latency)
                     return price
+            record_external_api_call(service="naver", success=False, latency_ms=latency)
     except Exception:
-        pass
+        latency = (time.monotonic() - t0) * 1000
+        record_external_api_call(service="naver", success=False, latency_ms=latency)
     return None
 
 
@@ -174,6 +188,7 @@ async def get_stock_us_price(ticker: str) -> tuple[float | None, float | None]:
                 return None, None
             return cached_usd, cached_usd * usd_krw if usd_krw else None
 
+        t0 = time.monotonic()
         try:
             async with httpx.AsyncClient(timeout=10) as client:
                 resp = await client.get(
@@ -181,15 +196,19 @@ async def get_stock_us_price(ticker: str) -> tuple[float | None, float | None]:
                     params={"interval": "1d", "range": "1d"},
                     headers={"User-Agent": "Mozilla/5.0"},
                 )
+                latency = (time.monotonic() - t0) * 1000
                 if resp.status_code == 200:
                     data = resp.json()
                     meta = data["chart"]["result"][0]["meta"]
                     price_usd = float(meta["regularMarketPrice"])
                     _set_cached(key, price_usd)
+                    record_external_api_call(service="yahoo", success=True, latency_ms=latency)
                     krw_price = price_usd * usd_krw if usd_krw else None
                     return price_usd, krw_price
+                record_external_api_call(service="yahoo", success=False, latency_ms=latency)
         except Exception:
-            pass
+            latency = (time.monotonic() - t0) * 1000
+            record_external_api_call(service="yahoo", success=False, latency_ms=latency)
         _set_cached(key, None)  # 실패 캐시 (#159)
     return None, None
 
@@ -210,20 +229,25 @@ async def get_crypto_price(symbol: str) -> float | None:
             return cached  # type: ignore[return-value]
 
         market = f"KRW-{symbol.upper()}"
+        t0 = time.monotonic()
         try:
             async with httpx.AsyncClient(timeout=10) as client:
                 resp = await client.get(
                     "https://api.upbit.com/v1/ticker",
                     params={"markets": market},
                 )
+                latency = (time.monotonic() - t0) * 1000
                 if resp.status_code == 200:
                     data = resp.json()
                     if data and len(data) > 0:
                         price = float(data[0]["trade_price"])
                         _set_cached(key, price)
+                        record_external_api_call(service="upbit", success=True, latency_ms=latency)
                         return price
+                record_external_api_call(service="upbit", success=False, latency_ms=latency)
         except Exception:
-            pass
+            latency = (time.monotonic() - t0) * 1000
+            record_external_api_call(service="upbit", success=False, latency_ms=latency)
         _set_cached(key, None)  # 실패 캐시 (#159)
     return None
 
@@ -394,7 +418,7 @@ def _get_cached(key: str) -> "float | None | object":
     if key in _price_cache:
         price, ts = _price_cache[key]
         ttl = NEGATIVE_CACHE_TTL if price is None else CACHE_TTL
-        if time.time() - ts < ttl:
+        if time.monotonic() - ts < ttl:
             return price  # None(실패 캐시) 또는 float
         del _price_cache[key]
     return _CACHE_MISS
@@ -402,4 +426,4 @@ def _get_cached(key: str) -> "float | None | object":
 
 def _set_cached(key: str, price: float | None) -> None:
     """캐시 저장 — None이면 실패 캐시 (NEGATIVE_CACHE_TTL 적용) (#159)"""
-    _price_cache[key] = (price, time.time())
+    _price_cache[key] = (price, time.monotonic())

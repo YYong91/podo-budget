@@ -233,6 +233,6 @@ def test_price_cache_ttl():
     assert _get_cached("test:CACHE_DIFFERENT_KEY") is _CACHE_MISS
 
     # 3. 만료: TTL 초과 항목은 _CACHE_MISS 반환 + 캐시에서 삭제
-    price_service._price_cache["test:EXPIRED"] = (9999.0, time.time() - price_service.CACHE_TTL - 1)
+    price_service._price_cache["test:EXPIRED"] = (9999.0, time.monotonic() - price_service.CACHE_TTL - 1)
     assert _get_cached("test:EXPIRED") is _CACHE_MISS
     assert "test:EXPIRED" not in price_service._price_cache
