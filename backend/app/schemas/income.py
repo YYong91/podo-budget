@@ -10,7 +10,7 @@ from app.schemas.base import DateTimeCoerceMixin
 
 class IncomeBase(DateTimeCoerceMixin):
     amount: Decimal = Field(..., gt=0, description="수입 금액 (0보다 커야 함)")
-    description: str
+    description: str = Field(..., max_length=500, description="수입 설명 (최대 500자)")
     category_id: int | None = None
     date: datetime
 
@@ -24,7 +24,7 @@ class IncomeCreate(IncomeBase):
 
 class IncomeUpdate(BaseModel):
     amount: Decimal | None = Field(None, gt=0, description="수입 금액 (0보다 커야 함)")
-    description: str | None = None
+    description: str | None = Field(None, max_length=500, description="수입 설명 (최대 500자)")
     category_id: int | None = None
     date: datetime | None = None
     memo: str | None = None

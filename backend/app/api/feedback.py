@@ -4,13 +4,14 @@
 관리자(ADMIN_USER_ID)가 전체 피드백을 조회/상태 변경할 수 있습니다.
 """
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.auth import get_current_user
 from app.core.config import settings
 from app.core.database import get_db
+from app.core.rate_limit import limiter
 from app.models.feedback import Feedback
 from app.models.user import User
 from app.schemas.feedback import FeedbackCreate, FeedbackResponse, FeedbackStatusUpdate
@@ -34,7 +35,9 @@ def _to_response(feedback: Feedback, username: str | None = None) -> FeedbackRes
 
 
 @router.post("", response_model=FeedbackResponse, status_code=status.HTTP_201_CREATED)
+@limiter.limit("10/minute")  # 피드백 테이블 flood 방지 (#234)
 async def create_feedback(
+    request: Request,
     data: FeedbackCreate,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),

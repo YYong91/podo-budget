@@ -12,13 +12,14 @@
 from calendar import monthrange
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
+from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile, status
 from sqlalchemy import extract, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import get_household_member, get_user_active_household_id
 from app.core.auth import get_current_user
 from app.core.database import get_db
+from app.core.rate_limit import limiter
 from app.models.expense import Expense
 from app.models.user import User
 from app.schemas.chat import ChatResponse, ParsedExpenseItem
@@ -451,7 +452,9 @@ async def get_monthly_stats(
 
 
 @router.post("/ocr", response_model=ChatResponse)
+@limiter.limit("5/minute")  # LLM 크레딧 보호 (#234)
 async def parse_expense_image(
+    request: Request,
     file: UploadFile = File(...),
     household_id: int | None = Query(None),
     current_user: User = Depends(get_current_user),
