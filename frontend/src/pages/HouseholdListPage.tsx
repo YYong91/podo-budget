@@ -137,7 +137,10 @@ export default function HouseholdListPage() {
           {households.map((household) => (
             <div
               key={household.id}
+              role="button"
+              tabIndex={0}
               onClick={() => handleCardClick(household.id)}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleCardClick(household.id) } }}
               className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] p-5 hover:shadow-md hover:border-grape-300 transition-all cursor-pointer"
             >
               {/* 가구 이름 및 역할 */}

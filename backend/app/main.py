@@ -272,6 +272,56 @@ async def health():
     return {"status": "healthy"}
 
 
+@app.get("/health/llm")
+async def health_llm():
+    """LLM 프로바이더 헬스체크 (#254)
+
+    프로바이더 인스턴스 생성 가능 여부 + 인메모리 메트릭 요약 반환.
+    실패 시 503 응답.
+    """
+    from app.core.metrics import get_metrics_summary
+    from app.services.llm_service import get_llm_provider
+
+    try:
+        provider = get_llm_provider()
+        provider_name = type(provider).__name__
+        # LLM 관련 메트릭만 필터링
+        all_metrics = get_metrics_summary()
+        llm_metrics = {k: v for k, v in all_metrics.items() if k.startswith("llm.")}
+        return {
+            "status": "healthy",
+            "provider": provider_name,
+            "metrics": llm_metrics,
+        }
+    except Exception as e:
+        return JSONResponse(
+            status_code=503,
+            content={"status": "unhealthy", "error": str(e)},
+        )
+
+
+@app.get("/health/external")
+async def health_external():
+    """외부 API 헬스체크 (#254)
+
+    인메모리 메트릭 기반으로 외부 API 상태 요약 반환.
+    실제 API 호출 없이 기록된 메트릭만 표시.
+    """
+    from app.core.metrics import get_metrics_summary
+
+    all_metrics = get_metrics_summary()
+    external_metrics = {k: v for k, v in all_metrics.items() if k.startswith("external.")}
+
+    if not external_metrics:
+        return {"status": "no_data", "metrics": {}}
+
+    # 실패가 1건이라도 있으면 degraded
+    has_failure = any(m["failure"] > 0 for m in external_metrics.values())
+    status = "degraded" if has_failure else "healthy"
+
+    return {"status": status, "metrics": external_metrics}
+
+
 @app.get("/health/db")
 async def health_db():
     """

@@ -298,10 +298,11 @@ export default function IncomeForm() {
       {mode === 'natural' && !previewItems && (
         <form onSubmit={handlePreview} className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)]/60 p-6 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
+            <label htmlFor="income-natural-input" className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
               말하듯이 수입 입력하기
             </label>
             <textarea
+              id="income-natural-input"
               value={naturalInput}
               onChange={(e) => setNaturalInput(e.target.value)}
               placeholder={"예: 이번 달 월급 350만원 들어왔어\n부업으로 50만원 받았어"}
@@ -446,6 +447,7 @@ export default function IncomeForm() {
                   placeholder="새 카테고리 이름"
                   className="flex-1 px-3 py-2 border border-leaf-300 rounded-lg text-sm focus:ring-2 focus:ring-leaf-500/30 focus:border-leaf-500"
                   onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleCreateCategoryForForm() } }}
+                  // eslint-disable-next-line jsx-a11y/no-autofocus
                   autoFocus
                 />
                 <button
@@ -507,9 +509,10 @@ export default function IncomeForm() {
           </div>
 
           {/* 통계 제외 */}
-          <label className="flex items-center gap-3 cursor-pointer select-none">
+          <label htmlFor="income-exclude-stats" className="flex items-center gap-3 cursor-pointer select-none">
             <div className="relative">
               <input
+                id="income-exclude-stats"
                 type="checkbox"
                 checked={formData.exclude_from_stats}
                 onChange={(e) => setFormData({ ...formData, exclude_from_stats: e.target.checked })}

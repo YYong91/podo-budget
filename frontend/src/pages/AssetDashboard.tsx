@@ -321,7 +321,7 @@ export default function AssetDashboard() {
       {snapshots.length > 1 && (
         <div className="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)]/60 shadow-sm p-5">
           <h2 className="text-sm font-semibold text-[var(--text-secondary)] mb-4">순자산 추이</h2>
-          <div className="h-56">
+          <div className="h-56" role="img" aria-label="순자산 추이 차트">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={chartData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
                 <XAxis dataKey="month" tick={{ fontSize: 10 }} />
@@ -430,8 +430,9 @@ export default function AssetDashboard() {
 
       {/* 6. 목표 설정 모달 */}
       {showGoalModal && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center" role="dialog" aria-modal="true" aria-labelledby="goal-modal-title">
           {/* 배경 오버레이 */}
+          {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- 모달 배경 오버레이 */}
           <div
             className="absolute inset-0 bg-black/40"
             onClick={() => setShowGoalModal(false)}
@@ -439,16 +440,17 @@ export default function AssetDashboard() {
           {/* 모달 본체 */}
           <div className="relative bg-[var(--surface-card)] w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl p-6 space-y-5 animate-in slide-in-from-bottom sm:slide-in-from-bottom-0">
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-bold text-[var(--text-primary)]">순자산 목표 설정</h2>
-              <button onClick={() => setShowGoalModal(false)} className="text-[var(--text-muted)] hover:text-[var(--text-secondary)]">
+              <h2 id="goal-modal-title" className="text-lg font-bold text-[var(--text-primary)]">순자산 목표 설정</h2>
+              <button onClick={() => setShowGoalModal(false)} className="text-[var(--text-muted)] hover:text-[var(--text-secondary)]" aria-label="닫기">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">목표 금액</label>
+                <label htmlFor="goal-amount" className="block text-sm font-medium text-[var(--text-secondary)] mb-1">목표 금액</label>
                 <input
+                  id="goal-amount"
                   type="number"
                   value={goalAmount}
                   onChange={e => setGoalAmount(e.target.value)}
@@ -457,8 +459,9 @@ export default function AssetDashboard() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">목표 날짜</label>
+                <label htmlFor="goal-date" className="block text-sm font-medium text-[var(--text-secondary)] mb-1">목표 날짜</label>
                 <input
+                  id="goal-date"
                   type="date"
                   value={goalDate}
                   onChange={e => setGoalDate(e.target.value)}

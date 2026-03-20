@@ -115,10 +115,11 @@ export default function OnboardingPage() {
         {/* 새 가계부 만들기 */}
         <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] p-5 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1.5">
+            <label htmlFor="onboarding-name" className="block text-sm font-medium text-[var(--text-secondary)] mb-1.5">
               가계부 이름
             </label>
             <input
+              id="onboarding-name"
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
