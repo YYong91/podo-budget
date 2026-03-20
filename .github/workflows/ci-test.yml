@@ -154,31 +154,7 @@ jobs:
         env:
           VITE_API_URL: /api
 
-      - name: 번들 크기 리포트
+      - name: 번들 크기 분석
         if: inputs.frontend_build_check
-        run: |
-          cd frontend
-          # gzip 크기 계산
-          TOTAL=0
-          echo '{"files":[' > /tmp/bundle-sizes.json
-          FIRST=true
-          for f in dist/assets/*.js dist/assets/*.css; do
-            [ -f "$f" ] || continue
-            RAW=$(wc -c < "$f" | tr -d ' ')
-            GZ=$(gzip -c "$f" | wc -c | tr -d ' ')
-            NAME=$(basename "$f")
-            if [ "$FIRST" = true ]; then FIRST=false; else echo ',' >> /tmp/bundle-sizes.json; fi
-            echo "{\"name\":\"$NAME\",\"raw\":$RAW,\"gzip\":$GZ}" >> /tmp/bundle-sizes.json
-            TOTAL=$((TOTAL + GZ))
-          done
-          echo "]," >> /tmp/bundle-sizes.json
-          echo "\"total_gzip\":$TOTAL}" >> /tmp/bundle-sizes.json
-          echo "총 번들 크기 (gzipped): $((TOTAL / 1024))KB"
-
-      - name: 번들 크기 업로드
-        if: inputs.frontend_build_check
-        uses: actions/upload-artifact@v4
-        with:
-          name: bundle-sizes
-          path: /tmp/bundle-sizes.json
-          retention-days: 5
+        continue-on-error: true
+        run: cd frontend && node scripts/bundle-size.mjs
