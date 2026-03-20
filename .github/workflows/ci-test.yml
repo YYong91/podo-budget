@@ -50,6 +50,11 @@ jobs:
         # CVE-2024-23342(ecdsa): python-jose의 transitive dep, 최신 버전(0.19.1)에도 수정 없음 — ignore (#237)
         run: uv run pip-audit --ignore-vuln CVE-2024-23342
 
+      - name: 타입 체크 (pyright)
+        run: |
+          uv run pyright backend/app/ --pythonpath backend 2>&1 | tail -5
+        continue-on-error: true  # 처음엔 경고만 — 기준선 확보 후 필수로 전환
+
       - name: 시크릿 스캔
         run: |
           if [ ! -f .secrets.baseline ]; then
@@ -74,6 +79,38 @@ jobs:
         with:
           name: backend-coverage
           path: backend-coverage.json
+          retention-days: 5
+
+      - name: API 스키마 스냅샷 생성
+        env:
+          DATABASE_URL: sqlite+aiosqlite:///./test.db
+          SECRET_KEY: test-secret-key  # pragma: allowlist secret
+          LLM_PROVIDER: anthropic
+          ANTHROPIC_API_KEY: test-key  # pragma: allowlist secret
+        run: |
+          PYTHONPATH=backend uv run python -c "
+          import json
+          from app.main import app
+          schema = app.openapi()
+          # 엔드포인트 목록 + 요약만 추출 (전체 스키마는 너무 큼)
+          summary = {
+            'info': schema.get('info', {}),
+            'endpoint_count': sum(len(methods) for methods in schema.get('paths', {}).values()),
+            'endpoints': {
+              path: list(methods.keys())
+              for path, methods in sorted(schema.get('paths', {}).items())
+            },
+            'schema_count': len(schema.get('components', {}).get('schemas', {})),
+            'schemas': sorted(schema.get('components', {}).get('schemas', {}).keys()),
+          }
+          print(json.dumps(summary, indent=2, ensure_ascii=False))
+          " > /tmp/api-schema-summary.json
+
+      - name: API 스키마 업로드
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-schema
+          path: /tmp/api-schema-summary.json
           retention-days: 5
 
   test-frontend:
@@ -116,3 +153,32 @@ jobs:
         run: cd frontend && npm run build
         env:
           VITE_API_URL: /api
+
+      - name: 번들 크기 리포트
+        if: inputs.frontend_build_check
+        run: |
+          cd frontend
+          # gzip 크기 계산
+          TOTAL=0
+          echo '{"files":[' > /tmp/bundle-sizes.json
+          FIRST=true
+          for f in dist/assets/*.js dist/assets/*.css; do
+            [ -f "$f" ] || continue
+            RAW=$(wc -c < "$f" | tr -d ' ')
+            GZ=$(gzip -c "$f" | wc -c | tr -d ' ')
+            NAME=$(basename "$f")
+            if [ "$FIRST" = true ]; then FIRST=false; else echo ',' >> /tmp/bundle-sizes.json; fi
+            echo "{\"name\":\"$NAME\",\"raw\":$RAW,\"gzip\":$GZ}" >> /tmp/bundle-sizes.json
+            TOTAL=$((TOTAL + GZ))
+          done
+          echo "]," >> /tmp/bundle-sizes.json
+          echo "\"total_gzip\":$TOTAL}" >> /tmp/bundle-sizes.json
+          echo "총 번들 크기 (gzipped): $((TOTAL / 1024))KB"
+
+      - name: 번들 크기 업로드
+        if: inputs.frontend_build_check
+        uses: actions/upload-artifact@v4
+        with:
+          name: bundle-sizes
+          path: /tmp/bundle-sizes.json
+          retention-days: 5

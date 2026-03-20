@@ -52,12 +52,26 @@ jobs:
           path: ./coverage
         continue-on-error: true
 
-      - name: 커버리지 코멘트 작성
+      - name: 번들 크기 다운로드
+        uses: actions/download-artifact@v4
+        with:
+          name: bundle-sizes
+          path: ./bundle
+        continue-on-error: true
+
+      - name: API 스키마 다운로드
+        uses: actions/download-artifact@v4
+        with:
+          name: api-schema
+          path: ./schema
+        continue-on-error: true
+
+      - name: CI 리포트 코멘트 작성
         uses: actions/github-script@v7
         with:
           script: |
             const fs = require('fs');
-            let comment = '## 📊 테스트 커버리지 리포트\n\n';
+            let comment = '## 📊 CI 리포트\n\n';
 
             // BE 커버리지 파싱
             try {
@@ -85,13 +99,36 @@ jobs:
               comment += '### Frontend\n⚠️ 커버리지 데이터 없음\n\n';
             }
 
-            // 기존 커버리지 코멘트 찾아서 업데이트 (중복 방지)
+            // 번들 크기
+            try {
+              const bundle = JSON.parse(fs.readFileSync('./bundle/bundle-sizes.json', 'utf8'));
+              const totalKB = (bundle.total_gzip / 1024).toFixed(1);
+              comment += `### 📦 번들 크기 (gzipped)\n`;
+              comment += `| 파일 | 크기 |\n|------|------|\n`;
+              for (const f of bundle.files) {
+                comment += `| ${f.name} | ${(f.gzip / 1024).toFixed(1)}KB |\n`;
+              }
+              comment += `| **합계** | **${totalKB}KB** |\n\n`;
+            } catch (e) {
+              // 번들 데이터 없으면 생략
+            }
+
+            // API 스키마
+            try {
+              const schema = JSON.parse(fs.readFileSync('./schema/api-schema-summary.json', 'utf8'));
+              comment += `### 🔌 API 스키마\n`;
+              comment += `엔드포인트 ${schema.endpoint_count}개, 스키마 ${schema.schema_count}개\n\n`;
+            } catch (e) {
+              // 스키마 데이터 없으면 생략
+            }
+
+            // 기존 코멘트 찾아서 업데이트 (중복 방지)
             const { data: comments } = await github.rest.issues.listComments({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.issue.number,
             });
-            const existing = comments.find(c => c.body.includes('📊 테스트 커버리지 리포트'));
+            const existing = comments.find(c => c.body.includes('📊 CI 리포트') || c.body.includes('📊 테스트 커버리지 리포트'));
 
             if (existing) {
               await github.rest.issues.updateComment({
