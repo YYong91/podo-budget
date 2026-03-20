@@ -559,8 +559,17 @@ def _create_provider(provider_name: str, model: str) -> LLMProvider:
     return cls(model=model)
 
 
+# 앱 레벨 프로바이더 캐시: (feature, provider_name, model) → LLMProvider 인스턴스 (#251)
+# lru_cache 대신 명시적 dict 사용 — settings 모킹 시에도 올바르게 동작
+_provider_cache: dict[tuple[LLMFeature | None, str, str], LLMProvider] = {}
+
+
 def get_llm_provider(feature: LLMFeature | None = None) -> LLMProvider:
-    """설정된 LLM provider 반환
+    """설정된 LLM provider 반환 (앱 레벨 캐싱)
+
+    같은 (feature, provider, model) 조합에 대해 동일 인스턴스를 재사용합니다.
+    anthropic.AsyncAnthropic()은 매번 새 HTTP 커넥션 풀을 생성하므로
+    싱글톤으로 재사용하여 오버헤드를 제거합니다. (#251)
 
     Args:
         feature: 기능 이름 ("parse", "insights", "ocr").
@@ -572,4 +581,7 @@ def get_llm_provider(feature: LLMFeature | None = None) -> LLMProvider:
         get_llm_provider("insights")  # 인사이트용 (오버라이드 가능)
     """
     provider_name, model = _resolve_provider_and_model(feature)
-    return _create_provider(provider_name, model)
+    cache_key = (feature, provider_name, model)
+    if cache_key not in _provider_cache:
+        _provider_cache[cache_key] = _create_provider(provider_name, model)
+    return _provider_cache[cache_key]

@@ -15,6 +15,7 @@ Rate Limiting:
 - 사용자당 분당 10회로 제한 (LLM API 호출 보호)
 """
 
+import asyncio
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, Request, status
@@ -96,12 +97,14 @@ async def chat(
 
     llm = get_llm_provider("parse")
 
-    # 카테고리 목록 + 히스토리 패턴 + 매핑 로드 (LLM 프롬프트에 주입하여 정확도 향상)
-    user_categories = await get_user_categories(db, current_user.id, household_id)
-    history_hints = await get_category_hints(db, current_user.id, household_id)
+    # 3개 독립 DB 쿼리를 asyncio.gather로 병렬 실행 — 직렬 대비 레이턴시 감소 (#239)
     from app.services.category_mapping_service import get_category_mappings_for_prompt
 
-    cat_mappings = await get_category_mappings_for_prompt(db, user_id=current_user.id, household_id=household_id)
+    user_categories, history_hints, cat_mappings = await asyncio.gather(
+        get_user_categories(db, current_user.id, household_id),
+        get_category_hints(db, current_user.id, household_id),
+        get_category_mappings_for_prompt(db, user_id=current_user.id, household_id=household_id),
+    )
 
     # LLM으로 사용자 입력 파싱
     parsed = await llm.parse_expense(

@@ -4,7 +4,7 @@
 모든 예산은 가구(household)에 소속됩니다.
 """
 
-from sqlalchemy import Column, DateTime, Float, ForeignKey, Integer, Numeric, String
+from sqlalchemy import Column, DateTime, Float, ForeignKey, Index, Integer, Numeric, String
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
@@ -29,6 +29,11 @@ class Budget(Base):
     """
 
     __tablename__ = "budgets"
+    # 자주 쿼리되는 컬럼 복합 인덱스 (#238)
+    __table_args__ = (
+        Index("ix_budgets_household_period", "household_id", "period"),  # 예산 페이지 로드 시 매번 사용
+        Index("ix_budgets_start_end_date", "start_date", "end_date"),  # 날짜 범위 필터링
+    )
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)  # 점진적 마이그레이션을 위해 nullable=True
