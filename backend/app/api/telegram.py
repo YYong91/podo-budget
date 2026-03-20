@@ -476,10 +476,7 @@ async def _handle_multiple_expenses(
             "household_id": household_id,
         }
 
-        if item_type == "income":
-            record = Income(**record_kwargs)
-        else:
-            record = Expense(**record_kwargs)
+        record = Income(**record_kwargs) if item_type == "income" else Expense(**record_kwargs)
         db.add(record)
         created_records.append((record, item, category.name))
 
