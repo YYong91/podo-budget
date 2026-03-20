@@ -966,3 +966,82 @@ async def test_kakao_quickreply_uses_korean_commands(client, db_session, mock_ll
     assert "취소" in message_texts
     assert "변경" in message_texts
     assert "리포트" in message_texts
+
+
+# ── 수입 입력 테스트 (#285) ──────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_kakao_webhook_income_input(client, db_session, mock_llm_parse_expense):
+    """수입 자연어 입력 시 수입 저장 메시지 반환"""
+    # 봇 사용자에게 가구 설정
+    await setup_kakao_bot_user_with_household(db_session, "kakao_user_123")
+
+    mock_llm_parse_expense.return_value = {
+        "amount": 3000000,
+        "description": "월급",
+        "category": "급여",
+        "date": "2026-03-20",
+        "type": "income",
+    }
+
+    payload = make_kakao_request("월급 300만원")
+    response = await client.post("/api/kakao/webhook", json=payload)
+    assert response.status_code == 200
+
+    data = response.json()
+    text = data["template"]["outputs"][0]["simpleText"]["text"]
+    assert "수입" in text
+    assert "3,000,000" in text
+
+
+@pytest.mark.asyncio
+async def test_kakao_webhook_income_creates_income_record(client, db_session, mock_llm_parse_expense):
+    """수입 입력 시 Income 모델에 저장되는지 확인"""
+    from app.models.income import Income
+
+    await setup_kakao_bot_user_with_household(db_session, "kakao_user_123")
+
+    mock_llm_parse_expense.return_value = {
+        "amount": 500000,
+        "description": "부업 수입",
+        "category": "부수입",
+        "date": "2026-03-20",
+        "type": "income",
+    }
+
+    payload = make_kakao_request("부업 수입 50만원")
+    await client.post("/api/kakao/webhook", json=payload)
+
+    result = await db_session.execute(select(Income))
+    incomes = result.scalars().all()
+    assert len(incomes) >= 1
+    assert any(i.amount == 500000 for i in incomes)
+
+    # Expense에는 저장 안 됨
+    result = await db_session.execute(select(Expense))
+    expenses = result.scalars().all()
+    income_amounts = [i.amount for i in incomes]
+    assert 500000 not in [e.amount for e in expenses if e.amount in income_amounts]
+
+
+@pytest.mark.asyncio
+async def test_kakao_webhook_mixed_income_expense(client, db_session, mock_llm_parse_expense):
+    """다중 건 입력에서 수입/지출 혼합 처리"""
+    from app.models.income import Income
+
+    await setup_kakao_bot_user_with_household(db_session, "kakao_user_123")
+
+    mock_llm_parse_expense.return_value = [
+        {"amount": 3000000, "description": "월급", "category": "급여", "date": "2026-03-20", "type": "income"},
+        {"amount": 8000, "description": "점심", "category": "식비", "date": "2026-03-20", "type": "expense"},
+    ]
+
+    payload = make_kakao_request("월급 300만원, 점심 8000원")
+    response = await client.post("/api/kakao/webhook", json=payload)
+    assert response.status_code == 200
+
+    data = response.json()
+    text = data["template"]["outputs"][0]["simpleText"]["text"]
+    assert "수입" in text
+    assert "지출" in text
