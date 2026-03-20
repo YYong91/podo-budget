@@ -11,7 +11,9 @@ LLM으로 파싱하여 DB에 저장합니다.
 """
 
 import logging
+from collections.abc import Awaitable, Callable
 from datetime import datetime
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy import and_, extract, func, or_, select
@@ -136,12 +138,12 @@ async def _resolve_category(
 async def _save_and_respond_single(
     db: AsyncSession,
     chat_id: int,
-    bot_user,
+    bot_user: Any,
     parsed: dict,
     household_id: int | None,
     category: Category,
     user_text: str,
-):
+) -> None:
     """단일 지출을 저장하고 응답 메시지 전송"""
     expense_date = datetime.fromisoformat(parsed.get("date", datetime.now().isoformat()))
     expense = Expense(
@@ -176,6 +178,138 @@ async def _save_and_respond_single(
         ),
         reply_markup=inline_keyboard,
     )
+
+
+def _build_expense_saved_keyboard(expense_id: int) -> dict:
+    """지출 저장 후 수정/삭제 인라인 키보드 생성"""
+    return {
+        "inline_keyboard": [
+            [
+                {"text": "🔄 카테고리 변경", "callback_data": f"change_category:{expense_id}"},
+                {"text": "🗑️ 삭제", "callback_data": f"delete_expense:{expense_id}"},
+            ]
+        ]
+    }
+
+
+# ---------------------------------------------------------------------------
+# telegram_webhook: 슬래시 명령어 디스패치
+# ---------------------------------------------------------------------------
+
+
+async def _handle_start_command(chat_id: int, user_text: str, bot_user: Any, db: AsyncSession, active_household_id: int | None) -> dict:
+    """``/start`` 명령어 처리"""
+    await send_telegram_message(chat_id, format_welcome_message())
+    return {"ok": True}
+
+
+async def _handle_help_command(chat_id: int, user_text: str, bot_user: Any, db: AsyncSession, active_household_id: int | None) -> dict:
+    """``/help`` 명령어 처리"""
+    await send_telegram_message(chat_id, format_help_message())
+    return {"ok": True}
+
+
+async def _handle_report_command(chat_id: int, user_text: str, bot_user: Any, db: AsyncSession, active_household_id: int | None) -> dict:
+    """``/report`` 명령어 처리"""
+    await handle_report_command(chat_id, db, household_id=active_household_id)
+    return {"ok": True}
+
+
+async def _handle_budget_command(chat_id: int, user_text: str, bot_user: Any, db: AsyncSession, active_household_id: int | None) -> dict:
+    """``/budget`` 명령어 처리"""
+    await handle_budget_command(chat_id, db, household_id=active_household_id)
+    return {"ok": True}
+
+
+async def _handle_link_command(chat_id: int, user_text: str, bot_user: Any, db: AsyncSession, active_household_id: int | None) -> dict:
+    """``/link`` 명령어 처리 (코드 기반 연동)"""
+    parts = user_text.split()
+    if len(parts) != 2:
+        await send_telegram_message(chat_id, format_link_usage_message())
+        return {"ok": True}
+    code = parts[1].upper()
+    success, message = await link_telegram_account_by_code(db, code, str(chat_id))
+    await send_telegram_message(chat_id, message)
+    return {"ok": True}
+
+
+# 슬래시 명령어 디스패치 테이블
+# 키: 명령어 prefix, 값: (핸들러 함수)
+# 핸들러 시그니처: (chat_id, user_text, bot_user, db, active_household_id) -> dict
+_COMMAND_HANDLERS: dict[
+    str,
+    Callable[[int, str, Any, AsyncSession, int | None], Awaitable[dict]],
+] = {
+    "/start": _handle_start_command,
+    "/help": _handle_help_command,
+    "/report": _handle_report_command,
+    "/budget": _handle_budget_command,
+    "/link": _handle_link_command,
+}
+
+
+async def _handle_expense_input(chat_id: int, user_text: str, bot_user: Any, db: AsyncSession, active_household_id: int | None) -> None:
+    """자연어 지출 입력 → LLM 파싱 → DB 저장"""
+    # 연동 확인: 가구에 속하지 않은 봇 사용자는 저장 불가
+    if active_household_id is None and bot_user.username and bot_user.username.startswith("telegram_"):
+        await send_telegram_message(
+            chat_id,
+            "⚠️ 포도가계부 계정 연동이 필요해요!\n\n"
+            "웹 설정 페이지(budget.podonest.com)에서\n"
+            "텔레그램 연동 코드를 발급받아\n"
+            "`/link 코드` 형식으로 입력해주세요.\n\n"
+            "연동 후 지출을 기록하면 앱에서 바로 확인할 수 있어요.",
+        )
+        return
+
+    try:
+        llm = get_llm_provider("parse")
+
+        # 사용자 카테고리 목록 + 히스토리 힌트 + 매핑 로드 (정확도 향상)
+        household_id = await resolve_household_id(user_text, None, active_household_id)
+        user_categories = await get_user_categories(db, bot_user.id, household_id)
+        history_hints = await get_category_hints(db, bot_user.id, household_id)
+
+        # 카테고리 매핑 로드 (예: "식비" → "외식비")
+        from app.services.category_mapping_service import get_category_mappings_for_prompt
+
+        cat_mappings = await get_category_mappings_for_prompt(db, user_id=bot_user.id, household_id=household_id)
+
+        parsed = await llm.parse_expense(user_text, categories=user_categories, history_hints=history_hints, category_mappings=cat_mappings)
+
+        # 단일 지출 (dict) 처리
+        if isinstance(parsed, dict):
+            await _handle_single_expense_parsed(db, chat_id, bot_user, parsed, household_id, user_text)
+
+        # 여러 지출 (list) 처리
+        elif isinstance(parsed, list):
+            await _handle_multiple_expenses(db, chat_id, bot_user, parsed, household_id, user_text)
+
+    except Exception as e:
+        logger.error(f"Telegram webhook 처리 실패: {e}")
+        await send_telegram_message(chat_id, format_server_error())
+
+
+async def _handle_single_expense_parsed(
+    db: AsyncSession,
+    chat_id: int,
+    bot_user: Any,
+    parsed: dict,
+    household_id: int | None,
+    user_text: str,
+) -> None:
+    """단일 파싱 결과 처리: 에러 / 카테고리 확인 / 바로 저장 분기"""
+    if "error" in parsed:
+        await send_telegram_message(chat_id, format_parse_error(user_text))
+        return
+
+    category_name = parsed.get("category", "기타")
+    category = await _resolve_category(db, category_name, bot_user.id, household_id)
+
+    if category:
+        await _save_and_respond_single(db, chat_id, bot_user, parsed, household_id, category, user_text)
+    else:
+        await _ask_category_confirmation(db, chat_id, bot_user.id, parsed, household_id, category_name, user_text)
 
 
 @router.post("/webhook")
@@ -217,92 +351,13 @@ async def telegram_webhook(request: Request, db: AsyncSession = Depends(get_db))
     # 사용자의 활성 가구 ID 조회 (봇은 미연동 사용자를 별도 처리해야 하므로 or_none 사용)
     active_household_id = await get_user_active_household_id_or_none(bot_user, db)
 
-    # /start 명령어 처리
-    if user_text.startswith("/start"):
-        await send_telegram_message(chat_id, format_welcome_message())
-        return {"ok": True}
+    # 슬래시 명령어 디스패치
+    for prefix, handler in _COMMAND_HANDLERS.items():
+        if user_text.startswith(prefix):
+            return await handler(chat_id, user_text, bot_user, db, active_household_id)
 
-    # /help 명령어 처리
-    if user_text.startswith("/help"):
-        await send_telegram_message(chat_id, format_help_message())
-        return {"ok": True}
-
-    # /report 명령어 처리 (이번 달 지출 요약)
-    if user_text.startswith("/report"):
-        await handle_report_command(chat_id, db, household_id=active_household_id)
-        return {"ok": True}
-
-    # /budget 명령어 처리 (예산 현황)
-    if user_text.startswith("/budget"):
-        await handle_budget_command(chat_id, db, household_id=active_household_id)
-        return {"ok": True}
-
-    # /link 명령어 처리 (코드 기반 연동)
-    if user_text.startswith("/link"):
-        parts = user_text.split()
-        if len(parts) != 2:
-            await send_telegram_message(chat_id, format_link_usage_message())
-            return {"ok": True}
-        code = parts[1].upper()
-        success, message = await link_telegram_account_by_code(db, code, str(chat_id))
-        await send_telegram_message(chat_id, message)
-        return {"ok": True}
-
-    # 연동 확인: 가구에 속하지 않은 봇 사용자는 저장 불가
-    if active_household_id is None and bot_user.username and bot_user.username.startswith("telegram_"):
-        await send_telegram_message(
-            chat_id,
-            "⚠️ 포도가계부 계정 연동이 필요해요!\n\n"
-            "웹 설정 페이지(budget.podonest.com)에서\n"
-            "텔레그램 연동 코드를 발급받아\n"
-            "`/link 코드` 형식으로 입력해주세요.\n\n"
-            "연동 후 지출을 기록하면 앱에서 바로 확인할 수 있어요.",
-        )
-        return {"ok": True}
-
-    # LLM으로 지출 파싱
-    try:
-        llm = get_llm_provider("parse")
-
-        # 사용자 카테고리 목록 + 히스토리 힌트 + 매핑 로드 (정확도 향상)
-        household_id = await resolve_household_id(user_text, None, active_household_id)
-        user_categories = await get_user_categories(db, bot_user.id, household_id)
-        history_hints = await get_category_hints(db, bot_user.id, household_id)
-
-        # 카테고리 매핑 로드 (예: "식비" → "외식비")
-        from app.services.category_mapping_service import get_category_mappings_for_prompt
-
-        cat_mappings = await get_category_mappings_for_prompt(db, user_id=bot_user.id, household_id=household_id)
-
-        parsed = await llm.parse_expense(user_text, categories=user_categories, history_hints=history_hints, category_mappings=cat_mappings)
-
-        # 단일 지출 (dict) 처리
-        if isinstance(parsed, dict):
-            # 파싱 실패
-            if "error" in parsed:
-                await send_telegram_message(chat_id, format_parse_error(user_text))
-                return {"ok": True}
-
-            category_name = parsed.get("category", "기타")
-
-            # 카테고리 확인: 매핑 → 기존 → 확인 요청
-            category = await _resolve_category(db, category_name, bot_user.id, household_id)
-
-            if category:
-                # 매핑 또는 기존 카테고리로 바로 저장
-                await _save_and_respond_single(db, chat_id, bot_user, parsed, household_id, category, user_text)
-            else:
-                # 카테고리가 없음 → 사용자에게 확인 요청
-                await _ask_category_confirmation(db, chat_id, bot_user.id, parsed, household_id, category_name, user_text)
-
-        # 여러 지출 (list) 처리
-        elif isinstance(parsed, list):
-            await _handle_multiple_expenses(db, chat_id, bot_user, parsed, household_id, user_text)
-
-    except Exception as e:
-        logger.error(f"Telegram webhook 처리 실패: {e}")
-        await send_telegram_message(chat_id, format_server_error())
-
+    # 자연어 지출 입력 처리
+    await _handle_expense_input(chat_id, user_text, bot_user, db, active_household_id)
     return {"ok": True}
 
 
@@ -314,7 +369,7 @@ async def _ask_category_confirmation(
     household_id: int | None,
     suggested_category: str,
     raw_input: str,
-):
+) -> None:
     """LLM이 제안한 카테고리가 기존에 없을 때 사용자에게 확인 요청
 
     기존 카테고리 목록을 인라인 키보드로 보여주고,
@@ -371,12 +426,12 @@ async def _ask_category_confirmation(
 async def _handle_multiple_expenses(
     db: AsyncSession,
     chat_id: int,
-    bot_user,
+    bot_user: Any,
     parsed: list,
     household_id: int | None,
     user_text: str,
-):
-    """여러 지출 처리 — 확인이 필요한 항목이 있으면 첫 번째만 확인, 나머지는 바로 저장"""
+) -> None:
+    """여러 지출 처리 -- 확인이 필요한 항목이 있으면 첫 번째만 확인, 나머지는 바로 저장"""
     created_expenses = []
 
     for item in parsed:
@@ -427,14 +482,177 @@ async def _handle_multiple_expenses(
     await send_telegram_message(chat_id, "\n".join(message_lines))
 
 
-async def handle_callback_query(callback_query: dict, db: AsyncSession):
+# ---------------------------------------------------------------------------
+# handle_callback_query: 콜백 액션 디스패치
+# ---------------------------------------------------------------------------
+
+
+async def _handle_confirm_cat(db: AsyncSession, chat_id: int, callback_id: str, expense: Expense, bot_user: Any, parts: list[str]) -> dict:
+    """사용자가 기존 카테고리를 선택 → 카테고리 변경 + 매핑 저장"""
+    category_id = int(parts[2])
+    suggested_category = parts[3]
+
+    cat_result = await db.execute(select(Category).where(Category.id == category_id))
+    selected_category = cat_result.scalar_one_or_none()
+    if not selected_category:
+        await answer_callback_query(callback_id, "카테고리를 찾을 수 없어요.")
+        return {"ok": True}
+
+    expense.category_id = selected_category.id
+    await db.flush()
+
+    # 매핑 저장: 다음부터 같은 이름은 자동 적용
+    if suggested_category != selected_category.name:
+        await save_category_mapping(
+            db,
+            source_name=suggested_category,
+            target_category_id=selected_category.id,
+            user_id=bot_user.id if expense.household_id is None else None,
+            household_id=expense.household_id,
+        )
+
+    await db.commit()
+    await answer_callback_query(callback_id, f"'{selected_category.name}'으로 저장!")
+
+    await send_telegram_message(
+        chat_id,
+        format_expense_saved(
+            amount=float(expense.amount),
+            category=selected_category.name,
+            description=expense.description,
+            date=expense.date.strftime("%Y-%m-%d"),
+        ),
+        reply_markup=_build_expense_saved_keyboard(expense.id),
+    )
+    return {"ok": True}
+
+
+async def _handle_new_cat(db: AsyncSession, chat_id: int, callback_id: str, expense: Expense, bot_user: Any, parts: list[str]) -> dict:
+    """새 카테고리로 등록"""
+    new_category_name = parts[2]
+    new_category = await get_or_create_category(db, new_category_name, user_id=bot_user.id, household_id=expense.household_id)
+    expense.category_id = new_category.id
+    await db.commit()
+    await answer_callback_query(callback_id, f"'{new_category_name}' 카테고리 생성!")
+
+    await send_telegram_message(
+        chat_id,
+        format_expense_saved(
+            amount=float(expense.amount),
+            category=new_category.name,
+            description=expense.description,
+            date=expense.date.strftime("%Y-%m-%d"),
+        ),
+        reply_markup=_build_expense_saved_keyboard(expense.id),
+    )
+    return {"ok": True}
+
+
+async def _handle_delete_expense(db: AsyncSession, chat_id: int, callback_id: str, expense: Expense, bot_user: Any, parts: list[str]) -> dict:
+    """삭제 확인 프롬프트 (2단계: 먼저 확인 → 실제 삭제)"""
+    await answer_callback_query(callback_id, "삭제 확인이 필요합니다.")
+    confirm_keyboard = {
+        "inline_keyboard": [
+            [
+                {"text": "✅ 삭제 확인", "callback_data": f"confirm_delete:{expense.id}"},
+                {"text": "❌ 취소", "callback_data": f"cancel_delete:{expense.id}"},
+            ]
+        ]
+    }
+    await send_telegram_message(
+        chat_id,
+        f"🗑️ 정말 삭제하시겠어요?\n\n💰 {expense.amount:,.0f}원 - {expense.description}",
+        reply_markup=confirm_keyboard,
+    )
+    return {"ok": True}
+
+
+async def _handle_confirm_delete(db: AsyncSession, chat_id: int, callback_id: str, expense: Expense, bot_user: Any, parts: list[str]) -> dict:
+    """실제 삭제 수행"""
+    amount = expense.amount
+    await db.delete(expense)
+    await db.commit()
+    await answer_callback_query(callback_id, "삭제되었습니다!")
+    await send_telegram_message(chat_id, f"✅ {amount:,.0f}원 지출이 삭제되었어요.")
+    return {"ok": True}
+
+
+async def _handle_cancel_delete(db: AsyncSession, chat_id: int, callback_id: str, expense: Expense, bot_user: Any, parts: list[str]) -> dict:
+    """삭제 취소"""
+    await answer_callback_query(callback_id, "삭제가 취소되었습니다.")
+    await send_telegram_message(chat_id, "↩️ 삭제가 취소되었어요.")
+    return {"ok": True}
+
+
+async def _handle_change_category(db: AsyncSession, chat_id: int, callback_id: str, expense: Expense, bot_user: Any, parts: list[str]) -> dict:
+    """카테고리 선택 인라인 키보드 표시"""
+    await answer_callback_query(callback_id, "카테고리를 선택해주세요.")
+
+    expense_id = expense.id
+    categories = await _get_accessible_categories(db, expense.user_id, expense.household_id)
+
+    if not categories:
+        categories_keyboard = [[{"text": "기타", "callback_data": f"set_category:{expense_id}:기타"}]]
+    else:
+        # 2열 그리드로 카테고리 버튼 배치
+        buttons = [{"text": cat.name, "callback_data": f"set_category:{expense_id}:{cat.id}"} for cat in categories]
+        categories_keyboard = [buttons[i : i + 2] for i in range(0, len(buttons), 2)]
+
+    await send_telegram_message(
+        chat_id,
+        f"📂 {expense.amount:,.0f}원 지출의 카테고리를 선택해주세요:",
+        reply_markup={"inline_keyboard": categories_keyboard},
+    )
+    return {"ok": True}
+
+
+async def _handle_set_category(db: AsyncSession, chat_id: int, callback_id: str, expense: Expense, bot_user: Any, parts: list[str]) -> dict:
+    """카테고리 실제 변경 (callback_data: set_category:expense_id:category_id_or_name)"""
+    category_info = parts[2]
+    if category_info.isdigit():
+        new_category_id = int(category_info)
+        cat_result = await db.execute(select(Category).where(Category.id == new_category_id))
+        new_category = cat_result.scalar_one_or_none()
+        if not new_category:
+            await answer_callback_query(callback_id, "카테고리를 찾을 수 없어요.")
+            return {"ok": True}
+    else:
+        new_category = await get_or_create_category(db, category_info, user_id=expense.user_id, household_id=expense.household_id)
+
+    expense.category_id = new_category.id
+    await db.commit()
+    await answer_callback_query(callback_id, f"'{new_category.name}'으로 변경!")
+    await send_telegram_message(chat_id, f"✅ 카테고리가 '{new_category.name}'으로 변경되었어요.")
+    return {"ok": True}
+
+
+# 콜백 액션 디스패치 테이블
+# 키: action prefix, 값: (핸들러 함수, 최소 parts 수)
+_CALLBACK_HANDLERS: dict[
+    str,
+    tuple[
+        Callable[[AsyncSession, int, str, Expense, Any, list[str]], Awaitable[dict]],
+        int,
+    ],
+] = {
+    "confirm_cat": (_handle_confirm_cat, 4),
+    "new_cat": (_handle_new_cat, 3),
+    "delete_expense": (_handle_delete_expense, 2),
+    "confirm_delete": (_handle_confirm_delete, 2),
+    "cancel_delete": (_handle_cancel_delete, 2),
+    "change_category": (_handle_change_category, 2),
+    "set_category": (_handle_set_category, 3),
+}
+
+
+async def handle_callback_query(callback_query: dict, db: AsyncSession) -> dict:
     """인라인 버튼 클릭 처리
 
     callback_data 형식:
-    - change_category:{expense_id} — 카테고리 변경
-    - delete_expense:{expense_id} — 지출 삭제
-    - confirm_cat:{expense_id}:{category_id}:{suggested} — 카테고리 확인 (기존 선택)
-    - new_cat:{expense_id}:{category_name} — 새 카테고리로 등록
+    - change_category:{expense_id} -- 카테고리 변경
+    - delete_expense:{expense_id} -- 지출 삭제
+    - confirm_cat:{expense_id}:{category_id}:{suggested} -- 카테고리 확인 (기존 선택)
+    - new_cat:{expense_id}:{category_name} -- 새 카테고리로 등록
 
     보안: chat_id로 봇 사용자를 조회하여 지출 소유권을 검증합니다.
 
@@ -442,40 +660,25 @@ async def handle_callback_query(callback_query: dict, db: AsyncSession):
         callback_query: Telegram callback_query 객체
         db: 데이터베이스 세션
     """
-
     callback_id = callback_query["id"]
     chat_id = callback_query["message"]["chat"]["id"]
     callback_data = callback_query["data"]
 
     try:
-        # callback_data 파싱 (형식: action:expense_id 또는 action:expense_id:extra)
         parts = callback_data.split(":", 3)
         action = parts[0]
 
-        # set_category는 별도 처리 (3개 파트: set_category:expense_id:category_info)
-        if action == "set_category":
-            if len(parts) < 3:
-                await answer_callback_query(callback_id, "잘못된 요청입니다.")
-                return {"ok": True}
-            expense_id = int(parts[1])
-            category_info = parts[2]
-        elif action == "confirm_cat":
-            # confirm_cat:{expense_id}:{category_id}:{suggested_category}
-            if len(parts) < 4:
-                await answer_callback_query(callback_id, "잘못된 요청입니다.")
-                return {"ok": True}
-            expense_id = int(parts[1])
-            category_id = int(parts[2])
-            suggested_category = parts[3]
-        elif action == "new_cat":
-            # new_cat:{expense_id}:{category_name}
-            if len(parts) < 3:
-                await answer_callback_query(callback_id, "잘못된 요청입니다.")
-                return {"ok": True}
-            expense_id = int(parts[1])
-            new_category_name = parts[2]
-        else:
-            expense_id = int(parts[1])
+        handler_entry = _CALLBACK_HANDLERS.get(action)
+        if not handler_entry:
+            await answer_callback_query(callback_id, "알 수 없는 요청입니다.")
+            return {"ok": True}
+
+        handler_fn, min_parts = handler_entry
+        if len(parts) < min_parts:
+            await answer_callback_query(callback_id, "잘못된 요청입니다.")
+            return {"ok": True}
+
+        expense_id = int(parts[1])
 
         # 지출 조회
         result = await db.execute(select(Expense).where(Expense.id == expense_id))
@@ -491,141 +694,7 @@ async def handle_callback_query(callback_query: dict, db: AsyncSession):
             await answer_callback_query(callback_id, "본인의 지출만 수정할 수 있어요.")
             return {"ok": True}
 
-        if action == "confirm_cat":
-            # 사용자가 기존 카테고리를 선택 → 카테고리 변경 + 매핑 저장
-            cat_result = await db.execute(select(Category).where(Category.id == category_id))
-            selected_category = cat_result.scalar_one_or_none()
-            if not selected_category:
-                await answer_callback_query(callback_id, "카테고리를 찾을 수 없어요.")
-                return {"ok": True}
-
-            expense.category_id = selected_category.id
-            await db.flush()
-
-            # 매핑 저장: 다음부터 같은 이름은 자동 적용
-            if suggested_category != selected_category.name:
-                await save_category_mapping(
-                    db,
-                    source_name=suggested_category,
-                    target_category_id=selected_category.id,
-                    user_id=bot_user.id if expense.household_id is None else None,
-                    household_id=expense.household_id,
-                )
-
-            await db.commit()
-            await answer_callback_query(callback_id, f"'{selected_category.name}'으로 저장!")
-
-            # 저장 완료 메시지 (수정/삭제 버튼 포함)
-            inline_keyboard = {
-                "inline_keyboard": [
-                    [
-                        {"text": "🔄 카테고리 변경", "callback_data": f"change_category:{expense.id}"},
-                        {"text": "🗑️ 삭제", "callback_data": f"delete_expense:{expense.id}"},
-                    ]
-                ]
-            }
-            await send_telegram_message(
-                chat_id,
-                format_expense_saved(
-                    amount=float(expense.amount),
-                    category=selected_category.name,
-                    description=expense.description,
-                    date=expense.date.strftime("%Y-%m-%d"),
-                ),
-                reply_markup=inline_keyboard,
-            )
-
-        elif action == "new_cat":
-            # 새 카테고리로 등록
-            new_category = await get_or_create_category(db, new_category_name, user_id=bot_user.id, household_id=expense.household_id)
-            expense.category_id = new_category.id
-            await db.commit()
-            await answer_callback_query(callback_id, f"'{new_category_name}' 카테고리 생성!")
-
-            inline_keyboard = {
-                "inline_keyboard": [
-                    [
-                        {"text": "🔄 카테고리 변경", "callback_data": f"change_category:{expense.id}"},
-                        {"text": "🗑️ 삭제", "callback_data": f"delete_expense:{expense.id}"},
-                    ]
-                ]
-            }
-            await send_telegram_message(
-                chat_id,
-                format_expense_saved(
-                    amount=float(expense.amount),
-                    category=new_category.name,
-                    description=expense.description,
-                    date=expense.date.strftime("%Y-%m-%d"),
-                ),
-                reply_markup=inline_keyboard,
-            )
-
-        elif action == "delete_expense":
-            # 삭제 확인 프롬프트 (2단계: 먼저 확인 → 실제 삭제)
-            await answer_callback_query(callback_id, "삭제 확인이 필요합니다.")
-            confirm_keyboard = {
-                "inline_keyboard": [
-                    [
-                        {"text": "✅ 삭제 확인", "callback_data": f"confirm_delete:{expense.id}"},
-                        {"text": "❌ 취소", "callback_data": f"cancel_delete:{expense.id}"},
-                    ]
-                ]
-            }
-            await send_telegram_message(
-                chat_id,
-                f"🗑️ 정말 삭제하시겠어요?\n\n💰 {expense.amount:,.0f}원 - {expense.description}",
-                reply_markup=confirm_keyboard,
-            )
-
-        elif action == "confirm_delete":
-            # 실제 삭제 수행
-            amount = expense.amount
-            await db.delete(expense)
-            await db.commit()
-            await answer_callback_query(callback_id, "삭제되었습니다!")
-            await send_telegram_message(chat_id, f"✅ {amount:,.0f}원 지출이 삭제되었어요.")
-
-        elif action == "cancel_delete":
-            # 삭제 취소
-            await answer_callback_query(callback_id, "삭제가 취소되었습니다.")
-            await send_telegram_message(chat_id, "↩️ 삭제가 취소되었어요.")
-
-        elif action == "change_category":
-            # 카테고리 선택 인라인 키보드 표시
-            await answer_callback_query(callback_id, "카테고리를 선택해주세요.")
-
-            categories = await _get_accessible_categories(db, expense.user_id, expense.household_id)
-
-            if not categories:
-                categories_keyboard = [[{"text": "기타", "callback_data": f"set_category:{expense_id}:기타"}]]
-            else:
-                # 2열 그리드로 카테고리 버튼 배치
-                buttons = [{"text": cat.name, "callback_data": f"set_category:{expense_id}:{cat.id}"} for cat in categories]
-                categories_keyboard = [buttons[i : i + 2] for i in range(0, len(buttons), 2)]
-
-            await send_telegram_message(
-                chat_id,
-                f"📂 {expense.amount:,.0f}원 지출의 카테고리를 선택해주세요:",
-                reply_markup={"inline_keyboard": categories_keyboard},
-            )
-
-        elif action == "set_category":
-            # 카테고리 실제 변경 (callback_data: set_category:expense_id:category_id_or_name)
-            if category_info.isdigit():
-                new_category_id = int(category_info)
-                cat_result = await db.execute(select(Category).where(Category.id == new_category_id))
-                new_category = cat_result.scalar_one_or_none()
-                if not new_category:
-                    await answer_callback_query(callback_id, "카테고리를 찾을 수 없어요.")
-                    return {"ok": True}
-            else:
-                new_category = await get_or_create_category(db, category_info, user_id=expense.user_id, household_id=expense.household_id)
-
-            expense.category_id = new_category.id
-            await db.commit()
-            await answer_callback_query(callback_id, f"'{new_category.name}'으로 변경!")
-            await send_telegram_message(chat_id, f"✅ 카테고리가 '{new_category.name}'으로 변경되었어요.")
+        return await handler_fn(db, chat_id, callback_id, expense, bot_user, parts)
 
     except Exception as e:
         logger.error(f"Callback query 처리 실패: {e}")
@@ -634,7 +703,7 @@ async def handle_callback_query(callback_query: dict, db: AsyncSession):
     return {"ok": True}
 
 
-async def answer_callback_query(callback_id: str, text: str):
+async def answer_callback_query(callback_id: str, text: str) -> None:
     """Callback query 응답 (버튼 클릭 시 알림 팝업)
 
     Args:
@@ -648,7 +717,7 @@ async def answer_callback_query(callback_id: str, text: str):
         await client.post(url, json={"callback_query_id": callback_id, "text": text})
 
 
-async def handle_report_command(chat_id: int, db: AsyncSession, household_id: int | None):
+async def handle_report_command(chat_id: int, db: AsyncSession, household_id: int | None) -> None:
     """이번 달 지출 요약 리포트 전송
 
     카테고리별 지출 합계와 건수를 집계하여 메시지로 보냅니다.
@@ -691,7 +760,7 @@ async def handle_report_command(chat_id: int, db: AsyncSession, household_id: in
         await send_telegram_message(chat_id, format_server_error())
 
 
-async def handle_budget_command(chat_id: int, db: AsyncSession, household_id: int | None):
+async def handle_budget_command(chat_id: int, db: AsyncSession, household_id: int | None) -> None:
     """예산 현황 전송
 
     설정된 예산과 현재 지출을 비교하여 메시지로 보냅니다.
