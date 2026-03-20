@@ -8,6 +8,7 @@ Telegram Webhook API 통합 테스트
 - 카테고리 변경 콜백
 """
 
+from datetime import datetime
 from unittest.mock import patch
 
 import pytest
@@ -967,6 +968,272 @@ async def test_budget_command_has_buttons(client, db_session, mock_telegram_send
     # 리포트 버튼이 있어야 함
     buttons_flat = [btn for row in reply_markup["inline_keyboard"] for btn in row]
     assert any("리포트" in btn["text"] for btn in buttons_flat)
+
+
+# ── 수입 삭제 + 지출↔수입 변환 테스트 (#286) ──────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_callback_delete_income_confirmation(client, db_session, mock_telegram_send, mock_llm_parse_expense):
+    """수입 삭제 버튼 클릭 → 확인 프롬프트 표시 (아직 삭제 안 됨)"""
+    from unittest.mock import AsyncMock
+    from unittest.mock import patch as mock_patch
+
+    from app.models.income import Income
+
+    bot_user, household = await setup_bot_user_with_household(db_session, chat_id=50001)
+    cat = Category(name="급여", type="income", household_id=household.id)
+    db_session.add(cat)
+    await db_session.flush()
+
+    income = Income(user_id=bot_user.id, amount=3000000, description="월급", category_id=cat.id, date=datetime(2026, 3, 20), household_id=household.id)
+    db_session.add(income)
+    await db_session.commit()
+    await db_session.refresh(income)
+
+    with mock_patch("app.api.telegram.answer_callback_query", new_callable=AsyncMock):
+        callback_payload = {
+            "callback_query": {
+                "id": "cb_del_income",
+                "message": {"chat": {"id": 50001}},
+                "data": f"delete_income:{income.id}",
+            }
+        }
+        response = await client.post("/api/telegram/webhook", json=callback_payload)
+        assert response.status_code == 200
+
+    # 아직 삭제되지 않음
+    result = await db_session.execute(select(Income).where(Income.id == income.id))
+    assert result.scalar_one_or_none() is not None
+
+    # 확인 메시지 전송
+    mock_telegram_send.assert_called_once()
+    sent_message = mock_telegram_send.call_args[0][1]
+    assert "정말 삭제" in sent_message
+    assert "3,000,000" in sent_message
+
+
+@pytest.mark.asyncio
+async def test_callback_confirm_delete_income(client, db_session, mock_telegram_send, mock_llm_parse_expense):
+    """confirm_delete_income 콜백 → Income 실제 삭제"""
+    from unittest.mock import AsyncMock
+    from unittest.mock import patch as mock_patch
+
+    from app.models.income import Income
+
+    bot_user, household = await setup_bot_user_with_household(db_session, chat_id=50002)
+    cat = Category(name="급여", type="income", household_id=household.id)
+    db_session.add(cat)
+    await db_session.flush()
+
+    income = Income(user_id=bot_user.id, amount=500000, description="부업", category_id=cat.id, date=datetime(2026, 3, 20), household_id=household.id)
+    db_session.add(income)
+    await db_session.commit()
+    await db_session.refresh(income)
+
+    with mock_patch("app.api.telegram.answer_callback_query", new_callable=AsyncMock):
+        callback_payload = {
+            "callback_query": {
+                "id": "cb_confirm_del_income",
+                "message": {"chat": {"id": 50002}},
+                "data": f"confirm_delete_income:{income.id}",
+            }
+        }
+        response = await client.post("/api/telegram/webhook", json=callback_payload)
+        assert response.status_code == 200
+
+    # 삭제 확인
+    result = await db_session.execute(select(Income).where(Income.id == income.id))
+    assert result.scalar_one_or_none() is None
+
+    # 삭제 완료 메시지
+    mock_telegram_send.assert_called_once()
+    sent_message = mock_telegram_send.call_args[0][1]
+    assert "삭제" in sent_message
+
+
+@pytest.mark.asyncio
+async def test_callback_cancel_delete_income(client, db_session, mock_telegram_send, mock_llm_parse_expense):
+    """cancel_delete_income 콜백 → Income 유지"""
+    from unittest.mock import AsyncMock
+    from unittest.mock import patch as mock_patch
+
+    from app.models.income import Income
+
+    bot_user, household = await setup_bot_user_with_household(db_session, chat_id=50003)
+    cat = Category(name="급여", type="income", household_id=household.id)
+    db_session.add(cat)
+    await db_session.flush()
+
+    income = Income(user_id=bot_user.id, amount=100000, description="용돈", category_id=cat.id, date=datetime(2026, 3, 20), household_id=household.id)
+    db_session.add(income)
+    await db_session.commit()
+    await db_session.refresh(income)
+
+    with mock_patch("app.api.telegram.answer_callback_query", new_callable=AsyncMock):
+        callback_payload = {
+            "callback_query": {
+                "id": "cb_cancel_del_income",
+                "message": {"chat": {"id": 50003}},
+                "data": f"cancel_delete_income:{income.id}",
+            }
+        }
+        response = await client.post("/api/telegram/webhook", json=callback_payload)
+        assert response.status_code == 200
+
+    # 삭제되지 않음
+    result = await db_session.execute(select(Income).where(Income.id == income.id))
+    assert result.scalar_one_or_none() is not None
+
+    # 취소 메시지
+    mock_telegram_send.assert_called_once()
+    assert "취소" in mock_telegram_send.call_args[0][1]
+
+
+@pytest.mark.asyncio
+async def test_callback_convert_expense_to_income(client, db_session, mock_telegram_send, mock_llm_parse_expense):
+    """convert_to_income 콜백 → Expense 삭제, Income 생성"""
+    from unittest.mock import AsyncMock
+    from unittest.mock import patch as mock_patch
+
+    from app.models.income import Income
+
+    bot_user, household = await setup_bot_user_with_household(db_session, chat_id=50004)
+    cat = Category(name="식비", household_id=household.id)
+    db_session.add(cat)
+    await db_session.flush()
+
+    expense = Expense(
+        user_id=bot_user.id, amount=50000, description="환불", category_id=cat.id, date=datetime(2026, 3, 20), household_id=household.id, raw_input="환불 5만원"
+    )
+    db_session.add(expense)
+    await db_session.commit()
+    await db_session.refresh(expense)
+    expense_id = expense.id
+
+    with mock_patch("app.api.telegram.answer_callback_query", new_callable=AsyncMock):
+        callback_payload = {
+            "callback_query": {
+                "id": "cb_convert_income",
+                "message": {"chat": {"id": 50004}},
+                "data": f"convert_to_income:{expense_id}",
+            }
+        }
+        response = await client.post("/api/telegram/webhook", json=callback_payload)
+        assert response.status_code == 200
+
+    # Expense 삭제됨
+    result = await db_session.execute(select(Expense).where(Expense.id == expense_id))
+    assert result.scalar_one_or_none() is None
+
+    # Income 생성됨 (같은 금액/설명)
+    result = await db_session.execute(select(Income))
+    incomes = result.scalars().all()
+    assert len(incomes) == 1
+    assert float(incomes[0].amount) == 50000
+    assert incomes[0].description == "환불"
+    assert incomes[0].household_id == household.id
+
+    # 수입 저장 메시지
+    mock_telegram_send.assert_called_once()
+    sent_message = mock_telegram_send.call_args[0][1]
+    assert "수입" in sent_message
+
+
+@pytest.mark.asyncio
+async def test_callback_convert_income_to_expense(client, db_session, mock_telegram_send, mock_llm_parse_expense):
+    """convert_to_expense 콜백 → Income 삭제, Expense 생성"""
+    from unittest.mock import AsyncMock
+    from unittest.mock import patch as mock_patch
+
+    from app.models.income import Income
+
+    bot_user, household = await setup_bot_user_with_household(db_session, chat_id=50005)
+    cat = Category(name="기타수입", type="income", household_id=household.id)
+    db_session.add(cat)
+    await db_session.flush()
+
+    income = Income(
+        user_id=bot_user.id,
+        amount=30000,
+        description="잘못 입력",
+        category_id=cat.id,
+        date=datetime(2026, 3, 20),
+        household_id=household.id,
+        raw_input="잘못 입력 3만원",
+    )
+    db_session.add(income)
+    await db_session.commit()
+    await db_session.refresh(income)
+    income_id = income.id
+
+    with mock_patch("app.api.telegram.answer_callback_query", new_callable=AsyncMock):
+        callback_payload = {
+            "callback_query": {
+                "id": "cb_convert_expense",
+                "message": {"chat": {"id": 50005}},
+                "data": f"convert_to_expense:{income_id}",
+            }
+        }
+        response = await client.post("/api/telegram/webhook", json=callback_payload)
+        assert response.status_code == 200
+
+    # Income 삭제됨
+    result = await db_session.execute(select(Income).where(Income.id == income_id))
+    assert result.scalar_one_or_none() is None
+
+    # Expense 생성됨 (같은 금액/설명)
+    result = await db_session.execute(select(Expense))
+    expenses = result.scalars().all()
+    assert len(expenses) == 1
+    assert float(expenses[0].amount) == 30000
+    assert expenses[0].description == "잘못 입력"
+    assert expenses[0].household_id == household.id
+
+    # 지출 저장 메시지
+    mock_telegram_send.assert_called_once()
+    sent_message = mock_telegram_send.call_args[0][1]
+    assert "기록했어요" in sent_message
+
+
+@pytest.mark.asyncio
+async def test_callback_idor_delete_income_blocked(client, db_session, mock_telegram_send, mock_llm_parse_expense):
+    """타인의 수입 삭제 시도 → 거부"""
+    from unittest.mock import AsyncMock
+    from unittest.mock import patch as mock_patch
+
+    from app.models.income import Income
+
+    # 사용자 A가 수입 생성
+    bot_user_a, household_a = await setup_bot_user_with_household(db_session, chat_id=60001)
+    cat = Category(name="급여", type="income", household_id=household_a.id)
+    db_session.add(cat)
+    await db_session.flush()
+
+    income = Income(user_id=bot_user_a.id, amount=1000000, description="월급", category_id=cat.id, date=datetime(2026, 3, 20), household_id=household_a.id)
+    db_session.add(income)
+    await db_session.commit()
+    await db_session.refresh(income)
+
+    # 사용자 B(chat_id=60002)가 사용자 A의 수입 삭제 시도
+    with mock_patch("app.api.telegram.answer_callback_query", new_callable=AsyncMock) as mock_answer:
+        callback_payload = {
+            "callback_query": {
+                "id": "cb_idor_income",
+                "message": {"chat": {"id": 60002}},
+                "data": f"confirm_delete_income:{income.id}",
+            }
+        }
+        response = await client.post("/api/telegram/webhook", json=callback_payload)
+        assert response.status_code == 200
+
+        # "본인" 거부 메시지
+        mock_answer.assert_called_once()
+        assert "본인" in mock_answer.call_args[0][1]
+
+    # 수입이 삭제되지 않았는지 확인
+    result = await db_session.execute(select(Income).where(Income.id == income.id))
+    assert result.scalar_one_or_none() is not None
 
 
 @pytest.mark.asyncio
