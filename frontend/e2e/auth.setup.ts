@@ -2,12 +2,10 @@
  * E2E 테스트 인증 헬퍼
  *
  * podo-auth SSO를 우회하여 테스트용 JWT를 직접 생성합니다.
- * BE의 JWT_SECRET과 동일한 시크릿으로 서명한 토큰을 쿠키에 주입합니다.
+ * BE /api/e2e/setup 엔드포인트로 JWT를 발급받아 쿠키에 주입합니다.
  */
 import { Page } from '@playwright/test'
 
-// BE에서 사용하는 JWT_SECRET과 동일해야 함 (CI 환경변수로 주입)
-const JWT_SECRET = process.env.E2E_JWT_SECRET || 'e2e-jwt-secret'
 const API_URL = process.env.E2E_API_URL || 'http://localhost:8000'
 
 /**
