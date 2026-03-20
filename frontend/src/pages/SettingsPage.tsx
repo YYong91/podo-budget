@@ -5,7 +5,6 @@
 
 import { useState, useEffect } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
-import toast from 'react-hot-toast'
 import {
   Tags, PiggyBank, Repeat, Users, LogOut, BookOpen, MessageSquarePlus,
   Megaphone, ChevronRight, ArrowLeft, User, Send, MessageCircle, ShieldCheck,
@@ -15,6 +14,7 @@ import type { LucideIcon } from 'lucide-react'
 import { generateTelegramLinkCode, unlinkTelegram } from '../api/telegram'
 import { generateKakaoLinkCode, unlinkKakao } from '../api/kakao'
 import { useAuth } from '../contexts/AuthContext'
+import { useToast } from '../hooks/useToast'
 import { useChangelog } from '../hooks/useChangelog'
 import { useTheme } from '../contexts/ThemeContext'
 import type { ThemeMode } from '../contexts/ThemeContext'
@@ -211,6 +211,7 @@ function ChangelogSection() {
 /* ─── 내 계정 섹션 (계정 정보 + 텔레그램 + 계정 관리 통합) ─── */
 function MyAccountSection() {
   const { user, refreshUser, logout } = useAuth()
+  const { addToast } = useToast()
   const [linkCode, setLinkCode] = useState<{ code: string; expires_at: string } | null>(null)
   const [loadingCode, setLoadingCode] = useState(false)
   const [loadingUnlink, setLoadingUnlink] = useState(false)
@@ -226,7 +227,7 @@ function MyAccountSection() {
       const data = await generateTelegramLinkCode()
       setLinkCode(data)
     } catch {
-      toast.error('코드 발급에 실패했습니다.')
+      addToast('error', '코드 발급에 실패했습니다.')
     } finally {
       setLoadingCode(false)
     }
@@ -237,11 +238,11 @@ function MyAccountSection() {
     setLoadingUnlink(true)
     try {
       await unlinkTelegram()
-      toast.success('텔레그램 연동이 해제되었습니다.')
+      addToast('success', '텔레그램 연동이 해제되었습니다.')
       await refreshUser()
       setLinkCode(null)
     } catch {
-      toast.error('연동 해제에 실패했습니다.')
+      addToast('error', '연동 해제에 실패했습니다.')
     } finally {
       setLoadingUnlink(false)
     }
@@ -251,9 +252,9 @@ function MyAccountSection() {
     if (!linkCode) return
     try {
       await navigator.clipboard.writeText(`/link ${linkCode.code}`)
-      toast.success('복사되었습니다!')
+      addToast('success', '복사되었습니다!')
     } catch {
-      toast.error('자동 복사 실패 — 아래 명령어를 직접 복사해주세요')
+      addToast('error', '자동 복사 실패 — 아래 명령어를 직접 복사해주세요')
     }
   }
 
@@ -263,7 +264,7 @@ function MyAccountSection() {
       const data = await generateKakaoLinkCode()
       setKakaoLinkCode(data)
     } catch {
-      toast.error('코드 발급에 실패했습니다.')
+      addToast('error', '코드 발급에 실패했습니다.')
     } finally {
       setLoadingKakaoCode(false)
     }
@@ -274,11 +275,11 @@ function MyAccountSection() {
     setLoadingKakaoUnlink(true)
     try {
       await unlinkKakao()
-      toast.success('카카오톡 연동이 해제되었습니다.')
+      addToast('success', '카카오톡 연동이 해제되었습니다.')
       await refreshUser()
       setKakaoLinkCode(null)
     } catch {
-      toast.error('연동 해제에 실패했습니다.')
+      addToast('error', '연동 해제에 실패했습니다.')
     } finally {
       setLoadingKakaoUnlink(false)
     }
@@ -289,9 +290,9 @@ function MyAccountSection() {
     try {
       // 카카오 봇은 "연동 {code}" 형식 사용 (한글 명령어 = /link 슬래시 명령어) (#200)
       await navigator.clipboard.writeText(`연동 ${kakaoLinkCode.code}`)
-      toast.success('복사되었습니다!')
+      addToast('success', '복사되었습니다!')
     } catch {
-      toast.error('자동 복사 실패 — 아래 명령어를 직접 복사해주세요')
+      addToast('error', '자동 복사 실패 — 아래 명령어를 직접 복사해주세요')
     }
   }
 

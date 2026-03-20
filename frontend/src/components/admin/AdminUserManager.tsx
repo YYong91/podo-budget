@@ -2,11 +2,12 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { Search, ChevronLeft, ChevronRight, ToggleLeft, ToggleRight } from 'lucide-react'
-import toast from 'react-hot-toast'
 import { adminApi } from '../../api/admin'
+import { useToast } from '../../hooks/useToast'
 import type { AdminUserItem, AdminUserDetail, AdminUserListResponse } from '../../types'
 
 export default function AdminUserManager() {
+  const { addToast } = useToast()
   const [data, setData] = useState<AdminUserListResponse | null>(null)
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -19,7 +20,7 @@ export default function AdminUserManager() {
       const res = await adminApi.getUserList(page, 20, search || undefined)
       setData(res.data)
     } catch {
-      toast.error('사용자 목록 로딩 실패')
+      addToast('error', '사용자 목록 로딩 실패')
     } finally {
       setLoading(false)
     }
@@ -38,7 +39,7 @@ export default function AdminUserManager() {
       const res = await adminApi.getUserDetail(userId)
       setSelectedUser(res.data)
     } catch {
-      toast.error('사용자 정보 로딩 실패')
+      addToast('error', '사용자 정보 로딩 실패')
     }
   }
 
@@ -46,10 +47,10 @@ export default function AdminUserManager() {
     try {
       const res = await adminApi.updateUser(userId, { is_active: !currentActive })
       setSelectedUser(res.data)
-      toast.success(res.data.is_active ? '사용자 활성화' : '사용자 비활성화')
+      addToast('success', res.data.is_active ? '사용자 활성화' : '사용자 비활성화')
       fetchUsers()
     } catch {
-      toast.error('상태 변경 실패')
+      addToast('error', '상태 변경 실패')
     }
   }
 

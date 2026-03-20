@@ -2,6 +2,14 @@
 
 from pydantic import BaseModel, Field
 
+
+class InsightsGenerateResponse(BaseModel):
+    """월별 인사이트 생성 API 응답 (#242)"""
+
+    month: str
+    insights: str
+
+
 # ── 요청: 프론트엔드가 사전 계산하여 전송 ──
 
 

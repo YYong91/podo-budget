@@ -1,6 +1,10 @@
+import logging
 from typing import Literal
 
+from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+_settings_logger = logging.getLogger(__name__)
 
 LLMProviderType = Literal["openai", "anthropic", "google", "local"]
 
@@ -63,6 +67,23 @@ class Settings(BaseSettings):
     # Email (Resend) — 빈 문자열이면 이메일 발송 비활성화
     RESEND_API_KEY: str = ""
     RESEND_FROM_EMAIL: str = "포도가계부 <noreply@podonest.com>"
+
+    @model_validator(mode="after")
+    def validate_llm_config(self) -> "Settings":
+        """LLM 프로바이더 설정 교차 검증 (#242)"""
+        provider = self.LLM_PROVIDER
+        if provider == "openai" and not self.OPENAI_API_KEY:
+            _settings_logger.warning("LLM_PROVIDER=openai 이지만 OPENAI_API_KEY가 설정되지 않았습니다")
+        elif provider == "anthropic" and not self.ANTHROPIC_API_KEY:
+            _settings_logger.warning("LLM_PROVIDER=anthropic 이지만 ANTHROPIC_API_KEY가 설정되지 않았습니다")
+        elif provider == "google" and not self.GOOGLE_API_KEY:
+            _settings_logger.warning("LLM_PROVIDER=google 이지만 GOOGLE_API_KEY가 설정되지 않았습니다")
+
+        # CORS wildcard 경고
+        if self.CORS_ORIGINS == "*":
+            _settings_logger.warning("CORS_ORIGINS='*' — 모든 오리진 허용 중. 프로덕션 환경에서는 특정 도메인을 지정하세요.")
+
+        return self
 
     model_config = SettingsConfigDict(
         env_file=".env",

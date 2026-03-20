@@ -9,6 +9,7 @@
 - 가구 멤버 전체의 수입을 함께 조회할 수 있음
 """
 
+import logging
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -24,6 +25,8 @@ from app.models.user import User
 from app.schemas.expense import CategoryStats, StatsPeriod, StatsResponse, TrendPoint
 from app.schemas.income import IncomeCreate, IncomeResponse, IncomeUpdate
 from app.utils.date_utils import get_month_range, get_week_label, get_week_range, get_year_range
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -46,6 +49,7 @@ async def create_income(
     db.add(db_income)
     await db.commit()
     await db.refresh(db_income)
+    logger.info("수입 생성: user=%s, amount=%s", current_user.id, income.amount)
     return db_income
 
 
@@ -282,3 +286,4 @@ async def delete_income(
 
     await db.delete(income)
     await db.commit()
+    logger.info("수입 삭제: user=%s, income_id=%s", current_user.id, income_id)

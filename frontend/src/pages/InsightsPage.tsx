@@ -6,8 +6,8 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { Sparkles } from 'lucide-react'
-import toast from 'react-hot-toast'
 import ErrorState from '../components/ErrorState'
+import { useToast } from '../hooks/useToast'
 import EmptyState from '../components/EmptyState'
 
 // API
@@ -56,6 +56,7 @@ function getNavLabel(monthStr: string): string {
 // ── 메인 페이지 ──
 
 export default function InsightsPage() {
+  const { addToast } = useToast()
   const [monthStr, setMonthStr] = useState(toMonthStr(new Date()))
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
@@ -149,7 +150,7 @@ export default function InsightsPage() {
   // AI 분석 생성
   const handleGenerateAI = useCallback(async () => {
     if (!expenseStats && !incomeStats) {
-      toast.error('분석할 데이터가 없습니다')
+      addToast('error', '분석할 데이터가 없습니다')
       return
     }
 
@@ -201,9 +202,9 @@ export default function InsightsPage() {
 
       const result = await insightsApi.generateComprehensive(requestData)
       setStructuredInsights(result.insights)
-      toast.success('AI 분석이 완료되었습니다')
+      addToast('success', 'AI 분석이 완료되었습니다')
     } catch {
-      toast.error('AI 분석 생성에 실패했습니다')
+      addToast('error', 'AI 분석 생성에 실패했습니다')
     } finally {
       setAiLoading(false)
     }

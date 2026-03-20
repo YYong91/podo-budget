@@ -117,3 +117,29 @@ class ComparisonResponse(BaseModel):
     change: ChangeInfo
     trend: list[PeriodTotal]
     by_category_comparison: list[CategoryChange]
+
+
+# ── 월별 통계 응답 스키마 (#242) ──
+
+
+class CategoryAmount(BaseModel):
+    """카테고리별 금액"""
+
+    category: str
+    amount: float
+
+
+class DailyTrendItem(BaseModel):
+    """일별 추이 항목"""
+
+    date: str
+    amount: float
+
+
+class MonthlyStatsResponse(BaseModel):
+    """월별 통계 응답"""
+
+    month: str
+    total: float
+    by_category: list[CategoryAmount]
+    daily_trend: list[DailyTrendItem]

@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import { MessageSquare, Bug, Lightbulb } from 'lucide-react'
-import toast from 'react-hot-toast'
 import { feedbackApi } from '../../api/feedback'
+import { useToast } from '../../hooks/useToast'
 import type { Feedback, FeedbackStatus, FeedbackType } from '../../types'
 
 const STATUS_META: Record<string, { label: string; color: string }> = {
@@ -18,6 +18,7 @@ const TYPE_META: Record<string, { label: string; icon: React.ComponentType<{ cla
 }
 
 export default function AdminFeedbackDashboard() {
+  const { addToast } = useToast()
   const [feedbacks, setFeedbacks] = useState<Feedback[]>([])
   const [loading, setLoading] = useState(true)
   const [statusFilter, setStatusFilter] = useState<FeedbackStatus | 'all'>('all')
@@ -28,7 +29,7 @@ export default function AdminFeedbackDashboard() {
       const res = await feedbackApi.getAll()
       setFeedbacks(res.data)
     } catch {
-      toast.error('피드백 로딩 실패')
+      addToast('error', '피드백 로딩 실패')
     } finally {
       setLoading(false)
     }
@@ -40,9 +41,9 @@ export default function AdminFeedbackDashboard() {
     try {
       const res = await feedbackApi.updateStatus(id, newStatus)
       setFeedbacks(prev => prev.map(f => f.id === id ? res.data : f))
-      toast.success('상태 변경 완료')
+      addToast('success', '상태 변경 완료')
     } catch {
-      toast.error('상태 변경 실패')
+      addToast('error', '상태 변경 실패')
     }
   }
 

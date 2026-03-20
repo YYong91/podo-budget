@@ -6,6 +6,8 @@
 - user_id=X, household_id=None: 솔로 유저 개인 카테고리 (가구 미소속 폴백)
 """
 
+import logging
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import and_, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -16,6 +18,8 @@ from app.core.database import get_db
 from app.models.category import Category
 from app.models.user import User
 from app.schemas.category import CategoryCreate, CategoryReorderRequest, CategoryResponse, CategoryUpdate
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -75,6 +79,7 @@ async def create_category(
     db.add(db_category)
     await db.commit()
     await db.refresh(db_category)
+    logger.info("카테고리 생성: user=%s, name=%s", current_user.id, category.name)
     return db_category
 
 
