@@ -27,6 +27,88 @@ jobs:
     with:
       frontend_build_check: true
 
+  # ── 커버리지 PR 코멘트 ─────────────────────────────
+  coverage-comment:
+    name: 커버리지 리포트
+    needs: [test]
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    permissions:
+      pull-requests: write
+
+    steps:
+      - name: BE 커버리지 다운로드
+        uses: actions/download-artifact@v4
+        with:
+          name: backend-coverage
+          path: ./coverage
+        continue-on-error: true
+
+      - name: FE 커버리지 다운로드
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-coverage
+          path: ./coverage
+        continue-on-error: true
+
+      - name: 커버리지 코멘트 작성
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            let comment = '## 📊 테스트 커버리지 리포트\n\n';
+
+            // BE 커버리지 파싱
+            try {
+              const be = JSON.parse(fs.readFileSync('./coverage/backend-coverage.json', 'utf8'));
+              const total = be.totals;
+              comment += `### Backend (pytest-cov)\n`;
+              comment += `| 항목 | 커버리지 |\n|------|----------|\n`;
+              comment += `| **Statements** | ${total.percent_covered_display}% |\n`;
+              comment += `| Lines | ${total.covered_lines} / ${total.num_statements} |\n\n`;
+            } catch (e) {
+              comment += '### Backend\n⚠️ 커버리지 데이터 없음\n\n';
+            }
+
+            // FE 커버리지 파싱
+            try {
+              const fe = JSON.parse(fs.readFileSync('./coverage/coverage-summary.json', 'utf8'));
+              const total = fe.total;
+              comment += `### Frontend (vitest)\n`;
+              comment += `| 항목 | 커버리지 |\n|------|----------|\n`;
+              comment += `| **Statements** | ${total.statements.pct}% |\n`;
+              comment += `| **Branches** | ${total.branches.pct}% |\n`;
+              comment += `| **Functions** | ${total.functions.pct}% |\n`;
+              comment += `| **Lines** | ${total.lines.pct}% |\n\n`;
+            } catch (e) {
+              comment += '### Frontend\n⚠️ 커버리지 데이터 없음\n\n';
+            }
+
+            // 기존 커버리지 코멘트 찾아서 업데이트 (중복 방지)
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            const existing = comments.find(c => c.body.includes('📊 테스트 커버리지 리포트'));
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body: comment,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: comment,
+              });
+            }
+
   # ── 테스트 결과 메시지 빌드 ──────────────────────
   build-test-result-message:
     name: 결과 메시지 빌드

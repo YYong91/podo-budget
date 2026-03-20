@@ -50,13 +50,24 @@ jobs:
         # CVE-2024-23342(ecdsa): python-jose의 transitive dep, 최신 버전(0.19.1)에도 수정 없음 — ignore (#237)
         run: uv run pip-audit --ignore-vuln CVE-2024-23342
 
-      - name: 테스트 실행
+      - name: 테스트 + 커버리지
         env:
           DATABASE_URL: sqlite+aiosqlite:///./test.db
           SECRET_KEY: test-secret-key  # pragma: allowlist secret
           LLM_PROVIDER: anthropic
           ANTHROPIC_API_KEY: test-key  # pragma: allowlist secret
-        run: PYTHONPATH=backend uv run pytest backend/tests/ --ignore=backend/tests/integration/test_api_budget_bulk.py
+        run: |
+          PYTHONPATH=backend uv run pytest backend/tests/ \
+            --ignore=backend/tests/integration/test_api_budget_bulk.py \
+            --cov=app --cov-report=term --cov-report=json:backend-coverage.json
+
+      - name: 커버리지 리포트 업로드
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-coverage
+          path: backend-coverage.json
+          retention-days: 5
 
   test-frontend:
     name: 프론트엔드
@@ -82,8 +93,16 @@ jobs:
       - name: 의존성 취약점 스캔
         run: cd frontend && npm audit --audit-level=high --omit=dev  # 런타임 의존성만 심각(high+) CVE 탐지 (#237)
 
-      - name: 테스트 실행
-        run: cd frontend && npm run test:run
+      - name: 테스트 + 커버리지
+        run: cd frontend && npm run test:coverage
+
+      - name: 커버리지 리포트 업로드
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-coverage
+          path: frontend/coverage/coverage-summary.json
+          retention-days: 5
 
       - name: 빌드 검증
         if: inputs.frontend_build_check
