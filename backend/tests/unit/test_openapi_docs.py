@@ -3,8 +3,6 @@
 FastAPI 앱 메타데이터, openapi_tags, 에러 스키마 검증.
 """
 
-import pytest
-
 from app.main import app
 from app.schemas.base import ErrorDetail, ErrorResponse
 
