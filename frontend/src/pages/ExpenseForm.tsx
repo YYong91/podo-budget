@@ -348,10 +348,11 @@ export default function ExpenseForm() {
       {mode === 'natural' && !previewItems && (
         <form onSubmit={handlePreview} className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)]/60 p-6 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
+            <label htmlFor="expense-natural-input" className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
               말하듯이 지출 입력하기
             </label>
             <textarea
+              id="expense-natural-input"
               value={naturalInput}
               onChange={(e) => setNaturalInput(e.target.value)}
               placeholder="예: 오늘 점심에 김치찌개 8000원 먹었어&#10;어제 스타벅스에서 아메리카노 4500원"
@@ -378,9 +379,9 @@ export default function ExpenseForm() {
       {mode === 'ocr' && !previewItems && (
         <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)]/60 p-6 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
+            <span className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
               결제 화면 이미지 인식
-            </label>
+            </span>
             <p className="text-xs text-[var(--text-muted)] mb-4">
               토스, 카카오페이, 카드사 앱 결제 화면이나 영수증 사진을 업로드하면 AI가 자동으로 금액과 가맹점을 인식합니다.
             </p>
@@ -394,8 +395,11 @@ export default function ExpenseForm() {
 
             {/* 업로드 버튼 영역 */}
             <div
+              role="button"
+              tabIndex={0}
               className="border-2 border-dashed border-[var(--input-border)] rounded-xl p-8 text-center cursor-pointer hover:border-grape-400 hover:bg-grape-50/30 transition-all"
               onClick={() => fileInputRef.current?.click()}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileInputRef.current?.click() } }}
             >
               <Camera className="w-10 h-10 text-[var(--text-muted)] mx-auto mb-3" />
               <p className="text-sm font-medium text-[var(--text-secondary)]">
@@ -611,6 +615,7 @@ export default function ExpenseForm() {
                   placeholder="새 카테고리 이름"
                   className="flex-1 px-3 py-2 border border-grape-300 rounded-lg text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
                   onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleCreateCategoryForForm() } }}
+                  // eslint-disable-next-line jsx-a11y/no-autofocus
                   autoFocus
                 />
                 <button
@@ -672,9 +677,10 @@ export default function ExpenseForm() {
           </div>
 
           {/* 통계 제외 */}
-          <label className="flex items-center gap-3 cursor-pointer select-none">
+          <label htmlFor="expense-exclude-stats" className="flex items-center gap-3 cursor-pointer select-none">
             <div className="relative">
               <input
+                id="expense-exclude-stats"
                 type="checkbox"
                 checked={formData.exclude_from_stats}
                 onChange={(e) => setFormData({ ...formData, exclude_from_stats: e.target.checked })}

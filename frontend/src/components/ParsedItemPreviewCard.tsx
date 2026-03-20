@@ -98,10 +98,11 @@ export default function ParsedItemPreviewCard({
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {/* 금액 */}
         <div>
-          <label className="block text-xs text-[var(--text-tertiary)] mb-1">금액</label>
+          <label htmlFor={`preview-amount-${index}`} className="block text-xs text-[var(--text-tertiary)] mb-1">금액</label>
           <div className="relative">
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)] text-sm">₩</span>
             <input
+              id={`preview-amount-${index}`}
               type="number"
               value={item.amount}
               onChange={(e) => onUpdate(index, 'amount', Number(e.target.value))}
@@ -113,8 +114,9 @@ export default function ParsedItemPreviewCard({
 
         {/* 날짜 */}
         <div>
-          <label className="block text-xs text-[var(--text-tertiary)] mb-1">날짜</label>
+          <label htmlFor={`preview-date-${index}`} className="block text-xs text-[var(--text-tertiary)] mb-1">날짜</label>
           <input
+            id={`preview-date-${index}`}
             type="date"
             value={item.date.slice(0, 10)}
             onChange={(e) => onUpdate(index, 'date', e.target.value)}
@@ -124,8 +126,9 @@ export default function ParsedItemPreviewCard({
 
         {/* 설명 */}
         <div>
-          <label className="block text-xs text-[var(--text-tertiary)] mb-1">설명</label>
+          <label htmlFor={`preview-desc-${index}`} className="block text-xs text-[var(--text-tertiary)] mb-1">설명</label>
           <input
+            id={`preview-desc-${index}`}
             type="text"
             value={item.description}
             onChange={(e) => onUpdate(index, 'description', e.target.value)}
@@ -135,8 +138,9 @@ export default function ParsedItemPreviewCard({
 
         {/* 카테고리 */}
         <div>
-          <label className="block text-xs text-[var(--text-tertiary)] mb-1">카테고리</label>
+          <label htmlFor={`preview-category-${index}`} className="block text-xs text-[var(--text-tertiary)] mb-1">카테고리</label>
           <select
+            id={`preview-category-${index}`}
             value={item.category_id ?? ''}
             onChange={(e) =>
               onUpdate(index, 'category_id', e.target.value ? Number(e.target.value) : null)
@@ -164,6 +168,7 @@ export default function ParsedItemPreviewCard({
                     onCreateCategory(index)
                   }
                 }}
+                // eslint-disable-next-line jsx-a11y/no-autofocus
                 autoFocus
               />
               <button
@@ -201,8 +206,9 @@ export default function ParsedItemPreviewCard({
 
         {/* 메모 (선택) */}
         <div className="sm:col-span-2">
-          <label className="block text-xs text-[var(--text-tertiary)] mb-1">메모 (선택)</label>
+          <label htmlFor={`preview-memo-${index}`} className="block text-xs text-[var(--text-tertiary)] mb-1">메모 (선택)</label>
           <input
+            id={`preview-memo-${index}`}
             type="text"
             value={item.memo ?? ''}
             onChange={(e) => onUpdate(index, 'memo', e.target.value)}

@@ -144,7 +144,7 @@ export default function Layout() {
           </div>
 
           {/* 네비게이션 */}
-          <nav className="space-y-1 flex-1 overflow-y-auto">
+          <nav aria-label="사이드바 메뉴" className="space-y-1 flex-1 overflow-y-auto">
             {navItems.map(item => {
               const active = isActive(item.path)
               const Icon = item.icon
@@ -204,7 +204,7 @@ export default function Layout() {
       </div>
 
       {/* 모바일 하단 탭 바 */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-[var(--surface-card)] border-t border-[var(--border-default)] safe-area-bottom">
+      <nav aria-label="하단 탭 메뉴" className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-[var(--surface-card)] border-t border-[var(--border-default)] safe-area-bottom">
         <div className="flex items-center justify-around h-14 pwa-nav-container">
           {navItems.map(item => {
             const active = isActive(item.path)

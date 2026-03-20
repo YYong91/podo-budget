@@ -395,6 +395,8 @@ function MyAccountSection() {
                 </div>
                 <p className="text-xs text-[var(--text-tertiary)]">⏰ {expiresAt}까지 유효 (만료 전 입력하세요)</p>
                 <div
+                  role="button"
+                  tabIndex={0}
                   className="bg-[var(--surface-card)] rounded-lg p-3 border border-grape-200 cursor-pointer active:bg-grape-50"
                   onClick={(e) => {
                     const el = e.currentTarget.querySelector('p.selectable')
@@ -404,6 +406,19 @@ function MyAccountSection() {
                       const sel = window.getSelection()
                       sel?.removeAllRanges()
                       sel?.addRange(range)
+                    }
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault()
+                      const el = e.currentTarget.querySelector('p.selectable')
+                      if (el && window.getSelection) {
+                        const range = document.createRange()
+                        range.selectNodeContents(el)
+                        const sel = window.getSelection()
+                        sel?.removeAllRanges()
+                        sel?.addRange(range)
+                      }
                     }
                   }}
                 >
@@ -492,6 +507,8 @@ function MyAccountSection() {
                 </div>
                 <p className="text-xs text-[var(--text-tertiary)]">⏰ {kakaoExpiresAt}까지 유효 (만료 전 입력하세요)</p>
                 <div
+                  role="button"
+                  tabIndex={0}
                   className="bg-[var(--surface-card)] rounded-lg p-3 border border-grape-200 cursor-pointer active:bg-grape-50"
                   onClick={(e) => {
                     const el = e.currentTarget.querySelector('p.selectable')
@@ -501,6 +518,19 @@ function MyAccountSection() {
                       const sel = window.getSelection()
                       sel?.removeAllRanges()
                       sel?.addRange(range)
+                    }
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault()
+                      const el = e.currentTarget.querySelector('p.selectable')
+                      if (el && window.getSelection) {
+                        const range = document.createRange()
+                        range.selectNodeContents(el)
+                        const sel = window.getSelection()
+                        sel?.removeAllRanges()
+                        sel?.addRange(range)
+                      }
                     }
                   }}
                 >
