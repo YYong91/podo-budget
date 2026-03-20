@@ -42,10 +42,24 @@ class TestFastAPIMetadata:
         """등록된 모든 라우터 태그가 openapi_tags에 포함되어야 한다"""
         registered_tags = {tag["name"] for tag in app.openapi_tags}
         expected_tags = {
-            "auth", "budgets", "chat", "expenses", "feedback",
-            "categories", "insights", "telegram", "kakao", "households",
-            "income", "invitations", "recurring", "assets", "accounts",
-            "admin", "onboarding", "webhooks",
+            "auth",
+            "budgets",
+            "chat",
+            "expenses",
+            "feedback",
+            "categories",
+            "insights",
+            "telegram",
+            "kakao",
+            "households",
+            "income",
+            "invitations",
+            "recurring",
+            "assets",
+            "accounts",
+            "admin",
+            "onboarding",
+            "webhooks",
         }
         missing = expected_tags - registered_tags
         assert not missing, f"openapi_tags에 누락된 태그: {missing}"
