@@ -2,6 +2,7 @@
 
 import { Users, Activity, MessageSquare, Home, AlertTriangle, ExternalLink } from 'lucide-react'
 import type { DashboardStats } from '../../types'
+import { maskUsername } from '../../utils/format'
 
 interface Props {
   data: DashboardStats
@@ -137,7 +138,7 @@ export default function AdminOverview({ data, onTabChange }: Props) {
                   </span>
                   <div className="flex-1 min-w-0">
                     <div className="text-sm text-[var(--text-primary)]">
-                      <span className="font-medium">{activity.username}</span>
+                      <span className="font-medium">{maskUsername(activity.username)}</span>
                       {' '}
                       <span className="text-[var(--text-secondary)]">
                         {activity.description}
