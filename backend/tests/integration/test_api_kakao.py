@@ -22,7 +22,9 @@ from app.main import app as _app
 from app.models.expense import Expense
 from app.models.household import Household
 from app.models.household_member import HouseholdMember
+from app.models.income import Income
 from app.models.user import User
+from app.services.bot_strike_service import _error_counts
 
 # 테스트용 API 키 (실제 운영 키와 완전히 다른 값)
 _KAKAO_TEST_API_KEY = "kakao-test-key-for-pytest"  # pragma: allowlist secret
@@ -36,6 +38,14 @@ def _kakao_api_key():
     """
     with patch.object(_app_settings, "KAKAO_BOT_API_KEY", _KAKAO_TEST_API_KEY):
         yield
+
+
+@pytest.fixture(autouse=True)
+def _clear_strike_counts():
+    """테스트 간 Strike 카운트 격리"""
+    _error_counts.clear()
+    yield
+    _error_counts.clear()
 
 
 @pytest_asyncio.fixture
@@ -162,10 +172,10 @@ async def test_kakao_webhook_parse_error(client, db_session, mock_llm_parse_expe
     result = await db_session.execute(select(Expense))
     assert len(result.scalars().all()) == 0
 
-    # 에러 메시지 검증
+    # 에러 메시지 검증 (Strike 1 기본 안내)
     data = response.json()
     text = data["template"]["outputs"][0]["simpleText"]["text"]
-    assert "금액을 찾을 수 없" in text or "파싱" in text
+    assert "금액을 찾지 못했어요" in text
 
 
 @pytest.mark.asyncio
@@ -635,6 +645,12 @@ async def test_kakao_webhook_undo_deletes_last_expense(client, db_session, mock_
     assert "삭제" in text
     assert "8,000" in text
 
+    # quickReply 검증
+    qr = data["template"].get("quickReplies", [])
+    message_texts = [r["messageText"] for r in qr]
+    assert "리포트" in message_texts
+    assert "도움말" in message_texts
+
     # DB에서 삭제 확인
     result = await db_session.execute(select(Expense))
     expenses = result.scalars().all()
@@ -643,14 +659,14 @@ async def test_kakao_webhook_undo_deletes_last_expense(client, db_session, mock_
 
 @pytest.mark.asyncio
 async def test_kakao_webhook_undo_no_expenses(client, db_session):
-    """/undo 지출이 없으면 안내 메시지 반환"""
+    """/undo 기록이 없으면 안내 메시지 반환"""
     payload = make_kakao_request("/undo")
     response = await client.post("/api/kakao/webhook", json=payload)
     assert response.status_code == 200
 
     data = response.json()
     text = data["template"]["outputs"][0]["simpleText"]["text"]
-    assert "없" in text
+    assert "삭제할 기록이 없어요" in text
 
 
 @pytest.mark.asyncio
@@ -929,8 +945,8 @@ async def test_kakao_korean_command_no_false_positive(client, db_session, mock_l
     # LLM 파싱으로 넘어가므로 지출 저장 또는 파싱 에러 응답이어야 함
     data = response.json()
     text = data["template"]["outputs"][0]["simpleText"]["text"]
-    # /undo의 "삭제되었어요" 메시지가 아니어야 함
-    assert "마지막 지출이 삭제되었어요" not in text
+    # /undo의 삭제 확인 메시지가 아니어야 함
+    assert "삭제했어요" not in text
 
 
 @pytest.mark.asyncio
@@ -1044,3 +1060,165 @@ async def test_kakao_webhook_mixed_income_expense(client, db_session, mock_llm_p
     text = data["template"]["outputs"][0]["simpleText"]["text"]
     assert "수입" in text
     assert "지출" in text
+
+
+# ── 3 Strike 에러 테스트 (#286) ──────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_kakao_parse_error_strike_progression(client, db_session, mock_llm_parse_expense):
+    """파싱 실패 시 Strike 1→2→3으로 메시지가 점진적으로 변화"""
+    mock_llm_parse_expense.return_value = {"error": "파싱 실패"}
+
+    # Strike 1: 기본 안내
+    response = await client.post("/api/kakao/webhook", json=make_kakao_request("아무말"))
+    text = response.json()["template"]["outputs"][0]["simpleText"]["text"]
+    assert "금액을 찾지 못했어요" in text
+
+    # Strike 2: 다른 방식 제안
+    response = await client.post("/api/kakao/webhook", json=make_kakao_request("또 아무말"))
+    text = response.json()["template"]["outputs"][0]["simpleText"]["text"]
+    assert "이해하지 못했어요" in text
+
+    # Strike 3+: 도움말 안내
+    response = await client.post("/api/kakao/webhook", json=make_kakao_request("세번째"))
+    text = response.json()["template"]["outputs"][0]["simpleText"]["text"]
+    assert "도움말을 확인" in text
+
+    # quickReply도 Strike에 따라 달라짐
+    qr = response.json()["template"].get("quickReplies", [])
+    labels = [r["label"] for r in qr]
+    assert any("도움말" in label for label in labels)
+    assert any("리포트" in label for label in labels)
+    assert any("예산" in label for label in labels)
+
+
+@pytest.mark.asyncio
+async def test_kakao_successful_parse_resets_strike(client, db_session, mock_llm_parse_expense):
+    """성공적 파싱 후 Strike 카운트가 초기화됨"""
+    await setup_kakao_bot_user_with_household(db_session, "kakao_user_123")
+
+    # 먼저 2번 파싱 실패 (Strike 2)
+    mock_llm_parse_expense.return_value = {"error": "파싱 실패"}
+    await client.post("/api/kakao/webhook", json=make_kakao_request("아무말1"))
+    await client.post("/api/kakao/webhook", json=make_kakao_request("아무말2"))
+
+    # 성공 → Strike 리셋
+    mock_llm_parse_expense.return_value = {
+        "amount": 8000,
+        "category": "식비",
+        "description": "점심",
+        "date": "2026-03-20",
+        "memo": "",
+    }
+    await client.post("/api/kakao/webhook", json=make_kakao_request("점심 8000원"))
+
+    # 다시 실패 → Strike 1부터 시작해야 함
+    mock_llm_parse_expense.return_value = {"error": "파싱 실패"}
+    response = await client.post("/api/kakao/webhook", json=make_kakao_request("또아무말"))
+    text = response.json()["template"]["outputs"][0]["simpleText"]["text"]
+    assert "금액을 찾지 못했어요" in text  # Strike 1 메시지
+
+
+# ── undo 수입 삭제 테스트 (#286) ──────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_kakao_undo_deletes_latest_income(client, db_session, mock_llm_parse_expense):
+    """Income이 더 최근이면 Income을 삭제"""
+    await setup_kakao_bot_user_with_household(db_session, "kakao_user_123")
+
+    # 지출 먼저 입력
+    mock_llm_parse_expense.return_value = {
+        "amount": 5000,
+        "category": "식비",
+        "description": "점심",
+        "date": "2026-03-20",
+        "memo": "",
+    }
+    await client.post("/api/kakao/webhook", json=make_kakao_request("점심 5000원"))
+
+    # 수입 입력 (더 최근)
+    mock_llm_parse_expense.return_value = {
+        "amount": 3000000,
+        "category": "급여",
+        "description": "월급",
+        "date": "2026-03-20",
+        "type": "income",
+    }
+    await client.post("/api/kakao/webhook", json=make_kakao_request("월급 300만원"))
+
+    # Income이 1건 있어야 함
+    result = await db_session.execute(select(Income))
+    assert len(result.scalars().all()) == 1
+
+    # undo → Income이 삭제되어야 함
+    response = await client.post("/api/kakao/webhook", json=make_kakao_request("취소"))
+    assert response.status_code == 200
+
+    text = response.json()["template"]["outputs"][0]["simpleText"]["text"]
+    assert "삭제" in text
+    assert "3,000,000" in text
+
+    # Income은 삭제됨
+    result = await db_session.execute(select(Income))
+    assert len(result.scalars().all()) == 0
+
+    # Expense는 남아있음
+    result = await db_session.execute(select(Expense))
+    assert len(result.scalars().all()) == 1
+
+
+@pytest.mark.asyncio
+async def test_kakao_undo_deletes_latest_expense(client, db_session, mock_llm_parse_expense):
+    """Expense가 더 최근이면 Expense를 삭제"""
+    from app.models.category import Category
+
+    bot_user, household = await setup_kakao_bot_user_with_household(db_session, "kakao_user_123")
+
+    category = Category(name="식비", user_id=bot_user.id, household_id=household.id)
+    db_session.add(category)
+    await db_session.flush()
+
+    # 수입 (더 오래됨 — created_at 명시)
+    older_time = datetime(2026, 3, 20, 10, 0, 0)
+    income = Income(
+        user_id=bot_user.id,
+        amount=3000000,
+        description="월급",
+        category_id=category.id,
+        date=datetime(2026, 3, 20),
+        household_id=household.id,
+        created_at=older_time,
+    )
+    db_session.add(income)
+
+    # 지출 (더 최근 — created_at 명시)
+    newer_time = datetime(2026, 3, 20, 11, 0, 0)
+    expense = Expense(
+        user_id=bot_user.id,
+        amount=8000,
+        description="점심",
+        category_id=category.id,
+        date=datetime(2026, 3, 20),
+        household_id=household.id,
+        created_at=newer_time,
+    )
+    db_session.add(expense)
+    await db_session.commit()
+
+    # undo → Expense가 삭제되어야 함 (created_at이 더 최근)
+    response = await client.post("/api/kakao/webhook", json=make_kakao_request("취소"))
+    assert response.status_code == 200
+
+    text = response.json()["template"]["outputs"][0]["simpleText"]["text"]
+    assert "삭제" in text
+    assert "8,000" in text
+
+    # Expense는 삭제됨
+    result = await db_session.execute(select(Expense))
+    assert len(result.scalars().all()) == 0
+
+    # Income은 남아있음
+    result = await db_session.execute(select(Income))
+    assert len(result.scalars().all()) == 1

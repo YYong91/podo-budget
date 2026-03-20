@@ -28,6 +28,7 @@ from app.models.expense import Expense
 from app.models.income import Income
 from app.services.bot_messages import (
     format_budget_status,
+    format_delete_confirm,
     format_expense_saved,
     format_help_message,
     format_income_saved,
@@ -37,6 +38,7 @@ from app.services.bot_messages import (
     format_server_error,
     format_timeout_message,
 )
+from app.services.bot_strike_service import increment_strike, reset_strike
 from app.services.bot_user_service import get_or_create_bot_user, link_kakao_account_by_code
 from app.services.category_hint_service import get_category_hints, get_user_categories
 from app.services.category_mapping_service import get_category_mappings_for_prompt, get_mapped_category
@@ -223,8 +225,21 @@ async def _handle_expense_input(utterance: str, bot_user: Any, db: AsyncSession,
 
 async def _handle_single_expense(db: AsyncSession, bot_user: Any, parsed: dict, utterance: str, household_id: int | None) -> dict:
     """단일 파싱 결과 처리: 에러 / 카테고리 매핑 / 수입·지출 분기 저장"""
+    strike_user_id = str(bot_user.id)
+
     if "error" in parsed:
-        return make_simple_text_response(format_parse_error(utterance), quick_replies=[make_quick_reply("❓ 도움말", "도움말")])
+        strike = increment_strike("kakao", strike_user_id)
+        # Strike별 quickReply 단계적 확장
+        if strike <= 1:
+            qr = [make_quick_reply("❓ 도움말", "도움말")]
+        elif strike == 2:
+            qr = [make_quick_reply("❓ 도움말", "도움말"), make_quick_reply("📊 리포트", "리포트")]
+        else:
+            qr = [make_quick_reply("❓ 도움말", "도움말"), make_quick_reply("📊 리포트", "리포트"), make_quick_reply("💰 예산", "예산")]
+        return make_simple_text_response(format_parse_error(strike), quick_replies=qr)
+
+    # 파싱 성공 → Strike 리셋
+    reset_strike("kakao", strike_user_id)
 
     item_type = parsed.get("type", "expense")
 
@@ -254,7 +269,7 @@ async def _handle_single_expense(db: AsyncSession, bot_user: Any, parsed: dict, 
                 amount=parsed["amount"],
                 category=category.name,
                 description=parsed.get("description", utterance),
-                date=record_date.strftime("%Y-%m-%d"),
+                date=record_date.date().isoformat(),
             ),
             quick_replies=[
                 make_quick_reply("↩️ 방금 거 취소", "취소"),
@@ -272,7 +287,7 @@ async def _handle_single_expense(db: AsyncSession, bot_user: Any, parsed: dict, 
             amount=parsed["amount"],
             category=category.name,
             description=parsed.get("description", utterance),
-            date=record_date.strftime("%Y-%m-%d"),
+            date=record_date.date().isoformat(),
         ),
         quick_replies=[
             make_quick_reply("↩️ 방금 거 취소", "취소"),
@@ -314,6 +329,9 @@ async def _handle_multiple_expenses(db: AsyncSession, bot_user: Any, parsed: lis
             created_expenses.append((record, item))
 
     await db.commit()
+
+    # 성공 → Strike 리셋
+    reset_strike("kakao", str(bot_user.id))
 
     # 응답 메시지 생성
     total_amount = sum(item["amount"] for item in parsed)
@@ -404,9 +422,9 @@ async def kakao_webhook(request: Request, db: AsyncSession = Depends(get_db)):
 
 
 async def handle_undo_command(db: AsyncSession, bot_user: Any) -> dict:
-    """마지막 지출 삭제
+    """마지막 거래(지출 또는 수입) 삭제
 
-    사용자의 가장 최근 지출을 삭제합니다.
+    Expense와 Income 중 created_at이 더 최근인 것을 삭제합니다.
 
     Args:
         db: 데이터베이스 세션
@@ -415,21 +433,34 @@ async def handle_undo_command(db: AsyncSession, bot_user: Any) -> dict:
     Returns:
         카카오 응답 형식 (version 2.0)
     """
-    result = await db.execute(select(Expense).where(Expense.user_id == bot_user.id).order_by(Expense.id.desc()).limit(1))
-    expense = result.scalar_one_or_none()
+    # 최신 Expense 조회
+    expense_result = await db.execute(select(Expense).where(Expense.user_id == bot_user.id).order_by(Expense.id.desc()).limit(1))
+    last_expense = expense_result.scalar_one_or_none()
 
-    if not expense:
-        return make_simple_text_response("삭제할 지출이 없어요.")
+    # 최신 Income 조회
+    income_result = await db.execute(select(Income).where(Income.user_id == bot_user.id).order_by(Income.id.desc()).limit(1))
+    last_income = income_result.scalar_one_or_none()
 
-    amount = expense.amount
-    description = expense.description
-    await db.delete(expense)
+    if not last_expense and not last_income:
+        return make_simple_text_response("삭제할 기록이 없어요.")
+
+    # 둘 다 있으면 created_at으로 비교, 같으면 Income 우선 (수입 undo가 더 최근 기능)
+    if last_expense and last_income:
+        target = last_income if last_income.created_at >= last_expense.created_at else last_expense
+    elif last_income:
+        target = last_income
+    else:
+        target = last_expense
+
+    amount = target.amount
+    description = target.description
+    await db.delete(target)
     await db.commit()
 
     return make_simple_text_response(
-        f"✅ 마지막 지출이 삭제되었어요.\n\n🗑️ {amount:,.0f}원 - {description}",
+        format_delete_confirm(amount=amount, description=description),
         quick_replies=[
-            make_quick_reply("📊 이번달 지출 보기", "리포트"),
+            make_quick_reply("📊 이번달 보기", "리포트"),
             make_quick_reply("❓ 도움말", "도움말"),
         ],
     )
