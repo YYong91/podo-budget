@@ -257,6 +257,12 @@ app.include_router(admin.router, prefix="/api/admin", tags=["admin"])
 app.include_router(onboarding.router, prefix="/api/onboarding", tags=["onboarding"])
 app.include_router(webhooks.router, prefix="/api/webhooks", tags=["webhooks"])
 
+# E2E 테스트 전용 (DEBUG 모드에서만 활성화)
+if settings.DEBUG:
+    from app.api import e2e
+
+    app.include_router(e2e.router, prefix="/api", tags=["e2e"])
+
 
 @app.get("/")
 async def root():
