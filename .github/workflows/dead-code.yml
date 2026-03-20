@@ -1,0 +1,99 @@
+# 월간 Dead code 탐지 — 미사용 코드 자동 감지
+name: Dead Code 탐지
+
+on:
+  schedule:
+    - cron: '0 4 1 * *'  # 매월 1일 04:00 UTC (한국시간 13:00)
+  workflow_dispatch:
+
+jobs:
+  dead-code:
+    name: 미사용 코드 스캔
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      issues: write
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # ── BE: vulture ──
+      - name: uv 설치
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: "0.5.20"
+          enable-cache: true
+
+      - name: Python 설정
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: BE 의존성 설치
+        run: uv sync --all-extras
+
+      - name: BE dead code 스캔 (vulture)
+        run: |
+          uv run vulture backend/app/ scripts/vulture_whitelist.py --min-confidence 90 > /tmp/be-dead-code.txt 2>&1 || true
+          BE_COUNT=$(wc -l < /tmp/be-dead-code.txt | tr -d ' ')
+          echo "be_count=$BE_COUNT" >> "$GITHUB_ENV"
+          echo "BE dead code: $BE_COUNT건"
+          cat /tmp/be-dead-code.txt
+
+      # ── FE: knip ──
+      - name: Node.js 설정
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: FE 의존성 설치
+        run: cd frontend && npm ci
+
+      - name: FE dead code 스캔 (knip)
+        run: |
+          cd frontend && npx knip --no-exit-code > /tmp/fe-dead-code.txt 2>&1 || true
+          FE_COUNT=$(grep -cE "^(Unused|src/)" /tmp/fe-dead-code.txt 2>/dev/null || echo "0")
+          echo "fe_count=$FE_COUNT" >> "$GITHUB_ENV"
+          echo "FE dead code: $FE_COUNT건"
+          cat /tmp/fe-dead-code.txt
+
+      # ── 이슈 생성 ──
+      - name: Dead code 이슈 생성
+        if: env.be_count != '0' || env.fe_count != '0'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          BE_RESULT=$(cat /tmp/be-dead-code.txt)
+          FE_RESULT=$(cat /tmp/fe-dead-code.txt)
+
+          BODY="## 월간 Dead Code 스캔 결과
+
+          ### Backend (vulture, 90%+ 확신)
+          \`\`\`
+          ${BE_RESULT:-깨끗합니다 ✅}
+          \`\`\`
+
+          ### Frontend (knip)
+          \`\`\`
+          ${FE_RESULT:-깨끗합니다 ✅}
+          \`\`\`
+
+          ---
+          🤖 월간 자동 스캔"
+
+          EXISTING=$(gh issue list --label "code-quality" --search "[월간] Dead code" --state open --json number --jq '.[0].number // empty')
+          if [ -n "$EXISTING" ]; then
+            printf "$BODY" | gh issue comment "$EXISTING" --body-file -
+          else
+            printf "$BODY" | gh issue create \
+              --title "[월간] Dead code 정리 필요" \
+              --label "code-quality" \
+              --body-file -
+          fi
+
+      - name: 깨끗함 로그
+        if: env.be_count == '0' && env.fe_count == '0'
+        run: echo "✅ Dead code 없음"
