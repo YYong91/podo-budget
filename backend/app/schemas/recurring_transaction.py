@@ -63,3 +63,9 @@ class ExecuteResponse(BaseModel):
     created_id: int
     type: str
     next_due_date: date
+
+
+class SkipResponse(BaseModel):
+    """정기 거래 건너뛰기 결과 (#242)"""
+
+    next_due_date: str

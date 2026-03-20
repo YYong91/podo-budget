@@ -2,6 +2,7 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
+import { Toaster } from 'react-hot-toast'
 import { ToastProvider } from './contexts/ToastContext'
 import { AuthProvider } from './contexts/AuthContext'
 import { ThemeProvider } from './contexts/ThemeContext'
@@ -46,6 +47,8 @@ async function bootstrap() {
           <AuthProvider>
             <ToastProvider>
               <App />
+              {/* api/client.ts 글로벌 에러 핸들러용 react-hot-toast Toaster (#243) */}
+              <Toaster position="top-center" toastOptions={{ duration: 3000 }} />
             </ToastProvider>
           </AuthProvider>
         </ThemeProvider>

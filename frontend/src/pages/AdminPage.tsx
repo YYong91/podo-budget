@@ -6,8 +6,8 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { RefreshCw, ShieldCheck } from 'lucide-react'
-import toast from 'react-hot-toast'
 import { useAuth } from '../contexts/AuthContext'
+import { useToast } from '../hooks/useToast'
 import { adminApi } from '../api/admin'
 
 import LoadingSpinner from '../components/LoadingSpinner'
@@ -22,6 +22,7 @@ type TabName = typeof TABS[number]
 
 export default function AdminPage() {
   const { user, loading: authLoading } = useAuth()
+  const { addToast } = useToast()
   const [activeTab, setActiveTab] = useState<TabName>('현황')
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
@@ -33,7 +34,7 @@ export default function AdminPage() {
       const res = await adminApi.getDashboardStats()
       setDashboard(res.data)
     } catch {
-      toast.error('데이터 로딩 실패')
+      addToast('error', '데이터 로딩 실패')
     } finally {
       setLoading(false)
       setRefreshing(false)

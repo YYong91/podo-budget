@@ -9,6 +9,7 @@
 - 가구 멤버 전체의 지출을 함께 조회할 수 있음
 """
 
+import logging
 from calendar import monthrange
 from datetime import datetime
 
@@ -31,6 +32,7 @@ from app.schemas.expense import (
     ExpenseCreate,
     ExpenseResponse,
     ExpenseUpdate,
+    MonthlyStatsResponse,
     PeriodTotal,
     StatsPeriod,
     StatsResponse,
@@ -38,6 +40,8 @@ from app.schemas.expense import (
 )
 from app.services.llm_service import get_llm_provider
 from app.utils.date_utils import get_month_range, get_week_label, get_week_range, get_year_range
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -66,6 +70,7 @@ async def create_expense(
     db.add(db_expense)
     await db.commit()
     await db.refresh(db_expense)
+    logger.info("지출 생성: user=%s, amount=%s", current_user.id, expense.amount)
     return db_expense
 
 
@@ -392,7 +397,7 @@ async def get_stats_comparison(
     )
 
 
-@router.get("/stats/monthly")
+@router.get("/stats/monthly", response_model=MonthlyStatsResponse)
 async def get_monthly_stats(
     month: str = Query(..., description="YYYY-MM 형식", pattern=r"^\d{4}-\d{2}$"),
     household_id: int | None = None,
@@ -664,3 +669,4 @@ async def delete_expense(
 
     await db.delete(expense)
     await db.commit()
+    logger.info("지출 삭제: user=%s, expense_id=%s", current_user.id, expense_id)

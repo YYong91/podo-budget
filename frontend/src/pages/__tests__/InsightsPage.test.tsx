@@ -5,29 +5,15 @@ import { server } from '../../mocks/server'
 import { http, HttpResponse } from 'msw'
 import InsightsPage from '../InsightsPage'
 
-vi.mock('react-chartjs-2', () => ({
-  Line: () => <div data-testid="mock-line-chart" />,
-  Bar: () => <div data-testid="mock-bar-chart" />,
-  Chart: () => <div data-testid="mock-chart" />,
-}))
-
-vi.mock('chart.js', () => ({
-  Chart: { register: vi.fn() },
-  CategoryScale: class {},
-  LinearScale: class {},
-  BarElement: class {},
-  LineElement: class {},
-  PointElement: class {},
-  BarController: class {},
-  LineController: class {},
-  Legend: class {},
-  Tooltip: class {},
-  Filler: class {},
-}))
 
 vi.mock('../../stores/useHouseholdStore', () => ({
   useHouseholdStore: (selector: (s: { activeHouseholdId: number }) => unknown) =>
     selector({ activeHouseholdId: 1 }),
+}))
+
+// useToast 모킹 (react-hot-toast 대신 커스텀 훅 사용)
+vi.mock('../../hooks/useToast', () => ({
+  useToast: () => ({ addToast: vi.fn(), removeToast: vi.fn() }),
 }))
 
 describe('InsightsPage', () => {

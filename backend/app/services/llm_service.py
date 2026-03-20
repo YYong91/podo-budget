@@ -21,6 +21,16 @@ from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
+
+def _extract_json_text(text: str) -> str:
+    """LLM 응답 텍스트에서 JSON 부분 추출 — ```json 블록 처리 (#243)"""
+    if "```json" in text:
+        return text.split("```json")[1].split("```")[0].strip()
+    if "```" in text:
+        return text.split("```")[1].split("```")[0].strip()
+    return text.strip()
+
+
 # 기능 타입 정의
 LLMFeature = Literal["parse", "insights", "ocr"]
 
@@ -120,14 +130,8 @@ class AnthropicProvider(LLMProvider):
                     logger.warning(f"max_tokens 초과: 응답이 잘렸습니다. 입력 길이={len(user_input)}")
                     return {"error": "입력이 너무 길어 처리할 수 없습니다. 날짜별로 나누어 입력해주세요."}
 
-                # 텍스트 응답에서 JSON 추출
-                text = response.content[0].text.strip()
-
-                # ```json ... ``` 블록이 있으면 내부만 추출
-                if "```json" in text:
-                    text = text.split("```json")[1].split("```")[0].strip()
-                elif "```" in text:
-                    text = text.split("```")[1].split("```")[0].strip()
+                # 텍스트 응답에서 JSON 추출 (```json 블록 처리)
+                text = _extract_json_text(response.content[0].text)
 
                 parsed = json.loads(text)
 
@@ -202,13 +206,7 @@ class AnthropicProvider(LLMProvider):
                 ],
             )
 
-            text = response.content[0].text.strip()
-
-            # ```json ... ``` 블록이 있으면 내부만 추출
-            if "```json" in text:
-                text = text.split("```json")[1].split("```")[0].strip()
-            elif "```" in text:
-                text = text.split("```")[1].split("```")[0].strip()
+            text = _extract_json_text(response.content[0].text)
 
             parsed = json.loads(text)
 
@@ -355,14 +353,8 @@ class OpenAIProvider(LLMProvider):
                     logger.warning(f"max_tokens 초과: 응답이 잘렸습니다. 입력 길이={len(user_input)}")
                     return {"error": "입력이 너무 길어 처리할 수 없습니다. 날짜별로 나누어 입력해주세요."}
 
-                # 텍스트 응답에서 JSON 추출
-                text = response.choices[0].message.content.strip()
-
-                # ```json ... ``` 블록이 있으면 내부만 추출
-                if "```json" in text:
-                    text = text.split("```json")[1].split("```")[0].strip()
-                elif "```" in text:
-                    text = text.split("```")[1].split("```")[0].strip()
+                # 텍스트 응답에서 JSON 추출 (```json 블록 처리)
+                text = _extract_json_text(response.choices[0].message.content)
 
                 parsed = json.loads(text)
 

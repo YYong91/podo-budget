@@ -1,3 +1,6 @@
+import logging
+import sys
+import uuid
 from contextlib import asynccontextmanager
 
 import sentry_sdk
@@ -30,6 +33,19 @@ from app.core.config import settings
 from app.core.database import Base, engine
 from app.core.exceptions import register_exception_handlers
 from app.core.rate_limit import limiter
+
+
+def _setup_logging() -> None:
+    """로그 레벨 설정 — DEBUG 모드에서는 DEBUG, 프로덕션에서는 INFO (#244)"""
+    level = logging.DEBUG if settings.DEBUG else logging.INFO
+    logging.basicConfig(
+        level=level,
+        format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+        datefmt="%Y-%m-%dT%H:%M:%S",
+    )
+
+
+_setup_logging()  # 모듈 임포트 시 설정
 
 # Sentry 초기화 — DSN이 설정된 경우에만 활성화
 if settings.SENTRY_DSN:
@@ -76,7 +92,6 @@ async def lifespan(app: FastAPI):
     # Alembic 마이그레이션 실행 — create_all 대신 사용해 기존 DB에도 스키마 변경 적용
     import logging
     import pathlib
-    import sys
 
     logger = logging.getLogger(__name__)
     # alembic.ini는 app 패키지의 부모 디렉토리에 위치 (backend/ 또는 컨테이너의 /app/)
@@ -136,6 +151,15 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["Content-Type", "Authorization"],
 )
+
+
+# Request ID 미들웨어 — 모든 응답에 X-Request-ID 헤더 추가 (#244)
+@app.middleware("http")
+async def add_request_id(request: Request, call_next):
+    request_id = request.headers.get("X-Request-ID") or str(uuid.uuid4())[:8]
+    response = await call_next(request)
+    response.headers["X-Request-ID"] = request_id
+    return response
 
 
 # 보안 헤더 미들웨어 — 모든 응답에 필수 보안 헤더 추가 (#235)
@@ -229,4 +253,7 @@ async def health_db():
             await session.execute(text("SELECT 1"))
         return {"status": "healthy", "database": "connected"}
     except Exception:
-        return {"status": "unhealthy", "database": "disconnected"}
+        return JSONResponse(
+            status_code=503,
+            content={"status": "unhealthy", "database": "disconnected"},
+        )

@@ -22,13 +22,14 @@ from app.models.user import User
 from app.schemas.insights import (
     ComprehensiveInsightsRequest,
     ComprehensiveInsightsResponse,
+    InsightsGenerateResponse,
 )
 from app.services.llm_service import get_llm_provider
 
 router = APIRouter()
 
 
-@router.post("/generate")
+@router.post("/generate", response_model=InsightsGenerateResponse)
 @limiter.limit("5/minute")
 async def generate_insights(
     request: Request,

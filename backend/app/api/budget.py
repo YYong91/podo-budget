@@ -7,6 +7,7 @@ expenses/recurring과 동일한 household 패턴을 따릅니다.
 복잡한 비즈니스 로직(알림, 카테고리 개요)은 budget_service로 위임 (#176)
 """
 
+import logging
 from datetime import date, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -32,6 +33,8 @@ from app.schemas.budget import (
     TotalBudgetUpdate,
 )
 from app.services import budget_service
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -105,6 +108,7 @@ async def create_budget(
     db.add(new_budget)
     await db.commit()
     await db.refresh(new_budget)
+    logger.info("예산 생성: user=%s, category_id=%s, amount=%s", current_user.id, budget_data.category_id, budget_data.amount)
     return new_budget
 
 
