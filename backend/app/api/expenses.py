@@ -465,7 +465,7 @@ async def parse_expense_image(
     이미지를 Claude Vision API로 분석하여 지출 정보를 추출합니다.
     저장하지 않고 파싱 결과만 반환합니다 (chat preview와 동일한 형식).
     """
-    # 이미지 파일 타입 검증
+    # Content-Type 검증
     ALLOWED_TYPES = {"image/jpeg", "image/png", "image/gif", "image/webp"}
     if file.content_type not in ALLOWED_TYPES:
         raise HTTPException(
@@ -480,6 +480,21 @@ async def parse_expense_image(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="파일 크기는 10MB 이하여야 합니다",
+        )
+
+    # 매직 바이트 검증 — Content-Type 스푸핑 방지 (#237)
+    # content_type 헤더는 클라이언트가 임의로 설정 가능하므로 실제 파일 내용으로 검증
+    MAGIC_BYTES: dict[str, list[bytes]] = {
+        "image/jpeg": [b"\xff\xd8\xff"],
+        "image/png": [b"\x89PNG\r\n"],
+        "image/gif": [b"GIF87a", b"GIF89a"],
+        "image/webp": [b"RIFF"],  # RIFF....WEBP 구조
+    }
+    valid_magic = MAGIC_BYTES.get(file.content_type, [])
+    if valid_magic and not any(image_bytes.startswith(m) for m in valid_magic):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="이미지 파일 내용이 올바르지 않습니다",
         )
 
     # household_id 미지정 시 활성 가구 자동 감지

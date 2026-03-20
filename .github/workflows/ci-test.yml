@@ -46,6 +46,9 @@ jobs:
       - name: 포맷 검증
         run: uv run ruff format --check backend/  # 포맷 미준수 코드 CI 차단 (#177)
 
+      - name: 의존성 취약점 스캔
+        run: uv run pip-audit  # 알려진 CVE 탐지 (#237)
+
       - name: 테스트 실행
         env:
           DATABASE_URL: sqlite+aiosqlite:///./test.db
@@ -74,6 +77,9 @@ jobs:
 
       - name: 린트
         run: cd frontend && npm run lint
+
+      - name: 의존성 취약점 스캔
+        run: cd frontend && npm audit --audit-level=high  # 심각(high+) CVE 탐지 (#237)
 
       - name: 테스트 실행
         run: cd frontend && npm run test:run
