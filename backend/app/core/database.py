@@ -9,6 +9,9 @@ engine = create_async_engine(
     echo=settings.DEBUG,
     future=True,
     connect_args={"check_same_thread": False} if "sqlite" in settings.DATABASE_URL else {},
+    # Fly.io 하이버네이션 후 stale 커넥션 자동 감지 + 30분마다 커넥션 재생성 (#241)
+    pool_pre_ping=True,
+    pool_recycle=1800,
 )
 
 if "sqlite" in settings.DATABASE_URL:

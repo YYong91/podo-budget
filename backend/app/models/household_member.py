@@ -14,7 +14,7 @@
 - 멤버 탈퇴 시 소프트 삭제(left_at 설정)로 기록을 보존합니다
 """
 
-from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, UniqueConstraint
+from sqlalchemy import Column, DateTime, ForeignKey, Index, Integer, String, UniqueConstraint
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
@@ -52,8 +52,12 @@ class HouseholdMember(Base):
     joined_at = Column(DateTime, default=func.now(), nullable=False)
     left_at = Column(DateTime, nullable=True)  # 소프트 삭제: 탈퇴한 멤버는 left_at이 설정됨
 
-    # 제약 조건: 한 사용자는 같은 가구에 한 번만 속할 수 있음
-    __table_args__ = (UniqueConstraint("household_id", "user_id", name="uq_household_user"),)
+    # 제약 조건 + 인덱스 (#238)
+    __table_args__ = (
+        UniqueConstraint("household_id", "user_id", name="uq_household_user"),
+        # get_household_member()는 모든 인증 요청마다 실행 — (user_id, left_at) 복합 인덱스로 최적화
+        Index("ix_household_members_user_left_at", "user_id", "left_at"),
+    )
 
     # Relationships
     household = relationship("Household", back_populates="members")
