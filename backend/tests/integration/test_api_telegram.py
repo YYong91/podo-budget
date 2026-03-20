@@ -130,11 +130,11 @@ async def test_webhook_parse_error(client, db_session, mock_telegram_send, mock_
     result = await db_session.execute(select(Expense))
     assert len(result.scalars().all()) == 0
 
-    # 에러 메시지 전송
+    # 에러 메시지 전송 (3 Strike: 1회차 메시지)
     mock_telegram_send.assert_called_once()
     call_args = mock_telegram_send.call_args
     sent_message = call_args[0][1]
-    assert "금액을 찾을 수 없" in sent_message or "파싱 실패" in sent_message
+    assert "금액" in sent_message
 
 
 @pytest.mark.asyncio
@@ -890,3 +890,105 @@ async def test_webhook_income_creates_income_record(client, db_session, mock_tel
     incomes = result.scalars().all()
     assert len(incomes) >= 1
     assert any(i.amount == 500000 for i in incomes)
+
+
+# ── 3 Strike + 리포트/예산 UX 버튼 테스트 (#286) ──────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_webhook_parse_error_strike_progression(client, db_session, mock_telegram_send, mock_llm_parse_expense):
+    """3번 연속 파싱 실패 시 메시지가 점진적으로 변화"""
+    from app.services.bot_strike_service import _error_counts
+
+    # Strike 카운터 초기화
+    _error_counts.clear()
+
+    await setup_bot_user_with_household(db_session, chat_id=55555)
+    mock_llm_parse_expense.return_value = {"error": "금액을 찾을 수 없습니다"}
+
+    messages = []
+    for i in range(3):
+        mock_telegram_send.reset_mock()
+        payload = {"message": {"chat": {"id": 55555}, "text": f"아무말이나{i}"}}
+        response = await client.post("/api/telegram/webhook", json=payload)
+        assert response.status_code == 200
+        messages.append(mock_telegram_send.call_args[0][1])
+
+    # Strike 1: "금액을 찾지 못했어요"
+    assert "금액을 찾지 못했어요" in messages[0]
+    # Strike 2: "아직 이해하지 못했어요"
+    assert "이해하지 못했어요" in messages[1]
+    # Strike 3: "이해하기 어려운 표현"
+    assert "이해하기 어려운" in messages[2]
+
+    # Strike 카운터 정리
+    _error_counts.clear()
+
+
+@pytest.mark.asyncio
+async def test_report_command_has_buttons(client, db_session, mock_telegram_send, mock_llm_parse_expense):
+    """/report 응답에 인라인 키보드(예산 현황 버튼) 포함"""
+    await setup_bot_user_with_household(db_session, chat_id=44444)
+    # 지출 하나 만들어서 리포트에 데이터가 있도록
+    payload = {"message": {"chat": {"id": 44444}, "text": "점심 8000원"}}
+    await client.post("/api/telegram/webhook", json=payload)
+
+    mock_telegram_send.reset_mock()
+    report_payload = {"message": {"chat": {"id": 44444}, "text": "/report"}}
+    response = await client.post("/api/telegram/webhook", json=report_payload)
+    assert response.status_code == 200
+
+    mock_telegram_send.assert_called_once()
+    call_kwargs = mock_telegram_send.call_args
+    # reply_markup에 inline_keyboard가 포함되어야 함
+    reply_markup = call_kwargs[1].get("reply_markup") if call_kwargs[1] else None
+    assert reply_markup is not None
+    assert "inline_keyboard" in reply_markup
+    # 예산 현황 버튼이 있어야 함
+    buttons_flat = [btn for row in reply_markup["inline_keyboard"] for btn in row]
+    assert any("예산" in btn["text"] for btn in buttons_flat)
+
+
+@pytest.mark.asyncio
+async def test_budget_command_has_buttons(client, db_session, mock_telegram_send):
+    """/budget 응답에 인라인 키보드(리포트 버튼) 포함"""
+    await setup_bot_user_with_household(db_session, chat_id=44444)
+
+    mock_telegram_send.reset_mock()
+    payload = {"message": {"chat": {"id": 44444}, "text": "/budget"}}
+    response = await client.post("/api/telegram/webhook", json=payload)
+    assert response.status_code == 200
+
+    mock_telegram_send.assert_called_once()
+    call_kwargs = mock_telegram_send.call_args
+    reply_markup = call_kwargs[1].get("reply_markup") if call_kwargs[1] else None
+    assert reply_markup is not None
+    assert "inline_keyboard" in reply_markup
+    # 리포트 버튼이 있어야 함
+    buttons_flat = [btn for row in reply_markup["inline_keyboard"] for btn in row]
+    assert any("리포트" in btn["text"] for btn in buttons_flat)
+
+
+@pytest.mark.asyncio
+async def test_cmd_callback_report(client, db_session, mock_telegram_send):
+    """cmd:report 콜백이 리포트를 전송하는지 확인"""
+    from unittest.mock import AsyncMock
+    from unittest.mock import patch as mock_patch
+
+    await setup_bot_user_with_household(db_session, chat_id=44444)
+
+    with mock_patch("app.api.telegram.answer_callback_query", new_callable=AsyncMock):
+        callback_payload = {
+            "callback_query": {
+                "id": "cb_cmd_report",
+                "message": {"chat": {"id": 44444}},
+                "data": "cmd:report",
+            }
+        }
+        response = await client.post("/api/telegram/webhook", json=callback_payload)
+        assert response.status_code == 200
+
+    # 리포트 메시지가 전송되었는지 확인
+    assert mock_telegram_send.called
+    sent_message = mock_telegram_send.call_args[0][1]
+    assert "리포트" in sent_message or "지출" in sent_message

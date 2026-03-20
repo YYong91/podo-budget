@@ -22,7 +22,8 @@ def format_korean_date(d: date | datetime | str) -> str:
     - 그 외 → "3월 20일 (금)"
     """
     if isinstance(d, str):
-        d = date.fromisoformat(d)
+        # "2026-03-20T00:00:00" 등 datetime ISO 문자열도 처리
+        d = datetime.fromisoformat(d).date() if "T" in d else date.fromisoformat(d)
     if isinstance(d, datetime):
         d = d.date()
 
