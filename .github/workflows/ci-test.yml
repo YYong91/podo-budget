@@ -81,6 +81,20 @@ jobs:
           path: backend-coverage.json
           retention-days: 5
 
+      - name: 마이그레이션 정합성 검증
+        env:
+          DATABASE_URL: sqlite+aiosqlite:///./test.db
+          SECRET_KEY: test-secret-key  # pragma: allowlist secret
+          LLM_PROVIDER: anthropic
+          ANTHROPIC_API_KEY: test-key  # pragma: allowlist secret
+        run: |
+          cd backend
+          # Alembic head가 현재 DB 상태와 일치하는지 확인
+          PYTHONPATH=. uv run alembic upgrade head
+          # 모델과 마이그레이션이 동기화되어 있는지 확인 (autogenerate diff가 비어있어야 함)
+          PYTHONPATH=. uv run alembic check 2>&1 || echo "::warning::pending 마이그레이션이 감지되었습니다. alembic revision --autogenerate로 마이그레이션을 생성하세요."
+        continue-on-error: true  # 처음엔 경고만 — 안정화 후 필수로 전환 (#255)
+
       - name: API 스키마 스냅샷 생성
         env:
           DATABASE_URL: sqlite+aiosqlite:///./test.db
