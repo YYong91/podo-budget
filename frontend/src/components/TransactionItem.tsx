@@ -3,6 +3,7 @@
  * @description 2줄 구조 거래 항목 — 설명+금액 / 카테고리뱃지
  */
 
+import { memo } from 'react'
 import { Link } from 'react-router-dom'
 import { formatAmount } from '../utils/format'
 import type { Category } from '../types'
@@ -17,10 +18,11 @@ interface TransactionItemProps {
   categoryMap: Map<number, Category>
   excludeFromStats?: boolean
   rawInput?: string | null
-  onCategoryClick: (e: React.MouseEvent) => void
+  /** 안정적 콜백 — TransactionList에서 useMemo로 생성된 핸들러 전달 (#240) */
+  onCategoryClick: () => void
 }
 
-export default function TransactionItem({
+function TransactionItem({
   id,
   type,
   description,
@@ -60,7 +62,7 @@ export default function TransactionItem({
           onClick={(e) => {
             e.preventDefault()
             e.stopPropagation()
-            onCategoryClick(e)
+            onCategoryClick()
           }}
           className={`text-xs px-2 py-0.5 rounded-full transition-colors ${
             type === 'income'
@@ -80,3 +82,6 @@ export default function TransactionItem({
     </Link>
   )
 }
+
+// React.memo로 불필요한 리렌더 방지 — onCategoryClick은 TransactionList에서 useMemo로 안정화 (#240)
+export default memo(TransactionItem)

@@ -5,6 +5,7 @@
  */
 
 import { create } from 'zustand'
+import { persist } from 'zustand/middleware'
 import type {
   Household,
   HouseholdDetail,
@@ -105,7 +106,10 @@ let _initializeAppPromise: Promise<void> | null = null
 /**
  * Household 관리를 위한 Zustand 스토어
  */
-export const useHouseholdStore = create<HouseholdStore>((set, get) => ({
+export const useHouseholdStore = create<HouseholdStore>()(
+  // activeHouseholdId를 localStorage에 유지 — 새로고침 후에도 선택된 가구 복원 (#245)
+  persist(
+    (set, get) => ({
   // ============================================================
   // 초기 상태
   // ============================================================
@@ -441,4 +445,10 @@ export const useHouseholdStore = create<HouseholdStore>((set, get) => ({
     if (id === null) return
     set({ activeHouseholdId: id })
   },
-}))
+    }),
+    {
+      name: 'podo-household',   // localStorage 키
+      partialize: (state) => ({ activeHouseholdId: state.activeHouseholdId }),
+    }
+  )
+)
