@@ -29,12 +29,12 @@ def test_report_message_single_category():
     assert "식비" in result
     assert "150,000원" in result
     assert "12건" in result
-    assert "100.0%" in result
-    assert "총 지출" in result
+    assert "100%" in result
+    assert "총" in result
 
 
 def test_report_message_multiple_categories():
-    """여러 카테고리 리포트 메시지"""
+    """여러 카테고리 리포트 메시지 — TOP 3 표시"""
     data = [
         {"category": "식비", "total": 200000, "count": 15},
         {"category": "교통비", "total": 100000, "count": 10},
@@ -47,8 +47,8 @@ def test_report_message_multiple_categories():
     assert "문화생활" in result
     # 총 지출: 350,000원
     assert "350,000원" in result
-    # 퍼센티지 확인 (식비: 200000/350000 = 57.1%)
-    assert "57.1%" in result
+    # 퍼센티지 확인 (소수점 없이 정수%)
+    assert "57%" in result
 
 
 # ===== format_budget_status 테스트 =====
@@ -62,7 +62,7 @@ def test_budget_status_empty():
 
 
 def test_budget_status_safe():
-    """예산 안전 상태 (80% 미만)"""
+    """예산 안전 상태 (80% 미만) — 단독이면 상세 표시"""
     data = [
         {
             "category": "식비",
@@ -78,9 +78,7 @@ def test_budget_status_safe():
     assert "식비" in result
     assert "100,000원" in result
     assert "300,000원" in result
-    assert "안전" in result
     assert "✅" in result
-    assert "200,000원" in result
 
 
 def test_budget_status_warning():
@@ -96,8 +94,8 @@ def test_budget_status_warning():
     ]
     result = format_budget_status(data)
 
-    assert "주의" in result
     assert "⚠️" in result
+    assert "85%" in result
 
 
 def test_budget_status_exceeded():
@@ -115,11 +113,11 @@ def test_budget_status_exceeded():
 
     assert "초과" in result
     assert "🚨" in result
-    assert "-15,000원" in result
+    assert "15,000원" in result  # +15,000원 초과
 
 
 def test_budget_status_multiple_items():
-    """여러 예산 항목 메시지"""
+    """여러 예산 항목 — 초과/주의 상세, 안전 접기"""
     data = [
         {
             "category": "식비",
@@ -145,11 +143,9 @@ def test_budget_status_multiple_items():
     ]
     result = format_budget_status(data)
 
-    # 세 카테고리 모두 포함
-    assert "식비" in result
-    assert "교통비" in result
+    # 초과/주의 항목은 상세 표시
     assert "카페" in result
-    # 다양한 상태
-    assert "안전" in result
-    assert "주의" in result
+    assert "교통비" in result
     assert "초과" in result
+    # 안전 항목은 접힘 (1개 카테고리 안전)
+    assert "1개 카테고리 안전" in result

@@ -28,6 +28,7 @@ from app.models.expense import Expense
 from app.models.income import Income
 from app.services.bot_messages import (
     format_budget_status,
+    format_delete_confirm,
     format_expense_saved,
     format_help_message,
     format_income_saved,
@@ -37,6 +38,7 @@ from app.services.bot_messages import (
     format_server_error,
     format_welcome_message,
 )
+from app.services.bot_strike_service import increment_strike, reset_strike
 from app.services.bot_user_service import get_or_create_bot_user, link_telegram_account_by_code
 from app.services.category_hint_service import get_category_hints, get_user_categories
 from app.services.category_mapping_service import get_mapped_category, save_category_mapping
@@ -164,15 +166,23 @@ async def _save_and_respond_single(
         db.add(record)
         await db.commit()
         await db.refresh(record)
-        # 수입은 카테고리 변경 대신 삭제만 제공
-        inline_keyboard = {"inline_keyboard": [[{"text": "🗑️ 삭제", "callback_data": f"delete_income:{record.id}"}]]}
+        reset_strike("telegram", str(chat_id))
+        # 수입: 삭제 + 지출로 변경
+        inline_keyboard = {
+            "inline_keyboard": [
+                [
+                    {"text": "🗑️ 삭제", "callback_data": f"delete_income:{record.id}"},
+                    {"text": "🍇 지출로 변경", "callback_data": f"convert_to_expense:{record.id}"},
+                ]
+            ]
+        }
         await send_telegram_message(
             chat_id,
             format_income_saved(
                 amount=parsed["amount"],
                 category=category.name,
                 description=parsed.get("description", user_text),
-                date=record_date.strftime("%Y-%m-%d"),
+                date=record_date.isoformat(),
             ),
             reply_markup=inline_keyboard,
         )
@@ -183,12 +193,16 @@ async def _save_and_respond_single(
     db.add(record)
     await db.commit()
     await db.refresh(record)
+    reset_strike("telegram", str(chat_id))
     inline_keyboard = {
         "inline_keyboard": [
             [
                 {"text": "🔄 카테고리 변경", "callback_data": f"change_category:{record.id}"},
                 {"text": "🗑️ 삭제", "callback_data": f"delete_expense:{record.id}"},
-            ]
+            ],
+            [
+                {"text": "💰 수입으로 변경", "callback_data": f"convert_to_income:{record.id}"},
+            ],
         ]
     }
     await send_telegram_message(
@@ -197,20 +211,23 @@ async def _save_and_respond_single(
             amount=parsed["amount"],
             category=category.name,
             description=parsed.get("description", user_text),
-            date=record_date.strftime("%Y-%m-%d"),
+            date=record_date.isoformat(),
         ),
         reply_markup=inline_keyboard,
     )
 
 
 def _build_expense_saved_keyboard(expense_id: int) -> dict:
-    """지출 저장 후 수정/삭제 인라인 키보드 생성"""
+    """지출 저장 후 수정/삭제/변환 인라인 키보드 생성"""
     return {
         "inline_keyboard": [
             [
                 {"text": "🔄 카테고리 변경", "callback_data": f"change_category:{expense_id}"},
                 {"text": "🗑️ 삭제", "callback_data": f"delete_expense:{expense_id}"},
-            ]
+            ],
+            [
+                {"text": "💰 수입으로 변경", "callback_data": f"convert_to_income:{expense_id}"},
+            ],
         ]
     }
 
@@ -222,13 +239,29 @@ def _build_expense_saved_keyboard(expense_id: int) -> dict:
 
 async def _handle_start_command(chat_id: int, user_text: str, bot_user: Any, db: AsyncSession, active_household_id: int | None) -> dict:
     """``/start`` 명령어 처리"""
-    await send_telegram_message(chat_id, format_welcome_message())
+    reply_markup = {
+        "inline_keyboard": [
+            [
+                {"text": "📖 사용법 보기", "callback_data": "cmd:help"},
+                {"text": "🔗 연동하기", "callback_data": "cmd:link_info"},
+            ],
+        ]
+    }
+    await send_telegram_message(chat_id, format_welcome_message(), reply_markup=reply_markup)
     return {"ok": True}
 
 
 async def _handle_help_command(chat_id: int, user_text: str, bot_user: Any, db: AsyncSession, active_household_id: int | None) -> dict:
     """``/help`` 명령어 처리"""
-    await send_telegram_message(chat_id, format_help_message())
+    reply_markup = {
+        "inline_keyboard": [
+            [
+                {"text": "📊 리포트", "callback_data": "cmd:report"},
+                {"text": "💵 예산", "callback_data": "cmd:budget"},
+            ],
+        ]
+    }
+    await send_telegram_message(chat_id, format_help_message(), reply_markup=reply_markup)
     return {"ok": True}
 
 
@@ -323,7 +356,8 @@ async def _handle_single_expense_parsed(
 ) -> None:
     """단일 파싱 결과 처리: 에러 / 카테고리 확인 / 바로 저장 분기"""
     if "error" in parsed:
-        await send_telegram_message(chat_id, format_parse_error(user_text))
+        strike = increment_strike("telegram", str(chat_id))
+        await send_telegram_message(chat_id, format_parse_error(strike=strike))
         return
 
     category_name = parsed.get("category", "기타")
@@ -499,6 +533,9 @@ async def _handle_multiple_expenses(
         type_icon = "💵" if item.get("type") == "income" else "💰"
         message_lines.append(f"{idx}. {type_icon} {item['amount']:,.0f}원 - 📂 {cat_name} - {item.get('description', '')}")
 
+    # 성공 시 strike 초기화
+    reset_strike("telegram", str(chat_id))
+
     await send_telegram_message(chat_id, "\n".join(message_lines))
 
 
@@ -540,7 +577,7 @@ async def _handle_confirm_cat(db: AsyncSession, chat_id: int, callback_id: str, 
             amount=float(expense.amount),
             category=selected_category.name,
             description=expense.description,
-            date=expense.date.strftime("%Y-%m-%d"),
+            date=expense.date.isoformat(),
         ),
         reply_markup=_build_expense_saved_keyboard(expense.id),
     )
@@ -561,7 +598,7 @@ async def _handle_new_cat(db: AsyncSession, chat_id: int, callback_id: str, expe
             amount=float(expense.amount),
             category=new_category.name,
             description=expense.description,
-            date=expense.date.strftime("%Y-%m-%d"),
+            date=expense.date.isoformat(),
         ),
         reply_markup=_build_expense_saved_keyboard(expense.id),
     )
@@ -646,6 +683,120 @@ async def _handle_set_category(db: AsyncSession, chat_id: int, callback_id: str,
     return {"ok": True}
 
 
+# ---------------------------------------------------------------------------
+# Income 관련 콜백 핸들러
+# ---------------------------------------------------------------------------
+
+
+async def _handle_delete_income(db: AsyncSession, chat_id: int, callback_id: str, income: Income, bot_user: Any, parts: list[str]) -> dict:
+    """수입 삭제 확인 프롬프트 (2단계: 먼저 확인 → 실제 삭제)"""
+    await answer_callback_query(callback_id, "삭제 확인이 필요합니다.")
+    confirm_keyboard = {
+        "inline_keyboard": [
+            [
+                {"text": "✅ 삭제 확인", "callback_data": f"confirm_delete_income:{income.id}"},
+                {"text": "❌ 취소", "callback_data": f"cancel_delete_income:{income.id}"},
+            ]
+        ]
+    }
+    await send_telegram_message(
+        chat_id,
+        f"🗑️ 정말 삭제하시겠어요?\n\n💰 {income.amount:,.0f}원 - {income.description}",
+        reply_markup=confirm_keyboard,
+    )
+    return {"ok": True}
+
+
+async def _handle_confirm_delete_income(db: AsyncSession, chat_id: int, callback_id: str, income: Income, bot_user: Any, parts: list[str]) -> dict:
+    """수입 실제 삭제"""
+    amount = income.amount
+    description = income.description
+    await db.delete(income)
+    await db.commit()
+    await answer_callback_query(callback_id, "삭제되었습니다!")
+    await send_telegram_message(chat_id, format_delete_confirm(amount=float(amount), description=description))
+    return {"ok": True}
+
+
+async def _handle_cancel_delete_income(db: AsyncSession, chat_id: int, callback_id: str, income: Income, bot_user: Any, parts: list[str]) -> dict:
+    """수입 삭제 취소"""
+    await answer_callback_query(callback_id, "삭제가 취소되었습니다.")
+    await send_telegram_message(chat_id, "↩️ 삭제가 취소되었어요.")
+    return {"ok": True}
+
+
+async def _handle_convert_to_income(db: AsyncSession, chat_id: int, callback_id: str, expense: Expense, bot_user: Any, parts: list[str]) -> dict:
+    """지출 → 수입 변환: Expense 삭제 → Income 생성 (같은 금액/설명/날짜)"""
+    category = await get_or_create_category(db, "기타수입", user_id=bot_user.id, household_id=expense.household_id)
+
+    income = Income(
+        user_id=expense.user_id,
+        amount=expense.amount,
+        description=expense.description,
+        category_id=category.id,
+        date=expense.date,
+        household_id=expense.household_id,
+        raw_input=expense.raw_input,
+    )
+    db.add(income)
+    await db.delete(expense)
+    await db.commit()
+    await db.refresh(income)
+
+    await answer_callback_query(callback_id, "수입으로 변경!")
+    inline_keyboard = {
+        "inline_keyboard": [
+            [
+                {"text": "🗑️ 삭제", "callback_data": f"delete_income:{income.id}"},
+                {"text": "🍇 지출로 변경", "callback_data": f"convert_to_expense:{income.id}"},
+            ]
+        ]
+    }
+    await send_telegram_message(
+        chat_id,
+        format_income_saved(
+            amount=float(income.amount),
+            category=category.name,
+            description=income.description,
+            date=income.date.isoformat(),
+        ),
+        reply_markup=inline_keyboard,
+    )
+    return {"ok": True}
+
+
+async def _handle_convert_to_expense(db: AsyncSession, chat_id: int, callback_id: str, income: Income, bot_user: Any, parts: list[str]) -> dict:
+    """수입 → 지출 변환: Income 삭제 → Expense 생성 (같은 금액/설명/날짜)"""
+    category = await get_or_create_category(db, "기타", user_id=bot_user.id, household_id=income.household_id)
+
+    expense = Expense(
+        user_id=income.user_id,
+        amount=income.amount,
+        description=income.description,
+        category_id=category.id,
+        date=income.date,
+        household_id=income.household_id,
+        raw_input=income.raw_input,
+    )
+    db.add(expense)
+    await db.delete(income)
+    await db.commit()
+    await db.refresh(expense)
+
+    await answer_callback_query(callback_id, "지출로 변경!")
+    await send_telegram_message(
+        chat_id,
+        format_expense_saved(
+            amount=float(expense.amount),
+            category=category.name,
+            description=expense.description,
+            date=expense.date.isoformat(),
+        ),
+        reply_markup=_build_expense_saved_keyboard(expense.id),
+    )
+    return {"ok": True}
+
+
 # 콜백 액션 디스패치 테이블
 # 키: action prefix, 값: (핸들러 함수, 최소 parts 수)
 _CALLBACK_HANDLERS: dict[
@@ -662,13 +813,56 @@ _CALLBACK_HANDLERS: dict[
     "cancel_delete": (_handle_cancel_delete, 2),
     "change_category": (_handle_change_category, 2),
     "set_category": (_handle_set_category, 3),
+    "convert_to_income": (_handle_convert_to_income, 2),
 }
+
+# Income 관련 콜백 액션 — Income 모델에서 조회해야 하는 액션들
+_INCOME_CALLBACK_HANDLERS: dict[
+    str,
+    tuple[
+        Callable[[AsyncSession, int, str, Income, Any, list[str]], Awaitable[dict]],
+        int,
+    ],
+] = {
+    "delete_income": (_handle_delete_income, 2),
+    "confirm_delete_income": (_handle_confirm_delete_income, 2),
+    "cancel_delete_income": (_handle_cancel_delete_income, 2),
+    "convert_to_expense": (_handle_convert_to_expense, 2),
+}
+
+
+async def _handle_cmd_callback(db: AsyncSession, chat_id: int, callback_id: str, data_parts: list[str]) -> dict:
+    """명령어 바로가기 콜백 (cmd:report, cmd:budget 등)"""
+    command = data_parts[1] if len(data_parts) > 1 else ""
+    bot_user = await get_or_create_bot_user(db, platform="telegram", platform_user_id=str(chat_id))
+    active_household_id = await get_user_active_household_id_or_none(bot_user, db)
+
+    if command == "report":
+        await handle_report_command(chat_id, db, household_id=active_household_id)
+    elif command == "budget":
+        await handle_budget_command(chat_id, db, household_id=active_household_id)
+    elif command == "help":
+        help_keyboard = {
+            "inline_keyboard": [
+                [
+                    {"text": "📊 리포트", "callback_data": "cmd:report"},
+                    {"text": "💵 예산", "callback_data": "cmd:budget"},
+                ]
+            ]
+        }
+        await send_telegram_message(chat_id, format_help_message(), reply_markup=help_keyboard)
+    elif command == "link_info":
+        await send_telegram_message(chat_id, format_link_usage_message())
+
+    await answer_callback_query(callback_id, "")
+    return {"ok": True}
 
 
 async def handle_callback_query(callback_query: dict, db: AsyncSession) -> dict:
     """인라인 버튼 클릭 처리
 
     callback_data 형식:
+    - cmd:{command} -- 명령어 바로가기 (report, budget)
     - change_category:{expense_id} -- 카테고리 변경
     - delete_expense:{expense_id} -- 지출 삭제
     - confirm_cat:{expense_id}:{category_id}:{suggested} -- 카테고리 확인 (기존 선택)
@@ -688,6 +882,34 @@ async def handle_callback_query(callback_query: dict, db: AsyncSession) -> dict:
         parts = callback_data.split(":", 3)
         action = parts[0]
 
+        # cmd:* 콜백은 Expense 조회 불필요 — 먼저 처리
+        if action == "cmd":
+            return await _handle_cmd_callback(db, chat_id, callback_id, parts)
+
+        # Income 관련 콜백은 Income 모델에서 조회
+        income_handler_entry = _INCOME_CALLBACK_HANDLERS.get(action)
+        if income_handler_entry:
+            handler_fn, min_parts = income_handler_entry
+            if len(parts) < min_parts:
+                await answer_callback_query(callback_id, "잘못된 요청입니다.")
+                return {"ok": True}
+
+            income_id = int(parts[1])
+            result = await db.execute(select(Income).where(Income.id == income_id))
+            income = result.scalar_one_or_none()
+            if not income:
+                await answer_callback_query(callback_id, "수입을 찾을 수 없어요.")
+                return {"ok": True}
+
+            # 소유권 검증
+            bot_user = await get_or_create_bot_user(db, platform="telegram", platform_user_id=str(chat_id))
+            if income.user_id != bot_user.id:
+                await answer_callback_query(callback_id, "본인의 수입만 수정할 수 있어요.")
+                return {"ok": True}
+
+            return await handler_fn(db, chat_id, callback_id, income, bot_user, parts)
+
+        # Expense 관련 콜백
         handler_entry = _CALLBACK_HANDLERS.get(action)
         if not handler_entry:
             await answer_callback_query(callback_id, "알 수 없는 요청입니다.")
@@ -773,7 +995,12 @@ async def handle_report_command(chat_id: int, db: AsyncSession, household_id: in
         report_data = [{"category": row.name, "total": row.total, "count": row.count} for row in rows]
 
         message = format_report_message(report_data)
-        await send_telegram_message(chat_id, message)
+        reply_markup = {
+            "inline_keyboard": [
+                [{"text": "💵 예산 현황", "callback_data": "cmd:budget"}],
+            ]
+        }
+        await send_telegram_message(chat_id, message, reply_markup=reply_markup)
 
     except Exception as e:
         logger.error(f"리포트 생성 실패: {e}")
@@ -801,7 +1028,12 @@ async def handle_budget_command(chat_id: int, db: AsyncSession, household_id: in
         budgets = budget_result.scalars().all()
 
         if not budgets:
-            await send_telegram_message(chat_id, "💵 예산 현황\n\n아직 설정된 예산이 없어요.")
+            reply_markup = {
+                "inline_keyboard": [
+                    [{"text": "📊 리포트", "callback_data": "cmd:report"}],
+                ]
+            }
+            await send_telegram_message(chat_id, "💵 예산 현황\n\n아직 설정된 예산이 없어요.", reply_markup=reply_markup)
             return
 
         budget_data = []
@@ -843,7 +1075,12 @@ async def handle_budget_command(chat_id: int, db: AsyncSession, household_id: in
             )
 
         message = format_budget_status(budget_data)
-        await send_telegram_message(chat_id, message)
+        reply_markup = {
+            "inline_keyboard": [
+                [{"text": "📊 리포트", "callback_data": "cmd:report"}],
+            ]
+        }
+        await send_telegram_message(chat_id, message, reply_markup=reply_markup)
 
     except Exception as e:
         logger.error(f"예산 현황 생성 실패: {e}")
