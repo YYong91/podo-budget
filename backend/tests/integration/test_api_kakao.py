@@ -1028,7 +1028,6 @@ async def test_kakao_webhook_income_creates_income_record(client, db_session, mo
 @pytest.mark.asyncio
 async def test_kakao_webhook_mixed_income_expense(client, db_session, mock_llm_parse_expense):
     """다중 건 입력에서 수입/지출 혼합 처리"""
-    from app.models.income import Income
 
     await setup_kakao_bot_user_with_household(db_session, "kakao_user_123")
 

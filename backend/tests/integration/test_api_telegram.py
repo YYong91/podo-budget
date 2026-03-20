@@ -841,6 +841,7 @@ async def test_webhook_income_input(client, db_session, mock_telegram_send, mock
     bot_user, household = await setup_bot_user_with_household(db_session, chat_id=12345)
     # 카테고리 미리 생성 (카테고리 확인 플로우 방지)
     from app.models.category import Category
+
     cat = Category(name="급여", type="income", household_id=household.id)
     db_session.add(cat)
     await db_session.commit()
@@ -869,6 +870,7 @@ async def test_webhook_income_creates_income_record(client, db_session, mock_tel
 
     bot_user, household = await setup_bot_user_with_household(db_session, chat_id=12345)
     from app.models.category import Category
+
     cat = Category(name="부수입", type="income", household_id=household.id)
     db_session.add(cat)
     await db_session.commit()
