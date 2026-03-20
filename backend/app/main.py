@@ -137,6 +137,21 @@ app.add_middleware(
     allow_headers=["Content-Type", "Authorization"],
 )
 
+
+# 보안 헤더 미들웨어 — 모든 응답에 필수 보안 헤더 추가 (#235)
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "SAMEORIGIN"
+    response.headers["Referrer-Policy"] = "same-origin"
+    response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
+    # HSTS는 프로덕션(HTTPS) 환경에서만 설정 (로컬 HTTP 개발 지원)
+    if not settings.DEBUG:
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+    return response
+
+
 # 전역 에러 핸들러 등록
 register_exception_handlers(app)
 

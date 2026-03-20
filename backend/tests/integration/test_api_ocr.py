@@ -150,3 +150,69 @@ async def test_ocr_requires_auth(client):
         files={"file": ("receipt.jpg", fake_image, "image/jpeg")},
     )
     assert response.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_ocr_magic_bytes_mismatch_jpeg(authenticated_client):
+    """Content-Type은 image/jpeg인데 실제 내용이 다른 경우 400 반환 (#237)"""
+    # JPEG 헤더(FF D8 FF)가 아닌 임의 데이터 전송
+    fake_file = io.BytesIO(b"PK\x03\x04" + b"\x00" * 100)  # ZIP 파일 헤더
+    response = await authenticated_client.post(
+        "/api/expenses/ocr",
+        files={"file": ("evil.jpg", fake_file, "image/jpeg")},
+    )
+    assert response.status_code == 400
+    assert "이미지" in response.json()["detail"]
+
+
+@pytest.mark.asyncio
+async def test_ocr_magic_bytes_mismatch_png(authenticated_client):
+    """Content-Type은 image/png인데 실제 내용이 다른 경우 400 반환 (#237)"""
+    fake_file = io.BytesIO(b"\xff\xd8\xff" + b"\x00" * 100)  # JPEG를 PNG로 위장
+    response = await authenticated_client.post(
+        "/api/expenses/ocr",
+        files={"file": ("evil.png", fake_file, "image/png")},
+    )
+    assert response.status_code == 400
+
+
+@pytest.mark.asyncio
+async def test_ocr_magic_bytes_valid_jpeg(authenticated_client):
+    """올바른 JPEG 매직 바이트(FF D8 FF) + image/jpeg → 통과 (#237)"""
+    from unittest.mock import AsyncMock, patch
+
+    mock_parsed = {"amount": 8000, "description": "스타벅스", "category": "식비", "date": "2026-02-26", "memo": ""}
+    valid_jpeg = io.BytesIO(b"\xff\xd8\xff\xe0" + b"\x00" * 100)
+
+    with patch("app.api.expenses.get_llm_provider") as mock_get_provider:
+        mock_provider = AsyncMock()
+        mock_provider.parse_image = AsyncMock(return_value=mock_parsed)
+        mock_get_provider.return_value = mock_provider
+
+        response = await authenticated_client.post(
+            "/api/expenses/ocr",
+            files={"file": ("valid.jpg", valid_jpeg, "image/jpeg")},
+        )
+
+    assert response.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_ocr_magic_bytes_valid_png(authenticated_client):
+    """올바른 PNG 매직 바이트(89 50 4E 47) + image/png → 통과 (#237)"""
+    from unittest.mock import AsyncMock, patch
+
+    mock_parsed = {"amount": 5000, "description": "GS25", "category": "식비", "date": "2026-02-26", "memo": ""}
+    valid_png = io.BytesIO(b"\x89PNG\r\n\x1a\n" + b"\x00" * 100)
+
+    with patch("app.api.expenses.get_llm_provider") as mock_get_provider:
+        mock_provider = AsyncMock()
+        mock_provider.parse_image = AsyncMock(return_value=mock_parsed)
+        mock_get_provider.return_value = mock_provider
+
+        response = await authenticated_client.post(
+            "/api/expenses/ocr",
+            files={"file": ("valid.png", valid_png, "image/png")},
+        )
+
+    assert response.status_code == 200
