@@ -223,6 +223,7 @@ export default function CategoryManager() {
                     onChange={(e) => setNewName(e.target.value)}
                     placeholder="카테고리 이름"
                     className="w-full px-3 py-2 border border-[var(--input-border)] rounded-lg focus:ring-2 focus:ring-grape-500 focus:border-transparent"
+                    // eslint-disable-next-line jsx-a11y/no-autofocus
                     autoFocus
                   />
                 </td>
@@ -301,6 +302,7 @@ export default function CategoryManager() {
                             setEditForm({ ...editForm, name: e.target.value })
                           }
                           className="w-full px-3 py-2 border border-[var(--input-border)] rounded-lg focus:ring-2 focus:ring-grape-500 focus:border-transparent"
+                          // eslint-disable-next-line jsx-a11y/no-autofocus
                           autoFocus
                         />
                       ) : (

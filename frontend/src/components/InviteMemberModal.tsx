@@ -87,9 +87,9 @@ export default function InviteMemberModal({
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" role="dialog" aria-modal="true" aria-labelledby="invite-member-title">
       <div className="bg-[var(--surface-card)] rounded-2xl shadow-xl max-w-md w-full p-6">
-        <h2 className="text-xl font-bold text-[var(--text-primary)] mb-4">
+        <h2 id="invite-member-title" className="text-xl font-bold text-[var(--text-primary)] mb-4">
           멤버 초대
         </h2>
 

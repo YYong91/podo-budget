@@ -59,8 +59,8 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastContext.Provider value={contextValue}>
       {children}
-      {/* 토스트 컨테이너: 화면 하단 중앙에 고정 */}
-      <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 pointer-events-none">
+      {/* 토스트 컨테이너: 화면 하단 중앙에 고정 — aria-live로 스크린 리더에 알림 전달 */}
+      <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 pointer-events-none" role="status" aria-live="polite">
         <div className="pointer-events-auto">
           {toasts.map((toast) => (
             <Toast

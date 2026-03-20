@@ -18,7 +18,10 @@ function StatCard({ icon: Icon, label, value, sub, onClick }: {
   return (
     <div
       className={`bg-[var(--surface-card)] rounded-xl p-4 border border-[var(--border-default)] ${onClick ? 'cursor-pointer hover:border-grape-300 transition-colors' : ''}`}
+      role={onClick ? 'button' : undefined}
+      tabIndex={onClick ? 0 : undefined}
       onClick={onClick}
+      onKeyDown={onClick ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick() } } : undefined}
     >
       <div className="flex items-center gap-2 text-[var(--text-tertiary)] mb-1">
         <Icon className="w-4 h-4" />

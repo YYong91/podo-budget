@@ -58,7 +58,8 @@ export default function CategoryBottomSheet({
     : 'bg-grape-50 text-grape-600 font-medium'
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end md:items-center md:justify-center">
+    <div className="fixed inset-0 z-50 flex items-end md:items-center md:justify-center" role="dialog" aria-modal="true" aria-label="카테고리 변경">
+      {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- 모달 배경 오버레이: Escape 키로 닫기 지원됨 */}
       <div
         className="absolute inset-0 bg-black/40 transition-opacity"
         onClick={onClose}
@@ -69,7 +70,7 @@ export default function CategoryBottomSheet({
       >
         <div className="flex items-center justify-between px-4 pt-4 pb-2 border-b border-[var(--border-subtle)]">
           <h3 className="text-sm font-semibold text-[var(--text-primary)]">카테고리 변경</h3>
-          <button onClick={onClose} className="p-1 rounded-lg hover:bg-[var(--surface-hover)]">
+          <button onClick={onClose} className="p-1 rounded-lg hover:bg-[var(--surface-hover)]" aria-label="닫기">
             <X className="w-4 h-4 text-[var(--text-muted)]" />
           </button>
         </div>
