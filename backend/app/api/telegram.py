@@ -25,10 +25,12 @@ from app.core.database import get_db
 from app.models.budget import Budget
 from app.models.category import Category
 from app.models.expense import Expense
+from app.models.income import Income
 from app.services.bot_messages import (
     format_budget_status,
     format_expense_saved,
     format_help_message,
+    format_income_saved,
     format_link_usage_message,
     format_parse_error,
     format_report_message,
@@ -144,37 +146,58 @@ async def _save_and_respond_single(
     category: Category,
     user_text: str,
 ) -> None:
-    """단일 지출을 저장하고 응답 메시지 전송"""
-    expense_date = datetime.fromisoformat(parsed.get("date", datetime.now().isoformat()))
-    expense = Expense(
-        user_id=bot_user.id,
-        amount=parsed["amount"],
-        description=parsed.get("description", user_text),
-        category_id=category.id,
-        raw_input=user_text,
-        date=expense_date,
-        household_id=household_id,
-    )
-    db.add(expense)
-    await db.commit()
-    await db.refresh(expense)
+    """단일 수입/지출을 저장하고 응답 메시지 전송"""
+    item_type = parsed.get("type", "expense")
+    record_date = datetime.fromisoformat(parsed.get("date", datetime.now().isoformat()))
+    record_kwargs = {
+        "user_id": bot_user.id,
+        "amount": parsed["amount"],
+        "description": parsed.get("description", user_text),
+        "category_id": category.id,
+        "raw_input": user_text,
+        "date": record_date,
+        "household_id": household_id,
+    }
 
+    if item_type == "income":
+        record = Income(**record_kwargs)
+        db.add(record)
+        await db.commit()
+        await db.refresh(record)
+        # 수입은 카테고리 변경 대신 삭제만 제공
+        inline_keyboard = {"inline_keyboard": [[{"text": "🗑️ 삭제", "callback_data": f"delete_income:{record.id}"}]]}
+        await send_telegram_message(
+            chat_id,
+            format_income_saved(
+                amount=parsed["amount"],
+                category=category.name,
+                description=parsed.get("description", user_text),
+                date=record_date.strftime("%Y-%m-%d"),
+            ),
+            reply_markup=inline_keyboard,
+        )
+        return
+
+    # 지출 (기본)
+    record = Expense(**record_kwargs)
+    db.add(record)
+    await db.commit()
+    await db.refresh(record)
     inline_keyboard = {
         "inline_keyboard": [
             [
-                {"text": "🔄 카테고리 변경", "callback_data": f"change_category:{expense.id}"},
-                {"text": "🗑️ 삭제", "callback_data": f"delete_expense:{expense.id}"},
+                {"text": "🔄 카테고리 변경", "callback_data": f"change_category:{record.id}"},
+                {"text": "🗑️ 삭제", "callback_data": f"delete_expense:{record.id}"},
             ]
         ]
     }
-
     await send_telegram_message(
         chat_id,
         format_expense_saved(
             amount=parsed["amount"],
             category=category.name,
             description=parsed.get("description", user_text),
-            date=expense_date.strftime("%Y-%m-%d"),
+            date=record_date.strftime("%Y-%m-%d"),
         ),
         reply_markup=inline_keyboard,
     )
@@ -431,53 +454,50 @@ async def _handle_multiple_expenses(
     household_id: int | None,
     user_text: str,
 ) -> None:
-    """여러 지출 처리 -- 확인이 필요한 항목이 있으면 첫 번째만 확인, 나머지는 바로 저장"""
-    created_expenses = []
+    """여러 건 처리 — 수입/지출 혼합 지원"""
+    created_records = []  # (record, item, category_name)
 
     for item in parsed:
+        item_type = item.get("type", "expense")
         category_name = item.get("category", "기타")
         category = await _resolve_category(db, category_name, bot_user.id, household_id)
 
-        if category:
-            expense_date = datetime.fromisoformat(item.get("date", datetime.now().isoformat()))
-            expense = Expense(
-                user_id=bot_user.id,
-                amount=item["amount"],
-                description=item.get("description", ""),
-                category_id=category.id,
-                raw_input=user_text,
-                date=expense_date,
-                household_id=household_id,
-            )
-            db.add(expense)
-            created_expenses.append((expense, item, category.name))
-        else:
-            # 카테고리 없음 → 매핑 없이 get_or_create로 생성 (다건에서는 바로 저장)
+        if not category:
             category = await get_or_create_category(db, category_name, user_id=bot_user.id, household_id=household_id)
-            expense_date = datetime.fromisoformat(item.get("date", datetime.now().isoformat()))
-            expense = Expense(
-                user_id=bot_user.id,
-                amount=item["amount"],
-                description=item.get("description", ""),
-                category_id=category.id,
-                raw_input=user_text,
-                date=expense_date,
-                household_id=household_id,
-            )
-            db.add(expense)
-            created_expenses.append((expense, item, category_name))
+
+        record_date = datetime.fromisoformat(item.get("date", datetime.now().isoformat()))
+        record_kwargs = {
+            "user_id": bot_user.id,
+            "amount": item["amount"],
+            "description": item.get("description", ""),
+            "category_id": category.id,
+            "raw_input": user_text,
+            "date": record_date,
+            "household_id": household_id,
+        }
+
+        record = Income(**record_kwargs) if item_type == "income" else Expense(**record_kwargs)
+        db.add(record)
+        created_records.append((record, item, category.name))
 
     await db.commit()
 
-    # 성공 메시지 구성
-    total_amount = sum(item["amount"] for _, item, _ in created_expenses)
-    count = len(created_expenses)
-    message_lines = [f"✅ {count}건의 지출이 기록되었어요!\n"]
+    # 응답 메시지 생성
+    total_amount = sum(item["amount"] for _, item, _ in created_records)
+    expense_count = sum(1 for _, item, _ in created_records if item.get("type", "expense") != "income")
+    income_count = sum(1 for _, item, _ in created_records if item.get("type") == "income")
 
-    for idx, (_expense, item, cat_name) in enumerate(created_expenses, 1):
-        message_lines.append(f"{idx}. 💰 {item['amount']:,.0f}원 - 📂 {cat_name} - {item.get('description', '')}")
+    parts = []
+    if expense_count > 0:
+        parts.append(f"지출 {expense_count}건")
+    if income_count > 0:
+        parts.append(f"수입 {income_count}건")
 
-    message_lines.append(f"\n💰 총 {total_amount:,.0f}원")
+    message_lines = [f"✅ {' + '.join(parts)}(총 ₩{total_amount:,.0f}) 기록했어요\n"]
+
+    for idx, (_, item, cat_name) in enumerate(created_records, 1):
+        type_icon = "💵" if item.get("type") == "income" else "💰"
+        message_lines.append(f"{idx}. {type_icon} {item['amount']:,.0f}원 - 📂 {cat_name} - {item.get('description', '')}")
 
     await send_telegram_message(chat_id, "\n".join(message_lines))
 

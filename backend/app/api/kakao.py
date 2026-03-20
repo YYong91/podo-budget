@@ -25,10 +25,12 @@ from app.core.database import get_db
 from app.models.budget import Budget
 from app.models.category import Category
 from app.models.expense import Expense
+from app.models.income import Income
 from app.services.bot_messages import (
     format_budget_status,
     format_expense_saved,
     format_help_message,
+    format_income_saved,
     format_kakao_link_usage_message,
     format_parse_error,
     format_report_message,
@@ -220,40 +222,57 @@ async def _handle_expense_input(utterance: str, bot_user: Any, db: AsyncSession,
 
 
 async def _handle_single_expense(db: AsyncSession, bot_user: Any, parsed: dict, utterance: str, household_id: int | None) -> dict:
-    """단일 파싱 결과 처리: 에러 / 카테고리 매핑 / 저장"""
+    """단일 파싱 결과 처리: 에러 / 카테고리 매핑 / 수입·지출 분기 저장"""
     if "error" in parsed:
         return make_simple_text_response(format_parse_error(utterance), quick_replies=[make_quick_reply("❓ 도움말", "도움말")])
+
+    item_type = parsed.get("type", "expense")
 
     # 카테고리 매핑 확인 → 기존 카테고리 → 새로 생성
     category_name = parsed.get("category", "기타")
     mapped = await get_mapped_category(db, category_name, user_id=bot_user.id, household_id=household_id)
-    if mapped:
-        category = mapped
-    else:
-        category = await get_or_create_category(db, category_name, user_id=bot_user.id, household_id=household_id)
+    category = mapped or await get_or_create_category(db, category_name, user_id=bot_user.id, household_id=household_id)
 
-    # Expense 생성 (user_id + household_id 연결)
-    expense_date = datetime.fromisoformat(parsed.get("date", datetime.now().isoformat()))
-    expense = Expense(
-        user_id=bot_user.id,
-        amount=parsed["amount"],
-        description=parsed.get("description", utterance),
-        category_id=category.id,
-        raw_input=utterance,
-        date=expense_date,
-        household_id=household_id,
-    )
-    db.add(expense)
+    record_date = datetime.fromisoformat(parsed.get("date", datetime.now().isoformat()))
+    record_kwargs = {
+        "user_id": bot_user.id,
+        "amount": parsed["amount"],
+        "description": parsed.get("description", utterance),
+        "category_id": category.id,
+        "raw_input": utterance,
+        "date": record_date,
+        "household_id": household_id,
+    }
+
+    if item_type == "income":
+        record = Income(**record_kwargs)
+        db.add(record)
+        await db.commit()
+        await db.refresh(record)
+        return make_simple_text_response(
+            format_income_saved(
+                amount=parsed["amount"],
+                category=category.name,
+                description=parsed.get("description", utterance),
+                date=record_date.strftime("%Y-%m-%d"),
+            ),
+            quick_replies=[
+                make_quick_reply("↩️ 방금 거 취소", "취소"),
+                make_quick_reply("📊 이번달 보기", "리포트"),
+            ],
+        )
+
+    # 지출 (기본)
+    record = Expense(**record_kwargs)
+    db.add(record)
     await db.commit()
-    await db.refresh(expense)
-
-    # 성공 응답 (quickReplies 포함)
+    await db.refresh(record)
     return make_simple_text_response(
         format_expense_saved(
             amount=parsed["amount"],
             category=category.name,
             description=parsed.get("description", utterance),
-            date=expense_date.strftime("%Y-%m-%d"),
+            date=record_date.strftime("%Y-%m-%d"),
         ),
         quick_replies=[
             make_quick_reply("↩️ 방금 거 취소", "취소"),
@@ -264,50 +283,60 @@ async def _handle_single_expense(db: AsyncSession, bot_user: Any, parsed: dict, 
 
 
 async def _handle_multiple_expenses(db: AsyncSession, bot_user: Any, parsed: list, utterance: str, household_id: int | None) -> dict:
-    """여러 지출 처리"""
+    """여러 건 처리 — 수입/지출 혼합 지원"""
     created_expenses = []
+    created_incomes = []
 
     for item in parsed:
-        # 카테고리 매핑 확인 → 기존 카테고리 → 새로 생성
+        item_type = item.get("type", "expense")
         category_name = item.get("category", "기타")
         mapped = await get_mapped_category(db, category_name, user_id=bot_user.id, household_id=household_id)
-        if mapped:
-            category = mapped
-        else:
-            category = await get_or_create_category(db, category_name, user_id=bot_user.id, household_id=household_id)
+        category = mapped or await get_or_create_category(db, category_name, user_id=bot_user.id, household_id=household_id)
 
-        # Expense 생성 (user_id + household_id 연결)
-        expense_date = datetime.fromisoformat(item.get("date", datetime.now().isoformat()))
-        expense = Expense(
-            user_id=bot_user.id,
-            amount=item["amount"],
-            description=item.get("description", ""),
-            category_id=category.id,
-            raw_input=utterance,
-            date=expense_date,
-            household_id=household_id,
-        )
-        db.add(expense)
-        created_expenses.append(expense)
+        record_date = datetime.fromisoformat(item.get("date", datetime.now().isoformat()))
+        record_kwargs = {
+            "user_id": bot_user.id,
+            "amount": item["amount"],
+            "description": item.get("description", ""),
+            "category_id": category.id,
+            "raw_input": utterance,
+            "date": record_date,
+            "household_id": household_id,
+        }
+
+        if item_type == "income":
+            record = Income(**record_kwargs)
+            db.add(record)
+            created_incomes.append((record, item))
+        else:
+            record = Expense(**record_kwargs)
+            db.add(record)
+            created_expenses.append((record, item))
 
     await db.commit()
 
-    # 성공 메시지 구성
+    # 응답 메시지 생성
     total_amount = sum(item["amount"] for item in parsed)
-    count = len(parsed)
-    message_lines = [f"✅ {count}건의 지출이 기록되었어요!\n"]
+    expense_count = len(created_expenses)
+    income_count = len(created_incomes)
 
-    for idx, (_expense, item) in enumerate(zip(created_expenses, parsed, strict=False), 1):
-        message_lines.append(f"{idx}. 💰 {item['amount']:,.0f}원 - 📂 {item.get('category', '기타')} - {item.get('description', '')}")
+    parts = []
+    if expense_count > 0:
+        parts.append(f"지출 {expense_count}건")
+    if income_count > 0:
+        parts.append(f"수입 {income_count}건")
 
-    message_lines.append(f"\n💰 총 {total_amount:,.0f}원")
+    message_lines = [f"✅ {' + '.join(parts)}(총 ₩{total_amount:,.0f}) 기록했어요\n"]
+
+    for idx, (_, item) in enumerate(created_expenses + created_incomes, 1):
+        type_icon = "💵" if item.get("type") == "income" else "💰"
+        message_lines.append(f"{idx}. {type_icon} {item['amount']:,.0f}원 - 📂 {item.get('category', '기타')} - {item.get('description', '')}")
 
     return make_simple_text_response(
         "\n".join(message_lines),
         quick_replies=[
             make_quick_reply("↩️ 방금 거 취소", "취소"),
-            make_quick_reply("🔄 카테고리 변경", "변경"),
-            make_quick_reply("📊 이번달 지출 보기", "리포트"),
+            make_quick_reply("📊 이번달 보기", "리포트"),
         ],
     )
 

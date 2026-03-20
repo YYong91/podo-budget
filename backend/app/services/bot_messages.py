@@ -6,6 +6,21 @@ def format_expense_saved(amount: float, category: str, description: str, date: s
     return f"✅ 지출이 기록되었어요!\n\n💰 {amount:,.0f}원\n📂 {category}\n📅 {date}\n📝 {description}"
 
 
+def format_income_saved(amount: float, category: str, description: str, date: str) -> str:
+    """수입 저장 성공 메시지"""
+    return f"✅ 수입이 기록되었어요! 💰\n\n💵 {amount:,.0f}원\n📂 {category}\n📅 {date}\n📝 {description}"
+
+
+def format_mixed_saved(expense_count: int, income_count: int, total_amount: float) -> str:
+    """수입/지출 혼합 저장 메시지"""
+    parts = []
+    if expense_count > 0:
+        parts.append(f"지출 {expense_count}건")
+    if income_count > 0:
+        parts.append(f"수입 {income_count}건")
+    return f"✅ {' + '.join(parts)}(총 ₩{total_amount:,.0f}) 기록했어요"
+
+
 def format_parse_error(raw_input: str) -> str:
     """파싱 실패 - 금액 없음"""
     return f'❓ 금액을 찾을 수 없어요.\n\n입력하신 내용: "{raw_input}"\n\n얼마를 쓰셨나요?\n예시: "8000원" 또는 "8천원"'

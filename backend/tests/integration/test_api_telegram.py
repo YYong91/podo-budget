@@ -830,3 +830,63 @@ async def test_link_by_invalid_code(client, db_session, mock_telegram_send):
     assert response.status_code == 200
     msg = mock_telegram_send.call_args[0][1]
     assert "유효하지" in msg or "찾을 수 없" in msg
+
+
+# ── 수입 입력 테스트 (#285) ──────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_webhook_income_input(client, db_session, mock_telegram_send, mock_llm_parse_expense):
+    """수입 자연어 입력 시 수입 메시지 반환"""
+    bot_user, household = await setup_bot_user_with_household(db_session, chat_id=12345)
+    # 카테고리 미리 생성 (카테고리 확인 플로우 방지)
+    from app.models.category import Category
+
+    cat = Category(name="급여", type="income", household_id=household.id)
+    db_session.add(cat)
+    await db_session.commit()
+
+    mock_llm_parse_expense.return_value = {
+        "amount": 3000000,
+        "description": "월급",
+        "category": "급여",
+        "date": "2026-03-20",
+        "type": "income",
+    }
+
+    payload = {"message": {"chat": {"id": 12345}, "text": "월급 300만원"}}
+    response = await client.post("/api/telegram/webhook", json=payload)
+    assert response.status_code == 200
+
+    assert mock_telegram_send.called
+    call_args = mock_telegram_send.call_args
+    assert "수입" in str(call_args)
+
+
+@pytest.mark.asyncio
+async def test_webhook_income_creates_income_record(client, db_session, mock_telegram_send, mock_llm_parse_expense):
+    """수입 입력 시 Income 모델에 저장"""
+    from app.models.income import Income
+
+    bot_user, household = await setup_bot_user_with_household(db_session, chat_id=12345)
+    from app.models.category import Category
+
+    cat = Category(name="부수입", type="income", household_id=household.id)
+    db_session.add(cat)
+    await db_session.commit()
+
+    mock_llm_parse_expense.return_value = {
+        "amount": 500000,
+        "description": "부업",
+        "category": "부수입",
+        "date": "2026-03-20",
+        "type": "income",
+    }
+
+    payload = {"message": {"chat": {"id": 12345}, "text": "부업 50만원"}}
+    await client.post("/api/telegram/webhook", json=payload)
+
+    result = await db_session.execute(select(Income))
+    incomes = result.scalars().all()
+    assert len(incomes) >= 1
+    assert any(i.amount == 500000 for i in incomes)
