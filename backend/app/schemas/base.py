@@ -1,11 +1,42 @@
 """공통 스키마 베이스
 
 여러 스키마에서 재사용되는 공통 validator와 mixin (#179)
+공통 에러 응답 스키마 추가 (#253)
 """
 
 from typing import Any
 
 from pydantic import BaseModel, field_validator
+
+
+class ErrorDetail(BaseModel):
+    """에러 상세 정보 — {"code": "...", "message": "..."}"""
+
+    code: str
+    message: str
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {"code": "VALIDATION_ERROR", "message": "잘못된 요청입니다"},
+                {"code": "NOT_FOUND", "message": "리소스를 찾을 수 없습니다"},
+                {"code": "CONFLICT", "message": "데이터 무결성 오류가 발생했습니다"},
+                {"code": "INTERNAL_ERROR", "message": "서버 내부 오류가 발생했습니다"},
+            ]
+        }
+    }
+
+
+class ErrorResponse(BaseModel):
+    """공통 에러 응답 — 모든 4xx/5xx 응답의 표준 형식 (#253)
+
+    예시:
+        {"error": {"code": "NOT_FOUND", "message": "리소스를 찾을 수 없습니다"}}
+    """
+
+    error: ErrorDetail
+
+    model_config = {"json_schema_extra": {"example": {"error": {"code": "NOT_FOUND", "message": "리소스를 찾을 수 없습니다"}}}}
 
 
 class DateTimeCoerceMixin(BaseModel):
