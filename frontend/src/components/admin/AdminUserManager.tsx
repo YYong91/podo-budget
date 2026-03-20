@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Search, ChevronLeft, ChevronRight, ToggleLeft, ToggleRight } from 'lucide-react'
 import { adminApi } from '../../api/admin'
+import { maskUsername } from '../../utils/format'
 import { useToast } from '../../hooks/useToast'
 import type { AdminUserItem, AdminUserDetail, AdminUserListResponse } from '../../types'
 
@@ -65,7 +66,7 @@ export default function AdminUserManager() {
         <div className="bg-[var(--surface-card)] rounded-xl p-6 border border-[var(--border-default)] space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-lg font-bold text-[var(--text-primary)]">{selectedUser.username}</h3>
+              <h3 className="text-lg font-bold text-[var(--text-primary)]">{maskUsername(selectedUser.username)}</h3>
               <p className="text-sm text-[var(--text-tertiary)]">{selectedUser.email ?? '이메일 없음'}</p>
             </div>
             <button
@@ -133,7 +134,7 @@ export default function AdminUserManager() {
                     className="border-t border-[var(--border-subtle)] hover:bg-[var(--surface)] cursor-pointer transition-colors"
                   >
                     <td className="px-4 py-3">
-                      <div className="font-medium text-[var(--text-primary)]">{u.username}</div>
+                      <div className="font-medium text-[var(--text-primary)]">{maskUsername(u.username)}</div>
                       <div className="text-xs text-[var(--text-muted)]">{u.email ?? ''}</div>
                     </td>
                     <td className="text-right px-4 py-3 text-[var(--text-secondary)] hidden md:table-cell">{u.expense_count + u.income_count}</td>
