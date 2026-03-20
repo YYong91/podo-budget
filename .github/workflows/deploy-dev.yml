@@ -99,10 +99,59 @@ jobs:
           REASON=$(grep -iE "error|failed" /tmp/deploy.log 2>/dev/null | tail -3 | sed 's/\x1b\[[0-9;]*m//g' | tr '\n' ' ' | cut -c1-300)
           echo "reason=${REASON:-Cloudflare Pages 배포 실패}" >> $GITHUB_OUTPUT
 
+  # ── 배포 후 스모크 테스트 ──────────────────────────
+  smoke-test:
+    name: 스모크 테스트
+    needs: [deploy-backend, deploy-frontend]
+    if: needs.deploy-backend.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    outputs:
+      result: ${{ steps.smoke.outputs.result }}
+
+    steps:
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: BE 헬스체크 (슬립 깨우기 + 검증)
+        id: smoke
+        env:
+          BE_URL: https://podo-budget-dev.fly.dev
+        run: |
+          echo "30초 대기 (서버 부팅)..."
+          sleep 30
+
+          FAILED=0
+
+          # /health 엔드포인트
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 15 "$BE_URL/health" || echo "000")
+          if [ "$HTTP_CODE" = "200" ]; then
+            echo "✅ /health → $HTTP_CODE"
+          else
+            echo "❌ /health → $HTTP_CODE"
+            FAILED=1
+          fi
+
+          # / 루트 엔드포인트
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 "$BE_URL/" || echo "000")
+          if [ "$HTTP_CODE" = "200" ]; then
+            echo "✅ / → $HTTP_CODE"
+          else
+            echo "❌ / → $HTTP_CODE"
+            FAILED=1
+          fi
+
+          if [ "$FAILED" = "1" ]; then
+            echo "result=fail" >> "$GITHUB_OUTPUT"
+            echo "::error::스모크 테스트 실패"
+            exit 1
+          else
+            echo "result=pass" >> "$GITHUB_OUTPUT"
+          fi
+
   # ── 배포 결과 알림 ─────────────────────────────────
   notify-deploy-result:
     name: 배포 결과 알림
-    needs: [deploy-backend, deploy-frontend]
+    needs: [deploy-backend, deploy-frontend, smoke-test]
     runs-on: ubuntu-latest
     timeout-minutes: 2
     if: always()
