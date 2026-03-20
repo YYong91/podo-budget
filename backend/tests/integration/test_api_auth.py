@@ -134,6 +134,61 @@ async def test_removed_endpoints_return_404(client: AsyncClient):
 
 
 @pytest.mark.asyncio
+async def test_telegram_link_code_format(authenticated_client: AsyncClient):
+    """텔레그램 연동 코드 — 6자리 대문자+숫자 형식 확인"""
+    response = await authenticated_client.post("/api/auth/telegram-link-code")
+    assert response.status_code == 200
+
+    data = response.json()
+    code = data["code"]
+    assert len(code) == 6
+    # 대문자 알파벳 + 숫자만 허용
+    assert code.isalnum()
+    assert code == code.upper()
+    assert "expires_at" in data
+
+
+@pytest.mark.asyncio
+async def test_kakao_link_code_format(authenticated_client: AsyncClient):
+    """카카오 연동 코드 — 6자리 대문자+숫자 형식 확인"""
+    response = await authenticated_client.post("/api/auth/kakao-link-code")
+    assert response.status_code == 200
+
+    data = response.json()
+    code = data["code"]
+    assert len(code) == 6
+    assert code.isalnum()
+    assert code == code.upper()
+    assert "expires_at" in data
+
+
+@pytest.mark.asyncio
+async def test_kakao_unlink(authenticated_client: AsyncClient):
+    """카카오 연동 해제 성공"""
+    response = await authenticated_client.delete("/api/auth/kakao/link")
+    assert response.status_code == 200
+    assert "메시지" in response.json() or "message" in response.json()
+
+
+@pytest.mark.asyncio
+async def test_get_me_returns_is_telegram_linked_false(authenticated_client: AsyncClient, test_user: User):
+    """텔레그램 미연동 사용자 — is_telegram_linked=False"""
+    response = await authenticated_client.get("/api/auth/me")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["is_telegram_linked"] is False
+
+
+@pytest.mark.asyncio
+async def test_get_me_returns_is_kakao_linked_false(authenticated_client: AsyncClient, test_user: User):
+    """카카오 미연동 사용자 — is_kakao_linked=False"""
+    response = await authenticated_client.get("/api/auth/me")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["is_kakao_linked"] is False
+
+
+@pytest.mark.asyncio
 async def test_inactive_user_returns_403(client: AsyncClient, db_session: AsyncSession):
     """is_active=False 계정으로 접근 시 403 반환 (#183)"""
     from app.models.household import Household
