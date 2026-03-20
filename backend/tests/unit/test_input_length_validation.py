@@ -12,7 +12,6 @@ from app.schemas.category import CategoryCreate, CategoryUpdate
 from app.schemas.expense import ExpenseCreate, ExpenseUpdate
 from app.schemas.income import IncomeCreate, IncomeUpdate
 
-
 # ===== ExpenseBase.description =====
 
 
