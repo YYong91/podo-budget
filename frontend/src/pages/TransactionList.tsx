@@ -186,6 +186,20 @@ export default function TransactionList() {
     return { grouped, totalExpense, totalIncome, daySummaries }
   }, [expenses, incomes, filter])
 
+  // TransactionItem.onCategoryClick 안정화 — 데이터 변경 시에만 재생성 (#240)
+  const categoryClickHandlers = useMemo(() => {
+    const handlers = new Map<string, () => void>()
+    for (const txs of grouped.values()) {
+      for (const tx of txs) {
+        handlers.set(`${tx.type}-${tx.id}`, () => {
+          setSheetTarget(tx)
+          setSheetOpen(true)
+        })
+      }
+    }
+    return handlers
+  }, [grouped])
+
   // 캘린더 날짜 클릭 → 스크롤
   const handleDateClick = useCallback((dateString: string) => {
     const ref = dateRefs.current.get(dateString)
@@ -354,10 +368,7 @@ export default function TransactionList() {
                     categoryMap={categoryMap}
                     excludeFromStats={tx.exclude_from_stats}
                     rawInput={tx.raw_input}
-                    onCategoryClick={() => {
-                      setSheetTarget(tx)
-                      setSheetOpen(true)
-                    }}
+                    onCategoryClick={categoryClickHandlers.get(`${tx.type}-${tx.id}`)!}
                   />
                 ))}
               </div>
