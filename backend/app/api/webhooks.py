@@ -7,6 +7,7 @@ import hashlib
 import hmac
 import logging
 
+import httpx
 from fastapi import APIRouter, Header, HTTPException, Request, status
 
 from app.core.config import settings
@@ -90,8 +91,6 @@ async def sentry_webhook(
     message = _format_sentry_alert(payload)
 
     # 텔레그램 전송 — Sentry 전용 봇 토큰이 있으면 직접 전송, 없으면 기본 봇 사용
-    import httpx
-
     try:
         async with httpx.AsyncClient() as client:
             resp = await client.post(
