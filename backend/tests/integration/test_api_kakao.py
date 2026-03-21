@@ -1224,6 +1224,98 @@ async def test_kakao_undo_deletes_latest_expense(client, db_session, mock_llm_pa
     assert len(result.scalars().all()) == 1
 
 
+# ── 보강 테스트 (#289) ──────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_kakao_llm_exception_returns_server_error(client, db_session, mock_llm_parse_expense):
+    """LLM 파싱 중 Exception 시 서버 에러 메시지 + 도움말 quick reply"""
+    await setup_kakao_bot_user_with_household(db_session, "kakao_user_123")
+
+    mock_llm_parse_expense.side_effect = Exception("LLM 서비스 장애")
+    payload = make_kakao_request("점심 8000원")
+    response = await client.post("/api/kakao/webhook", json=payload)
+    assert response.status_code == 200
+
+    data = response.json()
+    text = data["template"]["outputs"][0]["simpleText"]["text"]
+    assert "다시 시도" in text or "다시" in text
+
+    # quick reply 포함 확인
+    quick_replies = data["template"].get("quickReplies", [])
+    assert len(quick_replies) > 0
+
+
+@pytest.mark.asyncio
+async def test_kakao_timeout_has_retry_quickreply(client, db_session, mock_llm_parse_expense):
+    """LLM 타임아웃 시 '다시 시도' quick reply 포함"""
+
+    await setup_kakao_bot_user_with_household(db_session, "kakao_user_123")
+
+    mock_llm_parse_expense.side_effect = TimeoutError()
+    payload = make_kakao_request("점심 8000원")
+    response = await client.post("/api/kakao/webhook", json=payload)
+    assert response.status_code == 200
+
+    data = response.json()
+    text = data["template"]["outputs"][0]["simpleText"]["text"]
+    assert "다시" in text
+
+    quick_replies = data["template"].get("quickReplies", [])
+    labels = [qr["label"] for qr in quick_replies]
+    assert any("다시" in label or "시도" in label for label in labels)
+
+
+@pytest.mark.asyncio
+async def test_kakao_link_then_expense_saves_to_household(client, db_session, mock_llm_parse_expense):
+    """카카오 연동 후 지출이 웹 사용자의 household에 저장"""
+    from passlib.context import CryptContext
+
+    pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+    # 웹 사용자 + 가구 + 카카오 연동 코드
+    web_user = User(
+        username="web_kakao_link",
+        email="kakao_link@test.com",
+        hashed_password=pwd_context.hash("test"),
+        is_active=True,
+        kakao_link_code="KK1234",
+        kakao_link_code_expires_at=datetime.now(UTC) + timedelta(minutes=10),
+    )
+    db_session.add(web_user)
+    await db_session.flush()
+    household = Household(name="카카오 연동 테스트")
+    db_session.add(household)
+    await db_session.flush()
+    member = HouseholdMember(household_id=household.id, user_id=web_user.id, role="owner")
+    db_session.add(member)
+    await db_session.commit()
+
+    # 연동
+    link_user_id = "kakao_linker_hh_001"
+    payload = make_kakao_request("/link KK1234", user_id=link_user_id)
+    response = await client.post("/api/kakao/webhook", json=payload)
+    assert response.status_code == 200
+    assert "연동 완료" in response.json()["template"]["outputs"][0]["simpleText"]["text"]
+
+    # 지출 입력
+    mock_llm_parse_expense.return_value = {
+        "amount": 8000,
+        "category": "식비",
+        "description": "김치찌개",
+        "date": "2026-03-21",
+        "memo": "",
+    }
+    payload2 = make_kakao_request("김치찌개 8000원", user_id=link_user_id)
+    await client.post("/api/kakao/webhook", json=payload2)
+
+    # 웹 사용자 household에 저장 확인
+    result = await db_session.execute(select(Expense).where(Expense.household_id == household.id))
+    expenses = result.scalars().all()
+    assert len(expenses) == 1
+    assert expenses[0].amount == 8000
+
+
 # ── 리포트/예산 전체 보기 명령어 테스트 (#287) ──────────────────────────
 
 
@@ -1545,3 +1637,144 @@ async def test_kakao_callback_no_callback_url_uses_existing_flow(client, db_sess
         data = response.json()
         assert "useCallback" not in data
         assert "template" in data
+
+
+# ── #289 봇 테스트 강화 ──────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_kakao_report_with_data(client, db_session, mock_llm_parse_expense):
+    """지출 데이터 있을 때 리포트에 카테고리별 금액 표시"""
+    from app.models.category import Category
+
+    bot_user, household = await setup_kakao_bot_user_with_household(db_session, "kakao_user_123")
+
+    cat = Category(name="식비", household_id=household.id)
+    db_session.add(cat)
+    await db_session.flush()
+    exp = Expense(
+        user_id=bot_user.id,
+        amount=50000,
+        description="회식",
+        category_id=cat.id,
+        date=datetime.now(),
+        household_id=household.id,
+    )
+    db_session.add(exp)
+    await db_session.commit()
+
+    payload = make_kakao_request("리포트")
+    response = await client.post("/api/kakao/webhook", json=payload)
+    assert response.status_code == 200
+
+    text = response.json()["template"]["outputs"][0]["simpleText"]["text"]
+    assert "식비" in text
+    assert "50,000" in text
+
+
+@pytest.mark.asyncio
+async def test_kakao_budget_with_data(client, db_session):
+    """예산 데이터 있을 때 예산 현황에 카테고리/금액/사용량 표시"""
+    from app.models.budget import Budget
+    from app.models.category import Category
+
+    bot_user, household = await setup_kakao_bot_user_with_household(db_session, "kakao_user_123")
+
+    cat = Category(name="식비", household_id=household.id)
+    db_session.add(cat)
+    await db_session.flush()
+
+    budget = Budget(
+        user_id=bot_user.id,
+        household_id=household.id,
+        category_id=cat.id,
+        amount=300000,
+        period="monthly",
+        start_date=datetime(2026, 3, 1),
+        end_date=datetime(2026, 3, 31),
+    )
+    db_session.add(budget)
+
+    # 지출도 추가 (사용량 표시 확인)
+    exp = Expense(
+        user_id=bot_user.id,
+        amount=100000,
+        description="회식",
+        category_id=cat.id,
+        date=datetime(2026, 3, 15),
+        household_id=household.id,
+    )
+    db_session.add(exp)
+    await db_session.commit()
+
+    payload = make_kakao_request("예산")
+    response = await client.post("/api/kakao/webhook", json=payload)
+    assert response.status_code == 200
+
+    text = response.json()["template"]["outputs"][0]["simpleText"]["text"]
+    assert "식비" in text
+    assert "300,000" in text or "100,000" in text
+
+
+@pytest.mark.asyncio
+async def test_kakao_very_long_input(client, db_session, mock_llm_parse_expense):
+    """매우 긴 입력(1000자+)도 정상 처리"""
+    await setup_kakao_bot_user_with_household(db_session, "kakao_user_123")
+
+    mock_llm_parse_expense.return_value = {"error": "파싱 실패"}
+    long_text = "점심에 " + "김치찌개 " * 200  # ~1200 chars
+    payload = make_kakao_request(long_text)
+    response = await client.post("/api/kakao/webhook", json=payload)
+    assert response.status_code == 200
+
+    text = response.json()["template"]["outputs"][0]["simpleText"]["text"]
+    assert len(text) > 0  # 빈 응답이 아님
+
+
+@pytest.mark.asyncio
+async def test_kakao_multiple_income_input(client, db_session, mock_llm_parse_expense):
+    """여러 수입 동시 입력"""
+    await setup_kakao_bot_user_with_household(db_session, "kakao_user_123")
+
+    mock_llm_parse_expense.return_value = [
+        {"amount": 3000000, "category": "급여", "description": "월급", "date": "2026-03-21", "type": "income"},
+        {"amount": 500000, "category": "부수입", "description": "부업", "date": "2026-03-21", "type": "income"},
+    ]
+    payload = make_kakao_request("월급 300만원, 부업 50만원")
+    response = await client.post("/api/kakao/webhook", json=payload)
+    assert response.status_code == 200
+
+    data = response.json()
+    text = data["template"]["outputs"][0]["simpleText"]["text"]
+    assert "수입" in text
+    assert "2건" in text
+
+    result = await db_session.execute(select(Income))
+    incomes = result.scalars().all()
+    assert len(incomes) == 2
+
+
+@pytest.mark.asyncio
+async def test_kakao_empty_then_normal_input(client, db_session, mock_llm_parse_expense):
+    """빈 입력 후 정상 입력이 제대로 처리"""
+    await setup_kakao_bot_user_with_household(db_session, "kakao_user_123")
+
+    # 빈 입력
+    payload_empty = make_kakao_request("")
+    response1 = await client.post("/api/kakao/webhook", json=payload_empty)
+    assert response1.status_code == 200
+
+    # 정상 입력
+    mock_llm_parse_expense.return_value = {
+        "amount": 8000,
+        "category": "식비",
+        "description": "점심",
+        "date": "2026-03-21",
+        "memo": "",
+    }
+    payload_normal = make_kakao_request("점심 8000원")
+    response2 = await client.post("/api/kakao/webhook", json=payload_normal)
+    assert response2.status_code == 200
+
+    text = response2.json()["template"]["outputs"][0]["simpleText"]["text"]
+    assert "8,000" in text or "기록" in text
