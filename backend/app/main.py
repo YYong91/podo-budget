@@ -1,3 +1,6 @@
+import logging
+import sys
+import uuid
 from contextlib import asynccontextmanager
 
 import sentry_sdk
@@ -30,6 +33,19 @@ from app.core.config import settings
 from app.core.database import Base, engine
 from app.core.exceptions import register_exception_handlers
 from app.core.rate_limit import limiter
+
+
+def _setup_logging() -> None:
+    """로그 레벨 설정 — DEBUG 모드에서는 DEBUG, 프로덕션에서는 INFO (#244)"""
+    level = logging.DEBUG if settings.DEBUG else logging.INFO
+    logging.basicConfig(
+        level=level,
+        format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+        datefmt="%Y-%m-%dT%H:%M:%S",
+    )
+
+
+_setup_logging()  # 모듈 임포트 시 설정
 
 # Sentry 초기화 — DSN이 설정된 경우에만 활성화
 if settings.SENTRY_DSN:
@@ -76,7 +92,6 @@ async def lifespan(app: FastAPI):
     # Alembic 마이그레이션 실행 — create_all 대신 사용해 기존 DB에도 스키마 변경 적용
     import logging
     import pathlib
-    import sys
 
     logger = logging.getLogger(__name__)
     # alembic.ini는 app 패키지의 부모 디렉토리에 위치 (backend/ 또는 컨테이너의 /app/)
@@ -116,10 +131,44 @@ async def lifespan(app: FastAPI):
     yield
 
 
+# OpenAPI 태그별 설명 (#253)
+_OPENAPI_TAGS = [
+    {"name": "auth", "description": "podo-auth SSO 연동 — 로그인 콜백, 토큰 갱신, 소셜 계정 연동"},
+    {"name": "households", "description": "가구(Household) 관리 — 생성, 조회, 멤버 초대/탈퇴"},
+    {"name": "invitations", "description": "가구 초대 — 초대 링크 생성, 수락"},
+    {"name": "onboarding", "description": "신규 사용자 온보딩 — 가구 상태 확인, 첫 가구 생성"},
+    {"name": "expenses", "description": "지출 CRUD — 자연어 파싱 프리뷰, 직접 입력, 월간 통계"},
+    {"name": "income", "description": "수입 CRUD — 자연어 파싱 프리뷰, 직접 입력, 월간 통계"},
+    {"name": "categories", "description": "카테고리 관리 — 지출/수입 카테고리 CRUD, 사용 빈도 정렬"},
+    {"name": "budgets", "description": "예산 — 월별 카테고리 예산 설정, 달성률 조회"},
+    {"name": "recurring", "description": "정기 거래 — 구독/월세 등 정기 지출·수입 관리, 실행/건너뛰기"},
+    {"name": "assets", "description": "자산 관리 — 자산 CRUD, 순자산 스냅샷, 자산 목표"},
+    {"name": "accounts", "description": "계좌/카드 — 결제 수단 관리"},
+    {"name": "insights", "description": "AI 재무 인사이트 — 월간 소비 패턴 분석, LLM 기반 조언"},
+    {"name": "chat", "description": "자연어 채팅 — 지출·수입 자연어 입력 처리 (LLM 파싱)"},
+    {"name": "telegram", "description": "텔레그램 봇 — 웹훅, 계정 연동 코드 발급"},
+    {"name": "kakao", "description": "카카오 봇 — 카카오 채널 자연어 지출·수입 입력"},
+    {"name": "webhooks", "description": "외부 웹훅 — 텔레그램/카카오 이벤트 수신"},
+    {"name": "feedback", "description": "사용자 피드백 — 앱 내 피드백 제출"},
+    {"name": "admin", "description": "관리자 전용 — 사용자 목록, 피드백 관리 (admin 권한 필요)"},
+]
+
 app = FastAPI(
     title=settings.APP_NAME,
+    description=(
+        "포도가계부 REST API\n\n"
+        '자연어 입력(예: "오늘 점심 8000원")을 LLM이 자동 분류·저장하는 AI 가계부.\n\n'
+        "## 인증\n"
+        "모든 API는 podo-auth SSO JWT를 사용합니다. "
+        "`Authorization: Bearer <token>` 헤더 또는 `podo_access_token` 쿠키로 전달하세요.\n\n"
+        "## 에러 형식\n"
+        '모든 에러 응답은 `{"error": {"code": "...", "message": "..."}}` 형식을 따릅니다.'
+    ),
+    version="0.7.0",
+    contact={"name": "포도가계부 팀", "url": "https://budget.podonest.com"},
     debug=settings.DEBUG,
     lifespan=lifespan,
+    openapi_tags=_OPENAPI_TAGS,
 )
 
 # slowapi의 limiter를 FastAPI app에 등록
@@ -136,6 +185,30 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["Content-Type", "Authorization"],
 )
+
+
+# Request ID 미들웨어 — 모든 응답에 X-Request-ID 헤더 추가 (#244)
+@app.middleware("http")
+async def add_request_id(request: Request, call_next):
+    request_id = request.headers.get("X-Request-ID") or str(uuid.uuid4())[:8]
+    response = await call_next(request)
+    response.headers["X-Request-ID"] = request_id
+    return response
+
+
+# 보안 헤더 미들웨어 — 모든 응답에 필수 보안 헤더 추가 (#235)
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "SAMEORIGIN"
+    response.headers["Referrer-Policy"] = "same-origin"
+    response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
+    # HSTS는 프로덕션(HTTPS) 환경에서만 설정 (로컬 HTTP 개발 지원)
+    if not settings.DEBUG:
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+    return response
+
 
 # 전역 에러 핸들러 등록
 register_exception_handlers(app)
@@ -184,10 +257,16 @@ app.include_router(admin.router, prefix="/api/admin", tags=["admin"])
 app.include_router(onboarding.router, prefix="/api/onboarding", tags=["onboarding"])
 app.include_router(webhooks.router, prefix="/api/webhooks", tags=["webhooks"])
 
+# E2E 테스트 전용 (DEBUG 모드에서만 활성화)
+if settings.DEBUG:
+    from app.api import e2e
+
+    app.include_router(e2e.router, prefix="/api", tags=["e2e"])
+
 
 @app.get("/")
 async def root():
-    return {"message": "Welcome to HomeNRich API"}
+    return {"message": "Welcome to 포도가계부 API"}
 
 
 @app.get("/health")
@@ -197,6 +276,56 @@ async def health():
     Fly.io 및 로드밸런서가 사용
     """
     return {"status": "healthy"}
+
+
+@app.get("/health/llm")
+async def health_llm():
+    """LLM 프로바이더 헬스체크 (#254)
+
+    프로바이더 인스턴스 생성 가능 여부 + 인메모리 메트릭 요약 반환.
+    실패 시 503 응답.
+    """
+    from app.core.metrics import get_metrics_summary
+    from app.services.llm_service import get_llm_provider
+
+    try:
+        provider = get_llm_provider()
+        provider_name = type(provider).__name__
+        # LLM 관련 메트릭만 필터링
+        all_metrics = get_metrics_summary()
+        llm_metrics = {k: v for k, v in all_metrics.items() if k.startswith("llm.")}
+        return {
+            "status": "healthy",
+            "provider": provider_name,
+            "metrics": llm_metrics,
+        }
+    except Exception as e:
+        return JSONResponse(
+            status_code=503,
+            content={"status": "unhealthy", "error": str(e)},
+        )
+
+
+@app.get("/health/external")
+async def health_external():
+    """외부 API 헬스체크 (#254)
+
+    인메모리 메트릭 기반으로 외부 API 상태 요약 반환.
+    실제 API 호출 없이 기록된 메트릭만 표시.
+    """
+    from app.core.metrics import get_metrics_summary
+
+    all_metrics = get_metrics_summary()
+    external_metrics = {k: v for k, v in all_metrics.items() if k.startswith("external.")}
+
+    if not external_metrics:
+        return {"status": "no_data", "metrics": {}}
+
+    # 실패가 1건이라도 있으면 degraded
+    has_failure = any(m["failure"] > 0 for m in external_metrics.values())
+    status = "degraded" if has_failure else "healthy"
+
+    return {"status": status, "metrics": external_metrics}
 
 
 @app.get("/health/db")
@@ -214,4 +343,7 @@ async def health_db():
             await session.execute(text("SELECT 1"))
         return {"status": "healthy", "database": "connected"}
     except Exception:
-        return {"status": "unhealthy", "database": "disconnected"}
+        return JSONResponse(
+            status_code=503,
+            content={"status": "unhealthy", "database": "disconnected"},
+        )

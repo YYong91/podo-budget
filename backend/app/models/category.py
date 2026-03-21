@@ -6,7 +6,7 @@
 - user_id=X, household_id=None: 솔로 유저 개인 카테고리 (가구 미소속 폴백)
 """
 
-from sqlalchemy import BigInteger, Column, DateTime, ForeignKey, Integer, String, UniqueConstraint
+from sqlalchemy import BigInteger, Column, DateTime, ForeignKey, Index, Integer, String, UniqueConstraint
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
@@ -26,7 +26,10 @@ class Category(Base):
     """
 
     __tablename__ = "categories"
-    __table_args__ = (UniqueConstraint("name", "household_id", "user_id", name="uq_category_name_scope"),)
+    __table_args__ = (
+        UniqueConstraint("name", "household_id", "user_id", name="uq_category_name_scope"),
+        Index("ix_categories_household_type", "household_id", "type"),  # 카테고리 조회 전반에 사용 (#238)
+    )
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)  # None이면 시스템 카테고리

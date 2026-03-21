@@ -174,6 +174,12 @@ export interface ParsedExpenseItem {
   date: string
   memo: string
   type: string
+  /** 원본 통화 코드 (예: USD, JPY) — 해외 지출 지원 (#245) */
+  currency?: string | null
+  /** 원본 통화 금액 */
+  original_amount?: number | null
+  /** 환율 (원본 통화 → KRW) */
+  exchange_rate?: number | null
 }
 
 export interface ChatResponse {
@@ -203,21 +209,6 @@ export interface User {
   is_admin: boolean
 }
 
-export interface LoginRequest {
-  email: string
-  password: string
-}
-
-export interface RegisterRequest {
-  username: string
-  password: string
-  email: string
-}
-
-export interface AuthResponse {
-  access_token: string
-  token_type: string
-}
 
 export interface Budget {
   id: number

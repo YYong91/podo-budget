@@ -4,9 +4,9 @@
 프론트엔드 온보딩 플로우에서 사용됩니다.
 """
 
-from datetime import datetime
+from datetime import UTC, datetime
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import and_, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -59,7 +59,16 @@ async def create_default_household(
     """기본 가구 생성 + owner 멤버십 추가
 
     가구 이름을 지정하지 않으면 "{username}님의 가계부"로 생성됩니다.
+    이미 활성 가구가 있는 경우 중복 생성을 방지합니다 (#152).
     """
+    # 이미 활성 가구가 있으면 중복 생성 방지 (#152)
+    existing_count = await _count_active_households(current_user.id, db)
+    if existing_count > 0:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="이미 가구에 소속되어 있습니다",
+        )
+
     name = body.name or f"{current_user.username}님의 가계부"
 
     household = Household(name=name)
@@ -70,7 +79,7 @@ async def create_default_household(
         household_id=household.id,
         user_id=current_user.id,
         role="owner",
-        joined_at=datetime.now(),
+        joined_at=datetime.now(UTC).replace(tzinfo=None),
     )
     db.add(member)
     await db.commit()

@@ -10,6 +10,11 @@ vi.mock('../../hooks/useToast', () => ({
   useToast: () => ({ addToast: vi.fn() }),
 }))
 
+vi.mock('../../stores/useHouseholdStore', () => ({
+  useHouseholdStore: (selector: (s: { activeHouseholdId: number }) => unknown) =>
+    selector({ activeHouseholdId: 1 }),
+}))
+
 function renderRecurringList() {
   return render(
     <MemoryRouter>

@@ -5,6 +5,7 @@
 등록(execute) 또는 건너뛰기(skip) 선택이 가능합니다.
 """
 
+import logging
 from datetime import date
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -21,12 +22,15 @@ from app.schemas.recurring_transaction import (
     RecurringTransactionCreate,
     RecurringTransactionResponse,
     RecurringTransactionUpdate,
+    SkipResponse,
 )
 from app.services.recurring_service import (
     calculate_initial_due_date,
     execute_recurring,
     skip_recurring,
 )
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -71,6 +75,7 @@ async def create_recurring(
     db.add(recurring)
     await db.commit()
     await db.refresh(recurring)
+    logger.info("정기 거래 생성: user=%s, description=%s, amount=%s", current_user.id, data.description, data.amount)
     return recurring
 
 
@@ -167,7 +172,12 @@ async def execute_recurring_transaction(
     db: AsyncSession = Depends(get_db),
 ):
     """정기 거래 실행 → Expense 또는 Income 생성"""
-    recurring = await _get_user_recurring(recurring_id, current_user, db)
+    # 권한 확인 (가구 멤버십 포함)
+    await _get_user_recurring(recurring_id, current_user, db)
+
+    # FOR UPDATE 잠금으로 더블 클릭/네트워크 재시도 시 중복 실행 방지 (#136)
+    result = await db.execute(select(RecurringTransaction).where(RecurringTransaction.id == recurring_id).with_for_update())
+    recurring = result.scalar_one()
 
     if not recurring.is_active:
         raise HTTPException(
@@ -185,7 +195,7 @@ async def execute_recurring_transaction(
     )
 
 
-@router.post("/{recurring_id}/skip")
+@router.post("/{recurring_id}/skip", response_model=SkipResponse)
 async def skip_recurring_transaction(
     recurring_id: int,
     current_user: User = Depends(get_current_user),

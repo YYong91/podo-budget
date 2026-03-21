@@ -6,12 +6,12 @@ primary_region = "nrt"
 [build]
 
 [deploy]
-  release_command = "sh -c 'uv sync --frozen --no-dev --no-install-project && .venv/bin/alembic upgrade head'"
+  release_command = ".venv/bin/alembic upgrade head"
 
 [env]
   PORT = "8000"
   APP_NAME = "PodoBudget-Dev"
-  DEBUG = "True"
+  # DEBUG는 Fly.io secrets로 관리 — 스택 트레이스 공개 노출 방지 (#157)
   DATABASE_URL = "sqlite+aiosqlite:////app/data/db.sqlite3"
   SENTRY_ENVIRONMENT = "development"
 
@@ -23,10 +23,10 @@ primary_region = "nrt"
   min_machines_running = 0    # 비용 절약: 최소 0대
 
   [[http_service.checks]]
-    grace_period = "30s"
-    interval = "30s"
+    grace_period = "120s"
+    interval = "15s"
     method = "GET"
-    timeout = "5s"
+    timeout = "10s"
     path = "/health"
 
 [[vm]]

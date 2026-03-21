@@ -36,12 +36,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: superfly/flyctl-actions/setup-flyctl@master
+      - uses: superfly/flyctl-actions/setup-flyctl@v1  # 버전 고정 — 공급망 보안 (#139)
 
       - name: 백엔드 배포
         run: |
           set -o pipefail
-          flyctl deploy --remote-only --config backend/fly.toml --dockerfile backend/Dockerfile 2>&1 | tee /tmp/deploy.log
+          flyctl deploy --local-only --config backend/fly.toml --dockerfile backend/Dockerfile 2>&1 | tee /tmp/deploy.log
 
       - name: 실패 원인 수집
         id: on-failure
@@ -100,20 +100,74 @@ jobs:
           REASON=$(grep -iE "error|failed" /tmp/deploy.log 2>/dev/null | tail -3 | sed 's/\x1b\[[0-9;]*m//g' | tr '\n' ' ' | cut -c1-300)
           echo "reason=${REASON:-Cloudflare Pages 배포 실패}" >> $GITHUB_OUTPUT
 
-  # ── 배포 결과 알림 ─────────────────────────────────
-  notify-deploy-result:
-    name: 배포 결과 알림
+  # ── 배포 후 스모크 테스트 ──────────────────────────
+  smoke-test:
+    name: 스모크 테스트
     needs: [deploy-backend, deploy-frontend]
+    if: needs.deploy-backend.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - uses: superfly/flyctl-actions/setup-flyctl@v1
+
+      - name: 헬스체크 (재시도 포함)
+        id: smoke
+        env:
+          BE_URL: https://podo-budget-backend.fly.dev
+          FE_URL: https://budget.podonest.com
+        run: |
+          # 재시도 함수: 최대 N회, 간격 M초
+          check_url() {
+            local url="$1" label="$2" max_retries=5 interval=15
+            for i in $(seq 1 $max_retries); do
+              HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 15 "$url" || echo "000")
+              if [ "$HTTP_CODE" = "200" ]; then
+                echo "✅ $label → $HTTP_CODE (시도 $i/$max_retries)"
+                return 0
+              fi
+              echo "⏳ $label → $HTTP_CODE (시도 $i/$max_retries, ${interval}초 후 재시도)"
+              [ "$i" -lt "$max_retries" ] && sleep $interval
+            done
+            echo "❌ $label → $HTTP_CODE (${max_retries}회 실패)"
+            return 1
+          }
+
+          echo "20초 대기 (서버 부팅 + 마이그레이션)..."
+          sleep 20
+
+          FAILED=0
+          check_url "$BE_URL/health" "BE /health" || FAILED=1
+          check_url "$BE_URL/" "BE /" || FAILED=1
+          check_url "$FE_URL" "FE" || FAILED=1
+
+          if [ "$FAILED" = "1" ]; then
+            echo "::error::스모크 테스트 실패 — 롤백 시도"
+            exit 1
+          fi
+
+      - name: BE 자동 롤백
+        if: failure()
+        run: |
+          echo "⚠️ 스모크 테스트 실패 — 이전 릴리즈로 롤백"
+          flyctl releases rollback --app podo-budget-backend --yes || echo "롤백 실패 — 수동 확인 필요"
+
+  # ── 배포 결과 메시지 빌드 ──────────────────────────
+  build-deploy-result-message:
+    name: 결과 메시지 빌드
+    needs: [deploy-backend, deploy-frontend, smoke-test]
     runs-on: ubuntu-latest
     timeout-minutes: 2
     if: always()
+    outputs:
+      message: ${{ steps.build.outputs.message }}
     steps:
-      - name: 텔레그램 전송
+      - name: 메시지 빌드
+        id: build
         env:
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           BACKEND_STATUS: ${{ needs.deploy-backend.result }}
           FRONTEND_STATUS: ${{ needs.deploy-frontend.result }}
+          SMOKE_STATUS: ${{ needs.smoke-test.result }}
           BACKEND_FAILURE: ${{ needs.deploy-backend.outputs.failure_reason }}
           FRONTEND_FAILURE: ${{ needs.deploy-frontend.outputs.failure_reason }}
           COMMIT_MSG: ${{ github.event.head_commit.message || 'Manual trigger' }}
@@ -128,12 +182,13 @@ jobs:
             PR_LINK="https://github.com/${REPO}/pull/${PR_NUM}"
           fi
 
-          if [ "$BACKEND_STATUS" = "success" ] && [ "$FRONTEND_STATUS" = "success" ]; then
+          if [ "$BACKEND_STATUS" = "success" ] && [ "$FRONTEND_STATUS" = "success" ] && [ "$SMOKE_STATUS" != "failure" ]; then
             KST_TIME="$(TZ=Asia/Seoul date '+%Y-%m-%d %H:%M KST')"
             MESSAGE="$(printf '[PROD] ✅ podo-budget 배포 완료\n📝 %s\n🕐 %s' \
-              "${DISPLAY_MSG}" \
-              "${KST_TIME}")"
+              "${DISPLAY_MSG}" "${KST_TIME}")"
             [ -n "$PR_LINK" ] && MESSAGE="${MESSAGE}"$'\n'"🔗 ${PR_LINK}"
+          elif [ "$SMOKE_STATUS" = "failure" ]; then
+            MESSAGE="[PROD] 🔥 podo-budget 스모크 테스트 실패 — 자동 롤백 시도됨"
           else
             MESSAGE="[PROD] ❌ podo-budget 배포 실패 (backend: ${BACKEND_STATUS}, frontend: ${FRONTEND_STATUS})"
             [ -n "$BACKEND_FAILURE" ] && MESSAGE="${MESSAGE}"$'\n'"🔴 Backend: ${BACKEND_FAILURE}"
@@ -141,6 +196,18 @@ jobs:
             MESSAGE="${MESSAGE}"$'\n'"🔗 https://github.com/${REPO}/actions/runs/${RUN_ID}"
           fi
 
-          curl -sf -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
-            -d chat_id="${TELEGRAM_CHAT_ID}" \
-            --data-urlencode "text=${MESSAGE}" || true
+          echo "message<<EOF" >> "$GITHUB_OUTPUT"
+          echo "${MESSAGE}" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+
+  # ── 배포 결과 알림 ─────────────────────────────────
+  notify-deploy-result:
+    name: 배포 결과 알림
+    needs: [build-deploy-result-message]
+    if: always()
+    uses: ./.github/workflows/notify.yml
+    with:
+      message: ${{ needs.build-deploy-result-message.outputs.message }}
+    secrets:
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}

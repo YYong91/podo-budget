@@ -91,11 +91,11 @@ export default function RegisterRecurringModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" role="dialog" aria-modal="true" aria-labelledby="register-recurring-title">
       <div className="bg-[var(--surface-card)] rounded-2xl shadow-xl w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-5 border-b border-[var(--border-subtle)]">
-          <h2 className="text-lg font-semibold text-[var(--text-primary)]">반복 거래 등록</h2>
-          <button onClick={onClose} className="p-1 rounded-md hover:bg-[var(--surface-hover)]">
+          <h2 id="register-recurring-title" className="text-lg font-semibold text-[var(--text-primary)]">반복 거래 등록</h2>
+          <button onClick={onClose} className="p-1 rounded-md hover:bg-[var(--surface-hover)]" aria-label="닫기">
             <X className="w-5 h-5 text-[var(--text-tertiary)]" />
           </button>
         </div>
@@ -129,8 +129,9 @@ export default function RegisterRecurringModal({
 
           {/* 반복 빈도 */}
           <div>
-            <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">반복 빈도</label>
+            <label htmlFor="recurring-frequency" className="block text-sm font-medium text-[var(--text-secondary)] mb-2">반복 빈도</label>
             <select
+              id="recurring-frequency"
               value={formData.frequency}
               onChange={(e) =>
                 setFormData({ ...formData, frequency: e.target.value as typeof formData.frequency })
@@ -147,9 +148,10 @@ export default function RegisterRecurringModal({
           {/* 빈도별 추가 필드 */}
           {(formData.frequency === 'monthly' || formData.frequency === 'yearly') && (
             <div>
-              <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">반복 날짜</label>
+              <label htmlFor="recurring-day-of-month" className="block text-sm font-medium text-[var(--text-secondary)] mb-2">반복 날짜</label>
               <div className="flex items-center gap-2">
                 <input
+                  id="recurring-day-of-month"
                   type="number"
                   value={formData.day_of_month}
                   onChange={(e) => setFormData({ ...formData, day_of_month: e.target.value })}
@@ -164,8 +166,9 @@ export default function RegisterRecurringModal({
 
           {formData.frequency === 'weekly' && (
             <div>
-              <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">요일</label>
+              <label htmlFor="recurring-day-of-week" className="block text-sm font-medium text-[var(--text-secondary)] mb-2">요일</label>
               <select
+                id="recurring-day-of-week"
                 value={formData.day_of_week}
                 onChange={(e) => setFormData({ ...formData, day_of_week: e.target.value })}
                 className="w-full px-3 py-2 rounded-xl border border-[var(--input-border)] text-sm focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
@@ -179,8 +182,9 @@ export default function RegisterRecurringModal({
 
           {formData.frequency === 'yearly' && (
             <div>
-              <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">반복 월</label>
+              <label htmlFor="recurring-month-of-year" className="block text-sm font-medium text-[var(--text-secondary)] mb-2">반복 월</label>
               <select
+                id="recurring-month-of-year"
                 value={formData.month_of_year}
                 onChange={(e) => setFormData({ ...formData, month_of_year: e.target.value })}
                 className="w-full px-3 py-2 rounded-xl border border-[var(--input-border)] text-sm focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
@@ -194,9 +198,10 @@ export default function RegisterRecurringModal({
 
           {formData.frequency === 'custom' && (
             <div>
-              <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">반복 주기</label>
+              <label htmlFor="recurring-interval" className="block text-sm font-medium text-[var(--text-secondary)] mb-2">반복 주기</label>
               <div className="flex items-center gap-2">
                 <input
+                  id="recurring-interval"
                   type="number"
                   value={formData.interval}
                   onChange={(e) => setFormData({ ...formData, interval: e.target.value })}
@@ -210,8 +215,9 @@ export default function RegisterRecurringModal({
 
           {/* 시작일 */}
           <div>
-            <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">시작일</label>
+            <label htmlFor="recurring-start-date" className="block text-sm font-medium text-[var(--text-secondary)] mb-2">시작일</label>
             <input
+              id="recurring-start-date"
               type="date"
               value={formData.start_date}
               onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
@@ -221,8 +227,9 @@ export default function RegisterRecurringModal({
 
           {/* 종료일 */}
           <div>
-            <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">종료일 (선택)</label>
+            <label htmlFor="recurring-end-date" className="block text-sm font-medium text-[var(--text-secondary)] mb-2">종료일 (선택)</label>
             <input
+              id="recurring-end-date"
               type="date"
               value={formData.end_date}
               onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}

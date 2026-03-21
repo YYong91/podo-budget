@@ -15,41 +15,7 @@ import EmptyState from '../components/EmptyState'
 import ErrorState from '../components/ErrorState'
 import LoadingSpinner from '../components/LoadingSpinner'
 import type { CreateHouseholdDto } from '../types'
-
-/**
- * 날짜 포맷팅 함수 (YYYY.MM.DD)
- */
-function formatDate(dateStr: string): string {
-  return dateStr.slice(0, 10).replace(/-/g, '.')
-}
-
-/**
- * 역할 한글 변환 함수
- */
-function formatRole(role: string): string {
-  const roleMap: Record<string, string> = {
-    owner: '소유자',
-    admin: '관리자',
-    member: '멤버',
-  }
-  return roleMap[role] || role
-}
-
-/**
- * 역할별 배지 색상
- */
-function getRoleBadgeColor(role: string): string {
-  switch (role) {
-    case 'owner':
-      return 'bg-purple-50 text-purple-700 border-purple-200'
-    case 'admin':
-      return 'bg-blue-50 text-blue-700 border-blue-200'
-    case 'member':
-      return 'bg-[var(--surface-elevated)] text-[var(--text-secondary)] border-[var(--border-default)]'
-    default:
-      return 'bg-[var(--surface-elevated)] text-[var(--text-secondary)] border-[var(--border-default)]'
-  }
-}
+import { formatDate, formatRole, getRoleBadgeColor } from '../utils/household'
 
 export default function HouseholdListPage() {
   const navigate = useNavigate()
@@ -171,7 +137,10 @@ export default function HouseholdListPage() {
           {households.map((household) => (
             <div
               key={household.id}
+              role="button"
+              tabIndex={0}
               onClick={() => handleCardClick(household.id)}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleCardClick(household.id) } }}
               className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] p-5 hover:shadow-md hover:border-grape-300 transition-all cursor-pointer"
             >
               {/* 가구 이름 및 역할 */}

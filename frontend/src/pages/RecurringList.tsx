@@ -73,7 +73,8 @@ export default function RecurringList() {
       setLoading(true)
       setError(null)
 
-      const params: { type?: string; household_id: number } = { household_id: activeHouseholdId! }
+      if (!activeHouseholdId) return  // 가구 로딩 전 API 호출 방지 (#149)
+      const params: { type?: string; household_id: number } = { household_id: activeHouseholdId }
       if (typeFilter !== 'all') params.type = typeFilter
 
       const [recurringRes, categoriesRes] = await Promise.all([
@@ -378,13 +379,13 @@ export default function RecurringList() {
 
       {/* 추가/수정 모달 */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" role="dialog" aria-modal="true" aria-labelledby="recurring-modal-title">
           <div className="bg-[var(--surface-card)] rounded-2xl shadow-xl w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-5 border-b border-[var(--border-subtle)]">
-              <h2 className="text-lg font-semibold text-[var(--text-primary)]">
+              <h2 id="recurring-modal-title" className="text-lg font-semibold text-[var(--text-primary)]">
                 {editingId ? '반복 거래 수정' : '반복 거래 추가'}
               </h2>
-              <button onClick={() => setShowModal(false)} className="p-1 rounded-md hover:bg-[var(--surface-hover)]">
+              <button onClick={() => setShowModal(false)} className="p-1 rounded-md hover:bg-[var(--surface-hover)]" aria-label="닫기">
                 <X className="w-5 h-5 text-[var(--text-tertiary)]" />
               </button>
             </div>
@@ -392,7 +393,7 @@ export default function RecurringList() {
               {/* 타입 선택 (추가 시에만) */}
               {!editingId && (
                 <div>
-                  <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">유형</label>
+                  <span className="block text-sm font-medium text-[var(--text-secondary)] mb-2">유형</span>
                   <div className="flex gap-2">
                     <button
                       type="button"
@@ -418,8 +419,9 @@ export default function RecurringList() {
 
               {/* 설명 */}
               <div>
-                <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">설명</label>
+                <label htmlFor="reclist-description" className="block text-sm font-medium text-[var(--text-secondary)] mb-2">설명</label>
                 <input
+                  id="reclist-description"
                   type="text"
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
@@ -430,8 +432,9 @@ export default function RecurringList() {
 
               {/* 금액 */}
               <div>
-                <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">금액</label>
+                <label htmlFor="reclist-amount" className="block text-sm font-medium text-[var(--text-secondary)] mb-2">금액</label>
                 <input
+                  id="reclist-amount"
                   type="number"
                   value={formData.amount}
                   onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
@@ -443,8 +446,9 @@ export default function RecurringList() {
 
               {/* 카테고리 */}
               <div>
-                <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">카테고리</label>
+                <label htmlFor="reclist-category" className="block text-sm font-medium text-[var(--text-secondary)] mb-2">카테고리</label>
                 <select
+                  id="reclist-category"
                   value={formData.category_id}
                   onChange={(e) => setFormData({ ...formData, category_id: e.target.value })}
                   className="w-full px-3 py-2 rounded-xl border border-[var(--input-border)] text-sm focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
@@ -460,8 +464,9 @@ export default function RecurringList() {
               {!editingId && (
                 <>
                   <div>
-                    <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">반복 빈도</label>
+                    <label htmlFor="reclist-frequency" className="block text-sm font-medium text-[var(--text-secondary)] mb-2">반복 빈도</label>
                     <select
+                      id="reclist-frequency"
                       value={formData.frequency}
                       onChange={(e) => setFormData({ ...formData, frequency: e.target.value as typeof formData.frequency })}
                       className="w-full px-3 py-2 rounded-xl border border-[var(--input-border)] text-sm focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
@@ -476,8 +481,9 @@ export default function RecurringList() {
                   {/* 빈도별 추가 필드 */}
                   {(formData.frequency === 'monthly' || formData.frequency === 'yearly') && (
                     <div>
-                      <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">반복일</label>
+                      <label htmlFor="reclist-day-of-month" className="block text-sm font-medium text-[var(--text-secondary)] mb-2">반복일</label>
                       <input
+                        id="reclist-day-of-month"
                         type="number"
                         value={formData.day_of_month}
                         onChange={(e) => setFormData({ ...formData, day_of_month: e.target.value })}
@@ -490,8 +496,9 @@ export default function RecurringList() {
 
                   {formData.frequency === 'weekly' && (
                     <div>
-                      <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">요일</label>
+                      <label htmlFor="reclist-day-of-week" className="block text-sm font-medium text-[var(--text-secondary)] mb-2">요일</label>
                       <select
+                        id="reclist-day-of-week"
                         value={formData.day_of_week}
                         onChange={(e) => setFormData({ ...formData, day_of_week: e.target.value })}
                         className="w-full px-3 py-2 rounded-xl border border-[var(--input-border)] text-sm focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
@@ -505,8 +512,9 @@ export default function RecurringList() {
 
                   {formData.frequency === 'yearly' && (
                     <div>
-                      <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">반복 월</label>
+                      <label htmlFor="reclist-month-of-year" className="block text-sm font-medium text-[var(--text-secondary)] mb-2">반복 월</label>
                       <select
+                        id="reclist-month-of-year"
                         value={formData.month_of_year}
                         onChange={(e) => setFormData({ ...formData, month_of_year: e.target.value })}
                         className="w-full px-3 py-2 rounded-xl border border-[var(--input-border)] text-sm focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
@@ -520,8 +528,9 @@ export default function RecurringList() {
 
                   {formData.frequency === 'custom' && (
                     <div>
-                      <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">반복 주기 (일)</label>
+                      <label htmlFor="reclist-interval" className="block text-sm font-medium text-[var(--text-secondary)] mb-2">반복 주기 (일)</label>
                       <input
+                        id="reclist-interval"
                         type="number"
                         value={formData.interval}
                         onChange={(e) => setFormData({ ...formData, interval: e.target.value })}
@@ -533,8 +542,9 @@ export default function RecurringList() {
 
                   {/* 시작일 */}
                   <div>
-                    <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">시작일</label>
+                    <label htmlFor="reclist-start-date" className="block text-sm font-medium text-[var(--text-secondary)] mb-2">시작일</label>
                     <input
+                      id="reclist-start-date"
                       type="date"
                       value={formData.start_date}
                       onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
@@ -546,8 +556,9 @@ export default function RecurringList() {
 
               {/* 종료일 (항상 표시) */}
               <div>
-                <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">종료일 (선택)</label>
+                <label htmlFor="reclist-end-date" className="block text-sm font-medium text-[var(--text-secondary)] mb-2">종료일 (선택)</label>
                 <input
+                  id="reclist-end-date"
                   type="date"
                   value={formData.end_date}
                   onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}

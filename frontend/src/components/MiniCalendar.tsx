@@ -3,7 +3,7 @@
  * @description 미니 캘린더 — 날짜별 지출/수입 금액 표시, 날짜 탭 시 콜백
  */
 
-import { useMemo } from 'react'
+import { memo, useMemo } from 'react'
 import { getCalendarGrid } from '../utils/calendar'
 import { formatCompactAmount } from '../utils/format'
 
@@ -22,7 +22,7 @@ interface MiniCalendarProps {
 
 const WEEKDAY_LABELS = ['일', '월', '화', '수', '목', '금', '토']
 
-export default function MiniCalendar({
+function MiniCalendar({
   year,
   month,
   daySummaries,
@@ -95,3 +95,6 @@ export default function MiniCalendar({
     </div>
   )
 }
+
+// React.memo로 year/month/daySummaries/today 변경 시에만 리렌더 (#240)
+export default memo(MiniCalendar)

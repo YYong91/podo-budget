@@ -14,6 +14,7 @@ from datetime import UTC, datetime
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import and_, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.core.auth import get_current_user
 from app.core.database import get_db
@@ -52,44 +53,42 @@ async def list_my_invitations(
     if current_user.email:
         conditions.append(HouseholdInvitation.invitee_email == current_user.email)
 
-    query = select(HouseholdInvitation).where(or_(*conditions)).order_by(HouseholdInvitation.created_at.desc())
+    # 초대+가구+초대자 일괄 로드 — 초대 건수만큼 개별 조회 제거 (#165)
+    query = (
+        select(HouseholdInvitation)
+        .where(or_(*conditions))
+        .options(
+            selectinload(HouseholdInvitation.household),
+            selectinload(HouseholdInvitation.inviter),
+        )
+        .order_by(HouseholdInvitation.created_at.desc())
+    )
 
     result = await db.execute(query)
     invitations = result.scalars().all()
 
-    # 응답 생성
+    # 응답 생성 (household, inviter 이미 로드됨)
     response_list = []
     for inv in invitations:
-        # 가구 정보 조회
-        household_query = select(Household).where(Household.id == inv.household_id)
-        household_result = await db.execute(household_query)
-        household = household_result.scalar_one_or_none()
-
         # 가구가 소프트 삭제된 경우 건너뛰기
-        if not household or household.deleted_at is not None:
+        if not inv.household or inv.household.deleted_at is not None:
             continue
-
-        # 초대자 정보 조회
-        inviter_query = select(User).where(User.id == inv.inviter_id)
-        inviter_result = await db.execute(inviter_query)
-        inviter = inviter_result.scalar_one()
 
         # pending 상태인 초대에는 토큰 포함 (수락/거절에 필요)
         # 이 엔드포인트는 인증 필요이고 본인 초대만 반환하므로 안전
-        include_token = inv.status == "pending"
         response_list.append(
             InvitationResponse(
                 id=inv.id,
-                household_id=household.id,
-                household_name=household.name,
+                household_id=inv.household.id,
+                household_name=inv.household.name,
                 invitee_email=inv.invitee_email,
-                inviter_username=inviter.username,
+                inviter_username=inv.inviter.username,
                 role=inv.role,
                 status=inv.status,
                 expires_at=inv.expires_at,
                 created_at=inv.created_at,
                 responded_at=inv.responded_at,
-                token=inv.token if include_token else None,
+                token=inv.token if inv.status == "pending" else None,
             )
         )
 
@@ -121,8 +120,8 @@ async def accept_invitation(
         - 초대 상태를 "accepted"로 변경
         - 이미 멤버인 경우 에러 반환
     """
-    # 토큰으로 초대 조회
-    invitation_query = select(HouseholdInvitation).where(HouseholdInvitation.token == token)
+    # 토큰으로 초대 조회 — FOR UPDATE로 행 잠금 (동시 수락 레이스 컨디션 방어, #134)
+    invitation_query = select(HouseholdInvitation).where(HouseholdInvitation.token == token).with_for_update()
     result = await db.execute(invitation_query)
     invitation = result.scalar_one_or_none()
 
@@ -133,7 +132,7 @@ async def accept_invitation(
     if invitation.invitee_user_id != current_user.id and (not current_user.email or invitation.invitee_email != current_user.email):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="이 초대를 수락할 권한이 없습니다")
 
-    # 상태 확인
+    # 상태 확인 — FOR UPDATE 잠금 이후 재확인 (동시 요청에서 첫 번째 commit 후 두 번째가 감지)
     if invitation.status != "pending":
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"이미 처리된 초대입니다 (상태: {invitation.status})")
 

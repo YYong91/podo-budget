@@ -3,6 +3,7 @@
  * @description 2줄 구조 거래 항목 — 설명+금액 / 카테고리뱃지
  */
 
+import { memo } from 'react'
 import { Link } from 'react-router-dom'
 import { formatAmount } from '../utils/format'
 import type { Category } from '../types'
@@ -13,24 +14,27 @@ interface TransactionItemProps {
   description: string
   amount: number
   categoryId: number | null
-  categories: Category[]
+  /** O(1) 카테고리 조회를 위해 Map으로 전달 (#180) */
+  categoryMap: Map<number, Category>
   excludeFromStats?: boolean
   rawInput?: string | null
-  onCategoryClick: (e: React.MouseEvent) => void
+  /** 안정적 콜백 — TransactionList에서 useMemo로 생성된 핸들러 전달 (#240) */
+  onCategoryClick: () => void
 }
 
-export default function TransactionItem({
+function TransactionItem({
   id,
   type,
   description,
   amount,
   categoryId,
-  categories,
+  categoryMap,
   excludeFromStats,
   rawInput,
   onCategoryClick,
 }: TransactionItemProps) {
-  const category = categoryId != null ? categories.find(c => c.id === categoryId) : null
+  // O(1) 조회 — 이전 O(n) find 대비 300건×20카테고리=6,000비교 → 300번 해시 조회 (#180)
+  const category = categoryId != null ? categoryMap.get(categoryId) : null
   const detailPath = type === 'expense' ? `/expenses/${id}` : `/income/${id}`
   const isRecurring = rawInput?.startsWith('[정기]')
 
@@ -58,7 +62,7 @@ export default function TransactionItem({
           onClick={(e) => {
             e.preventDefault()
             e.stopPropagation()
-            onCategoryClick(e)
+            onCategoryClick()
           }}
           className={`text-xs px-2 py-0.5 rounded-full transition-colors ${
             type === 'income'
@@ -78,3 +82,6 @@ export default function TransactionItem({
     </Link>
   )
 }
+
+// React.memo로 불필요한 리렌더 방지 — onCategoryClick은 TransactionList에서 useMemo로 안정화 (#240)
+export default memo(TransactionItem)

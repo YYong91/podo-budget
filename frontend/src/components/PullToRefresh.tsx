@@ -58,9 +58,12 @@ export default function PullToRefresh({ onRefresh, children }: PullToRefreshProp
     let isPulling = false
 
     const getScrollTop = (): number => {
+      // window 스크롤 우선 — Layout의 <main>에 overflow 없으므로 스크롤은 window에서 발생
+      if (window.scrollY > 0) return window.scrollY
+      // fallback: 스크롤 컨테이너가 별도로 있는 경우
       const main = el.closest('main')
-      if (main) return main.scrollTop
-      return window.scrollY
+      if (main && main.scrollTop > 0) return main.scrollTop
+      return 0
     }
 
     // non-passive: 당기는 중에만 등록

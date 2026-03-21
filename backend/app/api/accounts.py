@@ -21,7 +21,11 @@ async def create_account(
 ):
     """계좌 등록"""
     account_data = account.model_dump()
-    return await account_service.create_account(db, account_data, current_user)
+    household_id = account_data.get("household_id")
+    if household_id is None:
+        household_id = await get_user_active_household_id(current_user, db)
+    await get_household_member(household_id, current_user, db)
+    return await account_service.create_account(db, account_data, current_user, household_id)
 
 
 @router.get("", response_model=list[AccountResponse])
@@ -34,7 +38,7 @@ async def get_accounts(
     if household_id is None:
         household_id = await get_user_active_household_id(current_user, db)
     await get_household_member(household_id, current_user, db)
-    return await account_service.get_accounts(db, current_user, household_id)
+    return await account_service.get_accounts(db, household_id)
 
 
 @router.get("/{account_id}", response_model=AccountResponse)
@@ -47,6 +51,12 @@ async def get_account(
     account = await account_service.get_account_by_id(db, account_id, current_user)
     if not account:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="계좌를 찾을 수 없습니다")
+    # household 멤버십 검증 — IDOR 방지 (#137)
+    if account.household_id is not None:
+        try:
+            await get_household_member(account.household_id, current_user, db)
+        except HTTPException:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="계좌를 찾을 수 없습니다") from None
     return account
 
 

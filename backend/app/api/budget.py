@@ -3,12 +3,15 @@
 예산 설정, 조회, 수정, 삭제 및 예산 초과 알림 기능을 제공합니다.
 household_id가 있으면 가구 공유 예산, 없으면 개인 예산으로 처리합니다.
 expenses/recurring과 동일한 household 패턴을 따릅니다.
+
+복잡한 비즈니스 로직(알림, 카테고리 개요)은 budget_service로 위임 (#176)
 """
 
-from datetime import datetime, timedelta
+import logging
+from datetime import date, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import and_, extract, func, or_, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import get_household_member, get_user_active_household_id
@@ -26,10 +29,12 @@ from app.schemas.budget import (
     BudgetResponse,
     BudgetUpdate,
     CategoryBudgetOverview,
-    MonthlySpending,
     TotalBudgetResponse,
     TotalBudgetUpdate,
 )
+from app.services import budget_service
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -103,6 +108,7 @@ async def create_budget(
     db.add(new_budget)
     await db.commit()
     await db.refresh(new_budget)
+    logger.info("예산 생성: user=%s, category_id=%s, amount=%s", current_user.id, budget_data.category_id, budget_data.amount)
     return new_budget
 
 
@@ -142,94 +148,11 @@ async def get_budget_alerts(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """예산 초과/경고 알림 조회
-
-    household_id가 있으면 가구 공유 예산 알림, 없으면 개인 예산 알림을 조회합니다.
-    각 카테고리별로 설정된 예산과 현재까지의 지출을 비교합니다.
-    """
+    """예산 초과/경고 알림 조회 (로직은 budget_service에서 처리, #176)"""
     if household_id is None:
         household_id = await get_user_active_household_id(current_user, db)
     await get_household_member(household_id, current_user, db)
-
-    budget_scope = _budget_scope_filter(household_id)
-    expense_scope = _expense_scope_filter(household_id)
-
-    result = await db.execute(select(Budget).where(budget_scope))
-    budgets = result.scalars().all()
-
-    alerts = []
-    now = datetime.now()
-
-    # 유효한 예산만 필터 (기간 미시작 제외)
-    active_budgets = [b for b in budgets if b.start_date <= now]
-    if not active_budgets:
-        return alerts
-
-    # 카테고리 배치 조회 (1 쿼리)
-    category_ids = [b.category_id for b in active_budgets]
-    cat_result = await db.execute(select(Category).where(Category.id.in_(category_ids)))
-    categories_map = {c.id: c for c in cat_result.scalars().all()}
-
-    # period_start별로 예산 그룹화 (period 타입별로 동일한 period_start 공유)
-    budgets_by_period: dict[datetime, list] = {}
-    for budget in active_budgets:
-        if budget.period == "monthly":
-            period_start = datetime(now.year, now.month, 1)
-        elif budget.period == "weekly":
-            days_since_monday = now.weekday()
-            period_start = datetime(now.year, now.month, now.day) - timedelta(days=days_since_monday)
-        else:  # daily
-            period_start = datetime(now.year, now.month, now.day)
-        budgets_by_period.setdefault(period_start, []).append(budget)
-
-    # period_start별 지출 합계 배치 조회 (period 유형 수만큼 쿼리 — 보통 1~3회)
-    spent_map: dict[int, float] = {}
-    for period_start, period_budgets in budgets_by_period.items():
-        period_cat_ids = [b.category_id for b in period_budgets]
-        expense_result = await db.execute(
-            select(Expense.category_id, func.sum(Expense.amount).label("total"))
-            .where(
-                expense_scope,
-                Expense.category_id.in_(period_cat_ids),
-                Expense.date >= period_start,
-                Expense.date <= now,
-            )
-            .group_by(Expense.category_id)
-        )
-        for row in expense_result.all():
-            spent_map[row.category_id] = float(row.total)
-        # 지출 없는 카테고리는 0으로 초기화
-        for cat_id in period_cat_ids:
-            spent_map.setdefault(cat_id, 0.0)
-
-    for budget in active_budgets:
-        category = categories_map.get(budget.category_id)
-        if not category:
-            continue
-
-        spent_amount = spent_map.get(budget.category_id, 0.0)
-        budget_amount = float(budget.amount)
-        usage_percentage = (spent_amount / budget_amount * 100) if budget_amount > 0 else 0
-        remaining_amount = budget_amount - spent_amount
-        is_exceeded = spent_amount > budget_amount
-        is_warning = usage_percentage >= (budget.alert_threshold * 100)
-
-        alerts.append(
-            BudgetAlert(
-                budget_id=budget.id,
-                category_id=budget.category_id,
-                category_name=category.name,
-                budget_amount=budget.amount,
-                spent_amount=spent_amount,
-                remaining_amount=remaining_amount,
-                usage_percentage=usage_percentage,
-                is_exceeded=is_exceeded,
-                is_warning=is_warning,
-            )
-        )
-
-    alerts.sort(key=lambda x: (not x.is_exceeded, not x.is_warning, -x.usage_percentage))
-    return alerts
+    return await budget_service.get_budget_alerts(db, household_id)
 
 
 @router.get("/category-overview", response_model=list[CategoryBudgetOverview])
@@ -238,112 +161,11 @@ async def get_category_overview(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """카테고리별 예산 개요 조회 — 인라인 예산 편집 화면용
-
-    household_id가 있으면 가구 공유 예산 개요, 없으면 개인 예산 개요를 반환합니다.
-    모든 지출 카테고리와 함께 최근 3개월 지출액, 현재 예산 정보를 반환합니다.
-    """
+    """카테고리별 예산 개요 조회 — 인라인 예산 편집 화면용 (로직은 budget_service에서 처리, #176)"""
     if household_id is None:
         household_id = await get_user_active_household_id(current_user, db)
     await get_household_member(household_id, current_user, db)
-
-    budget_scope = _budget_scope_filter(household_id)
-    expense_scope = _expense_scope_filter(household_id)
-
-    now = datetime.now()
-
-    # 최근 3개월 시작일 계산 (현재 월 포함 3개월)
-    start_month = now.month - 2
-    start_year = now.year
-    while start_month <= 0:
-        start_month += 12
-        start_year -= 1
-    start_date = datetime(start_year, start_month, 1)
-
-    # 지출/공통 카테고리 조회 — 시스템 + 가계 + 솔로 개인 카테고리 (3-scope)
-    category_conditions = [
-        and_(Category.household_id.is_(None), Category.user_id.is_(None)),  # 시스템
-        and_(Category.user_id == current_user.id, Category.household_id.is_(None)),  # 솔로 폴백
-        Category.household_id == household_id,  # 가계
-    ]
-    categories_result = await db.execute(
-        select(Category)
-        .where(
-            Category.type.in_(["expense", "both"]),
-            or_(*category_conditions),
-        )
-        .order_by(Category.name)
-    )
-    categories = categories_result.scalars().all()
-
-    # 현재 활성 예산 조회
-    budgets_result = await db.execute(
-        select(Budget)
-        .where(
-            budget_scope,
-            Budget.start_date <= now,
-            or_(Budget.end_date.is_(None), Budget.end_date >= now),
-        )
-        .order_by(Budget.created_at.desc())
-    )
-    budgets = budgets_result.scalars().all()
-
-    # 카테고리별 현재 예산 매핑 (가장 최근 예산 하나만)
-    budget_map: dict[int, Budget] = {}
-    for budget in budgets:
-        if budget.category_id not in budget_map:
-            budget_map[budget.category_id] = budget
-
-    # 최근 3개월 카테고리별 월별 지출 집계
-    spending_result = await db.execute(
-        select(
-            Expense.category_id,
-            extract("year", Expense.date).label("year"),
-            extract("month", Expense.date).label("month"),
-            func.sum(Expense.amount).label("amount"),
-        )
-        .where(
-            expense_scope,
-            Expense.date >= start_date,
-            Expense.amount > 0,
-            Expense.category_id.isnot(None),  # 카테고리 미설정 지출 제외
-        )
-        .group_by(
-            Expense.category_id,
-            extract("year", Expense.date),
-            extract("month", Expense.date),
-        )
-    )
-    spending_rows = spending_result.all()
-
-    # 카테고리별 월별 지출 매핑
-    spending_map: dict[int, list[MonthlySpending]] = {}
-    for row in spending_rows:
-        cat_id = int(row.category_id)
-        if cat_id not in spending_map:
-            spending_map[cat_id] = []
-        spending_map[cat_id].append(MonthlySpending(year=int(row.year), month=int(row.month), amount=float(row.amount)))
-
-    # 최신순 정렬
-    for cat_id in spending_map:
-        spending_map[cat_id].sort(key=lambda x: (x.year, x.month), reverse=True)
-
-    # 결과 조합
-    overview = []
-    for cat in categories:
-        budget = budget_map.get(cat.id)
-        overview.append(
-            CategoryBudgetOverview(
-                category_id=cat.id,
-                category_name=cat.name,
-                monthly_spending=spending_map.get(cat.id, []),
-                current_budget_id=budget.id if budget else None,
-                current_budget_amount=float(budget.amount) if budget else None,
-                alert_threshold=float(budget.alert_threshold) if budget else None,
-            )
-        )
-
-    return overview
+    return await budget_service.get_category_overview(db, household_id, current_user.id)
 
 
 @router.get("/monthly-stats", response_model=BudgetMonthlyStatsResponse)
@@ -485,7 +307,13 @@ async def update_budget(
     for field, value in update_data.items():
         setattr(budget, field, value)
 
-    if budget.end_date and budget.end_date < budget.start_date:
+    # DB 컬럼(DateTime)과 스키마(date) 혼용 방지: 둘 다 date로 정규화 후 비교
+    def _as_date(val: datetime | date | None) -> date | None:
+        if val is None:
+            return None
+        return val.date() if isinstance(val, datetime) else val
+
+    if budget.end_date and _as_date(budget.end_date) < _as_date(budget.start_date):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="종료일은 시작일 이후여야 합니다")
 
     await db.commit()

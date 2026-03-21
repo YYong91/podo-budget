@@ -18,8 +18,19 @@ from abc import ABC, abstractmethod
 from typing import Any, Literal
 
 from app.core.config import settings
+from app.core.metrics import track_llm_call
 
 logger = logging.getLogger(__name__)
+
+
+def _extract_json_text(text: str) -> str:
+    """LLM 응답 텍스트에서 JSON 부분 추출 — ```json 블록 처리 (#243)"""
+    if "```json" in text:
+        return text.split("```json")[1].split("```")[0].strip()
+    if "```" in text:
+        return text.split("```")[1].split("```")[0].strip()
+    return text.strip()
+
 
 # 기능 타입 정의
 LLMFeature = Literal["parse", "insights", "ocr"]
@@ -107,55 +118,48 @@ class AnthropicProvider(LLMProvider):
         max_retries = 2
         for attempt in range(max_retries):
             try:
-                response = await self.client.messages.create(
-                    model=self.model,
-                    max_tokens=8192,  # Haiku 최대값 — 월간 40건+ 파싱 대응
-                    system=get_expense_parser_prompt(categories=categories, history_hints=history_hints, category_mappings=category_mappings),
-                    messages=[{"role": "user", "content": user_input}],
-                )
+                async with track_llm_call("anthropic"):
+                    response = await self.client.messages.create(
+                        model=self.model,
+                        max_tokens=8192,  # Haiku 최대값 — 월간 40건+ 파싱 대응
+                        system=get_expense_parser_prompt(categories=categories, history_hints=history_hints, category_mappings=category_mappings),
+                        messages=[{"role": "user", "content": user_input}],
+                        timeout=25.0,  # LLM 응답 타임아웃 (#172)
+                    )
 
-                # 토큰 한도 초과 감지 — JSON이 중간에 잘린 경우
-                if response.stop_reason == "max_tokens":
-                    logger.warning(f"max_tokens 초과: 응답이 잘렸습니다. 입력 길이={len(user_input)}")
-                    return {"error": "입력이 너무 길어 처리할 수 없습니다. 날짜별로 나누어 입력해주세요."}
+                    # 토큰 한도 초과 감지 — JSON이 중간에 잘린 경우
+                    if response.stop_reason == "max_tokens":
+                        logger.warning(f"max_tokens 초과: 응답이 잘렸습니다. 입력 길이={len(user_input)}")
+                        raise ValueError("max_tokens_exceeded")
 
-                # 텍스트 응답에서 JSON 추출
-                text = response.content[0].text.strip()
+                    # 텍스트 응답에서 JSON 추출 (```json 블록 처리)
+                    text = _extract_json_text(response.content[0].text)
+                    parsed = json.loads(text)
 
-                # ```json ... ``` 블록이 있으면 내부만 추출
-                if "```json" in text:
-                    text = text.split("```json")[1].split("```")[0].strip()
-                elif "```" in text:
-                    text = text.split("```")[1].split("```")[0].strip()
-
-                parsed = json.loads(text)
-
-                # 단일 지출 (dict)인 경우
-                if isinstance(parsed, dict):
-                    # 에러 응답 확인
-                    if "error" in parsed:
+                    # 단일 지출 (dict)인 경우
+                    if isinstance(parsed, dict):
+                        if "error" in parsed:
+                            return parsed
+                        if "amount" not in parsed or parsed["amount"] is None:
+                            return {"error": "금액을 찾을 수 없습니다"}
                         return parsed
 
-                    # 필수 필드 검증
-                    if "amount" not in parsed or parsed["amount"] is None:
-                        return {"error": "금액을 찾을 수 없습니다"}
+                    # 여러 지출 (list)인 경우
+                    elif isinstance(parsed, list):
+                        for item in parsed:
+                            if not isinstance(item, dict):
+                                return {"error": "잘못된 형식입니다"}
+                            if "amount" not in item or item["amount"] is None:
+                                return {"error": "일부 항목의 금액을 찾을 수 없습니다"}
+                        return parsed
 
-                    return parsed
+                    else:
+                        return {"error": "잘못된 형식입니다"}
 
-                # 여러 지출 (list)인 경우
-                elif isinstance(parsed, list):
-                    # 각 항목의 필수 필드 검증
-                    for item in parsed:
-                        if not isinstance(item, dict):
-                            return {"error": "잘못된 형식입니다"}
-                        if "amount" not in item or item["amount"] is None:
-                            return {"error": "일부 항목의 금액을 찾을 수 없습니다"}
-
-                    return parsed
-
-                else:
-                    return {"error": "잘못된 형식입니다"}
-
+            except ValueError as e:
+                if str(e) == "max_tokens_exceeded":
+                    return {"error": "입력이 너무 길어 처리할 수 없습니다. 날짜별로 나누어 입력해주세요."}
+                raise
             except json.JSONDecodeError:
                 logger.warning(f"JSON 파싱 실패 (시도 {attempt + 1}/{max_retries}): {text}")
                 if attempt == max_retries - 1:
@@ -176,56 +180,50 @@ class AnthropicProvider(LLMProvider):
         image_data = base64.b64encode(image_bytes).decode("utf-8")
 
         try:
-            response = await self.client.messages.create(
-                model=self.model,
-                max_tokens=512,
-                system=get_ocr_expense_prompt(),
-                messages=[
-                    {
-                        "role": "user",
-                        "content": [
-                            {
-                                "type": "image",
-                                "source": {
-                                    "type": "base64",
-                                    "media_type": media_type,
-                                    "data": image_data,
+            async with track_llm_call("anthropic"):
+                response = await self.client.messages.create(
+                    model=self.model,
+                    max_tokens=512,
+                    system=get_ocr_expense_prompt(),
+                    messages=[
+                        {
+                            "role": "user",
+                            "content": [
+                                {
+                                    "type": "image",
+                                    "source": {
+                                        "type": "base64",
+                                        "media_type": media_type,
+                                        "data": image_data,
+                                    },
                                 },
-                            },
-                            {
-                                "type": "text",
-                                "text": "이 이미지에서 결제 정보를 추출해주세요.",
-                            },
-                        ],
-                    }
-                ],
-            )
+                                {
+                                    "type": "text",
+                                    "text": "이 이미지에서 결제 정보를 추출해주세요.",
+                                },
+                            ],
+                        }
+                    ],
+                )
 
-            text = response.content[0].text.strip()
+                text = _extract_json_text(response.content[0].text)
+                parsed = json.loads(text)
 
-            # ```json ... ``` 블록이 있으면 내부만 추출
-            if "```json" in text:
-                text = text.split("```json")[1].split("```")[0].strip()
-            elif "```" in text:
-                text = text.split("```")[1].split("```")[0].strip()
-
-            parsed = json.loads(text)
-
-            if isinstance(parsed, dict):
-                if "error" in parsed:
+                if isinstance(parsed, dict):
+                    if "error" in parsed:
+                        return parsed
+                    if "amount" not in parsed or parsed["amount"] is None:
+                        return {"error": "금액을 찾을 수 없습니다"}
                     return parsed
-                if "amount" not in parsed or parsed["amount"] is None:
-                    return {"error": "금액을 찾을 수 없습니다"}
-                return parsed
 
-            elif isinstance(parsed, list):
-                for item in parsed:
-                    if not isinstance(item, dict) or "amount" not in item:
-                        return {"error": "잘못된 형식입니다"}
-                return parsed
+                elif isinstance(parsed, list):
+                    for item in parsed:
+                        if not isinstance(item, dict) or "amount" not in item:
+                            return {"error": "잘못된 형식입니다"}
+                    return parsed
 
-            else:
-                return {"error": "잘못된 형식입니다"}
+                else:
+                    return {"error": "잘못된 형식입니다"}
 
         except json.JSONDecodeError:
             logger.warning(f"OCR JSON 파싱 실패: {text}")
@@ -239,25 +237,25 @@ class AnthropicProvider(LLMProvider):
         from app.services.prompts import INSIGHTS_SYSTEM_PROMPT
 
         try:
-            # 지출 데이터를 텍스트로 정리
-            data_text = json.dumps(expenses_data, ensure_ascii=False, indent=2)
+            async with track_llm_call("anthropic"):
+                data_text = json.dumps(expenses_data, ensure_ascii=False, indent=2)
 
-            response = await self.client.messages.create(
-                model=self.model,
-                max_tokens=2048,
-                system=INSIGHTS_SYSTEM_PROMPT,
-                messages=[
-                    {
-                        "role": "user",
-                        "content": f"다음 지출 데이터를 분석해주세요:\n\n{data_text}",
-                    }
-                ],
-            )
+                response = await self.client.messages.create(
+                    model=self.model,
+                    max_tokens=2048,
+                    system=INSIGHTS_SYSTEM_PROMPT,
+                    messages=[
+                        {
+                            "role": "user",
+                            "content": f"다음 지출 데이터를 분석해주세요:\n\n{data_text}",
+                        }
+                    ],
+                )
 
-            if response.stop_reason == "max_tokens":
-                logger.warning("인사이트 생성: max_tokens 초과로 응답이 잘렸습니다.")
+                if response.stop_reason == "max_tokens":
+                    logger.warning("인사이트 생성: max_tokens 초과로 응답이 잘렸습니다.")
 
-            return response.content[0].text
+                return response.content[0].text
 
         except Exception as e:
             logger.error(f"인사이트 생성 실패: {e}")
@@ -266,12 +264,13 @@ class AnthropicProvider(LLMProvider):
     async def generate(self, prompt: str) -> str:
         """범용 텍스트 생성"""
         try:
-            response = await self.client.messages.create(
-                model=self.model,
-                max_tokens=2048,
-                messages=[{"role": "user", "content": prompt}],
-            )
-            return response.content[0].text
+            async with track_llm_call("anthropic"):
+                response = await self.client.messages.create(
+                    model=self.model,
+                    max_tokens=2048,
+                    messages=[{"role": "user", "content": prompt}],
+                )
+                return response.content[0].text
         except Exception as e:
             logger.error(f"Claude generate 실패: {e}")
             return ""
@@ -283,32 +282,33 @@ class AnthropicProvider(LLMProvider):
             COMPREHENSIVE_INSIGHTS_SYSTEM_PROMPT,
         )
 
-        response = await self.client.messages.create(
-            model=self.model,
-            max_tokens=2000,
-            system=COMPREHENSIVE_INSIGHTS_SYSTEM_PROMPT,
-            messages=[
-                {
-                    "role": "user",
-                    "content": f"다음 재무 데이터를 분석해주세요:\n\n{json.dumps(report_data, ensure_ascii=False, indent=2)}",
-                }
-            ],
-            tools=[
-                {
-                    "name": "structured_insights",
-                    "description": "구조화된 재무 인사이트 응답",
-                    "input_schema": COMPREHENSIVE_INSIGHTS_JSON_SCHEMA,
-                }
-            ],
-            tool_choice={"type": "tool", "name": "structured_insights"},
-        )
+        async with track_llm_call("anthropic"):
+            response = await self.client.messages.create(
+                model=self.model,
+                max_tokens=2000,
+                system=COMPREHENSIVE_INSIGHTS_SYSTEM_PROMPT,
+                messages=[
+                    {
+                        "role": "user",
+                        "content": f"다음 재무 데이터를 분석해주세요:\n\n{json.dumps(report_data, ensure_ascii=False, indent=2)}",
+                    }
+                ],
+                tools=[
+                    {
+                        "name": "structured_insights",
+                        "description": "구조화된 재무 인사이트 응답",
+                        "input_schema": COMPREHENSIVE_INSIGHTS_JSON_SCHEMA,
+                    }
+                ],
+                tool_choice={"type": "tool", "name": "structured_insights"},
+            )
 
-        # tool_use 블록에서 구조화된 JSON 추출
-        for block in response.content:
-            if block.type == "tool_use":
-                return block.input
+            # tool_use 블록에서 구조화된 JSON 추출
+            for block in response.content:
+                if block.type == "tool_use":
+                    return block.input
 
-        raise ValueError("LLM이 구조화된 응답을 반환하지 않았습니다")
+            raise ValueError("LLM이 구조화된 응답을 반환하지 않았습니다")
 
 
 class OpenAIProvider(LLMProvider):
@@ -336,60 +336,53 @@ class OpenAIProvider(LLMProvider):
         max_retries = 2
         for attempt in range(max_retries):
             try:
-                response = await self.client.chat.completions.create(
-                    model=self.model,
-                    max_tokens=8192,  # Haiku 최대값 — 월간 40건+ 파싱 대응
-                    messages=[
-                        {
-                            "role": "system",
-                            "content": get_expense_parser_prompt(categories=categories, history_hints=history_hints, category_mappings=category_mappings),
-                        },
-                        {"role": "user", "content": user_input},
-                    ],
-                )
+                async with track_llm_call("openai"):
+                    response = await self.client.chat.completions.create(
+                        model=self.model,
+                        max_tokens=8192,  # Haiku 최대값 — 월간 40건+ 파싱 대응
+                        messages=[
+                            {
+                                "role": "system",
+                                "content": get_expense_parser_prompt(categories=categories, history_hints=history_hints, category_mappings=category_mappings),
+                            },
+                            {"role": "user", "content": user_input},
+                        ],
+                        timeout=25.0,  # LLM 응답 타임아웃 (#172)
+                    )
 
-                # 토큰 한도 초과 감지
-                if response.choices[0].finish_reason == "length":
-                    logger.warning(f"max_tokens 초과: 응답이 잘렸습니다. 입력 길이={len(user_input)}")
-                    return {"error": "입력이 너무 길어 처리할 수 없습니다. 날짜별로 나누어 입력해주세요."}
+                    # 토큰 한도 초과 감지
+                    if response.choices[0].finish_reason == "length":
+                        logger.warning(f"max_tokens 초과: 응답이 잘렸습니다. 입력 길이={len(user_input)}")
+                        raise ValueError("max_tokens_exceeded")
 
-                # 텍스트 응답에서 JSON 추출
-                text = response.choices[0].message.content.strip()
+                    # 텍스트 응답에서 JSON 추출 (```json 블록 처리)
+                    text = _extract_json_text(response.choices[0].message.content)
+                    parsed = json.loads(text)
 
-                # ```json ... ``` 블록이 있으면 내부만 추출
-                if "```json" in text:
-                    text = text.split("```json")[1].split("```")[0].strip()
-                elif "```" in text:
-                    text = text.split("```")[1].split("```")[0].strip()
-
-                parsed = json.loads(text)
-
-                # 단일 지출 (dict)인 경우
-                if isinstance(parsed, dict):
-                    # 에러 응답 확인
-                    if "error" in parsed:
+                    # 단일 지출 (dict)인 경우
+                    if isinstance(parsed, dict):
+                        if "error" in parsed:
+                            return parsed
+                        if "amount" not in parsed or parsed["amount"] is None:
+                            return {"error": "금액을 찾을 수 없습니다"}
                         return parsed
 
-                    # 필수 필드 검증
-                    if "amount" not in parsed or parsed["amount"] is None:
-                        return {"error": "금액을 찾을 수 없습니다"}
+                    # 여러 지출 (list)인 경우
+                    elif isinstance(parsed, list):
+                        for item in parsed:
+                            if not isinstance(item, dict):
+                                return {"error": "잘못된 형식입니다"}
+                            if "amount" not in item or item["amount"] is None:
+                                return {"error": "일부 항목의 금액을 찾을 수 없습니다"}
+                        return parsed
 
-                    return parsed
+                    else:
+                        return {"error": "잘못된 형식입니다"}
 
-                # 여러 지출 (list)인 경우
-                elif isinstance(parsed, list):
-                    # 각 항목의 필수 필드 검증
-                    for item in parsed:
-                        if not isinstance(item, dict):
-                            return {"error": "잘못된 형식입니다"}
-                        if "amount" not in item or item["amount"] is None:
-                            return {"error": "일부 항목의 금액을 찾을 수 없습니다"}
-
-                    return parsed
-
-                else:
-                    return {"error": "잘못된 형식입니다"}
-
+            except ValueError as e:
+                if str(e) == "max_tokens_exceeded":
+                    return {"error": "입력이 너무 길어 처리할 수 없습니다. 날짜별로 나누어 입력해주세요."}
+                raise
             except json.JSONDecodeError:
                 logger.warning(f"JSON 파싱 실패 (시도 {attempt + 1}/{max_retries}): {text}")
                 if attempt == max_retries - 1:
@@ -409,22 +402,22 @@ class OpenAIProvider(LLMProvider):
         from app.services.prompts import INSIGHTS_SYSTEM_PROMPT
 
         try:
-            # 지출 데이터를 텍스트로 정리
-            data_text = json.dumps(expenses_data, ensure_ascii=False, indent=2)
+            async with track_llm_call("openai"):
+                data_text = json.dumps(expenses_data, ensure_ascii=False, indent=2)
 
-            response = await self.client.chat.completions.create(
-                model=self.model,
-                max_tokens=2048,
-                messages=[
-                    {"role": "system", "content": INSIGHTS_SYSTEM_PROMPT},
-                    {"role": "user", "content": f"다음 지출 데이터를 분석해주세요:\n\n{data_text}"},
-                ],
-            )
+                response = await self.client.chat.completions.create(
+                    model=self.model,
+                    max_tokens=2048,
+                    messages=[
+                        {"role": "system", "content": INSIGHTS_SYSTEM_PROMPT},
+                        {"role": "user", "content": f"다음 지출 데이터를 분석해주세요:\n\n{data_text}"},
+                    ],
+                )
 
-            if response.choices[0].finish_reason == "length":
-                logger.warning("인사이트 생성: max_tokens 초과로 응답이 잘렸습니다.")
+                if response.choices[0].finish_reason == "length":
+                    logger.warning("인사이트 생성: max_tokens 초과로 응답이 잘렸습니다.")
 
-            return response.choices[0].message.content
+                return response.choices[0].message.content
 
         except Exception as e:
             logger.error(f"인사이트 생성 실패: {e}")
@@ -433,12 +426,13 @@ class OpenAIProvider(LLMProvider):
     async def generate(self, prompt: str) -> str:
         """범용 텍스트 생성"""
         try:
-            response = await self.client.chat.completions.create(
-                model=self.model,
-                max_tokens=2048,
-                messages=[{"role": "user", "content": prompt}],
-            )
-            return response.choices[0].message.content
+            async with track_llm_call("openai"):
+                response = await self.client.chat.completions.create(
+                    model=self.model,
+                    max_tokens=2048,
+                    messages=[{"role": "user", "content": prompt}],
+                )
+                return response.choices[0].message.content
         except Exception as e:
             logger.error(f"OpenAI generate 실패: {e}")
             return ""
@@ -450,27 +444,27 @@ class OpenAIProvider(LLMProvider):
             COMPREHENSIVE_INSIGHTS_SYSTEM_PROMPT,
         )
 
-        response = await self.client.chat.completions.create(
-            model=self.model,
-            max_tokens=2000,
-            messages=[
-                {"role": "system", "content": COMPREHENSIVE_INSIGHTS_SYSTEM_PROMPT},
-                {
-                    "role": "user",
-                    "content": f"다음 재무 데이터를 분석해주세요:\n\n{json.dumps(report_data, ensure_ascii=False, indent=2)}",
+        async with track_llm_call("openai"):
+            response = await self.client.chat.completions.create(
+                model=self.model,
+                max_tokens=2000,
+                messages=[
+                    {"role": "system", "content": COMPREHENSIVE_INSIGHTS_SYSTEM_PROMPT},
+                    {
+                        "role": "user",
+                        "content": f"다음 재무 데이터를 분석해주세요:\n\n{json.dumps(report_data, ensure_ascii=False, indent=2)}",
+                    },
+                ],
+                response_format={
+                    "type": "json_schema",
+                    "json_schema": {
+                        "name": "structured_insights",
+                        "schema": COMPREHENSIVE_INSIGHTS_JSON_SCHEMA,
+                        "strict": True,
+                    },
                 },
-            ],
-            response_format={
-                "type": "json_schema",
-                "json_schema": {
-                    "name": "structured_insights",
-                    "schema": COMPREHENSIVE_INSIGHTS_JSON_SCHEMA,
-                    "strict": True,
-                },
-            },
-        )
-
-        return json.loads(response.choices[0].message.content)
+            )
+            return json.loads(response.choices[0].message.content)
 
 
 class GoogleProvider(LLMProvider):
@@ -557,8 +551,17 @@ def _create_provider(provider_name: str, model: str) -> LLMProvider:
     return cls(model=model)
 
 
+# 앱 레벨 프로바이더 캐시: (feature, provider_name, model) → LLMProvider 인스턴스 (#251)
+# lru_cache 대신 명시적 dict 사용 — settings 모킹 시에도 올바르게 동작
+_provider_cache: dict[tuple[LLMFeature | None, str, str], LLMProvider] = {}
+
+
 def get_llm_provider(feature: LLMFeature | None = None) -> LLMProvider:
-    """설정된 LLM provider 반환
+    """설정된 LLM provider 반환 (앱 레벨 캐싱)
+
+    같은 (feature, provider, model) 조합에 대해 동일 인스턴스를 재사용합니다.
+    anthropic.AsyncAnthropic()은 매번 새 HTTP 커넥션 풀을 생성하므로
+    싱글톤으로 재사용하여 오버헤드를 제거합니다. (#251)
 
     Args:
         feature: 기능 이름 ("parse", "insights", "ocr").
@@ -570,4 +573,7 @@ def get_llm_provider(feature: LLMFeature | None = None) -> LLMProvider:
         get_llm_provider("insights")  # 인사이트용 (오버라이드 가능)
     """
     provider_name, model = _resolve_provider_and_model(feature)
-    return _create_provider(provider_name, model)
+    cache_key = (feature, provider_name, model)
+    if cache_key not in _provider_cache:
+        _provider_cache[cache_key] = _create_provider(provider_name, model)
+    return _provider_cache[cache_key]

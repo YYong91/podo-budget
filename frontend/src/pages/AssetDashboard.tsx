@@ -7,17 +7,14 @@ import {
   ChevronRight, ChevronDown, ChevronUp, Target, Bell, Building2, X,
 } from 'lucide-react'
 import {
-  Chart as ChartJS, LineElement, PointElement, CategoryScale,
-  LinearScale, Filler, Tooltip as ChartTooltip, Legend,
-} from 'chart.js'
-import { Line } from 'react-chartjs-2'
+  LineChart, Line, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer,
+} from 'recharts'
 import { assetApi } from '../api/assets'
 import { useHouseholdStore } from '../stores/useHouseholdStore'
 import LoadingSpinner from '../components/LoadingSpinner'
 import type { Asset, AssetSummary, AssetSnapshot, AssetGoal, MonthlySavings } from '../types'
 import { formatAmount } from '../utils/format'
 
-ChartJS.register(LineElement, PointElement, CategoryScale, LinearScale, Filler, ChartTooltip, Legend)
 
 function formatPct(pct: number | null): string {
   if (pct == null) return ''
@@ -95,9 +92,10 @@ export default function AssetDashboard() {
   const { activeHouseholdId } = useHouseholdStore()
 
   const fetchData = () => {
+    if (!activeHouseholdId) return  // 가구 로딩 전 API 호출 방지 (#149)
     setLoading(true)
     setError(null)
-    const hid = activeHouseholdId!
+    const hid = activeHouseholdId
     Promise.all([
       assetApi.getAll(hid),
       assetApi.getSummary(hid),
@@ -191,30 +189,12 @@ export default function AssetDashboard() {
   const prevMonthNW = snapshots.length >= 2 ? snapshots[snapshots.length - 2].net_worth : null
   const prevMonthDiff = prevMonthNW != null ? netWorth - prevMonthNW : null
 
-  /* 순자산 추이 라인차트 */
-  const lineLabels = snapshots.map(s => s.snapshot_date.slice(0, 7))
-  const lineDatasets = [
-    {
-      label: '순자산',
-      data: snapshots.map(s => s.net_worth),
-      borderColor: '#9333EA',
-      backgroundColor: 'rgba(147,51,234,0.08)',
-      fill: true,
-      tension: 0.3,
-      pointRadius: 4,
-    },
-    // 목표 기준선
-    ...(goal ? [{
-      label: '목표',
-      data: snapshots.map(() => goal.target_net_worth),
-      borderColor: '#D1D5DB',
-      borderDash: [5, 5],
-      fill: false,
-      tension: 0,
-      pointRadius: 0,
-    }] : []),
-  ]
-  const lineData = { labels: lineLabels, datasets: lineDatasets }
+  /* 순자산 추이 recharts 데이터 (#240) */
+  const chartData = snapshots.map(s => ({
+    month: s.snapshot_date.slice(0, 7),
+    순자산: s.net_worth,
+    ...(goal ? { 목표: goal.target_net_worth } : {}),
+  }))
 
   /* 유형별 그룹 구성 */
   const groupedAssets = TYPE_GROUPS.map(group => {
@@ -337,22 +317,42 @@ export default function AssetDashboard() {
         </button>
       )}
 
-      {/* 3. 순자산 추이 차트 */}
+      {/* 3. 순자산 추이 차트 (#240: chart.js → recharts) */}
       {snapshots.length > 1 && (
         <div className="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)]/60 shadow-sm p-5">
           <h2 className="text-sm font-semibold text-[var(--text-secondary)] mb-4">순자산 추이</h2>
-          <div className="h-56">
-            <Line
-              data={lineData}
-              options={{
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: !!goal } },
-                scales: {
-                  y: { ticks: { callback: (v) => `₩${Number(v).toLocaleString()}` } },
-                },
-              }}
-            />
+          <div className="h-56" role="img" aria-label="순자산 추이 차트">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={chartData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+                <XAxis dataKey="month" tick={{ fontSize: 10 }} />
+                <YAxis
+                  tickFormatter={(v) => `₩${Number(v).toLocaleString()}`}
+                  tick={{ fontSize: 9 }}
+                  width={72}
+                />
+                <Tooltip formatter={(v) => `₩${Number(v).toLocaleString()}`} />
+                {goal && <Legend />}
+                <Line
+                  type="monotone"
+                  dataKey="순자산"
+                  stroke="#9333EA"
+                  strokeWidth={2}
+                  dot={{ r: 4, fill: '#9333EA' }}
+                  activeDot={{ r: 5 }}
+                />
+                {goal && (
+                  <Line
+                    type="monotone"
+                    dataKey="목표"
+                    stroke="#D1D5DB"
+                    strokeWidth={1.5}
+                    strokeDasharray="5 5"
+                    dot={false}
+                    activeDot={false}
+                  />
+                )}
+              </LineChart>
+            </ResponsiveContainer>
           </div>
         </div>
       )}
@@ -430,8 +430,9 @@ export default function AssetDashboard() {
 
       {/* 6. 목표 설정 모달 */}
       {showGoalModal && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center" role="dialog" aria-modal="true" aria-labelledby="goal-modal-title">
           {/* 배경 오버레이 */}
+          {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- 모달 배경 오버레이 */}
           <div
             className="absolute inset-0 bg-black/40"
             onClick={() => setShowGoalModal(false)}
@@ -439,16 +440,17 @@ export default function AssetDashboard() {
           {/* 모달 본체 */}
           <div className="relative bg-[var(--surface-card)] w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl p-6 space-y-5 animate-in slide-in-from-bottom sm:slide-in-from-bottom-0">
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-bold text-[var(--text-primary)]">순자산 목표 설정</h2>
-              <button onClick={() => setShowGoalModal(false)} className="text-[var(--text-muted)] hover:text-[var(--text-secondary)]">
+              <h2 id="goal-modal-title" className="text-lg font-bold text-[var(--text-primary)]">순자산 목표 설정</h2>
+              <button onClick={() => setShowGoalModal(false)} className="text-[var(--text-muted)] hover:text-[var(--text-secondary)]" aria-label="닫기">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">목표 금액</label>
+                <label htmlFor="goal-amount" className="block text-sm font-medium text-[var(--text-secondary)] mb-1">목표 금액</label>
                 <input
+                  id="goal-amount"
                   type="number"
                   value={goalAmount}
                   onChange={e => setGoalAmount(e.target.value)}
@@ -457,8 +459,9 @@ export default function AssetDashboard() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">목표 날짜</label>
+                <label htmlFor="goal-date" className="block text-sm font-medium text-[var(--text-secondary)] mb-1">목표 날짜</label>
                 <input
+                  id="goal-date"
                   type="date"
                   value={goalDate}
                   onChange={e => setGoalDate(e.target.value)}

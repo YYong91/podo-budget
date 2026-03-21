@@ -3,11 +3,13 @@
 import json
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import get_household_member, get_user_active_household_id
 from app.core.auth import get_current_user
 from app.core.database import get_db
+from app.models.asset import Asset
 from app.models.user import User
 from app.schemas.asset import (
     AssetCreate,
@@ -34,7 +36,11 @@ async def create_asset(
 ):
     """자산/부채 등록"""
     asset_data = asset.model_dump()
-    result = await asset_service.create_asset(db, asset_data, current_user)
+    household_id = asset_data.get("household_id")
+    if household_id is None:
+        household_id = await get_user_active_household_id(current_user, db)
+    await get_household_member(household_id, current_user, db)
+    result = await asset_service.create_asset(db, asset_data, current_user, household_id)
     return result
 
 
@@ -75,6 +81,7 @@ async def get_snapshots(
     """월별 스냅샷 (순자산 추이)"""
     if household_id is None:
         household_id = await get_user_active_household_id(current_user, db)
+    await get_household_member(household_id, current_user, db)  # 가구 접근 권한 검증 (#135)
     snapshots = await asset_service.get_snapshots(db, current_user, household_id, months)
     results = []
     for s in snapshots:
@@ -95,6 +102,7 @@ async def get_snapshots(
 async def search_assets(
     q: str = Query(..., min_length=1),
     market: str = Query("all", pattern="^(all|kr|us|crypto)$"),
+    current_user: User = Depends(get_current_user),  # 비인증 외부 API 프록시 차단 (#205)
 ):
     """종목/코인 검색"""
     results = []
@@ -126,6 +134,7 @@ async def get_all_prices(
     """보유 투자형 자산 일괄 시세"""
     if household_id is None:
         household_id = await get_user_active_household_id(current_user, db)
+    await get_household_member(household_id, current_user, db)  # 가구 접근 권한 검증 (#135)
     assets = await asset_service.get_assets(db, current_user, household_id)
     prices = {}
     for asset in assets:
@@ -199,7 +208,7 @@ async def get_monthly_savings(
     if household_id is None:
         household_id = await get_user_active_household_id(current_user, db)
     await get_household_member(household_id, current_user, db)
-    return await asset_goal_service.get_monthly_savings(current_user.id, household_id, db)
+    return await asset_goal_service.get_monthly_savings(household_id, db)
 
 
 @router.get("/{asset_id}", response_model=AssetWithPrice)
@@ -229,15 +238,17 @@ async def update_asset(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """자산 수정 (본인 생성분만)"""
-    from sqlalchemy import select
-
-    from app.models.asset import Asset
-
+    """자산 수정 (본인 생성분만 + 현재 가구 멤버만)"""
     result = await db.execute(select(Asset).where(Asset.id == asset_id, Asset.created_by == current_user.id))
     asset = result.scalar_one_or_none()
     if not asset:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="자산을 찾을 수 없습니다")
+    # 탈퇴 멤버가 이전 가구 자산 수정 방지 (#135)
+    if asset.household_id is not None:
+        try:
+            await get_household_member(asset.household_id, current_user, db)
+        except HTTPException:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="자산을 찾을 수 없습니다") from None
     update_data = asset_update.model_dump(exclude_unset=True)
     return await asset_service.update_asset(db, asset, update_data)
 
@@ -248,13 +259,15 @@ async def delete_asset(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """자산 삭제 (본인 생성분만)"""
-    from sqlalchemy import select
-
-    from app.models.asset import Asset
-
+    """자산 삭제 (본인 생성분만 + 현재 가구 멤버만)"""
     result = await db.execute(select(Asset).where(Asset.id == asset_id, Asset.created_by == current_user.id))
     asset = result.scalar_one_or_none()
     if not asset:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="자산을 찾을 수 없습니다")
+    # 탈퇴 멤버가 이전 가구 자산 삭제 방지 (#135)
+    if asset.household_id is not None:
+        try:
+            await get_household_member(asset.household_id, current_user, db)
+        except HTTPException:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="자산을 찾을 수 없습니다") from None
     await asset_service.delete_asset(db, asset)

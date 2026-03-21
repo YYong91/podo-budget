@@ -260,59 +260,58 @@ async def get_user_list(
 
 
 async def get_user_detail(db: AsyncSession, user_id: int) -> AdminUserDetailResponse | None:
-    """사용자 상세 정보 조회"""
-    user_result = await db.execute(select(User).where(User.id == user_id))
-    user = user_result.scalar_one_or_none()
-    if not user:
-        return None
-
-    # 지출/수입 통계
-    expense_stats = await db.execute(
-        select(
-            func.count(Expense.id).label("count"),
-            func.coalesce(func.sum(Expense.amount), 0).label("total"),
-        ).where(Expense.user_id == user_id)
-    )
-    e = expense_stats.one()
-
-    income_stats = await db.execute(
-        select(
-            func.count(Income.id).label("count"),
-            func.coalesce(func.sum(Income.amount), 0).label("total"),
-        ).where(Income.user_id == user_id)
-    )
-    i = income_stats.one()
-
-    # 가구 수
-    household_count_result = await db.execute(
-        select(func.count(HouseholdMember.id)).where(
+    """사용자 상세 정보 조회 — 서브쿼리 단일 쿼리 (#178)"""
+    # 모든 통계를 서브쿼리로 묶어 단일 쿼리로 처리 (6쿼리 → 1쿼리)
+    expense_count_sq = select(func.count(Expense.id)).where(Expense.user_id == user_id).scalar_subquery()
+    expense_total_sq = select(func.coalesce(func.sum(Expense.amount), 0)).where(Expense.user_id == user_id).scalar_subquery()
+    income_count_sq = select(func.count(Income.id)).where(Income.user_id == user_id).scalar_subquery()
+    income_total_sq = select(func.coalesce(func.sum(Income.amount), 0)).where(Income.user_id == user_id).scalar_subquery()
+    household_count_sq = (
+        select(func.count(HouseholdMember.id))
+        .where(
             HouseholdMember.user_id == user_id,
             HouseholdMember.left_at.is_(None),
         )
+        .scalar_subquery()
     )
-    household_count = household_count_result.scalar() or 0
+    last_expense_sq = select(func.max(Expense.created_at)).where(Expense.user_id == user_id).scalar_subquery()
+    last_income_sq = select(func.max(Income.created_at)).where(Income.user_id == user_id).scalar_subquery()
+    last_activity = case(
+        (last_expense_sq.is_(None), last_income_sq),
+        (last_income_sq.is_(None), last_expense_sq),
+        (last_expense_sq > last_income_sq, last_expense_sq),
+        else_=last_income_sq,
+    )
 
-    # 마지막 활동
-    last_expense = await db.execute(select(func.max(Expense.created_at)).where(Expense.user_id == user_id))
-    last_income = await db.execute(select(func.max(Income.created_at)).where(Income.user_id == user_id))
-    le = last_expense.scalar()
-    li = last_income.scalar()
-    last_activity = max(filter(None, [le, li]), default=None)
+    result = await db.execute(
+        select(
+            User,
+            expense_count_sq.label("expense_count"),
+            expense_total_sq.label("total_spent"),
+            income_count_sq.label("income_count"),
+            income_total_sq.label("total_earned"),
+            household_count_sq.label("household_count"),
+            last_activity.label("last_activity_at"),
+        ).where(User.id == user_id)
+    )
+    row = result.one_or_none()
+    if not row:
+        return None
 
     return AdminUserDetailResponse(
-        id=user.id,
-        username=user.username,
-        email=user.email,
-        is_active=user.is_active,
-        created_at=user.created_at,
-        updated_at=user.updated_at,
-        expense_count=e.count,
-        income_count=i.count,
-        total_spent=float(e.total),
-        total_earned=float(i.total),
-        household_count=household_count,
-        is_telegram_linked=user.telegram_chat_id is not None,
-        last_activity_at=last_activity,
+        id=row.User.id,
+        username=row.User.username,
+        email=row.User.email,
+        is_active=row.User.is_active,
+        created_at=row.User.created_at,
+        updated_at=row.User.updated_at,
+        expense_count=row.expense_count,
+        income_count=row.income_count,
+        total_spent=float(row.total_spent),
+        total_earned=float(row.total_earned),
+        household_count=row.household_count,
+        is_telegram_linked=row.User.telegram_chat_id is not None,
+        last_activity_at=row.last_activity_at,
     )
 
 

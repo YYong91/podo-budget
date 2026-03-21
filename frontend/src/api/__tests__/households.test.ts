@@ -108,7 +108,7 @@ const householdHandlers = [
   http.post(`${BASE_URL}/households/:id/leave`, () =>
     new HttpResponse(null, { status: 204 })
   ),
-  http.put(`${BASE_URL}/households/:householdId/members/:userId/role`, () =>
+  http.patch(`${BASE_URL}/households/:householdId/members/:userId/role`, () =>
     HttpResponse.json({ message: 'ok' })
   ),
   http.delete(`${BASE_URL}/households/:householdId/members/:userId`, () =>
@@ -205,7 +205,7 @@ describe('householdApi', () => {
   })
 
   describe('updateMemberRole', () => {
-    it('PUT /api/households/:id/members/:userId/role을 호출하여 역할을 변경한다', async () => {
+    it('PATCH /api/households/:id/members/:userId/role을 호출하여 역할을 변경한다', async () => {
       const response = await householdApi.updateMemberRole(1, 2, 'admin')
 
       expect(response.data).toEqual({ message: 'ok' })

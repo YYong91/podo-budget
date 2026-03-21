@@ -5,11 +5,22 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Routes, Route } from 'react-router-dom'
+import { http, HttpResponse } from 'msw'
+import { server } from '../../mocks/server'
 import SettingsPage from '../SettingsPage'
 import { ThemeProvider } from '../../contexts/ThemeContext'
 import { changelogs } from '../../data/changelogs'
+
+// refreshUser는 테스트마다 호출 여부를 검증할 수 있도록 vi.fn()으로 분리
+const mockRefreshUser = vi.fn()
+
+// useToast 모킹 (react-hot-toast 대신 커스텀 훅 사용)
+vi.mock('../../hooks/useToast', () => ({
+  useToast: () => ({ addToast: vi.fn(), removeToast: vi.fn() }),
+}))
 
 // useAuth 모킹
 vi.mock('../../contexts/AuthContext', () => ({
@@ -24,7 +35,7 @@ vi.mock('../../contexts/AuthContext', () => ({
     },
     isAuthenticated: true,
     loading: false,
-    refreshUser: vi.fn(),
+    refreshUser: mockRefreshUser,
     logout: vi.fn(),
   }),
 }))
@@ -56,6 +67,8 @@ describe('SettingsPage', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     localStorage.clear()
+    // window.confirm 기본 동작 (연동 해제 confirm 대화상자 자동 승인)
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
   })
 
   describe('메뉴 목록 (메인)', () => {
@@ -148,6 +161,43 @@ describe('SettingsPage', () => {
       renderSettingsPage('/settings/changelog')
       const firstTag = changelogs[0].items[0].tag
       expect(screen.getAllByText(firstTag).length).toBeGreaterThan(0)
+    })
+  })
+
+  describe('텔레그램 연동 (내 계정 서브 페이지)', () => {
+    it('텔레그램 연동 코드 발급 버튼 클릭 시 코드가 화면에 표시된다', async () => {
+      // MSW에 텔레그램 코드 발급 핸들러 등록
+      server.use(
+        http.post('/api/auth/telegram-link-code', () =>
+          HttpResponse.json({
+            code: 'ABC123',
+            expires_at: '2026-03-19T12:00:00Z',
+          })
+        )
+      )
+
+      const user = userEvent.setup()
+      renderSettingsPage('/settings/my-account')
+
+      // "연동 코드 발급" 버튼이 여럿 있으므로 (텔레그램 + 카카오) 첫 번째(텔레그램) 클릭
+      const codeBtns = await screen.findAllByRole('button', { name: '연동 코드 발급' })
+      await user.click(codeBtns[0]) // 첫 번째가 텔레그램
+
+      // 발급된 코드가 화면에 표시되어야 한다
+      await waitFor(() => {
+        expect(screen.getByText('ABC123')).toBeInTheDocument()
+      })
+    })
+
+    it('미연동 상태에서는 연동 해제 버튼 없이 코드 발급 버튼이 표시된다', () => {
+      // useAuth mock에서 is_telegram_linked=false가 기본값
+      renderSettingsPage('/settings/my-account')
+
+      // 미연동 상태: "연동 코드 발급" 버튼들이 존재 (텔레그램 + 카카오 각 1개)
+      const codeBtns = screen.getAllByRole('button', { name: '연동 코드 발급' })
+      expect(codeBtns.length).toBeGreaterThanOrEqual(1)
+      // 연동 해제 버튼은 없어야 한다 (is_linked=false 상태이므로)
+      expect(screen.queryByRole('button', { name: '연동 해제' })).not.toBeInTheDocument()
     })
   })
 })

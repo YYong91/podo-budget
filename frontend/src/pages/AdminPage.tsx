@@ -6,8 +6,8 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { RefreshCw, ShieldCheck } from 'lucide-react'
-import toast from 'react-hot-toast'
 import { useAuth } from '../contexts/AuthContext'
+import { useToast } from '../hooks/useToast'
 import { adminApi } from '../api/admin'
 
 import LoadingSpinner from '../components/LoadingSpinner'
@@ -21,7 +21,8 @@ const TABS = ['현황', '피드백', '사용자'] as const
 type TabName = typeof TABS[number]
 
 export default function AdminPage() {
-  const { user } = useAuth()
+  const { user, loading: authLoading } = useAuth()
+  const { addToast } = useToast()
   const [activeTab, setActiveTab] = useState<TabName>('현황')
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
@@ -33,7 +34,7 @@ export default function AdminPage() {
       const res = await adminApi.getDashboardStats()
       setDashboard(res.data)
     } catch {
-      toast.error('데이터 로딩 실패')
+      addToast('error', '데이터 로딩 실패')
     } finally {
       setLoading(false)
       setRefreshing(false)
@@ -45,7 +46,12 @@ export default function AdminPage() {
     loadData()
   }, [user?.is_admin, loadData])
 
-  // 비관리자 접근 방지
+  // 사용자 프로필 로딩 중 — 비관리자로 오판하지 않도록 스피너 표시 (#154)
+  if (authLoading) {
+    return <LoadingSpinner className="min-h-[50vh]" />
+  }
+
+  // 비관리자 접근 방지 (백엔드 API도 require_admin으로 검증)
   if (!user?.is_admin) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[50vh] text-[var(--text-muted)]">

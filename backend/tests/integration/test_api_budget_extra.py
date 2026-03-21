@@ -44,8 +44,8 @@ async def test_update_budget_invalid_dates(authenticated_client: AsyncClient, te
     await db_session.commit()
     await db_session.refresh(budget)
 
-    # 종료일을 시작일보다 이전으로 수정 시도
-    early_date = (start_date - timedelta(days=10)).isoformat()
+    # 종료일을 시작일보다 이전으로 수정 시도 (date 형식)
+    early_date = (start_date.date() - timedelta(days=10)).isoformat()
     response = await authenticated_client.put(
         f"/api/budgets/{budget.id}",
         json={"end_date": early_date},

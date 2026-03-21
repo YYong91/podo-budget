@@ -19,6 +19,11 @@ interface HealthScoreInput {
  * - overall: 가중 평균 → grade
  */
 export function calculateHealthScore(input: HealthScoreInput): HealthScore {
+  // 수입/지출 모두 0이면 데이터 없음 (신규 사용자) — 의미없는 점수 대신 '-' 등급 반환
+  if (input.incomeTotal === 0 && input.expenseTotal === 0) {
+    return { savings: 0, spending: 0, debt: 100, overall: 0, grade: '-' }
+  }
+
   const {
     incomeTotal,
     expenseTotal,

@@ -5,13 +5,14 @@
 
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import toast from 'react-hot-toast'
 import { Mail } from 'lucide-react'
 import { onboardingApi } from '../api/onboarding'
 import { useHouseholdStore } from '../stores/useHouseholdStore'
+import { useToast } from '../hooks/useToast'
 
 export default function OnboardingPage() {
   const navigate = useNavigate()
+  const { addToast } = useToast()
   const { myInvitations, fetchHouseholds, fetchMyInvitations, acceptInvitation } = useHouseholdStore()
 
   const [name, setName] = useState('')
@@ -26,10 +27,10 @@ export default function OnboardingPage() {
     try {
       await onboardingApi.createHousehold(name.trim() || undefined)
       await fetchHouseholds()
-      toast.success('가계부가 생성되었습니다!')
+      addToast('success', '가계부가 생성되었습니다!')
       navigate('/', { replace: true })
     } catch {
-      toast.error('가계부 생성에 실패했습니다')
+      addToast('error', '가계부 생성에 실패했습니다')
     } finally {
       setLoading(false)
     }
@@ -40,10 +41,10 @@ export default function OnboardingPage() {
     setAcceptingToken(token)
     try {
       await acceptInvitation(token)
-      toast.success(`${householdName || '가계부'}에 참여했습니다!`)
+      addToast('success', `${householdName || '가계부'}에 참여했습니다!`)
       navigate('/', { replace: true })
     } catch {
-      toast.error('초대 수락에 실패했습니다')
+      addToast('error', '초대 수락에 실패했습니다')
       // 실패 시 초대 목록 새로고침 (만료 등)
       await fetchMyInvitations().catch(() => {})
     } finally {
@@ -90,8 +91,8 @@ export default function OnboardingPage() {
                   )}
                 </div>
                 <button
-                  onClick={() => handleAccept(inv.token!, inv.household_name)}
-                  disabled={isDisabled}
+                  onClick={() => inv.token && handleAccept(inv.token, inv.household_name)}
+                  disabled={isDisabled || !inv.token}
                   className="ml-3 shrink-0 px-3 py-1.5 text-xs font-medium text-white bg-grape-600 rounded-lg hover:bg-grape-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-1"
                 >
                   {acceptingToken === inv.token && <div className="animate-spin rounded-full border-b-2 border-current w-3 h-3" />}
@@ -114,10 +115,11 @@ export default function OnboardingPage() {
         {/* 새 가계부 만들기 */}
         <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] p-5 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1.5">
+            <label htmlFor="onboarding-name" className="block text-sm font-medium text-[var(--text-secondary)] mb-1.5">
               가계부 이름
             </label>
             <input
+              id="onboarding-name"
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}

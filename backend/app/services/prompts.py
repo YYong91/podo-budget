@@ -194,7 +194,9 @@ def get_expense_parser_prompt(
 
     # 히스토리 기반 패턴 주입 (유사 거래 카테고리 추론)
     if history_hints:
-        pairs = "\n".join(f'- "{desc}" → {cat}' for desc, cat in list(history_hints.items())[:20])
+        # DB에서 가져온 description — 개행/특수문자 제거로 프롬프트 인젝션 방어 (#138)
+        safe_hints = {desc.replace("\n", " ").replace("\r", "").replace('"', "'")[:100]: cat for desc, cat in list(history_hints.items())[:20]}
+        pairs = "\n".join(f'- "{desc}" → {cat}' for desc, cat in safe_hints.items())
         prompt += f"\n\n## 과거 거래 패턴 (히스토리 기반)\n아래 패턴을 참고하여 카테고리를 결정하세요 (유사한 설명은 같은 카테고리 사용):\n{pairs}"
 
     return prompt

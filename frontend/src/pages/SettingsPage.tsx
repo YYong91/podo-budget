@@ -5,7 +5,6 @@
 
 import { useState, useEffect } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
-import toast from 'react-hot-toast'
 import {
   Tags, PiggyBank, Repeat, Users, LogOut, BookOpen, MessageSquarePlus,
   Megaphone, ChevronRight, ArrowLeft, User, Send, MessageCircle, ShieldCheck,
@@ -15,6 +14,7 @@ import type { LucideIcon } from 'lucide-react'
 import { generateTelegramLinkCode, unlinkTelegram } from '../api/telegram'
 import { generateKakaoLinkCode, unlinkKakao } from '../api/kakao'
 import { useAuth } from '../contexts/AuthContext'
+import { useToast } from '../hooks/useToast'
 import { useChangelog } from '../hooks/useChangelog'
 import { useTheme } from '../contexts/ThemeContext'
 import type { ThemeMode } from '../contexts/ThemeContext'
@@ -211,12 +211,16 @@ function ChangelogSection() {
 /* ─── 내 계정 섹션 (계정 정보 + 텔레그램 + 계정 관리 통합) ─── */
 function MyAccountSection() {
   const { user, refreshUser, logout } = useAuth()
+  const { addToast } = useToast()
   const [linkCode, setLinkCode] = useState<{ code: string; expires_at: string } | null>(null)
   const [loadingCode, setLoadingCode] = useState(false)
   const [loadingUnlink, setLoadingUnlink] = useState(false)
   const [kakaoLinkCode, setKakaoLinkCode] = useState<{ code: string; expires_at: string } | null>(null)
   const [loadingKakaoCode, setLoadingKakaoCode] = useState(false)
   const [loadingKakaoUnlink, setLoadingKakaoUnlink] = useState(false)
+
+  const TELEGRAM_BOT_USERNAME = import.meta.env.VITE_TELEGRAM_BOT_USERNAME || 'PodoBudgetBot'
+  const KAKAO_CHANNEL_CHAT_URL = import.meta.env.VITE_KAKAO_CHANNEL_URL || 'http://pf.kakao.com/_xkxkAb/chat'
 
   const formatDate = (dateStr: string): string => dateStr.slice(0, 10).replace(/-/g, '.')
 
@@ -226,7 +230,7 @@ function MyAccountSection() {
       const data = await generateTelegramLinkCode()
       setLinkCode(data)
     } catch {
-      toast.error('코드 발급에 실패했습니다.')
+      addToast('error', '코드 발급에 실패했습니다.')
     } finally {
       setLoadingCode(false)
     }
@@ -237,11 +241,11 @@ function MyAccountSection() {
     setLoadingUnlink(true)
     try {
       await unlinkTelegram()
-      toast.success('텔레그램 연동이 해제되었습니다.')
+      addToast('success', '텔레그램 연동이 해제되었습니다.')
       await refreshUser()
       setLinkCode(null)
     } catch {
-      toast.error('연동 해제에 실패했습니다.')
+      addToast('error', '연동 해제에 실패했습니다.')
     } finally {
       setLoadingUnlink(false)
     }
@@ -251,9 +255,9 @@ function MyAccountSection() {
     if (!linkCode) return
     try {
       await navigator.clipboard.writeText(`/link ${linkCode.code}`)
-      toast.success('복사되었습니다!')
+      addToast('success', '복사되었습니다!')
     } catch {
-      toast.error('자동 복사 실패 — 아래 명령어를 직접 복사해주세요')
+      addToast('error', '자동 복사 실패 — 아래 명령어를 직접 복사해주세요')
     }
   }
 
@@ -263,7 +267,7 @@ function MyAccountSection() {
       const data = await generateKakaoLinkCode()
       setKakaoLinkCode(data)
     } catch {
-      toast.error('코드 발급에 실패했습니다.')
+      addToast('error', '코드 발급에 실패했습니다.')
     } finally {
       setLoadingKakaoCode(false)
     }
@@ -274,11 +278,11 @@ function MyAccountSection() {
     setLoadingKakaoUnlink(true)
     try {
       await unlinkKakao()
-      toast.success('카카오톡 연동이 해제되었습니다.')
+      addToast('success', '카카오톡 연동이 해제되었습니다.')
       await refreshUser()
       setKakaoLinkCode(null)
     } catch {
-      toast.error('연동 해제에 실패했습니다.')
+      addToast('error', '연동 해제에 실패했습니다.')
     } finally {
       setLoadingKakaoUnlink(false)
     }
@@ -287,10 +291,11 @@ function MyAccountSection() {
   const handleCopyKakaoCode = async () => {
     if (!kakaoLinkCode) return
     try {
-      await navigator.clipboard.writeText(`/link ${kakaoLinkCode.code}`)
-      toast.success('복사되었습니다!')
+      // 카카오 봇은 "연동 {code}" 형식 사용 (한글 명령어 = /link 슬래시 명령어) (#200)
+      await navigator.clipboard.writeText(`연동 ${kakaoLinkCode.code}`)
+      addToast('success', '복사되었습니다!')
     } catch {
-      toast.error('자동 복사 실패 — 아래 명령어를 직접 복사해주세요')
+      addToast('error', '자동 복사 실패 — 아래 명령어를 직접 복사해주세요')
     }
   }
 
@@ -354,7 +359,7 @@ function MyAccountSection() {
               <ol className="space-y-2 text-sm text-[var(--text-secondary)]">
                 <li className="flex gap-2">
                   <span className="flex-shrink-0 w-5 h-5 rounded-full bg-grape-100 text-grape-600 text-xs font-bold flex items-center justify-center">1</span>
-                  <span>텔레그램 앱에서 <span className="font-mono bg-[var(--surface-hover)] px-1 rounded">@homenrich_bot</span>을 검색하거나 <a href="https://t.me/homenrich_bot" target="_blank" rel="noopener noreferrer" className="text-grape-600 underline">t.me/homenrich_bot</a> 으로 접속하세요</span>
+                  <span>텔레그램 앱에서 <span className="font-mono bg-[var(--surface-hover)] px-1 rounded">@{TELEGRAM_BOT_USERNAME}</span>을 검색하거나 <a href={`https://t.me/${TELEGRAM_BOT_USERNAME}`} target="_blank" rel="noopener noreferrer" className="text-grape-600 underline">t.me/{TELEGRAM_BOT_USERNAME}</a> 으로 접속하세요</span>
                 </li>
                 <li className="flex gap-2">
                   <span className="flex-shrink-0 w-5 h-5 rounded-full bg-grape-100 text-grape-600 text-xs font-bold flex items-center justify-center">2</span>
@@ -393,6 +398,8 @@ function MyAccountSection() {
                 </div>
                 <p className="text-xs text-[var(--text-tertiary)]">⏰ {expiresAt}까지 유효 (만료 전 입력하세요)</p>
                 <div
+                  role="button"
+                  tabIndex={0}
                   className="bg-[var(--surface-card)] rounded-lg p-3 border border-grape-200 cursor-pointer active:bg-grape-50"
                   onClick={(e) => {
                     const el = e.currentTarget.querySelector('p.selectable')
@@ -404,10 +411,35 @@ function MyAccountSection() {
                       sel?.addRange(range)
                     }
                   }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault()
+                      const el = e.currentTarget.querySelector('p.selectable')
+                      if (el && window.getSelection) {
+                        const range = document.createRange()
+                        range.selectNodeContents(el)
+                        const sel = window.getSelection()
+                        sel?.removeAllRanges()
+                        sel?.addRange(range)
+                      }
+                    }
+                  }}
                 >
                   <p className="text-xs text-[var(--text-tertiary)] mb-1">텔레그램 봇에 아래 명령어를 입력하세요: (탭하면 선택됩니다)</p>
                   <p className="selectable font-mono text-sm text-grape-600 font-bold select-all">/link {linkCode.code}</p>
                 </div>
+                {/* 딥링크 버튼 */}
+                <a
+                  href={`https://t.me/${TELEGRAM_BOT_USERNAME}?start=${linkCode.code}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block w-full text-center bg-grape-600 text-white rounded-xl py-3 font-medium hover:bg-grape-700 transition-colors"
+                >
+                  텔레그램에서 바로 연동하기
+                </a>
+                <p className="text-xs text-center text-[var(--text-tertiary)]">
+                  버튼을 누르면 텔레그램이 열리고 자동으로 연동돼요
+                </p>
               </div>
             ) : (
               <button
@@ -490,6 +522,8 @@ function MyAccountSection() {
                 </div>
                 <p className="text-xs text-[var(--text-tertiary)]">⏰ {kakaoExpiresAt}까지 유효 (만료 전 입력하세요)</p>
                 <div
+                  role="button"
+                  tabIndex={0}
                   className="bg-[var(--surface-card)] rounded-lg p-3 border border-grape-200 cursor-pointer active:bg-grape-50"
                   onClick={(e) => {
                     const el = e.currentTarget.querySelector('p.selectable')
@@ -501,10 +535,41 @@ function MyAccountSection() {
                       sel?.addRange(range)
                     }
                   }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault()
+                      const el = e.currentTarget.querySelector('p.selectable')
+                      if (el && window.getSelection) {
+                        const range = document.createRange()
+                        range.selectNodeContents(el)
+                        const sel = window.getSelection()
+                        sel?.removeAllRanges()
+                        sel?.addRange(range)
+                      }
+                    }
+                  }}
                 >
                   <p className="text-xs text-[var(--text-tertiary)] mb-1">카카오톡 채널 채팅에 아래 명령어를 입력하세요: (탭하면 선택됩니다)</p>
-                  <p className="selectable font-mono text-sm text-grape-600 font-bold select-all">/link {kakaoLinkCode.code}</p>
+                  <p className="selectable font-mono text-sm text-grape-600 font-bold select-all">연동 {kakaoLinkCode.code}</p>
                 </div>
+                {/* 간편 연동 버튼: 코드 복사 + 카카오 채팅 열기 */}
+                <button
+                  onClick={async () => {
+                    try {
+                      await navigator.clipboard.writeText(`연동 ${kakaoLinkCode.code}`)
+                      window.open(KAKAO_CHANNEL_CHAT_URL, '_blank')
+                      addToast('success', '연동 코드가 복사되었어요. 카카오톡에서 붙여넣기 해주세요!')
+                    } catch {
+                      addToast('error', '클립보드 복사에 실패했어요')
+                    }
+                  }}
+                  className="block w-full text-center bg-[#FEE500] text-[#191919] rounded-xl py-3 font-medium hover:bg-[#FDD835] transition-colors"
+                >
+                  💬 카카오톡에서 연동하기
+                </button>
+                <p className="text-xs text-center text-[var(--text-tertiary)]">
+                  코드가 복사돼요. 카카오톡에서 붙여넣기만 하면 끝!
+                </p>
               </div>
             ) : (
               <button

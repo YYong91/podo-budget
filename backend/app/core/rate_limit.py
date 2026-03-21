@@ -14,8 +14,7 @@ from slowapi import Limiter
 
 from app.core.config import settings
 
-# JWT 설정 (app/core/auth.py와 동일)
-ALGORITHM = "HS256"
+# JWT 알고리즘은 settings에서 단일 관리 — 하드코딩 금지 (#163)
 
 
 def get_user_identifier(request: Request) -> str:
@@ -46,7 +45,7 @@ def get_user_identifier(request: Request) -> str:
 
         try:
             # podo-auth JWT 디코딩 및 사용자 ID(sub) 추출
-            payload = pyjwt.decode(token, settings.JWT_SECRET, algorithms=[ALGORITHM])
+            payload = pyjwt.decode(token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM])
             # podo-auth 발급 토큰만 허용
             if payload.get("iss") == "podo-auth":
                 user_id = payload.get("sub")
@@ -59,9 +58,10 @@ def get_user_identifier(request: Request) -> str:
             pass
 
     # 인증되지 않은 요청은 IP 주소를 식별자로 사용
-    # X-Forwarded-For 헤더를 먼저 확인 (프록시/로드밸런서 뒤에 있을 때)
-    forwarded = request.headers.get("X-Forwarded-For")
-    client_ip = forwarded.split(",")[0].strip() if forwarded else (request.client.host if request.client else "unknown")
+    # Fly-Client-IP: Fly.io 프록시가 설정하는 실제 클라이언트 IP (클라이언트 조작 불가, #132)
+    # X-Forwarded-For는 클라이언트가 임의 값을 주입할 수 있어 rate limit 우회에 악용됨
+    fly_client_ip = request.headers.get("Fly-Client-IP")
+    client_ip = fly_client_ip or (request.client.host if request.client else "unknown")
 
     return f"ip:{client_ip}"
 

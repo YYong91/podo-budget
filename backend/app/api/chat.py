@@ -15,6 +15,7 @@ Rate Limiting:
 - 사용자당 분당 10회로 제한 (LLM API 호출 보호)
 """
 
+import asyncio
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, Request, status
@@ -73,6 +74,133 @@ async def _to_parsed_items(parsed: dict | list, household_id: int | None = None)
     return result
 
 
+async def _handle_preview(
+    parsed: dict | list,
+    household_id: int,
+) -> ChatResponse:
+    """Preview 모드: LLM 파싱 결과만 반환 (DB 저장 안 함)"""
+    parsed_items = await _to_parsed_items(parsed, household_id=household_id)
+    count = len(parsed_items)
+    total = sum(item.amount for item in parsed_items)
+    income_count = sum(1 for item in parsed_items if item.type == "income")
+    expense_count = count - income_count
+
+    parts = []
+    if expense_count > 0:
+        parts.append(f"지출 {expense_count}건")
+    if income_count > 0:
+        parts.append(f"수입 {income_count}건")
+
+    # 외화 변환 정보 추가
+    fx_info = ""
+    fx_items = [i for i in parsed_items if i.currency]
+    if fx_items:
+        fx_parts = [f"{i.currency} {i.original_amount:g} → ₩{i.amount:,.0f} (환율 {i.exchange_rate:,.2f})" for i in fx_items if i.exchange_rate]
+        if fx_parts:
+            fx_info = " [" + ", ".join(fx_parts) + "]"
+
+    return ChatResponse(
+        message=f"{'과 '.join(parts)}(총 ₩{total:,.0f})을 인식했습니다.{fx_info} 확인 후 저장해주세요.",
+        expenses_created=None,
+        incomes_created=None,
+        parsed_items=parsed_items,
+        parsed_expenses=parsed_items,  # 하위 호환
+        insights=None,
+    )
+
+
+async def _save_and_respond(
+    parsed: dict | list,
+    message: str,
+    household_id: int,
+    current_user: User,
+    db: AsyncSession,
+) -> ChatResponse:
+    """일반 모드: LLM 파싱 결과를 DB에 저장하고 응답 생성"""
+    items = [parsed] if isinstance(parsed, dict) else parsed
+    created_expenses: list[Expense] = []
+    created_incomes: list[Income] = []
+    saved_amounts: list[int] = []  # 실제 저장된 금액 (외화 환율 변환 후)
+
+    for item in items:
+        item_type = item.get("type", "expense")
+        category = await get_or_create_category(db, item.get("category", "기타"), current_user.id, household_id)
+
+        # 외화 환율 변환
+        amount = item["amount"]
+        currency = item.get("currency")
+        memo = item.get("memo", "")
+        if currency and currency != "KRW":
+            rate = await get_exchange_rate(currency)
+            if rate:
+                original = amount
+                amount = round(amount * rate)
+                currency_memo = f"{currency} {original:g} (환율 {rate:,.2f})"
+                memo = f"{memo}, {currency_memo}" if memo else currency_memo
+
+        saved_amounts.append(amount)
+
+        record_kwargs = {
+            "user_id": current_user.id,
+            "household_id": household_id,
+            "amount": amount,
+            "description": item.get("description", message),
+            "category_id": category.id,
+            "raw_input": message,
+            "memo": memo if memo else None,
+            "date": datetime.fromisoformat(item.get("date", datetime.now().isoformat())),
+        }
+
+        if item_type == "income":
+            record = Income(**record_kwargs)
+            db.add(record)
+            created_incomes.append(record)
+        else:
+            record = Expense(**record_kwargs)
+            db.add(record)
+            created_expenses.append(record)
+
+    await db.commit()
+    for r in created_expenses + created_incomes:
+        await db.refresh(r)
+
+    # 응답 메시지 생성
+    msg = _build_result_message(items, saved_amounts, created_expenses, created_incomes)
+
+    return ChatResponse(
+        message=msg,
+        expenses_created=[ExpenseResponse.model_validate(exp) for exp in created_expenses] if created_expenses else None,
+        incomes_created=[IncomeResponse.model_validate(inc) for inc in created_incomes] if created_incomes else None,
+        parsed_items=None,
+        parsed_expenses=None,
+        insights=None,
+    )
+
+
+def _build_result_message(
+    items: list[dict],
+    saved_amounts: list[int],
+    created_expenses: list[Expense],
+    created_incomes: list[Income],
+) -> str:
+    """저장 완료 후 사용자에게 보여줄 메시지 생성"""
+    total_amount = sum(saved_amounts)
+    count = len(items)
+    income_count = len(created_incomes)
+    expense_count = len(created_expenses)
+
+    if count == 1:
+        item_type_label = "수입" if income_count > 0 else "지출"
+        return f"₩{int(saved_amounts[0]):,}이(가) [{items[0].get('category', '기타')}] 카테고리로 {item_type_label} 기록되었습니다."
+
+    parts = []
+    if expense_count > 0:
+        parts.append(f"지출 {expense_count}건")
+    if income_count > 0:
+        parts.append(f"수입 {income_count}건")
+    return f"{' + '.join(parts)}(총 ₩{total_amount:,})이 기록되었습니다."
+
+
 @router.post("", response_model=ChatResponse, status_code=status.HTTP_201_CREATED)
 @limiter.limit("10/minute")
 async def chat(
@@ -96,12 +224,14 @@ async def chat(
 
     llm = get_llm_provider("parse")
 
-    # 카테고리 목록 + 히스토리 패턴 + 매핑 로드 (LLM 프롬프트에 주입하여 정확도 향상)
-    user_categories = await get_user_categories(db, current_user.id, household_id)
-    history_hints = await get_category_hints(db, current_user.id, household_id)
+    # 3개 독립 DB 쿼리를 asyncio.gather로 병렬 실행 — 직렬 대비 레이턴시 감소 (#239)
     from app.services.category_mapping_service import get_category_mappings_for_prompt
 
-    cat_mappings = await get_category_mappings_for_prompt(db, user_id=current_user.id, household_id=household_id)
+    user_categories, history_hints, cat_mappings = await asyncio.gather(
+        get_user_categories(db, current_user.id, household_id),
+        get_category_hints(db, current_user.id, household_id),
+        get_category_mappings_for_prompt(db, user_id=current_user.id, household_id=household_id),
+    )
 
     # LLM으로 사용자 입력 파싱
     parsed = await llm.parse_expense(
@@ -133,114 +263,8 @@ async def chat(
             insights=None,
         )
 
-    # Preview 모드: 파싱 결과만 반환 (저장하지 않음)
+    # Preview 모드 vs 일반 모드 라우팅
     if chat_request.preview:
-        parsed_items = await _to_parsed_items(parsed, household_id=household_id)
-        count = len(parsed_items)
-        total = sum(item.amount for item in parsed_items)
-        income_count = sum(1 for item in parsed_items if item.type == "income")
-        expense_count = count - income_count
+        return await _handle_preview(parsed, household_id)
 
-        parts = []
-        if expense_count > 0:
-            parts.append(f"지출 {expense_count}건")
-        if income_count > 0:
-            parts.append(f"수입 {income_count}건")
-
-        # 외화 변환 정보 추가
-        fx_info = ""
-        fx_items = [i for i in parsed_items if i.currency]
-        if fx_items:
-            fx_parts = [f"{i.currency} {i.original_amount:g} → ₩{i.amount:,.0f} (환율 {i.exchange_rate:,.2f})" for i in fx_items if i.exchange_rate]
-            if fx_parts:
-                fx_info = " [" + ", ".join(fx_parts) + "]"
-
-        return ChatResponse(
-            message=f"{'과 '.join(parts)}(총 ₩{total:,.0f})을 인식했습니다.{fx_info} 확인 후 저장해주세요.",
-            expenses_created=None,
-            incomes_created=None,
-            parsed_items=parsed_items,
-            parsed_expenses=parsed_items,  # 하위 호환
-            insights=None,
-        )
-
-    # 일반 모드: 파싱 후 DB에 저장 (외화 환율 변환 포함)
-    items = [parsed] if isinstance(parsed, dict) else parsed
-    created_expenses = []
-    created_incomes = []
-    saved_amounts = []  # 실제 저장된 금액 (외화 환율 변환 후)
-
-    for item in items:
-        item_type = item.get("type", "expense")
-        category = await get_or_create_category(db, item.get("category", "기타"), current_user.id, household_id)
-
-        # 외화 환율 변환
-        amount = item["amount"]
-        currency = item.get("currency")
-        memo = item.get("memo", "")
-        if currency and currency != "KRW":
-            rate = await get_exchange_rate(currency)
-            if rate:
-                original = amount
-                amount = round(amount * rate)
-                currency_memo = f"{currency} {original:g} (환율 {rate:,.2f})"
-                memo = f"{memo}, {currency_memo}" if memo else currency_memo
-
-        saved_amounts.append(amount)
-
-        if item_type == "income":
-            record = Income(
-                user_id=current_user.id,
-                household_id=household_id,
-                amount=amount,
-                description=item.get("description", chat_request.message),
-                category_id=category.id,
-                raw_input=chat_request.message,
-                memo=memo if memo else None,
-                date=datetime.fromisoformat(item.get("date", datetime.now().isoformat())),
-            )
-            db.add(record)
-            created_incomes.append(record)
-        else:
-            record = Expense(
-                user_id=current_user.id,
-                household_id=household_id,
-                amount=amount,
-                description=item.get("description", chat_request.message),
-                category_id=category.id,
-                raw_input=chat_request.message,
-                memo=memo if memo else None,
-                date=datetime.fromisoformat(item.get("date", datetime.now().isoformat())),
-            )
-            db.add(record)
-            created_expenses.append(record)
-
-    await db.commit()
-    for r in created_expenses + created_incomes:
-        await db.refresh(r)
-
-    # 응답 메시지 생성 — saved_amounts 사용 (외화 변환 후 실제 저장된 금액)
-    total_amount = sum(saved_amounts)
-    count = len(items)
-    income_count = len(created_incomes)
-    expense_count = len(created_expenses)
-
-    if count == 1:
-        item_type_label = "수입" if income_count > 0 else "지출"
-        msg = f"₩{int(saved_amounts[0]):,}이(가) [{items[0].get('category', '기타')}] 카테고리로 {item_type_label} 기록되었습니다."
-    else:
-        parts = []
-        if expense_count > 0:
-            parts.append(f"지출 {expense_count}건")
-        if income_count > 0:
-            parts.append(f"수입 {income_count}건")
-        msg = f"{' + '.join(parts)}(총 ₩{total_amount:,})이 기록되었습니다."
-
-    return ChatResponse(
-        message=msg,
-        expenses_created=[ExpenseResponse.model_validate(exp) for exp in created_expenses] if created_expenses else None,
-        incomes_created=[IncomeResponse.model_validate(inc) for inc in created_incomes] if created_incomes else None,
-        parsed_items=None,
-        parsed_expenses=None,
-        insights=None,
-    )
+    return await _save_and_respond(parsed, chat_request.message, household_id, current_user, db)

@@ -29,7 +29,7 @@ async def test_root_endpoint(client):
     response = await client.get("/")
     assert response.status_code == 200
     data = response.json()
-    assert "HomeNRich" in data["message"]
+    assert "포도가계부" in data["message"]
 
 
 @pytest.mark.asyncio
@@ -99,7 +99,8 @@ async def test_full_expense_workflow(authenticated_client, test_user: User, db_s
     response_insights = await authenticated_client.post("/api/insights/generate?month=2026-02")
     assert response_insights.status_code == 200
     insights = response_insights.json()
-    assert insights["total"] == 35000.0
+    # InsightsGenerateResponse: month + insights 필드만 포함 (#242)
+    assert "month" in insights
     assert "지출 분석" in insights["insights"]
     assert "35,000" in insights["insights"]
 

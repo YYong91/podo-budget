@@ -5,6 +5,7 @@
  */
 
 import { create } from 'zustand'
+import { persist } from 'zustand/middleware'
 import type {
   Household,
   HouseholdDetail,
@@ -31,8 +32,10 @@ interface HouseholdState {
   householdInvitations: HouseholdInvitation[]
   /** 활성 가구 ID (지출 연동용) */
   activeHouseholdId: number | null
-  /** 로딩 상태 */
+  /** 목록/상세 조회 로딩 상태 */
   isLoading: boolean
+  /** 생성/수정/삭제/초대 등 변경 작업 로딩 상태 — isLoading과 분리로 동시 동작 시 상태 오염 방지 (#173) */
+  isMutating: boolean
   /** 에러 메시지 */
   error: string | null
   /** 초기 fetch 완료 여부 (새로고침 시 premature redirect 방지) */
@@ -95,9 +98,18 @@ interface HouseholdActions {
 type HouseholdStore = HouseholdState & HouseholdActions
 
 /**
+ * initializeApp 중복 실행 방지 캐시 (#175)
+ * React StrictMode에서 effect가 두 번 실행되어 hasInitialized 체크를 동시에 통과하는 경쟁 조건 해결
+ */
+let _initializeAppPromise: Promise<void> | null = null
+
+/**
  * Household 관리를 위한 Zustand 스토어
  */
-export const useHouseholdStore = create<HouseholdStore>((set, get) => ({
+export const useHouseholdStore = create<HouseholdStore>()(
+  // activeHouseholdId를 localStorage에 유지 — 새로고침 후에도 선택된 가구 복원 (#245)
+  persist(
+    (set, get) => ({
   // ============================================================
   // 초기 상태
   // ============================================================
@@ -107,6 +119,7 @@ export const useHouseholdStore = create<HouseholdStore>((set, get) => ({
   householdInvitations: [],
   activeHouseholdId: null,
   isLoading: false,
+  isMutating: false,
   error: null,
   hasInitialized: false,
   initError: null,
@@ -155,18 +168,18 @@ export const useHouseholdStore = create<HouseholdStore>((set, get) => ({
    * Household 생성
    */
   createHousehold: async (data: CreateHouseholdDto) => {
-    set({ isLoading: true, error: null })
+    set({ isMutating: true, error: null })
     try {
       const response = await householdApi.createHousehold(data)
       const newHousehold = response.data
       set((state) => ({
         households: [...state.households, newHousehold],
-        isLoading: false,
+        isMutating: false,
       }))
       return newHousehold
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : '생성 중 오류가 발생했습니다'
-      set({ error: errorMessage, isLoading: false })
+      set({ error: errorMessage, isMutating: false })
       throw error
     }
   },
@@ -175,7 +188,7 @@ export const useHouseholdStore = create<HouseholdStore>((set, get) => ({
    * Household 수정
    */
   updateHousehold: async (id: number, data: UpdateHouseholdDto) => {
-    set({ isLoading: true, error: null })
+    set({ isMutating: true, error: null })
     try {
       const response = await householdApi.updateHousehold(id, data)
       const updatedHousehold = response.data
@@ -185,11 +198,11 @@ export const useHouseholdStore = create<HouseholdStore>((set, get) => ({
           state.currentHousehold?.id === id
             ? { ...state.currentHousehold, ...updatedHousehold }
             : state.currentHousehold,
-        isLoading: false,
+        isMutating: false,
       }))
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : '수정 중 오류가 발생했습니다'
-      set({ error: errorMessage, isLoading: false })
+      set({ error: errorMessage, isMutating: false })
       throw error
     }
   },
@@ -198,7 +211,7 @@ export const useHouseholdStore = create<HouseholdStore>((set, get) => ({
    * Household 삭제
    */
   deleteHousehold: async (id: number) => {
-    set({ isLoading: true, error: null })
+    set({ isMutating: true, error: null })
     try {
       await householdApi.deleteHousehold(id)
       set((state) => {
@@ -207,12 +220,12 @@ export const useHouseholdStore = create<HouseholdStore>((set, get) => ({
           households: remaining,
           currentHousehold: state.currentHousehold?.id === id ? null : state.currentHousehold,
           activeHouseholdId: state.activeHouseholdId === id ? (remaining.length > 0 ? remaining[0].id : null) : state.activeHouseholdId,
-          isLoading: false,
+          isMutating: false,
         }
       })
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : '삭제 중 오류가 발생했습니다'
-      set({ error: errorMessage, isLoading: false })
+      set({ error: errorMessage, isMutating: false })
       throw error
     }
   },
@@ -225,14 +238,15 @@ export const useHouseholdStore = create<HouseholdStore>((set, get) => ({
    * 멤버 역할 변경
    */
   updateMemberRole: async (householdId: number, userId: number, role: MemberRole) => {
-    set({ isLoading: true, error: null })
+    set({ isMutating: true, error: null })
     try {
       await householdApi.updateMemberRole(householdId, userId, role)
       // 변경 후 상세 정보 다시 조회
       await get().fetchHouseholdDetail(householdId)
+      set({ isMutating: false })
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : '역할 변경 중 오류가 발생했습니다'
-      set({ error: errorMessage, isLoading: false })
+      set({ error: errorMessage, isMutating: false })
       throw error
     }
   },
@@ -241,14 +255,15 @@ export const useHouseholdStore = create<HouseholdStore>((set, get) => ({
    * 멤버 추방
    */
   removeMember: async (householdId: number, userId: number) => {
-    set({ isLoading: true, error: null })
+    set({ isMutating: true, error: null })
     try {
       await householdApi.removeMember(householdId, userId)
       // 변경 후 상세 정보 다시 조회
       await get().fetchHouseholdDetail(householdId)
+      set({ isMutating: false })
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : '멤버 추방 중 오류가 발생했습니다'
-      set({ error: errorMessage, isLoading: false })
+      set({ error: errorMessage, isMutating: false })
       throw error
     }
   },
@@ -257,7 +272,7 @@ export const useHouseholdStore = create<HouseholdStore>((set, get) => ({
    * Household 탈퇴
    */
   leaveHousehold: async (householdId: number) => {
-    set({ isLoading: true, error: null })
+    set({ isMutating: true, error: null })
     try {
       await householdApi.leaveHousehold(householdId)
       set((state) => {
@@ -266,12 +281,12 @@ export const useHouseholdStore = create<HouseholdStore>((set, get) => ({
           households: remaining,
           currentHousehold: state.currentHousehold?.id === householdId ? null : state.currentHousehold,
           activeHouseholdId: state.activeHouseholdId === householdId ? (remaining.length > 0 ? remaining[0].id : null) : state.activeHouseholdId,
-          isLoading: false,
+          isMutating: false,
         }
       })
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : '탈퇴 중 오류가 발생했습니다'
-      set({ error: errorMessage, isLoading: false })
+      set({ error: errorMessage, isMutating: false })
       throw error
     }
   },
@@ -284,14 +299,14 @@ export const useHouseholdStore = create<HouseholdStore>((set, get) => ({
    * 멤버 초대 생성
    */
   inviteMember: async (householdId: number, data: InviteMemberDto) => {
-    set({ isLoading: true, error: null })
+    set({ isMutating: true, error: null })
     try {
       const response = await householdApi.createInvitation(householdId, data)
-      set({ isLoading: false })
+      set({ isMutating: false })
       return response.data
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : '초대 생성 중 오류가 발생했습니다'
-      set({ error: errorMessage, isLoading: false })
+      set({ error: errorMessage, isMutating: false })
       throw error
     }
   },
@@ -300,13 +315,12 @@ export const useHouseholdStore = create<HouseholdStore>((set, get) => ({
    * 내가 받은 초대 목록 조회
    */
   fetchMyInvitations: async () => {
-    set({ isLoading: true, error: null })
     try {
       const response = await householdApi.getMyInvitations()
-      set({ myInvitations: response.data, isLoading: false })
+      set({ myInvitations: response.data })
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : '초대 목록 조회 중 오류가 발생했습니다'
-      set({ error: errorMessage, isLoading: false })
+      set({ error: errorMessage })
       throw error
     }
   },
@@ -315,15 +329,16 @@ export const useHouseholdStore = create<HouseholdStore>((set, get) => ({
    * 초대 수락
    */
   acceptInvitation: async (token: string) => {
-    set({ isLoading: true, error: null })
+    set({ isMutating: true, error: null })
     try {
       const response = await householdApi.acceptInvitation(token)
       // 수락 후 Household 목록과 초대 목록 다시 조회
       await Promise.all([get().fetchHouseholds(), get().fetchMyInvitations()])
+      set({ isMutating: false })
       return response.data
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : '초대 수락 중 오류가 발생했습니다'
-      set({ error: errorMessage, isLoading: false })
+      set({ error: errorMessage, isMutating: false })
       throw error
     }
   },
@@ -332,14 +347,15 @@ export const useHouseholdStore = create<HouseholdStore>((set, get) => ({
    * 초대 거절
    */
   rejectInvitation: async (token: string) => {
-    set({ isLoading: true, error: null })
+    set({ isMutating: true, error: null })
     try {
       await householdApi.rejectInvitation(token)
       // 거절 후 초대 목록 다시 조회
       await get().fetchMyInvitations()
+      set({ isMutating: false })
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : '초대 거절 중 오류가 발생했습니다'
-      set({ error: errorMessage, isLoading: false })
+      set({ error: errorMessage, isMutating: false })
       throw error
     }
   },
@@ -348,15 +364,15 @@ export const useHouseholdStore = create<HouseholdStore>((set, get) => ({
    * 초대 취소
    */
   cancelInvitation: async (householdId: number, invitationId: number) => {
-    set({ isLoading: true, error: null })
+    set({ isMutating: true, error: null })
     try {
       await householdApi.cancelInvitation(householdId, invitationId)
       // 취소 후 목록 새로고침
       await get().fetchHouseholdInvitations(householdId)
-      set({ isLoading: false })
+      set({ isMutating: false })
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : '초대 취소 중 오류가 발생했습니다'
-      set({ error: errorMessage, isLoading: false })
+      set({ error: errorMessage, isMutating: false })
       throw error
     }
   },
@@ -377,15 +393,22 @@ export const useHouseholdStore = create<HouseholdStore>((set, get) => ({
    * 앱 초기화 (households + invitations 동시 fetch)
    */
   initializeApp: async () => {
-    if (get().hasInitialized) return // 중복 호출 방지
-    try {
-      await Promise.all([
-        get().fetchHouseholds(),
-        get().fetchMyInvitations(),
-      ])
-    } catch {
-      // fetchHouseholds에서 이미 hasInitialized=true 설정됨
-    }
+    if (get().hasInitialized) return
+    // 동일 Promise 반환으로 React StrictMode 이중 실행 방지 (#175)
+    if (_initializeAppPromise) return _initializeAppPromise
+    _initializeAppPromise = (async () => {
+      try {
+        await Promise.all([
+          get().fetchHouseholds(),
+          get().fetchMyInvitations(),
+        ])
+      } catch {
+        // fetchHouseholds에서 이미 hasInitialized=true 설정됨
+      } finally {
+        _initializeAppPromise = null
+      }
+    })()
+    return _initializeAppPromise
   },
 
   // ============================================================
@@ -422,4 +445,10 @@ export const useHouseholdStore = create<HouseholdStore>((set, get) => ({
     if (id === null) return
     set({ activeHouseholdId: id })
   },
-}))
+    }),
+    {
+      name: 'podo-household',   // localStorage 키
+      partialize: (state) => ({ activeHouseholdId: state.activeHouseholdId }),
+    }
+  )
+)

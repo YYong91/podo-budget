@@ -2,8 +2,14 @@
 
 Resend API를 사용한 이메일 발송을 담당합니다.
 RESEND_API_KEY가 설정되지 않으면 이메일 발송을 건너뜁니다.
+
+주의: resend.Emails.send()는 동기 함수이므로 asyncio 이벤트 루프 블로킹 방지를 위해
+      run_in_executor()로 스레드 풀에서 실행합니다. (#192)
 """
 
+import asyncio
+import functools
+import html
 import logging
 
 import resend
@@ -38,17 +44,22 @@ async def send_invitation_email(
     frontend_url = settings.CORS_ORIGINS.split(",")[0].strip()
     accept_url = f"{frontend_url}/invitations/accept?token={invite_token}"
 
+    # HTML 인젝션 방지: 사용자 입력값을 HTML에 삽입하기 전에 반드시 이스케이프
+    safe_inviter_name = html.escape(inviter_name)
+    safe_household_name = html.escape(household_name)
+    # 제목 필드는 HTML이 아니므로 원본 값 사용 (이메일 클라이언트가 처리)
+    subject = f"{inviter_name}님이 '{household_name}' 가구에 초대했습니다"
+
     try:
-        resend.Emails.send(
-            {
-                "from": settings.RESEND_FROM_EMAIL,
-                "to": [to_email],
-                "subject": f"{inviter_name}님이 '{household_name}' 가구에 초대했습니다",
-                "html": f"""
+        email_params = {
+            "from": settings.RESEND_FROM_EMAIL,
+            "to": [to_email],
+            "subject": subject,
+            "html": f"""
             <div style="font-family: 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
                 <h2 style="color: #292524; margin-bottom: 16px;">가구 초대</h2>
                 <p style="color: #57534e; font-size: 16px; line-height: 1.6;">
-                    <strong>{inviter_name}</strong>님이 <strong>{household_name}</strong> 가구에 초대했습니다.
+                    <strong>{safe_inviter_name}</strong>님이 <strong>{safe_household_name}</strong> 가구에 초대했습니다.
                 </p>
                 <div style="margin: 32px 0;">
                     <a href="{accept_url}"
@@ -61,8 +72,10 @@ async def send_invitation_email(
                 <p style="color: #a8a29e; font-size: 14px;">이 링크는 7일 후 만료됩니다.</p>
             </div>
             """,
-            }
-        )
+        }
+        # resend.Emails.send()는 동기 블로킹 I/O — 이벤트 루프 블로킹 방지
+        loop = asyncio.get_event_loop()
+        await loop.run_in_executor(None, functools.partial(resend.Emails.send, email_params))
         logger.info(f"초대 이메일 발송 완료: {to_email}")
         return True
     except Exception as e:

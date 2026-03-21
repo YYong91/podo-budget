@@ -9,12 +9,9 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import FeedbackPage from '../FeedbackPage'
 
-// react-hot-toast 모킹
-vi.mock('react-hot-toast', () => ({
-  default: {
-    success: vi.fn(),
-    error: vi.fn(),
-  },
+// useToast 모킹 (react-hot-toast 대신 커스텀 훅 사용)
+vi.mock('../../hooks/useToast', () => ({
+  useToast: () => ({ addToast: vi.fn(), removeToast: vi.fn() }),
 }))
 
 // feedbackApi 모킹 — jsdom XHR/undici 비호환 회피

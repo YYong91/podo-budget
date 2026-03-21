@@ -2,19 +2,36 @@
 
 접근 제어(403), 대시보드 통합 통계, 사용자 관리 엔드포인트를 검증합니다.
 test_user(id=1)는 ADMIN_USER_ID=1과 일치하므로 관리자로 간주됩니다.
+
+참고: #133 패치로 ADMIN_USER_ID 기본값이 -1(미설정)로 바뀌었으므로,
+      admin 기능이 필요한 테스트는 아래 autouse 픽스처로 ADMIN_USER_ID=1로 패치합니다.
+      SQLite in-memory 테스트 DB에서 test_user는 항상 id=1로 생성됩니다.
 """
 
 from datetime import UTC, datetime, timedelta
+from unittest.mock import patch
 
 import pytest
 from httpx import AsyncClient
 
+from app.core.config import settings as _app_settings
 from app.models.expense import Expense
 from app.models.feedback import Feedback
 from app.models.household import Household
 from app.models.household_member import HouseholdMember
 from app.models.income import Income
 from app.models.user import User
+
+# SQLite in-memory 테스트 DB에서 test_user는 항상 id=1
+_TEST_ADMIN_USER_ID = 1
+
+
+@pytest.fixture(autouse=True)
+def _set_admin_user_id():
+    """ADMIN_USER_ID를 test_user.id(=1)로 패치하여 admin 엔드포인트 접근 허용."""
+    with patch.object(_app_settings, "ADMIN_USER_ID", _TEST_ADMIN_USER_ID):
+        yield
+
 
 # ── 접근 제어 테스트 ──
 

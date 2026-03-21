@@ -84,3 +84,6 @@ backend/scripts/reset_and_import.py
 
 # Auto Claude data directory
 .auto-claude/
+
+# Radon 스캔 히스토리 (로컬 전용)
+.radon/

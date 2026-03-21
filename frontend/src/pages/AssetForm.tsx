@@ -374,8 +374,9 @@ export default function AssetForm() {
         <form onSubmit={handleDirectSave} className="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)]/60 shadow-sm p-6 space-y-5">
           {/* 자산 유형 선택 */}
           <div>
-            <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">자산 유형</label>
+            <label htmlFor="asset-type" className="block text-sm font-medium text-[var(--text-secondary)] mb-2">자산 유형</label>
             <select
+              id="asset-type"
               value={assetType}
               onChange={e => {
                 const t = e.target.value as AssetType
@@ -393,8 +394,9 @@ export default function AssetForm() {
           {/* 자산명 (수동형에서만) */}
           {!isInvestmentType && (
             <div>
-              <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">자산명</label>
+              <label htmlFor="asset-name" className="block text-sm font-medium text-[var(--text-secondary)] mb-2">자산명</label>
               <input
+                id="asset-name"
                 type="text"
                 value={form.name ?? ''}
                 onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
@@ -409,7 +411,7 @@ export default function AssetForm() {
           {isInvestmentType && (
             <>
               <div className="relative" ref={dropdownRef}>
-                <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">종목명</label>
+                <label htmlFor="asset-ticker-search" className="block text-sm font-medium text-[var(--text-secondary)] mb-2">종목명</label>
                 {form.ticker && !manualMode ? (
                   /* 선택된 상태 */
                   <div className="flex items-center gap-2 p-2.5 border border-grape-200 bg-grape-50 rounded-lg">
@@ -473,6 +475,7 @@ export default function AssetForm() {
                       onChange={e => setSearchQuery(e.target.value)}
                       onFocus={() => { if (searchResults.length > 0 || searchError) setShowDropdown(true) }}
                       onKeyDown={e => { if (e.key === 'Enter') e.preventDefault() }}
+                      id="asset-ticker-search"
                       placeholder={assetType === 'crypto' ? 'BTC, 비트코인...' : '종목명 또는 코드 검색'}
                       className="w-full border border-[var(--input-border)] rounded-xl pl-9 pr-4 py-3 text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
                     />
@@ -528,8 +531,9 @@ export default function AssetForm() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">수량</label>
+                  <label htmlFor="asset-quantity" className="block text-sm font-medium text-[var(--text-secondary)] mb-2">수량</label>
                   <input
+                    id="asset-quantity"
                     type="number"
                     step="any"
                     value={form.quantity ?? ''}
@@ -539,8 +543,9 @@ export default function AssetForm() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">매입 평균가 (원)</label>
+                  <label htmlFor="asset-avg-buy-price" className="block text-sm font-medium text-[var(--text-secondary)] mb-2">매입 평균가 (원)</label>
                   <input
+                    id="asset-avg-buy-price"
                     type="number"
                     step="any"
                     value={form.avg_buy_price ?? ''}
@@ -557,10 +562,11 @@ export default function AssetForm() {
           {isManualType && (
             <>
               <div>
-                <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
+                <label htmlFor="asset-manual-value" className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
                   {assetType === 'loan' ? '대출 잔액 (원)' : '금액 (원)'}
                 </label>
                 <input
+                  id="asset-manual-value"
                   type="number"
                   step="any"
                   value={form.manual_value ?? ''}
@@ -571,8 +577,9 @@ export default function AssetForm() {
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">이율 (%)</label>
+                  <label htmlFor="asset-interest-rate" className="block text-sm font-medium text-[var(--text-secondary)] mb-2">이율 (%)</label>
                   <input
+                    id="asset-interest-rate"
                     type="number"
                     step="0.01"
                     value={form.interest_rate ?? ''}
@@ -582,8 +589,9 @@ export default function AssetForm() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">만기일</label>
+                  <label htmlFor="asset-maturity-date" className="block text-sm font-medium text-[var(--text-secondary)] mb-2">만기일</label>
                   <input
+                    id="asset-maturity-date"
                     type="date"
                     value={form.maturity_date ?? ''}
                     onChange={e => setForm(f => ({ ...f, maturity_date: e.target.value || null }))}
@@ -594,8 +602,9 @@ export default function AssetForm() {
               {assetType === 'loan' && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">상환방식</label>
+                    <label htmlFor="asset-repayment-type" className="block text-sm font-medium text-[var(--text-secondary)] mb-2">상환방식</label>
                     <select
+                      id="asset-repayment-type"
                       value={form.repayment_type ?? ''}
                       onChange={e => setForm(f => ({ ...f, repayment_type: e.target.value || null }))}
                       className="w-full border border-[var(--input-border)] rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
@@ -607,8 +616,9 @@ export default function AssetForm() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">월 상환액 (원)</label>
+                    <label htmlFor="asset-monthly-payment" className="block text-sm font-medium text-[var(--text-secondary)] mb-2">월 상환액 (원)</label>
                     <input
+                      id="asset-monthly-payment"
                       type="number"
                       step="any"
                       value={form.monthly_payment ?? ''}
@@ -625,8 +635,9 @@ export default function AssetForm() {
           {/* 계좌 선택 (선택) */}
           {accounts.length > 0 && (
             <div>
-              <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">계좌 (선택)</label>
+              <label htmlFor="asset-account" className="block text-sm font-medium text-[var(--text-secondary)] mb-2">계좌 (선택)</label>
               <select
+                id="asset-account"
                 value={form.account_id ?? ''}
                 onChange={e => setForm(f => ({ ...f, account_id: e.target.value ? Number(e.target.value) : null }))}
                 className="w-full border border-[var(--input-border)] rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
@@ -641,8 +652,9 @@ export default function AssetForm() {
 
           {/* 메모 */}
           <div>
-            <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">메모 (선택)</label>
+            <label htmlFor="asset-memo" className="block text-sm font-medium text-[var(--text-secondary)] mb-2">메모 (선택)</label>
             <input
+              id="asset-memo"
               type="text"
               value={form.memo ?? ''}
               onChange={e => setForm(f => ({ ...f, memo: e.target.value || null }))}

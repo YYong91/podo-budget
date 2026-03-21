@@ -25,8 +25,8 @@ export default function AccountManager() {
   const { activeHouseholdId } = useHouseholdStore()
 
   function loadAccounts() {
-    const hid = activeHouseholdId!
-    accountApi.getAll(hid)
+    if (!activeHouseholdId) return  // null 안전 처리 (#200)
+    accountApi.getAll(activeHouseholdId)
       .then(res => setAccounts(res.data))
       .catch(() => addToast('error', '계좌 목록을 불러오지 못했습니다'))
       .finally(() => setLoading(false))
@@ -89,8 +89,9 @@ export default function AccountManager() {
         <form onSubmit={handleCreate} className="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)]/60 shadow-sm p-5 space-y-3">
           <h2 className="text-sm font-semibold text-[var(--text-secondary)]">새 계좌</h2>
           <div>
-            <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1">계좌 유형</label>
+            <label htmlFor="account-type" className="block text-xs font-medium text-[var(--text-secondary)] mb-1">계좌 유형</label>
             <select
+              id="account-type"
               value={form.type}
               onChange={e => setForm(f => ({ ...f, type: e.target.value as AccountType }))}
               className="w-full border border-[var(--border-default)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-grape-300"
@@ -101,13 +102,15 @@ export default function AccountManager() {
             </select>
           </div>
           <div>
-            <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1">계좌명</label>
+            <label htmlFor="account-name" className="block text-xs font-medium text-[var(--text-secondary)] mb-1">계좌명</label>
             <input
+              id="account-name"
               type="text"
               value={form.name}
               onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
               placeholder="예) 키움증권, KB국민은행, 업비트"
               className="w-full border border-[var(--border-default)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-grape-300"
+              // eslint-disable-next-line jsx-a11y/no-autofocus
               autoFocus
             />
           </div>

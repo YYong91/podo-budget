@@ -12,19 +12,9 @@ from app.models.user import User
 from app.services.price_service import get_asset_current_value
 
 
-async def get_user_active_household_id(user: User, db: AsyncSession) -> int:
-    """사용자의 활성 household_id 가져오기 (필수)"""
-    from app.api.dependencies import get_user_active_household_id as _get
-
-    return await _get(user, db)
-
-
-async def create_asset(db: AsyncSession, asset_data: dict, user: User) -> Asset:
-    """자산 생성"""
-    household_id = asset_data.pop("household_id", None)
-    if household_id is None:
-        household_id = await get_user_active_household_id(user, db)
-
+async def create_asset(db: AsyncSession, asset_data: dict, user: User, household_id: int) -> Asset:
+    """자산 생성 — household_id는 API 레이어에서 resolve 후 전달 (#180)"""
+    asset_data.pop("household_id", None)  # schema에 포함된 경우 제거
     asset = Asset(**asset_data, created_by=user.id, household_id=household_id)
     db.add(asset)
     await db.commit()
@@ -32,12 +22,9 @@ async def create_asset(db: AsyncSession, asset_data: dict, user: User) -> Asset:
     return asset
 
 
-async def get_assets(db: AsyncSession, user: User, household_id: int | None = None) -> list[Asset]:
-    """자산 목록 조회 (household 기반)"""
-    query = (
-        select(Asset).where(Asset.household_id == household_id) if household_id is not None else select(Asset).where(Asset.created_by == user.id)
-    )  # 레거시 폴백
-    query = query.order_by(Asset.type, Asset.name)
+async def get_assets(db: AsyncSession, user: User, household_id: int) -> list[Asset]:
+    """자산 목록 조회 (household 기반) — household_id는 API 레이어에서 반드시 resolve (#135)"""
+    query = select(Asset).where(Asset.household_id == household_id).order_by(Asset.type, Asset.name)
     result = await db.execute(query)
     return list(result.scalars().all())
 
@@ -74,10 +61,13 @@ async def delete_asset(db: AsyncSession, asset: Asset) -> None:
 
 async def get_assets_with_prices(db: AsyncSession, user: User, household_id: int | None = None) -> list[dict]:
     """시세 포함 자산 목록"""
+    import asyncio
+
     assets = await get_assets(db, user, household_id)
+    # 시세 조회 병렬화 — 자산 수만큼 직렬 await → asyncio.gather 동시 실행 (#166)
+    price_infos = await asyncio.gather(*[get_asset_current_value(asset) for asset in assets])
     results = []
-    for asset in assets:
-        price_info = await get_asset_current_value(asset)
+    for asset, price_info in zip(assets, price_infos, strict=False):
         asset_dict = {
             "id": asset.id,
             "household_id": asset.household_id,

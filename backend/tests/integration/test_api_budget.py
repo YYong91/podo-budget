@@ -4,7 +4,7 @@
 모든 엔드포인트는 JWT 인증이 필요합니다.
 """
 
-from datetime import datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 
 import pytest
 from httpx import AsyncClient
@@ -33,14 +33,13 @@ async def test_create_budget_success(authenticated_client: AsyncClient, test_use
     await db_session.commit()
     await db_session.refresh(category)
 
-    start_date = datetime.now()
     response = await authenticated_client.post(
         "/api/budgets",
         json={
             "category_id": category.id,
             "amount": 300000,
             "period": "monthly",
-            "start_date": start_date.isoformat(),
+            "start_date": date.today().isoformat(),
             "end_date": None,
             "alert_threshold": 0.8,
         },
@@ -64,7 +63,7 @@ async def test_create_budget_nonexistent_category(authenticated_client: AsyncCli
             "category_id": 99999,
             "amount": 100000,
             "period": "monthly",
-            "start_date": datetime.now().isoformat(),
+            "start_date": date.today().isoformat(),
         },
     )
 
@@ -80,7 +79,7 @@ async def test_create_budget_invalid_dates(authenticated_client: AsyncClient, te
     await db_session.commit()
     await db_session.refresh(category)
 
-    start_date = datetime.now()
+    start_date = date.today()
     end_date = start_date - timedelta(days=1)
 
     response = await authenticated_client.post(
@@ -112,7 +111,7 @@ async def test_get_budgets_list(authenticated_client: AsyncClient, test_user: Us
         category_id=category.id,
         amount=200000,
         period="monthly",
-        start_date=datetime.now(),
+        start_date=datetime.now(UTC).replace(tzinfo=None),
         alert_threshold=0.8,
     )
     db_session.add(budget)
@@ -141,7 +140,7 @@ async def test_update_budget_success(authenticated_client: AsyncClient, test_use
         category_id=category.id,
         amount=100000,
         period="monthly",
-        start_date=datetime.now(),
+        start_date=datetime.now(UTC).replace(tzinfo=None),
     )
     db_session.add(budget)
     await db_session.commit()
@@ -183,7 +182,7 @@ async def test_delete_budget_success(authenticated_client: AsyncClient, test_use
         category_id=category.id,
         amount=50000,
         period="monthly",
-        start_date=datetime.now(),
+        start_date=datetime.now(UTC).replace(tzinfo=None),
     )
     db_session.add(budget)
     await db_session.commit()
@@ -219,7 +218,7 @@ async def test_get_budget_alerts_with_expenses(authenticated_client: AsyncClient
     await db_session.commit()
     await db_session.refresh(category)
 
-    start_date = datetime.now() - timedelta(days=5)
+    start_date = datetime.now(UTC).replace(tzinfo=None) - timedelta(days=5)
     budget = Budget(
         user_id=test_user.id,
         household_id=test_household.id,
@@ -238,7 +237,7 @@ async def test_get_budget_alerts_with_expenses(authenticated_client: AsyncClient
         amount=250000,
         description="식비 지출",
         category_id=category.id,
-        date=datetime.now(),
+        date=datetime.now(UTC).replace(tzinfo=None),
     )
     db_session.add(expense)
     await db_session.commit()
@@ -267,7 +266,7 @@ async def test_get_budget_alerts_exceeded(authenticated_client: AsyncClient, tes
     await db_session.commit()
     await db_session.refresh(category)
 
-    start_date = datetime.now() - timedelta(days=5)
+    start_date = datetime.now(UTC).replace(tzinfo=None) - timedelta(days=5)
     budget = Budget(
         user_id=test_user.id,
         household_id=test_household.id,
@@ -285,7 +284,7 @@ async def test_get_budget_alerts_exceeded(authenticated_client: AsyncClient, tes
         amount=150000,
         description="택시비",
         category_id=category.id,
-        date=datetime.now(),
+        date=datetime.now(UTC).replace(tzinfo=None),
     )
     db_session.add(expense)
     await db_session.commit()

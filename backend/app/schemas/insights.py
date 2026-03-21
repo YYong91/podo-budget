@@ -2,6 +2,14 @@
 
 from pydantic import BaseModel, Field
 
+
+class InsightsGenerateResponse(BaseModel):
+    """월별 인사이트 생성 API 응답 (#242)"""
+
+    month: str
+    insights: str
+
+
 # ── 요청: 프론트엔드가 사전 계산하여 전송 ──
 
 
@@ -47,19 +55,22 @@ class HealthScoreBreakdown(BaseModel):
 
 
 class ComprehensiveInsightsRequest(BaseModel):
-    """프론트엔드가 사전 계산한 종합 재무 데이터"""
+    """프론트엔드가 사전 계산한 종합 재무 데이터
+
+    금액 필드는 ge=0 제약을 적용하여 조작된 음수 데이터로 LLM rate limit이 소모되는 것을 방지. (#158)
+    """
 
     month: str = Field(..., pattern=r"^\d{4}-\d{2}$")
-    income_total: float
-    expense_total: float
+    income_total: float = Field(..., ge=0)
+    expense_total: float = Field(..., ge=0)
     top_expense_categories: list[CategorySummary] = []
     budget: BudgetSummary | None = None
     assets: AssetBreakdown | None = None
     debt: DebtSummary | None = None
-    savings_rate: float = 0
+    savings_rate: float = Field(0, ge=0, le=100)
     health_score: HealthScoreBreakdown | None = None
-    previous_month_expense: float | None = None
-    previous_month_income: float | None = None
+    previous_month_expense: float | None = Field(None, ge=0)
+    previous_month_income: float | None = Field(None, ge=0)
 
 
 # ── 응답: LLM이 생성하는 구조화된 인사이트 ──

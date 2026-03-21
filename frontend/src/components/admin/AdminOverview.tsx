@@ -2,6 +2,7 @@
 
 import { Users, Activity, MessageSquare, Home, AlertTriangle, ExternalLink } from 'lucide-react'
 import type { DashboardStats } from '../../types'
+import { maskUsername } from '../../utils/format'
 
 interface Props {
   data: DashboardStats
@@ -18,7 +19,10 @@ function StatCard({ icon: Icon, label, value, sub, onClick }: {
   return (
     <div
       className={`bg-[var(--surface-card)] rounded-xl p-4 border border-[var(--border-default)] ${onClick ? 'cursor-pointer hover:border-grape-300 transition-colors' : ''}`}
+      role={onClick ? 'button' : undefined}
+      tabIndex={onClick ? 0 : undefined}
       onClick={onClick}
+      onKeyDown={onClick ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick() } } : undefined}
     >
       <div className="flex items-center gap-2 text-[var(--text-tertiary)] mb-1">
         <Icon className="w-4 h-4" />
@@ -134,7 +138,7 @@ export default function AdminOverview({ data, onTabChange }: Props) {
                   </span>
                   <div className="flex-1 min-w-0">
                     <div className="text-sm text-[var(--text-primary)]">
-                      <span className="font-medium">{activity.username}</span>
+                      <span className="font-medium">{maskUsername(activity.username)}</span>
                       {' '}
                       <span className="text-[var(--text-secondary)]">
                         {activity.description}

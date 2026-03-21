@@ -26,14 +26,18 @@ vi.mock('../../contexts/AuthContext', () => ({
  * useHouseholdStore 훅 모킹
  */
 vi.mock('../../stores/useHouseholdStore', () => ({
-  useHouseholdStore: () => ({
-    households: [],
-    activeHouseholdId: null,
-    myInvitations: [],
-    fetchHouseholds: vi.fn().mockResolvedValue(undefined),
-    fetchMyInvitations: vi.fn().mockResolvedValue(undefined),
-    setActiveHouseholdId: vi.fn(),
-  }),
+  // selector 방식(useHouseholdStore(s => s.x)) 지원 — Layout.tsx #167 수정 대응
+  useHouseholdStore: (selector?: (s: object) => unknown) => {
+    const state = {
+      households: [],
+      activeHouseholdId: null,
+      myInvitations: [],
+      fetchHouseholds: vi.fn().mockResolvedValue(undefined),
+      fetchMyInvitations: vi.fn().mockResolvedValue(undefined),
+      setActiveHouseholdId: vi.fn(),
+    }
+    return selector ? selector(state) : state
+  },
 }))
 
 /**

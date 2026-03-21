@@ -5,8 +5,8 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { Link } from 'react-router-dom'
-import toast from 'react-hot-toast'
 import { ArrowLeft, Bug, Lightbulb, Send } from 'lucide-react'
+import { useToast } from '../hooks/useToast'
 import { feedbackApi } from '../api/feedback'
 import ErrorState from '../components/ErrorState'
 import type { Feedback, FeedbackStatus, FeedbackType } from '../types'
@@ -18,6 +18,7 @@ const STATUS_LABELS: Record<FeedbackStatus, { text: string; className: string }>
 }
 
 export default function FeedbackPage() {
+  const { addToast } = useToast()
   const [type, setType] = useState<FeedbackType>('feature')
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
@@ -57,18 +58,18 @@ export default function FeedbackPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!title.trim() || !content.trim()) {
-      toast.error('제목과 내용을 입력해주세요')
+      addToast('error', '제목과 내용을 입력해주세요')
       return
     }
     setSubmitting(true)
     try {
       await feedbackApi.create({ type, title: title.trim(), content: content.trim() })
-      toast.success('피드백이 제출되었습니다!')
+      addToast('success', '피드백이 제출되었습니다!')
       setTitle('')
       setContent('')
       await loadData()
     } catch {
-      toast.error('제출에 실패했습니다')
+      addToast('error', '제출에 실패했습니다')
     } finally {
       setSubmitting(false)
     }
@@ -79,7 +80,7 @@ export default function FeedbackPage() {
       await feedbackApi.updateStatus(id, status)
       await loadData()
     } catch {
-      toast.error('상태 변경에 실패했습니다')
+      addToast('error', '상태 변경에 실패했습니다')
     }
   }
 

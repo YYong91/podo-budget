@@ -9,16 +9,18 @@
 - 가구 멤버 전체의 지출을 함께 조회할 수 있음
 """
 
+import logging
 from calendar import monthrange
-from datetime import date, datetime, timedelta
+from datetime import datetime
 
-from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
+from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile, status
 from sqlalchemy import extract, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import get_household_member, get_user_active_household_id
 from app.core.auth import get_current_user
 from app.core.database import get_db
+from app.core.rate_limit import limiter
 from app.models.expense import Expense
 from app.models.user import User
 from app.schemas.chat import ChatResponse, ParsedExpenseItem
@@ -30,12 +32,16 @@ from app.schemas.expense import (
     ExpenseCreate,
     ExpenseResponse,
     ExpenseUpdate,
+    MonthlyStatsResponse,
     PeriodTotal,
     StatsPeriod,
     StatsResponse,
     TrendPoint,
 )
 from app.services.llm_service import get_llm_provider
+from app.utils.date_utils import get_month_range, get_week_label, get_week_range, get_year_range
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -64,6 +70,7 @@ async def create_expense(
     db.add(db_expense)
     await db.commit()
     await db.refresh(db_expense)
+    logger.info("지출 생성: user=%s, amount=%s", current_user.id, expense.amount)
     return db_expense
 
 
@@ -113,36 +120,6 @@ async def get_expenses(
     return result.scalars().all()
 
 
-# ── 날짜 유틸 ──
-
-
-def _get_week_range(d: date) -> tuple[date, date]:
-    """주어진 날짜가 속한 주의 월요일~일요일 반환"""
-    monday = d - timedelta(days=d.weekday())
-    sunday = monday + timedelta(days=6)
-    return monday, sunday
-
-
-def _get_week_label(d: date) -> str:
-    """주차 라벨 생성 (예: '2월 3주차')"""
-    first_day = d.replace(day=1)
-    week_num = (d.day + first_day.weekday() - 1) // 7 + 1
-    return f"{d.month}월 {week_num}주차"
-
-
-def _get_month_range(d: date) -> tuple[date, date]:
-    """주어진 날짜가 속한 월의 첫날~마지막날 반환"""
-    first = d.replace(day=1)
-    _, last_day = monthrange(d.year, d.month)
-    last = d.replace(day=last_day)
-    return first, last
-
-
-def _get_year_range(d: date) -> tuple[date, date]:
-    """주어진 날짜가 속한 연도의 첫날~마지막날 반환"""
-    return date(d.year, 1, 1), date(d.year, 12, 31)
-
-
 def _build_scope_filter(household_id: int):
     """가구 스코프 필터 생성"""
     return Expense.household_id == household_id
@@ -169,13 +146,13 @@ async def get_stats(
 
     # 기간 범위 결정
     if period == StatsPeriod.weekly:
-        start_d, end_d = _get_week_range(ref_date)
-        label = _get_week_label(ref_date)
+        start_d, end_d = get_week_range(ref_date)
+        label = get_week_label(ref_date)
     elif period == StatsPeriod.monthly:
-        start_d, end_d = _get_month_range(ref_date)
+        start_d, end_d = get_month_range(ref_date)
         label = f"{ref_date.year}년 {ref_date.month}월"
     else:  # yearly
-        start_d, end_d = _get_year_range(ref_date)
+        start_d, end_d = get_year_range(ref_date)
         label = f"{ref_date.year}년"
 
     start_dt = datetime(start_d.year, start_d.month, start_d.day)
@@ -228,15 +205,14 @@ async def get_stats(
     # 트렌드
     trend: list[TrendPoint] = []
     if period == StatsPeriod.yearly:
-        # 월별 12포인트
+        # 월별 12포인트 — 단일 GROUP BY 쿼리 (12번 직렬 → 1번, #164)
+        month_col = func.extract("month", Expense.date).label("month")
+        monthly_result = await db.execute(
+            select(month_col, func.coalesce(func.sum(Expense.amount), 0).label("amount")).where(*base_where).group_by(month_col).order_by(month_col)
+        )
+        monthly_map = {int(r.month): float(r.amount) for r in monthly_result.all()}
         for m in range(1, 13):
-            m_start = datetime(ref_date.year, m, 1)
-            _, m_last = monthrange(ref_date.year, m)
-            m_end = datetime(ref_date.year, m, m_last, 23, 59, 59)
-            r = await db.execute(
-                select(func.coalesce(func.sum(Expense.amount), 0)).where(scope_filter, stats_filter, Expense.date >= m_start, Expense.date <= m_end)
-            )
-            trend.append(TrendPoint(label=f"{m}월", amount=float(r.scalar())))
+            trend.append(TrendPoint(label=f"{m}월", amount=monthly_map.get(m, 0.0)))
     else:
         # 일별
         day_col = func.date(Expense.date).label("day")
@@ -336,19 +312,30 @@ async def get_stats_comparison(
             current_label = f"{cur_y}년 {cur_m}월"
             previous_label = f"{prev_y}년 {prev_m}월"
 
-        # N개월 트렌드 (현재 월 포함 과거 N개월) — 트렌드는 전체 달 기준 유지
+        # N개월 트렌드 (현재 월 포함 과거 N개월) — 단일 GROUP BY 쿼리 (#164)
         trend_data: list[PeriodTotal] = []
         y, m = cur_y, cur_m
-        # months-1 만큼 뒤로
         for _ in range(months - 1):
             m -= 1
             if m < 1:
                 m = 12
                 y -= 1
-        # 시작점부터 현재까지 순서대로
+        start_y, start_m = y, m
+        _, end_last = monthrange(cur_y, cur_m)
+        trend_start = datetime(start_y, start_m, 1)
+        trend_end = datetime(cur_y, cur_m, end_last, 23, 59, 59)
+
+        yr_col = func.extract("year", Expense.date).label("year")
+        mo_col = func.extract("month", Expense.date).label("month")
+        trend_result = await db.execute(
+            select(yr_col, mo_col, func.coalesce(func.sum(Expense.amount), 0).label("amount"))
+            .where(scope_filter, excl_filter, Expense.date >= trend_start, Expense.date <= trend_end)
+            .group_by(yr_col, mo_col)
+            .order_by(yr_col, mo_col)
+        )
+        trend_map = {(int(r.year), int(r.month)): float(r.amount) for r in trend_result.all()}
         for _ in range(months):
-            t = await _month_total(y, m)
-            trend_data.append(PeriodTotal(label=f"{y}년 {m}월", total=t))
+            trend_data.append(PeriodTotal(label=f"{y}년 {m}월", total=trend_map.get((y, m), 0.0)))
             m += 1
             if m > 12:
                 m = 1
@@ -410,7 +397,7 @@ async def get_stats_comparison(
     )
 
 
-@router.get("/stats/monthly")
+@router.get("/stats/monthly", response_model=MonthlyStatsResponse)
 async def get_monthly_stats(
     month: str = Query(..., description="YYYY-MM 형식", pattern=r"^\d{4}-\d{2}$"),
     household_id: int | None = None,
@@ -470,7 +457,9 @@ async def get_monthly_stats(
 
 
 @router.post("/ocr", response_model=ChatResponse)
+@limiter.limit("5/minute")  # LLM 크레딧 보호 (#234)
 async def parse_expense_image(
+    request: Request,
     file: UploadFile = File(...),
     household_id: int | None = Query(None),
     current_user: User = Depends(get_current_user),
@@ -481,7 +470,7 @@ async def parse_expense_image(
     이미지를 Claude Vision API로 분석하여 지출 정보를 추출합니다.
     저장하지 않고 파싱 결과만 반환합니다 (chat preview와 동일한 형식).
     """
-    # 이미지 파일 타입 검증
+    # Content-Type 검증
     ALLOWED_TYPES = {"image/jpeg", "image/png", "image/gif", "image/webp"}
     if file.content_type not in ALLOWED_TYPES:
         raise HTTPException(
@@ -496,6 +485,21 @@ async def parse_expense_image(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="파일 크기는 10MB 이하여야 합니다",
+        )
+
+    # 매직 바이트 검증 — Content-Type 스푸핑 방지 (#237)
+    # content_type 헤더는 클라이언트가 임의로 설정 가능하므로 실제 파일 내용으로 검증
+    MAGIC_BYTES: dict[str, list[bytes]] = {
+        "image/jpeg": [b"\xff\xd8\xff"],
+        "image/png": [b"\x89PNG\r\n"],
+        "image/gif": [b"GIF87a", b"GIF89a"],
+        "image/webp": [b"RIFF"],  # RIFF....WEBP 구조
+    }
+    valid_magic = MAGIC_BYTES.get(file.content_type, [])
+    if valid_magic and not any(image_bytes.startswith(m) for m in valid_magic):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="이미지 파일 내용이 올바르지 않습니다",
         )
 
     # household_id 미지정 시 활성 가구 자동 감지
@@ -602,18 +606,23 @@ async def update_expense(
     if not expense:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="지출을 찾을 수 없습니다")
 
-    # 가구 멤버 검증 (비멤버는 존재 여부 노출 방지를 위해 404)
-    try:
-        member = await get_household_member(expense.household_id, current_user, db)
-    except HTTPException:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="지출을 찾을 수 없습니다") from None
+    if expense.household_id is None:
+        # 레거시 데이터(마이그레이션 이전): household_id=None → 본인 확인만으로 수정 허용 (#147)
+        if expense.user_id != current_user.id:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="지출을 찾을 수 없습니다")
+    else:
+        # 가구 멤버 검증 (비멤버는 존재 여부 노출 방지를 위해 404)
+        try:
+            member = await get_household_member(expense.household_id, current_user, db)
+        except HTTPException:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="지출을 찾을 수 없습니다") from None
 
-    # 본인 거래가 아니면 admin/owner만 수정 가능
-    if expense.user_id != current_user.id and member.role not in ("admin", "owner"):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="이 항목을 수정할 권한이 없습니다",
-        )
+        # 본인 거래가 아니면 admin/owner만 수정 가능
+        if expense.user_id != current_user.id and member.role not in ("admin", "owner"):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="이 항목을 수정할 권한이 없습니다",
+            )
 
     update_data = expense_update.model_dump(exclude_unset=True)
     for key, value in update_data.items():
@@ -640,18 +649,24 @@ async def delete_expense(
     if not expense:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="지출을 찾을 수 없습니다")
 
-    # 가구 멤버 검증 (비멤버는 존재 여부 노출 방지를 위해 404)
-    try:
-        member = await get_household_member(expense.household_id, current_user, db)
-    except HTTPException:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="지출을 찾을 수 없습니다") from None
+    if expense.household_id is None:
+        # 레거시 데이터(마이그레이션 이전): household_id=None → 본인 확인만으로 삭제 허용 (#147)
+        if expense.user_id != current_user.id:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="지출을 찾을 수 없습니다")
+    else:
+        # 가구 멤버 검증 (비멤버는 존재 여부 노출 방지를 위해 404)
+        try:
+            member = await get_household_member(expense.household_id, current_user, db)
+        except HTTPException:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="지출을 찾을 수 없습니다") from None
 
-    # 본인 거래가 아니면 admin/owner만 삭제 가능
-    if expense.user_id != current_user.id and member.role not in ("admin", "owner"):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="이 항목을 삭제할 권한이 없습니다",
-        )
+        # 본인 거래가 아니면 admin/owner만 삭제 가능
+        if expense.user_id != current_user.id and member.role not in ("admin", "owner"):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="이 항목을 삭제할 권한이 없습니다",
+            )
 
     await db.delete(expense)
     await db.commit()
+    logger.info("지출 삭제: user=%s, expense_id=%s", current_user.id, expense_id)

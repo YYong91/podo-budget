@@ -9,8 +9,8 @@
 - 가구 멤버 전체의 수입을 함께 조회할 수 있음
 """
 
-from calendar import monthrange
-from datetime import date, datetime, timedelta
+import logging
+from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import func, select
@@ -24,6 +24,9 @@ from app.models.income import Income
 from app.models.user import User
 from app.schemas.expense import CategoryStats, StatsPeriod, StatsResponse, TrendPoint
 from app.schemas.income import IncomeCreate, IncomeResponse, IncomeUpdate
+from app.utils.date_utils import get_month_range, get_week_label, get_week_range, get_year_range
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -46,6 +49,7 @@ async def create_income(
     db.add(db_income)
     await db.commit()
     await db.refresh(db_income)
+    logger.info("수입 생성: user=%s, amount=%s", current_user.id, income.amount)
     return db_income
 
 
@@ -88,29 +92,6 @@ async def get_incomes(
     return result.scalars().all()
 
 
-def _get_week_range(d: date) -> tuple[date, date]:
-    monday = d - timedelta(days=d.weekday())
-    sunday = monday + timedelta(days=6)
-    return monday, sunday
-
-
-def _get_week_label(d: date) -> str:
-    first_day = d.replace(day=1)
-    week_num = (d.day + first_day.weekday() - 1) // 7 + 1
-    return f"{d.month}월 {week_num}주차"
-
-
-def _get_month_range(d: date) -> tuple[date, date]:
-    first = d.replace(day=1)
-    _, last_day = monthrange(d.year, d.month)
-    last = d.replace(day=last_day)
-    return first, last
-
-
-def _get_year_range(d: date) -> tuple[date, date]:
-    return date(d.year, 1, 1), date(d.year, 12, 31)
-
-
 def _build_income_scope_filter(household_id: int):
     """가구 스코프 필터 생성"""
     return Income.household_id == household_id
@@ -130,13 +111,13 @@ async def get_income_stats(
     ref_date = date_type.fromisoformat(date) if date else date_type.today()
 
     if period == StatsPeriod.weekly:
-        start_d, end_d = _get_week_range(ref_date)
-        label = _get_week_label(ref_date)
+        start_d, end_d = get_week_range(ref_date)
+        label = get_week_label(ref_date)
     elif period == StatsPeriod.monthly:
-        start_d, end_d = _get_month_range(ref_date)
+        start_d, end_d = get_month_range(ref_date)
         label = f"{ref_date.year}년 {ref_date.month}월"
     else:
-        start_d, end_d = _get_year_range(ref_date)
+        start_d, end_d = get_year_range(ref_date)
         label = f"{ref_date.year}년"
 
     start_dt = datetime(start_d.year, start_d.month, start_d.day)
@@ -179,14 +160,14 @@ async def get_income_stats(
     # 추이 데이터
     trend: list[TrendPoint] = []
     if period == StatsPeriod.yearly:
+        # 월별 12포인트 — 단일 GROUP BY 쿼리 (12번 직렬 → 1번, #164)
+        month_col = func.extract("month", Income.date).label("month")
+        monthly_result = await db.execute(
+            select(month_col, func.coalesce(func.sum(Income.amount), 0).label("amount")).where(*base_where).group_by(month_col).order_by(month_col)
+        )
+        monthly_map = {int(r.month): float(r.amount) for r in monthly_result.all()}
         for m in range(1, 13):
-            m_start = datetime(ref_date.year, m, 1)
-            _, m_last = monthrange(ref_date.year, m)
-            m_end = datetime(ref_date.year, m, m_last, 23, 59, 59)
-            r = await db.execute(
-                select(func.coalesce(func.sum(Income.amount), 0)).where(scope_filter, stats_filter, Income.date >= m_start, Income.date <= m_end)
-            )
-            trend.append(TrendPoint(label=f"{m}월", amount=float(r.scalar())))
+            trend.append(TrendPoint(label=f"{m}월", amount=monthly_map.get(m, 0.0)))
     else:
         day_col = func.date(Income.date).label("day")
         daily_result = await db.execute(select(day_col, func.sum(Income.amount).label("amount")).where(*base_where).group_by(day_col).order_by(day_col))
@@ -246,18 +227,23 @@ async def update_income(
     if not income:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="수입을 찾을 수 없습니다")
 
-    # 가구 멤버 검증 (비멤버는 존재 여부 노출 방지를 위해 404)
-    try:
-        member = await get_household_member(income.household_id, current_user, db)
-    except HTTPException:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="수입을 찾을 수 없습니다") from None
+    if income.household_id is None:
+        # 레거시 데이터(마이그레이션 이전): household_id=None → 본인 확인만으로 수정 허용 (#147)
+        if income.user_id != current_user.id:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="수입을 찾을 수 없습니다")
+    else:
+        # 가구 멤버 검증 (비멤버는 존재 여부 노출 방지를 위해 404)
+        try:
+            member = await get_household_member(income.household_id, current_user, db)
+        except HTTPException:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="수입을 찾을 수 없습니다") from None
 
-    # 본인이 아닌 경우 admin/owner 권한 필요
-    if income.user_id != current_user.id and member.role not in ("admin", "owner"):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="이 항목을 수정할 권한이 없습니다",
-        )
+        # 본인이 아닌 경우 admin/owner 권한 필요
+        if income.user_id != current_user.id and member.role not in ("admin", "owner"):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="이 항목을 수정할 권한이 없습니다",
+            )
 
     update_data = income_update.model_dump(exclude_unset=True)
     for key, value in update_data.items():
@@ -280,18 +266,24 @@ async def delete_income(
     if not income:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="수입을 찾을 수 없습니다")
 
-    # 가구 멤버 검증 (비멤버는 존재 여부 노출 방지를 위해 404)
-    try:
-        member = await get_household_member(income.household_id, current_user, db)
-    except HTTPException:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="수입을 찾을 수 없습니다") from None
+    if income.household_id is None:
+        # 레거시 데이터(마이그레이션 이전): household_id=None → 본인 확인만으로 삭제 허용 (#147)
+        if income.user_id != current_user.id:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="수입을 찾을 수 없습니다")
+    else:
+        # 가구 멤버 검증 (비멤버는 존재 여부 노출 방지를 위해 404)
+        try:
+            member = await get_household_member(income.household_id, current_user, db)
+        except HTTPException:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="수입을 찾을 수 없습니다") from None
 
-    # 본인이 아닌 경우 admin/owner 권한 필요
-    if income.user_id != current_user.id and member.role not in ("admin", "owner"):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="이 항목을 삭제할 권한이 없습니다",
-        )
+        # 본인이 아닌 경우 admin/owner 권한 필요
+        if income.user_id != current_user.id and member.role not in ("admin", "owner"):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="이 항목을 삭제할 권한이 없습니다",
+            )
 
     await db.delete(income)
     await db.commit()
+    logger.info("수입 삭제: user=%s, income_id=%s", current_user.id, income_id)

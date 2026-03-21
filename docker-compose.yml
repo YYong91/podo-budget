@@ -18,8 +18,9 @@ services:
       - ./backend/.env
     environment:
       - DATABASE_URL=sqlite+aiosqlite:////app/data/db.sqlite3
-      - JWT_SECRET=${JWT_SECRET:-podo-jwt-secret-change-in-production}
+      - JWT_SECRET=${JWT_SECRET:?JWT_SECRET 환경변수를 설정하세요}
       - AUTH_SERVER_URL=https://auth.podonest.com
+    # --reload는 개발 전용 — 운영 배포 시 Fly.io Dockerfile CMD를 사용 (reload 없음)
     command: uv run uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
   frontend:
@@ -36,6 +37,3 @@ services:
       - "3000:80"
     depends_on:
       - backend
-
-volumes:
-  data:

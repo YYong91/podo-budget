@@ -6,7 +6,6 @@
 import { useEffect, useState, useMemo, useCallback, useRef } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import PeriodNavigator from '../components/stats/PeriodNavigator'
-import toast from 'react-hot-toast'
 import { expenseApi } from '../api/expenses'
 import { incomeApi } from '../api/income'
 import { recurringApi } from '../api/recurring'
@@ -107,6 +106,8 @@ export default function TransactionList() {
 
   // 데이터 로드
   const fetchData = useCallback(async () => {
+    // 가구 로딩 전 API 호출 방지 (#149)
+    if (!activeHouseholdId) return
     setLoading(true)
     setError(false)
     try {
@@ -115,13 +116,13 @@ export default function TransactionList() {
         start_date: start,
         end_date: end,
         limit: 1000,
-        household_id: activeHouseholdId!,
+        household_id: activeHouseholdId,
       }
 
       const [expRes, incRes, pendingRes] = await Promise.all([
         expenseApi.getAll(baseParams).catch(() => ({ data: [] as Expense[] })),
         incomeApi.getAll(baseParams).catch(() => ({ data: [] as Income[] })),
-        recurringApi.getPending(activeHouseholdId!).catch(() => ({ data: [] as RecurringTransaction[] })),
+        recurringApi.getPending(activeHouseholdId).catch(() => ({ data: [] as RecurringTransaction[] })),
       ])
 
       setExpenses(expRes.data)
@@ -135,6 +136,9 @@ export default function TransactionList() {
   }, [currentYear, currentMonth, activeHouseholdId])
 
   useEffect(() => { fetchData() }, [fetchData])
+
+  // 카테고리 O(1) 조회용 Map — TransactionItem에 배열 대신 전달 (#180)
+  const categoryMap = useMemo(() => new Map(categories.map(c => [c.id, c])), [categories])
 
   // 통합 + 정렬 + 그룹핑
   const { grouped, totalExpense, totalIncome, daySummaries } = useMemo(() => {
@@ -182,6 +186,20 @@ export default function TransactionList() {
     return { grouped, totalExpense, totalIncome, daySummaries }
   }, [expenses, incomes, filter])
 
+  // TransactionItem.onCategoryClick 안정화 — 데이터 변경 시에만 재생성 (#240)
+  const categoryClickHandlers = useMemo(() => {
+    const handlers = new Map<string, () => void>()
+    for (const txs of grouped.values()) {
+      for (const tx of txs) {
+        handlers.set(`${tx.type}-${tx.id}`, () => {
+          setSheetTarget(tx)
+          setSheetOpen(true)
+        })
+      }
+    }
+    return handlers
+  }, [grouped])
+
   // 캘린더 날짜 클릭 → 스크롤
   const handleDateClick = useCallback((dateString: string) => {
     const ref = dateRefs.current.get(dateString)
@@ -208,7 +226,7 @@ export default function TransactionList() {
       }
       setSheetOpen(false)
     } catch {
-      toast.error('카테고리 변경에 실패했습니다')
+      addToast('error', '카테고리 변경에 실패했습니다')
     } finally {
       setSheetSaving(false)
     }
@@ -347,13 +365,10 @@ export default function TransactionList() {
                     description={tx.description}
                     amount={tx.amount}
                     categoryId={tx.category_id}
-                    categories={categories}
+                    categoryMap={categoryMap}
                     excludeFromStats={tx.exclude_from_stats}
                     rawInput={tx.raw_input}
-                    onCategoryClick={() => {
-                      setSheetTarget(tx)
-                      setSheetOpen(true)
-                    }}
+                    onCategoryClick={categoryClickHandlers.get(`${tx.type}-${tx.id}`)!}
                   />
                 ))}
               </div>

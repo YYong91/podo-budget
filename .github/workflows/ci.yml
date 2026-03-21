@@ -27,14 +27,148 @@ jobs:
     with:
       frontend_build_check: true
 
-  # ── 테스트 결과 알림 ─────────────────────────────
+  # ── 커버리지 PR 코멘트 ─────────────────────────────
+  coverage-comment:
+    name: 커버리지 리포트
+    needs: [test]
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    permissions:
+      pull-requests: write
+
+    steps:
+      - name: BE 커버리지 다운로드
+        uses: actions/download-artifact@v4
+        with:
+          name: backend-coverage
+          path: ./coverage
+        continue-on-error: true
+
+      - name: FE 커버리지 다운로드
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-coverage
+          path: ./coverage
+        continue-on-error: true
+
+      - name: 번들 크기 다운로드
+        uses: actions/download-artifact@v4
+        with:
+          name: bundle-sizes
+          path: ./bundle
+        continue-on-error: true
+
+      - name: API 스키마 다운로드
+        uses: actions/download-artifact@v4
+        with:
+          name: api-schema
+          path: ./schema
+        continue-on-error: true
+
+      - name: CI 리포트 코멘트 작성
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            let comment = '## 📊 CI 리포트\n\n';
+
+            // BE 커버리지 파싱
+            try {
+              const be = JSON.parse(fs.readFileSync('./coverage/backend-coverage.json', 'utf8'));
+              const total = be.totals;
+              comment += `### Backend (pytest-cov)\n`;
+              comment += `| 항목 | 커버리지 |\n|------|----------|\n`;
+              comment += `| **Statements** | ${total.percent_covered_display}% |\n`;
+              comment += `| Lines | ${total.covered_lines} / ${total.num_statements} |\n\n`;
+            } catch (e) {
+              comment += '### Backend\n⚠️ 커버리지 데이터 없음\n\n';
+            }
+
+            // FE 커버리지 파싱
+            try {
+              const fe = JSON.parse(fs.readFileSync('./coverage/coverage-summary.json', 'utf8'));
+              const total = fe.total;
+              comment += `### Frontend (vitest)\n`;
+              comment += `| 항목 | 커버리지 |\n|------|----------|\n`;
+              comment += `| **Statements** | ${total.statements.pct}% |\n`;
+              comment += `| **Branches** | ${total.branches.pct}% |\n`;
+              comment += `| **Functions** | ${total.functions.pct}% |\n`;
+              comment += `| **Lines** | ${total.lines.pct}% |\n\n`;
+            } catch (e) {
+              comment += '### Frontend\n⚠️ 커버리지 데이터 없음\n\n';
+            }
+
+            // 번들 크기
+            try {
+              const bundle = JSON.parse(fs.readFileSync('./bundle/bundle-sizes.json', 'utf8'));
+              const totalKB = (bundle.total_gzip / 1024).toFixed(1);
+              comment += `### 📦 번들 크기 (gzipped)\n`;
+              comment += `| 파일 | 크기 |\n|------|------|\n`;
+              for (const f of bundle.files) {
+                comment += `| ${f.name} | ${(f.gzip / 1024).toFixed(1)}KB |\n`;
+              }
+              comment += `| **합계** | **${totalKB}KB** |\n\n`;
+            } catch (e) {
+              // 번들 데이터 없으면 생략
+            }
+
+            // API 스키마
+            try {
+              const schema = JSON.parse(fs.readFileSync('./schema/api-schema-summary.json', 'utf8'));
+              comment += `### 🔌 API 스키마\n`;
+              comment += `엔드포인트 ${schema.endpoint_count}개, 스키마 ${schema.schema_count}개\n\n`;
+            } catch (e) {
+              // 스키마 데이터 없으면 생략
+            }
+
+            // 기존 코멘트 찾아서 업데이트 (중복 방지)
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            const existing = comments.find(c => c.body.includes('📊 CI 리포트') || c.body.includes('📊 테스트 커버리지 리포트'));
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body: comment,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: comment,
+              });
+            }
+
+  # ── 테스트 결과 + 커버리지 텔레그램 알림 ────────────
   notify-test-result:
     name: 테스트 결과 알림
     needs: [test]
     if: always()
     runs-on: ubuntu-latest
-    timeout-minutes: 2
+    timeout-minutes: 3
+
     steps:
+      - name: BE 커버리지 다운로드
+        uses: actions/download-artifact@v4
+        with:
+          name: backend-coverage
+          path: ./coverage
+        continue-on-error: true
+
+      - name: FE 커버리지 다운로드
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-coverage
+          path: ./coverage
+        continue-on-error: true
+
       - name: 텔레그램 전송
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
@@ -48,19 +182,26 @@ jobs:
         run: |
           PR_LINK="https://github.com/${REPO}/pull/${PR_NUMBER}"
 
+          BE_COV=""
+          FE_COV=""
+          if [ -f ./coverage/backend-coverage.json ]; then
+            BE_COV=$(python3 -c "import json; d=json.load(open('./coverage/backend-coverage.json')); print(d['totals']['percent_covered_display'])" 2>/dev/null || echo "")
+          fi
+          if [ -f ./coverage/coverage-summary.json ]; then
+            FE_COV=$(python3 -c "import json; d=json.load(open('./coverage/coverage-summary.json')); print(d['total']['statements']['pct'])" 2>/dev/null || echo "")
+          fi
+
+          COV_LINE=""
+          if [ -n "$BE_COV" ] || [ -n "$FE_COV" ]; then
+            COV_LINE="📈 커버리지: BE ${BE_COV:-?}% / FE ${FE_COV:-?}%"
+          fi
+
           if [ "$TEST_STATUS" = "success" ]; then
-            MESSAGE="$(printf '%s ✅ podo-budget 테스트 통과\n📝 #%s %s\n🔗 %s' \
-              "${ENV_PREFIX}" \
-              "${PR_NUMBER}" \
-              "${PR_TITLE}" \
-              "${PR_LINK}")"
+            MESSAGE="$(printf '%s ✅ 테스트 통과\n📝 #%s %s\n%s\n🔗 %s' \
+              "${ENV_PREFIX}" "${PR_NUMBER}" "${PR_TITLE}" "${COV_LINE}" "${PR_LINK}")"
           else
-            MESSAGE="$(printf '%s ❌ podo-budget 테스트 실패\n📝 #%s %s\n🔗 https://github.com/%s/actions/runs/%s' \
-              "${ENV_PREFIX}" \
-              "${PR_NUMBER}" \
-              "${PR_TITLE}" \
-              "${REPO}" \
-              "${RUN_ID}")"
+            MESSAGE="$(printf '%s ❌ 테스트 실패\n📝 #%s %s\n🔗 https://github.com/%s/actions/runs/%s' \
+              "${ENV_PREFIX}" "${PR_NUMBER}" "${PR_TITLE}" "${REPO}" "${RUN_ID}")"
           fi
 
           curl -sf -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \

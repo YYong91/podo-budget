@@ -9,8 +9,7 @@
 - 초대 생성/조회/수락/거절/취소
 """
 
-import uuid
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import and_, delete, func, select, update
@@ -35,7 +34,7 @@ from app.schemas.household import (
     MemberResponse,
     MemberRoleUpdate,
 )
-from app.services.email_service import send_invitation_email
+from app.services.household_service import create_household_invitation, leave_household_with_transfer
 
 router = APIRouter()
 
@@ -116,9 +115,21 @@ async def list_households(
         - 탈퇴한 가구는 목록에 표시되지 않습니다
         - 소프트 삭제된 가구는 목록에 표시되지 않습니다
     """
-    # 활성 멤버인 가구만 조회
+    # 가구별 활성 멤버 수 서브쿼리 — N번 개별 COUNT 제거 (#165)
+    member_count_subq = (
+        select(func.count(HouseholdMember.id))
+        .where(
+            and_(
+                HouseholdMember.household_id == Household.id,
+                HouseholdMember.left_at.is_(None),
+            )
+        )
+        .correlate(Household)
+        .scalar_subquery()
+    )
+
     query = (
-        select(Household, HouseholdMember.role)
+        select(Household, HouseholdMember.role, member_count_subq.label("member_count"))
         .join(HouseholdMember, Household.id == HouseholdMember.household_id)
         .where(
             and_(
@@ -131,34 +142,18 @@ async def list_households(
     )
 
     result = await db.execute(query)
-    households_with_role = result.all()
-
-    # 각 가구의 멤버 수 계산
-    response_list = []
-    for household, my_role in households_with_role:
-        # 활성 멤버 수 계산
-        count_query = select(func.count(HouseholdMember.id)).where(
-            and_(
-                HouseholdMember.household_id == household.id,
-                HouseholdMember.left_at.is_(None),
-            )
+    return [
+        HouseholdResponse(
+            id=household.id,
+            name=household.name,
+            description=household.description,
+            currency=household.currency,
+            my_role=my_role,
+            member_count=member_count or 0,
+            created_at=household.created_at,
         )
-        count_result = await db.execute(count_query)
-        member_count = count_result.scalar() or 0
-
-        response_list.append(
-            HouseholdResponse(
-                id=household.id,
-                name=household.name,
-                description=household.description,
-                currency=household.currency,
-                my_role=my_role,
-                member_count=member_count,
-                created_at=household.created_at,
-            )
-        )
-
-    return response_list
+        for household, my_role, member_count in result.all()
+    ]
 
 
 @router.get("/{household_id}", response_model=HouseholdDetailResponse)
@@ -182,26 +177,21 @@ async def get_household(
     Permissions:
         - 가구 멤버만 조회 가능
     """
-    # 가구 정보 조회 (eager loading으로 멤버 정보 함께 조회)
-    query = select(Household).where(Household.id == household_id).options(selectinload(Household.members))
+    # 가구+멤버+사용자 일괄 로드 — 멤버 수만큼 User 개별 조회 제거 (#165)
+    query = select(Household).where(Household.id == household_id).options(selectinload(Household.members).selectinload(HouseholdMember.user))
 
     result = await db.execute(query)
     household = result.scalar_one()
 
-    # 활성 멤버만 필터링하고 사용자 정보 조회
+    # 활성 멤버만 필터링 (user는 이미 로드됨)
     active_members = []
     for m in household.members:
         if m.left_at is None:  # 활성 멤버만
-            # 사용자 정보 조회
-            user_query = select(User).where(User.id == m.user_id)
-            user_result = await db.execute(user_query)
-            user = user_result.scalar_one()
-
             active_members.append(
                 MemberResponse(
-                    user_id=user.id,
-                    username=user.username,
-                    email=user.email,
+                    user_id=m.user.id,
+                    username=m.user.username,
+                    email=m.user.email,
                     role=m.role,
                     joined_at=m.joined_at,
                 )
@@ -436,6 +426,10 @@ async def remove_member(
     if target_member.role == "owner":
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="소유자는 추방할 수 없습니다")
 
+    # admin은 다른 admin 추방 불가 — owner 권한 필요 (#154)
+    if member.role == "admin" and target_member.role == "admin":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="관리자는 다른 관리자를 추방할 수 없습니다. 소유자 권한이 필요합니다")
+
     # 소프트 삭제 (left_at 설정)
     target_member.left_at = datetime.now(UTC).replace(tzinfo=None)
     await db.commit()
@@ -467,46 +461,9 @@ async def leave_household(
         - admin이 없으면 일반 member 중 한 명에게 양도합니다
         - 혼자 남은 owner는 탈퇴할 수 없습니다 (가구 삭제 필요)
     """
-    # owner 탈퇴 시 역할 양도 처리
-    if member.role == "owner":
-        # 다른 활성 멤버 조회
-        other_members_query = (
-            select(HouseholdMember)
-            .where(
-                and_(
-                    HouseholdMember.household_id == household_id,
-                    HouseholdMember.user_id != member.user_id,
-                    HouseholdMember.left_at.is_(None),
-                )
-            )
-            .order_by(
-                # admin 우선, 그 다음 member, 그 다음 가입 순서
-                HouseholdMember.role.desc(),
-                HouseholdMember.joined_at.asc(),
-            )
-        )
-        result = await db.execute(other_members_query)
-        other_members = result.scalars().all()
-
-        if not other_members:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="마지막 멤버는 탈퇴할 수 없습니다. 가구를 삭제하세요")
-
-        # 첫 번째 멤버에게 owner 양도
-        new_owner = other_members[0]
-        new_owner.role = "owner"
-        transferred_to = new_owner.user_id
-    else:
-        transferred_to = None
-
-    # 현재 사용자 탈퇴 처리
-    member.left_at = datetime.now(UTC).replace(tzinfo=None)
-    await db.commit()
-
-    message = "가구에서 탈퇴했습니다"
-    if transferred_to:
-        message = f"가구에서 탈퇴했습니다. 소유자 역할이 사용자 ID {transferred_to}에게 양도되었습니다"
-
-    return LeaveResponse(message=message, transferred_to=transferred_to)
+    # owner 양도 트랜잭션 → 서비스 위임 (#193)
+    result = await leave_household_with_transfer(db=db, household_id=household_id, member=member)
+    return LeaveResponse(message=result.message, transferred_to=result.transferred_to)
 
 
 # ===== 초대 시스템 =====
@@ -541,93 +498,28 @@ async def create_invitation(
         - 초대는 기본 7일 후 만료됩니다
         - owner 역할로는 초대할 수 없습니다
     """
-    # owner 역할 초대 방지
-    if invitation_data.role == "owner":
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="소유자 역할로 초대할 수 없습니다")
-
-    # 해당 이메일의 사용자가 있는지 확인
-    user_query = select(User).where(User.email == invitation_data.email)
-    user_result = await db.execute(user_query)
-    invitee_user = user_result.scalar_one_or_none()
-
-    # 이미 멤버인지 확인
-    if invitee_user:
-        existing_member_query = select(HouseholdMember).where(
-            and_(
-                HouseholdMember.household_id == household_id,
-                HouseholdMember.user_id == invitee_user.id,
-                HouseholdMember.left_at.is_(None),
-            )
-        )
-        existing_member_result = await db.execute(existing_member_query)
-        existing_member = existing_member_result.scalar_one_or_none()
-
-        if existing_member:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="이미 가구 멤버입니다")
-
-    # pending 상태의 중복 초대 확인
-    duplicate_query = select(HouseholdInvitation).where(
-        and_(
-            HouseholdInvitation.household_id == household_id,
-            HouseholdInvitation.invitee_email == invitation_data.email,
-            HouseholdInvitation.status == "pending",
-        )
-    )
-    duplicate_result = await db.execute(duplicate_query)
-    duplicate = duplicate_result.scalar_one_or_none()
-
-    if duplicate:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="이미 초대가 전송되었습니다")
-
-    # 초대 생성
-    token = str(uuid.uuid4())
-    expires_at = datetime.now(UTC).replace(tzinfo=None) + timedelta(days=7)
-
-    invitation = HouseholdInvitation(
+    # 복잡한 검증 + DB 저장 + 이메일 발송 → 서비스 위임 (#193)
+    result = await create_household_invitation(
+        db=db,
         household_id=household_id,
-        inviter_id=member.user_id,
-        invitee_email=invitation_data.email,
-        invitee_user_id=invitee_user.id if invitee_user else None,
-        token=token,
-        role=invitation_data.role,
-        status="pending",
-        expires_at=expires_at,
+        inviter_member=member,
+        invitation_data=invitation_data,
     )
 
-    db.add(invitation)
-    await db.commit()
-    await db.refresh(invitation)
-
-    # 가구 및 초대자 정보 조회
-    household_query = select(Household).where(Household.id == household_id)
-    household_result = await db.execute(household_query)
-    household = household_result.scalar_one()
-
-    inviter_query = select(User).where(User.id == member.user_id)
-    inviter_result = await db.execute(inviter_query)
-    inviter = inviter_result.scalar_one()
-
-    # 초대 이메일 발송 (비동기, 실패해도 초대 자체는 성공)
-    email_sent = await send_invitation_email(
-        to_email=invitation.invitee_email,
-        household_name=household.name,
-        inviter_name=inviter.username,
-        invite_token=token,
-    )
-
+    inv = result.invitation
     return InvitationResponse(
-        id=invitation.id,
-        household_id=household.id,
-        household_name=household.name,
-        invitee_email=invitation.invitee_email,
-        inviter_username=inviter.username,
-        role=invitation.role,
-        status=invitation.status,
-        expires_at=invitation.expires_at,
-        created_at=invitation.created_at,
-        responded_at=invitation.responded_at,
-        token=token,  # 초대 생성 시에만 토큰 포함
-        email_sent=email_sent,
+        id=inv.id,
+        household_id=result.household.id,
+        household_name=result.household.name,
+        invitee_email=inv.invitee_email,
+        inviter_username=result.inviter.username,
+        role=inv.role,
+        status=inv.status,
+        expires_at=inv.expires_at,
+        created_at=inv.created_at,
+        responded_at=inv.responded_at,
+        token=result.token,  # 초대 생성 시에만 토큰 포함
+        email_sent=result.email_sent,
     )
 
 
@@ -652,42 +544,38 @@ async def list_invitations(
     Permissions:
         - admin 이상 권한 필요
     """
-    # 초대 목록 조회
-    query = select(HouseholdInvitation).where(HouseholdInvitation.household_id == household_id).order_by(HouseholdInvitation.created_at.desc())
+    # 초대+초대자 일괄 로드 — 초대 건수만큼 User 개별 조회 제거 (#165)
+    query = (
+        select(HouseholdInvitation)
+        .where(HouseholdInvitation.household_id == household_id)
+        .options(selectinload(HouseholdInvitation.inviter))
+        .order_by(HouseholdInvitation.created_at.desc())
+    )
 
     result = await db.execute(query)
     invitations = result.scalars().all()
 
-    # 가구 정보 조회
+    # 가구 정보 조회 (단 1회)
     household_query = select(Household).where(Household.id == household_id)
     household_result = await db.execute(household_query)
     household = household_result.scalar_one()
 
-    # 응답 생성
-    response_list = []
-    for inv in invitations:
-        # 초대자 정보 조회
-        inviter_query = select(User).where(User.id == inv.inviter_id)
-        inviter_result = await db.execute(inviter_query)
-        inviter = inviter_result.scalar_one()
-
-        response_list.append(
-            InvitationResponse(
-                id=inv.id,
-                household_id=household.id,
-                household_name=household.name,
-                invitee_email=inv.invitee_email,
-                inviter_username=inviter.username,
-                role=inv.role,
-                status=inv.status,
-                expires_at=inv.expires_at,
-                created_at=inv.created_at,
-                responded_at=inv.responded_at,
-                token=inv.token if inv.status == "pending" else None,
-            )
+    return [
+        InvitationResponse(
+            id=inv.id,
+            household_id=household.id,
+            household_name=household.name,
+            invitee_email=inv.invitee_email,
+            inviter_username=inv.inviter.username,
+            role=inv.role,
+            status=inv.status,
+            expires_at=inv.expires_at,
+            created_at=inv.created_at,
+            responded_at=inv.responded_at,
+            token=inv.token if inv.status == "pending" else None,
         )
-
-    return response_list
+        for inv in invitations
+    ]
 
 
 @router.delete("/{household_id}/invitations/{invitation_id}", status_code=status.HTTP_204_NO_CONTENT)

@@ -43,10 +43,8 @@ async def test_generate_insights_success(authenticated_client, test_user: User, 
     assert response.status_code == 200
 
     data = response.json()
+    # InsightsGenerateResponse: month + insights 필드만 포함 (#242)
     assert data["month"] == "2026-02"
-    assert data["total"] == 35000.0
-    assert "by_category" in data
-    assert len(data["by_category"]) == 2
     assert data["insights"] is not None
     assert "지출 분석" in data["insights"]
     assert "35,000" in data["insights"]
@@ -94,8 +92,9 @@ async def test_generate_insights_filter_by_month(authenticated_client, test_user
     assert response.status_code == 200
 
     data = response.json()
-    assert data["total"] == 20000.0
-    assert data["by_category"]["식비"] == 20000.0
+    # InsightsGenerateResponse: month + insights 필드만 포함 (#242)
+    assert data["month"] == "2026-02"
+    assert "insights" in data
 
 
 @pytest.mark.asyncio
@@ -156,7 +155,9 @@ async def test_generate_insights_december(authenticated_client, test_user: User,
     assert response.status_code == 200
 
     data = response.json()
-    assert data["total"] == 10000.0
+    # InsightsGenerateResponse: month + insights 필드만 포함 (#242)
+    assert data["month"] == "2026-12"
+    assert "insights" in data
 
 
 @pytest.mark.asyncio
@@ -185,8 +186,13 @@ async def test_generate_insights_category_by_category(authenticated_client, test
     assert response.status_code == 200
 
     data = response.json()
-    by_category = data["by_category"]
-
+    # InsightsGenerateResponse: month + insights 필드만 포함 (#242)
+    # by_category 데이터는 LLM generate_insights에 전달되므로 call_args로 검증
+    assert data["month"] == "2026-02"
+    assert "insights" in data
+    call_args = mock_llm_generate_insights.call_args
+    expenses_data = call_args[0][0]
+    by_category = expenses_data["by_category"]
     assert by_category["문화생활"] == 20000.0
     assert by_category["식비"] == 15000.0
     assert by_category["교통비"] == 5000.0

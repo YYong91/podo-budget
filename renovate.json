@@ -1,0 +1,33 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    ":semanticCommits",
+    ":automergeMinor",
+    "schedule:weekly"
+  ],
+  "labels": ["dependencies"],
+  "rangeStrategy": "pin",
+  "packageRules": [
+    {
+      "description": "보안 패치는 자동 머지",
+      "matchUpdateTypes": ["patch"],
+      "matchCategories": ["security"],
+      "automerge": true
+    },
+    {
+      "description": "dev 의존성은 자동 머지",
+      "matchDepTypes": ["devDependencies", "dev"],
+      "automerge": true
+    },
+    {
+      "description": "메이저 업데이트는 수동 리뷰",
+      "matchUpdateTypes": ["major"],
+      "automerge": false,
+      "labels": ["dependencies", "breaking"]
+    }
+  ],
+  "pip_requirements": {
+    "enabled": false
+  }
+}

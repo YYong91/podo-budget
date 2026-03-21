@@ -1,59 +1,92 @@
-# E2E 테스트 (수동 실행 전용)
-# SSO 전환 후 auth spec 미업데이트로 현재 비활성화 상태
-# TODO: SSO 테스트 환경 구성 후 PR 트리거 복원
-name: E2E Tests
+# E2E 테스트 — main PR (release/hotfix) + 수동 실행
+# 프로덕션 배포 전 "화면이 실제로 동작하는가" 최종 검증
+name: E2E 테스트
 
 on:
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 
 jobs:
   e2e-test:
-    name: E2E Tests
+    name: E2E 테스트
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install uv
+      - name: uv 설치
         uses: astral-sh/setup-uv@v4
         with:
-          version: "latest"
+          version: "0.5.20"
+          enable-cache: true
 
-      - name: Set up Python
+      - name: Python 설정
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
-      - name: Setup Node.js
+      - name: Node.js 설정
         uses: actions/setup-node@v4
         with:
           node-version: "22"
           cache: "npm"
           cache-dependency-path: frontend/package-lock.json
 
-      - name: Install backend dependencies
+      - name: BE 의존성 설치
         run: uv sync --all-extras
 
-      - name: Start backend
+      - name: DB 스키마 생성
+        env:
+          DATABASE_URL: sqlite+aiosqlite:///./e2e_test.db
+        run: |
+          PYTHONPATH=backend uv run python -c "
+          import asyncio
+          from app.core.database import engine
+          from app.models.user import Base
+          # 모든 모델 import (테이블 등록)
+          import app.models.expense
+          import app.models.income
+          import app.models.category
+          import app.models.budget
+          import app.models.household
+          import app.models.household_member
+          import app.models.recurring_transaction
+          import app.models.asset
+          import app.models.asset_snapshot
+          import app.models.account
+          import app.models.category_mapping
+          import app.models.asset_goal
+          import app.models.feedback
+          async def create():
+              async with engine.begin() as conn:
+                  await conn.run_sync(Base.metadata.create_all)
+          asyncio.run(create())
+          print('E2E DB 스키마 생성 완료')
+          "
+
+      - name: BE 서버 시작
         env:
           DATABASE_URL: sqlite+aiosqlite:///./e2e_test.db
           SECRET_KEY: test-secret-key  # pragma: allowlist secret
+          JWT_SECRET: e2e-jwt-secret  # pragma: allowlist secret
           LLM_PROVIDER: anthropic
           ANTHROPIC_API_KEY: test-key  # pragma: allowlist secret
           DEBUG: "true"
+          CORS_ORIGINS: "http://localhost:5173"
         run: |
           PYTHONPATH=backend uv run uvicorn app.main:app --host 0.0.0.0 --port 8000 &
           for i in $(seq 1 30); do
             if curl -sf http://localhost:8000/health > /dev/null 2>&1; then
-              echo "Backend ready after ${i}s"
+              echo "BE 준비 완료 (${i}초)"
               break
             fi
             sleep 1
           done
           curl -f http://localhost:8000/health || exit 1
 
-      - name: Build and serve frontend
+      - name: FE 빌드 + 서빙
         run: |
           cd frontend && npm ci && npm run build
           npx serve dist -l 5173 -s &
@@ -61,17 +94,20 @@ jobs:
         env:
           VITE_API_URL: http://localhost:8000/api
 
-      - name: Install Playwright
-        run: npm ci && npx playwright install --with-deps chromium
+      - name: E2E 의존성 설치
+        run: npm ci
 
-      - name: Run E2E tests
+      - name: Playwright 브라우저 설치
+        run: npx playwright install --with-deps chromium
+
+      - name: E2E 테스트 실행
         env:
           E2E_BASE_URL: http://localhost:5173
           E2E_API_URL: http://localhost:8000
-          CI: "true"
+          E2E_JWT_SECRET: e2e-jwt-secret  # pragma: allowlist secret
         run: npx playwright test --config e2e/playwright.config.ts
 
-      - name: Upload test artifacts
+      - name: 테스트 실패 리포트 업로드
         if: failure()
         uses: actions/upload-artifact@v4
         with:
@@ -80,3 +116,19 @@ jobs:
             test-results/
             playwright-report/
           retention-days: 7
+
+      - name: 텔레그램 알림
+        if: always()
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          if [ "${{ job.status }}" = "success" ]; then
+            MESSAGE="🎭 E2E 테스트 통과 ✅ — main PR 준비 완료"
+          else
+            MESSAGE="🎭 E2E 테스트 실패 ❌ — main 머지 차단"
+            MESSAGE="${MESSAGE}"$'\n'"🔗 https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          fi
+          curl -sf -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            -d chat_id="${TELEGRAM_CHAT_ID}" \
+            --data-urlencode "text=${MESSAGE}" || true

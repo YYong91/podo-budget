@@ -15,6 +15,7 @@ import { categoryApi } from '../api/categories'
 import { chatApi } from '../api/chat'
 import { useHouseholdStore } from '../stores/useHouseholdStore'
 import type { Category, ParsedExpenseItem } from '../types'
+import ParsedItemPreviewCard from '../components/ParsedItemPreviewCard'
 
 type InputMode = 'natural' | 'form'
 
@@ -148,7 +149,7 @@ export default function IncomeForm() {
   }
 
   /** 프리뷰 항목 수정 */
-  const updatePreviewItem = (index: number, field: keyof EditableIncome, value: string | number | null) => {
+  const updatePreviewItem = (index: number, field: string, value: string | number | null) => {
     if (!previewItems) return
     const updated = [...previewItems]
     updated[index] = { ...updated[index], [field]: value }
@@ -297,10 +298,11 @@ export default function IncomeForm() {
       {mode === 'natural' && !previewItems && (
         <form onSubmit={handlePreview} className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)]/60 p-6 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
+            <label htmlFor="income-natural-input" className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
               말하듯이 수입 입력하기
             </label>
             <textarea
+              id="income-natural-input"
               value={naturalInput}
               onChange={(e) => setNaturalInput(e.target.value)}
               placeholder={"예: 이번 달 월급 350만원 들어왔어\n부업으로 50만원 받았어"}
@@ -338,121 +340,23 @@ export default function IncomeForm() {
           </div>
 
           {previewItems.map((item, index) => (
-            <div key={index} className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)]/60 border-l-4 border-l-leaf-400 p-5 space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-[var(--text-tertiary)]">수입 #{index + 1}</span>
-                {previewItems.length > 1 && (
-                  <button
-                    onClick={() => removePreviewItem(index)}
-                    className="text-sm text-rose-500 hover:text-rose-700 transition-colors"
-                  >
-                    삭제
-                  </button>
-                )}
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* 금액 */}
-                <div>
-                  <label className="block text-xs text-[var(--text-tertiary)] mb-1">금액</label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)] text-sm">₩</span>
-                    <input
-                      type="number"
-                      value={item.amount}
-                      onChange={(e) => updatePreviewItem(index, 'amount', Number(e.target.value))}
-                      className="w-full pl-7 pr-3 py-2 border border-[var(--input-border)] rounded-xl text-sm focus:ring-2 focus:ring-leaf-500/30 focus:border-leaf-500"
-                      min="1"
-                    />
-                  </div>
-                </div>
-
-                {/* 날짜 */}
-                <div>
-                  <label className="block text-xs text-[var(--text-tertiary)] mb-1">날짜</label>
-                  <input
-                    type="date"
-                    value={item.date.slice(0, 10)}
-                    onChange={(e) => updatePreviewItem(index, 'date', e.target.value)}
-                    className="w-full px-3 py-2 border border-[var(--input-border)] rounded-xl text-sm focus:ring-2 focus:ring-leaf-500/30 focus:border-leaf-500"
-                  />
-                </div>
-
-                {/* 설명 */}
-                <div>
-                  <label className="block text-xs text-[var(--text-tertiary)] mb-1">설명</label>
-                  <input
-                    type="text"
-                    value={item.description}
-                    onChange={(e) => updatePreviewItem(index, 'description', e.target.value)}
-                    className="w-full px-3 py-2 border border-[var(--input-border)] rounded-xl text-sm focus:ring-2 focus:ring-leaf-500/30 focus:border-leaf-500"
-                  />
-                </div>
-
-                {/* 카테고리 */}
-                <div>
-                  <label className="block text-xs text-[var(--text-tertiary)] mb-1">카테고리</label>
-                  <select
-                    value={item.category_id ?? ''}
-                    onChange={(e) => updatePreviewItem(index, 'category_id', e.target.value ? Number(e.target.value) : null)}
-                    className="w-full px-3 py-2 border border-[var(--input-border)] rounded-xl text-sm focus:ring-2 focus:ring-leaf-500/30 focus:border-leaf-500"
-                  >
-                    <option value="">미분류 ({item.category})</option>
-                    {incomeCategories.map((cat) => (
-                      <option key={cat.id} value={cat.id}>{cat.name}</option>
-                    ))}
-                  </select>
-                  {showNewCategoryFor === index ? (
-                    <div className="flex gap-1.5 mt-1.5">
-                      <input
-                        type="text"
-                        value={newCategoryName}
-                        onChange={(e) => setNewCategoryName(e.target.value)}
-                        placeholder="새 카테고리 이름"
-                        className="flex-1 px-2 py-1.5 border border-leaf-300 rounded-lg text-sm focus:ring-2 focus:ring-leaf-500/30 focus:border-leaf-500"
-                        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleCreateCategory(index) } }}
-                        autoFocus
-                      />
-                      <button
-                        type="button"
-                        onClick={() => handleCreateCategory(index)}
-                        disabled={creatingCategory || !newCategoryName.trim()}
-                        className="px-2.5 py-1.5 text-xs font-medium text-white bg-leaf-600 rounded-lg hover:bg-leaf-700 disabled:opacity-50"
-                      >
-                        {creatingCategory ? '...' : '추가'}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => { setShowNewCategoryFor(null); setNewCategoryName('') }}
-                        className="px-2.5 py-1.5 text-xs font-medium text-[var(--text-secondary)] bg-[var(--surface-hover)] rounded-lg hover:bg-[var(--surface-hover)]"
-                      >
-                        취소
-                      </button>
-                    </div>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => { setShowNewCategoryFor(index); setNewCategoryName('') }}
-                      className="mt-1.5 text-xs text-leaf-600 hover:text-leaf-600 font-medium"
-                    >
-                      + 새 카테고리
-                    </button>
-                  )}
-                </div>
-
-                {/* 메모 (선택) */}
-                <div className="sm:col-span-2">
-                  <label className="block text-xs text-[var(--text-tertiary)] mb-1">메모 (선택)</label>
-                  <input
-                    type="text"
-                    value={item.memo ?? ''}
-                    onChange={(e) => updatePreviewItem(index, 'memo', e.target.value)}
-                    placeholder="추가 메모 입력"
-                    className="w-full px-3 py-2 border border-[var(--input-border)] rounded-xl text-sm focus:ring-2 focus:ring-leaf-500/30 focus:border-leaf-500"
-                  />
-                </div>
-              </div>
-            </div>
+            <ParsedItemPreviewCard
+              key={index}
+              item={item}
+              index={index}
+              totalCount={previewItems.length}
+              categories={incomeCategories}
+              colorScheme="leaf"
+              label="수입"
+              onUpdate={updatePreviewItem}
+              onRemove={removePreviewItem}
+              showNewCategoryFor={showNewCategoryFor}
+              newCategoryName={newCategoryName}
+              creatingCategory={creatingCategory}
+              onSetShowNewCategory={setShowNewCategoryFor}
+              onSetNewCategoryName={setNewCategoryName}
+              onCreateCategory={handleCreateCategory}
+            />
           ))}
 
           {/* 확인/취소 버튼 */}
@@ -543,6 +447,7 @@ export default function IncomeForm() {
                   placeholder="새 카테고리 이름"
                   className="flex-1 px-3 py-2 border border-leaf-300 rounded-lg text-sm focus:ring-2 focus:ring-leaf-500/30 focus:border-leaf-500"
                   onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleCreateCategoryForForm() } }}
+                  // eslint-disable-next-line jsx-a11y/no-autofocus
                   autoFocus
                 />
                 <button
@@ -604,9 +509,10 @@ export default function IncomeForm() {
           </div>
 
           {/* 통계 제외 */}
-          <label className="flex items-center gap-3 cursor-pointer select-none">
+          <label htmlFor="income-exclude-stats" className="flex items-center gap-3 cursor-pointer select-none">
             <div className="relative">
               <input
+                id="income-exclude-stats"
                 type="checkbox"
                 checked={formData.exclude_from_stats}
                 onChange={(e) => setFormData({ ...formData, exclude_from_stats: e.target.checked })}

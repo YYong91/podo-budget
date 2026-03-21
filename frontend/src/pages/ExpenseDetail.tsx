@@ -217,11 +217,12 @@ export default function ExpenseDetail() {
       <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)]/60 p-4 sm:p-6 space-y-5">
         {/* 금액 */}
         <div>
-          <label className="block text-sm font-medium text-[var(--text-tertiary)] mb-2">
+          <label htmlFor="expense-edit-amount" className="block text-sm font-medium text-[var(--text-tertiary)] mb-2">
             금액
           </label>
           {isEditing ? (
             <input
+              id="expense-edit-amount"
               type="number"
               value={editForm.amount}
               onChange={(e) =>
@@ -239,11 +240,12 @@ export default function ExpenseDetail() {
 
         {/* 설명 */}
         <div>
-          <label className="block text-sm font-medium text-[var(--text-tertiary)] mb-2">
+          <label htmlFor="expense-edit-description" className="block text-sm font-medium text-[var(--text-tertiary)] mb-2">
             설명
           </label>
           {isEditing ? (
             <input
+              id="expense-edit-description"
               type="text"
               value={editForm.description}
               onChange={(e) =>
@@ -259,11 +261,12 @@ export default function ExpenseDetail() {
 
         {/* 카테고리 */}
         <div>
-          <label className="block text-sm font-medium text-[var(--text-tertiary)] mb-2">
+          <label htmlFor="expense-edit-category" className="block text-sm font-medium text-[var(--text-tertiary)] mb-2">
             카테고리
           </label>
           {isEditing ? (
             <select
+              id="expense-edit-category"
               value={editForm.category_id ?? ''}
               onChange={(e) =>
                 setEditForm({
@@ -287,11 +290,12 @@ export default function ExpenseDetail() {
 
         {/* 날짜 */}
         <div>
-          <label className="block text-sm font-medium text-[var(--text-tertiary)] mb-2">
+          <label htmlFor="expense-edit-date" className="block text-sm font-medium text-[var(--text-tertiary)] mb-2">
             날짜
           </label>
           {isEditing ? (
             <input
+              id="expense-edit-date"
               type="date"
               value={editForm.date}
               onChange={(e) =>
@@ -306,11 +310,12 @@ export default function ExpenseDetail() {
 
         {/* 메모 */}
         <div>
-          <label className="block text-sm font-medium text-[var(--text-tertiary)] mb-2">
+          <label htmlFor="expense-edit-memo" className="block text-sm font-medium text-[var(--text-tertiary)] mb-2">
             메모
           </label>
           {isEditing ? (
             <input
+              id="expense-edit-memo"
               type="text"
               value={editForm.memo}
               onChange={(e) =>
@@ -328,9 +333,9 @@ export default function ExpenseDetail() {
 
         {/* 통계 제외 */}
         <div>
-          <label className="block text-sm font-medium text-[var(--text-tertiary)] mb-2">
+          <span className="block text-sm font-medium text-[var(--text-tertiary)] mb-2">
             통계 제외
-          </label>
+          </span>
           {isEditing ? (
             <label className="flex items-center gap-3 cursor-pointer select-none">
               <div className="relative">
@@ -353,9 +358,9 @@ export default function ExpenseDetail() {
         {/* 원본 입력 (읽기 전용) */}
         {expense.raw_input && (
           <div>
-            <label className="block text-sm font-medium text-[var(--text-tertiary)] mb-2">
+            <span className="block text-sm font-medium text-[var(--text-tertiary)] mb-2">
               원본 입력
-            </label>
+            </span>
             <p className="text-sm text-[var(--text-secondary)] bg-[var(--surface-elevated)] rounded-lg p-3 font-mono">
               {expense.raw_input}
             </p>
@@ -385,9 +390,9 @@ export default function ExpenseDetail() {
 
       {/* 삭제 확인 모달 */}
       {showDeleteModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" role="dialog" aria-modal="true" aria-labelledby="expense-delete-title">
           <div className="bg-[var(--surface-card)] rounded-2xl shadow-xl max-w-md w-full p-6">
-            <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-2">
+            <h3 id="expense-delete-title" className="text-lg font-semibold text-[var(--text-primary)] mb-2">
               지출 내역 삭제
             </h3>
             <p className="text-[var(--text-secondary)] mb-6">
