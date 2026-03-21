@@ -5,7 +5,7 @@ DEBUG=True일 때만 활성화됩니다. 프로덕션에서는 등록되지 않�
 """
 
 import logging
-import random
+import uuid
 from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, HTTPException
@@ -48,7 +48,7 @@ async def e2e_setup(request: E2ESetupRequest):
 
             if not user:
                 # 고유한 auth_user_id 생성 (UNIQUE 제약 충돌 방지)
-                auth_user_id = random.randint(900000, 999999)
+                auth_user_id = uuid.uuid4().int % 10**9
                 user = User(
                     username=request.username,
                     email=request.email,
@@ -87,4 +87,4 @@ async def e2e_setup(request: E2ESetupRequest):
             return E2ESetupResponse(token=token, user_id=user.id, household_id=household_id)
     except Exception as e:
         logger.error(f"E2E setup 실패: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"E2E setup error: {str(e)}") from e
+        raise HTTPException(status_code=500, detail="E2E setup failed — check server logs") from e
