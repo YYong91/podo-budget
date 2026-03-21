@@ -49,6 +49,7 @@ class Settings(BaseSettings):
 
     # KakaoTalk Bot
     KAKAO_BOT_API_KEY: str = ""
+    KAKAO_CALLBACK_ENABLED: bool = False  # 콜백 API 활성화 시 5초 타임아웃 대신 백그라운드 처리
 
     # Sentry 에러 트래킹 (DSN 미설정 시 비활성화)
     SENTRY_DSN: str = ""

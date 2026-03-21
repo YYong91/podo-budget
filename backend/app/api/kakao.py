@@ -52,6 +52,9 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
+# 백그라운드 콜백 태스크 참조 보관 (GC 방지 + 셧다운 안전)
+_background_tasks: set[asyncio.Task] = set()  # type: ignore[type-arg]
+
 # 한글 명령어 → 슬래시 명령어 매핑 (모바일 입력 편의)
 # 인자를 받는 명령어: /change, /link
 # 인자를 받지 않는 명령어: /help, /report, /budget, /undo
@@ -99,6 +102,81 @@ def normalize_command(utterance: str) -> str:
         return utterance
 
     return f"{command} {rest}" if rest else command
+
+
+def make_callback_pending_response(text: str) -> dict:
+    """카카오 콜백 대기 응답 — useCallback: true로 즉시 반환
+
+    카카오 오픈빌더 콜백 API 규격에 따라 useCallback과 data를 포함합니다.
+    이 응답을 받은 카카오는 callbackUrl로 최종 결과를 기다립니다.
+    """
+    return {
+        "version": "2.0",
+        "useCallback": True,
+        "data": {"text": text},
+    }
+
+
+async def _send_callback_response(callback_url: str, response: dict) -> None:
+    """콜백 URL로 최종 결과 전송
+
+    카카오 오픈빌더가 제공한 callbackUrl(1분 유효, 1회용)로 POST 요청을 보냅니다.
+    """
+    import httpx
+
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.post(callback_url, json=response)
+            if resp.status_code != 200:
+                logger.error(f"카카오 콜백 전송 실패: {resp.status_code} - {resp.text}")
+    except Exception as e:
+        logger.error(f"카카오 콜백 전송 에러: {e}")
+
+
+async def _process_expense_callback(
+    utterance: str,
+    kakao_user_id: str,
+    callback_url: str,
+) -> None:
+    """백그라운드에서 LLM 파싱 → DB 저장 → 콜백 전송
+
+    asyncio.create_task로 실행되며, 독립적인 DB 세션을 사용합니다.
+    원본 요청의 세션은 이미 반환되었으므로 새 세션으로 모든 조회/저장을 수행합니다.
+    """
+    from app.core.database import AsyncSessionLocal
+
+    async with AsyncSessionLocal() as db:
+        try:
+            # 새 세션에서 봇 사용자 재조회
+            bot_user = await get_or_create_bot_user(db, platform="kakao", platform_user_id=kakao_user_id, auto_create_household=True)
+            active_household_id = await get_user_active_household_id_or_none(bot_user, db)
+
+            llm = get_llm_provider("parse")
+            household_id_for_hints = active_household_id
+            user_categories = await get_user_categories(db, bot_user.id, household_id_for_hints)
+            history_hints = await get_category_hints(db, bot_user.id, household_id_for_hints)
+            cat_mappings = await get_category_mappings_for_prompt(db, user_id=bot_user.id, household_id=household_id_for_hints)
+
+            # LLM 파싱 (타임아웃 없음 — 콜백이므로 최대 1분)
+            parsed = await llm.parse_expense(utterance, categories=user_categories, history_hints=history_hints, category_mappings=cat_mappings)
+            household_id = await resolve_household_id(utterance, None, active_household_id)
+
+            if isinstance(parsed, dict):
+                result = await _handle_single_expense(db, bot_user, parsed, utterance, household_id)
+            elif isinstance(parsed, list):
+                result = await _handle_multiple_expenses(db, bot_user, parsed, utterance, household_id)
+            else:
+                result = make_simple_text_response(format_server_error(), quick_replies=[make_quick_reply("❓ 도움말", "도움말")])
+
+            await _send_callback_response(callback_url, result)
+
+        except Exception as e:
+            logger.error(f"카카오 콜백 백그라운드 처리 실패: {e}")
+            error_response = make_simple_text_response(
+                format_server_error(),
+                quick_replies=[make_quick_reply("❓ 도움말", "도움말")],
+            )
+            await _send_callback_response(callback_url, error_response)
 
 
 def make_simple_text_response(text: str, quick_replies: list[dict] | None = None) -> dict:
@@ -205,8 +283,33 @@ _COMMAND_HANDLERS: dict[
 }
 
 
-async def _handle_expense_input(utterance: str, bot_user: Any, db: AsyncSession, active_household_id: int | None) -> dict:
-    """자연어 지출 입력 → LLM 파싱 → DB 저장"""
+async def _handle_expense_input(
+    utterance: str,
+    bot_user: Any,
+    db: AsyncSession,
+    active_household_id: int | None,
+    *,
+    callback_url: str | None = None,
+    kakao_user_id: str = "",
+) -> dict:
+    """자연어 지출 입력 → LLM 파싱 → DB 저장
+
+    콜백 모드(KAKAO_CALLBACK_ENABLED + callbackUrl 존재):
+    - 즉시 useCallback 응답 반환 → 백그라운드에서 LLM 파싱 → 콜백 URL로 결과 전송
+    기존 모드:
+    - 4.5초 타임아웃 내에서 동기 처리
+    """
+    # 콜백 모드: 즉시 응답 + 백그라운드 처리
+    if callback_url and settings.KAKAO_CALLBACK_ENABLED:
+        task = asyncio.create_task(
+            _process_expense_callback(utterance, kakao_user_id, callback_url),
+            name=f"kakao-callback-{kakao_user_id[:8]}",
+        )
+        _background_tasks.add(task)
+        task.add_done_callback(_background_tasks.discard)
+        return make_callback_pending_response("⏳ 분석 중이에요")
+
+    # 기존 동작 (4.5초 타임아웃)
     try:
         llm = get_llm_provider("parse")
 
@@ -435,8 +538,16 @@ async def kakao_webhook(request: Request, db: AsyncSession = Depends(get_db)):
             if utterance.startswith(prefix):
                 return await handler(utterance, bot_user, db, active_household_id)
 
-        # 자연어 지출 입력 처리
-        return await _handle_expense_input(utterance, bot_user, db, active_household_id)
+        # 자연어 지출 입력 처리 (콜백 URL이 있으면 전달)
+        callback_url = user_request.get("callbackUrl")
+        return await _handle_expense_input(
+            utterance,
+            bot_user,
+            db,
+            active_household_id,
+            callback_url=callback_url,
+            kakao_user_id=kakao_user_id,
+        )
 
     except Exception as e:
         logger.error(f"카카오 webhook 처리 실패: {e}")

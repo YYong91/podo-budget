@@ -9,7 +9,7 @@
 """
 
 from datetime import UTC, datetime, timedelta
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 import pytest_asyncio
@@ -1496,6 +1496,147 @@ async def test_kakao_budget_has_full_quickreply(client, db_session, mock_llm_par
     quick_replies = data["template"].get("quickReplies", [])
     labels = [qr["label"] for qr in quick_replies]
     assert any("전체" in label for label in labels)
+
+
+# ── 카카오 콜백 모드 테스트 (#288) ──────────────────────────
+
+
+def make_kakao_request_with_callback(utterance: str, user_id: str = "kakao_user_123", callback_url: str = "https://callback.kakao.com/test") -> dict:
+    """callbackUrl이 포함된 카카오 요청 생성 헬퍼"""
+    return {
+        "intent": {"id": "test_intent", "name": "TestIntent"},
+        "userRequest": {
+            "utterance": utterance,
+            "params": {},
+            "block": {"id": "test_block", "name": "TestBlock"},
+            "user": {"id": user_id, "type": "botUserKey"},
+            "callbackUrl": callback_url,
+        },
+        "bot": {"id": "test_bot", "name": "HomeNRich"},
+    }
+
+
+@pytest.mark.asyncio
+async def test_kakao_callback_mode_returns_pending(client, db_session, mock_llm_parse_expense):
+    """콜백 모드 활성화 시 즉시 'useCallback: true' + '분석 중' 응답 반환"""
+    await setup_kakao_bot_user_with_household(db_session, "kakao_user_123")
+
+    with patch.object(_app_settings, "KAKAO_CALLBACK_ENABLED", True):
+        payload = make_kakao_request_with_callback("점심 8000원")
+        response = await client.post("/api/kakao/webhook", json=payload)
+        assert response.status_code == 200
+
+        data = response.json()
+        assert data.get("useCallback") is True
+        assert "분석 중" in data.get("data", {}).get("text", "")
+        # template은 없어야 함 (콜백 대기 응답 형식)
+        assert "template" not in data
+
+
+@pytest.mark.asyncio
+async def test_kakao_callback_disabled_uses_existing_flow(client, db_session, mock_llm_parse_expense):
+    """콜백 비활성화(기본값) 시 기존 동기 처리 — useCallback 없음"""
+    await setup_kakao_bot_user_with_household(db_session, "kakao_user_123")
+
+    # KAKAO_CALLBACK_ENABLED=False (기본값)
+    payload = make_kakao_request_with_callback("점심 8000원")
+    response = await client.post("/api/kakao/webhook", json=payload)
+    assert response.status_code == 200
+
+    data = response.json()
+    assert "useCallback" not in data
+    # 기존 방식: template 응답
+    text = data["template"]["outputs"][0]["simpleText"]["text"]
+    assert "8,000" in text or "기록" in text
+
+
+@pytest.mark.asyncio
+async def test_kakao_callback_sends_result_to_callback_url(client, db_session, mock_llm_parse_expense):
+    """콜백 모드에서 백그라운드 처리 후 콜백 URL로 결과 전송"""
+    import asyncio
+
+    await setup_kakao_bot_user_with_household(db_session, "kakao_user_123")
+
+    with (
+        patch.object(_app_settings, "KAKAO_CALLBACK_ENABLED", True),
+        patch("app.api.kakao._send_callback_response", new_callable=AsyncMock) as mock_send,
+    ):
+        payload = make_kakao_request_with_callback("점심 8000원")
+        response = await client.post("/api/kakao/webhook", json=payload)
+
+        # 즉시 응답은 useCallback
+        assert response.json().get("useCallback") is True
+
+        # 백그라운드 태스크 완료 대기
+        await asyncio.sleep(0.5)
+
+        # 콜백이 호출되었는지 확인
+        mock_send.assert_called_once()
+        call_args = mock_send.call_args
+        assert call_args[0][0] == "https://callback.kakao.com/test"
+        # 콜백 응답에는 정상 template 구조가 있어야 함
+        callback_response = call_args[0][1]
+        assert "template" in callback_response
+        assert callback_response["version"] == "2.0"
+
+
+@pytest.mark.asyncio
+async def test_kakao_callback_background_error_sends_error(client, db_session, mock_llm_parse_expense):
+    """콜백 백그라운드 처리 중 에러 발생 시 콜백으로 에러 메시지 전송"""
+    import asyncio
+
+    await setup_kakao_bot_user_with_household(db_session, "kakao_user_123")
+
+    # LLM 파싱이 예외를 던지도록 설정
+    mock_llm_parse_expense.side_effect = RuntimeError("LLM 서비스 장애")
+
+    with (
+        patch.object(_app_settings, "KAKAO_CALLBACK_ENABLED", True),
+        patch("app.api.kakao._send_callback_response", new_callable=AsyncMock) as mock_send,
+    ):
+        payload = make_kakao_request_with_callback("점심 8000원")
+        response = await client.post("/api/kakao/webhook", json=payload)
+
+        assert response.json().get("useCallback") is True
+
+        await asyncio.sleep(0.5)
+
+        # 에러 시에도 콜백이 호출되어야 함
+        mock_send.assert_called_once()
+        callback_response = mock_send.call_args[0][1]
+        assert "template" in callback_response
+
+
+@pytest.mark.asyncio
+async def test_kakao_command_no_callback(client, db_session, mock_llm_parse_expense):
+    """명령어(리포트 등)는 콜백 모드에서도 즉시 응답 — useCallback 없음"""
+    await setup_kakao_bot_user_with_household(db_session, "kakao_user_123")
+
+    with patch.object(_app_settings, "KAKAO_CALLBACK_ENABLED", True):
+        payload = make_kakao_request_with_callback("리포트")
+        response = await client.post("/api/kakao/webhook", json=payload)
+        assert response.status_code == 200
+
+        data = response.json()
+        # 명령어는 콜백 안 쓰고 즉시 응답
+        assert "useCallback" not in data
+        assert "template" in data
+
+
+@pytest.mark.asyncio
+async def test_kakao_callback_no_callback_url_uses_existing_flow(client, db_session, mock_llm_parse_expense):
+    """callbackUrl이 없는 요청은 콜백 모드 활성화해도 기존 동기 처리"""
+    await setup_kakao_bot_user_with_household(db_session, "kakao_user_123")
+
+    with patch.object(_app_settings, "KAKAO_CALLBACK_ENABLED", True):
+        # callbackUrl 없는 일반 요청
+        payload = make_kakao_request("점심 8000원")
+        response = await client.post("/api/kakao/webhook", json=payload)
+        assert response.status_code == 200
+
+        data = response.json()
+        assert "useCallback" not in data
+        assert "template" in data
 
 
 # ── #289 봇 테스트 강화 ──────────────────────────
