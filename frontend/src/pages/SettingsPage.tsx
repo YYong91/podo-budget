@@ -220,6 +220,7 @@ function MyAccountSection() {
   const [loadingKakaoUnlink, setLoadingKakaoUnlink] = useState(false)
 
   const TELEGRAM_BOT_USERNAME = import.meta.env.VITE_TELEGRAM_BOT_USERNAME || 'PodoBudgetBot'
+  const KAKAO_CHANNEL_CHAT_URL = import.meta.env.VITE_KAKAO_CHANNEL_URL || 'http://pf.kakao.com/_xkxkAb/chat'
 
   const formatDate = (dateStr: string): string => dateStr.slice(0, 10).replace(/-/g, '.')
 
@@ -551,6 +552,24 @@ function MyAccountSection() {
                   <p className="text-xs text-[var(--text-tertiary)] mb-1">카카오톡 채널 채팅에 아래 명령어를 입력하세요: (탭하면 선택됩니다)</p>
                   <p className="selectable font-mono text-sm text-grape-600 font-bold select-all">연동 {kakaoLinkCode.code}</p>
                 </div>
+                {/* 간편 연동 버튼: 코드 복사 + 카카오 채팅 열기 */}
+                <button
+                  onClick={async () => {
+                    try {
+                      await navigator.clipboard.writeText(`연동 ${kakaoLinkCode.code}`)
+                      window.open(KAKAO_CHANNEL_CHAT_URL, '_blank')
+                      addToast('success', '연동 코드가 복사되었어요. 카카오톡에서 붙여넣기 해주세요!')
+                    } catch {
+                      addToast('error', '클립보드 복사에 실패했어요')
+                    }
+                  }}
+                  className="block w-full text-center bg-[#FEE500] text-[#191919] rounded-xl py-3 font-medium hover:bg-[#FDD835] transition-colors"
+                >
+                  💬 카카오톡에서 연동하기
+                </button>
+                <p className="text-xs text-center text-[var(--text-tertiary)]">
+                  코드가 복사돼요. 카카오톡에서 붙여넣기만 하면 끝!
+                </p>
               </div>
             ) : (
               <button
