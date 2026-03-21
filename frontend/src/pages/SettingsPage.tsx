@@ -219,6 +219,8 @@ function MyAccountSection() {
   const [loadingKakaoCode, setLoadingKakaoCode] = useState(false)
   const [loadingKakaoUnlink, setLoadingKakaoUnlink] = useState(false)
 
+  const TELEGRAM_BOT_USERNAME = import.meta.env.VITE_TELEGRAM_BOT_USERNAME || 'PodoBudgetBot'
+
   const formatDate = (dateStr: string): string => dateStr.slice(0, 10).replace(/-/g, '.')
 
   const handleGenerateCode = async () => {
@@ -356,7 +358,7 @@ function MyAccountSection() {
               <ol className="space-y-2 text-sm text-[var(--text-secondary)]">
                 <li className="flex gap-2">
                   <span className="flex-shrink-0 w-5 h-5 rounded-full bg-grape-100 text-grape-600 text-xs font-bold flex items-center justify-center">1</span>
-                  <span>텔레그램 앱에서 <span className="font-mono bg-[var(--surface-hover)] px-1 rounded">@homenrich_bot</span>을 검색하거나 <a href="https://t.me/homenrich_bot" target="_blank" rel="noopener noreferrer" className="text-grape-600 underline">t.me/homenrich_bot</a> 으로 접속하세요</span>
+                  <span>텔레그램 앱에서 <span className="font-mono bg-[var(--surface-hover)] px-1 rounded">@{TELEGRAM_BOT_USERNAME}</span>을 검색하거나 <a href={`https://t.me/${TELEGRAM_BOT_USERNAME}`} target="_blank" rel="noopener noreferrer" className="text-grape-600 underline">t.me/{TELEGRAM_BOT_USERNAME}</a> 으로 접속하세요</span>
                 </li>
                 <li className="flex gap-2">
                   <span className="flex-shrink-0 w-5 h-5 rounded-full bg-grape-100 text-grape-600 text-xs font-bold flex items-center justify-center">2</span>
@@ -425,6 +427,18 @@ function MyAccountSection() {
                   <p className="text-xs text-[var(--text-tertiary)] mb-1">텔레그램 봇에 아래 명령어를 입력하세요: (탭하면 선택됩니다)</p>
                   <p className="selectable font-mono text-sm text-grape-600 font-bold select-all">/link {linkCode.code}</p>
                 </div>
+                {/* 딥링크 버튼 */}
+                <a
+                  href={`https://t.me/${TELEGRAM_BOT_USERNAME}?start=${linkCode.code}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block w-full text-center bg-grape-600 text-white rounded-xl py-3 font-medium hover:bg-grape-700 transition-colors"
+                >
+                  텔레그램에서 바로 연동하기
+                </a>
+                <p className="text-xs text-center text-[var(--text-tertiary)]">
+                  버튼을 누르면 텔레그램이 열리고 자동으로 연동돼요
+                </p>
               </div>
             ) : (
               <button
