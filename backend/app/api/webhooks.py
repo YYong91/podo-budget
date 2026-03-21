@@ -64,7 +64,8 @@ async def sentry_webhook(
     Sentry Alert Rule에서 WebHook action으로 이 URL을 설정.
     SENTRY_WEBHOOK_SECRET 설정 시 HMAC-SHA256 서명을 검증합니다.
     """
-    if not settings.TELEGRAM_BOT_TOKEN or not settings.SENTRY_ALERT_CHAT_ID:
+    bot_token = settings.SENTRY_ALERT_BOT_TOKEN or settings.TELEGRAM_BOT_TOKEN
+    if not bot_token or not settings.SENTRY_ALERT_CHAT_ID:
         logger.warning("Sentry webhook 수신했으나 텔레그램 설정 미완료")
         return {"ok": False, "reason": "telegram not configured"}
 
@@ -88,11 +89,17 @@ async def sentry_webhook(
 
     message = _format_sentry_alert(payload)
 
-    # 텔레그램 전송
-    from app.api.telegram import send_telegram_message
+    # 텔레그램 전송 — Sentry 전용 봇 토큰이 있으면 직접 전송, 없으면 기본 봇 사용
+    import httpx
 
     try:
-        await send_telegram_message(int(settings.SENTRY_ALERT_CHAT_ID), message)
+        async with httpx.AsyncClient() as client:
+            resp = await client.post(
+                f"https://api.telegram.org/bot{bot_token}/sendMessage",
+                json={"chat_id": int(settings.SENTRY_ALERT_CHAT_ID), "text": message},
+            )
+            if not resp.is_success:
+                logger.error("Sentry 알림 텔레그램 전송 실패: %s", resp.text)
         logger.info("Sentry 알림 텔레그램 전송 완료")
     except Exception:
         logger.exception("Sentry 알림 텔레그램 전송 실패")
