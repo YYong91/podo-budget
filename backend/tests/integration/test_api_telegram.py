@@ -1259,3 +1259,225 @@ async def test_cmd_callback_report(client, db_session, mock_telegram_send):
     assert mock_telegram_send.called
     sent_message = mock_telegram_send.call_args[0][1]
     assert "리포트" in sent_message or "지출" in sent_message
+
+
+# ── 테스트 보강: 에러/연동동기화/예산리포트/엣지케이스 (#289) ──────────
+
+
+@pytest.mark.asyncio
+async def test_webhook_llm_exception_returns_server_error(client, db_session, mock_telegram_send, mock_llm_parse_expense):
+    """LLM 파싱 중 Exception 발생 시 서버 에러 메시지 전송"""
+    await setup_bot_user_with_household(db_session, chat_id=12345)
+    mock_llm_parse_expense.side_effect = Exception("LLM 서비스 장애")
+
+    payload = {"message": {"chat": {"id": 12345}, "text": "점심 8000원"}}
+    response = await client.post("/api/telegram/webhook", json=payload)
+    assert response.status_code == 200
+
+    msg = mock_telegram_send.call_args[0][1]
+    assert "다시 시도" in msg  # format_server_error 메시지
+
+
+@pytest.mark.asyncio
+async def test_deeplink_start_does_not_link(client, db_session, mock_telegram_send):
+    """[발견] /start SYNC01 딥링크는 연동 코드를 처리하지 않고 환영 메시지만 전송
+
+    현재 _handle_start_command는 user_text에서 코드를 파싱하지 않음.
+    연동은 /link 명령어로만 가능. 추후 딥링크 지원 시 수정 필요.
+    """
+    from datetime import UTC, datetime, timedelta
+
+    web_user = User(
+        username="web_sync",
+        email="sync@test.com",
+        telegram_link_code="SYNC01",
+        telegram_link_code_expires_at=datetime.now(UTC) + timedelta(minutes=10),
+    )
+    db_session.add(web_user)
+    await db_session.flush()
+    household = Household(name="동기화 테스트")
+    db_session.add(household)
+    await db_session.flush()
+    member = HouseholdMember(household_id=household.id, user_id=web_user.id, role="owner")
+    db_session.add(member)
+    await db_session.commit()
+
+    # /start SYNC01 딥링크 전송
+    payload = {"message": {"chat": {"id": 77777}, "text": "/start SYNC01"}}
+    response = await client.post("/api/telegram/webhook", json=payload)
+    assert response.status_code == 200
+
+    # 환영 메시지만 전송됨 (연동은 수행되지 않음)
+    msg = mock_telegram_send.call_args[0][1]
+    assert "환영" in msg or "HomeNRich" in msg
+
+    # web_user의 telegram_chat_id가 설정되지 않았음을 확인
+    await db_session.refresh(web_user)
+    assert web_user.telegram_chat_id is None
+
+
+@pytest.mark.asyncio
+async def test_report_with_data_shows_categories(client, db_session, mock_telegram_send):
+    """지출 데이터가 있을 때 /report가 카테고리별 금액을 표시"""
+    from app.models.expense import Expense as ExpenseModel
+
+    bot_user, household = await setup_bot_user_with_household(db_session, chat_id=44444)
+    cat = Category(name="식비", household_id=household.id)
+    db_session.add(cat)
+    await db_session.flush()
+    exp = ExpenseModel(
+        user_id=bot_user.id,
+        amount=50000,
+        description="회식",
+        category_id=cat.id,
+        date=datetime.now(),
+        household_id=household.id,
+    )
+    db_session.add(exp)
+    await db_session.commit()
+
+    mock_telegram_send.reset_mock()
+    payload = {"message": {"chat": {"id": 44444}, "text": "/report"}}
+    await client.post("/api/telegram/webhook", json=payload)
+
+    msg = mock_telegram_send.call_args[0][1]
+    assert "식비" in msg
+    assert "50,000" in msg
+
+
+@pytest.mark.asyncio
+async def test_budget_with_data_shows_usage(client, db_session, mock_telegram_send):
+    """예산과 지출 데이터가 있을 때 /budget이 사용률 표시"""
+    from app.models.budget import Budget
+    from app.models.expense import Expense as ExpenseModel
+
+    bot_user, household = await setup_bot_user_with_household(db_session, chat_id=44444)
+    cat = Category(name="식비", household_id=household.id)
+    db_session.add(cat)
+    await db_session.flush()
+
+    budget = Budget(
+        category_id=cat.id,
+        amount=300000,
+        household_id=household.id,
+        period="monthly",
+        start_date=datetime(2026, 3, 1),
+        end_date=datetime(2026, 3, 31),
+    )
+    db_session.add(budget)
+
+    exp = ExpenseModel(
+        user_id=bot_user.id,
+        amount=250000,
+        description="식비",
+        category_id=cat.id,
+        date=datetime.now(),
+        household_id=household.id,
+    )
+    db_session.add(exp)
+    await db_session.commit()
+
+    mock_telegram_send.reset_mock()
+    payload = {"message": {"chat": {"id": 44444}, "text": "/budget"}}
+    await client.post("/api/telegram/webhook", json=payload)
+
+    msg = mock_telegram_send.call_args[0][1]
+    assert "식비" in msg
+    assert "250,000" in msg or "300,000" in msg
+
+
+@pytest.mark.asyncio
+async def test_callback_deleted_expense_returns_not_found(client, db_session, mock_telegram_send):
+    """이미 삭제된 지출에 대한 콜백 → '찾을 수 없어요' 응답"""
+    from unittest.mock import AsyncMock
+    from unittest.mock import patch as mock_patch
+
+    with mock_patch("app.api.telegram.answer_callback_query", new_callable=AsyncMock) as mock_answer:
+        callback_payload = {
+            "callback_query": {
+                "id": "cb_notfound",
+                "message": {"chat": {"id": 12345}},
+                "data": "delete_expense:99999",  # 존재하지 않는 ID
+            }
+        }
+        response = await client.post("/api/telegram/webhook", json=callback_payload)
+        assert response.status_code == 200
+        mock_answer.assert_called_once()
+        assert "찾을 수 없" in mock_answer.call_args[0][1]
+
+
+@pytest.mark.asyncio
+async def test_callback_unknown_action(client, db_session, mock_telegram_send):
+    """알 수 없는 콜백 액션 → '알 수 없는 요청' 응답"""
+    from unittest.mock import AsyncMock
+    from unittest.mock import patch as mock_patch
+
+    with mock_patch("app.api.telegram.answer_callback_query", new_callable=AsyncMock) as mock_answer:
+        callback_payload = {
+            "callback_query": {
+                "id": "cb_unknown",
+                "message": {"chat": {"id": 12345}},
+                "data": "nonexistent_action:123",
+            }
+        }
+        response = await client.post("/api/telegram/webhook", json=callback_payload)
+        assert response.status_code == 200
+        mock_answer.assert_called_once()
+        assert "알 수 없는" in mock_answer.call_args[0][1]
+
+
+@pytest.mark.asyncio
+async def test_link_then_expense_saves_to_household(client, db_session, mock_telegram_send, mock_llm_parse_expense):
+    """/link 연동 후 지출이 연동된 사용자의 household에 저장"""
+    from datetime import UTC, datetime, timedelta
+
+    web_user = User(
+        username="web_link",
+        email="link@test.com",
+        telegram_link_code="LINK01",
+        telegram_link_code_expires_at=datetime.now(UTC) + timedelta(minutes=10),
+    )
+    db_session.add(web_user)
+    await db_session.flush()
+    household = Household(name="링크 테스트")
+    db_session.add(household)
+    await db_session.flush()
+    member = HouseholdMember(household_id=household.id, user_id=web_user.id, role="owner")
+    db_session.add(member)
+    await db_session.commit()
+
+    # /link 연동
+    payload = {"message": {"chat": {"id": 88888}, "text": "/link LINK01"}}
+    await client.post("/api/telegram/webhook", json=payload)
+
+    # 지출 입력
+    mock_telegram_send.reset_mock()
+    mock_llm_parse_expense.return_value = {
+        "amount": 15000,
+        "category": "교통",
+        "description": "택시",
+        "date": "2026-03-21",
+        "memo": "",
+    }
+    payload2 = {"message": {"chat": {"id": 88888}, "text": "택시 15000원"}}
+    await client.post("/api/telegram/webhook", json=payload2)
+
+    result = await db_session.execute(select(Expense).where(Expense.household_id == household.id))
+    expenses = result.scalars().all()
+    assert len(expenses) == 1
+    assert expenses[0].amount == 15000
+
+
+@pytest.mark.asyncio
+async def test_webhook_llm_timeout_returns_error(client, db_session, mock_telegram_send, mock_llm_parse_expense):
+    """LLM 타임아웃 시 에러 메시지 전송"""
+
+    await setup_bot_user_with_household(db_session, chat_id=12345)
+    mock_llm_parse_expense.side_effect = TimeoutError()
+
+    payload = {"message": {"chat": {"id": 12345}, "text": "점심 8000원"}}
+    response = await client.post("/api/telegram/webhook", json=payload)
+    assert response.status_code == 200
+
+    msg = mock_telegram_send.call_args[0][1]
+    assert "다시 시도" in msg
