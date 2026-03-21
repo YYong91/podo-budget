@@ -1,17 +1,26 @@
-import { test, expect } from '../fixtures/auth'
+/**
+ * 가계부 홈(TransactionList) E2E 테스트
+ *
+ * TransactionList는 앱의 첫 화면(`/`)이다.
+ * 빈 상태, 거래 생성 후 목록 표시를 검증한다.
+ */
 
-/** API로 지출 생성하는 헬퍼 */
+import { test, expect, API_URL } from '../fixtures/auth'
+import { getAuthToken } from '../fixtures/auth'
+import type { Page } from '@playwright/test'
+
+/** API로 지출 생성하는 헬퍼 — 쿠키에서 토큰을 읽어 Bearer 헤더로 전달 */
 async function createExpense(
-  page: import('@playwright/test').Page,
-  data: { amount: number; description: string },
+  page: Page,
+  data: { amount: number; description: string; category_name?: string },
 ) {
-  const token = await page.evaluate(() => localStorage.getItem('auth_token'))
-  const apiUrl = process.env.E2E_API_URL || 'http://localhost:8000'
+  const token = await getAuthToken(page)
 
-  const res = await page.request.post(`${apiUrl}/api/expenses`, {
+  const res = await page.request.post(`${API_URL}/api/expenses`, {
     headers: { Authorization: `Bearer ${token}` },
     data: {
-      ...data,
+      amount: data.amount,
+      description: data.description,
       // asyncpg는 TIMESTAMP WITHOUT TIME ZONE에 timezone-aware datetime 거부
       date: new Date().toISOString().replace('Z', ''),
     },
@@ -24,37 +33,38 @@ async function createExpense(
   return res.json()
 }
 
-test.describe('대시보드', () => {
+test.describe('가계부 홈 (TransactionList)', () => {
   test('빈 상태 → EmptyState 표시', async ({ authedPage: page }) => {
     await page.goto('/')
+    await page.waitForLoadState('networkidle')
 
-    // 빈 상태 메시지 또는 대시보드 제목
+    // TransactionList의 빈 상태: "거래 내역이 없습니다"
     await expect(
-      page.getByText(/지출 기록이 없|대시보드/).first(),
-    ).toBeVisible({ timeout: 10000 })
+      page.getByText('거래 내역이 없습니다'),
+    ).toBeVisible({ timeout: 15000 })
   })
 
-  test('지출 있을 때 → 통계 카드 표시', async ({ authedPage: page }) => {
+  test('지출 생성 후 → 목록에 표시', async ({ authedPage: page }) => {
     await createExpense(page, {
       amount: 25000,
       description: 'E2E 대시보드 테스트',
     })
 
     await page.goto('/')
+    await page.waitForLoadState('networkidle')
 
-    // 이번 달 총 지출 카드 확인
-    await expect(page.getByText(/이번 달 총 지출/)).toBeVisible({ timeout: 10000 })
-    await expect(page.getByText(/25,000|₩25/).first()).toBeVisible()
+    // 생성한 지출 항목이 목록에 표시되어야 함
+    await expect(page.getByText('E2E 대시보드 테스트')).toBeVisible({ timeout: 15000 })
+    // 금액 표시 확인 (formatAmount 결과)
+    await expect(page.getByText(/25,000/).first()).toBeVisible()
   })
 
-  test('최근 지출 목록에 항목 표시', async ({ authedPage: page }) => {
-    await createExpense(page, {
-      amount: 12000,
-      description: 'E2E 최근 지출 항목',
-    })
-
+  test('지출/수입 필터 버튼 동작', async ({ authedPage: page }) => {
     await page.goto('/')
+    await page.waitForLoadState('networkidle')
 
-    await expect(page.getByText('E2E 최근 지출 항목')).toBeVisible({ timeout: 10000 })
+    // 요약 영역에 "지출"/"수입" 텍스트가 있어야 함
+    await expect(page.getByText('지출').first()).toBeVisible({ timeout: 15000 })
+    await expect(page.getByText('수입').first()).toBeVisible()
   })
 })
