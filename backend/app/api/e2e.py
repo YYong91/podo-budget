@@ -13,7 +13,8 @@ from sqlalchemy import select
 
 from app.core.config import settings
 from app.core.database import AsyncSessionLocal
-from app.models.household import Household, HouseholdMember
+from app.models.household import Household
+from app.models.household_member import HouseholdMember
 from app.models.user import User
 
 router = APIRouter()
