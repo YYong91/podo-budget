@@ -5,7 +5,6 @@
  *
  * 핵심: page.addInitScript는 모든 page.goto 전에 실행되어
  * React가 마운트될 때 getCookieToken()이 토큰을 읽을 수 있음.
- * 이렇게 하면 SSO 리다이렉트가 발생하지 않음.
  */
 
 import { test as base, expect } from '@playwright/test'
@@ -36,6 +35,15 @@ export const test = base.extend<AuthFixtures>({
   authedPage: async ({ page }, use) => {
     const { token } = await setupE2EUser(page.request)
 
+    // 브라우저 콘솔 에러 수집 (디버깅용)
+    const consoleErrors: string[] = []
+    page.on('console', (msg) => {
+      if (msg.type() === 'error') consoleErrors.push(msg.text())
+    })
+    page.on('pageerror', (err) => {
+      consoleErrors.push(`PageError: ${err.message}`)
+    })
+
     // addInitScript: 모든 page.goto/reload 전에 실행됨
     // React가 마운트되기 전에 localStorage + cookie에 토큰 주입
     await page.addInitScript((t) => {
@@ -43,18 +51,35 @@ export const test = base.extend<AuthFixtures>({
       document.cookie = `podo_access_token=${t}; Path=/; SameSite=Lax`
     }, token)
 
-    // 앱 로드 — React 초기화 시 getCookieToken()이 토큰을 읽어 isAuthenticated=true
-    await page.goto(BASE_URL)
-    await page.waitForLoadState('networkidle')
+    // 앱 로드
+    await page.goto(BASE_URL, { waitUntil: 'domcontentloaded' })
 
-    // 앱 초기화 완료 대기 (ProtectedRoute → initializeApp → Layout 렌더)
+    // React 렌더링 대기 — #root에 자식이 생길 때까지
     try {
-      await page.waitForSelector('nav', { timeout: 15000 })
+      await page.waitForFunction(
+        () => {
+          const root = document.getElementById('root')
+          return root && root.children.length > 0
+        },
+        { timeout: 15000 },
+      )
     } catch {
       const url = page.url()
-      const html = await page.content()
+      const rootHtml = await page.evaluate(() => document.getElementById('root')?.innerHTML || 'NO ROOT')
       throw new Error(
-        `앱 초기화 실패 — nav 미발견\nURL: ${url}\nHTML: ${html.slice(0, 500)}`,
+        `React 마운트 실패\nURL: ${url}\n#root: ${rootHtml.slice(0, 300)}\nConsole errors: ${consoleErrors.join(' | ') || 'none'}`,
+      )
+    }
+
+    // ProtectedRoute initializeApp 완료 대기 — nav 또는 onboarding 또는 로딩 스피너 후 콘텐츠
+    try {
+      // nav가 보이면 앱 정상 로드, 온보딩이면 /onboarding으로 이동
+      await page.waitForSelector('nav, [class*="onboarding"], main', { timeout: 15000 })
+    } catch {
+      const url = page.url()
+      const bodyHtml = await page.evaluate(() => document.body.innerHTML.slice(0, 500))
+      throw new Error(
+        `앱 초기화 실패 — 콘텐츠 미발견\nURL: ${url}\nBody: ${bodyHtml}\nConsole errors: ${consoleErrors.join(' | ') || 'none'}`,
       )
     }
 
