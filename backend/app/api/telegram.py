@@ -238,7 +238,31 @@ def _build_expense_saved_keyboard(expense_id: int) -> dict:
 
 
 async def _handle_start_command(chat_id: int, user_text: str, bot_user: Any, db: AsyncSession, active_household_id: int | None) -> dict:
-    """``/start`` 명령어 처리"""
+    """``/start`` 명령어 처리 — 딥링크 연동 코드 감지"""
+    parts = user_text.split()
+
+    # 딥링크: /start CODE → 자동 연동 시도
+    if len(parts) == 2:
+        code = parts[1].upper()
+        success, message = await link_telegram_account_by_code(db, code, str(chat_id))
+        if success:
+            reply_markup = {
+                "inline_keyboard": [
+                    [
+                        {"text": "📖 사용법 보기", "callback_data": "cmd:help"},
+                        {"text": "📊 리포트", "callback_data": "cmd:report"},
+                    ],
+                ]
+            }
+            await send_telegram_message(
+                chat_id,
+                "🔗 연동 완료! 이제 포도가계부를 사용할 수 있어요 🍇\n\n" "말하듯 편하게 지출을 입력해보세요.\n" '"점심 김치찌개 8000원"',
+                reply_markup=reply_markup,
+            )
+            return {"ok": True}
+        # 연동 실패 → 일반 환영 메시지로 fallback
+
+    # 일반 /start → 환영 메시지
     reply_markup = {
         "inline_keyboard": [
             [

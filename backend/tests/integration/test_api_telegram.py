@@ -1259,3 +1259,69 @@ async def test_cmd_callback_report(client, db_session, mock_telegram_send):
     assert mock_telegram_send.called
     sent_message = mock_telegram_send.call_args[0][1]
     assert "리포트" in sent_message or "지출" in sent_message
+
+
+# ---------------------------------------------------------------------------
+# 딥링크 /start CODE 자동 연동 테스트
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_webhook_start_deeplink_success(client, db_session, mock_telegram_send):
+    """딥링크 /start CODE → 자동 연동 성공"""
+    from datetime import UTC, datetime, timedelta
+
+    web_user = User(
+        username="webuser_dl",
+        email="dl@test.com",
+        telegram_link_code="DL1234",
+        telegram_link_code_expires_at=datetime.now(UTC) + timedelta(minutes=10),
+    )
+    db_session.add(web_user)
+    await db_session.flush()
+    household = Household(name="딥링크 테스트 가구")
+    db_session.add(household)
+    await db_session.flush()
+    member = HouseholdMember(household_id=household.id, user_id=web_user.id, role="owner")
+    db_session.add(member)
+    await db_session.commit()
+
+    payload = {"message": {"chat": {"id": 55555}, "text": "/start DL1234"}}
+    response = await client.post("/api/telegram/webhook", json=payload)
+    assert response.status_code == 200
+
+    msg = mock_telegram_send.call_args[0][1]
+    assert "연동" in msg and "완료" in msg
+
+
+@pytest.mark.asyncio
+async def test_webhook_start_deeplink_expired(client, db_session, mock_telegram_send):
+    """딥링크 만료 코드 → 환영 메시지 fallback"""
+    from datetime import UTC, datetime, timedelta
+
+    web_user = User(
+        username="webuser_exp",
+        email="exp@test.com",
+        telegram_link_code="EXP123",
+        telegram_link_code_expires_at=datetime.now(UTC) - timedelta(minutes=1),
+    )
+    db_session.add(web_user)
+    await db_session.commit()
+
+    payload = {"message": {"chat": {"id": 55556}, "text": "/start EXP123"}}
+    response = await client.post("/api/telegram/webhook", json=payload)
+    assert response.status_code == 200
+
+    msg = mock_telegram_send.call_args[0][1]
+    assert "환영" in msg
+
+
+@pytest.mark.asyncio
+async def test_webhook_start_deeplink_invalid_code(client, db_session, mock_telegram_send):
+    """존재하지 않는 코드 → 환영 메시지 fallback"""
+    payload = {"message": {"chat": {"id": 55557}, "text": "/start XXXXXX"}}
+    response = await client.post("/api/telegram/webhook", json=payload)
+    assert response.status_code == 200
+
+    msg = mock_telegram_send.call_args[0][1]
+    assert "환영" in msg
