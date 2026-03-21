@@ -55,6 +55,7 @@ class Settings(BaseSettings):
     SENTRY_ENVIRONMENT: str = "development"
     SENTRY_WEBHOOK_SECRET: str = ""  # Sentry → 텔레그램 알림 webhook 인증용
     SENTRY_ALERT_CHAT_ID: str = ""  # Sentry 알림 수신할 텔레그램 채팅 ID
+    SENTRY_ALERT_BOT_TOKEN: str = ""  # Sentry 알림용 별도 봇 토큰 (미설정 시 TELEGRAM_BOT_TOKEN 사용)
 
     # 관리자 설정 — 기본값 -1은 "미설정" 의미 (DB에 존재하지 않는 ID)
     # .env에서 실제 사용자 ID를 설정하지 않으면 관리자 기능이 비활성화됨
