@@ -37,10 +37,34 @@ jobs:
       - name: BE 의존성 설치
         run: uv sync --all-extras
 
-      - name: DB 마이그레이션
+      - name: DB 스키마 생성
         env:
           DATABASE_URL: sqlite+aiosqlite:///./e2e_test.db
-        run: PYTHONPATH=backend uv run alembic -c backend/alembic.ini upgrade head
+        run: |
+          PYTHONPATH=backend uv run python -c "
+          import asyncio
+          from app.core.database import engine
+          from app.models.user import Base
+          # 모든 모델 import (테이블 등록)
+          import app.models.expense
+          import app.models.income
+          import app.models.category
+          import app.models.budget
+          import app.models.household
+          import app.models.household_member
+          import app.models.recurring_transaction
+          import app.models.asset
+          import app.models.asset_snapshot
+          import app.models.account
+          import app.models.category_mapping
+          import app.models.asset_goal
+          import app.models.feedback
+          async def create():
+              async with engine.begin() as conn:
+                  await conn.run_sync(Base.metadata.create_all)
+          asyncio.run(create())
+          print('E2E DB 스키마 생성 완료')
+          "
 
       - name: BE 서버 시작
         env:
