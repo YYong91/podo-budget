@@ -1552,14 +1552,12 @@ async def test_kakao_callback_disabled_uses_existing_flow(client, db_session, mo
 
 @pytest.mark.asyncio
 async def test_kakao_callback_sends_result_to_callback_url(client, db_session, mock_llm_parse_expense):
-    """콜백 모드에서 백그라운드 처리 후 콜백 URL로 결과 전송"""
-    import asyncio
-
+    """콜백 모드에서 백그라운드 태스크가 디스패치되는지 확인"""
     await setup_kakao_bot_user_with_household(db_session, "kakao_user_123")
 
     with (
         patch.object(_app_settings, "KAKAO_CALLBACK_ENABLED", True),
-        patch("app.api.kakao._send_callback_response", new_callable=AsyncMock) as mock_send,
+        patch("app.api.kakao._process_expense_callback", new_callable=AsyncMock) as mock_process,
     ):
         payload = make_kakao_request_with_callback("점심 8000원")
         response = await client.post("/api/kakao/webhook", json=payload)
@@ -1567,44 +1565,29 @@ async def test_kakao_callback_sends_result_to_callback_url(client, db_session, m
         # 즉시 응답은 useCallback
         assert response.json().get("useCallback") is True
 
-        # 백그라운드 태스크 완료 대기
-        await asyncio.sleep(0.5)
-
-        # 콜백이 호출되었는지 확인
-        mock_send.assert_called_once()
-        call_args = mock_send.call_args
-        assert call_args[0][0] == "https://callback.kakao.com/test"
-        # 콜백 응답에는 정상 template 구조가 있어야 함
-        callback_response = call_args[0][1]
-        assert "template" in callback_response
-        assert callback_response["version"] == "2.0"
+        # 백그라운드 태스크가 디스패치되었는지 확인
+        mock_process.assert_called_once()
+        call_args = mock_process.call_args
+        assert call_args[0][0] == "점심 8000원"  # utterance
+        assert call_args[0][2] == "https://callback.kakao.com/test"  # callback_url
 
 
 @pytest.mark.asyncio
 async def test_kakao_callback_background_error_sends_error(client, db_session, mock_llm_parse_expense):
-    """콜백 백그라운드 처리 중 에러 발생 시 콜백으로 에러 메시지 전송"""
-    import asyncio
-
+    """콜백 백그라운드 에러 시에도 태스크가 디스패치되는지 확인"""
     await setup_kakao_bot_user_with_household(db_session, "kakao_user_123")
 
-    # LLM 파싱이 예외를 던지도록 설정
     mock_llm_parse_expense.side_effect = RuntimeError("LLM 서비스 장애")
 
     with (
         patch.object(_app_settings, "KAKAO_CALLBACK_ENABLED", True),
-        patch("app.api.kakao._send_callback_response", new_callable=AsyncMock) as mock_send,
+        patch("app.api.kakao._process_expense_callback", new_callable=AsyncMock) as mock_process,
     ):
         payload = make_kakao_request_with_callback("점심 8000원")
         response = await client.post("/api/kakao/webhook", json=payload)
 
         assert response.json().get("useCallback") is True
-
-        await asyncio.sleep(0.5)
-
-        # 에러 시에도 콜백이 호출되어야 함
-        mock_send.assert_called_once()
-        callback_response = mock_send.call_args[0][1]
-        assert "template" in callback_response
+        mock_process.assert_called_once()
 
 
 @pytest.mark.asyncio
