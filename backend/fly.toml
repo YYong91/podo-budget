@@ -28,10 +28,10 @@ primary_region = "nrt"  # 도쿄 (Tokyo Narita)
   min_machines_running = 1    # 항상 1대 유지
 
   [[http_service.checks]]
-    grace_period = "10s"
-    interval = "30s"
+    grace_period = "120s"
+    interval = "15s"
     method = "GET"
-    timeout = "5s"
+    timeout = "10s"
     path = "/health"
 
 # 무료 티어: shared-cpu-1x + 256MB
