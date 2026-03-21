@@ -1224,6 +1224,188 @@ async def test_kakao_undo_deletes_latest_expense(client, db_session, mock_llm_pa
     assert len(result.scalars().all()) == 1
 
 
+# ── 리포트/예산 전체 보기 명령어 테스트 (#287) ──────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_kakao_report_full_command(client, db_session, mock_llm_parse_expense):
+    """'리포트 전체' → 전체 카테고리 리포트 반환"""
+    from app.models.category import Category
+
+    bot_user, household = await setup_kakao_bot_user_with_household(db_session, "kakao_user_123")
+
+    # 4개 카테고리에 지출 생성
+    for cat_name in ["식비", "교통", "카페", "문화"]:
+        cat = Category(name=cat_name, user_id=bot_user.id, household_id=household.id)
+        db_session.add(cat)
+        await db_session.flush()
+        exp = Expense(
+            user_id=bot_user.id,
+            amount=10000,
+            description=f"{cat_name} 지출",
+            category_id=cat.id,
+            date=datetime.now(),
+            household_id=household.id,
+        )
+        db_session.add(exp)
+    await db_session.commit()
+
+    payload = make_kakao_request("리포트 전체")
+    response = await client.post("/api/kakao/webhook", json=payload)
+    assert response.status_code == 200
+
+    data = response.json()
+    text = data["template"]["outputs"][0]["simpleText"]["text"]
+    # 전체 리포트이므로 모든 카테고리가 표시되어야 함
+    assert "식비" in text
+    assert "교통" in text
+    assert "카페" in text
+    assert "문화" in text
+
+
+@pytest.mark.asyncio
+async def test_kakao_report_has_full_quickreply(client, db_session, mock_llm_parse_expense):
+    """리포트에 4개+ 카테고리 시 '전체 보기' 퀵리플라이 포함"""
+    from app.models.category import Category
+
+    bot_user, household = await setup_kakao_bot_user_with_household(db_session, "kakao_user_123")
+
+    # 4개 카테고리에 지출 생성 (3개 초과 시 전체 보기 버튼 노출)
+    for cat_name in ["식비", "교통", "카페", "문화"]:
+        cat = Category(name=cat_name, user_id=bot_user.id, household_id=household.id)
+        db_session.add(cat)
+        await db_session.flush()
+        exp = Expense(
+            user_id=bot_user.id,
+            amount=10000,
+            description=f"{cat_name} 지출",
+            category_id=cat.id,
+            date=datetime.now(),
+            household_id=household.id,
+        )
+        db_session.add(exp)
+    await db_session.commit()
+
+    payload = make_kakao_request("리포트")
+    response = await client.post("/api/kakao/webhook", json=payload)
+    assert response.status_code == 200
+
+    data = response.json()
+    quick_replies = data["template"].get("quickReplies", [])
+    labels = [qr["label"] for qr in quick_replies]
+    assert any("전체" in label for label in labels)
+
+
+@pytest.mark.asyncio
+async def test_kakao_budget_full_command(client, db_session, mock_llm_parse_expense):
+    """'예산 전체' → 전체 예산 현황 반환"""
+    from app.models.budget import Budget
+    from app.models.category import Category
+
+    bot_user, household = await setup_kakao_bot_user_with_household(db_session, "kakao_user_123")
+
+    now = datetime.now()
+    start = datetime(now.year, now.month, 1)
+
+    # 위험 예산 (사용률 80%+) + 안전 예산 생성
+    cat_food = Category(name="식비", user_id=bot_user.id, household_id=household.id)
+    db_session.add(cat_food)
+    await db_session.flush()
+
+    budget_food = Budget(
+        household_id=household.id,
+        category_id=cat_food.id,
+        amount=100000,
+        period="monthly",
+        start_date=start,
+    )
+    db_session.add(budget_food)
+    # 식비 지출 90,000 (90%)
+    exp = Expense(
+        user_id=bot_user.id,
+        amount=90000,
+        description="식비",
+        category_id=cat_food.id,
+        date=now,
+        household_id=household.id,
+    )
+    db_session.add(exp)
+
+    cat_transport = Category(name="교통", user_id=bot_user.id, household_id=household.id)
+    db_session.add(cat_transport)
+    await db_session.flush()
+
+    budget_transport = Budget(
+        household_id=household.id,
+        category_id=cat_transport.id,
+        amount=100000,
+        period="monthly",
+        start_date=start,
+    )
+    db_session.add(budget_transport)
+    # 교통 지출 10,000 (10%) — 안전
+    exp2 = Expense(
+        user_id=bot_user.id,
+        amount=10000,
+        description="교통",
+        category_id=cat_transport.id,
+        date=now,
+        household_id=household.id,
+    )
+    db_session.add(exp2)
+    await db_session.commit()
+
+    payload = make_kakao_request("예산 전체")
+    response = await client.post("/api/kakao/webhook", json=payload)
+    assert response.status_code == 200
+
+    data = response.json()
+    text = data["template"]["outputs"][0]["simpleText"]["text"]
+    # 전체이므로 안전 예산(교통)도 표시되어야 함
+    assert "식비" in text
+    assert "교통" in text
+
+
+@pytest.mark.asyncio
+async def test_kakao_budget_has_full_quickreply(client, db_session, mock_llm_parse_expense):
+    """예산에 접혀진 항목 있을 때 '전체 보기' 퀵리플라이 포함"""
+    from app.models.budget import Budget
+    from app.models.category import Category
+
+    bot_user, household = await setup_kakao_bot_user_with_household(db_session, "kakao_user_123")
+
+    now = datetime.now()
+    start = datetime(now.year, now.month, 1)
+
+    # 위험 예산 (80%+)
+    cat_food = Category(name="식비", user_id=bot_user.id, household_id=household.id)
+    db_session.add(cat_food)
+    await db_session.flush()
+    budget_food = Budget(household_id=household.id, category_id=cat_food.id, amount=100000, period="monthly", start_date=start)
+    db_session.add(budget_food)
+    exp = Expense(user_id=bot_user.id, amount=90000, description="식비", category_id=cat_food.id, date=now, household_id=household.id)
+    db_session.add(exp)
+
+    # 안전 예산 (10%)
+    cat_transport = Category(name="교통", user_id=bot_user.id, household_id=household.id)
+    db_session.add(cat_transport)
+    await db_session.flush()
+    budget_transport = Budget(household_id=household.id, category_id=cat_transport.id, amount=100000, period="monthly", start_date=start)
+    db_session.add(budget_transport)
+    exp2 = Expense(user_id=bot_user.id, amount=10000, description="교통", category_id=cat_transport.id, date=now, household_id=household.id)
+    db_session.add(exp2)
+    await db_session.commit()
+
+    payload = make_kakao_request("예산")
+    response = await client.post("/api/kakao/webhook", json=payload)
+    assert response.status_code == 200
+
+    data = response.json()
+    quick_replies = data["template"].get("quickReplies", [])
+    labels = [qr["label"] for qr in quick_replies]
+    assert any("전체" in label for label in labels)
+
+
 # ── 카카오 콜백 모드 테스트 (#288) ──────────────────────────
 
 

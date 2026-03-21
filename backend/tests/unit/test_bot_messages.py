@@ -8,6 +8,7 @@ from datetime import date, datetime, timedelta
 
 from app.services.bot_messages import (
     format_budget_status,
+    format_budget_status_full,
     format_delete_confirm,
     format_expense_saved,
     format_help_message,
@@ -16,6 +17,7 @@ from app.services.bot_messages import (
     format_mixed_saved,
     format_parse_error,
     format_report_message,
+    format_report_message_full,
     format_server_error,
     format_timeout_message,
     format_unknown_input,
@@ -520,3 +522,73 @@ class TestFormatUnknownInput:
         result = format_unknown_input()
         assert isinstance(result, str)
         assert len(result) > 0
+
+
+# ===== format_report_message_full =====
+
+
+class TestFormatReportMessageFull:
+    def test_all_categories_shown(self):
+        """전체 보기: 모든 카테고리 표시"""
+        data = [
+            {"category": "식비", "total": 150000, "count": 12},
+            {"category": "교통", "total": 80000, "count": 8},
+            {"category": "카페", "total": 60000, "count": 15},
+            {"category": "문화", "total": 30000, "count": 3},
+            {"category": "기타", "total": 10000, "count": 2},
+        ]
+        result = format_report_message_full(data)
+        for cat in ["식비", "교통", "카페", "문화", "기타"]:
+            assert cat in result
+        assert "외" not in result
+
+    def test_total_amount(self):
+        data = [{"category": "식비", "total": 100000, "count": 5}]
+        result = format_report_message_full(data)
+        assert "100,000" in result
+        assert "총" in result
+
+    def test_empty(self):
+        result = format_report_message_full([])
+        assert "없" in result
+
+    def test_full_label(self):
+        data = [{"category": "식비", "total": 100000, "count": 5}]
+        result = format_report_message_full(data)
+        assert "전체" in result
+
+
+# ===== format_budget_status_full =====
+
+
+class TestFormatBudgetStatusFull:
+    def test_all_items_shown(self):
+        """전체 보기: 안전 항목도 전부 표시"""
+        data = [
+            {"category": "식비", "budget": 300000, "spent": 320000, "remaining": -20000, "usage": 106.7},
+            {"category": "카페", "budget": 50000, "spent": 20000, "remaining": 30000, "usage": 40.0},
+        ]
+        result = format_budget_status_full(data)
+        assert "식비" in result
+        assert "카페" in result
+        assert "카테고리 안전" not in result
+
+    def test_empty(self):
+        result = format_budget_status_full([])
+        assert "없" in result
+
+    def test_full_label(self):
+        data = [{"category": "식비", "budget": 100000, "spent": 50000, "remaining": 50000, "usage": 50.0}]
+        result = format_budget_status_full(data)
+        assert "전체" in result
+
+    def test_severity_icons(self):
+        data = [
+            {"category": "식비", "budget": 100000, "spent": 110000, "remaining": -10000, "usage": 110.0},
+            {"category": "교통", "budget": 100000, "spent": 85000, "remaining": 15000, "usage": 85.0},
+            {"category": "카페", "budget": 100000, "spent": 30000, "remaining": 70000, "usage": 30.0},
+        ]
+        result = format_budget_status_full(data)
+        assert "🚨" in result
+        assert "⚠️" in result
+        assert "✅" in result

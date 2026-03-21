@@ -14,6 +14,7 @@ from unittest.mock import patch
 import pytest
 from sqlalchemy import select
 
+from app.models.budget import Budget
 from app.models.category import Category
 from app.models.expense import Expense
 from app.models.household import Household
@@ -1259,3 +1260,275 @@ async def test_cmd_callback_report(client, db_session, mock_telegram_send):
     assert mock_telegram_send.called
     sent_message = mock_telegram_send.call_args[0][1]
     assert "리포트" in sent_message or "지출" in sent_message
+
+
+# ---------------------------------------------------------------------------
+# 딥링크 /start CODE 자동 연동 테스트
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_webhook_start_deeplink_success(client, db_session, mock_telegram_send):
+    """딥링크 /start CODE → 자동 연동 성공"""
+    from datetime import UTC, datetime, timedelta
+
+    web_user = User(
+        username="webuser_dl",
+        email="dl@test.com",
+        telegram_link_code="DL1234",
+        telegram_link_code_expires_at=datetime.now(UTC) + timedelta(minutes=10),
+    )
+    db_session.add(web_user)
+    await db_session.flush()
+    household = Household(name="딥링크 테스트 가구")
+    db_session.add(household)
+    await db_session.flush()
+    member = HouseholdMember(household_id=household.id, user_id=web_user.id, role="owner")
+    db_session.add(member)
+    await db_session.commit()
+
+    payload = {"message": {"chat": {"id": 55555}, "text": "/start DL1234"}}
+    response = await client.post("/api/telegram/webhook", json=payload)
+    assert response.status_code == 200
+
+    msg = mock_telegram_send.call_args[0][1]
+    assert "연동" in msg and "완료" in msg
+
+
+@pytest.mark.asyncio
+async def test_webhook_start_deeplink_expired(client, db_session, mock_telegram_send):
+    """딥링크 만료 코드 → 환영 메시지 fallback"""
+    from datetime import UTC, datetime, timedelta
+
+    web_user = User(
+        username="webuser_exp",
+        email="exp@test.com",
+        telegram_link_code="EXP123",
+        telegram_link_code_expires_at=datetime.now(UTC) - timedelta(minutes=1),
+    )
+    db_session.add(web_user)
+    await db_session.commit()
+
+    payload = {"message": {"chat": {"id": 55556}, "text": "/start EXP123"}}
+    response = await client.post("/api/telegram/webhook", json=payload)
+    assert response.status_code == 200
+
+    msg = mock_telegram_send.call_args[0][1]
+    assert "환영" in msg
+
+
+@pytest.mark.asyncio
+async def test_webhook_start_deeplink_invalid_code(client, db_session, mock_telegram_send):
+    """존재하지 않는 코드 → 환영 메시지 fallback"""
+    payload = {"message": {"chat": {"id": 55557}, "text": "/start XXXXXX"}}
+    response = await client.post("/api/telegram/webhook", json=payload)
+    assert response.status_code == 200
+
+    msg = mock_telegram_send.call_args[0][1]
+    assert "환영" in msg
+
+
+# ---------------------------------------------------------------------------
+# 리포트/예산 전체 보기 콜백 테스트 (#287)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_report_shows_full_button_when_4plus(client, db_session, mock_telegram_send):
+    """리포트 4개 이상 카테고리 시 '전체 보기' 버튼"""
+    bot_user, household = await setup_bot_user_with_household(db_session, chat_id=44444)
+
+    # 4개 카테고리로 지출 생성
+    for cat_name in ["식비", "교통", "카페", "문화"]:
+        cat = Category(name=cat_name, household_id=household.id)
+        db_session.add(cat)
+        await db_session.flush()
+        exp = Expense(
+            user_id=bot_user.id,
+            amount=10000,
+            description=f"{cat_name} 지출",
+            category_id=cat.id,
+            date=datetime.now(),
+            household_id=household.id,
+        )
+        db_session.add(exp)
+    await db_session.commit()
+
+    mock_telegram_send.reset_mock()
+    payload = {"message": {"chat": {"id": 44444}, "text": "/report"}}
+    await client.post("/api/telegram/webhook", json=payload)
+
+    call_kwargs = mock_telegram_send.call_args
+    reply_markup = call_kwargs[1].get("reply_markup") if call_kwargs[1] else {}
+    all_callbacks = [btn["callback_data"] for row in reply_markup.get("inline_keyboard", []) for btn in row]
+    assert "cmd:report_full" in all_callbacks
+
+
+@pytest.mark.asyncio
+async def test_report_no_full_button_when_3_or_less(client, db_session, mock_telegram_send):
+    """리포트 3개 이하 카테고리 시 '전체 보기' 버튼 없음"""
+    bot_user, household = await setup_bot_user_with_household(db_session, chat_id=44444)
+
+    # 3개 카테고리로 지출 생성
+    for cat_name in ["식비", "교통", "카페"]:
+        cat = Category(name=cat_name, household_id=household.id)
+        db_session.add(cat)
+        await db_session.flush()
+        exp = Expense(
+            user_id=bot_user.id,
+            amount=10000,
+            description=f"{cat_name} 지출",
+            category_id=cat.id,
+            date=datetime.now(),
+            household_id=household.id,
+        )
+        db_session.add(exp)
+    await db_session.commit()
+
+    mock_telegram_send.reset_mock()
+    payload = {"message": {"chat": {"id": 44444}, "text": "/report"}}
+    await client.post("/api/telegram/webhook", json=payload)
+
+    call_kwargs = mock_telegram_send.call_args
+    reply_markup = call_kwargs[1].get("reply_markup") if call_kwargs[1] else {}
+    all_callbacks = [btn["callback_data"] for row in reply_markup.get("inline_keyboard", []) for btn in row]
+    assert "cmd:report_full" not in all_callbacks
+
+
+@pytest.mark.asyncio
+async def test_cmd_report_full_callback(client, db_session, mock_telegram_send):
+    """cmd:report_full 콜백 → 전체 리포트"""
+    from unittest.mock import AsyncMock
+    from unittest.mock import patch as mock_patch
+
+    bot_user, household = await setup_bot_user_with_household(db_session, chat_id=44444)
+    cat = Category(name="식비", household_id=household.id)
+    db_session.add(cat)
+    await db_session.flush()
+    exp = Expense(
+        user_id=bot_user.id,
+        amount=10000,
+        description="점심",
+        category_id=cat.id,
+        date=datetime.now(),
+        household_id=household.id,
+    )
+    db_session.add(exp)
+    await db_session.commit()
+
+    mock_telegram_send.reset_mock()
+    with mock_patch("app.api.telegram.answer_callback_query", new_callable=AsyncMock):
+        callback_payload = {
+            "callback_query": {
+                "id": "cb_rf",
+                "message": {"chat": {"id": 44444}},
+                "data": "cmd:report_full",
+            }
+        }
+        response = await client.post("/api/telegram/webhook", json=callback_payload)
+        assert response.status_code == 200
+
+    msg = mock_telegram_send.call_args[0][1]
+    assert "전체" in msg
+    assert "식비" in msg
+
+
+@pytest.mark.asyncio
+async def test_cmd_budget_full_callback(client, db_session, mock_telegram_send):
+    """cmd:budget_full 콜백 → 전체 예산 현황"""
+    from unittest.mock import AsyncMock
+    from unittest.mock import patch as mock_patch
+
+    bot_user, household = await setup_bot_user_with_household(db_session, chat_id=44444)
+
+    # 예산 + 카테고리 생성
+    cat = Category(name="식비", household_id=household.id)
+    db_session.add(cat)
+    await db_session.flush()
+    budget = Budget(
+        household_id=household.id,
+        category_id=cat.id,
+        amount=100000,
+        period="monthly",
+        start_date=datetime(2026, 1, 1),
+    )
+    db_session.add(budget)
+    await db_session.commit()
+
+    mock_telegram_send.reset_mock()
+    with mock_patch("app.api.telegram.answer_callback_query", new_callable=AsyncMock):
+        callback_payload = {
+            "callback_query": {
+                "id": "cb_bf",
+                "message": {"chat": {"id": 44444}},
+                "data": "cmd:budget_full",
+            }
+        }
+        response = await client.post("/api/telegram/webhook", json=callback_payload)
+        assert response.status_code == 200
+
+    msg = mock_telegram_send.call_args[0][1]
+    assert "전체" in msg
+    assert "식비" in msg
+
+
+@pytest.mark.asyncio
+async def test_budget_shows_full_button_when_folded(client, db_session, mock_telegram_send):
+    """예산에 초과/안전 항목 모두 있을 때 '전체 보기' 버튼"""
+    bot_user, household = await setup_bot_user_with_household(db_session, chat_id=44444)
+
+    # 초과 예산 카테고리 (사용률 >= 80%)
+    cat_over = Category(name="식비", household_id=household.id)
+    db_session.add(cat_over)
+    await db_session.flush()
+    budget_over = Budget(
+        household_id=household.id,
+        category_id=cat_over.id,
+        amount=10000,
+        period="monthly",
+        start_date=datetime(2026, 1, 1),
+    )
+    db_session.add(budget_over)
+    # 지출 9000원 → 90% 사용
+    exp_over = Expense(
+        user_id=bot_user.id,
+        amount=9000,
+        description="식비",
+        category_id=cat_over.id,
+        date=datetime.now(),
+        household_id=household.id,
+    )
+    db_session.add(exp_over)
+
+    # 안전 예산 카테고리 (사용률 < 80%)
+    cat_safe = Category(name="교통", household_id=household.id)
+    db_session.add(cat_safe)
+    await db_session.flush()
+    budget_safe = Budget(
+        household_id=household.id,
+        category_id=cat_safe.id,
+        amount=100000,
+        period="monthly",
+        start_date=datetime(2026, 1, 1),
+    )
+    db_session.add(budget_safe)
+    # 지출 1000원 → 1% 사용
+    exp_safe = Expense(
+        user_id=bot_user.id,
+        amount=1000,
+        description="교통",
+        category_id=cat_safe.id,
+        date=datetime.now(),
+        household_id=household.id,
+    )
+    db_session.add(exp_safe)
+    await db_session.commit()
+
+    mock_telegram_send.reset_mock()
+    payload = {"message": {"chat": {"id": 44444}, "text": "/budget"}}
+    await client.post("/api/telegram/webhook", json=payload)
+
+    call_kwargs = mock_telegram_send.call_args
+    reply_markup = call_kwargs[1].get("reply_markup") if call_kwargs[1] else {}
+    all_callbacks = [btn["callback_data"] for row in reply_markup.get("inline_keyboard", []) for btn in row]
+    assert "cmd:budget_full" in all_callbacks

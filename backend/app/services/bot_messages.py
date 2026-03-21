@@ -214,6 +214,29 @@ def format_report_message(report_data: list[dict]) -> str:
     return "\n".join(lines)
 
 
+def format_report_message_full(report_data: list[dict]) -> str:
+    """전체 지출 리포트 — 모든 카테고리 표시 (접기 없음)
+
+    Args:
+        report_data: [{"category": "식비", "total": 150000, "count": 12}, ...]
+    """
+    now = datetime.now()
+    month_label = f"{now.month}월"
+
+    if not report_data:
+        return f"📊 {month_label} 지출 리포트\n\n아직 지출 내역이 없어요."
+
+    total_amount = sum(item["total"] for item in report_data)
+    lines = [f"📊 {month_label} 지출 리포트 (전체)\n"]
+
+    for i, item in enumerate(report_data, 1):
+        pct = (item["total"] / total_amount * 100) if total_amount > 0 else 0
+        lines.append(f"{i}. {item['category']} {item['total']:,.0f}원 ({item['count']}건, {pct:.0f}%)")
+
+    lines.append(f"\n💰 총 {total_amount:,.0f}원")
+    return "\n".join(lines)
+
+
 def format_budget_status(budget_data: list[dict]) -> str:
     """예산 현황 — 초과/주의 우선 + 안전 접기 (500자 이내)
 
@@ -262,5 +285,33 @@ def format_budget_status(budget_data: list[dict]) -> str:
     else:
         for item in safe:
             lines.append(f"✅ {item['category']} {item['spent']:,.0f}원 / {item['budget']:,.0f}원 ({item['usage']:.0f}%)")
+
+    return "\n".join(lines)
+
+
+def format_budget_status_full(budget_data: list[dict]) -> str:
+    """전체 예산 현황 — 모든 항목 표시 (접기 없음)
+
+    Args:
+        budget_data: [{"category": "식비", "budget": 300000, "spent": 150000,
+                      "remaining": 150000, "usage": 50.0}, ...]
+    """
+    now = datetime.now()
+    month_label = f"{now.month}월"
+
+    if not budget_data:
+        return f"💵 {month_label} 예산 현황\n\n아직 설정된 예산이 없어요."
+
+    lines = [f"💵 {month_label} 예산 현황 (전체)\n"]
+
+    for item in budget_data:
+        usage = item["usage"]
+        if usage >= 100:
+            over_amount = item["spent"] - item["budget"]
+            lines.append(f"🚨 {item['category']} {item['spent']:,.0f}원 / {item['budget']:,.0f}원 (+{over_amount:,.0f}원 초과)")
+        elif usage >= 80:
+            lines.append(f"⚠️ {item['category']} {item['spent']:,.0f}원 / {item['budget']:,.0f}원 ({usage:.0f}%)")
+        else:
+            lines.append(f"✅ {item['category']} {item['spent']:,.0f}원 / {item['budget']:,.0f}원 ({usage:.0f}%)")
 
     return "\n".join(lines)

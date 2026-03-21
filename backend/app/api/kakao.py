@@ -28,6 +28,7 @@ from app.models.expense import Expense
 from app.models.income import Income
 from app.services.bot_messages import (
     format_budget_status,
+    format_budget_status_full,
     format_delete_confirm,
     format_expense_saved,
     format_help_message,
@@ -35,6 +36,7 @@ from app.services.bot_messages import (
     format_kakao_link_usage_message,
     format_parse_error,
     format_report_message,
+    format_report_message_full,
     format_server_error,
     format_timeout_message,
 )
@@ -68,6 +70,8 @@ COMMAND_ALIASES: dict[str, tuple[str, bool]] = {
     "변경": ("/change", True),
     "바꿔": ("/change", True),
     "연동": ("/link", True),
+    "리포트 전체": ("/report_full", False),
+    "예산 전체": ("/budget_full", False),
 }
 
 
@@ -76,8 +80,14 @@ def normalize_command(utterance: str) -> str:
 
     "변경 외식비" → "/change 외식비"
     "리포트" → "/report"
+    "리포트 전체" → "/report_full"
     "취소해줘" → 그대로 (정확히 일치하지 않으므로 LLM 파싱으로 넘어감)
     """
+    # 다중 단어 별칭을 먼저 체크 (예: "리포트 전체", "예산 전체")
+    if utterance in COMMAND_ALIASES:
+        command, _ = COMMAND_ALIASES[utterance]
+        return command
+
     parts = utterance.split(maxsplit=1)
     first_word = parts[0]
 
@@ -246,6 +256,16 @@ async def _handle_change_command(utterance: str, bot_user: Any, db: AsyncSession
     return await handle_change_command(db, bot_user, utterance, active_household_id)
 
 
+async def _handle_report_full_command(utterance: str, bot_user: Any, db: AsyncSession, active_household_id: int | None) -> dict:
+    """``/report_full`` 명령어 처리 (전체 카테고리 리포트)"""
+    return await handle_report_full_command(db, household_id=active_household_id)
+
+
+async def _handle_budget_full_command(utterance: str, bot_user: Any, db: AsyncSession, active_household_id: int | None) -> dict:
+    """``/budget_full`` 명령어 처리 (전체 예산 현황)"""
+    return await handle_budget_full_command(db, household_id=active_household_id)
+
+
 # 슬래시 명령어 디스패치 테이블
 # 키: 명령어 prefix, 값: 핸들러 함수
 # 핸들러 시그니처: (utterance, bot_user, db, active_household_id) -> dict
@@ -254,7 +274,9 @@ _COMMAND_HANDLERS: dict[
     Callable[[str, Any, AsyncSession, int | None], Awaitable[dict]],
 ] = {
     "/help": _handle_help_command,
+    "/report_full": _handle_report_full_command,
     "/report": _handle_report_command,
+    "/budget_full": _handle_budget_full_command,
     "/budget": _handle_budget_command,
     "/undo": _handle_undo_command,
     "/change": _handle_change_command,
@@ -715,7 +737,11 @@ async def handle_report_command(db: AsyncSession, household_id: int | None) -> d
         report_data = [{"category": row.name, "total": row.total, "count": row.count} for row in rows]
 
         message = format_report_message(report_data)
-        return make_simple_text_response(message, quick_replies=[make_quick_reply("💰 예산 현황", "예산"), make_quick_reply("❓ 도움말", "도움말")])
+        quick_replies = [make_quick_reply("💰 예산 현황", "예산"), make_quick_reply("❓ 도움말", "도움말")]
+        # 3개 초과 카테고리 시 "전체 보기" 퀵리플라이 추가
+        if len(report_data) > 3:
+            quick_replies.insert(0, make_quick_reply("📋 전체 보기", "리포트 전체"))
+        return make_simple_text_response(message, quick_replies=quick_replies)
 
     except Exception as e:
         logger.error(f"리포트 생성 실패: {e}")
@@ -788,8 +814,136 @@ async def handle_budget_command(db: AsyncSession, household_id: int | None) -> d
             )
 
         message = format_budget_status(budget_data)
-        return make_simple_text_response(message, quick_replies=[make_quick_reply("📊 이번달 지출 보기", "리포트"), make_quick_reply("❓ 도움말", "도움말")])
+        quick_replies = [make_quick_reply("📊 이번달 지출 보기", "리포트"), make_quick_reply("❓ 도움말", "도움말")]
+        # 위험/안전 예산이 혼재하면 안전 항목이 접혀있으므로 "전체 보기" 추가
+        has_danger = any(b["usage"] >= 80 for b in budget_data)
+        has_safe = any(b["usage"] < 80 for b in budget_data)
+        if has_danger and has_safe:
+            quick_replies.insert(0, make_quick_reply("📋 전체 보기", "예산 전체"))
+        return make_simple_text_response(message, quick_replies=quick_replies)
 
     except Exception as e:
         logger.error(f"예산 현황 생성 실패: {e}")
+        return make_simple_text_response(format_server_error())
+
+
+async def handle_report_full_command(db: AsyncSession, household_id: int | None) -> dict:
+    """전체 카테고리 지출 리포트 (접기 없이 모든 카테고리 표시)
+
+    Args:
+        db: 데이터베이스 세션
+        household_id: 조회할 가구 ID
+
+    Returns:
+        카카오 응답 형식 (version 2.0)
+    """
+    if household_id is None:
+        return make_simple_text_response(
+            "🏠 가구 설정이 필요합니다.\n웹에서 계정을 연동해주세요.",
+            quick_replies=[make_quick_reply("❓ 도움말", "도움말")],
+        )
+
+    try:
+        now = datetime.now()
+        result = await db.execute(
+            select(
+                Category.name,
+                func.sum(Expense.amount).label("total"),
+                func.count(Expense.id).label("count"),
+            )
+            .join(Category, Expense.category_id == Category.id)
+            .where(Expense.household_id == household_id)
+            .where(extract("year", Expense.date) == now.year)
+            .where(extract("month", Expense.date) == now.month)
+            .group_by(Category.name)
+            .order_by(func.sum(Expense.amount).desc())
+        )
+
+        rows = result.all()
+        report_data = [{"category": row.name, "total": row.total, "count": row.count} for row in rows]
+
+        message = format_report_message_full(report_data)
+        return make_simple_text_response(
+            message,
+            quick_replies=[
+                make_quick_reply("💰 예산 현황", "예산"),
+                make_quick_reply("❓ 도움말", "도움말"),
+            ],
+        )
+
+    except Exception as e:
+        logger.error(f"전체 리포트 생성 실패: {e}")
+        return make_simple_text_response(format_server_error())
+
+
+async def handle_budget_full_command(db: AsyncSession, household_id: int | None) -> dict:
+    """전체 예산 현황 (접기 없이 모든 예산 항목 표시)
+
+    Args:
+        db: 데이터베이스 세션
+        household_id: 조회할 가구 ID
+
+    Returns:
+        카카오 응답 형식 (version 2.0)
+    """
+    if household_id is None:
+        return make_simple_text_response(
+            "🏠 가구 설정이 필요합니다.\n웹에서 계정을 연동해주세요.",
+            quick_replies=[make_quick_reply("❓ 도움말", "도움말")],
+        )
+
+    try:
+        budget_cat_result = await db.execute(
+            select(Budget, Category).join(Category, Budget.category_id == Category.id).where(Budget.household_id == household_id)
+        )
+        budget_cats = budget_cat_result.all()
+
+        if not budget_cats:
+            return make_simple_text_response(
+                "💵 예산 현황\n\n아직 설정된 예산이 없어요.",
+                quick_replies=[make_quick_reply("📊 이번달 지출 보기", "리포트"), make_quick_reply("❓ 도움말", "도움말")],
+            )
+
+        budget_data = []
+        now = datetime.now()
+
+        for budget, category in budget_cats:
+            end_date = budget.end_date if budget.end_date else now
+
+            if budget.start_date > now:
+                continue
+
+            expense_result = await db.execute(
+                select(func.sum(Expense.amount))
+                .where(Expense.household_id == household_id)
+                .where(Expense.category_id == budget.category_id)
+                .where(Expense.date >= budget.start_date)
+                .where(Expense.date <= end_date)
+            )
+            spent_amount = expense_result.scalar() or 0.0
+
+            usage = (spent_amount / budget.amount * 100) if budget.amount > 0 else 0
+            remaining = budget.amount - spent_amount
+
+            budget_data.append(
+                {
+                    "category": category.name,
+                    "budget": budget.amount,
+                    "spent": spent_amount,
+                    "remaining": remaining,
+                    "usage": usage,
+                }
+            )
+
+        message = format_budget_status_full(budget_data)
+        return make_simple_text_response(
+            message,
+            quick_replies=[
+                make_quick_reply("📊 이번달 지출 보기", "리포트"),
+                make_quick_reply("❓ 도움말", "도움말"),
+            ],
+        )
+
+    except Exception as e:
+        logger.error(f"전체 예산 현황 생성 실패: {e}")
         return make_simple_text_response(format_server_error())
