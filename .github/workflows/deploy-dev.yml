@@ -40,7 +40,7 @@ jobs:
       - name: 백엔드 배포
         run: |
           set -o pipefail
-          flyctl deploy --remote-only --config backend/fly.dev.toml --dockerfile backend/Dockerfile 2>&1 | tee /tmp/deploy.log
+          flyctl deploy --local-only --config backend/fly.dev.toml --dockerfile backend/Dockerfile 2>&1 | tee /tmp/deploy.log
 
       - name: 실패 원인 수집
         id: on-failure
@@ -105,40 +105,40 @@ jobs:
     needs: [deploy-backend, deploy-frontend]
     if: needs.deploy-backend.result == 'success'
     runs-on: ubuntu-latest
-    timeout-minutes: 3
+    timeout-minutes: 5
     outputs:
       result: ${{ steps.smoke.outputs.result }}
 
     steps:
       - uses: superfly/flyctl-actions/setup-flyctl@master
 
-      - name: BE 헬스체크 (슬립 깨우기 + 검증)
+      - name: 헬스체크 (재시도 포함)
         id: smoke
         env:
           BE_URL: https://podo-budget-dev.fly.dev
         run: |
-          echo "30초 대기 (서버 부팅)..."
-          sleep 30
+          # 재시도 함수: 최대 N회, 간격 M초
+          check_url() {
+            local url="$1" label="$2" max_retries=5 interval=15
+            for i in $(seq 1 $max_retries); do
+              HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 15 "$url" || echo "000")
+              if [ "$HTTP_CODE" = "200" ]; then
+                echo "✅ $label → $HTTP_CODE (시도 $i/$max_retries)"
+                return 0
+              fi
+              echo "⏳ $label → $HTTP_CODE (시도 $i/$max_retries, ${interval}초 후 재시도)"
+              [ "$i" -lt "$max_retries" ] && sleep $interval
+            done
+            echo "❌ $label → $HTTP_CODE (${max_retries}회 실패)"
+            return 1
+          }
+
+          echo "20초 대기 (서버 부팅)..."
+          sleep 20
 
           FAILED=0
-
-          # /health 엔드포인트
-          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 15 "$BE_URL/health" || echo "000")
-          if [ "$HTTP_CODE" = "200" ]; then
-            echo "✅ /health → $HTTP_CODE"
-          else
-            echo "❌ /health → $HTTP_CODE"
-            FAILED=1
-          fi
-
-          # / 루트 엔드포인트
-          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 "$BE_URL/" || echo "000")
-          if [ "$HTTP_CODE" = "200" ]; then
-            echo "✅ / → $HTTP_CODE"
-          else
-            echo "❌ / → $HTTP_CODE"
-            FAILED=1
-          fi
+          check_url "$BE_URL/health" "BE /health" || FAILED=1
+          check_url "$BE_URL/" "BE /" || FAILED=1
 
           if [ "$FAILED" = "1" ]; then
             echo "result=fail" >> "$GITHUB_OUTPUT"

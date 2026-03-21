@@ -28,6 +28,7 @@ from app.models.expense import Expense
 from app.models.income import Income
 from app.services.bot_messages import (
     format_budget_status,
+    format_budget_status_full,
     format_delete_confirm,
     format_expense_saved,
     format_help_message,
@@ -35,6 +36,7 @@ from app.services.bot_messages import (
     format_link_usage_message,
     format_parse_error,
     format_report_message,
+    format_report_message_full,
     format_server_error,
     format_welcome_message,
 )
@@ -238,7 +240,31 @@ def _build_expense_saved_keyboard(expense_id: int) -> dict:
 
 
 async def _handle_start_command(chat_id: int, user_text: str, bot_user: Any, db: AsyncSession, active_household_id: int | None) -> dict:
-    """``/start`` 명령어 처리"""
+    """``/start`` 명령어 처리 — 딥링크 연동 코드 감지"""
+    parts = user_text.split()
+
+    # 딥링크: /start CODE → 자동 연동 시도
+    if len(parts) == 2:
+        code = parts[1].upper()
+        success, message = await link_telegram_account_by_code(db, code, str(chat_id))
+        if success:
+            reply_markup = {
+                "inline_keyboard": [
+                    [
+                        {"text": "📖 사용법 보기", "callback_data": "cmd:help"},
+                        {"text": "📊 리포트", "callback_data": "cmd:report"},
+                    ],
+                ]
+            }
+            await send_telegram_message(
+                chat_id,
+                "🔗 연동 완료! 이제 포도가계부를 사용할 수 있어요 🍇\n\n" "말하듯 편하게 지출을 입력해보세요.\n" '"점심 김치찌개 8000원"',
+                reply_markup=reply_markup,
+            )
+            return {"ok": True}
+        # 연동 실패 → 일반 환영 메시지로 fallback
+
+    # 일반 /start → 환영 메시지
     reply_markup = {
         "inline_keyboard": [
             [
@@ -839,8 +865,12 @@ async def _handle_cmd_callback(db: AsyncSession, chat_id: int, callback_id: str,
 
     if command == "report":
         await handle_report_command(chat_id, db, household_id=active_household_id)
+    elif command == "report_full":
+        await handle_report_full_command(chat_id, db, household_id=active_household_id)
     elif command == "budget":
         await handle_budget_command(chat_id, db, household_id=active_household_id)
+    elif command == "budget_full":
+        await handle_budget_full_command(chat_id, db, household_id=active_household_id)
     elif command == "help":
         help_keyboard = {
             "inline_keyboard": [
@@ -995,11 +1025,11 @@ async def handle_report_command(chat_id: int, db: AsyncSession, household_id: in
         report_data = [{"category": row.name, "total": row.total, "count": row.count} for row in rows]
 
         message = format_report_message(report_data)
-        reply_markup = {
-            "inline_keyboard": [
-                [{"text": "💵 예산 현황", "callback_data": "cmd:budget"}],
-            ]
-        }
+        buttons: list[list[dict[str, str]]] = []
+        if len(report_data) > 3:
+            buttons.append([{"text": f"📋 전체 {len(report_data)}개 카테고리 보기", "callback_data": "cmd:report_full"}])
+        buttons.append([{"text": "💵 예산 현황", "callback_data": "cmd:budget"}])
+        reply_markup = {"inline_keyboard": buttons}
         await send_telegram_message(chat_id, message, reply_markup=reply_markup)
 
     except Exception as e:
@@ -1075,13 +1105,108 @@ async def handle_budget_command(chat_id: int, db: AsyncSession, household_id: in
             )
 
         message = format_budget_status(budget_data)
-        reply_markup = {
-            "inline_keyboard": [
-                [{"text": "📊 리포트", "callback_data": "cmd:report"}],
-            ]
-        }
+        has_folded = any(b["usage"] >= 80 for b in budget_data) and any(b["usage"] < 80 for b in budget_data)
+        buttons: list[list[dict[str, str]]] = []
+        if has_folded:
+            buttons.append([{"text": "📋 전체 예산 보기", "callback_data": "cmd:budget_full"}])
+        buttons.append([{"text": "📊 리포트", "callback_data": "cmd:report"}])
+        reply_markup = {"inline_keyboard": buttons}
         await send_telegram_message(chat_id, message, reply_markup=reply_markup)
 
     except Exception as e:
         logger.error(f"예산 현황 생성 실패: {e}")
+        await send_telegram_message(chat_id, format_server_error())
+
+
+async def handle_report_full_command(chat_id: int, db: AsyncSession, household_id: int | None) -> None:
+    """전체 지출 리포트 전송 (모든 카테고리 포함)"""
+    if household_id is None:
+        await send_telegram_message(chat_id, "🏠 가구 설정이 필요합니다.\n웹에서 계정을 연동해주세요.")
+        return
+
+    try:
+        now = datetime.now()
+        result = await db.execute(
+            select(
+                Category.name,
+                func.sum(Expense.amount).label("total"),
+                func.count(Expense.id).label("count"),
+            )
+            .join(Category, Expense.category_id == Category.id)
+            .where(Expense.household_id == household_id)
+            .where(extract("year", Expense.date) == now.year)
+            .where(extract("month", Expense.date) == now.month)
+            .group_by(Category.name)
+            .order_by(func.sum(Expense.amount).desc())
+        )
+
+        rows = result.all()
+        report_data = [{"category": row.name, "total": row.total, "count": row.count} for row in rows]
+
+        message = format_report_message_full(report_data)
+        reply_markup = {"inline_keyboard": [[{"text": "💵 예산 현황", "callback_data": "cmd:budget"}]]}
+        await send_telegram_message(chat_id, message, reply_markup=reply_markup)
+
+    except Exception as e:
+        logger.error(f"전체 리포트 생성 실패: {e}")
+        await send_telegram_message(chat_id, format_server_error())
+
+
+async def handle_budget_full_command(chat_id: int, db: AsyncSession, household_id: int | None) -> None:
+    """전체 예산 현황 전송 (안전 항목 포함)"""
+    if household_id is None:
+        await send_telegram_message(chat_id, "🏠 가구 설정이 필요합니다.\n웹에서 계정을 연동해주세요.")
+        return
+
+    try:
+        budget_result = await db.execute(select(Budget).where(Budget.household_id == household_id))
+        budgets = budget_result.scalars().all()
+
+        if not budgets:
+            reply_markup = {"inline_keyboard": [[{"text": "📊 리포트", "callback_data": "cmd:report"}]]}
+            await send_telegram_message(chat_id, "💵 예산 현황\n\n아직 설정된 예산이 없어요.", reply_markup=reply_markup)
+            return
+
+        budget_data = []
+        now = datetime.now()
+
+        budget_cat_result = await db.execute(
+            select(Budget, Category).join(Category, Budget.category_id == Category.id).where(Budget.household_id == household_id)
+        )
+        budget_cats = budget_cat_result.all()
+
+        for budget, category in budget_cats:
+            end_date = budget.end_date if budget.end_date else now
+
+            if budget.start_date > now:
+                continue
+
+            expense_result = await db.execute(
+                select(func.sum(Expense.amount))
+                .where(Expense.household_id == household_id)
+                .where(Expense.category_id == budget.category_id)
+                .where(Expense.date >= budget.start_date)
+                .where(Expense.date <= end_date)
+            )
+            spent_amount = expense_result.scalar() or 0.0
+
+            usage = (spent_amount / budget.amount * 100) if budget.amount > 0 else 0
+            remaining = budget.amount - spent_amount
+
+            budget_data.append(
+                {
+                    "category": category.name,
+                    "budget": budget.amount,
+                    "spent": spent_amount,
+                    "remaining": remaining,
+                    "usage": usage,
+                }
+            )
+
+        message = format_budget_status_full(budget_data)
+        reply_markup = {"inline_keyboard": [[{"text": "📊 리포트", "callback_data": "cmd:report"}]]}
+        await send_telegram_message(chat_id, message, reply_markup=reply_markup)
+
+    except Exception as e:
+        logger.error(f"전체 예산 현황 생성 실패: {e}")
         await send_telegram_message(chat_id, format_server_error())

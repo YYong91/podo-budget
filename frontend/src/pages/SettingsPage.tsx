@@ -219,6 +219,9 @@ function MyAccountSection() {
   const [loadingKakaoCode, setLoadingKakaoCode] = useState(false)
   const [loadingKakaoUnlink, setLoadingKakaoUnlink] = useState(false)
 
+  const TELEGRAM_BOT_USERNAME = import.meta.env.VITE_TELEGRAM_BOT_USERNAME || 'PodoBudgetBot'
+  const KAKAO_CHANNEL_CHAT_URL = import.meta.env.VITE_KAKAO_CHANNEL_URL || 'http://pf.kakao.com/_xkxkAb/chat'
+
   const formatDate = (dateStr: string): string => dateStr.slice(0, 10).replace(/-/g, '.')
 
   const handleGenerateCode = async () => {
@@ -356,7 +359,7 @@ function MyAccountSection() {
               <ol className="space-y-2 text-sm text-[var(--text-secondary)]">
                 <li className="flex gap-2">
                   <span className="flex-shrink-0 w-5 h-5 rounded-full bg-grape-100 text-grape-600 text-xs font-bold flex items-center justify-center">1</span>
-                  <span>텔레그램 앱에서 <span className="font-mono bg-[var(--surface-hover)] px-1 rounded">@homenrich_bot</span>을 검색하거나 <a href="https://t.me/homenrich_bot" target="_blank" rel="noopener noreferrer" className="text-grape-600 underline">t.me/homenrich_bot</a> 으로 접속하세요</span>
+                  <span>텔레그램 앱에서 <span className="font-mono bg-[var(--surface-hover)] px-1 rounded">@{TELEGRAM_BOT_USERNAME}</span>을 검색하거나 <a href={`https://t.me/${TELEGRAM_BOT_USERNAME}`} target="_blank" rel="noopener noreferrer" className="text-grape-600 underline">t.me/{TELEGRAM_BOT_USERNAME}</a> 으로 접속하세요</span>
                 </li>
                 <li className="flex gap-2">
                   <span className="flex-shrink-0 w-5 h-5 rounded-full bg-grape-100 text-grape-600 text-xs font-bold flex items-center justify-center">2</span>
@@ -425,6 +428,18 @@ function MyAccountSection() {
                   <p className="text-xs text-[var(--text-tertiary)] mb-1">텔레그램 봇에 아래 명령어를 입력하세요: (탭하면 선택됩니다)</p>
                   <p className="selectable font-mono text-sm text-grape-600 font-bold select-all">/link {linkCode.code}</p>
                 </div>
+                {/* 딥링크 버튼 */}
+                <a
+                  href={`https://t.me/${TELEGRAM_BOT_USERNAME}?start=${linkCode.code}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block w-full text-center bg-grape-600 text-white rounded-xl py-3 font-medium hover:bg-grape-700 transition-colors"
+                >
+                  텔레그램에서 바로 연동하기
+                </a>
+                <p className="text-xs text-center text-[var(--text-tertiary)]">
+                  버튼을 누르면 텔레그램이 열리고 자동으로 연동돼요
+                </p>
               </div>
             ) : (
               <button
@@ -537,6 +552,24 @@ function MyAccountSection() {
                   <p className="text-xs text-[var(--text-tertiary)] mb-1">카카오톡 채널 채팅에 아래 명령어를 입력하세요: (탭하면 선택됩니다)</p>
                   <p className="selectable font-mono text-sm text-grape-600 font-bold select-all">연동 {kakaoLinkCode.code}</p>
                 </div>
+                {/* 간편 연동 버튼: 코드 복사 + 카카오 채팅 열기 */}
+                <button
+                  onClick={async () => {
+                    try {
+                      await navigator.clipboard.writeText(`연동 ${kakaoLinkCode.code}`)
+                      window.open(KAKAO_CHANNEL_CHAT_URL, '_blank')
+                      addToast('success', '연동 코드가 복사되었어요. 카카오톡에서 붙여넣기 해주세요!')
+                    } catch {
+                      addToast('error', '클립보드 복사에 실패했어요')
+                    }
+                  }}
+                  className="block w-full text-center bg-[#FEE500] text-[#191919] rounded-xl py-3 font-medium hover:bg-[#FDD835] transition-colors"
+                >
+                  💬 카카오톡에서 연동하기
+                </button>
+                <p className="text-xs text-center text-[var(--text-tertiary)]">
+                  코드가 복사돼요. 카카오톡에서 붙여넣기만 하면 끝!
+                </p>
               </div>
             ) : (
               <button
