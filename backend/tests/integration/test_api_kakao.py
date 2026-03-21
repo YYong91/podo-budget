@@ -1521,7 +1521,10 @@ async def test_kakao_callback_mode_returns_pending(client, db_session, mock_llm_
     """콜백 모드 활성화 시 즉시 'useCallback: true' + '분석 중' 응답 반환"""
     await setup_kakao_bot_user_with_household(db_session, "kakao_user_123")
 
-    with patch.object(_app_settings, "KAKAO_CALLBACK_ENABLED", True):
+    with (
+        patch.object(_app_settings, "KAKAO_CALLBACK_ENABLED", True),
+        patch("app.api.kakao._process_expense_callback", new_callable=AsyncMock),
+    ):
         payload = make_kakao_request_with_callback("점심 8000원")
         response = await client.post("/api/kakao/webhook", json=payload)
         assert response.status_code == 200
