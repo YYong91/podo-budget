@@ -69,7 +69,10 @@ jobs:
         env:
           VITE_API_URL: http://localhost:8000/api
 
-      - name: Playwright 설치
+      - name: E2E 의존성 설치
+        run: npm ci
+
+      - name: Playwright 브라우저 설치
         run: npx playwright install --with-deps chromium
 
       - name: E2E 테스트 실행
