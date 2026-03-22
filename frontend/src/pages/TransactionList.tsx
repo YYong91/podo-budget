@@ -22,6 +22,7 @@ import ErrorState from '../components/ErrorState'
 import type { Expense, Income, Category, RecurringTransaction } from '../types'
 import { formatAmount } from '../utils/format'
 import { getMonthRange, formatDateHeader } from '../utils/calendar'
+import { Search, X } from 'lucide-react'
 
 type FilterType = 'all' | 'expense' | 'income'
 
@@ -53,6 +54,11 @@ export default function TransactionList() {
   }, [monthParam])
 
   const filter: FilterType = (searchParams.get('filter') as FilterType) || 'all'
+
+  // 검색 모드
+  const searchQuery = searchParams.get('search') ?? ''
+  const isSearchMode = searchParams.has('search')
+  const searchInputRef = useRef<HTMLInputElement>(null)
 
   const [expenses, setExpenses] = useState<Expense[]>([])
   const [incomes, setIncomes] = useState<Income[]>([])
@@ -98,6 +104,30 @@ export default function TransactionList() {
   const toggleFilter = useCallback((type: 'expense' | 'income') => {
     setParams({ filter: filter === type ? null : type })
   }, [filter, setParams])
+
+  // 검색 모드 진입
+  const enterSearchMode = useCallback(() => {
+    setParams({ search: '', month: null, filter: null })
+  }, [setParams])
+
+  // 검색 모드 해제 → 월 뷰 복귀
+  const exitSearchMode = useCallback(() => {
+    setParams({ search: null })
+  }, [setParams])
+
+  // 검색 실행
+  const submitSearch = useCallback((value: string) => {
+    if (value.trim()) {
+      setParams({ search: value.trim() })
+    }
+  }, [setParams])
+
+  // 검색 모드 진입 시 인풋 포커스
+  useEffect(() => {
+    if (isSearchMode && searchInputRef.current) {
+      searchInputRef.current.focus()
+    }
+  }, [isSearchMode])
 
   // 카테고리 로드
   useEffect(() => {
@@ -249,132 +279,186 @@ export default function TransactionList() {
   return (
     <PullToRefresh onRefresh={handleRefresh}>
     <div className="space-y-4">
-      {/* 월 네비게이션 */}
-      <PeriodNavigator label={monthLabel} onPrev={() => navigateMonth(-1)} onNext={() => navigateMonth(1)} />
-
-      {/* 요약 + 필터 */}
-      <div className="flex items-center justify-center gap-6">
-        <button
-          onClick={() => toggleFilter('expense')}
-          className={`text-center transition-opacity ${
-            filter === 'income' ? 'opacity-40' : ''
-          }`}
-        >
-          <div className="text-xs text-[var(--text-tertiary)]">지출</div>
-          <div className={`text-base font-bold ${filter !== 'income' ? 'text-grape-600' : 'text-[var(--text-muted)]'}`}>
-            {formatAmount(totalExpense)}
+      {/* 월 네비게이션 / 검색 바 */}
+      {isSearchMode ? (
+        <div className="flex items-center gap-2">
+          <div className="flex-1 relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]" />
+            <input
+              ref={searchInputRef}
+              type="text"
+              defaultValue={searchQuery}
+              placeholder="거래 내역 검색"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') submitSearch(e.currentTarget.value)
+              }}
+              className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-[var(--border-default)] bg-[var(--surface-card)] text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-grape-300 focus:border-grape-300"
+            />
           </div>
-        </button>
-        <div className="w-px h-8 bg-[var(--border-default)]" />
-        <button
-          onClick={() => toggleFilter('income')}
-          className={`text-center transition-opacity ${
-            filter === 'expense' ? 'opacity-40' : ''
-          }`}
-        >
-          <div className="text-xs text-[var(--text-tertiary)]">수입</div>
-          <div className={`text-base font-bold ${filter !== 'expense' ? 'text-leaf-600' : 'text-[var(--text-muted)]'}`}>
-            {formatAmount(totalIncome)}
+          <button
+            onClick={exitSearchMode}
+            className="p-2 rounded-xl hover:bg-[var(--surface-hover)] transition-colors"
+            aria-label="검색 닫기"
+          >
+            <X className="w-5 h-5 text-[var(--text-secondary)]" />
+          </button>
+        </div>
+      ) : (
+        <div className="flex items-center gap-2">
+          <div className="flex-1">
+            <PeriodNavigator label={monthLabel} onPrev={() => navigateMonth(-1)} onNext={() => navigateMonth(1)} />
           </div>
-        </button>
-      </div>
+          <button
+            onClick={enterSearchMode}
+            className="p-2 rounded-xl hover:bg-[var(--surface-hover)] transition-colors"
+            aria-label="검색"
+          >
+            <Search className="w-5 h-5 text-[var(--text-secondary)]" />
+          </button>
+        </div>
+      )}
 
-      {/* 반복 거래 알림 */}
-      <PendingRecurring
-        items={pendingRecurring}
-        onExecute={async (id) => {
-          try {
-            await recurringApi.execute(id)
-            addToast('success', '거래가 등록되었습니다')
-            setPendingRecurring((prev) => prev.filter((r) => r.id !== id))
-            fetchData()
-          } catch {
-            addToast('error', '반복 거래 등록에 실패했습니다')
-          }
-        }}
-        onSkip={async (id) => {
-          try {
-            const res = await recurringApi.skip(id)
-            addToast('success', `다음 예정일: ${res.data.next_due_date}`)
-            setPendingRecurring((prev) => prev.filter((r) => r.id !== id))
-          } catch {
-            addToast('error', '건너뛰기에 실패했습니다')
-          }
-        }}
-      />
+      {/* 요약 + 필터 (월 뷰 전용) */}
+      {!isSearchMode && (
+        <div className="flex items-center justify-center gap-6">
+          <button
+            onClick={() => toggleFilter('expense')}
+            className={`text-center transition-opacity ${
+              filter === 'income' ? 'opacity-40' : ''
+            }`}
+          >
+            <div className="text-xs text-[var(--text-tertiary)]">지출</div>
+            <div className={`text-base font-bold ${filter !== 'income' ? 'text-grape-600' : 'text-[var(--text-muted)]'}`}>
+              {formatAmount(totalExpense)}
+            </div>
+          </button>
+          <div className="w-px h-8 bg-[var(--border-default)]" />
+          <button
+            onClick={() => toggleFilter('income')}
+            className={`text-center transition-opacity ${
+              filter === 'expense' ? 'opacity-40' : ''
+            }`}
+          >
+            <div className="text-xs text-[var(--text-tertiary)]">수입</div>
+            <div className={`text-base font-bold ${filter !== 'expense' ? 'text-leaf-600' : 'text-[var(--text-muted)]'}`}>
+              {formatAmount(totalIncome)}
+            </div>
+          </button>
+        </div>
+      )}
 
-      {/* 미니 캘린더 */}
-      <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] p-3">
-        <MiniCalendar
-          year={currentYear}
-          month={currentMonth}
-          daySummaries={daySummaries}
-          onDateClick={handleDateClick}
-          today={todayString}
+      {/* 반복 거래 알림 (월 뷰 전용) */}
+      {!isSearchMode && (
+        <PendingRecurring
+          items={pendingRecurring}
+          onExecute={async (id) => {
+            try {
+              await recurringApi.execute(id)
+              addToast('success', '거래가 등록되었습니다')
+              setPendingRecurring((prev) => prev.filter((r) => r.id !== id))
+              fetchData()
+            } catch {
+              addToast('error', '반복 거래 등록에 실패했습니다')
+            }
+          }}
+          onSkip={async (id) => {
+            try {
+              const res = await recurringApi.skip(id)
+              addToast('success', `다음 예정일: ${res.data.next_due_date}`)
+              setPendingRecurring((prev) => prev.filter((r) => r.id !== id))
+            } catch {
+              addToast('error', '건너뛰기에 실패했습니다')
+            }
+          }}
         />
-      </div>
+      )}
 
-      {/* 거래 리스트 */}
-      {loading ? (
-        <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] overflow-hidden">
-          {/* 스켈레톤 UI */}
-          {[1, 2, 3].map(i => (
-            <div key={i}>
-              <div className="bg-[var(--surface-elevated)] px-4 py-2 border-b border-[var(--border-subtle)]">
-                <div className="h-3 w-24 bg-[var(--surface-hover)] rounded animate-pulse" />
-              </div>
-              {[1, 2].map(j => (
-                <div key={j} className="px-4 py-3 space-y-2">
-                  <div className="flex justify-between">
-                    <div className="h-4 w-32 bg-[var(--border-subtle)] rounded animate-pulse" />
-                    <div className="h-4 w-20 bg-[var(--border-subtle)] rounded animate-pulse" />
+      {/* 미니 캘린더 (월 뷰 전용) */}
+      {!isSearchMode && (
+        <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] p-3">
+          <MiniCalendar
+            year={currentYear}
+            month={currentMonth}
+            daySummaries={daySummaries}
+            onDateClick={handleDateClick}
+            today={todayString}
+          />
+        </div>
+      )}
+
+      {/* 검색 모드 — 빈 검색어 안내 */}
+      {isSearchMode && !searchQuery && (
+        <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] p-12 text-center">
+          <Search className="w-8 h-8 mx-auto mb-2 text-[var(--text-muted)] opacity-50" />
+          <p className="text-sm text-[var(--text-tertiary)]">검색어를 입력하세요</p>
+        </div>
+      )}
+
+      {/* 거래 리스트 (월 뷰 또는 검색어 입력 후) */}
+      {(!isSearchMode || searchQuery) && (
+        <>
+          {loading ? (
+            <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] overflow-hidden">
+              {/* 스켈레톤 UI */}
+              {[1, 2, 3].map(i => (
+                <div key={i}>
+                  <div className="bg-[var(--surface-elevated)] px-4 py-2 border-b border-[var(--border-subtle)]">
+                    <div className="h-3 w-24 bg-[var(--surface-hover)] rounded animate-pulse" />
                   </div>
-                  <div className="h-3 w-12 bg-[var(--border-subtle)] rounded-full animate-pulse" />
+                  {[1, 2].map(j => (
+                    <div key={j} className="px-4 py-3 space-y-2">
+                      <div className="flex justify-between">
+                        <div className="h-4 w-32 bg-[var(--border-subtle)] rounded animate-pulse" />
+                        <div className="h-4 w-20 bg-[var(--border-subtle)] rounded animate-pulse" />
+                      </div>
+                      <div className="h-3 w-12 bg-[var(--border-subtle)] rounded-full animate-pulse" />
+                    </div>
+                  ))}
                 </div>
               ))}
             </div>
-          ))}
-        </div>
-      ) : grouped.size === 0 ? (
-        <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)]">
-          <EmptyState
-            title={filter === 'all' ? '거래 내역이 없습니다' : `${filter === 'expense' ? '지출' : '수입'} 내역이 없습니다`}
-            description="이번 달의 거래를 추가해보세요."
-          />
-        </div>
-      ) : (
-        <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] overflow-hidden">
-          {Array.from(grouped.entries()).map(([dateKey, txs]) => (
-            <div key={dateKey}>
-              {/* 스티키 날짜 헤더 */}
-              <div
-                ref={(el) => { if (el) dateRefs.current.set(dateKey, el) }}
-                className="sticky top-0 md:top-0 z-10 bg-[var(--surface-elevated)] px-4 py-2 border-b border-[var(--border-subtle)] scroll-mt-14 md:scroll-mt-0"
-              >
-                <span className="text-xs font-semibold text-[var(--text-secondary)]">
-                  {formatDateHeader(dateKey)}
-                </span>
-              </div>
-              {/* 거래 항목들 */}
-              <div className="divide-y divide-[var(--border-subtle)]">
-                {txs.map(tx => (
-                  <TransactionItem
-                    key={`${tx.type}-${tx.id}`}
-                    id={tx.id}
-                    type={tx.type}
-                    description={tx.description}
-                    amount={tx.amount}
-                    categoryId={tx.category_id}
-                    categoryMap={categoryMap}
-                    excludeFromStats={tx.exclude_from_stats}
-                    rawInput={tx.raw_input}
-                    onCategoryClick={categoryClickHandlers.get(`${tx.type}-${tx.id}`)!}
-                  />
-                ))}
-              </div>
+          ) : grouped.size === 0 ? (
+            <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)]">
+              <EmptyState
+                title={filter === 'all' ? '거래 내역이 없습니다' : `${filter === 'expense' ? '지출' : '수입'} 내역이 없습니다`}
+                description="이번 달의 거래를 추가해보세요."
+              />
             </div>
-          ))}
-        </div>
+          ) : (
+            <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] overflow-hidden">
+              {Array.from(grouped.entries()).map(([dateKey, txs]) => (
+                <div key={dateKey}>
+                  {/* 스티키 날짜 헤더 */}
+                  <div
+                    ref={(el) => { if (el) dateRefs.current.set(dateKey, el) }}
+                    className="sticky top-0 md:top-0 z-10 bg-[var(--surface-elevated)] px-4 py-2 border-b border-[var(--border-subtle)] scroll-mt-14 md:scroll-mt-0"
+                  >
+                    <span className="text-xs font-semibold text-[var(--text-secondary)]">
+                      {formatDateHeader(dateKey)}
+                    </span>
+                  </div>
+                  {/* 거래 항목들 */}
+                  <div className="divide-y divide-[var(--border-subtle)]">
+                    {txs.map(tx => (
+                      <TransactionItem
+                        key={`${tx.type}-${tx.id}`}
+                        id={tx.id}
+                        type={tx.type}
+                        description={tx.description}
+                        amount={tx.amount}
+                        categoryId={tx.category_id}
+                        categoryMap={categoryMap}
+                        excludeFromStats={tx.exclude_from_stats}
+                        rawInput={tx.raw_input}
+                        onCategoryClick={categoryClickHandlers.get(`${tx.type}-${tx.id}`)!}
+                      />
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
       )}
 
       {/* 카테고리 바텀시트 */}
