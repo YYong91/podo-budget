@@ -417,20 +417,37 @@ export default function TransactionList() {
   }, [searchResults])
 
   // TransactionItem.onCategoryClick 안정화 — 데이터 변경 시에만 재생성 (#240)
+  // 검색 모드: 카테고리 뱃지 클릭 → 카테고리 필터 토글 (#323)
+  // 월 뷰: 카테고리 뱃지 클릭 → 카테고리 변경 바텀시트
   const categoryClickHandlers = useMemo(() => {
     const handlers = new Map<string, () => void>()
-    const sources = isSearchMode && searchQuery ? searchGrouped : grouped
-    for (const txs of sources.values()) {
-      for (const tx of txs) {
-        handlers.set(`${tx.type}-${tx.id}`, () => {
-          setIsFilterCategorySheet(false)
-          setSheetTarget(tx)
-          setSheetOpen(true)
-        })
+
+    if (isSearchMode) {
+      for (const txs of searchGrouped.values()) {
+        for (const tx of txs) {
+          handlers.set(`${tx.type}-${tx.id}`, () => {
+            if (tx.category_id) {
+              // 같은 카테고리 재클릭 시 필터 해제 (토글)
+              setSearchFilter('category',
+                searchCategoryId === tx.category_id ? null : String(tx.category_id))
+            }
+          })
+        }
+      }
+    } else {
+      for (const txs of grouped.values()) {
+        for (const tx of txs) {
+          handlers.set(`${tx.type}-${tx.id}`, () => {
+            setIsFilterCategorySheet(false)
+            setSheetTarget(tx)
+            setSheetOpen(true)
+          })
+        }
       }
     }
     return handlers
-  }, [grouped, searchGrouped, isSearchMode, searchQuery])
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- setSearchFilter는 useCallback 안정 참조
+  }, [grouped, searchGrouped, isSearchMode, searchCategoryId])
 
   // 캘린더 날짜 클릭 → 스크롤
   const handleDateClick = useCallback((dateString: string) => {
