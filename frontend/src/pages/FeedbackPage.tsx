@@ -9,8 +9,14 @@ import { ArrowLeft, Bug, Lightbulb, Send } from 'lucide-react'
 import { useToast } from '../hooks/useToast'
 import { feedbackApi } from '../api/feedback'
 import ErrorState from '../components/ErrorState'
-import type { Feedback, FeedbackStatus, FeedbackType } from '../types'
+import type { Feedback, FeedbackSource, FeedbackStatus, FeedbackType } from '../types'
 import { trackEvent } from '../utils/analytics'
+
+const SOURCE_LABELS: Record<FeedbackSource, { text: string; className: string }> = {
+  web: { text: '웹', className: 'bg-blue-50 text-blue-600' },
+  telegram: { text: 'TG', className: 'bg-sky-50 text-sky-600' },
+  kakao: { text: '카톡', className: 'bg-yellow-50 text-yellow-700' },
+}
 
 const STATUS_LABELS: Record<FeedbackStatus, { text: string; className: string }> = {
   new: { text: '접수', className: 'bg-[var(--surface-hover)] text-[var(--text-secondary)]' },
@@ -223,6 +229,11 @@ function FeedbackCard({
           }`}>
             {isFeature ? '기능' : '버그'}
           </span>
+          {feedback.source && feedback.source !== 'web' && (
+            <span className={`flex-shrink-0 text-xs px-2 py-0.5 rounded-full font-medium ${SOURCE_LABELS[feedback.source]?.className || ''}`}>
+              {SOURCE_LABELS[feedback.source]?.text || feedback.source}
+            </span>
+          )}
           <span className="text-sm font-medium text-[var(--text-primary)] truncate">{feedback.title}</span>
         </div>
         <span className={`flex-shrink-0 text-xs px-2 py-0.5 rounded-full font-medium ${statusInfo.className}`}>

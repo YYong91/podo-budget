@@ -4,12 +4,18 @@ import { useEffect, useState } from 'react'
 import { MessageSquare, Bug, Lightbulb } from 'lucide-react'
 import { feedbackApi } from '../../api/feedback'
 import { useToast } from '../../hooks/useToast'
-import type { Feedback, FeedbackStatus, FeedbackType } from '../../types'
+import type { Feedback, FeedbackSource, FeedbackStatus, FeedbackType } from '../../types'
 
 const STATUS_META: Record<string, { label: string; color: string }> = {
   new: { label: '신규', color: 'bg-red-100 text-red-600' },
   read: { label: '확인', color: 'bg-yellow-100 text-yellow-600' },
   done: { label: '완료', color: 'bg-green-100 text-green-600' },
+}
+
+const SOURCE_META: Record<FeedbackSource, { label: string; className: string }> = {
+  web: { label: '웹', className: 'bg-blue-50 text-blue-600' },
+  telegram: { label: 'TG', className: 'bg-sky-50 text-sky-600' },
+  kakao: { label: '카톡', className: 'bg-yellow-50 text-yellow-700' },
 }
 
 const TYPE_META: Record<string, { label: string; icon: React.ComponentType<{ className?: string }> }> = {
@@ -23,6 +29,7 @@ export default function AdminFeedbackDashboard() {
   const [loading, setLoading] = useState(true)
   const [statusFilter, setStatusFilter] = useState<FeedbackStatus | 'all'>('all')
   const [typeFilter, setTypeFilter] = useState<FeedbackType | 'all'>('all')
+  const [sourceFilter, setSourceFilter] = useState<FeedbackSource | 'all'>('all')
 
   const loadFeedbacks = async () => {
     try {
@@ -51,6 +58,7 @@ export default function AdminFeedbackDashboard() {
   const filtered = feedbacks.filter(f => {
     if (statusFilter !== 'all' && f.status !== statusFilter) return false
     if (typeFilter !== 'all' && f.type !== typeFilter) return false
+    if (sourceFilter !== 'all' && f.source !== sourceFilter) return false
     return true
   })
 
@@ -113,6 +121,28 @@ export default function AdminFeedbackDashboard() {
         ))}
       </div>
 
+      {/* 소스 필터 */}
+      <div className="flex gap-2">
+        {[
+          { key: 'all' as const, label: '전체' },
+          { key: 'web' as const, label: '웹' },
+          { key: 'telegram' as const, label: '텔레그램' },
+          { key: 'kakao' as const, label: '카카오톡' },
+        ].map(({ key, label }) => (
+          <button
+            key={key}
+            onClick={() => setSourceFilter(key)}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+              sourceFilter === key
+                ? 'bg-leaf-600 text-white'
+                : 'bg-[var(--surface-hover)] text-[var(--text-secondary)] hover:bg-[var(--surface-elevated)]'
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
       {/* 피드백 목록 */}
       {filtered.length === 0 ? (
         <div className="bg-[var(--surface-card)] rounded-xl border border-[var(--border-default)] px-4 py-12 text-center text-[var(--text-muted)] text-sm">
@@ -134,6 +164,13 @@ export default function AdminFeedbackDashboard() {
                     <TypeIcon className="w-3 h-3" />
                     {typeMeta?.label ?? fb.type}
                   </span>
+
+                  {/* 소스 뱃지 (웹 외) */}
+                  {fb.source && fb.source !== 'web' && (
+                    <span className={`text-[11px] font-medium px-2 py-0.5 rounded-md ${SOURCE_META[fb.source]?.className || ''}`}>
+                      {SOURCE_META[fb.source]?.label || fb.source}
+                    </span>
+                  )}
 
                   {/* 상태 변경 드롭다운 */}
                   <select
