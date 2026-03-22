@@ -315,3 +315,19 @@ def format_budget_status_full(budget_data: list[dict]) -> str:
             lines.append(f"✅ {item['category']} {item['spent']:,.0f}원 / {item['budget']:,.0f}원 ({usage:.0f}%)")
 
     return "\n".join(lines)
+
+
+def format_feedback_received() -> str:
+    """피드백 접수 완료 메시지"""
+    return "✅ 피드백 감사합니다! 개발팀에게 전달했어요.\n웹에서 진행 상황을 확인할 수 있어요."
+
+
+def format_feedback_guide() -> str:
+    """피드백 사용법 안내 메시지"""
+    return (
+        "💬 피드백을 보내주세요!\n\n"
+        "예시:\n"
+        "· 피드백 검색 기능이 있으면 좋겠어요\n"
+        "· 버그 카테고리가 안 보여요\n\n"
+        "'버그'로 시작하면 버그 신고로 분류돼요."
+    )
