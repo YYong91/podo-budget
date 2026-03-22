@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { MemoryRouter } from 'react-router-dom'
 import { server } from '../../mocks/server'
 import { http, HttpResponse } from 'msw'
 import InsightsPage from '../InsightsPage'
@@ -18,7 +19,7 @@ vi.mock('../../hooks/useToast', () => ({
 
 describe('InsightsPage', () => {
   it('로딩 완료 후 종합 요약 카드를 표시한다', async () => {
-    render(<InsightsPage />)
+    render(<MemoryRouter><InsightsPage /></MemoryRouter>)
     await waitFor(() => {
       expect(screen.getByText('총 수입')).toBeInTheDocument()
     })
@@ -26,7 +27,7 @@ describe('InsightsPage', () => {
   })
 
   it('월 네비게이션이 표시된다', async () => {
-    render(<InsightsPage />)
+    render(<MemoryRouter><InsightsPage /></MemoryRouter>)
     await waitFor(() => {
       const now = new Date()
       expect(screen.getByText(`${now.getFullYear()}년 ${now.getMonth() + 1}월`)).toBeInTheDocument()
@@ -34,14 +35,14 @@ describe('InsightsPage', () => {
   })
 
   it('지출 카테고리 TOP이 표시된다', async () => {
-    render(<InsightsPage />)
+    render(<MemoryRouter><InsightsPage /></MemoryRouter>)
     await waitFor(() => {
       expect(screen.getByText('지출 카테고리 TOP')).toBeInTheDocument()
     })
   })
 
   it('AI 심층 분석 버튼이 표시된다', async () => {
-    render(<InsightsPage />)
+    render(<MemoryRouter><InsightsPage /></MemoryRouter>)
     await waitFor(() => {
       expect(screen.getByText('AI 심층 분석')).toBeInTheDocument()
     })
@@ -50,7 +51,7 @@ describe('InsightsPage', () => {
 
   it('AI 분석 버튼 클릭 시 로딩 후 결과가 표시된다', async () => {
     const user = userEvent.setup()
-    render(<InsightsPage />)
+    render(<MemoryRouter><InsightsPage /></MemoryRouter>)
 
     await waitFor(() => {
       expect(screen.getByText('분석하기')).toBeInTheDocument()
@@ -65,7 +66,7 @@ describe('InsightsPage', () => {
   })
 
   it('주간/연간 토글이 없다 (월간 전용)', async () => {
-    render(<InsightsPage />)
+    render(<MemoryRouter><InsightsPage /></MemoryRouter>)
     await waitFor(() => {
       expect(screen.queryByText('주간')).not.toBeInTheDocument()
       expect(screen.queryByText('연간')).not.toBeInTheDocument()
@@ -73,7 +74,7 @@ describe('InsightsPage', () => {
   })
 
   it('로딩 중 스켈레톤 UI를 표시한다', () => {
-    render(<InsightsPage />)
+    render(<MemoryRouter><InsightsPage /></MemoryRouter>)
     const skeletons = document.querySelectorAll('.animate-pulse')
     expect(skeletons.length).toBeGreaterThan(0)
   })
@@ -100,7 +101,7 @@ describe('InsightsPage', () => {
       }),
     )
 
-    render(<InsightsPage />)
+    render(<MemoryRouter><InsightsPage /></MemoryRouter>)
     await waitFor(() => {
       expect(screen.getByText('문제가 발생했습니다')).toBeInTheDocument()
     })

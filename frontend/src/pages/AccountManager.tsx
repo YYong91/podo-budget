@@ -6,6 +6,8 @@ import { Plus, Wallet, Trash2, ArrowLeft } from 'lucide-react'
 import { useToast } from '../hooks/useToast'
 import { accountApi } from '../api/accounts'
 import { useHouseholdStore } from '../stores/useHouseholdStore'
+import EmptyState from '../components/EmptyState'
+import ErrorState from '../components/ErrorState'
 import type { Account, AccountType, CreateAccountParams } from '../types'
 
 const ACCOUNT_TYPE_LABELS: Record<AccountType, string> = {
@@ -18,6 +20,7 @@ const ACCOUNT_TYPE_LABELS: Record<AccountType, string> = {
 export default function AccountManager() {
   const [accounts, setAccounts] = useState<Account[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(false)
   const [showForm, setShowForm] = useState(false)
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState<CreateAccountParams>({ name: '', type: 'brokerage' })
@@ -26,9 +29,10 @@ export default function AccountManager() {
 
   function loadAccounts() {
     if (!activeHouseholdId) return  // null 안전 처리 (#200)
+    setError(false)
     accountApi.getAll(activeHouseholdId)
       .then(res => setAccounts(res.data))
-      .catch(() => addToast('error', '계좌 목록을 불러오지 못했습니다'))
+      .catch(() => setError(true))
       .finally(() => setLoading(false))
   }
 
@@ -139,11 +143,18 @@ export default function AccountManager() {
         <div className="flex justify-center py-12">
           <div className="animate-spin rounded-full border-b-2 border-grape-600 w-6 h-6" />
         </div>
+      ) : error ? (
+        <div className="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)]/60 shadow-sm">
+          <ErrorState onRetry={loadAccounts} />
+        </div>
       ) : accounts.length === 0 ? (
-        <div className="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)]/60 shadow-sm p-8 text-center">
-          <Wallet className="w-10 h-10 text-warm-300 mx-auto mb-3" />
-          <p className="text-[var(--text-tertiary)] text-sm">등록된 계좌가 없습니다</p>
-          <p className="text-[var(--text-muted)] text-xs mt-1">계좌를 등록하면 자산을 계좌별로 관리할 수 있습니다</p>
+        <div className="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)]/60 shadow-sm">
+          <EmptyState
+            icon={<Wallet className="w-8 h-8 text-grape-400" />}
+            title="등록된 계좌가 없습니다"
+            description="계좌를 등록하면 자산을 계좌별로 관리할 수 있습니다"
+            action={{ label: '계좌 추가하기', onClick: () => setShowForm(true) }}
+          />
         </div>
       ) : (
         <div className="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)]/60 shadow-sm overflow-hidden">
