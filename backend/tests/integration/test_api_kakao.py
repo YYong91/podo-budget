@@ -1765,3 +1765,100 @@ async def test_kakao_empty_then_normal_input(client, db_session, mock_llm_parse_
 
     text = response2.json()["template"]["outputs"][0]["simpleText"]["text"]
     assert "8,000" in text or "기록" in text
+
+
+# ── 피드백 명령어 테스트 ──
+
+
+@pytest.mark.asyncio
+async def test_kakao_feedback_with_content(client, db_session):
+    """피드백 내용이 있으면 DB에 저장하고 접수 완료 메시지 반환"""
+    await setup_kakao_bot_user_with_household(db_session, "kakao_user_123")
+
+    payload = make_kakao_request("피드백 검색 기능이 있으면 좋겠어요")
+
+    with patch("app.services.feedback_notify.notify_admin_feedback", new_callable=AsyncMock):
+        response = await client.post("/api/kakao/webhook", json=payload)
+
+    assert response.status_code == 200
+
+    data = response.json()
+    text = data["template"]["outputs"][0]["simpleText"]["text"]
+    assert "피드백 감사합니다" in text
+
+    # DB에 피드백이 저장되었는지 확인
+    from app.models.feedback import Feedback
+
+    result = await db_session.execute(select(Feedback))
+    feedbacks = result.scalars().all()
+    assert len(feedbacks) == 1
+    assert feedbacks[0].type == "feature"
+    assert feedbacks[0].source == "kakao"
+    assert feedbacks[0].content == "검색 기능이 있으면 좋겠어요"
+
+
+@pytest.mark.asyncio
+async def test_kakao_feedback_without_content(client, db_session):
+    """피드백 내용이 없으면 사용법 안내 메시지 반환"""
+    await setup_kakao_bot_user_with_household(db_session, "kakao_user_123")
+
+    payload = make_kakao_request("피드백")
+
+    response = await client.post("/api/kakao/webhook", json=payload)
+
+    assert response.status_code == 200
+
+    data = response.json()
+    text = data["template"]["outputs"][0]["simpleText"]["text"]
+    assert "피드백을 보내주세요" in text
+
+    # DB에 저장되지 않음
+    from app.models.feedback import Feedback
+
+    result = await db_session.execute(select(Feedback))
+    assert len(result.scalars().all()) == 0
+
+
+@pytest.mark.asyncio
+async def test_kakao_feedback_bug_prefix(client, db_session):
+    """'버그'로 시작하면 type=bug으로 분류"""
+    await setup_kakao_bot_user_with_household(db_session, "kakao_user_123")
+
+    payload = make_kakao_request("피드백 버그 카테고리가 안 보여요")
+
+    with patch("app.services.feedback_notify.notify_admin_feedback", new_callable=AsyncMock):
+        response = await client.post("/api/kakao/webhook", json=payload)
+
+    assert response.status_code == 200
+
+    from app.models.feedback import Feedback
+
+    result = await db_session.execute(select(Feedback))
+    feedbacks = result.scalars().all()
+    assert len(feedbacks) == 1
+    assert feedbacks[0].type == "bug"
+    assert feedbacks[0].source == "kakao"
+
+
+@pytest.mark.asyncio
+async def test_kakao_feedback_via_alias_건의(client, db_session):
+    """'건의' 별칭으로도 피드백 명령어 동작"""
+    await setup_kakao_bot_user_with_household(db_session, "kakao_user_123")
+
+    payload = make_kakao_request("건의 예산 알림 기능 추가해주세요")
+
+    with patch("app.services.feedback_notify.notify_admin_feedback", new_callable=AsyncMock):
+        response = await client.post("/api/kakao/webhook", json=payload)
+
+    assert response.status_code == 200
+
+    data = response.json()
+    text = data["template"]["outputs"][0]["simpleText"]["text"]
+    assert "피드백 감사합니다" in text
+
+    from app.models.feedback import Feedback
+
+    result = await db_session.execute(select(Feedback))
+    feedbacks = result.scalars().all()
+    assert len(feedbacks) == 1
+    assert feedbacks[0].type == "feature"

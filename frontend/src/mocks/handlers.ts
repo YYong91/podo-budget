@@ -513,6 +513,7 @@ export const handlers = [
       title: body.title ?? '',
       content: body.content ?? '',
       status: 'new',
+      source: body.source ?? 'web',
       username: 'testuser',
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),

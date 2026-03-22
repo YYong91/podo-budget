@@ -26,12 +26,15 @@ from app.core.database import get_db
 from app.models.budget import Budget
 from app.models.category import Category
 from app.models.expense import Expense
+from app.models.feedback import Feedback
 from app.models.income import Income
 from app.services.bot_messages import (
     format_budget_status,
     format_budget_status_full,
     format_delete_confirm,
     format_expense_saved,
+    format_feedback_guide,
+    format_feedback_received,
     format_help_message,
     format_income_saved,
     format_kakao_link_usage_message,
@@ -73,6 +76,8 @@ COMMAND_ALIASES: dict[str, tuple[str, bool]] = {
     "연동": ("/link", True),
     "리포트 전체": ("/report_full", False),
     "예산 전체": ("/budget_full", False),
+    "피드백": ("/feedback", True),
+    "건의": ("/feedback", True),
 }
 
 
@@ -267,6 +272,53 @@ async def _handle_budget_full_command(utterance: str, bot_user: Any, db: AsyncSe
     return await handle_budget_full_command(db, household_id=active_household_id)
 
 
+async def _handle_feedback_command(utterance: str, bot_user: Any, db: AsyncSession, active_household_id: int | None) -> dict:
+    """``/feedback`` 명령어 처리"""
+    content = utterance.replace("/feedback", "").strip()
+    if not content:
+        return make_simple_text_response(
+            format_feedback_guide(),
+            quick_replies=[make_quick_reply("❓ 도움말", "도움말")],
+        )
+
+    # "버그"로 시작하면 bug, 아니면 feature
+    feedback_type = "bug" if content.startswith("버그") else "feature"
+    title = content[:50]
+
+    feedback = Feedback(
+        user_id=bot_user.id,
+        type=feedback_type,
+        title=title,
+        content=content,
+        source="kakao",
+    )
+    db.add(feedback)
+    await db.commit()
+
+    # 관리자 알림 (비동기, 실패해도 사용자 응답에 영향 없음)
+    from app.services.feedback_notify import notify_admin_feedback
+
+    task = asyncio.create_task(
+        notify_admin_feedback(
+            username=bot_user.username or "unknown",
+            feedback_type=feedback_type,
+            title=title,
+            content=content,
+            source="kakao",
+        )
+    )
+    _background_tasks.add(task)
+    task.add_done_callback(_background_tasks.discard)
+
+    return make_simple_text_response(
+        format_feedback_received(),
+        quick_replies=[
+            make_quick_reply("📊 이번달 보기", "리포트"),
+            make_quick_reply("❓ 도움말", "도움말"),
+        ],
+    )
+
+
 # 슬래시 명령어 디스패치 테이블
 # 키: 명령어 prefix, 값: 핸들러 함수
 # 핸들러 시그니처: (utterance, bot_user, db, active_household_id) -> dict
@@ -281,6 +333,7 @@ _COMMAND_HANDLERS: dict[
     "/budget": _handle_budget_command,
     "/undo": _handle_undo_command,
     "/change": _handle_change_command,
+    "/feedback": _handle_feedback_command,
 }
 
 
