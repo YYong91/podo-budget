@@ -21,6 +21,7 @@ class Feedback(Base):
         title: 피드백 제목
         content: 피드백 내용
         status: 처리 상태 ("new" | "read" | "done")
+        source: 제출 경로 ("web" | "telegram" | "kakao")
         created_at: 생성 시각
         updated_at: 수정 시각
     """
@@ -33,6 +34,7 @@ class Feedback(Base):
     title = Column(String, nullable=False)
     content = Column(Text, nullable=False)
     status = Column(String, nullable=False, default="new")  # "new" | "read" | "done"
+    source = Column(String, nullable=False, default="web")  # "web" | "telegram" | "kakao"
     created_at = Column(DateTime, default=func.now(), nullable=False)
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now(), nullable=False)
 
