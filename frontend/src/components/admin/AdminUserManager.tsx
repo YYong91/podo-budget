@@ -21,7 +21,7 @@ export default function AdminUserManager() {
       const res = await adminApi.getUserList(page, 20, search || undefined)
       setData(res.data)
     } catch {
-      addToast('error', '사용자 목록 로딩 실패')
+      addToast('error', '사용자 목록 로딩에 실패했습니다')
     } finally {
       setLoading(false)
     }
@@ -40,7 +40,7 @@ export default function AdminUserManager() {
       const res = await adminApi.getUserDetail(userId)
       setSelectedUser(res.data)
     } catch {
-      addToast('error', '사용자 정보 로딩 실패')
+      addToast('error', '사용자 정보 로딩에 실패했습니다')
     }
   }
 
@@ -48,10 +48,10 @@ export default function AdminUserManager() {
     try {
       const res = await adminApi.updateUser(userId, { is_active: !currentActive })
       setSelectedUser(res.data)
-      addToast('success', res.data.is_active ? '사용자 활성화' : '사용자 비활성화')
+      addToast('success', res.data.is_active ? '사용자가 활성화되었습니다' : '사용자가 비활성화되었습니다')
       fetchUsers()
     } catch {
-      addToast('error', '상태 변경 실패')
+      addToast('error', '상태 변경에 실패했습니다')
     }
   }
 

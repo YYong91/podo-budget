@@ -13,7 +13,10 @@ interface BeforeInstallPromptEvent extends Event {
 const DISMISSED_KEY = 'pwa-install-banner-dismissed'
 
 export function useInstallPrompt() {
-  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null)
+  // main.tsx에서 React 마운트 전에 캡처한 이벤트를 초기값으로 사용
+  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(
+    () => window.__pwaInstallPrompt as BeforeInstallPromptEvent | null
+  )
   const [isInstalled, setIsInstalled] = useState(() =>
     window.matchMedia('(display-mode: standalone)').matches
   )
@@ -29,6 +32,7 @@ export function useInstallPrompt() {
     const handler = (e: Event) => {
       e.preventDefault()
       setDeferredPrompt(e as BeforeInstallPromptEvent)
+      window.__pwaInstallPrompt = e
     }
     window.addEventListener('beforeinstallprompt', handler)
     return () => window.removeEventListener('beforeinstallprompt', handler)

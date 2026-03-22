@@ -5,6 +5,7 @@ import { useInstallPrompt } from '../useInstallPrompt'
 describe('useInstallPrompt', () => {
   beforeEach(() => {
     localStorage.clear()
+    window.__pwaInstallPrompt = null
     Object.defineProperty(window, 'matchMedia', {
       writable: true,
       value: vi.fn().mockImplementation((query: string) => ({

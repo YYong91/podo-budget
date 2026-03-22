@@ -34,6 +34,7 @@ from app.schemas.expense import (
     ExpenseUpdate,
     MonthlyStatsResponse,
     PeriodTotal,
+    SearchSummary,
     StatsPeriod,
     StatsResponse,
     TrendPoint,
@@ -44,6 +45,38 @@ from app.utils.date_utils import get_month_range, get_week_label, get_week_range
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
+
+def _escape_like(value: str) -> str:
+    """LIKE 패턴 특수문자 이스케이프"""
+    return value.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+
+
+def _apply_expense_filters(
+    stmt,
+    *,
+    query: str | None,
+    start_date: str | None,
+    end_date: str | None,
+    category_id: int | None,
+    member_user_id: int | None,
+):
+    """지출 공통 필터 적용"""
+    if member_user_id is not None:
+        stmt = stmt.where(Expense.user_id == member_user_id)
+    if query:
+        stmt = stmt.where(Expense.description.ilike(f"%{_escape_like(query)}%", escape="\\"))
+    if start_date:
+        start_dt = datetime.fromisoformat(start_date)
+        stmt = stmt.where(Expense.date >= start_dt)
+    if end_date:
+        end_dt = datetime.fromisoformat(end_date)
+        if len(end_date) == 10:
+            end_dt = end_dt.replace(hour=23, minute=59, second=59)
+        stmt = stmt.where(Expense.date <= end_dt)
+    if category_id is not None:
+        stmt = stmt.where(Expense.category_id == category_id)
+    return stmt
 
 
 @router.post("", response_model=ExpenseResponse, status_code=status.HTTP_201_CREATED)
@@ -83,6 +116,7 @@ async def get_expenses(
     category_id: int | None = None,
     household_id: int | None = None,
     member_user_id: int | None = Query(None, description="가구 내 특정 멤버의 지출만 조회"),
+    query: str | None = Query(None, description="설명(description) 텍스트 검색"),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
@@ -97,26 +131,18 @@ async def get_expenses(
 
     # 가구 멤버 검증 후 가구 전체 멤버의 지출 조회
     await get_household_member(household_id, current_user, db)
-    query = select(Expense).where(Expense.household_id == household_id)
-    # 특정 멤버 필터링
-    if member_user_id is not None:
-        query = query.where(Expense.user_id == member_user_id)
+    stmt = select(Expense).where(Expense.household_id == household_id)
+    stmt = _apply_expense_filters(
+        stmt,
+        query=query,
+        start_date=start_date,
+        end_date=end_date,
+        category_id=category_id,
+        member_user_id=member_user_id,
+    )
 
-    # 필터 적용 (YYYY-MM-DD 또는 YYYY-MM-DDTHH:MM:SS 모두 허용)
-    if start_date:
-        start_dt = datetime.fromisoformat(start_date)
-        query = query.where(Expense.date >= start_dt)
-    if end_date:
-        end_dt = datetime.fromisoformat(end_date)
-        # 날짜만 입력된 경우 (YYYY-MM-DD) 해당 날짜 23:59:59까지 포함
-        if len(end_date) == 10:
-            end_dt = end_dt.replace(hour=23, minute=59, second=59)
-        query = query.where(Expense.date <= end_dt)
-    if category_id is not None:
-        query = query.where(Expense.category_id == category_id)
-
-    query = query.order_by(Expense.date.desc()).offset(skip).limit(limit)
-    result = await db.execute(query)
+    stmt = stmt.order_by(Expense.date.desc()).offset(skip).limit(limit)
+    result = await db.execute(stmt)
     return result.scalars().all()
 
 
@@ -556,6 +582,37 @@ async def parse_expense_image(
         incomes_created=None,
         insights=None,
     )
+
+
+@router.get("/search/summary", response_model=SearchSummary)
+async def get_expenses_search_summary(
+    query: str | None = Query(None, description="설명(description) 텍스트 검색"),
+    start_date: str | None = Query(None, description="시작일"),
+    end_date: str | None = Query(None, description="종료일"),
+    category_id: int | None = None,
+    household_id: int | None = None,
+    member_user_id: int | None = Query(None, description="가구 내 특정 멤버"),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """검색 결과 합계 (건수 + 총액)"""
+    if household_id is None:
+        household_id = await get_user_active_household_id(current_user, db)
+    await get_household_member(household_id, current_user, db)
+
+    stmt = select(func.count(), func.coalesce(func.sum(Expense.amount), 0)).where(Expense.household_id == household_id)
+    stmt = _apply_expense_filters(
+        stmt,
+        query=query,
+        start_date=start_date,
+        end_date=end_date,
+        category_id=category_id,
+        member_user_id=member_user_id,
+    )
+
+    result = await db.execute(stmt)
+    count, total = result.one()
+    return SearchSummary(total_count=count, total_amount=float(total))
 
 
 @router.get("/{expense_id}", response_model=ExpenseResponse)

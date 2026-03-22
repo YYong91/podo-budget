@@ -36,7 +36,7 @@ export default function AdminFeedbackDashboard() {
       const res = await feedbackApi.getAll()
       setFeedbacks(res.data)
     } catch {
-      addToast('error', '피드백 로딩 실패')
+      addToast('error', '피드백 로딩에 실패했습니다')
     } finally {
       setLoading(false)
     }
@@ -48,9 +48,9 @@ export default function AdminFeedbackDashboard() {
     try {
       const res = await feedbackApi.updateStatus(id, newStatus)
       setFeedbacks(prev => prev.map(f => f.id === id ? res.data : f))
-      addToast('success', '상태 변경 완료')
+      addToast('success', '상태가 변경되었습니다')
     } catch {
-      addToast('error', '상태 변경 실패')
+      addToast('error', '상태 변경에 실패했습니다')
     }
   }
 

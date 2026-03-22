@@ -122,6 +122,10 @@ async def get_current_user(
         return user
 
     # 3단계: 완전히 새로운 유저 자동 생성
+    # 동시 요청 레이스 컨디션 방어: 프론트엔드가 여러 API를 동시 호출하면
+    # 같은 auth_user_id로 INSERT가 중복 실행 → IntegrityError 시 재조회
+    from sqlalchemy.exc import IntegrityError
+
     new_user = User(
         auth_user_id=auth_user_id,
         username=name or email.split("@")[0],
@@ -129,7 +133,17 @@ async def get_current_user(
         hashed_password=None,  # SSO 유저는 로컬 패스워드 없음
     )
     db.add(new_user)
-    await db.commit()
-    await db.refresh(new_user)
-    _auth_id_cache[auth_user_id] = new_user.id
-    return new_user
+    try:
+        await db.commit()
+        await db.refresh(new_user)
+        _auth_id_cache[auth_user_id] = new_user.id
+        return new_user
+    except IntegrityError:
+        await db.rollback()
+        # 다른 요청이 먼저 생성 완료 → 재조회
+        result = await db.execute(select(User).where(User.auth_user_id == auth_user_id))
+        user = result.scalar_one_or_none()
+        if user:
+            _auth_id_cache[auth_user_id] = user.id
+            return user
+        raise credentials_exception from None

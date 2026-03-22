@@ -103,13 +103,12 @@ export default function IncomeForm() {
         setRawInput(naturalInput.trim())
         setExpenseCount(expenseItems.length)
       } else if (expenseItems.length > 0) {
-        addToast('info', '입력한 내용이 모두 지출로 분류되었습니다. 지출 입력 페이지를 이용해주세요.')
+        addToast('info', '지출로 분류되었습니다. 지출 입력을 이용해주세요')
       } else {
         addToast('info', res.data.message || '수입 정보를 인식하지 못했습니다')
       }
-    } catch (error: unknown) {
-      const errorMsg = (error as { response?: { data?: { detail?: string } } }).response?.data?.detail || '파싱에 실패했습니다'
-      addToast('error', errorMsg)
+    } catch {
+      addToast('error', '파싱에 실패했습니다')
     } finally {
       setLoading(false)
     }
@@ -137,14 +136,13 @@ export default function IncomeForm() {
         })
         savedCount++
       }
-      addToast('success', `🍇 포도알 +${savedCount}! 수입이 저장되었습니다`)
+      addToast('success', '수입이 저장되었습니다')
       trackEvent('income_saved', { mode: 'natural', item_count: savedCount })
       setPreviewItems(null)
       setNaturalInput('')
       setTimeout(() => navigate('/income'), 500)
-    } catch (error: unknown) {
-      const errorMsg = (error as { response?: { data?: { detail?: string } } }).response?.data?.detail || '저장에 실패했습니다'
-      addToast('error', errorMsg)
+    } catch {
+      addToast('error', '저장에 실패했습니다')
     } finally {
       setLoading(false)
     }
@@ -186,9 +184,8 @@ export default function IncomeForm() {
       setShowNewCategoryFor(null)
       setNewCategoryName('')
       addToast('success', `"${name}" 카테고리가 추가되었습니다`)
-    } catch (error: unknown) {
-      const errorMsg = (error as { response?: { data?: { detail?: string } } }).response?.data?.detail || '카테고리 생성에 실패했습니다'
-      addToast('error', errorMsg)
+    } catch {
+      addToast('error', '카테고리 생성에 실패했습니다')
     } finally {
       setCreatingCategory(false)
     }
@@ -207,9 +204,8 @@ export default function IncomeForm() {
       setShowNewCategoryFor(null)
       setNewCategoryName('')
       addToast('success', `"${name}" 카테고리가 추가되었습니다`)
-    } catch (error: unknown) {
-      const errorMsg = (error as { response?: { data?: { detail?: string } } }).response?.data?.detail || '카테고리 생성에 실패했습니다'
-      addToast('error', errorMsg)
+    } catch {
+      addToast('error', '카테고리 생성에 실패했습니다')
     } finally {
       setCreatingCategory(false)
     }
@@ -248,12 +244,11 @@ export default function IncomeForm() {
         memo: formData.memo.trim() || undefined,
         exclude_from_stats: formData.exclude_from_stats,
       })
-      addToast('success', '🍇 포도알 +1! 수입이 저장되었습니다')
+      addToast('success', '수입이 저장되었습니다')
       trackEvent('income_saved', { mode: 'form' })
       setTimeout(() => navigate('/income'), 500)
-    } catch (error: unknown) {
-      const errorMsg = (error as { response?: { data?: { detail?: string } } }).response?.data?.detail || '수입 저장에 실패했습니다'
-      addToast('error', errorMsg)
+    } catch {
+      addToast('error', '수입 저장에 실패했습니다')
     } finally {
       setLoading(false)
     }

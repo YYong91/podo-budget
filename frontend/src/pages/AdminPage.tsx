@@ -34,7 +34,7 @@ export default function AdminPage() {
       const res = await adminApi.getDashboardStats()
       setDashboard(res.data)
     } catch {
-      addToast('error', '데이터 로딩 실패')
+      addToast('error', '데이터 로딩에 실패했습니다')
     } finally {
       setLoading(false)
       setRefreshing(false)
