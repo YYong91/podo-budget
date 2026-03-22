@@ -22,6 +22,11 @@ jobs:
           fetch-depth: 0
           fetch-tags: true
 
+      - name: Git 사용자 설정
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
       - name: 브랜치 유형 판별
         id: branch-type
         env:
