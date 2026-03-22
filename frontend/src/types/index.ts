@@ -132,6 +132,7 @@ export interface Category {
   type: 'expense' | 'income' | 'both'
   description: string | null
   sort_order: number
+  is_system: boolean
   created_at: string
 }
 

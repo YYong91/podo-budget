@@ -306,6 +306,7 @@ export const handlers = [
       id: Math.max(...mockCategories.map((c) => c.id)) + 1,
       name: body.name,
       description: body.description ?? null,
+      is_system: false,
       created_at: new Date().toISOString(),
     }
     return HttpResponse.json(newCategory, { status: 201 })
@@ -324,6 +325,7 @@ export const handlers = [
       ...category,
       ...body,
       description: body.description ?? category.description,
+      is_system: category.is_system,
     }
     return HttpResponse.json(updated)
   }),
