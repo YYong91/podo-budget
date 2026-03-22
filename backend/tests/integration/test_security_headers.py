@@ -47,8 +47,14 @@ async def test_security_headers_on_api_endpoint(authenticated_client):
 
 @pytest.mark.asyncio
 async def test_security_headers_hsts_present_in_production(client):
-    """프로덕션 환경(DEBUG=False, 기본값)에서는 HSTS 헤더 포함"""
-    response = await client.get("/health")
-    # 테스트 환경은 DEBUG=False(기본값)이므로 HSTS 포함됨
-    assert "strict-transport-security" in response.headers
-    assert "max-age=31536000" in response.headers.get("strict-transport-security", "")
+    """프로덕션 환경(DEBUG=False)에서는 HSTS 헤더 포함"""
+    from app.core.config import settings
+
+    original_debug = settings.DEBUG
+    settings.DEBUG = False
+    try:
+        response = await client.get("/health")
+        assert "strict-transport-security" in response.headers
+        assert "max-age=31536000" in response.headers.get("strict-transport-security", "")
+    finally:
+        settings.DEBUG = original_debug
