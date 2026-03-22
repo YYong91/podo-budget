@@ -86,7 +86,8 @@ def upgrade() -> None:
         if existing is None:
             conn.execute(
                 sa.text(
-                    "INSERT INTO categories (user_id, household_id, name, type, description, sort_order) " "VALUES (NULL, NULL, :name, :type, :desc, :sort)"
+                    "INSERT INTO categories (user_id, household_id, name, type, description, sort_order, created_at) "
+                    "VALUES (NULL, NULL, :name, :type, :desc, :sort, CURRENT_TIMESTAMP)"
                 ),
                 {"name": cat["name"], "type": cat["type"], "desc": cat["description"], "sort": cat["sort_order"]},
             )
