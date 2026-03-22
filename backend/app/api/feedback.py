@@ -4,6 +4,8 @@
 관리자(ADMIN_USER_ID)가 전체 피드백을 조회/상태 변경할 수 있습니다.
 """
 
+import asyncio
+
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -15,6 +17,7 @@ from app.core.rate_limit import limiter
 from app.models.feedback import Feedback
 from app.models.user import User
 from app.schemas.feedback import FeedbackCreate, FeedbackResponse, FeedbackStatusUpdate
+from app.services.feedback_notify import notify_admin_feedback
 
 router = APIRouter()
 
@@ -54,6 +57,18 @@ async def create_feedback(
     db.add(feedback)
     await db.commit()
     await db.refresh(feedback)
+
+    # 관리자 알림 (비동기 — 응답 지연 없이)
+    asyncio.create_task(
+        notify_admin_feedback(
+            username=current_user.username or "unknown",
+            feedback_type=data.type,
+            title=data.title,
+            content=data.content,
+            source=data.source,
+        )
+    )
+
     return _to_response(feedback, username=current_user.username)
 
 
