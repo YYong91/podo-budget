@@ -341,7 +341,7 @@ export default function TransactionList() {
           <EmptyState
             title={filter === 'all' ? '거래 내역이 없습니다' : `${filter === 'expense' ? '지출' : '수입'} 내역이 없습니다`}
             description="이번 달의 거래를 추가해보세요."
-            action={{ label: '첫 거래 입력하기', onClick: () => navigate('/expenses/new') }}
+            action={{ label: filter === 'income' ? '첫 수입 입력하기' : '첫 거래 입력하기', onClick: () => navigate(filter === 'income' ? '/income/new' : '/expenses/new') }}
           />
         </div>
       ) : (
