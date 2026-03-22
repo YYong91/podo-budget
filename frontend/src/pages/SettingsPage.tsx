@@ -8,7 +8,7 @@ import { Link, useParams, useNavigate } from 'react-router-dom'
 import {
   Tags, PiggyBank, Repeat, Users, LogOut, BookOpen, MessageSquarePlus,
   Megaphone, ChevronRight, ArrowLeft, User, Send, MessageCircle, ShieldCheck,
-  Sun, Moon, Monitor, FileText, ScrollText,
+  Sun, Moon, Monitor, FileText, ScrollText, Download,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { generateTelegramLinkCode, unlinkTelegram } from '../api/telegram'
@@ -16,6 +16,8 @@ import { generateKakaoLinkCode, unlinkKakao } from '../api/kakao'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../hooks/useToast'
 import { useChangelog } from '../hooks/useChangelog'
+import { useInstallPrompt } from '../hooks/useInstallPrompt'
+import IosInstallGuide from '../components/IosInstallGuide'
 import { useTheme } from '../contexts/ThemeContext'
 import type { ThemeMode } from '../contexts/ThemeContext'
 import type { ChangelogItem } from '../data/changelogs'
@@ -232,7 +234,7 @@ function MyAccountSection() {
       setLinkCode(data)
       trackEvent('telegram_linked')
     } catch {
-      addToast('error', '코드 발급에 실패했습니다.')
+      addToast('error', '코드 발급에 실패했습니다')
     } finally {
       setLoadingCode(false)
     }
@@ -243,11 +245,11 @@ function MyAccountSection() {
     setLoadingUnlink(true)
     try {
       await unlinkTelegram()
-      addToast('success', '텔레그램 연동이 해제되었습니다.')
+      addToast('success', '텔레그램 연동이 해제되었습니다')
       await refreshUser()
       setLinkCode(null)
     } catch {
-      addToast('error', '연동 해제에 실패했습니다.')
+      addToast('error', '연동 해제에 실패했습니다')
     } finally {
       setLoadingUnlink(false)
     }
@@ -257,9 +259,9 @@ function MyAccountSection() {
     if (!linkCode) return
     try {
       await navigator.clipboard.writeText(`/link ${linkCode.code}`)
-      addToast('success', '복사되었습니다!')
+      addToast('success', '복사되었습니다')
     } catch {
-      addToast('error', '자동 복사 실패 — 아래 명령어를 직접 복사해주세요')
+      addToast('error', '자동 복사에 실패했습니다')
     }
   }
 
@@ -270,7 +272,7 @@ function MyAccountSection() {
       setKakaoLinkCode(data)
       trackEvent('kakao_linked')
     } catch {
-      addToast('error', '코드 발급에 실패했습니다.')
+      addToast('error', '코드 발급에 실패했습니다')
     } finally {
       setLoadingKakaoCode(false)
     }
@@ -281,11 +283,11 @@ function MyAccountSection() {
     setLoadingKakaoUnlink(true)
     try {
       await unlinkKakao()
-      addToast('success', '카카오톡 연동이 해제되었습니다.')
+      addToast('success', '카카오톡 연동이 해제되었습니다')
       await refreshUser()
       setKakaoLinkCode(null)
     } catch {
-      addToast('error', '연동 해제에 실패했습니다.')
+      addToast('error', '연동 해제에 실패했습니다')
     } finally {
       setLoadingKakaoUnlink(false)
     }
@@ -296,9 +298,9 @@ function MyAccountSection() {
     try {
       // 카카오 봇은 "연동 {code}" 형식 사용 (한글 명령어 = /link 슬래시 명령어) (#200)
       await navigator.clipboard.writeText(`연동 ${kakaoLinkCode.code}`)
-      addToast('success', '복사되었습니다!')
+      addToast('success', '복사되었습니다')
     } catch {
-      addToast('error', '자동 복사 실패 — 아래 명령어를 직접 복사해주세요')
+      addToast('error', '자동 복사에 실패했습니다')
     }
   }
 
@@ -561,9 +563,9 @@ function MyAccountSection() {
                     try {
                       await navigator.clipboard.writeText(`연동 ${kakaoLinkCode.code}`)
                       window.open(KAKAO_CHANNEL_CHAT_URL, '_blank')
-                      addToast('success', '연동 코드가 복사되었어요. 카카오톡에서 붙여넣기 해주세요!')
+                      addToast('success', '연동 코드가 복사되었습니다')
                     } catch {
-                      addToast('error', '클립보드 복사에 실패했어요')
+                      addToast('error', '복사에 실패했습니다')
                     }
                   }}
                   className="block w-full text-center bg-[#FEE500] text-[#191919] rounded-xl py-3 font-medium hover:bg-[#FDD835] transition-colors"
@@ -616,6 +618,8 @@ export default function SettingsPage() {
   const { user } = useAuth()
   const { hasUnread } = useChangelog()
   const { resolvedTheme } = useTheme()
+  const { isInstalled, isIOS, promptInstall } = useInstallPrompt()
+  const [showIosGuide, setShowIosGuide] = useState(false)
   const { section } = useParams<{ section: string }>()
   const navigate = useNavigate()
 
@@ -719,7 +723,30 @@ export default function SettingsPage() {
   }
 
   if (!section) {
-    return <SettingsMenu menuItems={menuItems} />
+    return (
+      <div className="space-y-4">
+        {/* PWA 설치 안내 (미설치 시에만) */}
+        {!isInstalled && (
+          <button
+            onClick={() => isIOS ? setShowIosGuide(true) : promptInstall()}
+            className="w-full bg-gradient-to-r from-grape-500 to-grape-600 rounded-2xl shadow-sm p-4 flex items-center gap-4 hover:from-grape-600 hover:to-grape-700 transition-all"
+          >
+            <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+              <Download className="w-5 h-5 text-white" />
+            </div>
+            <div className="flex-1 text-left">
+              <p className="text-sm font-semibold text-white">앱으로 설치</p>
+              <p className="text-xs text-white/70">
+                {isIOS ? 'Safari에서 홈 화면에 추가' : '홈 화면에서 바로 실행하세요'}
+              </p>
+            </div>
+            <ChevronRight className="w-4 h-4 text-white/50" />
+          </button>
+        )}
+        <SettingsMenu menuItems={menuItems} />
+        {showIosGuide && <IosInstallGuide onClose={() => setShowIosGuide(false)} />}
+      </div>
+    )
   }
 
   switch (section) {

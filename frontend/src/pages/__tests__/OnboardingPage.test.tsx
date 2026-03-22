@@ -106,7 +106,7 @@ describe('OnboardingPage', () => {
       await user.click(screen.getByRole('button', { name: '새 가계부 만들기' }))
 
       await waitFor(() => {
-        expect(mockAddToast).toHaveBeenCalledWith('success', '가계부가 생성되었습니다!')
+        expect(mockAddToast).toHaveBeenCalledWith('success', '가계부가 생성되었습니다')
         expect(mockNavigate).toHaveBeenCalledWith('/', { replace: true })
       })
     })
@@ -119,7 +119,7 @@ describe('OnboardingPage', () => {
       await user.type(input, '엔터 테스트{Enter}')
 
       await waitFor(() => {
-        expect(mockAddToast).toHaveBeenCalledWith('success', '가계부가 생성되었습니다!')
+        expect(mockAddToast).toHaveBeenCalledWith('success', '가계부가 생성되었습니다')
       })
     })
 
@@ -170,7 +170,7 @@ describe('OnboardingPage', () => {
 
       await waitFor(() => {
         expect(mockAcceptInvitation).toHaveBeenCalledWith('invite-token-abc')
-        expect(mockAddToast).toHaveBeenCalledWith('success', '부부 가계부에 참여했습니다!')
+        expect(mockAddToast).toHaveBeenCalledWith('success', '부부 가계부에 참여했습니다')
         expect(mockNavigate).toHaveBeenCalledWith('/', { replace: true })
       })
     })

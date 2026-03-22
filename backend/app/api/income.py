@@ -22,13 +22,45 @@ from app.core.database import get_db
 from app.models.category import Category
 from app.models.income import Income
 from app.models.user import User
-from app.schemas.expense import CategoryStats, StatsPeriod, StatsResponse, TrendPoint
+from app.schemas.expense import CategoryStats, SearchSummary, StatsPeriod, StatsResponse, TrendPoint
 from app.schemas.income import IncomeCreate, IncomeResponse, IncomeUpdate
 from app.utils.date_utils import get_month_range, get_week_label, get_week_range, get_year_range
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
+
+def _escape_like(value: str) -> str:
+    """LIKE 패턴 특수문자 이스케이프"""
+    return value.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+
+
+def _apply_income_filters(
+    stmt,
+    *,
+    query: str | None,
+    start_date: str | None,
+    end_date: str | None,
+    category_id: int | None,
+    member_user_id: int | None,
+):
+    """수입 공통 필터 적용"""
+    if member_user_id is not None:
+        stmt = stmt.where(Income.user_id == member_user_id)
+    if query:
+        stmt = stmt.where(Income.description.ilike(f"%{_escape_like(query)}%", escape="\\"))
+    if start_date:
+        start_dt = datetime.fromisoformat(start_date)
+        stmt = stmt.where(Income.date >= start_dt)
+    if end_date:
+        end_dt = datetime.fromisoformat(end_date)
+        if len(end_date) == 10:
+            end_dt = end_dt.replace(hour=23, minute=59, second=59)
+        stmt = stmt.where(Income.date <= end_dt)
+    if category_id is not None:
+        stmt = stmt.where(Income.category_id == category_id)
+    return stmt
 
 
 @router.post("", response_model=IncomeResponse, status_code=status.HTTP_201_CREATED)
@@ -62,6 +94,7 @@ async def get_incomes(
     category_id: int | None = None,
     household_id: int | None = None,
     member_user_id: int | None = Query(None, description="가구 내 특정 멤버의 수입만 조회"),
+    query: str | None = Query(None, description="설명(description) 텍스트 검색"),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
@@ -71,24 +104,18 @@ async def get_incomes(
         household_id = await get_user_active_household_id(current_user, db)
 
     await get_household_member(household_id, current_user, db)
-    query = select(Income).where(Income.household_id == household_id)
-    if member_user_id is not None:
-        query = query.where(Income.user_id == member_user_id)
+    stmt = select(Income).where(Income.household_id == household_id)
+    stmt = _apply_income_filters(
+        stmt,
+        query=query,
+        start_date=start_date,
+        end_date=end_date,
+        category_id=category_id,
+        member_user_id=member_user_id,
+    )
 
-    if start_date:
-        start_dt = datetime.fromisoformat(start_date)
-        query = query.where(Income.date >= start_dt)
-    if end_date:
-        end_dt = datetime.fromisoformat(end_date)
-        # 날짜만 입력된 경우 (YYYY-MM-DD) 해당 날짜 23:59:59까지 포함
-        if len(end_date) == 10:
-            end_dt = end_dt.replace(hour=23, minute=59, second=59)
-        query = query.where(Income.date <= end_dt)
-    if category_id is not None:
-        query = query.where(Income.category_id == category_id)
-
-    query = query.order_by(Income.date.desc()).offset(skip).limit(limit)
-    result = await db.execute(query)
+    stmt = stmt.order_by(Income.date.desc()).offset(skip).limit(limit)
+    result = await db.execute(stmt)
     return result.scalars().all()
 
 
@@ -186,6 +213,37 @@ async def get_income_stats(
         by_category=by_category,
         trend=trend,
     )
+
+
+@router.get("/search/summary", response_model=SearchSummary)
+async def get_incomes_search_summary(
+    query: str | None = Query(None, description="설명(description) 텍스트 검색"),
+    start_date: str | None = Query(None, description="시작일"),
+    end_date: str | None = Query(None, description="종료일"),
+    category_id: int | None = None,
+    household_id: int | None = None,
+    member_user_id: int | None = Query(None, description="가구 내 특정 멤버"),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """수입 검색 결과 합계 (건수 + 총액)"""
+    if household_id is None:
+        household_id = await get_user_active_household_id(current_user, db)
+    await get_household_member(household_id, current_user, db)
+
+    stmt = select(func.count(), func.coalesce(func.sum(Income.amount), 0)).where(Income.household_id == household_id)
+    stmt = _apply_income_filters(
+        stmt,
+        query=query,
+        start_date=start_date,
+        end_date=end_date,
+        category_id=category_id,
+        member_user_id=member_user_id,
+    )
+
+    result = await db.execute(stmt)
+    count, total = result.one()
+    return SearchSummary(total_count=count, total_amount=float(total))
 
 
 @router.get("/{income_id}", response_model=IncomeResponse)
