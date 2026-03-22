@@ -57,6 +57,9 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
+# GC 보호용 백그라운드 태스크 참조 보관 (asyncio.create_task 가비지 컬렉션 방지)
+_background_tasks: set[asyncio.Task] = set()  # type: ignore[type-arg]
+
 # Telegram API 베이스 URL
 TELEGRAM_API = "https://api.telegram.org/bot{token}"
 
@@ -358,7 +361,7 @@ async def _handle_feedback_command(
 
     from app.services.feedback_notify import notify_admin_feedback
 
-    asyncio.create_task(
+    task = asyncio.create_task(
         notify_admin_feedback(
             username=bot_user.username or "unknown",
             feedback_type=feedback_type,
@@ -367,6 +370,8 @@ async def _handle_feedback_command(
             source="telegram",
         )
     )
+    _background_tasks.add(task)
+    task.add_done_callback(_background_tasks.discard)
 
     await send_telegram_message(chat_id, format_feedback_received())
     return {"ok": True}

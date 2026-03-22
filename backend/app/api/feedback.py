@@ -21,6 +21,9 @@ from app.services.feedback_notify import notify_admin_feedback
 
 router = APIRouter()
 
+# GC 보호용 백그라운드 태스크 참조 보관 (asyncio.create_task 가비지 컬렉션 방지)
+_background_tasks: set[asyncio.Task] = set()  # type: ignore[type-arg]
+
 
 def _to_response(feedback: Feedback, username: str | None = None) -> FeedbackResponse:
     """Feedback ORM 객체를 응답 스키마로 변환"""
@@ -59,7 +62,7 @@ async def create_feedback(
     await db.refresh(feedback)
 
     # 관리자 알림 (비동기 — 응답 지연 없이)
-    asyncio.create_task(
+    task = asyncio.create_task(
         notify_admin_feedback(
             username=current_user.username or "unknown",
             feedback_type=data.type,
@@ -68,6 +71,8 @@ async def create_feedback(
             source=data.source,
         )
     )
+    _background_tasks.add(task)
+    task.add_done_callback(_background_tasks.discard)
 
     return _to_response(feedback, username=current_user.username)
 
