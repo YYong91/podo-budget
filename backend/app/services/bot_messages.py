@@ -125,9 +125,24 @@ def format_help_message(platform: str = "telegram") -> str:
     )
 
     if platform == "kakao":
-        commands = "\n명령어:\n" "리포트 — 이번 달 지출 요약\n" "예산 — 예산 현황\n" "취소 — 마지막 거래 삭제\n" "변경 — 카테고리 변경\n" "도움말 — 이 도움말"
+        commands = (
+            "\n명령어:\n"
+            "리포트 — 이번 달 지출 요약\n"
+            "예산 — 예산 현황\n"
+            "취소 — 마지막 거래 삭제\n"
+            "변경 — 카테고리 변경\n"
+            "피드백 [내용] — 의견이나 버그 신고\n"
+            "도움말 — 이 도움말"
+        )
     else:
-        commands = "\n명령어:\n" "/report — 이번 달 지출 요약\n" "/budget — 예산 현황\n" "/link 코드 — 웹 계정 연동\n" "/help — 이 도움말"
+        commands = (
+            "\n명령어:\n"
+            "/report — 이번 달 지출 요약\n"
+            "/budget — 예산 현황\n"
+            "/link 코드 — 웹 계정 연동\n"
+            "피드백 [내용] — 의견이나 버그 신고\n"
+            "/help — 이 도움말"
+        )
 
     return base + commands
 
