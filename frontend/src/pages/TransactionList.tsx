@@ -60,6 +60,11 @@ export default function TransactionList() {
   const isSearchMode = searchParams.has('search')
   const searchInputRef = useRef<HTMLInputElement>(null)
 
+  // 검색 필터 URL 파라미터
+  const searchType = (searchParams.get('type') as 'all' | 'expense' | 'income') || 'all'
+  const searchCategoryId = searchParams.get('category') ? Number(searchParams.get('category')) : null
+  const searchPeriod = (searchParams.get('period') as 'all' | '1m' | '3m' | '6m' | 'year') || 'all'
+
   const [expenses, setExpenses] = useState<Expense[]>([])
   const [incomes, setIncomes] = useState<Income[]>([])
   const [categories, setCategories] = useState<Category[]>([])
@@ -71,6 +76,11 @@ export default function TransactionList() {
   const [searchResults, setSearchResults] = useState<UnifiedTransaction[]>([])
   const [searchSummary, setSearchSummary] = useState<{ total_count: number; total_amount: number } | null>(null)
   const [searchLoading, setSearchLoading] = useState(false)
+
+  // 검색 필터 드롭다운 상태
+  const [openFilter, setOpenFilter] = useState<'type' | 'period' | null>(null)
+  // 카테고리 바텀시트: 검색 필터용 vs 거래 카테고리 변경용 구분
+  const [isFilterCategorySheet, setIsFilterCategorySheet] = useState(false)
 
   // 카테고리 바텀시트 상태
   const [sheetOpen, setSheetOpen] = useState(false)
@@ -115,9 +125,10 @@ export default function TransactionList() {
     setParams({ search: '', month: null, filter: null })
   }, [setParams])
 
-  // 검색 모드 해제 → 월 뷰 복귀
+  // 검색 모드 해제 → 월 뷰 복귀 (필터 파라미터도 전부 제거)
   const exitSearchMode = useCallback(() => {
-    setParams({ search: null })
+    setParams({ search: null, type: null, category: null, period: null, member: null })
+    setOpenFilter(null)
   }, [setParams])
 
   // 검색 실행
@@ -127,17 +138,51 @@ export default function TransactionList() {
     }
   }, [setParams])
 
+  // 검색 필터 변경
+  const setSearchFilter = useCallback((key: string, value: string | null) => {
+    setParams({ [key]: value })
+    setOpenFilter(null)
+  }, [setParams])
+
+  // 기간 프리셋 → 날짜 범위 계산
+  const getSearchDateRange = useCallback((period: string): { start_date?: string; end_date?: string } => {
+    if (period === 'all') return {}
+    const now = new Date()
+    const end = now.toISOString().slice(0, 10)
+    let start: Date
+    switch (period) {
+      case '1m': start = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate()); break
+      case '3m': start = new Date(now.getFullYear(), now.getMonth() - 3, now.getDate()); break
+      case '6m': start = new Date(now.getFullYear(), now.getMonth() - 6, now.getDate()); break
+      case 'year': start = new Date(now.getFullYear(), 0, 1); break
+      default: return {}
+    }
+    return { start_date: start.toISOString().slice(0, 10), end_date: end }
+  }, [])
+
   // 검색 실행
   const fetchSearchResults = useCallback(async () => {
     if (!activeHouseholdId || !searchQuery) return
     setSearchLoading(true)
     try {
-      const params = { query: searchQuery, limit: 30, household_id: activeHouseholdId }
+      const dateRange = getSearchDateRange(searchPeriod)
+      const baseParams = {
+        query: searchQuery,
+        limit: 30,
+        household_id: activeHouseholdId,
+        ...dateRange,
+        ...(searchCategoryId && { category_id: searchCategoryId }),
+      }
+
+      // 타입 필터: 해당 타입만 fetch
+      const fetchExpenses = searchType !== 'income'
+      const fetchIncomes = searchType !== 'expense'
+
       const [expRes, incRes, expSummary, incSummary] = await Promise.all([
-        expenseApi.getAll(params),
-        incomeApi.getAll(params),
-        expenseApi.searchSummary(params),
-        incomeApi.searchSummary(params),
+        fetchExpenses ? expenseApi.getAll(baseParams) : Promise.resolve({ data: [] as Expense[] }),
+        fetchIncomes ? incomeApi.getAll(baseParams) : Promise.resolve({ data: [] as Income[] }),
+        fetchExpenses ? expenseApi.searchSummary(baseParams) : Promise.resolve({ data: { total_count: 0, total_amount: 0 } }),
+        fetchIncomes ? incomeApi.searchSummary(baseParams) : Promise.resolve({ data: { total_count: 0, total_amount: 0 } }),
       ])
 
       const all: UnifiedTransaction[] = [
@@ -157,7 +202,7 @@ export default function TransactionList() {
       setSearchLoading(false)
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps -- addToast는 안정적 참조
-  }, [searchQuery, activeHouseholdId])
+  }, [searchQuery, activeHouseholdId, searchType, searchCategoryId, searchPeriod, getSearchDateRange])
 
   // 검색어 변경 시 검색 실행
   useEffect(() => {
@@ -282,6 +327,7 @@ export default function TransactionList() {
     for (const txs of sources.values()) {
       for (const tx of txs) {
         handlers.set(`${tx.type}-${tx.id}`, () => {
+          setIsFilterCategorySheet(false)
           setSheetTarget(tx)
           setSheetOpen(true)
         })
@@ -298,8 +344,16 @@ export default function TransactionList() {
     }
   }, [])
 
-  // 카테고리 변경
+  // 카테고리 변경 (거래 카테고리 수정 또는 검색 필터 설정)
   const handleCategorySelect = useCallback(async (categoryId: number | null) => {
+    // 검색 필터용 카테고리 선택
+    if (isFilterCategorySheet) {
+      setSearchFilter('category', categoryId ? String(categoryId) : null)
+      setSheetOpen(false)
+      setIsFilterCategorySheet(false)
+      return
+    }
+    // 거래 카테고리 변경
     if (!sheetTarget) return
     setSheetSaving(true)
     try {
@@ -320,7 +374,8 @@ export default function TransactionList() {
     } finally {
       setSheetSaving(false)
     }
-  }, [sheetTarget])
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- addToast, setSearchFilter는 안정적 참조
+  }, [sheetTarget, isFilterCategorySheet, setSearchFilter])
 
   const monthLabel = `${currentYear}년 ${currentMonth + 1}월`
 
@@ -444,6 +499,105 @@ export default function TransactionList() {
             onDateClick={handleDateClick}
             today={todayString}
           />
+        </div>
+      )}
+
+      {/* 검색 필터 칩 */}
+      {isSearchMode && (
+        <div className="flex gap-2 flex-wrap relative">
+          {/* 지출/수입 */}
+          <div className="relative">
+            <button
+              onClick={() => setOpenFilter(openFilter === 'type' ? null : 'type')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                searchType !== 'all'
+                  ? 'bg-grape-600 text-white'
+                  : 'bg-[var(--surface-hover)] text-[var(--text-secondary)]'
+              }`}
+            >
+              {searchType === 'all' ? '지출/수입' : searchType === 'expense' ? '지출만' : '수입만'}
+            </button>
+            {openFilter === 'type' && (
+              <div className="absolute top-full left-0 mt-1 bg-[var(--surface-card)] rounded-xl shadow-lg border border-[var(--border-default)] py-1 z-20 min-w-[120px]">
+                {[
+                  { value: 'all', label: '전체' },
+                  { value: 'expense', label: '지출만' },
+                  { value: 'income', label: '수입만' },
+                ].map(opt => (
+                  <button
+                    key={opt.value}
+                    onClick={() => setSearchFilter('type', opt.value === 'all' ? null : opt.value)}
+                    className={`w-full text-left px-4 py-2 text-sm hover:bg-[var(--surface-hover)] ${
+                      searchType === opt.value ? 'text-grape-600 font-medium' : 'text-[var(--text-primary)]'
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* 카테고리 */}
+          <button
+            onClick={() => {
+              if (searchCategoryId) {
+                // 이미 선택된 상태 → 필터 해제
+                setSearchFilter('category', null)
+              } else {
+                // 검색 필터용 바텀시트 열기
+                setIsFilterCategorySheet(true)
+                setSheetTarget(null)
+                setSheetOpen(true)
+              }
+            }}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+              searchCategoryId
+                ? 'bg-grape-600 text-white'
+                : 'bg-[var(--surface-hover)] text-[var(--text-secondary)]'
+            }`}
+          >
+            {searchCategoryId
+              ? `${categoryMap.get(searchCategoryId)?.name ?? '카테고리'} ✕`
+              : '카테고리'}
+          </button>
+
+          {/* 기간 */}
+          <div className="relative">
+            <button
+              onClick={() => setOpenFilter(openFilter === 'period' ? null : 'period')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                searchPeriod !== 'all'
+                  ? 'bg-grape-600 text-white'
+                  : 'bg-[var(--surface-hover)] text-[var(--text-secondary)]'
+              }`}
+            >
+              {{ all: '기간: 전체', '1m': '최근 1개월', '3m': '최근 3개월', '6m': '최근 6개월', year: '올해' }[searchPeriod]}
+            </button>
+            {openFilter === 'period' && (
+              <div className="absolute top-full left-0 mt-1 bg-[var(--surface-card)] rounded-xl shadow-lg border border-[var(--border-default)] py-1 z-20 min-w-[130px]">
+                {[
+                  { value: 'all', label: '전체' },
+                  { value: '1m', label: '최근 1개월' },
+                  { value: '3m', label: '최근 3개월' },
+                  { value: '6m', label: '최근 6개월' },
+                  { value: 'year', label: '올해' },
+                ].map(opt => (
+                  <button
+                    key={opt.value}
+                    onClick={() => setSearchFilter('period', opt.value === 'all' ? null : opt.value)}
+                    className={`w-full text-left px-4 py-2 text-sm hover:bg-[var(--surface-hover)] ${
+                      searchPeriod === opt.value ? 'text-grape-600 font-medium' : 'text-[var(--text-primary)]'
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* TODO: 멤버 필터 — 가구원 2인 이상일 때만 표시 (useHouseholdStore에 members 데이터 없어 보류) */}
         </div>
       )}
 
@@ -594,12 +748,13 @@ export default function TransactionList() {
       {/* 카테고리 바텀시트 */}
       <CategoryBottomSheet
         isOpen={sheetOpen}
-        onClose={() => setSheetOpen(false)}
+        onClose={() => { setSheetOpen(false); setIsFilterCategorySheet(false) }}
         onSelect={handleCategorySelect}
         categories={categories}
-        currentCategoryId={sheetTarget?.category_id ?? null}
-        transactionType={sheetTarget?.type ?? 'expense'}
+        currentCategoryId={isFilterCategorySheet ? searchCategoryId : (sheetTarget?.category_id ?? null)}
+        transactionType={isFilterCategorySheet ? 'expense' : (sheetTarget?.type ?? 'expense')}
         saving={sheetSaving}
+        title={isFilterCategorySheet ? '카테고리 선택' : undefined}
       />
     </div>
     </PullToRefresh>

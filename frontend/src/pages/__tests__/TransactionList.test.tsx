@@ -289,4 +289,69 @@ describe('TransactionList', () => {
       })
     })
   })
+
+  describe('검색 필터 칩', () => {
+    it('검색 모드에서 필터 칩 표시', async () => {
+      renderPage('/?search=')
+      await waitFor(() => {
+        expect(screen.getByText('지출/수입')).toBeInTheDocument()
+        expect(screen.getByText('카테고리')).toBeInTheDocument()
+        expect(screen.getByText('기간: 전체')).toBeInTheDocument()
+      })
+    })
+
+    it('지출/수입 필터 칩 클릭 시 드롭다운 표시', async () => {
+      renderPage('/?search=점심')
+      await waitFor(() => {
+        expect(screen.getByText('지출/수입')).toBeInTheDocument()
+      })
+      fireEvent.click(screen.getByText('지출/수입'))
+      await waitFor(() => {
+        expect(screen.getByText('지출만')).toBeInTheDocument()
+        expect(screen.getByText('수입만')).toBeInTheDocument()
+      })
+    })
+
+    it('지출만 필터 선택 시 칩 활성화', async () => {
+      renderPage('/?search=점심')
+      await waitFor(() => {
+        expect(screen.getByText('지출/수입')).toBeInTheDocument()
+      })
+      fireEvent.click(screen.getByText('지출/수입'))
+      await waitFor(() => {
+        expect(screen.getByText('지출만')).toBeInTheDocument()
+      })
+      fireEvent.click(screen.getByText('지출만'))
+      await waitFor(() => {
+        // 드롭다운이 닫히고, 칩 텍스트가 '지출만'으로 변경됨
+        expect(screen.getByRole('button', { name: /지출만/ })).toBeInTheDocument()
+      })
+    })
+
+    it('기간 프리셋 필터 선택', async () => {
+      renderPage('/?search=')
+      await waitFor(() => {
+        expect(screen.getByText('기간: 전체')).toBeInTheDocument()
+      })
+      fireEvent.click(screen.getByText('기간: 전체'))
+      await waitFor(() => {
+        expect(screen.getByText('최근 1개월')).toBeInTheDocument()
+        expect(screen.getByText('최근 3개월')).toBeInTheDocument()
+        expect(screen.getByText('최근 6개월')).toBeInTheDocument()
+        expect(screen.getByText('올해')).toBeInTheDocument()
+      })
+    })
+
+    it('카테고리 칩 클릭 시 바텀시트 열기', async () => {
+      renderPage('/?search=')
+      await waitFor(() => {
+        expect(screen.getByText('카테고리')).toBeInTheDocument()
+      })
+      fireEvent.click(screen.getByText('카테고리'))
+      // CategoryBottomSheet가 열려야 함
+      await waitFor(() => {
+        expect(screen.getByRole('dialog', { name: '카테고리 선택' })).toBeInTheDocument()
+      })
+    })
+  })
 })
