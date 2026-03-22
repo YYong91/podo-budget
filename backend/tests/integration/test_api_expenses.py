@@ -471,3 +471,33 @@ async def test_search_expenses_with_category_filter(authenticated_client, test_u
     data = response.json()
     assert len(data) == 1
     assert data[0]["description"] == "정형외과 병원"
+
+
+@pytest.mark.asyncio
+async def test_search_summary_expenses(authenticated_client, test_user: User, test_household: Household, db_session):
+    """검색 합계 — 건수 + 총액"""
+    e1 = Expense(user_id=test_user.id, household_id=test_household.id, amount=45000, description="정형외과 병원", date=datetime(2026, 3, 1))
+    e2 = Expense(user_id=test_user.id, household_id=test_household.id, amount=12000, description="약국 병원약", date=datetime(2026, 3, 2))
+    e3 = Expense(user_id=test_user.id, household_id=test_household.id, amount=8000, description="점심", date=datetime(2026, 3, 3))
+    db_session.add_all([e1, e2, e3])
+    await db_session.commit()
+
+    response = await authenticated_client.get("/api/expenses/search/summary?query=병원")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["total_count"] == 2
+    assert data["total_amount"] == 57000.0
+
+
+@pytest.mark.asyncio
+async def test_search_summary_expenses_no_query(authenticated_client, test_user: User, test_household: Household, db_session):
+    """검색 합계 — query 없이 전체 합계"""
+    e1 = Expense(user_id=test_user.id, household_id=test_household.id, amount=10000, description="택시", date=datetime(2026, 3, 1))
+    db_session.add(e1)
+    await db_session.commit()
+
+    response = await authenticated_client.get("/api/expenses/search/summary")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["total_count"] == 1
+    assert data["total_amount"] == 10000.0
