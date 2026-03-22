@@ -386,3 +386,88 @@ async def test_get_expenses_list_includes_memo(authenticated_client, test_user: 
     items = response.json()
     assert len(items) == 1
     assert items[0]["memo"] == "배달 앱 쿠폰 사용"
+
+
+@pytest.mark.asyncio
+async def test_search_expenses_by_query(authenticated_client, test_user: User, test_household: Household, db_session):
+    """query 파라미터로 description 검색"""
+    e1 = Expense(
+        user_id=test_user.id,
+        household_id=test_household.id,
+        amount=8000,
+        description="점심 김치찌개",
+        date=datetime(2026, 3, 1),
+    )
+    e2 = Expense(
+        user_id=test_user.id,
+        household_id=test_household.id,
+        amount=45000,
+        description="정형외과 병원",
+        date=datetime(2026, 3, 2),
+    )
+    e3 = Expense(
+        user_id=test_user.id,
+        household_id=test_household.id,
+        amount=5000,
+        description="버스 교통비",
+        date=datetime(2026, 3, 3),
+    )
+    db_session.add_all([e1, e2, e3])
+    await db_session.commit()
+
+    response = await authenticated_client.get("/api/expenses?query=병원")
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data) == 1
+    assert data[0]["description"] == "정형외과 병원"
+
+
+@pytest.mark.asyncio
+async def test_search_expenses_no_match(authenticated_client, test_user: User, test_household: Household, db_session):
+    """query 파라미터로 검색 — 결과 없음"""
+    e1 = Expense(
+        user_id=test_user.id,
+        household_id=test_household.id,
+        amount=8000,
+        description="점심 김치찌개",
+        date=datetime(2026, 3, 1),
+    )
+    db_session.add(e1)
+    await db_session.commit()
+
+    response = await authenticated_client.get("/api/expenses?query=병원")
+    assert response.status_code == 200
+    assert response.json() == []
+
+
+@pytest.mark.asyncio
+async def test_search_expenses_with_category_filter(authenticated_client, test_user: User, test_household: Household, db_session):
+    """query + category_id 필터 조합"""
+    cat = Category(name="의료", type="expense", household_id=test_household.id)
+    db_session.add(cat)
+    await db_session.flush()
+
+    e1 = Expense(
+        user_id=test_user.id,
+        household_id=test_household.id,
+        amount=45000,
+        description="정형외과 병원",
+        category_id=cat.id,
+        date=datetime(2026, 3, 1),
+    )
+    e2 = Expense(
+        user_id=test_user.id,
+        household_id=test_household.id,
+        amount=5000,
+        description="약국 병원약",
+        category_id=None,
+        date=datetime(2026, 3, 2),
+    )
+    db_session.add_all([e1, e2])
+    await db_session.commit()
+
+    response = await authenticated_client.get(f"/api/expenses?query=병원&category_id={cat.id}")
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data) == 1
+    assert data[0]["description"] == "정형외과 병원"
