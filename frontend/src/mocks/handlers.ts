@@ -344,6 +344,13 @@ export const handlers = [
   // ==================== 예산 API ====================
 
   /**
+   * GET /api/budgets - 예산 목록 조회
+   */
+  http.get(`${BASE_URL}/budgets`, () => {
+    return HttpResponse.json([])
+  }),
+
+  /**
    * GET /api/budgets/monthly-stats - 월별 예산 대비 지출 통계
    */
   http.get(`${BASE_URL}/budgets/monthly-stats`, () => {

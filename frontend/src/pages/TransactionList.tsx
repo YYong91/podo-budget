@@ -72,12 +72,22 @@ export default function TransactionList() {
     localStorage.getItem('podo-welcome-dismissed') === 'true'
   )
   const [hasBudget, setHasBudget] = useState(false)
+  const [hasEverTransacted, setHasEverTransacted] = useState(false)
 
-  // 예산 존재 여부 조회 (웰컴 카드용)
+  // 웰컴 카드용 완료 판정 데이터 조회 (예산 + 전체 거래 존재 여부)
   useEffect(() => {
-    if (welcomeDismissed) return
+    if (welcomeDismissed || !activeHouseholdId) return
     budgetApi.getBudgets().then((res) => setHasBudget(res.data.length > 0)).catch(() => {})
-  }, [welcomeDismissed])
+    // 전체 기간 거래 1건 조회 (현재 월이 아닌 lifetime 체크)
+    expenseApi.getAll({ household_id: activeHouseholdId, limit: 1 })
+      .then((res) => { if (res.data.length > 0) setHasEverTransacted(true) })
+      .catch(() => {})
+    if (!hasEverTransacted) {
+      incomeApi.getAll({ household_id: activeHouseholdId, limit: 1 })
+        .then((res) => { if (res.data.length > 0) setHasEverTransacted(true) })
+        .catch(() => {})
+    }
+  }, [welcomeDismissed, activeHouseholdId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleWelcomeDismiss = useCallback(() => {
     setWelcomeDismissed(true)
@@ -305,13 +315,14 @@ export default function TransactionList() {
       {/* 온보딩 웰컴 카드 */}
       {!welcomeDismissed && !loading && (
         <WelcomeCard
-          hasTransaction={expenses.length > 0 || incomes.length > 0}
+          hasTransaction={hasEverTransacted || expenses.length > 0 || incomes.length > 0}
           hasBudget={hasBudget}
           isBotLinked={!!user?.is_telegram_linked || !!user?.is_kakao_linked}
           isPwaInstalled={isPwaInstalled}
           canPromptPwa={canPromptInstall}
           isIos={isIos}
           onPromptPwa={promptInstall}
+          onIosGuide={() => addToast('info', 'Safari 하단 공유 버튼(□↑) → "홈 화면에 추가"를 선택해주세요')}
           onDismiss={handleWelcomeDismiss}
         />
       )}

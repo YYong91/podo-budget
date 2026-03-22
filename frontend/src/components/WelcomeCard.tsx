@@ -19,6 +19,7 @@ interface WelcomeCardProps {
   canPromptPwa: boolean
   isIos: boolean
   onPromptPwa: () => void
+  onIosGuide?: () => void
   onDismiss: () => void
 }
 
@@ -38,6 +39,7 @@ export default function WelcomeCard({
   canPromptPwa,
   isIos,
   onPromptPwa,
+  onIosGuide,
   onDismiss,
 }: WelcomeCardProps) {
   const navigate = useNavigate()
@@ -73,8 +75,7 @@ export default function WelcomeCard({
         if (canPromptPwa) {
           onPromptPwa()
         } else if (isIos) {
-          // iOS: 안내 알림 (WelcomeCard 내에서 간단히 표시)
-          alert('Safari 하단의 공유 버튼(□↑)을 누른 뒤\n"홈 화면에 추가"를 선택해주세요')
+          onIosGuide?.()
         }
       },
     },
