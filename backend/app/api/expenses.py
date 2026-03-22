@@ -47,6 +47,38 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
+def _escape_like(value: str) -> str:
+    """LIKE 패턴 특수문자 이스케이프"""
+    return value.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+
+
+def _apply_expense_filters(
+    stmt,
+    *,
+    query: str | None,
+    start_date: str | None,
+    end_date: str | None,
+    category_id: int | None,
+    member_user_id: int | None,
+):
+    """지출 공통 필터 적용"""
+    if member_user_id is not None:
+        stmt = stmt.where(Expense.user_id == member_user_id)
+    if query:
+        stmt = stmt.where(Expense.description.ilike(f"%{_escape_like(query)}%", escape="\\"))
+    if start_date:
+        start_dt = datetime.fromisoformat(start_date)
+        stmt = stmt.where(Expense.date >= start_dt)
+    if end_date:
+        end_dt = datetime.fromisoformat(end_date)
+        if len(end_date) == 10:
+            end_dt = end_dt.replace(hour=23, minute=59, second=59)
+        stmt = stmt.where(Expense.date <= end_dt)
+    if category_id is not None:
+        stmt = stmt.where(Expense.category_id == category_id)
+    return stmt
+
+
 @router.post("", response_model=ExpenseResponse, status_code=status.HTTP_201_CREATED)
 async def create_expense(
     expense: ExpenseCreate,
@@ -100,24 +132,14 @@ async def get_expenses(
     # 가구 멤버 검증 후 가구 전체 멤버의 지출 조회
     await get_household_member(household_id, current_user, db)
     stmt = select(Expense).where(Expense.household_id == household_id)
-    # 특정 멤버 필터링
-    if member_user_id is not None:
-        stmt = stmt.where(Expense.user_id == member_user_id)
-
-    # 필터 적용 (YYYY-MM-DD 또는 YYYY-MM-DDTHH:MM:SS 모두 허용)
-    if start_date:
-        start_dt = datetime.fromisoformat(start_date)
-        stmt = stmt.where(Expense.date >= start_dt)
-    if end_date:
-        end_dt = datetime.fromisoformat(end_date)
-        # 날짜만 입력된 경우 (YYYY-MM-DD) 해당 날짜 23:59:59까지 포함
-        if len(end_date) == 10:
-            end_dt = end_dt.replace(hour=23, minute=59, second=59)
-        stmt = stmt.where(Expense.date <= end_dt)
-    if category_id is not None:
-        stmt = stmt.where(Expense.category_id == category_id)
-    if query:
-        stmt = stmt.where(Expense.description.ilike(f"%{query}%"))
+    stmt = _apply_expense_filters(
+        stmt,
+        query=query,
+        start_date=start_date,
+        end_date=end_date,
+        category_id=category_id,
+        member_user_id=member_user_id,
+    )
 
     stmt = stmt.order_by(Expense.date.desc()).offset(skip).limit(limit)
     result = await db.execute(stmt)
@@ -579,20 +601,14 @@ async def get_expenses_search_summary(
     await get_household_member(household_id, current_user, db)
 
     stmt = select(func.count(), func.coalesce(func.sum(Expense.amount), 0)).where(Expense.household_id == household_id)
-    if member_user_id is not None:
-        stmt = stmt.where(Expense.user_id == member_user_id)
-    if query:
-        stmt = stmt.where(Expense.description.ilike(f"%{query}%"))
-    if start_date:
-        start_dt = datetime.fromisoformat(start_date)
-        stmt = stmt.where(Expense.date >= start_dt)
-    if end_date:
-        end_dt = datetime.fromisoformat(end_date)
-        if len(end_date) == 10:
-            end_dt = end_dt.replace(hour=23, minute=59, second=59)
-        stmt = stmt.where(Expense.date <= end_dt)
-    if category_id is not None:
-        stmt = stmt.where(Expense.category_id == category_id)
+    stmt = _apply_expense_filters(
+        stmt,
+        query=query,
+        start_date=start_date,
+        end_date=end_date,
+        category_id=category_id,
+        member_user_id=member_user_id,
+    )
 
     result = await db.execute(stmt)
     count, total = result.one()

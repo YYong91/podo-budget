@@ -31,6 +31,38 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
+def _escape_like(value: str) -> str:
+    """LIKE 패턴 특수문자 이스케이프"""
+    return value.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+
+
+def _apply_income_filters(
+    stmt,
+    *,
+    query: str | None,
+    start_date: str | None,
+    end_date: str | None,
+    category_id: int | None,
+    member_user_id: int | None,
+):
+    """수입 공통 필터 적용"""
+    if member_user_id is not None:
+        stmt = stmt.where(Income.user_id == member_user_id)
+    if query:
+        stmt = stmt.where(Income.description.ilike(f"%{_escape_like(query)}%", escape="\\"))
+    if start_date:
+        start_dt = datetime.fromisoformat(start_date)
+        stmt = stmt.where(Income.date >= start_dt)
+    if end_date:
+        end_dt = datetime.fromisoformat(end_date)
+        if len(end_date) == 10:
+            end_dt = end_dt.replace(hour=23, minute=59, second=59)
+        stmt = stmt.where(Income.date <= end_dt)
+    if category_id is not None:
+        stmt = stmt.where(Income.category_id == category_id)
+    return stmt
+
+
 @router.post("", response_model=IncomeResponse, status_code=status.HTTP_201_CREATED)
 async def create_income(
     income: IncomeCreate,
@@ -73,22 +105,14 @@ async def get_incomes(
 
     await get_household_member(household_id, current_user, db)
     stmt = select(Income).where(Income.household_id == household_id)
-    if member_user_id is not None:
-        stmt = stmt.where(Income.user_id == member_user_id)
-
-    if query:
-        stmt = stmt.where(Income.description.ilike(f"%{query}%"))
-    if start_date:
-        start_dt = datetime.fromisoformat(start_date)
-        stmt = stmt.where(Income.date >= start_dt)
-    if end_date:
-        end_dt = datetime.fromisoformat(end_date)
-        # 날짜만 입력된 경우 (YYYY-MM-DD) 해당 날짜 23:59:59까지 포함
-        if len(end_date) == 10:
-            end_dt = end_dt.replace(hour=23, minute=59, second=59)
-        stmt = stmt.where(Income.date <= end_dt)
-    if category_id is not None:
-        stmt = stmt.where(Income.category_id == category_id)
+    stmt = _apply_income_filters(
+        stmt,
+        query=query,
+        start_date=start_date,
+        end_date=end_date,
+        category_id=category_id,
+        member_user_id=member_user_id,
+    )
 
     stmt = stmt.order_by(Income.date.desc()).offset(skip).limit(limit)
     result = await db.execute(stmt)
