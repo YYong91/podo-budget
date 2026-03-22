@@ -62,6 +62,7 @@ class Settings(BaseSettings):
     # .env에서 실제 사용자 ID를 설정하지 않으면 관리자 기능이 비활성화됨
     ADMIN_USER_ID: int = -1
     ADMIN_TELEGRAM_CHAT_ID: str = ""  # 피드백 알림 수신할 관리자 텔레그램 채팅 ID
+    ADMIN_TELEGRAM_BOT_TOKEN: str = ""  # 관리자 알림용 별도 봇 토큰 (미설정 시 TELEGRAM_BOT_TOKEN 사용)
 
     # CORS — 허용할 프론트엔드 오리진 (쉼표로 구분)
     # 기본값은 프로덕션 도메인만. 로컬 개발 시 .env에서 http://localhost:5173 추가

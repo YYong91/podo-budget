@@ -12,10 +12,9 @@ async def test_notify_admin_feedback_sends_message():
 
     with (
         patch("app.services.feedback_notify.settings") as mock_settings,
-        patch("app.services.feedback_notify.send_telegram_message", new_callable=AsyncMock) as mock_send,
+        patch("app.services.feedback_notify._send_admin_telegram", new_callable=AsyncMock) as mock_send,
     ):
         mock_settings.ADMIN_TELEGRAM_CHAT_ID = "12345"
-        mock_settings.TELEGRAM_BOT_TOKEN = "test-token"
 
         await notify_admin_feedback(
             username="testuser",
@@ -26,8 +25,7 @@ async def test_notify_admin_feedback_sends_message():
         )
 
         mock_send.assert_called_once()
-        call_args = mock_send.call_args
-        text = call_args[0][1] if len(call_args[0]) > 1 else call_args[1].get("text", "")
+        text = mock_send.call_args[0][1]
         assert "검색 기능 요청" in text
         assert "카카오톡" in text
 
@@ -39,7 +37,7 @@ async def test_notify_admin_feedback_skips_when_no_chat_id():
 
     with (
         patch("app.services.feedback_notify.settings") as mock_settings,
-        patch("app.services.feedback_notify.send_telegram_message", new_callable=AsyncMock) as mock_send,
+        patch("app.services.feedback_notify._send_admin_telegram", new_callable=AsyncMock) as mock_send,
     ):
         mock_settings.ADMIN_TELEGRAM_CHAT_ID = ""
 
@@ -52,3 +50,27 @@ async def test_notify_admin_feedback_skips_when_no_chat_id():
         )
 
         mock_send.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_send_admin_telegram_uses_admin_token():
+    """ADMIN_TELEGRAM_BOT_TOKEN 설정 시 해당 토큰 사용"""
+    from app.services.feedback_notify import _send_admin_telegram
+
+    with (
+        patch("app.services.feedback_notify.settings") as mock_settings,
+        patch("app.services.feedback_notify.httpx.AsyncClient") as mock_client_cls,
+    ):
+        mock_settings.ADMIN_TELEGRAM_BOT_TOKEN = "admin-bot-token"
+        mock_settings.TELEGRAM_BOT_TOKEN = "main-bot-token"
+
+        mock_client = AsyncMock()
+        mock_client_cls.return_value.__aenter__ = AsyncMock(return_value=mock_client)
+        mock_client_cls.return_value.__aexit__ = AsyncMock(return_value=False)
+
+        await _send_admin_telegram("12345", "test message")
+
+        mock_client.post.assert_called_once()
+        url = mock_client.post.call_args[0][0]
+        assert "admin-bot-token" in url
+        assert "main-bot-token" not in url
