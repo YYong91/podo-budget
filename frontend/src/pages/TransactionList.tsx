@@ -284,8 +284,8 @@ export default function TransactionList() {
         items={pendingRecurring}
         onExecute={async (id) => {
           try {
-            const res = await recurringApi.execute(id)
-            addToast('success', res.data.message)
+            await recurringApi.execute(id)
+            addToast('success', '거래가 등록되었습니다')
             setPendingRecurring((prev) => prev.filter((r) => r.id !== id))
             fetchData()
           } catch {

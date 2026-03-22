@@ -65,7 +65,7 @@ export default function FeedbackPage() {
     setSubmitting(true)
     try {
       await feedbackApi.create({ type, title: title.trim(), content: content.trim() })
-      addToast('success', '피드백이 제출되었습니다!')
+      addToast('success', '피드백이 제출되었습니다')
       trackEvent('feedback_submitted')
       setTitle('')
       setContent('')

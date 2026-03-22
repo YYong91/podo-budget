@@ -232,7 +232,7 @@ function MyAccountSection() {
       setLinkCode(data)
       trackEvent('telegram_linked')
     } catch {
-      addToast('error', '코드 발급에 실패했습니다.')
+      addToast('error', '코드 발급에 실패했습니다')
     } finally {
       setLoadingCode(false)
     }
@@ -243,11 +243,11 @@ function MyAccountSection() {
     setLoadingUnlink(true)
     try {
       await unlinkTelegram()
-      addToast('success', '텔레그램 연동이 해제되었습니다.')
+      addToast('success', '텔레그램 연동이 해제되었습니다')
       await refreshUser()
       setLinkCode(null)
     } catch {
-      addToast('error', '연동 해제에 실패했습니다.')
+      addToast('error', '연동 해제에 실패했습니다')
     } finally {
       setLoadingUnlink(false)
     }
@@ -257,9 +257,9 @@ function MyAccountSection() {
     if (!linkCode) return
     try {
       await navigator.clipboard.writeText(`/link ${linkCode.code}`)
-      addToast('success', '복사되었습니다!')
+      addToast('success', '복사되었습니다')
     } catch {
-      addToast('error', '자동 복사 실패 — 아래 명령어를 직접 복사해주세요')
+      addToast('error', '자동 복사에 실패했습니다')
     }
   }
 
@@ -270,7 +270,7 @@ function MyAccountSection() {
       setKakaoLinkCode(data)
       trackEvent('kakao_linked')
     } catch {
-      addToast('error', '코드 발급에 실패했습니다.')
+      addToast('error', '코드 발급에 실패했습니다')
     } finally {
       setLoadingKakaoCode(false)
     }
@@ -281,11 +281,11 @@ function MyAccountSection() {
     setLoadingKakaoUnlink(true)
     try {
       await unlinkKakao()
-      addToast('success', '카카오톡 연동이 해제되었습니다.')
+      addToast('success', '카카오톡 연동이 해제되었습니다')
       await refreshUser()
       setKakaoLinkCode(null)
     } catch {
-      addToast('error', '연동 해제에 실패했습니다.')
+      addToast('error', '연동 해제에 실패했습니다')
     } finally {
       setLoadingKakaoUnlink(false)
     }
@@ -296,9 +296,9 @@ function MyAccountSection() {
     try {
       // 카카오 봇은 "연동 {code}" 형식 사용 (한글 명령어 = /link 슬래시 명령어) (#200)
       await navigator.clipboard.writeText(`연동 ${kakaoLinkCode.code}`)
-      addToast('success', '복사되었습니다!')
+      addToast('success', '복사되었습니다')
     } catch {
-      addToast('error', '자동 복사 실패 — 아래 명령어를 직접 복사해주세요')
+      addToast('error', '자동 복사에 실패했습니다')
     }
   }
 
@@ -561,9 +561,9 @@ function MyAccountSection() {
                     try {
                       await navigator.clipboard.writeText(`연동 ${kakaoLinkCode.code}`)
                       window.open(KAKAO_CHANNEL_CHAT_URL, '_blank')
-                      addToast('success', '연동 코드가 복사되었어요. 카카오톡에서 붙여넣기 해주세요!')
+                      addToast('success', '연동 코드가 복사되었습니다')
                     } catch {
-                      addToast('error', '클립보드 복사에 실패했어요')
+                      addToast('error', '복사에 실패했습니다')
                     }
                   }}
                   className="block w-full text-center bg-[#FEE500] text-[#191919] rounded-xl py-3 font-medium hover:bg-[#FDD835] transition-colors"
