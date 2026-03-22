@@ -9,6 +9,7 @@ import { accountApi } from '../api/accounts'
 import { useHouseholdStore } from '../stores/useHouseholdStore'
 import LoadingSpinner from '../components/LoadingSpinner'
 import type { AssetSearchResult, CreateAssetParams, Account } from '../types'
+import { trackEvent } from '../utils/analytics'
 
 // 한국 주식 정적 종목 리스트 (lazy load)
 let _stocksKrCache: AssetSearchResult[] | null = null
@@ -233,6 +234,7 @@ export default function AssetForm() {
         await assetApi.create(item)
       }
       addToast('success', `${previewItems.length}개 자산이 등록되었습니다`)
+      trackEvent('asset_added')
       navigate('/assets')
     } catch {
       addToast('error', '저장 중 오류가 발생했습니다')
@@ -256,6 +258,7 @@ export default function AssetForm() {
       } else {
         await assetApi.create(form)
         addToast('success', '자산이 등록되었습니다')
+        trackEvent('asset_added')
       }
       navigate('/assets')
     } catch {

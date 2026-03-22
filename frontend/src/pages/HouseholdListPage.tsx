@@ -16,6 +16,7 @@ import ErrorState from '../components/ErrorState'
 import LoadingSpinner from '../components/LoadingSpinner'
 import type { CreateHouseholdDto } from '../types'
 import { formatDate, formatRole, getRoleBadgeColor } from '../utils/household'
+import { trackEvent } from '../utils/analytics'
 
 export default function HouseholdListPage() {
   const navigate = useNavigate()
@@ -57,6 +58,7 @@ export default function HouseholdListPage() {
     try {
       const newHousehold = await createHousehold(data)
       addToast('success', '가구가 생성되었습니다')
+      trackEvent('household_created')
       setShowCreateModal(false)
       // 생성 후 상세 페이지로 이동
       navigate(`/households/${newHousehold.id}`)

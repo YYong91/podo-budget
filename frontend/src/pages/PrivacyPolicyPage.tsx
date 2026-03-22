@@ -34,9 +34,11 @@ export default function PrivacyPolicyPage() {
               <ul className="list-disc list-inside space-y-1 ml-4">
                 <li><strong>필수 항목</strong>: 사용자명, 비밀번호(암호화 저장), 지출 내역(금액, 설명, 카테고리, 날짜)</li>
                 <li><strong>선택 항목</strong>: 이메일(공유 가계부 초대 기능 이용 시 권장)</li>
+                <li><strong>자동 수집 항목</strong>: 서비스 이용 기록(페이지 방문, 기능 사용 빈도), 기기 정보(브라우저 유형, 화면 해상도), 접속 IP</li>
               </ul>
               <p className="mt-2">
                 개인정보는 회원가입 시 사용자가 직접 입력하거나, 서비스 이용 과정에서 자동으로 수집됩니다.
+                서비스 이용 분석을 위해 Google Analytics를 사용하며, 이를 통해 방문 페이지, 체류 시간, 이벤트 정보가 수집됩니다.
               </p>
             </section>
 
@@ -48,6 +50,7 @@ export default function PrivacyPolicyPage() {
                 <li>AI 기반 자동 카테고리 분류 및 인사이트 생성</li>
                 <li>공유 가계부 기능(초대, 멤버 관리)</li>
                 <li>서비스 개선 및 신규 기능 개발</li>
+                <li>서비스 이용 통계 분석(Google Analytics를 통한 사용 패턴 분석)</li>
               </ul>
             </section>
 
@@ -61,6 +64,12 @@ export default function PrivacyPolicyPage() {
                 <li><strong>제공 항목</strong>: 사용자가 입력한 지출 텍스트(예: "오늘 점심에 김치찌개 8000원 먹었어")</li>
                 <li><strong>제공 목적</strong>: 지출 내역 자동 파싱(금액, 카테고리, 날짜 추출) 및 월별 지출 인사이트 생성</li>
                 <li><strong>보유 기간</strong>: 각 제3자의 개인정보처리방침에 따름</li>
+              </ul>
+              <ul className="list-disc list-inside space-y-1 ml-4 mt-3">
+                <li><strong>제공받는 자</strong>: Google (Google Analytics)</li>
+                <li><strong>제공 항목</strong>: 서비스 이용 기록(페이지 방문, 기능 사용 이벤트), 기기 정보, 접속 IP(익명화 처리)</li>
+                <li><strong>제공 목적</strong>: 서비스 이용 통계 분석 및 개선</li>
+                <li><strong>보유 기간</strong>: Google의 개인정보처리방침에 따름</li>
               </ul>
               <p className="mt-2">
                 위 제3자 제공 이외에 법령에 따른 경우를 제외하고는 사용자의 개인정보를 외부에 제공하지 않습니다.

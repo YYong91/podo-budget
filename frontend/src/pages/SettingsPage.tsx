@@ -19,6 +19,7 @@ import { useChangelog } from '../hooks/useChangelog'
 import { useTheme } from '../contexts/ThemeContext'
 import type { ThemeMode } from '../contexts/ThemeContext'
 import type { ChangelogItem } from '../data/changelogs'
+import { trackEvent } from '../utils/analytics'
 
 const AUTH_URL = import.meta.env.VITE_AUTH_URL || 'https://auth.podonest.com'
 
@@ -229,6 +230,7 @@ function MyAccountSection() {
     try {
       const data = await generateTelegramLinkCode()
       setLinkCode(data)
+      trackEvent('telegram_linked')
     } catch {
       addToast('error', '코드 발급에 실패했습니다.')
     } finally {
@@ -266,6 +268,7 @@ function MyAccountSection() {
     try {
       const data = await generateKakaoLinkCode()
       setKakaoLinkCode(data)
+      trackEvent('kakao_linked')
     } catch {
       addToast('error', '코드 발급에 실패했습니다.')
     } finally {

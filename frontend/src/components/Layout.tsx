@@ -11,6 +11,7 @@ import {
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { useChangelog } from '../hooks/useChangelog'
+import { trackPageView } from '../utils/analytics'
 
 
 const navItems: { path: string; label: string; icon: LucideIcon }[] = [
@@ -31,9 +32,10 @@ export default function Layout() {
 
   // 초기 fetch는 ProtectedRoute의 initializeApp()에서 수행
 
-  // 탭 전환 시 스크롤 위치 초기화 — 이전 탭의 스크롤이 다른 탭에 적용되는 문제 방지
+  // 탭 전환 시 스크롤 위치 초기화 + 페이지뷰 트래킹
   useEffect(() => {
     window.scrollTo(0, 0)
+    trackPageView(location.pathname)
   }, [location.pathname])
 
   useEffect(() => {

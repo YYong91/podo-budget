@@ -17,6 +17,7 @@ import { chatApi } from '../api/chat'
 import { useHouseholdStore } from '../stores/useHouseholdStore'
 import type { Category, ParsedExpenseItem } from '../types'
 import ParsedItemPreviewCard from '../components/ParsedItemPreviewCard'
+import { trackEvent } from '../utils/analytics'
 
 type InputMode = 'natural' | 'form' | 'ocr'
 
@@ -96,6 +97,7 @@ export default function ExpenseForm() {
         }))
         setPreviewItems(editables)
         setRawInput(naturalInput.trim())
+        trackEvent('expense_preview', { mode: 'natural', item_count: editables.length })
       } else {
         addToast('info', res.data.message || '지출 정보를 인식하지 못했습니다')
       }
@@ -135,6 +137,7 @@ export default function ExpenseForm() {
         }
         savedCount++
       }
+      trackEvent('expense_saved', { mode: 'natural', item_count: savedCount })
       addToast('success', `🍇 포도알 +${savedCount}! 거래가 저장되었습니다`)
       setPreviewItems(null)
       setNaturalInput('')
@@ -234,6 +237,7 @@ export default function ExpenseForm() {
         }))
         setPreviewItems(editables)
         setRawInput(`[OCR] ${file.name}`)
+        trackEvent('ocr_upload', { item_count: editables.length })
       } else {
         addToast('info', res.data.message || '결제 정보를 인식하지 못했습니다')
         setOcrPreview(null)
@@ -283,6 +287,7 @@ export default function ExpenseForm() {
         memo: formData.memo.trim() || undefined,
         exclude_from_stats: formData.exclude_from_stats,
       })
+      trackEvent('expense_saved', { mode: 'form' })
       addToast('success', '🍇 포도알 +1! 지출이 저장되었습니다')
       setTimeout(() => navigate('/expenses'), 500)
     } catch (error: unknown) {
