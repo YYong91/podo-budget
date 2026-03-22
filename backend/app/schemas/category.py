@@ -31,6 +31,6 @@ class CategoryResponse(CategoryBase):
     type: str = "expense"
     sort_order: int = 0
     is_system: bool = False
-    created_at: datetime | None = None
+    created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
