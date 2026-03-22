@@ -80,6 +80,13 @@ export const handlers = [
   }),
 
   /**
+   * GET /api/expenses/search/summary - 지출 검색 합계
+   */
+  http.get(`${BASE_URL}/expenses/search/summary`, () => {
+    return HttpResponse.json({ total_count: 5, total_amount: 125000 })
+  }),
+
+  /**
    * GET /api/expenses/:id - 단일 지출 조회
    */
   http.get(`${BASE_URL}/expenses/:id`, ({ params }) => {
@@ -175,6 +182,13 @@ export const handlers = [
 
   http.get(`${BASE_URL}/income/stats`, () => {
     return HttpResponse.json(mockIncomeStats)
+  }),
+
+  /**
+   * GET /api/income/search/summary - 수입 검색 합계
+   */
+  http.get(`${BASE_URL}/income/search/summary`, () => {
+    return HttpResponse.json({ total_count: 2, total_amount: 3500000 })
   }),
 
   http.get(`${BASE_URL}/income/:id`, ({ params }) => {

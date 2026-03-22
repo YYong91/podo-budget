@@ -11,6 +11,7 @@ interface GetExpensesParams {
   category_id?: number
   household_id?: number
   member_user_id?: number
+  query?: string
 }
 
 export const expenseApi = {
@@ -28,6 +29,9 @@ export const expenseApi = {
 
   delete: (id: number) =>
     apiClient.delete(`/expenses/${id}`),
+
+  searchSummary: (params?: GetExpensesParams) =>
+    apiClient.get<{ total_count: number; total_amount: number }>('/expenses/search/summary', { params }),
 
   getMonthlyStats: (month: string, householdId: number) =>
     apiClient.get<MonthlyStats>('/expenses/stats/monthly', {

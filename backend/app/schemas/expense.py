@@ -143,3 +143,10 @@ class MonthlyStatsResponse(BaseModel):
     total: float
     by_category: list[CategoryAmount]
     daily_trend: list[DailyTrendItem]
+
+
+class SearchSummary(BaseModel):
+    """검색 결과 합계"""
+
+    total_count: int
+    total_amount: float
