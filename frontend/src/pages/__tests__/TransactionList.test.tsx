@@ -257,5 +257,36 @@ describe('TransactionList', () => {
         expect(screen.getByText('검색어를 입력하세요')).toBeInTheDocument()
       })
     })
+
+    it('검색어 입력 후 Enter → 검색 결과 표시', async () => {
+      // "김치찌개"는 mockExpenses에 존재 — 검색 결과로 표시되어야 함
+      renderPage('/?search=김치찌개')
+
+      await waitFor(() => {
+        expect(screen.getByText('김치찌개')).toBeInTheDocument()
+      })
+
+      // 월 뷰 전용 요소(캘린더 요일 헤더)가 숨겨져야 함
+      expect(screen.queryByText('일')).not.toBeInTheDocument()
+    })
+
+    it('검색 결과 상단에 합계 표시', async () => {
+      renderPage('/?search=김치찌개')
+
+      await waitFor(() => {
+        // 검색 합계 바: "김치찌개" · 1건 · 총 ₩8,000
+        expect(screen.getByText(/1건/)).toBeInTheDocument()
+        // 합계 바 텍스트 전체를 포함하는 요소 확인
+        expect(screen.getByText(/총/)).toBeInTheDocument()
+      })
+    })
+
+    it('검색 결과 없을 때 빈 상태 표시', async () => {
+      renderPage('/?search=존재하지않는검색어')
+
+      await waitFor(() => {
+        expect(screen.getByText('검색 결과가 없습니다')).toBeInTheDocument()
+      })
+    })
   })
 })

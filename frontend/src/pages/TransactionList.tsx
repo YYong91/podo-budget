@@ -67,6 +67,11 @@ export default function TransactionList() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
 
+  // 검색 결과 상태
+  const [searchResults, setSearchResults] = useState<UnifiedTransaction[]>([])
+  const [searchSummary, setSearchSummary] = useState<{ total_count: number; total_amount: number } | null>(null)
+  const [searchLoading, setSearchLoading] = useState(false)
+
   // 카테고리 바텀시트 상태
   const [sheetOpen, setSheetOpen] = useState(false)
   const [sheetTarget, setSheetTarget] = useState<UnifiedTransaction | null>(null)
@@ -121,6 +126,48 @@ export default function TransactionList() {
       setParams({ search: value.trim() })
     }
   }, [setParams])
+
+  // 검색 실행
+  const fetchSearchResults = useCallback(async () => {
+    if (!activeHouseholdId || !searchQuery) return
+    setSearchLoading(true)
+    try {
+      const params = { query: searchQuery, limit: 30, household_id: activeHouseholdId }
+      const [expRes, incRes, expSummary, incSummary] = await Promise.all([
+        expenseApi.getAll(params),
+        incomeApi.getAll(params),
+        expenseApi.searchSummary(params),
+        incomeApi.searchSummary(params),
+      ])
+
+      const all: UnifiedTransaction[] = [
+        ...expRes.data.map(e => ({ ...e, type: 'expense' as const })),
+        ...incRes.data.map(i => ({ ...i, type: 'income' as const })),
+      ]
+      all.sort((a, b) => b.date.localeCompare(a.date) || b.id - a.id)
+
+      setSearchResults(all)
+      setSearchSummary({
+        total_count: expSummary.data.total_count + incSummary.data.total_count,
+        total_amount: expSummary.data.total_amount + incSummary.data.total_amount,
+      })
+    } catch {
+      addToast('error', '검색에 실패했습니다')
+    } finally {
+      setSearchLoading(false)
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- addToast는 안정적 참조
+  }, [searchQuery, activeHouseholdId])
+
+  // 검색어 변경 시 검색 실행
+  useEffect(() => {
+    if (isSearchMode && searchQuery) {
+      fetchSearchResults()
+    } else {
+      setSearchResults([])
+      setSearchSummary(null)
+    }
+  }, [isSearchMode, searchQuery, fetchSearchResults])
 
   // 검색 모드 진입 시 인풋 포커스
   useEffect(() => {
@@ -216,10 +263,23 @@ export default function TransactionList() {
     return { grouped, totalExpense, totalIncome, daySummaries }
   }, [expenses, incomes, filter])
 
+  // 검색 결과 날짜별 그룹핑
+  const searchGrouped = useMemo(() => {
+    const grouped = new Map<string, UnifiedTransaction[]>()
+    for (const tx of searchResults) {
+      const dateKey = tx.date.slice(0, 10)
+      const group = grouped.get(dateKey)
+      if (group) group.push(tx)
+      else grouped.set(dateKey, [tx])
+    }
+    return grouped
+  }, [searchResults])
+
   // TransactionItem.onCategoryClick 안정화 — 데이터 변경 시에만 재생성 (#240)
   const categoryClickHandlers = useMemo(() => {
     const handlers = new Map<string, () => void>()
-    for (const txs of grouped.values()) {
+    const sources = isSearchMode && searchQuery ? searchGrouped : grouped
+    for (const txs of sources.values()) {
       for (const tx of txs) {
         handlers.set(`${tx.type}-${tx.id}`, () => {
           setSheetTarget(tx)
@@ -228,7 +288,7 @@ export default function TransactionList() {
       }
     }
     return handlers
-  }, [grouped])
+  }, [grouped, searchGrouped, isSearchMode, searchQuery])
 
   // 캘린더 날짜 클릭 → 스크롤
   const handleDateClick = useCallback((dateString: string) => {
@@ -395,8 +455,77 @@ export default function TransactionList() {
         </div>
       )}
 
-      {/* 거래 리스트 (월 뷰 또는 검색어 입력 후) */}
-      {(!isSearchMode || searchQuery) && (
+      {/* 검색 결과 합계 바 */}
+      {isSearchMode && searchQuery && searchSummary && !searchLoading && (
+        <div className="px-1 text-sm text-[var(--text-secondary)]">
+          <span className="font-medium text-[var(--text-primary)]">&ldquo;{searchQuery}&rdquo;</span>
+          {' \u00b7 '}
+          {searchSummary.total_count}건
+          {' \u00b7 총 '}
+          {formatAmount(searchSummary.total_amount)}
+        </div>
+      )}
+
+      {/* 검색 결과 리스트 */}
+      {isSearchMode && searchQuery && (
+        searchLoading ? (
+          <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] overflow-hidden">
+            {[1, 2, 3].map(i => (
+              <div key={i}>
+                <div className="bg-[var(--surface-elevated)] px-4 py-2 border-b border-[var(--border-subtle)]">
+                  <div className="h-3 w-24 bg-[var(--surface-hover)] rounded animate-pulse" />
+                </div>
+                {[1, 2].map(j => (
+                  <div key={j} className="px-4 py-3 space-y-2">
+                    <div className="flex justify-between">
+                      <div className="h-4 w-32 bg-[var(--border-subtle)] rounded animate-pulse" />
+                      <div className="h-4 w-20 bg-[var(--border-subtle)] rounded animate-pulse" />
+                    </div>
+                    <div className="h-3 w-12 bg-[var(--border-subtle)] rounded-full animate-pulse" />
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+        ) : searchGrouped.size === 0 ? (
+          <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] p-12 text-center">
+            <Search className="w-8 h-8 mx-auto mb-2 text-[var(--text-muted)] opacity-50" />
+            <p className="text-sm text-[var(--text-primary)] font-medium mb-1">검색 결과가 없습니다</p>
+            <p className="text-xs text-[var(--text-tertiary)]">다른 검색어를 시도해보세요</p>
+          </div>
+        ) : (
+          <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] overflow-hidden">
+            {Array.from(searchGrouped.entries()).map(([dateKey, txs]) => (
+              <div key={dateKey}>
+                <div className="bg-[var(--surface-elevated)] px-4 py-2 border-b border-[var(--border-subtle)]">
+                  <span className="text-xs font-semibold text-[var(--text-secondary)]">
+                    {formatDateHeader(dateKey)}
+                  </span>
+                </div>
+                <div className="divide-y divide-[var(--border-subtle)]">
+                  {txs.map(tx => (
+                    <TransactionItem
+                      key={`${tx.type}-${tx.id}`}
+                      id={tx.id}
+                      type={tx.type}
+                      description={tx.description}
+                      amount={tx.amount}
+                      categoryId={tx.category_id}
+                      categoryMap={categoryMap}
+                      excludeFromStats={tx.exclude_from_stats}
+                      rawInput={tx.raw_input}
+                      onCategoryClick={categoryClickHandlers.get(`${tx.type}-${tx.id}`) ?? (() => {})}
+                    />
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )
+      )}
+
+      {/* 월 뷰 거래 리스트 (검색 모드가 아닐 때만) */}
+      {!isSearchMode && (
         <>
           {loading ? (
             <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] overflow-hidden">
