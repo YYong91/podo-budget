@@ -24,6 +24,11 @@ describe('InstallBanner', () => {
     expect(screen.getByText(/앱으로 설치/)).toBeInTheDocument()
   })
 
+  it('설치 버튼에 "설치" 텍스트가 표시된다 (non-iOS)', () => {
+    render(<InstallBanner />)
+    expect(screen.getByText('설치')).toBeInTheDocument()
+  })
+
   it('닫기 버튼 클릭 시 dismissBanner 호출', () => {
     render(<InstallBanner />)
     fireEvent.click(screen.getByLabelText('배너 닫기'))

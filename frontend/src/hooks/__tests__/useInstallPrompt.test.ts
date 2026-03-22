@@ -53,6 +53,22 @@ describe('useInstallPrompt', () => {
     expect(localStorage.getItem('pwa-install-banner-dismissed')).toBe('true')
   })
 
+  it('beforeinstallprompt 이벤트를 캡처하여 deferredPrompt에 저장한다', () => {
+    const { result } = renderHook(() => useInstallPrompt())
+    expect(result.current.deferredPrompt).toBeNull()
+
+    const mockEvent = new Event('beforeinstallprompt')
+    Object.assign(mockEvent, {
+      prompt: vi.fn().mockResolvedValue(undefined),
+      userChoice: Promise.resolve({ outcome: 'accepted' }),
+    })
+    act(() => {
+      window.dispatchEvent(mockEvent)
+    })
+
+    expect(result.current.deferredPrompt).not.toBeNull()
+  })
+
   it('localStorage에 dismissed가 있으면 처음부터 isBannerVisible=false', () => {
     localStorage.setItem('pwa-install-banner-dismissed', 'true')
     const { result } = renderHook(() => useInstallPrompt())

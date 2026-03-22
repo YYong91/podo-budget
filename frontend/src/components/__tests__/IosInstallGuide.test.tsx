@@ -22,4 +22,18 @@ describe('IosInstallGuide', () => {
     fireEvent.click(screen.getByTestId('ios-guide-backdrop'))
     expect(onClose).toHaveBeenCalledTimes(1)
   })
+
+  it('Escape 키로 모달을 닫는다', () => {
+    const onClose = vi.fn()
+    render(<IosInstallGuide onClose={onClose} />)
+    fireEvent.keyDown(document, { key: 'Escape' })
+    expect(onClose).toHaveBeenCalledTimes(1)
+  })
+
+  it('role=dialog, aria-modal 속성이 있다', () => {
+    render(<IosInstallGuide onClose={vi.fn()} />)
+    const dialog = screen.getByRole('dialog')
+    expect(dialog).toHaveAttribute('aria-modal', 'true')
+    expect(dialog).toHaveAttribute('aria-label', 'iOS 설치 안내')
+  })
 })

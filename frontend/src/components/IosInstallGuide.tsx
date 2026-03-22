@@ -3,6 +3,7 @@
  * @description iOS Safari PWA 설치 안내 모달
  */
 
+import { useEffect } from 'react'
 import { Share, PlusSquare, CheckSquare } from 'lucide-react'
 
 interface Props {
@@ -16,8 +17,16 @@ const steps = [
 ]
 
 export default function IosInstallGuide({ onClose }: Props) {
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+    }
+    document.addEventListener('keydown', handler)
+    return () => document.removeEventListener('keydown', handler)
+  }, [onClose])
+
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center p-4">
+    <div role="dialog" aria-modal="true" aria-label="iOS 설치 안내" className="fixed inset-0 z-50 flex items-end justify-center sm:items-center p-4">
       <div data-testid="ios-guide-backdrop" role="button" tabIndex={0} aria-label="닫기" className="absolute inset-0 bg-black/50" onClick={onClose} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onClose() }} />
       <div className="relative bg-[var(--surface-card)] rounded-2xl shadow-xl max-w-sm w-full p-6">
         <h3 className="text-lg font-bold text-[var(--text-primary)] mb-1">앱으로 설치하기</h3>
