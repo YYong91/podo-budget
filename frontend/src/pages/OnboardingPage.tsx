@@ -28,7 +28,7 @@ export default function OnboardingPage() {
     try {
       await onboardingApi.createHousehold(name.trim() || undefined)
       await fetchHouseholds()
-      addToast('success', '가계부가 생성되었습니다!')
+      addToast('success', '가계부가 생성되었습니다')
       trackEvent('onboarding_complete', { method: 'create' })
       navigate('/', { replace: true })
     } catch {
@@ -43,7 +43,7 @@ export default function OnboardingPage() {
     setAcceptingToken(token)
     try {
       await acceptInvitation(token)
-      addToast('success', `${householdName || '가계부'}에 참여했습니다!`)
+      addToast('success', `${householdName || '가계부'}에 참여했습니다`)
       trackEvent('onboarding_complete', { method: 'accept_invitation' })
       navigate('/', { replace: true })
     } catch {

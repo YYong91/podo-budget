@@ -51,7 +51,7 @@ export default function CategoryManager() {
       setCategories(res.data)
     } catch {
       setError(true)
-      addToast('error', '카테고리 목록을 불러오는데 실패했습니다')
+      addToast('error', '카테고리 목록 로딩에 실패했습니다')
     } finally {
       setLoading(false)
     }
