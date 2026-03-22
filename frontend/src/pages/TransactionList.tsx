@@ -101,6 +101,13 @@ export default function TransactionList() {
   const [searchSummary, setSearchSummary] = useState<{ total_count: number; total_amount: number } | null>(null)
   const [searchLoading, setSearchLoading] = useState(false)
 
+  // 검색 무한 스크롤 상태
+  const [searchHasMore, setSearchHasMore] = useState(false)
+  const [searchLoadingMore, setSearchLoadingMore] = useState(false)
+  const searchOffsetRef = useRef(0)
+  const loadMoreRef = useRef<HTMLDivElement>(null)
+  const SEARCH_PAGE_SIZE = 30
+
   // 검색 필터 드롭다운 상태
   const [openFilter, setOpenFilter] = useState<'type' | 'period' | null>(null)
   // 카테고리 바텀시트: 검색 필터용 vs 거래 카테고리 변경용 구분
@@ -195,15 +202,24 @@ export default function TransactionList() {
     return { start_date: start.toISOString().slice(0, 10), end_date: end }
   }, [])
 
-  // 검색 실행
-  const fetchSearchResults = useCallback(async () => {
+  // 검색 실행 (append=true: 무한 스크롤로 추가 로드)
+  const fetchSearchResults = useCallback(async (append = false) => {
     if (!activeHouseholdId || !searchQuery) return
-    setSearchLoading(true)
+
+    if (append) {
+      setSearchLoadingMore(true)
+    } else {
+      setSearchLoading(true)
+      searchOffsetRef.current = 0
+    }
+
     try {
+      const offset = append ? searchOffsetRef.current : 0
       const dateRange = getSearchDateRange(searchPeriod)
       const baseParams = {
         query: searchQuery,
-        limit: 30,
+        skip: offset,
+        limit: SEARCH_PAGE_SIZE,
         household_id: activeHouseholdId,
         ...dateRange,
         ...(searchCategoryId && { category_id: searchCategoryId }),
@@ -213,28 +229,47 @@ export default function TransactionList() {
       const fetchExpenses = searchType !== 'income'
       const fetchIncomes = searchType !== 'expense'
 
-      const [expRes, incRes, expSummary, incSummary] = await Promise.all([
+      // 첫 로드: 데이터 + 합계, 추가 로드: 데이터만
+      const promises: Promise<{ data: unknown }>[] = [
         fetchExpenses ? expenseApi.getAll(baseParams) : Promise.resolve({ data: [] as Expense[] }),
         fetchIncomes ? incomeApi.getAll(baseParams) : Promise.resolve({ data: [] as Income[] }),
-        fetchExpenses ? expenseApi.searchSummary(baseParams) : Promise.resolve({ data: { total_count: 0, total_amount: 0 } }),
-        fetchIncomes ? incomeApi.searchSummary(baseParams) : Promise.resolve({ data: { total_count: 0, total_amount: 0 } }),
-      ])
-
-      const all: UnifiedTransaction[] = [
-        ...expRes.data.map(e => ({ ...e, type: 'expense' as const })),
-        ...incRes.data.map(i => ({ ...i, type: 'income' as const })),
       ]
-      all.sort((a, b) => b.date.localeCompare(a.date) || b.id - a.id)
+      if (!append) {
+        promises.push(
+          fetchExpenses ? expenseApi.searchSummary(baseParams) : Promise.resolve({ data: { total_count: 0, total_amount: 0 } }),
+          fetchIncomes ? incomeApi.searchSummary(baseParams) : Promise.resolve({ data: { total_count: 0, total_amount: 0 } }),
+        )
+      }
 
-      setSearchResults(all)
-      setSearchSummary({
-        total_count: expSummary.data.total_count + incSummary.data.total_count,
-        total_amount: expSummary.data.total_amount + incSummary.data.total_amount,
-      })
+      const results = await Promise.all(promises)
+      const expData = (results[0].data as Expense[]) ?? []
+      const incData = (results[1].data as Income[]) ?? []
+
+      const newItems: UnifiedTransaction[] = [
+        ...expData.map(e => ({ ...e, type: 'expense' as const })),
+        ...incData.map(i => ({ ...i, type: 'income' as const })),
+      ]
+      newItems.sort((a, b) => b.date.localeCompare(a.date) || b.id - a.id)
+
+      if (append) {
+        setSearchResults(prev => [...prev, ...newItems])
+      } else {
+        setSearchResults(newItems)
+        const expSummary = results[2].data as { total_count: number; total_amount: number }
+        const incSummary = results[3].data as { total_count: number; total_amount: number }
+        setSearchSummary({
+          total_count: expSummary.total_count + incSummary.total_count,
+          total_amount: expSummary.total_amount + incSummary.total_amount,
+        })
+      }
+
+      searchOffsetRef.current = offset + SEARCH_PAGE_SIZE
+      setSearchHasMore(newItems.length >= SEARCH_PAGE_SIZE)
     } catch {
       addToast('error', '검색에 실패했습니다')
     } finally {
       setSearchLoading(false)
+      setSearchLoadingMore(false)
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps -- addToast는 안정적 참조
   }, [searchQuery, activeHouseholdId, searchType, searchCategoryId, searchPeriod, getSearchDateRange])
@@ -255,6 +290,23 @@ export default function TransactionList() {
       searchInputRef.current.focus()
     }
   }, [isSearchMode])
+
+  // 무한 스크롤: IntersectionObserver로 sentinel 감지 → 추가 로드
+  useEffect(() => {
+    if (!loadMoreRef.current || !searchHasMore || searchLoadingMore) return
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          fetchSearchResults(true)
+        }
+      },
+      { threshold: 0.1 },
+    )
+
+    observer.observe(loadMoreRef.current)
+    return () => observer.disconnect()
+  }, [searchHasMore, searchLoadingMore, fetchSearchResults])
 
   // 카테고리 로드
   useEffect(() => {
@@ -735,33 +787,53 @@ export default function TransactionList() {
             <p className="text-xs text-[var(--text-tertiary)]">다른 검색어를 시도해보세요</p>
           </div>
         ) : (
-          <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] overflow-hidden">
-            {Array.from(searchGrouped.entries()).map(([dateKey, txs]) => (
-              <div key={dateKey}>
-                <div className="bg-[var(--surface-elevated)] px-4 py-2 border-b border-[var(--border-subtle)]">
-                  <span className="text-xs font-semibold text-[var(--text-secondary)]">
-                    {formatDateHeader(dateKey)}
-                  </span>
+          <>
+            <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] overflow-hidden">
+              {Array.from(searchGrouped.entries()).map(([dateKey, txs]) => (
+                <div key={dateKey}>
+                  <div className="bg-[var(--surface-elevated)] px-4 py-2 border-b border-[var(--border-subtle)]">
+                    <span className="text-xs font-semibold text-[var(--text-secondary)]">
+                      {formatDateHeader(dateKey)}
+                    </span>
+                  </div>
+                  <div className="divide-y divide-[var(--border-subtle)]">
+                    {txs.map(tx => (
+                      <TransactionItem
+                        key={`${tx.type}-${tx.id}`}
+                        id={tx.id}
+                        type={tx.type}
+                        description={tx.description}
+                        amount={tx.amount}
+                        categoryId={tx.category_id}
+                        categoryMap={categoryMap}
+                        excludeFromStats={tx.exclude_from_stats}
+                        rawInput={tx.raw_input}
+                        onCategoryClick={categoryClickHandlers.get(`${tx.type}-${tx.id}`) ?? (() => {})}
+                      />
+                    ))}
+                  </div>
                 </div>
-                <div className="divide-y divide-[var(--border-subtle)]">
-                  {txs.map(tx => (
-                    <TransactionItem
-                      key={`${tx.type}-${tx.id}`}
-                      id={tx.id}
-                      type={tx.type}
-                      description={tx.description}
-                      amount={tx.amount}
-                      categoryId={tx.category_id}
-                      categoryMap={categoryMap}
-                      excludeFromStats={tx.exclude_from_stats}
-                      rawInput={tx.raw_input}
-                      onCategoryClick={categoryClickHandlers.get(`${tx.type}-${tx.id}`) ?? (() => {})}
-                    />
-                  ))}
-                </div>
+              ))}
+            </div>
+
+            {/* 무한 스크롤 sentinel */}
+            {searchHasMore && (
+              <div ref={loadMoreRef} data-testid="search-load-more" className="py-4 text-center">
+                {searchLoadingMore ? (
+                  <div className="animate-spin rounded-full border-b-2 border-grape-600 w-5 h-5 mx-auto" />
+                ) : (
+                  <span className="text-xs text-[var(--text-muted)]">스크롤하여 더 보기</span>
+                )}
               </div>
-            ))}
-          </div>
+            )}
+
+            {/* 모든 결과 로드 완료 */}
+            {!searchHasMore && searchResults.length > 0 && (
+              <p className="text-center text-xs text-[var(--text-muted)] py-2">
+                모든 검색 결과를 불러왔습니다
+              </p>
+            )}
+          </>
         )
       )}
 

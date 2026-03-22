@@ -11,6 +11,16 @@ import { http, HttpResponse } from 'msw'
 import { server } from '../../mocks/server'
 import TransactionList from '../TransactionList'
 
+// jsdom에 IntersectionObserver가 없으므로 mock 제공
+class MockIntersectionObserver {
+  observe = vi.fn()
+  unobserve = vi.fn()
+  disconnect = vi.fn()
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  constructor(_callback: IntersectionObserverCallback, _options?: IntersectionObserverInit) {}
+}
+vi.stubGlobal('IntersectionObserver', MockIntersectionObserver)
+
 vi.mock('../../hooks/useToast', () => ({
   useToast: () => ({ addToast: vi.fn() }),
 }))
@@ -355,6 +365,80 @@ describe('TransactionList', () => {
       await waitFor(() => {
         expect(screen.getByText('검색 결과가 없습니다')).toBeInTheDocument()
       })
+    })
+  })
+
+  describe('검색 무한 스크롤', () => {
+    /** 30건 이상의 검색 결과를 반환하는 MSW 핸들러 */
+    function setupManySearchResults(count: number) {
+      const items = Array.from({ length: count }, (_, i) => ({
+        id: i + 1,
+        amount: 1000 * (i + 1),
+        description: `지출항목${i + 1}`,
+        category_id: 1,
+        raw_input: null,
+        memo: null,
+        household_id: 1,
+        user_id: null,
+        exclude_from_stats: false,
+        date: '2024-01-15T12:00:00Z',
+        created_at: '2024-01-15T12:00:00Z',
+        updated_at: '2024-01-15T12:00:00Z',
+      }))
+
+      server.use(
+        http.get('/api/expenses', ({ request }) => {
+          const url = new URL(request.url)
+          const skip = Number(url.searchParams.get('skip')) || 0
+          const limit = Number(url.searchParams.get('limit')) || 30
+          return HttpResponse.json(items.slice(skip, skip + limit))
+        }),
+        http.get('/api/income', () => HttpResponse.json([])),
+        http.get('/api/expenses/search/summary', () =>
+          HttpResponse.json({ total_count: count, total_amount: count * 1000 })
+        ),
+        http.get('/api/income/search/summary', () =>
+          HttpResponse.json({ total_count: 0, total_amount: 0 })
+        ),
+      )
+    }
+
+    it('검색 결과가 페이지 크기와 같으면 더 보기 sentinel 요소가 존재한다', async () => {
+      setupManySearchResults(30)
+      renderPage('/?search=지출')
+
+      await waitFor(() => {
+        expect(screen.getByText('지출항목1')).toBeInTheDocument()
+      })
+
+      // 30건 = SEARCH_PAGE_SIZE → hasMore가 true → sentinel이 존재해야 함
+      expect(screen.getByTestId('search-load-more')).toBeInTheDocument()
+    })
+
+    it('검색 결과가 페이지 크기보다 적으면 sentinel 표시 안 됨', async () => {
+      setupManySearchResults(5)
+      renderPage('/?search=지출')
+
+      await waitFor(() => {
+        expect(screen.getByText('지출항목1')).toBeInTheDocument()
+      })
+
+      // 5건 < 30 → hasMore가 false → sentinel 없음
+      expect(screen.queryByTestId('search-load-more')).not.toBeInTheDocument()
+
+      // 대신 "모든 검색 결과" 메시지가 표시됨
+      expect(screen.getByText('모든 검색 결과를 불러왔습니다')).toBeInTheDocument()
+    })
+
+    it('검색 결과가 페이지 크기보다 적으면 완료 메시지 표시', async () => {
+      setupManySearchResults(10)
+      renderPage('/?search=지출')
+
+      await waitFor(() => {
+        expect(screen.getByText('지출항목1')).toBeInTheDocument()
+      })
+
+      expect(screen.getByText('모든 검색 결과를 불러왔습니다')).toBeInTheDocument()
     })
   })
 
