@@ -5,9 +5,10 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowLeft, Bug, Lightbulb, Send } from 'lucide-react'
+import { ArrowLeft, Bug, Lightbulb, MessageSquarePlus, Send } from 'lucide-react'
 import { useToast } from '../hooks/useToast'
 import { feedbackApi } from '../api/feedback'
+import EmptyState from '../components/EmptyState'
 import ErrorState from '../components/ErrorState'
 import type { Feedback, FeedbackSource, FeedbackStatus, FeedbackType } from '../types'
 import { trackEvent } from '../utils/analytics'
@@ -172,16 +173,22 @@ export default function FeedbackPage() {
       </form>
 
       {/* 내 피드백 목록 */}
-      {myFeedbacks.length > 0 && (
-        <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] p-6 space-y-4">
-          <h2 className="text-lg font-semibold text-[var(--text-primary)]">내 피드백</h2>
+      <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] p-6 space-y-4">
+        <h2 className="text-lg font-semibold text-[var(--text-primary)]">내 피드백</h2>
+        {myFeedbacks.length > 0 ? (
           <div className="space-y-3">
             {myFeedbacks.map((fb) => (
               <FeedbackCard key={fb.id} feedback={fb} />
             ))}
           </div>
-        </div>
-      )}
+        ) : (
+          <EmptyState
+            icon={<MessageSquarePlus className="w-8 h-8 text-grape-400" />}
+            title="아직 피드백이 없습니다"
+            description="위 폼에서 기능 요청이나 버그 제보를 남겨주세요"
+          />
+        )}
+      </div>
 
       {/* 관리자 영역 */}
       {isAdmin && adminFeedbacks && (

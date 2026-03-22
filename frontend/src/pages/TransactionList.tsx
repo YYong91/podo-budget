@@ -4,7 +4,7 @@
  */
 
 import { useEffect, useState, useMemo, useCallback, useRef } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import PeriodNavigator from '../components/stats/PeriodNavigator'
 import { expenseApi } from '../api/expenses'
 import { incomeApi } from '../api/income'
@@ -37,6 +37,7 @@ interface UnifiedTransaction {
 }
 
 export default function TransactionList() {
+  const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const activeHouseholdId = useHouseholdStore((s) => s.activeHouseholdId)
   const { addToast } = useToast()
@@ -340,6 +341,7 @@ export default function TransactionList() {
           <EmptyState
             title={filter === 'all' ? '거래 내역이 없습니다' : `${filter === 'expense' ? '지출' : '수입'} 내역이 없습니다`}
             description="이번 달의 거래를 추가해보세요."
+            action={{ label: '첫 거래 입력하기', onClick: () => navigate('/expenses/new') }}
           />
         </div>
       ) : (

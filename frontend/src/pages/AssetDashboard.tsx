@@ -11,6 +11,7 @@ import {
 } from 'recharts'
 import { assetApi } from '../api/assets'
 import { useHouseholdStore } from '../stores/useHouseholdStore'
+import ErrorState from '../components/ErrorState'
 import LoadingSpinner from '../components/LoadingSpinner'
 import type { Asset, AssetSummary, AssetSnapshot, AssetGoal, MonthlySavings } from '../types'
 import { formatAmount } from '../utils/format'
@@ -176,9 +177,7 @@ export default function AssetDashboard() {
   }
 
   if (error) {
-    return (
-      <div className="text-center py-16 text-[var(--text-tertiary)]">{error}</div>
-    )
+    return <ErrorState message={error} onRetry={fetchData} />
   }
 
   const netWorth = summary?.net_worth ?? 0
