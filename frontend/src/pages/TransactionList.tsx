@@ -23,6 +23,10 @@ import type { Expense, Income, Category, RecurringTransaction } from '../types'
 import { formatAmount } from '../utils/format'
 import { getMonthRange, formatDateHeader } from '../utils/calendar'
 import { Search, X } from 'lucide-react'
+import WelcomeCard from '../components/WelcomeCard'
+import { useAuth } from '../contexts/AuthContext'
+import { usePwaInstall } from '../hooks/usePwaInstall'
+import budgetApi from '../api/budgets'
 
 type FilterType = 'all' | 'expense' | 'income'
 
@@ -65,6 +69,8 @@ export default function TransactionList() {
   const [searchParams, setSearchParams] = useSearchParams()
   const activeHouseholdId = useHouseholdStore((s) => s.activeHouseholdId)
   const { addToast } = useToast()
+  const { user } = useAuth()
+  const { isPwaInstalled, canPromptInstall, isIos, promptInstall } = usePwaInstall()
 
   // URL에서 월 파라미터 읽기 (YYYY-MM 형식)
   const monthParam = searchParams.get('month')
@@ -96,6 +102,31 @@ export default function TransactionList() {
   const [pendingRecurring, setPendingRecurring] = useState<RecurringTransaction[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
+
+  // 웰컴 카드 상태
+  const [welcomeDismissed, setWelcomeDismissed] = useState(() =>
+    localStorage.getItem('podo-welcome-dismissed') === 'true'
+  )
+  const [hasBudget, setHasBudget] = useState(false)
+  const [hasEverTransacted, setHasEverTransacted] = useState(false)
+
+  useEffect(() => {
+    if (welcomeDismissed || !activeHouseholdId) return
+    budgetApi.getBudgets().then((res) => setHasBudget(res.data.length > 0)).catch(() => {})
+    expenseApi.getAll({ household_id: activeHouseholdId, limit: 1 })
+      .then((res) => { if (res.data.length > 0) setHasEverTransacted(true) })
+      .catch(() => {})
+    if (!hasEverTransacted) {
+      incomeApi.getAll({ household_id: activeHouseholdId, limit: 1 })
+        .then((res) => { if (res.data.length > 0) setHasEverTransacted(true) })
+        .catch(() => {})
+    }
+  }, [welcomeDismissed, activeHouseholdId]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleWelcomeDismiss = useCallback(() => {
+    setWelcomeDismissed(true)
+    localStorage.setItem('podo-welcome-dismissed', 'true')
+  }, [])
 
   // 검색 결과 상태
   const [searchResults, setSearchResults] = useState<UnifiedTransaction[]>([])
@@ -574,6 +605,21 @@ export default function TransactionList() {
             </div>
           </button>
         </div>
+      )}
+
+      {/* 온보딩 웰컴 카드 */}
+      {!welcomeDismissed && !loading && !isSearchMode && (
+        <WelcomeCard
+          hasTransaction={hasEverTransacted || expenses.length > 0 || incomes.length > 0}
+          hasBudget={hasBudget}
+          isBotLinked={!!user?.is_telegram_linked || !!user?.is_kakao_linked}
+          isPwaInstalled={isPwaInstalled}
+          canPromptPwa={canPromptInstall}
+          isIos={isIos}
+          onPromptPwa={promptInstall}
+          onIosGuide={() => addToast('info', 'Safari 하단 공유 버튼(□↑) → "홈 화면에 추가"를 선택해주세요')}
+          onDismiss={handleWelcomeDismiss}
+        />
       )}
 
       {/* 반복 거래 알림 (월 뷰 전용) */}

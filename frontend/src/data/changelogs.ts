@@ -18,6 +18,15 @@ export interface Changelog {
 
 export const changelogs: Changelog[] = [
   {
+    version: '0.8.1',
+    date: '2026-03-23',
+    title: '시작 가이드 + 사용 분석',
+    items: [
+      { tag: '신규', text: '홈화면에 시작 가이드 카드가 표시됩니다 (첫 거래, 예산, 봇 연동, PWA 설치)' },
+      { tag: '개선', text: '탭 전환 시 스크롤이 최상단으로 리셋됩니다' },
+    ],
+  },
+  {
     version: '0.8.0',
     date: '2026-03-22',
     title: '카테고리 체계 개편',
