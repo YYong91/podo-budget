@@ -22,6 +22,10 @@ import ErrorState from '../components/ErrorState'
 import type { Expense, Income, Category, RecurringTransaction } from '../types'
 import { formatAmount } from '../utils/format'
 import { getMonthRange, formatDateHeader } from '../utils/calendar'
+import WelcomeCard from '../components/WelcomeCard'
+import { useAuth } from '../contexts/AuthContext'
+import { usePwaInstall } from '../hooks/usePwaInstall'
+import budgetApi from '../api/budgets'
 
 type FilterType = 'all' | 'expense' | 'income'
 
@@ -40,6 +44,8 @@ export default function TransactionList() {
   const [searchParams, setSearchParams] = useSearchParams()
   const activeHouseholdId = useHouseholdStore((s) => s.activeHouseholdId)
   const { addToast } = useToast()
+  const { user } = useAuth()
+  const { isPwaInstalled, canPromptInstall, isIos, promptInstall } = usePwaInstall()
 
   // URL에서 월 파라미터 읽기 (YYYY-MM 형식)
   const monthParam = searchParams.get('month')
@@ -60,6 +66,23 @@ export default function TransactionList() {
   const [pendingRecurring, setPendingRecurring] = useState<RecurringTransaction[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
+
+  // 웰컴 카드 상태
+  const [welcomeDismissed, setWelcomeDismissed] = useState(() =>
+    localStorage.getItem('podo-welcome-dismissed') === 'true'
+  )
+  const [hasBudget, setHasBudget] = useState(false)
+
+  // 예산 존재 여부 조회 (웰컴 카드용)
+  useEffect(() => {
+    if (welcomeDismissed) return
+    budgetApi.getBudgets().then((res) => setHasBudget(res.data.length > 0)).catch(() => {})
+  }, [welcomeDismissed])
+
+  const handleWelcomeDismiss = useCallback(() => {
+    setWelcomeDismissed(true)
+    localStorage.setItem('podo-welcome-dismissed', 'true')
+  }, [])
 
   // 카테고리 바텀시트 상태
   const [sheetOpen, setSheetOpen] = useState(false)
@@ -278,6 +301,20 @@ export default function TransactionList() {
           </div>
         </button>
       </div>
+
+      {/* 온보딩 웰컴 카드 */}
+      {!welcomeDismissed && !loading && (
+        <WelcomeCard
+          hasTransaction={expenses.length > 0 || incomes.length > 0}
+          hasBudget={hasBudget}
+          isBotLinked={!!user?.is_telegram_linked || !!user?.is_kakao_linked}
+          isPwaInstalled={isPwaInstalled}
+          canPromptPwa={canPromptInstall}
+          isIos={isIos}
+          onPromptPwa={promptInstall}
+          onDismiss={handleWelcomeDismiss}
+        />
+      )}
 
       {/* 반복 거래 알림 */}
       <PendingRecurring

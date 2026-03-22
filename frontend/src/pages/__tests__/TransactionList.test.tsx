@@ -20,6 +20,23 @@ vi.mock('../../stores/useHouseholdStore', () => ({
     selector({ activeHouseholdId: 1 }),
 }))
 
+vi.mock('../../contexts/AuthContext', () => ({
+  useAuth: () => ({
+    user: { id: 1, is_telegram_linked: false, is_kakao_linked: false },
+    isAuthenticated: true,
+    loading: false,
+  }),
+}))
+
+vi.mock('../../hooks/usePwaInstall', () => ({
+  usePwaInstall: () => ({
+    isPwaInstalled: false,
+    canPromptInstall: false,
+    isIos: false,
+    promptInstall: vi.fn(),
+  }),
+}))
+
 function renderPage(initialRoute = '/') {
   return render(
     <MemoryRouter initialEntries={[initialRoute]}>
