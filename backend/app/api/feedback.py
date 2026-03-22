@@ -28,6 +28,7 @@ def _to_response(feedback: Feedback, username: str | None = None) -> FeedbackRes
         title=feedback.title,
         content=feedback.content,
         status=feedback.status,
+        source=feedback.source,
         username=username,
         created_at=feedback.created_at,
         updated_at=feedback.updated_at,
@@ -48,6 +49,7 @@ async def create_feedback(
         type=data.type,
         title=data.title,
         content=data.content,
+        source=data.source,
     )
     db.add(feedback)
     await db.commit()
