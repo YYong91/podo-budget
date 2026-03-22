@@ -1,6 +1,6 @@
 /**
  * @file WelcomeCard.test.tsx
- * @description 온보딩 웰컴 카드 컴포넌트 테스트
+ * @description 온보딩 단계별 안내 카드 테스트
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
@@ -16,14 +16,8 @@ vi.mock('react-router-dom', async () => ({
 }))
 
 const defaultProps = {
-  hasTransaction: false,
-  hasBudget: false,
+  transactionCount: 0,
   isBotLinked: false,
-  isPwaInstalled: false,
-  canPromptPwa: false,
-  isIos: false,
-  onPromptPwa: vi.fn(),
-  onIosGuide: vi.fn(),
   onDismiss: vi.fn(),
 }
 
@@ -40,29 +34,45 @@ beforeEach(() => {
 })
 
 describe('WelcomeCard', () => {
-  it('4개 체크리스트 항목을 렌더링한다', () => {
+  it('1단계: 거래 없으면 첫 거래 입력을 안내한다', () => {
     renderCard()
-    expect(screen.getByText('첫 거래 입력하기')).toBeInTheDocument()
-    expect(screen.getByText('예산 설정하기')).toBeInTheDocument()
-    expect(screen.getByText('봇 연동하기')).toBeInTheDocument()
-    expect(screen.getByText('홈화면에 추가하기')).toBeInTheDocument()
+    expect(screen.getByText('첫 거래를 입력해보세요')).toBeInTheDocument()
+    expect(screen.getByText('거래 입력하기')).toBeInTheDocument()
   })
 
-  it('진행률을 정확히 표시한다', () => {
-    renderCard({ hasTransaction: true, hasBudget: true })
-    expect(screen.getByText('2/4')).toBeInTheDocument()
-  })
-
-  it('완료 항목은 취소선 스타일을 적용한다', () => {
-    renderCard({ hasTransaction: true })
-    const item = screen.getByText('첫 거래 입력하기')
-    expect(item).toHaveClass('line-through')
-  })
-
-  it('미완료 항목 클릭 시 해당 페이지로 이동한다', async () => {
+  it('1단계: CTA 클릭 시 지출 입력 페이지로 이동한다', async () => {
     renderCard()
-    await userEvent.click(screen.getByText('예산 설정하기'))
-    expect(mockNavigate).toHaveBeenCalledWith('/budgets')
+    await userEvent.click(screen.getByText('거래 입력하기'))
+    expect(mockNavigate).toHaveBeenCalledWith('/expenses/new')
+  })
+
+  it('2단계: 거래 1~2건이면 리포트 확인을 안내한다', () => {
+    renderCard({ transactionCount: 1 })
+    expect(screen.getByText('내 지출 리포트를 확인해보세요')).toBeInTheDocument()
+    expect(screen.getByText('리포트 보기')).toBeInTheDocument()
+  })
+
+  it('2단계: CTA 클릭 시 리포트 페이지로 이동한다', async () => {
+    renderCard({ transactionCount: 2 })
+    await userEvent.click(screen.getByText('리포트 보기'))
+    expect(mockNavigate).toHaveBeenCalledWith('/insights')
+  })
+
+  it('3단계: 거래 3건 이상 + 봇 미연동이면 봇 연동을 안내한다', () => {
+    renderCard({ transactionCount: 3 })
+    expect(screen.getByText('카카오톡에서도 입력할 수 있어요')).toBeInTheDocument()
+    expect(screen.getByText('연동하기')).toBeInTheDocument()
+  })
+
+  it('3단계: CTA 클릭 시 설정 페이지로 이동한다', async () => {
+    renderCard({ transactionCount: 5 })
+    await userEvent.click(screen.getByText('연동하기'))
+    expect(mockNavigate).toHaveBeenCalledWith('/settings/my-account')
+  })
+
+  it('모든 단계 완료 시 렌더링하지 않는다', () => {
+    const { container } = renderCard({ transactionCount: 5, isBotLinked: true })
+    expect(container.innerHTML).toBe('')
   })
 
   it('닫기 버튼 클릭 시 onDismiss를 호출한다', async () => {
@@ -70,29 +80,5 @@ describe('WelcomeCard', () => {
     renderCard({ onDismiss })
     await userEvent.click(screen.getByLabelText('시작 가이드 닫기'))
     expect(onDismiss).toHaveBeenCalled()
-  })
-
-  it('전부 완료 시 축하 메시지를 표시한다', () => {
-    renderCard({
-      hasTransaction: true,
-      hasBudget: true,
-      isBotLinked: true,
-      isPwaInstalled: true,
-    })
-    expect(screen.getByText('모든 준비가 끝났어요!')).toBeInTheDocument()
-  })
-
-  it('PWA 프롬프트 가능 시 onPromptPwa를 호출한다', async () => {
-    const onPromptPwa = vi.fn()
-    renderCard({ canPromptPwa: true, onPromptPwa })
-    await userEvent.click(screen.getByText('홈화면에 추가하기'))
-    expect(onPromptPwa).toHaveBeenCalled()
-  })
-
-  it('iOS에서 PWA 항목 클릭 시 onIosGuide를 호출한다', async () => {
-    const onIosGuide = vi.fn()
-    renderCard({ isIos: true, onIosGuide })
-    await userEvent.click(screen.getByText('홈화면에 추가하기'))
-    expect(onIosGuide).toHaveBeenCalled()
   })
 })

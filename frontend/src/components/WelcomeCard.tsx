@@ -1,175 +1,124 @@
 /**
  * @file WelcomeCard.tsx
- * @description 온보딩 시작 가이드 카드 — 홈화면 상단에 표시
- * 4개 체크리스트 항목의 완료 상태를 보여주고, 미완료 항목 클릭 시 해당 페이지로 이동한다.
+ * @description 온보딩 단계별 안내 카드 — 홈화면 상단에 표시
+ *
+ * 한 번에 하나의 다음 행동만 안내하여 사용자 부담을 최소화한다.
+ * - 1단계: 첫 거래 입력 유도 (핵심 가치 체험)
+ * - 2단계: 리포트 확인 유도 (데이터 활용 체험)
+ * - 3단계: 봇 연동 안내 (편의 기능, 3건 이상 입력 후)
+ * 모든 단계 완료 or 닫기 → localStorage에 저장하여 재표시 방지
  */
 
-import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import {
-  X, Check, Circle, ChevronRight,
-  PenLine, Target, MessageCircle, Smartphone,
-} from 'lucide-react'
+import { X, ChevronRight, PenLine, TrendingUp, MessageCircle } from 'lucide-react'
 
 interface WelcomeCardProps {
-  hasTransaction: boolean
-  hasBudget: boolean
+  /** 거래 건수 (limit 3 샘플 — 0/1~2/3+ 단계 판정용) */
+  transactionCount: number
+  /** 텔레그램 or 카카오 연동 여부 */
   isBotLinked: boolean
-  isPwaInstalled: boolean
-  canPromptPwa: boolean
-  isIos: boolean
-  onPromptPwa: () => void
-  onIosGuide?: () => void
+  /** 닫기 클릭 */
   onDismiss: () => void
 }
 
-interface ChecklistItem {
-  key: string
-  label: string
-  done: boolean
+interface Step {
   icon: React.ReactNode
+  title: string
+  description: string
   action: () => void
+  actionLabel: string
 }
 
 export default function WelcomeCard({
-  hasTransaction,
-  hasBudget,
+  transactionCount,
   isBotLinked,
-  isPwaInstalled,
-  canPromptPwa,
-  isIos,
-  onPromptPwa,
-  onIosGuide,
   onDismiss,
 }: WelcomeCardProps) {
   const navigate = useNavigate()
 
-  const items: ChecklistItem[] = [
-    {
-      key: 'transaction',
-      label: '첫 거래 입력하기',
-      done: hasTransaction,
-      icon: <PenLine className="w-4 h-4" />,
-      action: () => navigate('/expenses/new'),
-    },
-    {
-      key: 'budget',
-      label: '예산 설정하기',
-      done: hasBudget,
-      icon: <Target className="w-4 h-4" />,
-      action: () => navigate('/budgets'),
-    },
-    {
-      key: 'bot',
-      label: '봇 연동하기',
-      done: isBotLinked,
-      icon: <MessageCircle className="w-4 h-4" />,
-      action: () => navigate('/settings/my-account'),
-    },
-    {
-      key: 'pwa',
-      label: '홈화면에 추가하기',
-      done: isPwaInstalled,
-      icon: <Smartphone className="w-4 h-4" />,
-      action: () => {
-        if (canPromptPwa) {
-          onPromptPwa()
-        } else if (isIos) {
-          onIosGuide?.()
-        }
-      },
-    },
-  ]
+  // 현재 표시할 단계 결정
+  const currentStep = getCurrentStep({ transactionCount, isBotLinked }, navigate)
 
-  const completedCount = items.filter((i) => i.done).length
-  const allDone = completedCount === items.length
-
-  // 전부 완료 시 3초 후 자동 닫기
-  useEffect(() => {
-    if (!allDone) return
-    const timer = setTimeout(onDismiss, 3000)
-    return () => clearTimeout(timer)
-  }, [allDone, onDismiss])
-
-  if (allDone) {
-    return (
-      <div className="bg-gradient-to-r from-grape-50 to-leaf-50 rounded-2xl shadow-sm border border-grape-200 p-5 text-center">
-        <p className="text-lg font-bold text-grape-700">모든 준비가 끝났어요!</p>
-        <p className="text-sm text-[var(--text-tertiary)] mt-1">이제 포도가계부를 마음껏 사용해보세요</p>
-      </div>
-    )
-  }
+  // 모든 단계 완료 → 렌더링 안 함 (부모에서도 체크하지만 방어적)
+  if (!currentStep) return null
 
   return (
-    <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] overflow-hidden">
-      {/* 헤더 */}
-      <div className="flex items-center justify-between px-4 pt-4 pb-2">
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-bold text-[var(--text-primary)]">시작 가이드</span>
-          <span className="text-xs text-grape-600 font-medium bg-grape-50 px-2 py-0.5 rounded-full">
-            {completedCount}/{items.length}
-          </span>
-        </div>
-        <button
-          onClick={onDismiss}
-          className="p-1 rounded-lg hover:bg-[var(--surface-hover)] text-[var(--text-muted)] transition-colors"
-          aria-label="시작 가이드 닫기"
-        >
-          <X className="w-4 h-4" />
-        </button>
-      </div>
-
-      {/* 진행 바 */}
-      <div className="mx-4 mb-3 h-1.5 bg-[var(--surface-elevated)] rounded-full overflow-hidden">
-        <div
-          className="h-full bg-grape-500 rounded-full transition-all duration-500"
-          style={{ width: `${(completedCount / items.length) * 100}%` }}
-        />
-      </div>
-
-      {/* 체크리스트 */}
-      <div className="px-2 pb-2">
-        {items.map((item) => (
+    <div className="bg-gradient-to-r from-grape-50 to-grape-50/50 rounded-2xl shadow-sm border border-grape-200/60 overflow-hidden">
+      <div className="px-4 py-4">
+        {/* 헤더 */}
+        <div className="flex items-start justify-between mb-3">
+          <div>
+            <span className="text-xs font-medium text-grape-500">시작 가이드</span>
+            <h3 className="text-sm font-bold text-[var(--text-primary)] mt-0.5">
+              {currentStep.title}
+            </h3>
+          </div>
           <button
-            key={item.key}
-            onClick={item.done ? undefined : item.action}
-            disabled={item.done}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors ${
-              item.done
-                ? 'opacity-50 cursor-default'
-                : 'hover:bg-[var(--surface-hover)] active:bg-[var(--surface-elevated)] cursor-pointer'
-            }`}
+            onClick={onDismiss}
+            className="p-1 -mr-1 rounded-lg hover:bg-grape-100 text-[var(--text-muted)] transition-colors"
+            aria-label="시작 가이드 닫기"
           >
-            {/* 체크 아이콘 */}
-            {item.done ? (
-              <div className="w-5 h-5 rounded-full bg-grape-500 flex items-center justify-center flex-shrink-0">
-                <Check className="w-3 h-3 text-white" />
-              </div>
-            ) : (
-              <Circle className="w-5 h-5 text-[var(--border-default)] flex-shrink-0" />
-            )}
-
-            {/* 아이콘 + 텍스트 */}
-            <div className="flex items-center gap-2 flex-1 min-w-0">
-              <span className={item.done ? 'text-[var(--text-muted)]' : 'text-grape-600'}>
-                {item.icon}
-              </span>
-              <span className={`text-sm ${
-                item.done
-                  ? 'line-through text-[var(--text-muted)]'
-                  : 'text-[var(--text-primary)] font-medium'
-              }`}>
-                {item.label}
-              </span>
-            </div>
-
-            {/* 화살표 */}
-            {!item.done && (
-              <ChevronRight className="w-4 h-4 text-[var(--text-muted)] flex-shrink-0" />
-            )}
+            <X className="w-4 h-4" />
           </button>
-        ))}
+        </div>
+
+        {/* 설명 */}
+        <p className="text-xs text-[var(--text-tertiary)] mb-3">
+          {currentStep.description}
+        </p>
+
+        {/* CTA 버튼 */}
+        <button
+          onClick={currentStep.action}
+          className="flex items-center gap-1.5 px-4 py-2 bg-grape-600 text-white text-sm font-medium rounded-xl hover:bg-grape-700 active:scale-[0.98] transition-all shadow-sm shadow-grape-200"
+        >
+          {currentStep.icon}
+          {currentStep.actionLabel}
+          <ChevronRight className="w-3.5 h-3.5" />
+        </button>
       </div>
     </div>
   )
+}
+
+/** 현재 표시할 단계를 결정 — null이면 모든 단계 완료 */
+function getCurrentStep(
+  state: { transactionCount: number; isBotLinked: boolean },
+  navigate: ReturnType<typeof useNavigate>,
+): Step | null {
+  // 1단계: 첫 거래 입력
+  if (state.transactionCount === 0) {
+    return {
+      icon: <PenLine className="w-4 h-4" />,
+      title: '첫 거래를 입력해보세요',
+      description: '"점심 김치찌개 8000원" 처럼 자연어로 입력하면 AI가 자동 분류해요',
+      actionLabel: '거래 입력하기',
+      action: () => navigate('/expenses/new'),
+    }
+  }
+
+  // 2단계: 리포트 확인 (첫 거래 입력 후)
+  if (state.transactionCount < 3) {
+    return {
+      icon: <TrendingUp className="w-4 h-4" />,
+      title: '내 지출 리포트를 확인해보세요',
+      description: '거래를 입력할수록 더 정확한 분석을 볼 수 있어요',
+      actionLabel: '리포트 보기',
+      action: () => navigate('/insights'),
+    }
+  }
+
+  // 3단계: 봇 연동 (3건 이상 입력 후)
+  if (!state.isBotLinked) {
+    return {
+      icon: <MessageCircle className="w-4 h-4" />,
+      title: '카카오톡에서도 입력할 수 있어요',
+      description: '봇을 연동하면 메신저에서 바로 가계부를 쓸 수 있어요',
+      actionLabel: '연동하기',
+      action: () => navigate('/settings/my-account'),
+    }
+  }
+
+  // 모든 단계 완료
+  return null
 }

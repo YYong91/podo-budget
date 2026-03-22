@@ -38,14 +38,6 @@ vi.mock('../../contexts/AuthContext', () => ({
   }),
 }))
 
-vi.mock('../../hooks/usePwaInstall', () => ({
-  usePwaInstall: () => ({
-    isPwaInstalled: false,
-    canPromptInstall: false,
-    isIos: false,
-    promptInstall: vi.fn(),
-  }),
-}))
 
 function renderPage(initialRoute = '/') {
   return render(
