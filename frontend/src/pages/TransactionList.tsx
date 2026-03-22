@@ -32,7 +32,8 @@ const MAX_RECENT_SEARCHES = 5
 
 function getRecentSearches(): string[] {
   try {
-    return JSON.parse(localStorage.getItem(RECENT_SEARCHES_KEY) || '[]')
+    const parsed = JSON.parse(localStorage.getItem(RECENT_SEARCHES_KEY) || '[]')
+    return Array.isArray(parsed) ? parsed : []
   } catch {
     return []
   }
@@ -204,7 +205,8 @@ export default function TransactionList() {
 
   // 검색 실행 (append=true: 무한 스크롤로 추가 로드)
   const fetchSearchResults = useCallback(async (append = false) => {
-    if (!activeHouseholdId || !searchQuery) return
+    const hasFilters = searchCategoryId || searchPeriod !== 'all' || searchType !== 'all'
+    if (!activeHouseholdId || (!searchQuery && !hasFilters)) return
 
     if (append) {
       setSearchLoadingMore(true)
@@ -217,7 +219,7 @@ export default function TransactionList() {
       const offset = append ? searchOffsetRef.current : 0
       const dateRange = getSearchDateRange(searchPeriod)
       const baseParams = {
-        query: searchQuery,
+        query: searchQuery || undefined,
         skip: offset,
         limit: SEARCH_PAGE_SIZE,
         household_id: activeHouseholdId,
@@ -274,15 +276,22 @@ export default function TransactionList() {
   // eslint-disable-next-line react-hooks/exhaustive-deps -- addToast는 안정적 참조
   }, [searchQuery, activeHouseholdId, searchType, searchCategoryId, searchPeriod, getSearchDateRange])
 
-  // 검색어 변경 시 검색 실행
+  // 검색어 또는 필터 변경 시 검색 실행
   useEffect(() => {
-    if (isSearchMode && searchQuery) {
-      fetchSearchResults()
+    if (isSearchMode) {
+      const hasFilters = searchCategoryId || searchPeriod !== 'all' || searchType !== 'all'
+      if (searchQuery || hasFilters) {
+        fetchSearchResults()
+      } else {
+        setSearchResults([])
+        setSearchSummary(null)
+      }
     } else {
       setSearchResults([])
       setSearchSummary(null)
     }
-  }, [isSearchMode, searchQuery, fetchSearchResults])
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- fetchSearchResults 내부에서 동일 state 참조
+  }, [isSearchMode, searchQuery, searchType, searchCategoryId, searchPeriod])
 
   // 검색 모드 진입 시 인풋 포커스
   useEffect(() => {
