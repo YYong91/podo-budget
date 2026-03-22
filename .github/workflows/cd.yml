@@ -80,6 +80,7 @@ jobs:
           VITE_BOOKSHELF_URL: ${{ secrets.VITE_BOOKSHELF_URL }}
           VITE_SENTRY_DSN: ${{ secrets.VITE_SENTRY_DSN }}
           VITE_SENTRY_ENVIRONMENT: production
+          VITE_GA_MEASUREMENT_ID: ${{ secrets.VITE_GA_MEASUREMENT_ID }}
 
       - name: Cloudflare 배포
         env:
