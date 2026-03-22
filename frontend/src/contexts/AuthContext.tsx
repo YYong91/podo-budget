@@ -23,6 +23,7 @@ import type { User } from '../types'
 import authApi from '../api/auth'
 import apiClient from '../api/client'
 import { getCookieToken } from '../utils/token'
+import { identifyUser } from '../utils/analytics'
 
 interface AuthContextType {
   /** 현재 로그인한 사용자 프로필 (API로 로드, null이면 로딩 중이거나 미로그인) */
@@ -158,6 +159,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .then((response) => {
         if (active) {
           setUserProfile(response.data)
+          identifyUser(String(response.data.id))
           setLoadedToken(token)
         }
       })

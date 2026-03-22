@@ -16,6 +16,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import { trackEvent } from '../utils/analytics'
 
 export default function AuthCallbackPage() {
   const navigate = useNavigate()
@@ -45,6 +46,7 @@ export default function AuthCallbackPage() {
   useEffect(() => {
     console.log('[podo-auth] AuthCallback Effect2:', { urlToken: !!urlToken, isAuthenticated, intendedPath })
     if (!urlToken || isAuthenticated) {
+      trackEvent('login')
       navigate(intendedPath, { replace: true })
     }
   }, [isAuthenticated, urlToken, intendedPath, navigate])

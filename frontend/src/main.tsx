@@ -7,6 +7,7 @@ import { ToastProvider } from './contexts/ToastContext'
 import { AuthProvider } from './contexts/AuthContext'
 import { ThemeProvider } from './contexts/ThemeContext'
 import { initSentry, getErrorBoundary } from './utils/sentry'
+import { initAnalytics } from './utils/analytics'
 import './index.css'
 import App from './App.tsx'
 
@@ -37,6 +38,7 @@ function SentryFallback() {
 // Sentry 초기화 후 앱 렌더링 (DSN 없으면 즉시 렌더링)
 async function bootstrap() {
   await initSentry()
+  await initAnalytics()
 
   const ErrorBoundary = getErrorBoundary()
 

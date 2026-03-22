@@ -29,6 +29,7 @@ import StructuredInsightsView from '../components/stats/StructuredInsightsView'
 
 // 유틸
 import { calculateHealthScore } from '../utils/healthScore'
+import { trackEvent } from '../utils/analytics'
 
 // 타입
 import type {
@@ -202,6 +203,7 @@ export default function InsightsPage() {
 
       const result = await insightsApi.generateComprehensive(requestData)
       setStructuredInsights(result.insights)
+      trackEvent('ai_analysis_requested')
       addToast('success', 'AI 분석이 완료되었습니다')
     } catch {
       addToast('error', 'AI 분석 생성에 실패했습니다')

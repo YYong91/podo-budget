@@ -16,6 +16,7 @@ import { chatApi } from '../api/chat'
 import { useHouseholdStore } from '../stores/useHouseholdStore'
 import type { Category, ParsedExpenseItem } from '../types'
 import ParsedItemPreviewCard from '../components/ParsedItemPreviewCard'
+import { trackEvent } from '../utils/analytics'
 
 type InputMode = 'natural' | 'form'
 
@@ -137,6 +138,7 @@ export default function IncomeForm() {
         savedCount++
       }
       addToast('success', `🍇 포도알 +${savedCount}! 수입이 저장되었습니다`)
+      trackEvent('income_saved', { mode: 'natural', item_count: savedCount })
       setPreviewItems(null)
       setNaturalInput('')
       setTimeout(() => navigate('/income'), 500)
@@ -247,6 +249,7 @@ export default function IncomeForm() {
         exclude_from_stats: formData.exclude_from_stats,
       })
       addToast('success', '🍇 포도알 +1! 수입이 저장되었습니다')
+      trackEvent('income_saved', { mode: 'form' })
       setTimeout(() => navigate('/income'), 500)
     } catch (error: unknown) {
       const errorMsg = (error as { response?: { data?: { detail?: string } } }).response?.data?.detail || '수입 저장에 실패했습니다'
