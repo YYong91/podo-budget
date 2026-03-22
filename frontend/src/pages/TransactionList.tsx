@@ -87,6 +87,14 @@ export default function TransactionList() {
   const [sheetTarget, setSheetTarget] = useState<UnifiedTransaction | null>(null)
   const [sheetSaving, setSheetSaving] = useState(false)
 
+  // 드롭다운 외부 클릭 시 닫기
+  useEffect(() => {
+    if (!openFilter) return
+    const handleClick = () => setOpenFilter(null)
+    document.addEventListener('pointerdown', handleClick)
+    return () => document.removeEventListener('pointerdown', handleClick)
+  }, [openFilter])
+
   // 날짜 섹션 ref 맵
   const dateRefs = useRef<Map<string, HTMLDivElement>>(new Map())
 
@@ -506,7 +514,7 @@ export default function TransactionList() {
       {isSearchMode && (
         <div className="flex gap-2 flex-wrap relative">
           {/* 지출/수입 */}
-          <div className="relative">
+          <div className="relative" onPointerDown={(e) => e.stopPropagation()}>
             <button
               onClick={() => setOpenFilter(openFilter === 'type' ? null : 'type')}
               className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
@@ -563,7 +571,7 @@ export default function TransactionList() {
           </button>
 
           {/* 기간 */}
-          <div className="relative">
+          <div className="relative" onPointerDown={(e) => e.stopPropagation()}>
             <button
               onClick={() => setOpenFilter(openFilter === 'period' ? null : 'period')}
               className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
@@ -752,7 +760,9 @@ export default function TransactionList() {
         onSelect={handleCategorySelect}
         categories={categories}
         currentCategoryId={isFilterCategorySheet ? searchCategoryId : (sheetTarget?.category_id ?? null)}
-        transactionType={isFilterCategorySheet ? 'expense' : (sheetTarget?.type ?? 'expense')}
+        transactionType={isFilterCategorySheet
+          ? (searchType === 'income' ? 'income' : 'expense')
+          : (sheetTarget?.type ?? 'expense')}
         saving={sheetSaving}
         title={isFilterCategorySheet ? '카테고리 선택' : undefined}
       />
