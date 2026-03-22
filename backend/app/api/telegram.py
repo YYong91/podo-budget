@@ -10,6 +10,7 @@ LLM으로 파싱하여 DB에 저장합니다.
 - 선택한 매핑을 기억하여 다음부터 자동 적용
 """
 
+import asyncio
 import logging
 from collections.abc import Awaitable, Callable
 from datetime import datetime
@@ -26,12 +27,15 @@ from app.core.database import get_db
 from app.models.budget import Budget
 from app.models.category import Category
 from app.models.expense import Expense
+from app.models.feedback import Feedback
 from app.models.income import Income
 from app.services.bot_messages import (
     format_budget_status,
     format_budget_status_full,
     format_delete_confirm,
     format_expense_saved,
+    format_feedback_guide,
+    format_feedback_received,
     format_help_message,
     format_income_saved,
     format_link_usage_message,
@@ -316,6 +320,58 @@ async def _handle_link_command(chat_id: int, user_text: str, bot_user: Any, db: 
     return {"ok": True}
 
 
+async def _handle_feedback_command(
+    chat_id: int,
+    user_text: str,
+    bot_user: Any,
+    db: AsyncSession,
+    active_household_id: int | None,
+) -> dict:
+    """``/feedback`` 명령어 처리"""
+    content = user_text.replace("/feedback", "").strip()
+    if not content:
+        await send_telegram_message(
+            chat_id,
+            format_feedback_guide(),
+            reply_markup={
+                "inline_keyboard": [
+                    [
+                        {"text": "📖 사용법 보기", "callback_data": "cmd:help"},
+                    ]
+                ]
+            },
+        )
+        return {"ok": True}
+
+    feedback_type = "bug" if content.startswith("버그") else "feature"
+    title = content[:50]
+
+    feedback = Feedback(
+        user_id=bot_user.id,
+        type=feedback_type,
+        title=title,
+        content=content,
+        source="telegram",
+    )
+    db.add(feedback)
+    await db.commit()
+
+    from app.services.feedback_notify import notify_admin_feedback
+
+    asyncio.create_task(
+        notify_admin_feedback(
+            username=bot_user.username or "unknown",
+            feedback_type=feedback_type,
+            title=title,
+            content=content,
+            source="telegram",
+        )
+    )
+
+    await send_telegram_message(chat_id, format_feedback_received())
+    return {"ok": True}
+
+
 # 슬래시 명령어 디스패치 테이블
 # 키: 명령어 prefix, 값: (핸들러 함수)
 # 핸들러 시그니처: (chat_id, user_text, bot_user, db, active_household_id) -> dict
@@ -328,6 +384,7 @@ _COMMAND_HANDLERS: dict[
     "/report": _handle_report_command,
     "/budget": _handle_budget_command,
     "/link": _handle_link_command,
+    "/feedback": _handle_feedback_command,
 }
 
 
