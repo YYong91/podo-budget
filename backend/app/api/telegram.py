@@ -13,6 +13,7 @@ LLM으로 파싱하여 DB에 저장합니다.
 import logging
 from collections.abc import Awaitable, Callable
 from datetime import datetime
+from decimal import Decimal
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
@@ -1089,7 +1090,7 @@ async def handle_budget_command(chat_id: int, db: AsyncSession, household_id: in
                 .where(Expense.date >= budget.start_date)
                 .where(Expense.date <= end_date)
             )
-            spent_amount = expense_result.scalar() or 0.0
+            spent_amount = expense_result.scalar() or Decimal(0)
 
             usage = (spent_amount / budget.amount * 100) if budget.amount > 0 else 0
             remaining = budget.amount - spent_amount
@@ -1188,7 +1189,7 @@ async def handle_budget_full_command(chat_id: int, db: AsyncSession, household_i
                 .where(Expense.date >= budget.start_date)
                 .where(Expense.date <= end_date)
             )
-            spent_amount = expense_result.scalar() or 0.0
+            spent_amount = expense_result.scalar() or Decimal(0)
 
             usage = (spent_amount / budget.amount * 100) if budget.amount > 0 else 0
             remaining = budget.amount - spent_amount
