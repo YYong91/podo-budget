@@ -4,7 +4,7 @@
  */
 
 import { describe, it, expect, vi } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { http, HttpResponse } from 'msw'
@@ -214,6 +214,47 @@ describe('TransactionList', () => {
       await waitFor(() => {
         expect(screen.getByText('월급')).toBeInTheDocument()
         expect(screen.queryByText('점심식사')).not.toBeInTheDocument()
+      })
+    })
+  })
+
+  describe('검색 모드', () => {
+    it('돋보기 아이콘 클릭 시 검색 모드 진입', async () => {
+      renderPage()
+
+      // Wait for initial load
+      await waitFor(() => {
+        expect(screen.getByLabelText('검색')).toBeInTheDocument()
+      })
+
+      // Click search icon
+      fireEvent.click(screen.getByLabelText('검색'))
+
+      // Search bar should be visible
+      await waitFor(() => {
+        expect(screen.getByPlaceholderText('거래 내역 검색')).toBeInTheDocument()
+      })
+    })
+
+    it('X 버튼 클릭 시 검색 모드 해제', async () => {
+      renderPage('/?search=')
+
+      await waitFor(() => {
+        expect(screen.getByPlaceholderText('거래 내역 검색')).toBeInTheDocument()
+      })
+
+      fireEvent.click(screen.getByLabelText('검색 닫기'))
+
+      await waitFor(() => {
+        expect(screen.getByLabelText('검색')).toBeInTheDocument()
+      })
+    })
+
+    it('빈 검색어 상태에서 플레이스홀더 표시', async () => {
+      renderPage('/?search=')
+
+      await waitFor(() => {
+        expect(screen.getByText('검색어를 입력하세요')).toBeInTheDocument()
       })
     })
   })
