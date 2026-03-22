@@ -101,3 +101,25 @@ async def test_get_categories_includes_system_and_user(authenticated_client: Asy
     names = [c["name"] for c in data]
     assert "교통비" in names
     assert "커피" in names
+
+
+@pytest.mark.asyncio
+async def test_category_response_includes_is_system_field(authenticated_client: AsyncClient, test_user: User, test_household, db_session: AsyncSession):
+    """카테고리 응답에 is_system 필드가 포함됨"""
+    # 시스템 카테고리
+    sys_cat = Category(user_id=None, household_id=None, name="시스템테스트")
+    db_session.add(sys_cat)
+    # 가구 카테고리
+    hh_cat = Category(user_id=None, household_id=test_household.id, name="가구테스트")
+    db_session.add(hh_cat)
+    await db_session.commit()
+
+    response = await authenticated_client.get("/api/categories")
+    assert response.status_code == 200
+
+    data = response.json()
+    sys_item = next(c for c in data if c["name"] == "시스템테스트")
+    hh_item = next(c for c in data if c["name"] == "가구테스트")
+
+    assert sys_item["is_system"] is True
+    assert hh_item["is_system"] is False

@@ -24,6 +24,13 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
+def _to_response(cat: Category) -> CategoryResponse:
+    """Category ORM → CategoryResponse 변환 (is_system 계산 포함)"""
+    resp = CategoryResponse.model_validate(cat)
+    resp.is_system = cat.user_id is None and cat.household_id is None
+    return resp
+
+
 async def _get_household_id(current_user: User, db: AsyncSession) -> int:
     """현재 사용자의 활성 가구 ID 조회 (필수)"""
     return await get_user_active_household_id(current_user, db)
@@ -52,7 +59,7 @@ async def get_categories(
     scope_filter = _build_accessible_filter(current_user.id, household_id)
 
     result = await db.execute(select(Category).where(scope_filter).order_by(Category.sort_order.desc(), Category.name))
-    return result.scalars().all()
+    return [_to_response(cat) for cat in result.scalars().all()]
 
 
 @router.post("", response_model=CategoryResponse, status_code=status.HTTP_201_CREATED)
@@ -80,7 +87,7 @@ async def create_category(
     await db.commit()
     await db.refresh(db_category)
     logger.info("카테고리 생성: user=%s, name=%s", current_user.id, category.name)
-    return db_category
+    return _to_response(db_category)
 
 
 @router.put("/reorder", response_model=list[CategoryResponse])
@@ -118,7 +125,7 @@ async def reorder_categories(
     await db.commit()
 
     result = await db.execute(select(Category).where(scope_filter).order_by(Category.sort_order.desc(), Category.name))
-    return result.scalars().all()
+    return [_to_response(cat) for cat in result.scalars().all()]
 
 
 @router.put("/{category_id}", response_model=CategoryResponse)
@@ -156,7 +163,7 @@ async def update_category(
 
     await db.commit()
     await db.refresh(db_category)
-    return db_category
+    return _to_response(db_category)
 
 
 @router.delete("/{category_id}", status_code=status.HTTP_204_NO_CONTENT)

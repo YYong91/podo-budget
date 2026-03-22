@@ -18,6 +18,16 @@ export interface Changelog {
 
 export const changelogs: Changelog[] = [
   {
+    version: '0.8.0',
+    date: '2026-03-22',
+    title: '카테고리 체계 개편',
+    items: [
+      { tag: '개선', text: '카테고리 체계를 25개(지출 18 + 수입 7)로 정립했습니다' },
+      { tag: '신규', text: '자녀/육아, 대출/이자, 세금/공과금 카테고리가 추가되었습니다' },
+      { tag: '개선', text: '시스템 기본 카테고리에 잠금 표시가 됩니다' },
+    ],
+  },
+  {
     version: '0.7.0',
     date: '2026-03-18',
     title: 'UX 안정성 개선',
