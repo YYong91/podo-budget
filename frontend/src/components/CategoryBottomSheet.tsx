@@ -66,7 +66,7 @@ export default function CategoryBottomSheet({
       />
       <div
         ref={sheetRef}
-        className="relative w-full md:max-w-sm bg-[var(--surface-card)] rounded-t-2xl md:rounded-2xl max-h-[60vh] flex flex-col animate-slide-up md:animate-none"
+        className="relative w-full md:max-w-sm bg-[var(--surface-card)] rounded-t-2xl md:rounded-2xl max-h-[60vh] flex flex-col animate-sheet-up md:animate-none"
       >
         <div className="flex items-center justify-between px-4 pt-4 pb-2 border-b border-[var(--border-subtle)]">
           <h3 className="text-sm font-semibold text-[var(--text-primary)]">카테고리 변경</h3>
