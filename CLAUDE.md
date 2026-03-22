@@ -145,6 +145,7 @@ Frontend: `frontend/.env.development`:
 - `VITE_API_URL` — API base URL (default: `/api`, proxied by Vite)
 - `VITE_SENTRY_DSN` — Sentry DSN (빈 문자열이면 비활성화)
 - `VITE_SENTRY_ENVIRONMENT` — Sentry 환경
+- `VITE_GA_MEASUREMENT_ID` — Google Analytics 4 Measurement ID (빈 문자열이면 비활성화)
 
 ## Project Documents
 

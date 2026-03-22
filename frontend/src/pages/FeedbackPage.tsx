@@ -5,11 +5,19 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowLeft, Bug, Lightbulb, Send } from 'lucide-react'
+import { ArrowLeft, Bug, Lightbulb, MessageSquarePlus, Send } from 'lucide-react'
 import { useToast } from '../hooks/useToast'
 import { feedbackApi } from '../api/feedback'
+import EmptyState from '../components/EmptyState'
 import ErrorState from '../components/ErrorState'
-import type { Feedback, FeedbackStatus, FeedbackType } from '../types'
+import type { Feedback, FeedbackSource, FeedbackStatus, FeedbackType } from '../types'
+import { trackEvent } from '../utils/analytics'
+
+const SOURCE_LABELS: Record<FeedbackSource, { text: string; className: string }> = {
+  web: { text: '웹', className: 'bg-blue-50 text-blue-600' },
+  telegram: { text: 'TG', className: 'bg-sky-50 text-sky-600' },
+  kakao: { text: '카톡', className: 'bg-yellow-50 text-yellow-700' },
+}
 
 const STATUS_LABELS: Record<FeedbackStatus, { text: string; className: string }> = {
   new: { text: '접수', className: 'bg-[var(--surface-hover)] text-[var(--text-secondary)]' },
@@ -64,7 +72,8 @@ export default function FeedbackPage() {
     setSubmitting(true)
     try {
       await feedbackApi.create({ type, title: title.trim(), content: content.trim() })
-      addToast('success', '피드백이 제출되었습니다!')
+      addToast('success', '피드백이 제출되었습니다')
+      trackEvent('feedback_submitted')
       setTitle('')
       setContent('')
       await loadData()
@@ -164,16 +173,22 @@ export default function FeedbackPage() {
       </form>
 
       {/* 내 피드백 목록 */}
-      {myFeedbacks.length > 0 && (
-        <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] p-6 space-y-4">
-          <h2 className="text-lg font-semibold text-[var(--text-primary)]">내 피드백</h2>
+      <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] p-6 space-y-4">
+        <h2 className="text-lg font-semibold text-[var(--text-primary)]">내 피드백</h2>
+        {myFeedbacks.length > 0 ? (
           <div className="space-y-3">
             {myFeedbacks.map((fb) => (
               <FeedbackCard key={fb.id} feedback={fb} />
             ))}
           </div>
-        </div>
-      )}
+        ) : (
+          <EmptyState
+            icon={<MessageSquarePlus className="w-8 h-8 text-grape-400" />}
+            title="아직 피드백이 없습니다"
+            description="위 폼에서 기능 요청이나 버그 제보를 남겨주세요"
+          />
+        )}
+      </div>
 
       {/* 관리자 영역 */}
       {isAdmin && adminFeedbacks && (
@@ -221,6 +236,11 @@ function FeedbackCard({
           }`}>
             {isFeature ? '기능' : '버그'}
           </span>
+          {feedback.source && feedback.source !== 'web' && (
+            <span className={`flex-shrink-0 text-xs px-2 py-0.5 rounded-full font-medium ${SOURCE_LABELS[feedback.source]?.className || ''}`}>
+              {SOURCE_LABELS[feedback.source]?.text || feedback.source}
+            </span>
+          )}
           <span className="text-sm font-medium text-[var(--text-primary)] truncate">{feedback.title}</span>
         </div>
         <span className={`flex-shrink-0 text-xs px-2 py-0.5 rounded-full font-medium ${statusInfo.className}`}>

@@ -16,6 +16,7 @@ import ErrorState from '../components/ErrorState'
 import LoadingSpinner from '../components/LoadingSpinner'
 import type { CreateHouseholdDto } from '../types'
 import { formatDate, formatRole, getRoleBadgeColor } from '../utils/household'
+import { trackEvent } from '../utils/analytics'
 
 export default function HouseholdListPage() {
   const navigate = useNavigate()
@@ -35,7 +36,7 @@ export default function HouseholdListPage() {
   useEffect(() => {
     fetchHouseholds().catch((err) => {
       console.error('가구 목록 조회 실패:', err)
-      addToast('error', '가구 목록을 불러오는데 실패했습니다')
+      addToast('error', '가구 목록 로딩에 실패했습니다')
     })
   }, [fetchHouseholds, addToast])
 
@@ -44,7 +45,7 @@ export default function HouseholdListPage() {
    */
   useEffect(() => {
     if (error) {
-      addToast('error', error)
+      addToast('error', '처리에 실패했습니다')
       clearError()
     }
   }, [error, addToast, clearError])
@@ -57,6 +58,7 @@ export default function HouseholdListPage() {
     try {
       const newHousehold = await createHousehold(data)
       addToast('success', '가구가 생성되었습니다')
+      trackEvent('household_created')
       setShowCreateModal(false)
       // 생성 후 상세 페이지로 이동
       navigate(`/households/${newHousehold.id}`)

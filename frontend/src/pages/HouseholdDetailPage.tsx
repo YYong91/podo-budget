@@ -17,6 +17,7 @@ import LoadingSpinner from '../components/LoadingSpinner'
 import ErrorState from '../components/ErrorState'
 import type { InviteMemberDto, UpdateHouseholdDto, MemberRole } from '../types'
 import { formatDate, formatRole, getRoleBadgeColor } from '../utils/household'
+import { trackEvent } from '../utils/analytics'
 
 type TabType = 'members' | 'invitations' | 'settings'
 
@@ -64,7 +65,7 @@ export default function HouseholdDetailPage() {
     if (id) {
       fetchHouseholdDetail(Number(id)).catch((err) => {
         console.error('가구 상세 조회 실패:', err)
-        addToast('error', '가구 정보를 불러오는데 실패했습니다')
+        addToast('error', '가구 정보 로딩에 실패했습니다')
       })
     }
 
@@ -100,7 +101,7 @@ export default function HouseholdDetailPage() {
    */
   useEffect(() => {
     if (error) {
-      addToast('error', error)
+      addToast('error', '처리에 실패했습니다')
       clearError()
     }
   }, [error, addToast, clearError])
@@ -118,10 +119,11 @@ export default function HouseholdDetailPage() {
         // 이메일 미발송 — 링크 복사 안내
         const link = `${window.location.origin}/invitations/accept?token=${result.token}`
         await navigator.clipboard.writeText(link)
-        addToast('warning', '이메일 발송 실패 — 초대 링크가 클립보드에 복사되었습니다')
+        addToast('warning', '이메일 발송에 실패하여 링크가 복사되었습니다')
       } else {
         addToast('success', '초대를 전송했습니다')
       }
+      trackEvent('member_invited')
       setShowInviteModal(false)
       // 초대 목록 새로고침
       await fetchHouseholdInvitations(Number(id)).catch(() => {})

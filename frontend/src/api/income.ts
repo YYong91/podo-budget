@@ -11,6 +11,7 @@ interface GetIncomesParams {
   category_id?: number
   household_id?: number
   member_user_id?: number
+  query?: string
 }
 
 export const incomeApi = {
@@ -28,6 +29,9 @@ export const incomeApi = {
 
   delete: (id: number) =>
     apiClient.delete(`/income/${id}`),
+
+  searchSummary: (params?: GetIncomesParams) =>
+    apiClient.get<{ total_count: number; total_amount: number }>('/income/search/summary', { params }),
 
   getStats: (period: string, date?: string, householdId?: number) =>
     apiClient.get<StatsResponse>('/income/stats', {

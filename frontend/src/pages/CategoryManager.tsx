@@ -6,7 +6,7 @@
 
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, Plus } from 'lucide-react'
+import { ArrowLeft, Lock, Plus } from 'lucide-react'
 import { useToast } from '../hooks/useToast'
 import { categoryApi } from '../api/categories'
 import EmptyState from '../components/EmptyState'
@@ -51,7 +51,7 @@ export default function CategoryManager() {
       setCategories(res.data)
     } catch {
       setError(true)
-      addToast('error', '카테고리 목록을 불러오는데 실패했습니다')
+      addToast('error', '카테고리 목록 로딩에 실패했습니다')
     } finally {
       setLoading(false)
     }
@@ -273,7 +273,7 @@ export default function CategoryManager() {
                       <div className="flex flex-col items-center gap-0.5">
                         <button
                           onClick={() => handleMove(index, 'up')}
-                          disabled={index === 0 || reordering}
+                          disabled={index === 0 || reordering || category.is_system}
                           className="p-0.5 text-[var(--text-muted)] hover:text-grape-600 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                           aria-label={`${category.name} 위로 이동`}
                         >
@@ -283,7 +283,7 @@ export default function CategoryManager() {
                         </button>
                         <button
                           onClick={() => handleMove(index, 'down')}
-                          disabled={index === categories.length - 1 || reordering}
+                          disabled={index === categories.length - 1 || reordering || category.is_system}
                           className="p-0.5 text-[var(--text-muted)] hover:text-grape-600 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                           aria-label={`${category.name} 아래로 이동`}
                         >
@@ -342,7 +342,14 @@ export default function CategoryManager() {
                       </span>
                     </td>
                     <td className="px-4 sm:px-6 py-4 text-right">
-                      {isEditing ? (
+                      {category.is_system ? (
+                        <div className="flex justify-end items-center gap-2">
+                          <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-[var(--text-tertiary)] bg-[var(--surface-elevated)] rounded-md">
+                            <Lock className="w-3 h-3" aria-hidden="true" />
+                            기본
+                          </span>
+                        </div>
+                      ) : isEditing ? (
                         <div className="flex justify-end gap-2">
                           <button
                             onClick={() => handleUpdate(category.id)}

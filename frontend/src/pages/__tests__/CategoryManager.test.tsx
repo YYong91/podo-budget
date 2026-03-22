@@ -106,6 +106,25 @@ describe('CategoryManager', () => {
         expect(deleteButtons.length).toBeGreaterThan(0)
       })
     })
+
+    it('시스템 카테고리에는 잠금 뱃지를 표시하고 수정/삭제 버튼을 숨긴다', async () => {
+      renderCategoryManager()
+
+      const systemCategories = mockCategories.filter((c) => c.is_system)
+      const nonSystemCategories = mockCategories.filter((c) => !c.is_system)
+
+      await waitFor(() => {
+        // 시스템 카테고리 수만큼 '기본' 뱃지 표시
+        const badges = screen.getAllByText('기본')
+        expect(badges).toHaveLength(systemCategories.length)
+
+        // 비시스템 카테고리 수만큼 수정/삭제 버튼 표시
+        const editButtons = screen.getAllByRole('button', { name: '수정' })
+        const deleteButtons = screen.getAllByRole('button', { name: '삭제' })
+        expect(editButtons).toHaveLength(nonSystemCategories.length)
+        expect(deleteButtons).toHaveLength(nonSystemCategories.length)
+      })
+    })
   })
 
   describe('카테고리 추가', () => {
@@ -201,19 +220,22 @@ describe('CategoryManager', () => {
   })
 
   describe('카테고리 수정', () => {
+    // 쇼핑(mockCategories[2])은 is_system: false → 수정/삭제 버튼 표시
+    const editableCategory = mockCategories[2]
+
     it('수정 버튼을 클릭하면 편집 모드로 전환된다', async () => {
       const user = userEvent.setup()
       renderCategoryManager()
 
       await waitFor(() => {
-        expect(screen.getByText(mockCategories[0].name)).toBeInTheDocument()
+        expect(screen.getByText(editableCategory.name)).toBeInTheDocument()
       })
 
       const editButtons = screen.getAllByRole('button', { name: '수정' })
       await user.click(editButtons[0])
 
       await waitFor(() => {
-        const nameInput = screen.getByDisplayValue(mockCategories[0].name)
+        const nameInput = screen.getByDisplayValue(editableCategory.name)
         expect(nameInput).toBeInTheDocument()
       })
     })
@@ -224,17 +246,17 @@ describe('CategoryManager', () => {
       renderCategoryManager()
 
       await waitFor(() => {
-        expect(screen.getByText(mockCategories[0].name)).toBeInTheDocument()
+        expect(screen.getByText(editableCategory.name)).toBeInTheDocument()
       })
 
       const editButtons = screen.getAllByRole('button', { name: '수정' })
       await user.click(editButtons[0])
 
       await waitFor(() => {
-        expect(screen.getByDisplayValue(mockCategories[0].name)).toBeInTheDocument()
+        expect(screen.getByDisplayValue(editableCategory.name)).toBeInTheDocument()
       })
 
-      const nameInput = screen.getByDisplayValue(mockCategories[0].name)
+      const nameInput = screen.getByDisplayValue(editableCategory.name)
       await user.clear(nameInput)
       await user.type(nameInput, '수정된 카테고리')
 
@@ -251,21 +273,21 @@ describe('CategoryManager', () => {
       renderCategoryManager()
 
       await waitFor(() => {
-        expect(screen.getByText(mockCategories[0].name)).toBeInTheDocument()
+        expect(screen.getByText(editableCategory.name)).toBeInTheDocument()
       })
 
       const editButtons = screen.getAllByRole('button', { name: '수정' })
       await user.click(editButtons[0])
 
       await waitFor(() => {
-        expect(screen.getByDisplayValue(mockCategories[0].name)).toBeInTheDocument()
+        expect(screen.getByDisplayValue(editableCategory.name)).toBeInTheDocument()
       })
 
       const cancelButton = screen.getByRole('button', { name: '취소' })
       await user.click(cancelButton)
 
       await waitFor(() => {
-        expect(screen.queryByDisplayValue(mockCategories[0].name)).not.toBeInTheDocument()
+        expect(screen.queryByDisplayValue(editableCategory.name)).not.toBeInTheDocument()
       })
     })
   })
@@ -380,7 +402,7 @@ describe('CategoryManager', () => {
 
       await waitFor(() => {
         expect(screen.getByText('문제가 발생했습니다')).toBeInTheDocument()
-        expect(mockAddToast).toHaveBeenCalledWith('error', '카테고리 목록을 불러오는데 실패했습니다')
+        expect(mockAddToast).toHaveBeenCalledWith('error', '카테고리 목록 로딩에 실패했습니다')
       })
     })
   })

@@ -15,6 +15,8 @@ interface CategoryBottomSheetProps {
   currentCategoryId: number | null
   transactionType: 'expense' | 'income'
   saving?: boolean
+  /** 바텀시트 제목 (기본: '카테고리 변경') */
+  title?: string
 }
 
 export default function CategoryBottomSheet({
@@ -25,6 +27,7 @@ export default function CategoryBottomSheet({
   currentCategoryId,
   transactionType,
   saving = false,
+  title = '카테고리 변경',
 }: CategoryBottomSheetProps) {
   const sheetRef = useRef<HTMLDivElement>(null)
 
@@ -58,7 +61,7 @@ export default function CategoryBottomSheet({
     : 'bg-grape-50 text-grape-600 font-medium'
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end md:items-center md:justify-center" role="dialog" aria-modal="true" aria-label="카테고리 변경">
+    <div className="fixed inset-0 z-50 flex items-end md:items-center md:justify-center" role="dialog" aria-modal="true" aria-label={title}>
       {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- 모달 배경 오버레이: Escape 키로 닫기 지원됨 */}
       <div
         className="absolute inset-0 bg-black/40 transition-opacity"
@@ -66,10 +69,10 @@ export default function CategoryBottomSheet({
       />
       <div
         ref={sheetRef}
-        className="relative w-full md:max-w-sm bg-[var(--surface-card)] rounded-t-2xl md:rounded-2xl max-h-[60vh] flex flex-col animate-slide-up md:animate-none"
+        className="relative w-full md:max-w-sm bg-[var(--surface-card)] rounded-t-2xl md:rounded-2xl max-h-[60vh] flex flex-col animate-sheet-up md:animate-none"
       >
         <div className="flex items-center justify-between px-4 pt-4 pb-2 border-b border-[var(--border-subtle)]">
-          <h3 className="text-sm font-semibold text-[var(--text-primary)]">카테고리 변경</h3>
+          <h3 className="text-sm font-semibold text-[var(--text-primary)]">{title}</h3>
           <button onClick={onClose} className="p-1 rounded-lg hover:bg-[var(--surface-hover)]" aria-label="닫기">
             <X className="w-4 h-4 text-[var(--text-muted)]" />
           </button>

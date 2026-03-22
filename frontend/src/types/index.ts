@@ -132,6 +132,7 @@ export interface Category {
   type: 'expense' | 'income' | 'both'
   description: string | null
   sort_order: number
+  is_system: boolean
   created_at: string
 }
 
@@ -385,6 +386,8 @@ export interface ExecuteResponse {
 export type FeedbackType = 'feature' | 'bug'
 export type FeedbackStatus = 'new' | 'read' | 'done'
 
+export type FeedbackSource = 'web' | 'telegram' | 'kakao'
+
 export interface Feedback {
   id: number
   user_id: number
@@ -392,6 +395,7 @@ export interface Feedback {
   title: string
   content: string
   status: FeedbackStatus
+  source: FeedbackSource
   username: string | null
   created_at: string
   updated_at: string
@@ -401,6 +405,7 @@ export interface FeedbackCreateRequest {
   type: FeedbackType
   title: string
   content: string
+  source?: FeedbackSource
 }
 
 // ── 종합 재무 인사이트 ──

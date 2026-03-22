@@ -24,6 +24,7 @@ vi.mock('../../api/feedback', () => {
       title: '다크모드 추가',
       content: '다크모드를 추가해주세요',
       status: 'new' as const,
+      source: 'web' as const,
       username: 'testuser',
       created_at: '2026-03-01T00:00:00Z',
       updated_at: '2026-03-01T00:00:00Z',

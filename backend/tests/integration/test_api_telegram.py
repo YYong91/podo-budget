@@ -9,7 +9,7 @@ Telegram Webhook API 통합 테스트
 """
 
 from datetime import datetime
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 from sqlalchemy import select
@@ -1717,3 +1717,93 @@ async def test_webhook_llm_timeout_returns_error(client, db_session, mock_telegr
 
     msg = mock_telegram_send.call_args[0][1]
     assert "다시 시도" in msg
+
+
+# ──────────────────────────────────────────────
+# /feedback 명령어 테스트
+# ──────────────────────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_feedback_with_content_saves_and_responds(client, db_session, mock_telegram_send):
+    """/feedback 내용 입력 시 DB 저장 후 접수 완료 메시지 전송"""
+    from app.models.feedback import Feedback
+
+    await setup_bot_user_with_household(db_session, chat_id=77001)
+
+    payload = {
+        "message": {
+            "chat": {"id": 77001},
+            "text": "/feedback 카테고리 자동 분류가 잘 안 돼요",
+        }
+    }
+
+    with patch("app.services.feedback_notify.notify_admin_feedback", new_callable=AsyncMock):
+        response = await client.post("/api/telegram/webhook", json=payload)
+
+    assert response.status_code == 200
+    assert response.json() == {"ok": True}
+
+    # DB에 피드백이 저장되었는지 확인
+    result = await db_session.execute(select(Feedback))
+    feedbacks = result.scalars().all()
+    assert len(feedbacks) == 1
+    assert feedbacks[0].source == "telegram"
+    assert feedbacks[0].type == "feature"
+    assert "카테고리" in feedbacks[0].content
+
+    # 접수 완료 메시지 확인
+    mock_telegram_send.assert_called_once()
+    sent_message = mock_telegram_send.call_args[0][1]
+    assert "접수" in sent_message or "감사" in sent_message
+
+
+@pytest.mark.asyncio
+async def test_feedback_bug_type_detected(client, db_session, mock_telegram_send):
+    """/feedback 버그로 시작하면 type이 bug으로 저장"""
+    from app.models.feedback import Feedback
+
+    await setup_bot_user_with_household(db_session, chat_id=77002)
+
+    payload = {
+        "message": {
+            "chat": {"id": 77002},
+            "text": "/feedback 버그 리포트 페이지에서 숫자가 깨져요",
+        }
+    }
+
+    with patch("app.services.feedback_notify.notify_admin_feedback", new_callable=AsyncMock):
+        response = await client.post("/api/telegram/webhook", json=payload)
+
+    assert response.status_code == 200
+
+    result = await db_session.execute(select(Feedback))
+    fb = result.scalars().first()
+    assert fb.type == "bug"
+
+
+@pytest.mark.asyncio
+async def test_feedback_without_content_shows_guide(client, db_session, mock_telegram_send):
+    """/feedback만 입력 시 가이드 메시지 + 인라인 키보드 전송"""
+    await setup_bot_user_with_household(db_session, chat_id=77003)
+
+    payload = {
+        "message": {
+            "chat": {"id": 77003},
+            "text": "/feedback",
+        }
+    }
+
+    response = await client.post("/api/telegram/webhook", json=payload)
+    assert response.status_code == 200
+    assert response.json() == {"ok": True}
+
+    mock_telegram_send.assert_called_once()
+    call_args = mock_telegram_send.call_args
+    sent_message = call_args[0][1]
+    # 가이드 메시지 확인
+    assert "피드백" in sent_message or "의견" in sent_message
+    # 인라인 키보드 확인 (keyword argument로 전달될 수 있음)
+    reply_markup = call_args.kwargs.get("reply_markup")
+    assert reply_markup is not None
+    assert "inline_keyboard" in reply_markup

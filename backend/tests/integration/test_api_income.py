@@ -256,3 +256,45 @@ async def test_get_income_list_includes_memo(authenticated_client, test_user: Us
     items = response.json()
     assert len(items) == 1
     assert items[0]["memo"] == "성과급 포함"
+
+
+@pytest.mark.asyncio
+async def test_search_incomes_by_query(authenticated_client, test_user: User, test_household: Household, db_session):
+    """query 파라미터로 description 검색"""
+    i1 = Income(user_id=test_user.id, household_id=test_household.id, amount=3000000, description="3월 급여", date=datetime(2026, 3, 1))
+    i2 = Income(user_id=test_user.id, household_id=test_household.id, amount=50000, description="용돈", date=datetime(2026, 3, 2))
+    db_session.add_all([i1, i2])
+    await db_session.commit()
+
+    response = await authenticated_client.get("/api/income?query=급여")
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data) == 1
+    assert data[0]["description"] == "3월 급여"
+
+
+@pytest.mark.asyncio
+async def test_search_summary_incomes(authenticated_client, test_user: User, test_household: Household, db_session):
+    """수입 검색 합계"""
+    i1 = Income(user_id=test_user.id, household_id=test_household.id, amount=3000000, description="3월 급여", date=datetime(2026, 3, 1))
+    i2 = Income(user_id=test_user.id, household_id=test_household.id, amount=50000, description="용돈", date=datetime(2026, 3, 2))
+    db_session.add_all([i1, i2])
+    await db_session.commit()
+
+    response = await authenticated_client.get("/api/income/search/summary?query=급여")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["total_count"] == 1
+    assert data["total_amount"] == 3000000.0
+
+
+@pytest.mark.asyncio
+async def test_search_incomes_no_match(authenticated_client, test_user: User, test_household: Household, db_session):
+    """query 검색 — 결과 없음"""
+    i1 = Income(user_id=test_user.id, household_id=test_household.id, amount=50000, description="용돈", date=datetime(2026, 3, 1))
+    db_session.add(i1)
+    await db_session.commit()
+
+    response = await authenticated_client.get("/api/income?query=급여")
+    assert response.status_code == 200
+    assert response.json() == []

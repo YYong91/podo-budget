@@ -10,6 +10,7 @@ class FeedbackCreate(BaseModel):
     type: Literal["feature", "bug"]
     title: str = Field(..., min_length=1, max_length=200)
     content: str = Field(..., min_length=1, max_length=5000)
+    source: Literal["web", "telegram", "kakao"] = "web"
 
 
 class FeedbackResponse(BaseModel):
@@ -19,6 +20,7 @@ class FeedbackResponse(BaseModel):
     title: str
     content: str
     status: str
+    source: str
     username: str | None = None
     created_at: datetime
     updated_at: datetime

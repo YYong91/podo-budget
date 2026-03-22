@@ -9,6 +9,7 @@ import { Mail } from 'lucide-react'
 import { onboardingApi } from '../api/onboarding'
 import { useHouseholdStore } from '../stores/useHouseholdStore'
 import { useToast } from '../hooks/useToast'
+import { trackEvent } from '../utils/analytics'
 
 export default function OnboardingPage() {
   const navigate = useNavigate()
@@ -27,7 +28,8 @@ export default function OnboardingPage() {
     try {
       await onboardingApi.createHousehold(name.trim() || undefined)
       await fetchHouseholds()
-      addToast('success', '가계부가 생성되었습니다!')
+      addToast('success', '가계부가 생성되었습니다')
+      trackEvent('onboarding_complete', { method: 'create' })
       navigate('/', { replace: true })
     } catch {
       addToast('error', '가계부 생성에 실패했습니다')
@@ -41,7 +43,8 @@ export default function OnboardingPage() {
     setAcceptingToken(token)
     try {
       await acceptInvitation(token)
-      addToast('success', `${householdName || '가계부'}에 참여했습니다!`)
+      addToast('success', `${householdName || '가계부'}에 참여했습니다`)
+      trackEvent('onboarding_complete', { method: 'accept_invitation' })
       navigate('/', { replace: true })
     } catch {
       addToast('error', '초대 수락에 실패했습니다')

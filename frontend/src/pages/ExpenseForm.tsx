@@ -17,6 +17,7 @@ import { chatApi } from '../api/chat'
 import { useHouseholdStore } from '../stores/useHouseholdStore'
 import type { Category, ParsedExpenseItem } from '../types'
 import ParsedItemPreviewCard from '../components/ParsedItemPreviewCard'
+import { trackEvent } from '../utils/analytics'
 
 type InputMode = 'natural' | 'form' | 'ocr'
 
@@ -96,12 +97,12 @@ export default function ExpenseForm() {
         }))
         setPreviewItems(editables)
         setRawInput(naturalInput.trim())
+        trackEvent('expense_preview', { mode: 'natural', item_count: editables.length })
       } else {
         addToast('info', res.data.message || '지출 정보를 인식하지 못했습니다')
       }
-    } catch (error: unknown) {
-      const errorMsg = (error as { response?: { data?: { detail?: string } } }).response?.data?.detail || '파싱에 실패했습니다'
-      addToast('error', errorMsg)
+    } catch {
+      addToast('error', '파싱에 실패했습니다')
     } finally {
       setLoading(false)
     }
@@ -135,13 +136,13 @@ export default function ExpenseForm() {
         }
         savedCount++
       }
-      addToast('success', `🍇 포도알 +${savedCount}! 거래가 저장되었습니다`)
+      trackEvent('expense_saved', { mode: 'natural', item_count: savedCount })
+      addToast('success', '거래가 저장되었습니다')
       setPreviewItems(null)
       setNaturalInput('')
       setTimeout(() => navigate('/expenses'), 500)
-    } catch (error: unknown) {
-      const errorMsg = (error as { response?: { data?: { detail?: string } } }).response?.data?.detail || '저장에 실패했습니다'
-      addToast('error', errorMsg)
+    } catch {
+      addToast('error', '저장에 실패했습니다')
     } finally {
       setLoading(false)
     }
@@ -184,9 +185,8 @@ export default function ExpenseForm() {
       setShowNewCategoryFor(null)
       setNewCategoryName('')
       addToast('success', `"${name}" 카테고리가 추가되었습니다`)
-    } catch (error: unknown) {
-      const errorMsg = (error as { response?: { data?: { detail?: string } } }).response?.data?.detail || '카테고리 생성에 실패했습니다'
-      addToast('error', errorMsg)
+    } catch {
+      addToast('error', '카테고리 생성에 실패했습니다')
     } finally {
       setCreatingCategory(false)
     }
@@ -205,9 +205,8 @@ export default function ExpenseForm() {
       setShowNewCategoryFor(null)
       setNewCategoryName('')
       addToast('success', `"${name}" 카테고리가 추가되었습니다`)
-    } catch (error: unknown) {
-      const errorMsg = (error as { response?: { data?: { detail?: string } } }).response?.data?.detail || '카테고리 생성에 실패했습니다'
-      addToast('error', errorMsg)
+    } catch {
+      addToast('error', '카테고리 생성에 실패했습니다')
     } finally {
       setCreatingCategory(false)
     }
@@ -234,13 +233,13 @@ export default function ExpenseForm() {
         }))
         setPreviewItems(editables)
         setRawInput(`[OCR] ${file.name}`)
+        trackEvent('ocr_upload', { item_count: editables.length })
       } else {
         addToast('info', res.data.message || '결제 정보를 인식하지 못했습니다')
         setOcrPreview(null)
       }
-    } catch (error: unknown) {
-      const errorMsg = (error as { response?: { data?: { detail?: string } } }).response?.data?.detail || 'OCR 처리에 실패했습니다'
-      addToast('error', errorMsg)
+    } catch {
+      addToast('error', 'OCR 처리에 실패했습니다')
       setOcrPreview(null)
     } finally {
       setLoading(false)
@@ -283,11 +282,11 @@ export default function ExpenseForm() {
         memo: formData.memo.trim() || undefined,
         exclude_from_stats: formData.exclude_from_stats,
       })
-      addToast('success', '🍇 포도알 +1! 지출이 저장되었습니다')
+      trackEvent('expense_saved', { mode: 'form' })
+      addToast('success', '지출이 저장되었습니다')
       setTimeout(() => navigate('/expenses'), 500)
-    } catch (error: unknown) {
-      const errorMsg = (error as { response?: { data?: { detail?: string } } }).response?.data?.detail || '지출 저장에 실패했습니다'
-      addToast('error', errorMsg)
+    } catch {
+      addToast('error', '지출 저장에 실패했습니다')
     } finally {
       setLoading(false)
     }

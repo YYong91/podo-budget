@@ -15,6 +15,7 @@ import EmptyState from '../components/EmptyState'
 import ErrorState from '../components/ErrorState'
 import type { RecurringTransaction, RecurringTransactionCreate, Category } from '../types'
 import { formatAmount } from '../utils/format'
+import { trackEvent } from '../utils/analytics'
 
 /* 빈도 한국어 표시 */
 function formatFrequency(r: RecurringTransaction): string {
@@ -168,6 +169,7 @@ export default function RecurringList() {
         }
         await recurringApi.create(payload)
         addToast('success', '반복 거래가 추가되었습니다')
+        trackEvent('recurring_added')
       }
       setShowModal(false)
       loadData()

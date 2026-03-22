@@ -7,8 +7,19 @@ import { ToastProvider } from './contexts/ToastContext'
 import { AuthProvider } from './contexts/AuthContext'
 import { ThemeProvider } from './contexts/ThemeContext'
 import { initSentry, getErrorBoundary } from './utils/sentry'
+import { initAnalytics } from './utils/analytics'
 import './index.css'
 import App from './App.tsx'
+
+// beforeinstallprompt 이벤트를 React 마운트 전에 캡처 — 늦게 등록하면 이벤트를 놓침
+declare global {
+  interface Window { __pwaInstallPrompt: Event | null }
+}
+window.__pwaInstallPrompt = null
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault()
+  window.__pwaInstallPrompt = e
+})
 
 // Sentry ErrorBoundary 폴백 (Tailwind 로드 실패해도 동작하도록 인라인 스타일)
 function SentryFallback() {
@@ -37,6 +48,7 @@ function SentryFallback() {
 // Sentry 초기화 후 앱 렌더링 (DSN 없으면 즉시 렌더링)
 async function bootstrap() {
   await initSentry()
+  await initAnalytics()
 
   const ErrorBoundary = getErrorBoundary()
 
