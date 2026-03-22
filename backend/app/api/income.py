@@ -22,7 +22,7 @@ from app.core.database import get_db
 from app.models.category import Category
 from app.models.income import Income
 from app.models.user import User
-from app.schemas.expense import CategoryStats, StatsPeriod, StatsResponse, TrendPoint
+from app.schemas.expense import CategoryStats, SearchSummary, StatsPeriod, StatsResponse, TrendPoint
 from app.schemas.income import IncomeCreate, IncomeResponse, IncomeUpdate
 from app.utils.date_utils import get_month_range, get_week_label, get_week_range, get_year_range
 
@@ -213,6 +213,37 @@ async def get_income_stats(
         by_category=by_category,
         trend=trend,
     )
+
+
+@router.get("/search/summary", response_model=SearchSummary)
+async def get_incomes_search_summary(
+    query: str | None = Query(None, description="설명(description) 텍스트 검색"),
+    start_date: str | None = Query(None, description="시작일"),
+    end_date: str | None = Query(None, description="종료일"),
+    category_id: int | None = None,
+    household_id: int | None = None,
+    member_user_id: int | None = Query(None, description="가구 내 특정 멤버"),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """수입 검색 결과 합계 (건수 + 총액)"""
+    if household_id is None:
+        household_id = await get_user_active_household_id(current_user, db)
+    await get_household_member(household_id, current_user, db)
+
+    stmt = select(func.count(), func.coalesce(func.sum(Income.amount), 0)).where(Income.household_id == household_id)
+    stmt = _apply_income_filters(
+        stmt,
+        query=query,
+        start_date=start_date,
+        end_date=end_date,
+        category_id=category_id,
+        member_user_id=member_user_id,
+    )
+
+    result = await db.execute(stmt)
+    count, total = result.one()
+    return SearchSummary(total_count=count, total_amount=float(total))
 
 
 @router.get("/{income_id}", response_model=IncomeResponse)

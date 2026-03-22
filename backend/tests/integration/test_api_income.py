@@ -274,6 +274,21 @@ async def test_search_incomes_by_query(authenticated_client, test_user: User, te
 
 
 @pytest.mark.asyncio
+async def test_search_summary_incomes(authenticated_client, test_user: User, test_household: Household, db_session):
+    """수입 검색 합계"""
+    i1 = Income(user_id=test_user.id, household_id=test_household.id, amount=3000000, description="3월 급여", date=datetime(2026, 3, 1))
+    i2 = Income(user_id=test_user.id, household_id=test_household.id, amount=50000, description="용돈", date=datetime(2026, 3, 2))
+    db_session.add_all([i1, i2])
+    await db_session.commit()
+
+    response = await authenticated_client.get("/api/income/search/summary?query=급여")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["total_count"] == 1
+    assert data["total_amount"] == 3000000.0
+
+
+@pytest.mark.asyncio
 async def test_search_incomes_no_match(authenticated_client, test_user: User, test_household: Household, db_session):
     """query 검색 — 결과 없음"""
     i1 = Income(user_id=test_user.id, household_id=test_household.id, amount=50000, description="용돈", date=datetime(2026, 3, 1))
