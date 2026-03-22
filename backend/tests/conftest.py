@@ -367,6 +367,24 @@ def mock_llm_generate_insights():
         yield mock
 
 
+@pytest.fixture(autouse=True)
+def _disable_telegram_webhook_auth():
+    """모든 테스트에서 텔레그램 webhook 보안 체크 비활성화
+
+    로컬 .env에 TELEGRAM_BOT_TOKEN이 있으면 TELEGRAM_WEBHOOK_SECRET도 필요한데,
+    테스트에서는 시크릿이 없으므로 503 발생. 토큰을 비워서 보안 체크를 건너뛴다.
+    """
+    from app.core.config import settings as real_settings
+
+    original_token = real_settings.TELEGRAM_BOT_TOKEN
+    original_secret = real_settings.TELEGRAM_WEBHOOK_SECRET
+    real_settings.TELEGRAM_BOT_TOKEN = ""
+    real_settings.TELEGRAM_WEBHOOK_SECRET = ""
+    yield
+    real_settings.TELEGRAM_BOT_TOKEN = original_token
+    real_settings.TELEGRAM_WEBHOOK_SECRET = original_secret
+
+
 @pytest.fixture
 def mock_telegram_send():
     """
