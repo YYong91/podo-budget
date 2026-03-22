@@ -4,6 +4,7 @@ import type { } from 'react'
 import { useState, useEffect } from 'react'
 import { Link, Outlet, useLocation } from 'react-router-dom'
 import FloatingActionButton from './FloatingActionButton'
+import InstallBanner from './InstallBanner'
 import { useHouseholdStore } from '../stores/useHouseholdStore'
 import {
   Receipt, TrendingUp, Settings as SettingsIcon,
@@ -206,6 +207,7 @@ export default function Layout() {
 
         {/* 플로팅 액션 버튼 */}
         <FloatingActionButton />
+        <InstallBanner />
       </div>
 
       {/* 모바일 하단 탭 바 */}

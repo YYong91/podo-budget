@@ -8,7 +8,7 @@ import { Link, useParams, useNavigate } from 'react-router-dom'
 import {
   Tags, PiggyBank, Repeat, Users, LogOut, BookOpen, MessageSquarePlus,
   Megaphone, ChevronRight, ArrowLeft, User, Send, MessageCircle, ShieldCheck,
-  Sun, Moon, Monitor, FileText, ScrollText,
+  Sun, Moon, Monitor, FileText, ScrollText, Download,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { generateTelegramLinkCode, unlinkTelegram } from '../api/telegram'
@@ -16,6 +16,8 @@ import { generateKakaoLinkCode, unlinkKakao } from '../api/kakao'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../hooks/useToast'
 import { useChangelog } from '../hooks/useChangelog'
+import { useInstallPrompt } from '../hooks/useInstallPrompt'
+import IosInstallGuide from '../components/IosInstallGuide'
 import { useTheme } from '../contexts/ThemeContext'
 import type { ThemeMode } from '../contexts/ThemeContext'
 import type { ChangelogItem } from '../data/changelogs'
@@ -613,6 +615,8 @@ export default function SettingsPage() {
   const { user } = useAuth()
   const { hasUnread } = useChangelog()
   const { resolvedTheme } = useTheme()
+  const { isInstalled, isIOS, promptInstall } = useInstallPrompt()
+  const [showIosGuide, setShowIosGuide] = useState(false)
   const { section } = useParams<{ section: string }>()
   const navigate = useNavigate()
 
@@ -716,7 +720,30 @@ export default function SettingsPage() {
   }
 
   if (!section) {
-    return <SettingsMenu menuItems={menuItems} />
+    return (
+      <div className="space-y-4">
+        {/* PWA 설치 안내 (미설치 시에만) */}
+        {!isInstalled && (
+          <button
+            onClick={() => isIOS ? setShowIosGuide(true) : promptInstall()}
+            className="w-full bg-gradient-to-r from-grape-500 to-grape-600 rounded-2xl shadow-sm p-4 flex items-center gap-4 hover:from-grape-600 hover:to-grape-700 transition-all"
+          >
+            <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+              <Download className="w-5 h-5 text-white" />
+            </div>
+            <div className="flex-1 text-left">
+              <p className="text-sm font-semibold text-white">앱으로 설치</p>
+              <p className="text-xs text-white/70">
+                {isIOS ? 'Safari에서 홈 화면에 추가' : '홈 화면에서 바로 실행하세요'}
+              </p>
+            </div>
+            <ChevronRight className="w-4 h-4 text-white/50" />
+          </button>
+        )}
+        <SettingsMenu menuItems={menuItems} />
+        {showIosGuide && <IosInstallGuide onClose={() => setShowIosGuide(false)} />}
+      </div>
+    )
   }
 
   switch (section) {
