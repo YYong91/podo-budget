@@ -26,6 +26,29 @@ import { Search, X } from 'lucide-react'
 
 type FilterType = 'all' | 'expense' | 'income'
 
+// 최근 검색어 localStorage 관리
+const RECENT_SEARCHES_KEY = 'podo-recent-searches'
+const MAX_RECENT_SEARCHES = 5
+
+function getRecentSearches(): string[] {
+  try {
+    return JSON.parse(localStorage.getItem(RECENT_SEARCHES_KEY) || '[]')
+  } catch {
+    return []
+  }
+}
+
+function addRecentSearch(query: string): void {
+  const searches = getRecentSearches().filter(s => s !== query)
+  searches.unshift(query)
+  localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(searches.slice(0, MAX_RECENT_SEARCHES)))
+}
+
+function removeRecentSearch(query: string): void {
+  const searches = getRecentSearches().filter(s => s !== query)
+  localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(searches))
+}
+
 interface UnifiedTransaction {
   id: number
   type: 'expense' | 'income'
@@ -59,6 +82,7 @@ export default function TransactionList() {
   const searchQuery = searchParams.get('search') ?? ''
   const isSearchMode = searchParams.has('search')
   const searchInputRef = useRef<HTMLInputElement>(null)
+  const [recentSearches, setRecentSearches] = useState<string[]>(getRecentSearches())
 
   // 검색 필터 URL 파라미터
   const searchType = (searchParams.get('type') as 'all' | 'expense' | 'income') || 'all'
@@ -141,8 +165,11 @@ export default function TransactionList() {
 
   // 검색 실행
   const submitSearch = useCallback((value: string) => {
-    if (value.trim()) {
-      setParams({ search: value.trim() })
+    const trimmed = value.trim()
+    if (trimmed) {
+      setParams({ search: trimmed })
+      addRecentSearch(trimmed)
+      setRecentSearches(getRecentSearches())
     }
   }, [setParams])
 
@@ -609,11 +636,63 @@ export default function TransactionList() {
         </div>
       )}
 
-      {/* 검색 모드 — 빈 검색어 안내 */}
+      {/* 검색 모드 — 빈 검색어: 최근 검색 + 카테고리 바로가기 */}
       {isSearchMode && !searchQuery && (
-        <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] p-12 text-center">
-          <Search className="w-8 h-8 mx-auto mb-2 text-[var(--text-muted)] opacity-50" />
-          <p className="text-sm text-[var(--text-tertiary)]">검색어를 입력하세요</p>
+        <div className="space-y-4">
+          {/* 최근 검색 */}
+          {recentSearches.length > 0 && (
+            <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] p-4">
+              <h3 className="text-sm font-semibold text-[var(--text-primary)] mb-3">최근 검색</h3>
+              <div className="space-y-1">
+                {recentSearches.map(query => (
+                  <div key={query} className="flex items-center justify-between group">
+                    <button
+                      onClick={() => submitSearch(query)}
+                      className="flex-1 text-left py-1.5 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                    >
+                      {query}
+                    </button>
+                    <button
+                      onClick={() => {
+                        removeRecentSearch(query)
+                        setRecentSearches(getRecentSearches())
+                      }}
+                      className="p-1 opacity-0 group-hover:opacity-100 text-[var(--text-muted)] hover:text-[var(--text-secondary)] transition-opacity"
+                      aria-label={`${query} 삭제`}
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* 카테고리 바로가기 */}
+          {categories.length > 0 && (
+            <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] p-4">
+              <h3 className="text-sm font-semibold text-[var(--text-primary)] mb-3">카테고리로 보기</h3>
+              <div className="flex flex-wrap gap-2">
+                {categories.slice(0, 8).map(cat => (
+                  <button
+                    key={cat.id}
+                    onClick={() => setSearchFilter('category', String(cat.id))}
+                    className="px-3 py-1.5 rounded-lg text-xs font-medium bg-[var(--surface-hover)] text-[var(--text-secondary)] hover:bg-grape-50 hover:text-grape-600 transition-colors"
+                  >
+                    {cat.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* 최근 검색도 카테고리도 없을 때 기본 안내 */}
+          {recentSearches.length === 0 && categories.length === 0 && (
+            <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] p-12 text-center">
+              <Search className="w-8 h-8 mx-auto mb-2 text-[var(--text-muted)] opacity-50" />
+              <p className="text-sm text-[var(--text-tertiary)]">검색어를 입력하세요</p>
+            </div>
+          )}
         </div>
       )}
 

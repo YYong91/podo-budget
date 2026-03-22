@@ -250,11 +250,79 @@ describe('TransactionList', () => {
       })
     })
 
-    it('빈 검색어 상태에서 플레이스홀더 표시', async () => {
+    it('빈 검색어 + 최근 검색어 없으면 카테고리 바로가기 표시', async () => {
+      localStorage.removeItem('podo-recent-searches')
+      renderPage('/?search=')
+
+      // 카테고리 로드 후 카테고리 바로가기가 표시됨
+      await waitFor(() => {
+        expect(screen.getByText('카테고리로 보기')).toBeInTheDocument()
+      })
+      // 최근 검색 섹션은 미표시
+      expect(screen.queryByText('최근 검색')).not.toBeInTheDocument()
+    })
+
+    it('검색 모드 진입 시 최근 검색어가 있으면 표시', async () => {
+      localStorage.setItem('podo-recent-searches', JSON.stringify(['병원', '치킨']))
+
       renderPage('/?search=')
 
       await waitFor(() => {
-        expect(screen.getByText('검색어를 입력하세요')).toBeInTheDocument()
+        expect(screen.getByText('최근 검색')).toBeInTheDocument()
+        expect(screen.getByText('병원')).toBeInTheDocument()
+        expect(screen.getByText('치킨')).toBeInTheDocument()
+      })
+
+      localStorage.removeItem('podo-recent-searches')
+    })
+
+    it('최근 검색어 클릭 시 검색 실행', async () => {
+      localStorage.setItem('podo-recent-searches', JSON.stringify(['병원']))
+
+      renderPage('/?search=')
+
+      await waitFor(() => {
+        expect(screen.getByText('병원')).toBeInTheDocument()
+      })
+
+      fireEvent.click(screen.getByText('병원'))
+
+      // 검색이 실행되어 검색 입력창에 값이 반영됨
+      await waitFor(() => {
+        expect(screen.getByPlaceholderText('거래 내역 검색')).toBeInTheDocument()
+      })
+
+      localStorage.removeItem('podo-recent-searches')
+    })
+
+    it('최근 검색어 삭제 버튼 클릭 시 해당 항목 제거', async () => {
+      localStorage.setItem('podo-recent-searches', JSON.stringify(['병원', '치킨']))
+
+      renderPage('/?search=')
+
+      await waitFor(() => {
+        expect(screen.getByText('병원')).toBeInTheDocument()
+        expect(screen.getByText('치킨')).toBeInTheDocument()
+      })
+
+      fireEvent.click(screen.getByLabelText('병원 삭제'))
+
+      await waitFor(() => {
+        expect(screen.queryByText('병원')).not.toBeInTheDocument()
+        expect(screen.getByText('치킨')).toBeInTheDocument()
+      })
+
+      localStorage.removeItem('podo-recent-searches')
+    })
+
+    it('빈 검색어 상태에서 카테고리 바로가기 표시', async () => {
+      renderPage('/?search=')
+
+      await waitFor(() => {
+        expect(screen.getByText('카테고리로 보기')).toBeInTheDocument()
+        // mockCategories에 '식비', '교통'이 있음
+        expect(screen.getByRole('button', { name: '식비' })).toBeInTheDocument()
+        expect(screen.getByRole('button', { name: '교통' })).toBeInTheDocument()
       })
     })
 
