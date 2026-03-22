@@ -46,7 +46,16 @@ export const handlers = [
     const endDate = url.searchParams.get('end_date')
     const categoryId = url.searchParams.get('category_id')
 
+    const query = url.searchParams.get('query')
+
     let filtered = [...mockExpenses]
+
+    // 검색어 필터링
+    if (query) {
+      filtered = filtered.filter((e) =>
+        e.description.toLowerCase().includes(query.toLowerCase())
+      )
+    }
 
     // 필터링 적용
     if (startDate) {
@@ -82,8 +91,16 @@ export const handlers = [
   /**
    * GET /api/expenses/search/summary - 지출 검색 합계
    */
-  http.get(`${BASE_URL}/expenses/search/summary`, () => {
-    return HttpResponse.json({ total_count: 5, total_amount: 125000 })
+  http.get(`${BASE_URL}/expenses/search/summary`, ({ request }) => {
+    const url = new URL(request.url)
+    const query = url.searchParams.get('query')
+    const filtered = query
+      ? mockExpenses.filter((e) => e.description.toLowerCase().includes(query.toLowerCase()))
+      : mockExpenses
+    return HttpResponse.json({
+      total_count: filtered.length,
+      total_amount: filtered.reduce((sum, e) => sum + e.amount, 0),
+    })
   }),
 
   /**
@@ -172,7 +189,14 @@ export const handlers = [
     const startDate = url.searchParams.get('start_date')
     const endDate = url.searchParams.get('end_date')
 
+    const query = url.searchParams.get('query')
+
     let filtered = [...mockIncomes]
+    if (query) {
+      filtered = filtered.filter((i) =>
+        i.description.toLowerCase().includes(query.toLowerCase())
+      )
+    }
     if (startDate) filtered = filtered.filter((i) => i.date >= startDate)
     if (endDate) filtered = filtered.filter((i) => i.date <= endDate)
 
@@ -187,8 +211,16 @@ export const handlers = [
   /**
    * GET /api/income/search/summary - 수입 검색 합계
    */
-  http.get(`${BASE_URL}/income/search/summary`, () => {
-    return HttpResponse.json({ total_count: 2, total_amount: 3500000 })
+  http.get(`${BASE_URL}/income/search/summary`, ({ request }) => {
+    const url = new URL(request.url)
+    const query = url.searchParams.get('query')
+    const filtered = query
+      ? mockIncomes.filter((i) => i.description.toLowerCase().includes(query.toLowerCase()))
+      : mockIncomes
+    return HttpResponse.json({
+      total_count: filtered.length,
+      total_amount: filtered.reduce((sum, i) => sum + i.amount, 0),
+    })
   }),
 
   http.get(`${BASE_URL}/income/:id`, ({ params }) => {
