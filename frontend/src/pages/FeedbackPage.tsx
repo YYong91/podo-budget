@@ -10,6 +10,7 @@ import { useToast } from '../hooks/useToast'
 import { feedbackApi } from '../api/feedback'
 import ErrorState from '../components/ErrorState'
 import type { Feedback, FeedbackStatus, FeedbackType } from '../types'
+import { trackEvent } from '../utils/analytics'
 
 const STATUS_LABELS: Record<FeedbackStatus, { text: string; className: string }> = {
   new: { text: '접수', className: 'bg-[var(--surface-hover)] text-[var(--text-secondary)]' },
@@ -65,6 +66,7 @@ export default function FeedbackPage() {
     try {
       await feedbackApi.create({ type, title: title.trim(), content: content.trim() })
       addToast('success', '피드백이 제출되었습니다!')
+      trackEvent('feedback_submitted')
       setTitle('')
       setContent('')
       await loadData()

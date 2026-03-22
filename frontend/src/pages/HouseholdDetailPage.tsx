@@ -17,6 +17,7 @@ import LoadingSpinner from '../components/LoadingSpinner'
 import ErrorState from '../components/ErrorState'
 import type { InviteMemberDto, UpdateHouseholdDto, MemberRole } from '../types'
 import { formatDate, formatRole, getRoleBadgeColor } from '../utils/household'
+import { trackEvent } from '../utils/analytics'
 
 type TabType = 'members' | 'invitations' | 'settings'
 
@@ -122,6 +123,7 @@ export default function HouseholdDetailPage() {
       } else {
         addToast('success', '초대를 전송했습니다')
       }
+      trackEvent('member_invited')
       setShowInviteModal(false)
       // 초대 목록 새로고침
       await fetchHouseholdInvitations(Number(id)).catch(() => {})
