@@ -13,11 +13,9 @@ services:
       - ./backend:/app
       - ./pyproject.toml:/app/pyproject.toml
       - ./uv.lock:/app/uv.lock
-      - ./data:/app/data
     env_file:
       - ./backend/.env
     environment:
-      - DATABASE_URL=sqlite+aiosqlite:////app/data/db.sqlite3
       - JWT_SECRET=${JWT_SECRET:?JWT_SECRET 환경변수를 설정하세요}
       - AUTH_SERVER_URL=https://auth.podonest.com
     # --reload는 개발 전용 — 운영 배포 시 Fly.io Dockerfile CMD를 사용 (reload 없음)

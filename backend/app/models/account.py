@@ -18,8 +18,8 @@ class Account(Base):
     type = Column(String, nullable=False)  # brokerage, bank, crypto_exchange, other
     institution = Column(String, nullable=True)  # 기관명 (선택)
     memo = Column(Text, nullable=True)
-    created_at = Column(DateTime, default=func.now())
-    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+    created_at = Column(DateTime, default=func.now(), server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now(), server_default=func.now(), nullable=False)
 
     # Relationships
     user = relationship("User", backref="accounts")

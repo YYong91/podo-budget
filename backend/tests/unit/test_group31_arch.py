@@ -32,7 +32,7 @@ def test_settings_warns_when_openai_key_missing(caplog):
     from app.core.config import Settings
 
     with caplog.at_level(logging.WARNING):
-        Settings(LLM_PROVIDER="openai", OPENAI_API_KEY="", DATABASE_URL="sqlite+aiosqlite:///./test.db")
+        Settings(LLM_PROVIDER="openai", OPENAI_API_KEY="", DATABASE_URL="postgresql+asyncpg://localhost/test")
     assert any("OPENAI_API_KEY" in r.message for r in caplog.records)
 
 
@@ -41,7 +41,7 @@ def test_settings_warns_when_anthropic_key_missing(caplog):
     from app.core.config import Settings
 
     with caplog.at_level(logging.WARNING):
-        Settings(LLM_PROVIDER="anthropic", ANTHROPIC_API_KEY="", DATABASE_URL="sqlite+aiosqlite:///./test.db")
+        Settings(LLM_PROVIDER="anthropic", ANTHROPIC_API_KEY="", DATABASE_URL="postgresql+asyncpg://localhost/test")
     assert any("ANTHROPIC_API_KEY" in r.message for r in caplog.records)
 
 
@@ -50,7 +50,7 @@ def test_settings_warns_cors_wildcard(caplog):
     from app.core.config import Settings
 
     with caplog.at_level(logging.WARNING):
-        Settings(CORS_ORIGINS="*", DATABASE_URL="sqlite+aiosqlite:///./test.db")
+        Settings(CORS_ORIGINS="*", DATABASE_URL="postgresql+asyncpg://localhost/test")
     assert any("CORS_ORIGINS" in r.message for r in caplog.records)
 
 

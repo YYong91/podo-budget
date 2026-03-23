@@ -49,7 +49,7 @@ class HouseholdMember(Base):
     household_id = Column(Integer, ForeignKey("households.id", ondelete="CASCADE"), nullable=False, index=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     role = Column(String, nullable=False, default="member")  # owner, admin, member
-    joined_at = Column(DateTime, default=func.now(), nullable=False)
+    joined_at = Column(DateTime, default=func.now(), server_default=func.now(), nullable=False)
     left_at = Column(DateTime, nullable=True)  # 소프트 삭제: 탈퇴한 멤버는 left_at이 설정됨
 
     # 제약 조건 + 인덱스 (#238)

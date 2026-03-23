@@ -40,10 +40,6 @@ primary_region = "nrt"  # 도쿄 (Tokyo Narita)
   cpus = 1
   memory_mb = 512
 
-[[mounts]]
-  source = "budget_data"
-  destination = "/app/data"
-
 # 유료 플랜 전환 시 (고성능 필요하면)
 # [[vm]]
 #   cpu_kind = "shared"

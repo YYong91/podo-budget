@@ -35,8 +35,8 @@ class Feedback(Base):
     content = Column(Text, nullable=False)
     status = Column(String, nullable=False, default="new")  # "new" | "read" | "done"
     source = Column(String, nullable=False, default="web")  # "web" | "telegram" | "kakao"
-    created_at = Column(DateTime, default=func.now(), nullable=False)
-    updated_at = Column(DateTime, default=func.now(), onupdate=func.now(), nullable=False)
+    created_at = Column(DateTime, default=func.now(), server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now(), server_default=func.now(), nullable=False)
 
     # Relationships
     user = relationship("User")

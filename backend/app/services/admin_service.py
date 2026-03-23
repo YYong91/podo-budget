@@ -69,7 +69,7 @@ async def get_dashboard_stats(db: AsyncSession) -> DashboardStatsResponse:
     total_households = household_result.scalar() or 0
 
     # 5) 최근 활동 피드 (최신 20건) — 개별 쿼리 후 Python에서 합치기
-    #    SQLite에서 UNION ALL + ORDER BY/LIMIT 서브쿼리 호환 문제 회피
+    #    개별 쿼리 후 Python에서 합치기 (UNION ALL 대비 쿼리 구조 단순화)
     expense_q = (
         select(
             literal("expense").label("type"),
@@ -204,7 +204,7 @@ async def get_user_list(
     last_expense = select(func.max(Expense.created_at)).where(Expense.user_id == User.id).correlate(User).scalar_subquery()
     last_income = select(func.max(Income.created_at)).where(Income.user_id == User.id).correlate(User).scalar_subquery()
 
-    # max(last_expense, last_income) — SQLite에는 greatest()가 없으므로 case 사용
+    # max(last_expense, last_income) — NULL 처리를 위한 case 사용
     last_activity = case(
         (last_expense.is_(None), last_income),
         (last_income.is_(None), last_expense),

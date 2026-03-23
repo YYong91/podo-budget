@@ -16,4 +16,4 @@ class AssetSnapshot(Base):
     total_liabilities = Column(Numeric(18, 2), nullable=False, default=0)
     net_worth = Column(Numeric(18, 2), nullable=False, default=0)
     breakdown = Column(Text, nullable=True)  # JSON string: 유형별 합산
-    created_at = Column(DateTime, default=func.now())
+    created_at = Column(DateTime, default=func.now(), server_default=func.now(), nullable=False)

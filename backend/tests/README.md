@@ -1,5 +1,7 @@
 # HomeNRich 백엔드 테스트 가이드
 
+> **프로덕션 DB**: Supabase PostgreSQL (도쿄 리전). 테스트는 CI 속도를 위해 SQLite in-memory를 사용합니다.
+
 ## 테스트 구조
 
 ```
