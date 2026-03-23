@@ -1,8 +1,8 @@
-"""Alembic 환경 설정 - async SQLite 지원
+"""Alembic 환경 설정 — async PostgreSQL 지원
 
 이 파일은 Alembic 마이그레이션 실행 시 사용되는 환경 설정입니다.
-- SQLite URL에서 aiosqlite를 제거하여 Alembic이 실행 가능하도록 합니다
-- render_as_batch=True로 SQLite의 ALTER TABLE 제약을 우회합니다
+- async URL을 동기 URL로 변환하여 Alembic이 실행 가능하도록 합니다
+- render_as_batch=True로 기존 마이그레이션 호환성을 유지합니다
 - app.models의 모든 모델을 import하여 Base.metadata에 등록합니다
 """
 
@@ -54,7 +54,7 @@ def run_migrations_offline() -> None:
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
-        render_as_batch=True,  # SQLite ALTER TABLE 지원 필수
+        render_as_batch=True,  # 기존 마이그레이션 호환 유지
     )
     with context.begin_transaction():
         context.run_migrations()
@@ -67,7 +67,7 @@ def do_run_migrations(connection: Connection) -> None:
     context.configure(
         connection=connection,
         target_metadata=target_metadata,
-        render_as_batch=True,  # SQLite ALTER TABLE 지원 필수
+        render_as_batch=True,  # 기존 마이그레이션 호환 유지
     )
     with context.begin_transaction():
         context.run_migrations()
@@ -76,7 +76,7 @@ def do_run_migrations(connection: Connection) -> None:
 async def run_async_migrations() -> None:
     """
     비동기 엔진을 생성하고 마이그레이션을 실행합니다.
-    async_engine_from_config는 asyncpg/aiosqlite URL이 필요하므로 원본 URL 사용.
+    async_engine_from_config는 async URL이 필요하므로 원본 URL 사용.
     """
     configuration = config.get_section(config.config_ini_section, {})
     configuration["sqlalchemy.url"] = settings.DATABASE_URL
