@@ -35,16 +35,12 @@ describe('getLocalDateString', () => {
     expect(result).toBe(expected)
   })
 
-  it('toISOString과 다를 수 있음을 증명 — UTC 기준 전날일 때', () => {
-    // 2026-03-23 02:00 KST = 2026-03-22 17:00 UTC
-    // 하지만 로컬은 3/23
+  it('로컬 시간 기준으로 항상 올바른 날짜 반환', () => {
+    // 2026-03-23 02:00 로컬 시간
     const date = new Date(2026, 2, 23, 2, 0, 0)
-    const isoDate = date.toISOString().slice(0, 10)
     const localDate = getLocalDateString(date)
 
-    // 로컬은 항상 23일
+    // 로컬은 항상 23일 (toISOString은 UTC 기준이라 다를 수 있음)
     expect(localDate).toBe('2026-03-23')
-    // ISO는 타임존에 따라 22일일 수 있음 (UTC+9에서는 같지만 개념 증명)
-    expect(localDate).toBeDefined()
   })
 })
