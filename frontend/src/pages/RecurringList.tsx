@@ -14,7 +14,7 @@ import { useHouseholdStore } from '../stores/useHouseholdStore'
 import EmptyState from '../components/EmptyState'
 import ErrorState from '../components/ErrorState'
 import type { RecurringTransaction, RecurringTransactionCreate, Category } from '../types'
-import { formatAmount } from '../utils/format'
+import { formatAmount , getLocalDateString } from '../utils/format'
 import { trackEvent } from '../utils/analytics'
 
 /* 빈도 한국어 표시 */
@@ -45,7 +45,7 @@ const emptyForm = {
   day_of_week: '0',
   month_of_year: '1',
   interval: '14',
-  start_date: new Date().toISOString().slice(0, 10),
+  start_date: getLocalDateString(),
   end_date: '',
 }
 

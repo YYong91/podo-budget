@@ -1,3 +1,4 @@
+import { getLocalDateString } from '../utils/format'
 /**
  * @file InvitationListPage.tsx
  * @description 내가 받은 초대 목록 페이지
@@ -19,7 +20,7 @@ import LoadingSpinner from '../components/LoadingSpinner'
  */
 function formatDateTime(dateStr: string): string {
   const date = new Date(dateStr)
-  const dateOnly = date.toISOString().slice(0, 10).replace(/-/g, '.')
+  const dateOnly = getLocalDateString(date).replace(/-/g, '.')
   const time = date.toTimeString().slice(0, 5)
   return `${dateOnly} ${time}`
 }
