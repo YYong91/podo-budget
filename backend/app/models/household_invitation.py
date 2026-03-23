@@ -64,7 +64,7 @@ class HouseholdInvitation(Base):
     role = Column(String, nullable=False, default="member")  # member or admin (owner는 불가)
     status = Column(String, nullable=False, default="pending")  # pending, accepted, rejected, expired
     expires_at = Column(DateTime, nullable=False)  # 기본 7일 후 만료
-    created_at = Column(DateTime, default=func.now(), nullable=False)
+    created_at = Column(DateTime, default=func.now(), server_default=func.now(), nullable=False)
     responded_at = Column(DateTime, nullable=True)  # 수락/거절 시각
 
     # Relationships

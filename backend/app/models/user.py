@@ -39,8 +39,8 @@ class User(Base):
     kakao_link_code = Column(String(8), unique=True, index=True, nullable=True)  # 카카오 단기 연동 코드
     kakao_link_code_expires_at = Column(DateTime(timezone=True), nullable=True)  # 카카오 코드 만료 시각
     total_monthly_budget = Column(Numeric(12, 2), nullable=True)  # 월 총 예산
-    created_at = Column(DateTime, default=func.now(), nullable=False)
-    updated_at = Column(DateTime, default=func.now(), onupdate=func.now(), nullable=False)
+    created_at = Column(DateTime, default=func.now(), server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now(), server_default=func.now(), nullable=False)
 
     # Relationships
     expenses = relationship("Expense", back_populates="user")

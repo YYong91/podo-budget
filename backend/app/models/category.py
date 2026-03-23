@@ -38,7 +38,7 @@ class Category(Base):
     description = Column(String, nullable=True)
     type = Column(String(10), nullable=False, default="expense")  # expense | income | both
     sort_order = Column(BigInteger, nullable=False, default=0, server_default="0")  # 사용 횟수 기반 정렬 (높을수록 앞)
-    created_at = Column(DateTime, default=func.now())
+    created_at = Column(DateTime, default=func.now(), server_default=func.now(), nullable=False)
 
     # Relationships
     user = relationship("User", back_populates="categories")

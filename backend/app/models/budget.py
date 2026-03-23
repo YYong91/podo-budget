@@ -44,8 +44,8 @@ class Budget(Base):
     start_date = Column(DateTime, nullable=False)
     end_date = Column(DateTime, nullable=True)
     alert_threshold = Column(Float, default=0.8)  # 80% 도달시 경고
-    created_at = Column(DateTime, default=func.now())
-    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+    created_at = Column(DateTime, default=func.now(), server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now(), server_default=func.now(), nullable=False)
 
     # Relationships
     user = relationship("User", back_populates="budgets")

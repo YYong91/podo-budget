@@ -41,8 +41,8 @@ class Household(Base):
     name = Column(String(50), nullable=False)
     description = Column(String(200), nullable=True)
     currency = Column(String(3), default="KRW", nullable=False)
-    created_at = Column(DateTime, default=func.now(), nullable=False)
-    updated_at = Column(DateTime, default=func.now(), onupdate=func.now(), nullable=False)
+    created_at = Column(DateTime, default=func.now(), server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now(), server_default=func.now(), nullable=False)
     deleted_at = Column(DateTime, nullable=True)  # 소프트 삭제 지원
 
     # Relationships

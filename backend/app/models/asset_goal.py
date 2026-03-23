@@ -18,5 +18,5 @@ class AssetGoal(Base):
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     target_net_worth = Column(Numeric(18, 2), nullable=False)
     target_date = Column(Date, nullable=False)
-    created_at = Column(DateTime, default=func.now())
-    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+    created_at = Column(DateTime, default=func.now(), server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now(), server_default=func.now(), nullable=False)
