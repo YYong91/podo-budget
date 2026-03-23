@@ -93,6 +93,10 @@ export default function TransactionList() {
   const searchCategoryId = searchParams.get('category') ? Number(searchParams.get('category')) : null
   const searchPeriod = (searchParams.get('period') as 'all' | '1m' | '3m' | '6m' | 'year') || 'all'
 
+  // 검색 필터 활성 여부 — 검색어 없이 필터만으로도 결과 표시 (#329)
+  const hasSearchFilters = !!(searchCategoryId || searchPeriod !== 'all' || searchType !== 'all')
+
+
   const [expenses, setExpenses] = useState<Expense[]>([])
   const [incomes, setIncomes] = useState<Income[]>([])
   const [categories, setCategories] = useState<Category[]>([])
@@ -230,8 +234,7 @@ export default function TransactionList() {
 
   // 검색 실행 (append=true: 무한 스크롤로 추가 로드)
   const fetchSearchResults = useCallback(async (append = false) => {
-    const hasFilters = searchCategoryId || searchPeriod !== 'all' || searchType !== 'all'
-    if (!activeHouseholdId || (!searchQuery && !hasFilters)) return
+    if (!activeHouseholdId || (!searchQuery && !hasSearchFilters)) return
 
     if (append) {
       setSearchLoadingMore(true)
@@ -304,8 +307,7 @@ export default function TransactionList() {
   // 검색어 또는 필터 변경 시 검색 실행
   useEffect(() => {
     if (isSearchMode) {
-      const hasFilters = searchCategoryId || searchPeriod !== 'all' || searchType !== 'all'
-      if (searchQuery || hasFilters) {
+      if (searchQuery || hasSearchFilters) {
         fetchSearchResults()
       } else {
         setSearchResults([])
@@ -753,7 +755,7 @@ export default function TransactionList() {
       )}
 
       {/* 검색 모드 — 빈 검색어: 최근 검색 + 카테고리 바로가기 */}
-      {isSearchMode && !searchQuery && (
+      {isSearchMode && !searchQuery && !hasSearchFilters && (
         <div className="space-y-4">
           {/* 최근 검색 */}
           {recentSearches.length > 0 && (
@@ -813,9 +815,13 @@ export default function TransactionList() {
       )}
 
       {/* 검색 결과 합계 바 */}
-      {isSearchMode && searchQuery && searchSummary && !searchLoading && (
+      {isSearchMode && (searchQuery || hasSearchFilters) && searchSummary && !searchLoading && (
         <div className="px-1 text-sm text-[var(--text-secondary)]">
-          <span className="font-medium text-[var(--text-primary)]">&ldquo;{searchQuery}&rdquo;</span>
+          {searchQuery ? (
+            <span className="font-medium text-[var(--text-primary)]">&ldquo;{searchQuery}&rdquo;</span>
+          ) : (
+            <span className="font-medium text-[var(--text-primary)]">필터 검색</span>
+          )}
           {' \u00b7 '}
           {searchSummary.total_count}건
           {' \u00b7 총 '}
@@ -824,7 +830,7 @@ export default function TransactionList() {
       )}
 
       {/* 검색 결과 리스트 */}
-      {isSearchMode && searchQuery && (
+      {isSearchMode && (searchQuery || hasSearchFilters) && (
         searchLoading ? (
           <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] overflow-hidden">
             {[1, 2, 3].map(i => (
