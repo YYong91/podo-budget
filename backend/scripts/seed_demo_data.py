@@ -129,7 +129,7 @@ async def get_category_map(session: AsyncSession, user_id: int, household_id: in
 
 
 async def seed():
-    # 테이블 생성 (SQLite create_all)
+    # 테이블 생성
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
