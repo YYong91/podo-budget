@@ -115,10 +115,10 @@ describe('FeedbackPage', () => {
     expect(screen.getAllByText('다크모드 추가').length).toBeGreaterThan(0)
   })
 
-  it('뒤로가기 링크가 설정 페이지로 이동한다', () => {
+  it('뒤로가기 버튼이 존재한다', () => {
     renderPage()
-    const backLink = screen.getByRole('link', { name: '뒤로가기' })
-    expect(backLink).toHaveAttribute('href', '/settings')
+    const backButton = screen.getByRole('button', { name: '뒤로가기' })
+    expect(backButton).toBeInTheDocument()
   })
 
   it('getMine 에러 시 에러 상태를 표시한다', async () => {

@@ -5,6 +5,7 @@
 
 import { useState, useEffect } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
+import { useGoBack } from '../hooks/useGoBack'
 import {
   Tags, PiggyBank, Repeat, Users, LogOut, BookOpen, MessageSquarePlus,
   Megaphone, ChevronRight, ArrowLeft, User, Send, MessageCircle, ShieldCheck,
@@ -101,11 +102,11 @@ function SettingsMenu({ menuItems }: { menuItems: MenuItem[] }) {
 
 /* ─── 서브 페이지 래퍼 ─── */
 function SubPageWrapper({ children }: { children: React.ReactNode }) {
-  const navigate = useNavigate()
+  const goBack = useGoBack('/settings')
   return (
     <div className="space-y-6">
       <button
-        onClick={() => navigate('/settings')}
+        onClick={() => goBack()}
         className="p-2.5 -ml-2.5 rounded-lg hover:bg-[var(--surface-hover)] transition-colors"
       >
         <ArrowLeft className="w-5 h-5 text-[var(--text-secondary)]" />
