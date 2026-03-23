@@ -11,6 +11,7 @@ dependencies = [
     "pydantic>=2.7.0,<3.0.0",  # fastapi 0.130+이 pydantic>=2.7.0 요구 (#237)
     "pydantic-settings>=2.1.0,<3.0.0",
     "python-dotenv==1.0.1",
+    "asyncpg>=0.29.0",
     "aiosqlite>=0.20.0",
     "python-multipart>=0.0.7",
     "httpx==0.26.0",
