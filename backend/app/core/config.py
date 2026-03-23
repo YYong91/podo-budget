@@ -20,7 +20,7 @@ class Settings(BaseSettings):
     AUTH_SERVER_URL: str = "https://auth.podonest.com"
 
     # Database
-    DATABASE_URL: str = "sqlite+aiosqlite:///./data/db.sqlite3"
+    DATABASE_URL: str = "postgresql+asyncpg://localhost:5432/podo_budget"
 
     # LLM — 기본 프로바이더/모델 (모든 기능에 적용)
     LLM_PROVIDER: LLMProviderType = "anthropic"
