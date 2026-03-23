@@ -41,7 +41,7 @@ jobs:
       - name: 백엔드 배포
         run: |
           set -o pipefail
-          flyctl deploy --local-only --config backend/fly.toml --dockerfile backend/Dockerfile 2>&1 | tee /tmp/deploy.log
+          flyctl deploy --local-only --yes --config backend/fly.toml --dockerfile backend/Dockerfile 2>&1 | tee /tmp/deploy.log
 
       - name: 실패 원인 수집
         id: on-failure
