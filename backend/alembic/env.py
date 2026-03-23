@@ -34,7 +34,8 @@ def get_url() -> str:
     데이터베이스 URL을 가져와서 Alembic 실행용으로 변환합니다.
 
     Alembic은 sync driver만 지원하므로, async URL을 동기 URL로 변환합니다.
-    SQLite: sqlite+aiosqlite:// → sqlite://
+    PostgreSQL: postgresql+asyncpg:// → postgresql://
+    SQLite (테스트): sqlite+aiosqlite:// → sqlite://
     """
     url = settings.DATABASE_URL
     if "sqlite" in url:
