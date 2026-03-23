@@ -464,7 +464,7 @@ async def get_monthly_stats(
     )
     by_category = [{"category": row.name or "미분류", "amount": float(row.amount)} for row in category_result.all()]
 
-    # 일별 추이 (DATE() 함수 — SQLite/PostgreSQL 모두 지원)
+    # 일별 추이
     day_col = func.date(Expense.date).label("day")
     daily_result = await db.execute(
         select(day_col, func.sum(Expense.amount).label("amount"))

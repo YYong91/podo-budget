@@ -12,7 +12,7 @@ primary_region = "nrt"  # 도쿄 (Tokyo Narita)
 [build]
 
 [deploy]
-  release_command = ".venv/bin/alembic upgrade head"
+  release_command = "uv run alembic upgrade head"
 
 [env]
   PORT = "8000"
@@ -39,10 +39,6 @@ primary_region = "nrt"  # 도쿄 (Tokyo Narita)
   cpu_kind = "shared"
   cpus = 1
   memory_mb = 512
-
-[[mounts]]
-  source = "budget_data"
-  destination = "/app/data"
 
 # 유료 플랜 전환 시 (고성능 필요하면)
 # [[vm]]

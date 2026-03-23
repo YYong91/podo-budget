@@ -1,7 +1,7 @@
 """
 테스트용 공통 fixture 모듈
 
-- 테스트 DB: SQLite + aiosqlite (PostgreSQL 의존성 제거)
+- 테스트 DB: SQLite in-memory (CI 속도 + 외부 의존성 없음, 프로덕션은 Supabase PostgreSQL)
 - LLM 서비스: Mock으로 대체
 - AsyncClient: 통합/E2E 테스트용 HTTP 클라이언트
 - SSO 인증: podo-auth 스타일 JWT 토큰으로 테스트 (Shadow User 패턴)
@@ -27,7 +27,7 @@ from app.models.household import Household
 from app.models.household_member import HouseholdMember
 from app.models.user import User
 
-# 테스트용 SQLite 데이터베이스 URL (in-memory, StaticPool로 연결 공유)
+# 테스트용 SQLite 데이터베이스 URL (in-memory, StaticPool로 연결 공유 — 프로덕션은 Supabase PostgreSQL)
 TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
 
 # 테스트용 비동기 엔진 및 세션

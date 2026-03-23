@@ -316,7 +316,7 @@ async def seed_travel_household(session: AsyncSession, user: User) -> int:
 
 
 async def seed():
-    # 테이블 생성 (SQLite create_all)
+    # 테이블 생성
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 

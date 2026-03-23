@@ -112,7 +112,7 @@ async def link_telegram_account_by_code(db: AsyncSession, code: str, telegram_ch
     if user is None:
         return False, "❌ 유효하지 않은 코드입니다. 웹에서 새 코드를 발급해주세요."
 
-    # 만료 확인 (SQLite는 naive datetime 반환 → UTC로 간주하여 비교)
+    # 만료 확인 (naive datetime이면 UTC로 간주하여 비교)
     expires_at = user.telegram_link_code_expires_at
     if expires_at is not None and expires_at.tzinfo is None:
         expires_at = expires_at.replace(tzinfo=UTC)
@@ -215,7 +215,7 @@ async def _migrate_bot_user_data(db: AsyncSession, platform: str, platform_user_
     # 웹 유저의 활성 가구 ID 조회
     household_id = await get_user_active_household_id(web_user, db)
 
-    # 이관할 지출 건수 먼저 조회 (RETURNING 대신 count 사용 — SQLite 호환)
+    # 이관할 지출 건수 먼저 조회
     count_result = await db.execute(select(func.count()).where(Expense.user_id == bot_user.id))
     migrated_count = count_result.scalar() or 0
 
@@ -257,7 +257,7 @@ async def link_kakao_account_by_code(db: AsyncSession, code: str, kakao_user_id:
     if user is None:
         return False, "❌ 유효하지 않은 코드입니다. 웹에서 새 코드를 발급해주세요."
 
-    # 만료 확인 (SQLite는 naive datetime 반환 → UTC로 간주하여 비교)
+    # 만료 확인 (naive datetime이면 UTC로 간주하여 비교)
     expires_at = user.kakao_link_code_expires_at
     if expires_at is not None and expires_at.tzinfo is None:
         expires_at = expires_at.replace(tzinfo=UTC)

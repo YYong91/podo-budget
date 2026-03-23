@@ -8,7 +8,7 @@
 - `tests/conftest.py` — 공유 fixture
 
 ### 핵심 fixture
-- `db_session` — SQLite in-memory, 테스트마다 테이블 생성/삭제
+- `db_session` — SQLite in-memory (CI 속도 + 외부 의존성 없음), 테스트마다 테이블 생성/삭제
 - `test_user` / `test_user2` — Shadow User (podo-auth 스타일, auth_user_id 사용)
 - `test_household` — 기본 가구 + owner 멤버십
 - `authenticated_client` — JWT 헤더 포함된 AsyncClient

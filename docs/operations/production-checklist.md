@@ -9,7 +9,7 @@
 ### 1. 인프라 설정
 
 - [ ] Fly.io 계정 생성 및 결제 정보 등록
-- [ ] Backend 앱 생성 (Fly.io, SQLite + Volume)
+- [ ] Backend 앱 생성 (Fly.io + Supabase PostgreSQL)
 - [ ] Cloudflare Pages 프로젝트 생성 (Frontend)
 - [ ] 도메인 구매 (선택)
 - [ ] Cloudflare DNS 설정 (선택)
@@ -179,7 +179,7 @@
 - [ ] Fly Volume 스냅샷 활성화
 - [ ] 수동 백업 테스트 (`flyctl volumes snapshots create`)
 - [ ] 백업 보관 기간 확인
-- [ ] SQLite DB 파일 백업 전략 수립
+- [x] Supabase 자동 백업 확인 (무료 티어 7일 보관)
 
 ### 2. 복구 테스트
 

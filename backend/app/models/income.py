@@ -46,8 +46,8 @@ class Income(Base):
     memo = Column(Text, nullable=True)  # 선택적 메모
     exclude_from_stats = Column(Boolean, nullable=False, default=False)  # 통계 제외 여부 (저축, 퇴직금 등 비정형 대규모 거래용)
     date = Column(DateTime, nullable=False, default=func.now())
-    created_at = Column(DateTime, default=func.now())
-    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+    created_at = Column(DateTime, default=func.now(), server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now(), server_default=func.now(), nullable=False)
 
     # Relationships
     user = relationship("User", back_populates="incomes")

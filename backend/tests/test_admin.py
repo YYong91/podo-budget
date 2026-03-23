@@ -5,7 +5,7 @@ test_user(id=1)는 ADMIN_USER_ID=1과 일치하므로 관리자로 간주됩니�
 
 참고: #133 패치로 ADMIN_USER_ID 기본값이 -1(미설정)로 바뀌었으므로,
       admin 기능이 필요한 테스트는 아래 autouse 픽스처로 ADMIN_USER_ID=1로 패치합니다.
-      SQLite in-memory 테스트 DB에서 test_user는 항상 id=1로 생성됩니다.
+      테스트 DB(SQLite in-memory)에서 test_user는 항상 id=1로 생성됩니다.
 """
 
 from datetime import UTC, datetime, timedelta
@@ -22,7 +22,7 @@ from app.models.household_member import HouseholdMember
 from app.models.income import Income
 from app.models.user import User
 
-# SQLite in-memory 테스트 DB에서 test_user는 항상 id=1
+# 테스트 DB에서 test_user는 항상 id=1
 _TEST_ADMIN_USER_ID = 1
 
 

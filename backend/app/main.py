@@ -30,7 +30,7 @@ from app.api import (
     webhooks,
 )
 from app.core.config import settings
-from app.core.database import Base, engine
+from app.core.database import engine
 from app.core.exceptions import register_exception_handlers
 from app.core.rate_limit import limiter
 
@@ -104,15 +104,12 @@ async def lifespan(app: FastAPI):
         cwd=str(alembic_dir),
     )
     if result.returncode != 0:
-        # 마이그레이션 실패 시 로그 출력 후 fallback으로 create_all 실행
-        logger.error("Alembic 마이그레이션 실패, create_all로 폴백: %s", result.stderr)
-        async with engine.begin() as conn:
-            await conn.run_sync(Base.metadata.create_all)
+        # PostgreSQL에서는 Alembic이 유일한 스키마 관리 경로 — fallback 없이 에러 로그만 출력
+        logger.error("Alembic 마이그레이션 실패: %s", result.stderr)
     else:
         logger.info("Alembic 마이그레이션 완료: %s", result.stdout)
 
     # sort_order=0인 카테고리를 실제 사용 횟수(지출+수입)로 초기화
-    # Alembic 마이그레이션이 실패(로컬 SQLite)해도 create_all 이후 동작
     from sqlalchemy import text
 
     async with engine.begin() as conn:

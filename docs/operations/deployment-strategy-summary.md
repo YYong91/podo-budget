@@ -6,7 +6,7 @@
 
 ## 최종 아키텍처
 
-**Backend**: Fly.io (도쿄 리전) — FastAPI + SQLite
+**Backend**: Fly.io (도쿄 리전) — FastAPI + Supabase PostgreSQL
 **Frontend**: Cloudflare Pages — React 19 SPA
 **CI/CD**: GitHub Actions — CI(PR 테스트) / CD(배포) 분리
 **비용**: $0~5/월 (MVP), $50~100/월 (1000명)
@@ -21,7 +21,7 @@
 |------|------|------|
 | 플랫폼 | **Fly.io** | 무료 티어로 MVP 커버, Docker 네이티브 |
 | 리전 | 도쿄 (nrt) | 한국과 40~60ms 레이턴시 |
-| DB | **SQLite** (Fly Volume) | 단일 인스턴스에 충분, 운영 비용 $0 |
+| DB | **Supabase PostgreSQL** (도쿄 리전, Transaction pooler) | 관리형 DB, 백업 자동, 운영 비용 $0 (무료 티어) |
 | 대안 | AWS Seoul | 서울 리전 필요 시 ($300+/월), 1000 DAU 이후 검토 |
 
 ### 2. Frontend: Cloudflare Pages ✅
@@ -166,6 +166,8 @@ e2e.yml         수동 실행 전용 (Playwright)
 **대응**: Rate limiting + LLM 응답 캐싱 + API 예산 알림
 
 ### 리스크 3: SQLite 한계 도달
+
+> **해결됨**: Supabase PostgreSQL로 마이그레이션 완료 (#336)
 
 **대응**: PostgreSQL 전환 (Fly Postgres 또는 Supabase)
 
