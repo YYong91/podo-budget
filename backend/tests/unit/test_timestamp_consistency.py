@@ -4,11 +4,9 @@
 server_default=func.now()와 nullable=False를 가지는지 확인합니다.
 """
 
-from app.core.database import Base
-
 # 모든 모델이 import되어 Base.metadata에 등록되도록 보장
 import app.models  # noqa: F401
-
+from app.core.database import Base
 
 # 타임스탬프 컬럼명 목록
 TIMESTAMP_COLUMNS = {"created_at", "updated_at", "joined_at"}
@@ -23,9 +21,8 @@ def test_all_timestamp_columns_have_server_default():
         if table_name == "alembic_version":
             continue
         for col in table.columns:
-            if col.name in TIMESTAMP_COLUMNS:
-                if col.server_default is None:
-                    missing.append(f"{table_name}.{col.name}")
+            if col.name in TIMESTAMP_COLUMNS and col.server_default is None:
+                missing.append(f"{table_name}.{col.name}")
     assert not missing, f"server_default 누락: {missing}"
 
 
@@ -36,7 +33,6 @@ def test_all_timestamp_columns_are_not_nullable():
         if table_name == "alembic_version":
             continue
         for col in table.columns:
-            if col.name in TIMESTAMP_COLUMNS:
-                if col.nullable:
-                    nullable.append(f"{table_name}.{col.name}")
+            if col.name in TIMESTAMP_COLUMNS and col.nullable:
+                nullable.append(f"{table_name}.{col.name}")
     assert not nullable, f"nullable=True인 타임스탬프: {nullable}"

@@ -9,11 +9,7 @@ engine = create_async_engine(
     future=True,
     # PostgreSQL: Supabase Transaction pooler (PgBouncer) 호환 — prepared statement 비활성화
     # SQLite (테스트): connect_args 불필요
-    connect_args=(
-        {"prepared_statement_cache_size": 0}
-        if "postgresql" in settings.DATABASE_URL
-        else {}
-    ),
+    connect_args=({"prepared_statement_cache_size": 0} if "postgresql" in settings.DATABASE_URL else {}),
     # Fly.io 하이버네이션 후 stale 커넥션 자동 감지 + 30분마다 커넥션 재생성 (#241)
     pool_pre_ping=True,
     pool_recycle=1800,

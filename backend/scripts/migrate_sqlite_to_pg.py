@@ -33,6 +33,7 @@ def parse_date(value: str) -> date:
     """SQLite date 문자열 → Python date"""
     return datetime.strptime(value[:10], "%Y-%m-%d").date()
 
+
 # FK 의존성 순서대로 마이그레이션 (부모 테이블 먼저)
 TABLE_ORDER = [
     "users",

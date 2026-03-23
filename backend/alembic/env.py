@@ -80,11 +80,7 @@ async def run_async_migrations() -> None:
     Supabase Transaction pooler 호환을 위해 create_async_engine 직접 사용.
     """
     # Supabase Transaction pooler (PgBouncer) 호환 — prepared statement 비활성화
-    connect_args = (
-        {"prepared_statement_cache_size": 0, "statement_cache_size": 0}
-        if "postgresql" in settings.DATABASE_URL
-        else {}
-    )
+    connect_args = {"prepared_statement_cache_size": 0, "statement_cache_size": 0} if "postgresql" in settings.DATABASE_URL else {}
 
     connectable = create_async_engine(
         settings.DATABASE_URL,
