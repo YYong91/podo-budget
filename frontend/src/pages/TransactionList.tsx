@@ -564,13 +564,11 @@ export default function TransactionList() {
           </button>
         </div>
       ) : (
-        <div className="flex items-center gap-2">
-          <div className="flex-1">
-            <PeriodNavigator label={monthLabel} onPrev={() => navigateMonth(-1)} onNext={() => navigateMonth(1)} />
-          </div>
+        <div className="relative">
+          <PeriodNavigator label={monthLabel} onPrev={() => navigateMonth(-1)} onNext={() => navigateMonth(1)} />
           <button
             onClick={enterSearchMode}
-            className="p-2 rounded-xl hover:bg-[var(--surface-hover)] transition-colors"
+            className="absolute right-0 top-1/2 -translate-y-1/2 p-2 rounded-xl hover:bg-[var(--surface-hover)] transition-colors"
             aria-label="검색"
           >
             <Search className="w-5 h-5 text-[var(--text-secondary)]" />
