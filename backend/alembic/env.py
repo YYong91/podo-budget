@@ -11,7 +11,7 @@ from logging.config import fileConfig
 
 from sqlalchemy import pool
 from sqlalchemy.engine import Connection
-from sqlalchemy.ext.asyncio import async_engine_from_config
+from sqlalchemy.ext.asyncio import create_async_engine
 
 import app.models  # noqa: F401 - 모델 메타데이터 로드
 from alembic import context
@@ -77,15 +77,19 @@ def do_run_migrations(connection: Connection) -> None:
 async def run_async_migrations() -> None:
     """
     비동기 엔진을 생성하고 마이그레이션을 실행합니다.
-    async_engine_from_config는 async URL이 필요하므로 원본 URL 사용.
+    Supabase Transaction pooler 호환을 위해 create_async_engine 직접 사용.
     """
-    configuration = config.get_section(config.config_ini_section, {})
-    configuration["sqlalchemy.url"] = settings.DATABASE_URL
+    # Supabase Transaction pooler (PgBouncer) 호환 — prepared statement 비활성화
+    connect_args = (
+        {"prepared_statement_cache_size": 0, "statement_cache_size": 0}
+        if "postgresql" in settings.DATABASE_URL
+        else {}
+    )
 
-    connectable = async_engine_from_config(
-        configuration,
-        prefix="sqlalchemy.",
+    connectable = create_async_engine(
+        settings.DATABASE_URL,
         poolclass=pool.NullPool,
+        connect_args=connect_args,
     )
 
     async with connectable.connect() as connection:
