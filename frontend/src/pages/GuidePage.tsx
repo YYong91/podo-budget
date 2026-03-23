@@ -3,7 +3,7 @@
  * @description 사용 가이드 페이지 - 앱 기능별 상세 사용법 안내
  */
 
-import { useNavigate } from 'react-router-dom'
+import { useGoBack } from '../hooks/useGoBack'
 import {
   ArrowLeft,
   MessageSquare,
@@ -62,12 +62,12 @@ function SectionCard({
 }
 
 export default function GuidePage() {
-  const navigate = useNavigate()
+  const goBack = useGoBack('/settings')
 
   return (
     <div className="space-y-6">
       <button
-        onClick={() => navigate('/settings')}
+        onClick={() => goBack()}
         className="w-9 h-9 flex items-center justify-center rounded-xl border border-[var(--border-default)] hover:bg-[var(--surface-hover)] transition-colors"
       >
         <ArrowLeft className="w-5 h-5 text-[var(--text-secondary)]" />

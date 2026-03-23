@@ -7,6 +7,7 @@
 import type { } from 'react'
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useGoBack } from '../hooks/useGoBack'
 import { ArrowLeft, Users, Calendar } from 'lucide-react'
 import { useHouseholdStore } from '../stores/useHouseholdStore'
 import { useToast } from '../hooks/useToast'
@@ -20,6 +21,7 @@ import { trackEvent } from '../utils/analytics'
 
 export default function HouseholdListPage() {
   const navigate = useNavigate()
+  const goBack = useGoBack('/settings')
   const { addToast } = useToast()
 
   // Zustand 스토어
@@ -90,7 +92,7 @@ export default function HouseholdListPage() {
   if (error && households.length === 0) {
     return (
       <div className="space-y-6">
-        <button onClick={() => navigate('/settings')} className="p-2.5 -ml-2.5 rounded-lg hover:bg-[var(--surface-hover)] transition-colors">
+        <button onClick={() => goBack()} className="p-2.5 -ml-2.5 rounded-lg hover:bg-[var(--surface-hover)] transition-colors">
           <ArrowLeft className="w-5 h-5 text-[var(--text-secondary)]" />
         </button>
         <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)]">
@@ -105,7 +107,7 @@ export default function HouseholdListPage() {
       {/* 헤더 */}
       <div className="flex items-center justify-between">
         <div>
-          <button onClick={() => navigate('/settings')} className="p-2.5 -ml-2.5 rounded-lg hover:bg-[var(--surface-hover)] transition-colors">
+          <button onClick={() => goBack()} className="p-2.5 -ml-2.5 rounded-lg hover:bg-[var(--surface-hover)] transition-colors">
           <ArrowLeft className="w-5 h-5 text-[var(--text-secondary)]" />
         </button>
           <p className="text-sm text-[var(--text-tertiary)] mt-1">
