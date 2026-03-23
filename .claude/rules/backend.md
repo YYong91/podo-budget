@@ -33,7 +33,7 @@ await get_household_member(household_id, current_user, db)
 - 디렉토리: `tests/integration/` (API), `tests/unit/` (서비스/유틸)
 - 비동기 테스트에 `@pytest.mark.asyncio`
 - httpx.AsyncClient로 API 테스트 (`authenticated_client` fixture)
-- DB: SQLite in-memory (StaticPool), 테스트마다 테이블 생성/삭제
+- DB: SQLite in-memory (StaticPool, CI 속도용), 테스트마다 테이블 생성/삭제. 프로덕션은 Supabase PostgreSQL
 - conftest.py fixtures: `test_user`, `test_household`, `db_session`, `authenticated_client`
 - 테스트 데이터에 household_id 필수 포함
 - 기존 실패 중: `tests/integration/test_api_budget_bulk.py` (CI에서 `--ignore`)
