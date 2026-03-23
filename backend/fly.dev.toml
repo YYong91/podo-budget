@@ -12,7 +12,7 @@ primary_region = "nrt"
   PORT = "8000"
   APP_NAME = "PodoBudget-Dev"
   # DEBUG는 Fly.io secrets로 관리 — 스택 트레이스 공개 노출 방지 (#157)
-  DATABASE_URL = "sqlite+aiosqlite:////app/data/db.sqlite3"
+  # DATABASE_URL은 Fly.io secrets로 관리 (fly secrets set DATABASE_URL=postgresql+asyncpg://...)
   SENTRY_ENVIRONMENT = "development"
 
 [http_service]
@@ -33,7 +33,3 @@ primary_region = "nrt"
   cpu_kind = "shared"
   cpus = 1
   memory_mb = 512
-
-[[mounts]]
-  source = "budget_dev_data"
-  destination = "/app/data"

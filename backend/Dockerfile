@@ -14,9 +14,6 @@ RUN uv sync --frozen --no-dev --no-install-project
 # 백엔드 앱 복사 (.dockerignore로 backend/pyproject.toml, uv.lock 제외)
 COPY backend/ .
 
-# SQLite 데이터 디렉토리 생성
-RUN mkdir -p /app/data
-
 EXPOSE 8000
 
 CMD ["uv", "run", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers", "--forwarded-allow-ips", "*"]
