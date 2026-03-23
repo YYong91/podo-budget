@@ -17,6 +17,7 @@ import type { Category } from '../types'
 export default function CategoryManager() {
   const navigate = useNavigate()
   const { addToast } = useToast()
+  const [activeTab, setActiveTab] = useState<'expense' | 'income'>('expense')
   const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
@@ -38,7 +39,7 @@ export default function CategoryManager() {
 
   useEffect(() => {
     fetchCategories()
-  }, [])
+  }, [activeTab])
 
   /**
    * 카테고리 목록 조회
@@ -47,7 +48,7 @@ export default function CategoryManager() {
     setLoading(true)
     setError(false)
     try {
-      const res = await categoryApi.getAll()
+      const res = await categoryApi.getAll({ type: activeTab })
       setCategories(res.data)
     } catch {
       setError(true)
@@ -185,6 +186,30 @@ export default function CategoryManager() {
         >
           <Plus className="w-4 h-4" />
           추가
+        </button>
+      </div>
+
+      {/* 지출/수입 탭 */}
+      <div className="flex gap-2">
+        <button
+          onClick={() => setActiveTab('expense')}
+          className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-colors ${
+            activeTab === 'expense'
+              ? 'bg-grape-100 text-grape-700'
+              : 'bg-[var(--surface-elevated)] text-[var(--text-secondary)] hover:bg-[var(--surface-hover)]'
+          }`}
+        >
+          💰 지출 카테고리
+        </button>
+        <button
+          onClick={() => setActiveTab('income')}
+          className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-colors ${
+            activeTab === 'income'
+              ? 'bg-leaf-100 text-leaf-700'
+              : 'bg-[var(--surface-elevated)] text-[var(--text-secondary)] hover:bg-[var(--surface-hover)]'
+          }`}
+        >
+          💵 수입 카테고리
         </button>
       </div>
 

@@ -48,17 +48,23 @@ def _build_accessible_filter(user_id: int, household_id: int):
 
 @router.get("", response_model=list[CategoryResponse])
 async def get_categories(
+    type: str | None = None,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     """카테고리 목록 조회
 
     시스템 카테고리 + 가계/솔로 카테고리를 반환합니다.
+    ?type=expense 또는 ?type=income으로 필터링 가능. both 타입은 양쪽에 포함.
     """
     household_id = await _get_household_id(current_user, db)
     scope_filter = _build_accessible_filter(current_user.id, household_id)
 
-    result = await db.execute(select(Category).where(scope_filter).order_by(Category.sort_order.desc(), Category.name))
+    query = select(Category).where(scope_filter)
+    if type in ("expense", "income"):
+        query = query.where(Category.type.in_([type, "both"]))
+
+    result = await db.execute(query.order_by(Category.sort_order.desc(), Category.name))
     return [_to_response(cat) for cat in result.scalars().all()]
 
 

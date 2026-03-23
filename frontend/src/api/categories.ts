@@ -4,8 +4,8 @@ import apiClient from './client'
 import type { Category } from '../types'
 
 export const categoryApi = {
-  getAll: () =>
-    apiClient.get<Category[]>('/categories'),
+  getAll: (params?: { type?: 'expense' | 'income' }) =>
+    apiClient.get<Category[]>('/categories', { params }),
 
   create: (data: { name: string; description?: string }) =>
     apiClient.post<Category>('/categories', data),
