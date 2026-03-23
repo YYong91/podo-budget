@@ -20,7 +20,7 @@ import PullToRefresh from '../components/PullToRefresh'
 import EmptyState from '../components/EmptyState'
 import ErrorState from '../components/ErrorState'
 import type { Expense, Income, Category, RecurringTransaction } from '../types'
-import { formatAmount } from '../utils/format'
+import { formatAmount , getLocalDateString } from '../utils/format'
 import { getMonthRange, formatDateHeader } from '../utils/calendar'
 import { Search, X } from 'lucide-react'
 import WelcomeCard from '../components/WelcomeCard'
@@ -216,7 +216,7 @@ export default function TransactionList() {
   const getSearchDateRange = useCallback((period: string): { start_date?: string; end_date?: string } => {
     if (period === 'all') return {}
     const now = new Date()
-    const end = now.toISOString().slice(0, 10)
+    const end = getLocalDateString(now)
     let start: Date
     switch (period) {
       case '1m': start = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate()); break
@@ -225,7 +225,7 @@ export default function TransactionList() {
       case 'year': start = new Date(now.getFullYear(), 0, 1); break
       default: return {}
     }
-    return { start_date: start.toISOString().slice(0, 10), end_date: end }
+    return { start_date: getLocalDateString(start), end_date: end }
   }, [])
 
   // 검색 실행 (append=true: 무한 스크롤로 추가 로드)

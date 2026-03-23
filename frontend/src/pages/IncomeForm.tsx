@@ -1,3 +1,4 @@
+import { getLocalDateString } from '../utils/format'
 /**
  * @file IncomeForm.tsx
  * @description 수입 입력 폼 페이지
@@ -50,7 +51,7 @@ export default function IncomeForm() {
     amount: '',
     description: '',
     category_id: '',
-    date: new Date().toISOString().slice(0, 10),
+    date: getLocalDateString(),
     memo: '',
     exclude_from_stats: false,
   })

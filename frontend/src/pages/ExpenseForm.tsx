@@ -1,3 +1,4 @@
+import { getLocalDateString } from '../utils/format'
 /**
  * @file ExpenseForm.tsx
  * @description 지출 입력 폼 페이지
@@ -54,7 +55,7 @@ export default function ExpenseForm() {
     amount: '',
     description: '',
     category_id: '',
-    date: new Date().toISOString().slice(0, 10),
+    date: getLocalDateString(),
     memo: '',
     exclude_from_stats: false,
   })
