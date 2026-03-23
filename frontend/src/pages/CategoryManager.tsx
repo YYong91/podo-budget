@@ -5,7 +5,7 @@
  */
 
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useGoBack } from '../hooks/useGoBack'
 import { ArrowLeft, Lock, Plus } from 'lucide-react'
 import { useToast } from '../hooks/useToast'
 import { categoryApi } from '../api/categories'
@@ -15,7 +15,7 @@ import LoadingSpinner from '../components/LoadingSpinner'
 import type { Category } from '../types'
 
 export default function CategoryManager() {
-  const navigate = useNavigate()
+  const goBack = useGoBack('/settings')
   const { addToast } = useToast()
   const [activeTab, setActiveTab] = useState<'expense' | 'income'>('expense')
   const [categories, setCategories] = useState<Category[]>([])
@@ -164,7 +164,7 @@ export default function CategoryManager() {
   if (error) {
     return (
       <div className="space-y-6">
-        <button onClick={() => navigate('/settings')} className="p-2.5 -ml-2.5 rounded-lg hover:bg-[var(--surface-hover)] transition-colors">
+        <button onClick={() => goBack()} className="p-2.5 -ml-2.5 rounded-lg hover:bg-[var(--surface-hover)] transition-colors">
           <ArrowLeft className="w-5 h-5 text-[var(--text-secondary)]" />
         </button>
         <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)]">
@@ -177,7 +177,7 @@ export default function CategoryManager() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <button onClick={() => navigate('/settings')} className="p-2.5 -ml-2.5 rounded-lg hover:bg-[var(--surface-hover)] transition-colors">
+        <button onClick={() => goBack()} className="p-2.5 -ml-2.5 rounded-lg hover:bg-[var(--surface-hover)] transition-colors">
           <ArrowLeft className="w-5 h-5 text-[var(--text-secondary)]" />
         </button>
         <button

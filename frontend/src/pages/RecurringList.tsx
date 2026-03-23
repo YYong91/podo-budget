@@ -5,7 +5,7 @@
  */
 
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useGoBack } from '../hooks/useGoBack'
 import { ArrowLeft, Plus, Pencil, Trash2, Pause, Play, X, Zap } from 'lucide-react'
 import { useToast } from '../hooks/useToast'
 import { recurringApi } from '../api/recurring'
@@ -50,7 +50,7 @@ const emptyForm = {
 }
 
 export default function RecurringList() {
-  const navigate = useNavigate()
+  const goBack = useGoBack('/settings')
   const { addToast } = useToast()
   const activeHouseholdId = useHouseholdStore((s) => s.activeHouseholdId)
 
@@ -222,7 +222,7 @@ export default function RecurringList() {
   if (error) {
     return (
       <div className="space-y-6">
-        <button onClick={() => navigate('/settings')} className="p-2.5 -ml-2.5 rounded-lg hover:bg-[var(--surface-hover)] transition-colors">
+        <button onClick={() => goBack()} className="p-2.5 -ml-2.5 rounded-lg hover:bg-[var(--surface-hover)] transition-colors">
           <ArrowLeft className="w-5 h-5 text-[var(--text-secondary)]" />
         </button>
         <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)]/60">
@@ -236,7 +236,7 @@ export default function RecurringList() {
     <div className="space-y-6">
       {/* 헤더 */}
       <div className="flex items-center justify-between">
-        <button onClick={() => navigate('/settings')} className="p-2.5 -ml-2.5 rounded-lg hover:bg-[var(--surface-hover)] transition-colors">
+        <button onClick={() => goBack()} className="p-2.5 -ml-2.5 rounded-lg hover:bg-[var(--surface-hover)] transition-colors">
           <ArrowLeft className="w-5 h-5 text-[var(--text-secondary)]" />
         </button>
         <button

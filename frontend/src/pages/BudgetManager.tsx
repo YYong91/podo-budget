@@ -7,7 +7,7 @@
  */
 
 import { useState, useEffect, useMemo } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useGoBack } from '../hooks/useGoBack'
 import { ArrowLeft, BarChart3, AlertTriangle, Wallet } from 'lucide-react'
 import { useToast } from '../hooks/useToast'
 import budgetApi from '../api/budgets'
@@ -18,7 +18,7 @@ import type { BudgetAlert, CategoryBudgetOverview } from '../types'
 import { formatAmount } from '../utils/format'
 
 export default function BudgetManager() {
-  const navigate = useNavigate()
+  const goBack = useGoBack('/settings')
   const { addToast } = useToast()
 
   const [overview, setOverview] = useState<CategoryBudgetOverview[]>([])
@@ -218,7 +218,7 @@ export default function BudgetManager() {
 
   return (
     <div className="space-y-6">
-      <button onClick={() => navigate('/settings')} className="p-2.5 -ml-2.5 rounded-lg hover:bg-[var(--surface-hover)] transition-colors">
+      <button onClick={() => goBack()} className="p-2.5 -ml-2.5 rounded-lg hover:bg-[var(--surface-hover)] transition-colors">
         <ArrowLeft className="w-5 h-5 text-[var(--text-secondary)]" />
       </button>
 
