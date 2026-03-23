@@ -10,6 +10,7 @@ import { useToast } from '../hooks/useToast'
 import { recurringApi } from '../api/recurring'
 import { useHouseholdStore } from '../stores/useHouseholdStore'
 import type { Category, RecurringTransactionCreate } from '../types'
+import { getLocalDateString } from '../utils/format'
 
 interface Props {
   type: 'expense' | 'income'
@@ -44,7 +45,7 @@ export default function RegisterRecurringModal({
     day_of_week: '0',
     month_of_year: '1',
     interval: '14',
-    start_date: new Date().toISOString().slice(0, 10),
+    start_date: getLocalDateString(),
     end_date: '',
   })
   const [submitting, setSubmitting] = useState(false)

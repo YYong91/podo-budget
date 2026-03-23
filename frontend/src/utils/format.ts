@@ -32,6 +32,18 @@ export function maskUsername(name: string): string {
   return name[0] + '*'.repeat(Math.min(name.length - 1, 2))
 }
 
+/** 로컬 시간 기준 오늘 날짜를 YYYY-MM-DD로 반환 (#331)
+ *
+ * new Date().toISOString().slice(0,10)은 UTC 기준이라
+ * 한국(UTC+9)에서 자정~오전 9시 사이에 전날로 표시되는 버그가 있음.
+ */
+export function getLocalDateString(date: Date = new Date()): string {
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const d = String(date.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
+}
+
 /** 금액을 축약 형태로 포맷 (캘린더 셀용) */
 export function formatCompactAmount(amount: number): string {
   if (amount < 10000) {

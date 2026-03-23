@@ -60,11 +60,15 @@ async def get_categories(
     household_id = await _get_household_id(current_user, db)
     scope_filter = _build_accessible_filter(current_user.id, household_id)
 
+<<<<<<< HEAD
     query = select(Category).where(scope_filter)
     if type in ("expense", "income"):
         query = query.where(Category.type.in_([type, "both"]))
 
     result = await db.execute(query.order_by(Category.sort_order.desc(), Category.name))
+=======
+    result = await db.execute(select(Category).where(scope_filter).order_by(Category.sort_order.desc(), Category.name))
+>>>>>>> origin/main
     return [_to_response(cat) for cat in result.scalars().all()]
 
 
