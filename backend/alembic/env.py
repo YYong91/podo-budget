@@ -37,7 +37,7 @@ def get_url() -> str:
     PostgreSQL: postgresql+asyncpg:// → postgresql://
     SQLite (테스트): sqlite+aiosqlite:// → sqlite://
     """
-    url = settings.DATABASE_URL
+    url = settings.MIGRATION_DATABASE_URL or settings.DATABASE_URL
     if "sqlite" in url:
         return url.replace("sqlite+aiosqlite", "sqlite")
     return url.replace("postgresql+asyncpg://", "postgresql://")
@@ -77,13 +77,16 @@ def do_run_migrations(connection: Connection) -> None:
 async def run_async_migrations() -> None:
     """
     비동기 엔진을 생성하고 마이그레이션을 실행합니다.
-    Supabase Transaction pooler 호환을 위해 create_async_engine 직접 사용.
+    MIGRATION_DATABASE_URL(Direct connection)이 설정되면 우선 사용, 없으면 DATABASE_URL fallback.
     """
-    # Supabase Transaction pooler (PgBouncer) 호환 — prepared statement 비활성화
-    connect_args = {"prepared_statement_cache_size": 0, "statement_cache_size": 0} if "postgresql" in settings.DATABASE_URL else {}
+    # MIGRATION_DATABASE_URL이 있으면 Direct connection 사용 (pooler 제약 없음)
+    migration_url = settings.MIGRATION_DATABASE_URL or settings.DATABASE_URL
+    connect_args = (
+        {"prepared_statement_cache_size": 0, "statement_cache_size": 0} if "postgresql" in migration_url and not settings.MIGRATION_DATABASE_URL else {}
+    )
 
     connectable = create_async_engine(
-        settings.DATABASE_URL,
+        migration_url,
         poolclass=pool.NullPool,
         connect_args=connect_args,
     )
