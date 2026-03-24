@@ -11,9 +11,8 @@ Supabase JWT는 podo-auth와 다른 payload 구조를 가짐:
 from datetime import UTC, datetime, timedelta
 
 import pytest
-from jose import jwt
-
 from fastapi import HTTPException
+from jose import jwt
 
 from app.core.config import settings
 
