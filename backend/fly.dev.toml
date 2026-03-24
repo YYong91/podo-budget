@@ -6,7 +6,7 @@ primary_region = "nrt"
 [build]
 
 [deploy]
-  release_command = "uv run --no-sync alembic upgrade head"
+  release_command = "alembic upgrade head"
 
 [env]
   PORT = "8000"
