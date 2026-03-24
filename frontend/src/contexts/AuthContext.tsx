@@ -7,9 +7,6 @@
  *
  * Supabase가 토큰 저장/갱신/만료를 자동 처리하므로
  * 기존의 쿠키 관리, 토큰 만료 체크, BFCache 대응 등이 불필요.
- *
- * React 19 대응: effect 내 동기 setState 금지.
- * loading은 session + loadedSessionToken에서 파생(derived).
  */
 
 import { createContext, useContext, useMemo, useState, useEffect, useCallback } from 'react'
@@ -22,30 +19,39 @@ import apiClient from '../api/client'
 import { identifyUser } from '../utils/analytics'
 
 interface AuthContextType {
+  /** 현재 로그인한 사용자 프로필 (BE API에서 로드) */
   user: User | null
+  /** Supabase 세션 기반 인증 상태 */
   isAuthenticated: boolean
+  /** 사용자 프로필 로딩 상태 */
   loading: boolean
+  /** 로그아웃 함수 */
   logout: () => void
+  /** 사용자 정보 새로고침 */
   refreshUser: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
+/**
+ * AuthContext Provider 컴포넌트
+ * Supabase 세션 변화를 구독하여 인증 상태를 관리한다.
+ */
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
   const [userProfile, setUserProfile] = useState<User | null>(null)
+  const [loading, setLoading] = useState(true)
   const [initialized, setInitialized] = useState(false)
-  // loadedSessionToken: 프로필 fetch가 완료된 세션 토큰 기록
-  // loading = initialized && session 있는데 아직 프로필 안 가져온 상태 (derived)
-  const [loadedSessionToken, setLoadedSessionToken] = useState<string | null>(null)
 
   // Supabase 세션 초기화 + 변화 구독
   useEffect(() => {
+    // 1. 현재 세션 가져오기
     supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
       setSession(currentSession)
       setInitialized(true)
     })
 
+    // 2. 세션 변화 구독 (로그인, 로그아웃, 토큰 갱신)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, newSession) => {
       setSession(newSession)
     })
@@ -53,10 +59,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe()
   }, [])
 
-  // axios 인터셉터
+  // axios 인터셉터: Supabase access_token을 Authorization 헤더에 추가
   useEffect(() => {
     const requestInterceptor = apiClient.interceptors.request.use(
       async (config) => {
+        // 최신 세션에서 토큰 가져오기 (자동 갱신 포함)
         const { data: { session: currentSession } } = await supabase.auth.getSession()
         if (currentSession?.access_token) {
           config.headers.Authorization = `Bearer ${currentSession.access_token}`
@@ -70,8 +77,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       (response) => response,
       async (error) => {
         if (error.response?.status === 401) {
+          // 세션 갱신 시도
           const { error: refreshError } = await supabase.auth.refreshSession()
           if (refreshError) {
+            // 갱신 실패 → 로그아웃
             await supabase.auth.signOut()
             setSession(null)
           }
@@ -86,35 +95,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  // 사용자 프로필 로드 — 세션 토큰이 바뀔 때만 fetch
-  // effect body에 동기 setState 없음 (React 19 대응)
-  // setState는 .then/.finally 비동기 콜백에서만 호출
+  // 사용자 프로필 로드 (BE API) — 세션이 있을 때만
   useEffect(() => {
-    const token = session?.access_token
-    if (!token) return
-    if (token === loadedSessionToken) return
+    if (!session?.access_token) {
+      setUserProfile(null)
+      setLoading(false)
+      return
+    }
 
     let active = true
+    setLoading(true)
 
     authApi.getCurrentUser()
       .then((response) => {
         if (active) {
           setUserProfile(response.data)
           identifyUser(String(response.data.id))
-          setLoadedSessionToken(token)
         }
       })
       .catch(() => {
-        if (active) setLoadedSessionToken(token)
+        // 401은 인터셉터에서 처리
+      })
+      .finally(() => {
+        if (active) setLoading(false)
       })
 
     return () => { active = false }
-  }, [session?.access_token, loadedSessionToken])
+  }, [session?.access_token])
 
-  // 파생 상태 — 동기 setState 없이 계산
   const isAuthenticated = useMemo(() => !!session?.access_token, [session])
-  const user: User | null = session ? userProfile : null
-  const loading: boolean = !initialized || (!!session?.access_token && session.access_token !== loadedSessionToken)
 
   const logout = useCallback(async () => {
     await supabase.auth.signOut()
@@ -134,8 +143,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [session])
 
   const contextValue = useMemo(
-    () => ({ user, isAuthenticated, loading, logout, refreshUser }),
-    [user, isAuthenticated, loading, logout, refreshUser],
+    () => ({
+      user: session ? userProfile : null,
+      isAuthenticated,
+      loading: !initialized || loading,
+      logout,
+      refreshUser,
+    }),
+    [session, userProfile, isAuthenticated, initialized, loading, logout, refreshUser],
   )
 
   return (
@@ -145,6 +160,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   )
 }
 
+/**
+ * useAuth 커스텀 훅
+ */
 export function useAuth() {
   const context = useContext(AuthContext)
   if (!context) {
