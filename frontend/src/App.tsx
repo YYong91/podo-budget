@@ -14,6 +14,7 @@ const HouseholdDetailPage = lazy(() => import('./pages/HouseholdDetailPage'))
 const InvitationListPage = lazy(() => import('./pages/InvitationListPage'))
 const AcceptInvitationPage = lazy(() => import('./pages/AcceptInvitationPage'))
 const AuthCallbackPage = lazy(() => import('./pages/AuthCallbackPage'))
+const LoginPage = lazy(() => import('./pages/LoginPage'))
 const PrivacyPolicyPage = lazy(() => import('./pages/PrivacyPolicyPage'))
 const TermsOfServicePage = lazy(() => import('./pages/TermsOfServicePage'))
 const SettingsPage = lazy(() => import('./pages/SettingsPage'))
@@ -51,6 +52,7 @@ function App() {
     <Suspense fallback={<PageLoading />}>
       <Routes>
         {/* podo-auth SSO 콜백 */}
+        <Route path="/login" element={<LoginPage />} />
         <Route path="/auth/callback" element={<AuthCallbackPage />} />
         <Route path="/privacy" element={<PrivacyPolicyPage />} />
         <Route path="/terms" element={<TermsOfServicePage />} />
