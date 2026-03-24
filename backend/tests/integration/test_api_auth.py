@@ -1,6 +1,6 @@
 """인증 API 통합 테스트
 
-podo-auth SSO 연동 후 GET /me 엔드포인트를 테스트합니다.
+Supabase Auth 연동 후 GET /me 엔드포인트를 테스트합니다.
 Shadow User 패턴으로 auth_user_id를 통해 로컬 유저를 조회합니다.
 """
 
@@ -45,18 +45,18 @@ async def test_get_me_invalid_token(client: AsyncClient):
 
 @pytest.mark.asyncio
 async def test_get_me_wrong_iss(client: AsyncClient, db_session: AsyncSession, test_user: User):
-    """iss가 podo-auth가 아닌 토큰으로 접근 시 401 반환"""
+    """role이 없는 토큰으로 접근 시 401 반환"""
     from datetime import UTC, datetime, timedelta
 
     from jose import jwt
 
     from app.core.config import settings
 
-    # iss가 없는 토큰 (podo-auth 발급 아님)
+    # role이 없는 토큰 (Supabase 발급 아님)
     payload = {
         "sub": str(TEST_AUTH_USER_ID_1),
         "email": "test@example.com",
-        "name": "테스터",
+        "user_metadata": {"name": "테스터"},
         "exp": datetime.now(UTC) + timedelta(days=7),
     }
     bad_token = jwt.encode(payload, settings.JWT_SECRET, algorithm=settings.JWT_ALGORITHM)
@@ -70,7 +70,7 @@ async def test_get_me_wrong_iss(client: AsyncClient, db_session: AsyncSession, t
 
 @pytest.mark.asyncio
 async def test_shadow_user_auto_created(client: AsyncClient, db_session: AsyncSession):
-    """처음 로그인하는 podo-auth 유저의 Shadow User가 자동 생성되는지 테스트"""
+    """처음 로그인하는 Supabase 유저의 Shadow User가 자동 생성되는지 테스트"""
     new_auth_id = 9999999999999
     token = create_test_token(
         auth_user_id=new_auth_id,
@@ -91,7 +91,7 @@ async def test_shadow_user_auto_created(client: AsyncClient, db_session: AsyncSe
 
 @pytest.mark.asyncio
 async def test_shadow_user_email_matching(client: AsyncClient, db_session: AsyncSession):
-    """email 매칭으로 기존 유저와 podo-auth 계정이 연결되는지 테스트"""
+    """email 매칭으로 기존 유저와 Supabase 계정이 연결되는지 테스트"""
     # 기존 유저 생성 (auth_user_id 없는 상태)
     existing_user = User(
         username="existing_user",
@@ -106,7 +106,7 @@ async def test_shadow_user_email_matching(client: AsyncClient, db_session: Async
     existing_id = existing_user.id
     new_auth_id = 8888888888888
 
-    # 같은 이메일로 podo-auth SSO 로그인
+    # 같은 이메일로 Supabase 로그인
     token = create_test_token(
         auth_user_id=new_auth_id,
         email="existing@example.com",
