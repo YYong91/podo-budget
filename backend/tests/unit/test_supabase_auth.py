@@ -134,5 +134,5 @@ async def test_get_current_user_rejects_podo_auth_token(db_session):
     credentials = MagicMock()
     credentials.credentials = token
 
-    with pytest.raises(Exception):  # HTTPException 401
+    with pytest.raises(HTTPException):
         await get_current_user(credentials=credentials, db=db_session)
