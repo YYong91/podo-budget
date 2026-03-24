@@ -84,7 +84,23 @@ async def _get_jwks_key(token: str) -> dict:
 
 
 async def _decode_token(token: str) -> dict:
-    """JWT 토큰을 디코드한다. Supabase JWKS ES256 공개키로 검증."""
+    """JWT 토큰을 디코드한다. Supabase JWKS ES256 공개키로 검증.
+
+    DEBUG 모드에서는 E2E 테스트용 HS256 JWT도 허용한다.
+    """
+    # E2E fallback: DEBUG 모드에서 HS256 JWT_SECRET 토큰 허용
+    if settings.DEBUG:
+        try:
+            header = pyjwt.get_unverified_header(token)
+            if header.get("alg") == "HS256":
+                payload = pyjwt.decode(token, settings.JWT_SECRET, algorithms=["HS256"])
+                # E2E 토큰을 Supabase 형식으로 맞춤
+                payload.setdefault("role", "authenticated")
+                payload.setdefault("email", payload.get("email", ""))
+                return payload
+        except JWTError:
+            pass  # HS256 실패 시 Supabase JWKS로 진행
+
     jwk_key = await _get_jwks_key(token)
     return pyjwt.decode(
         token,
