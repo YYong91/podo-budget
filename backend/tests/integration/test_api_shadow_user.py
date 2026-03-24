@@ -45,7 +45,7 @@ async def test_step2_email_matching(client: AsyncClient, db_session: AsyncSessio
     await db_session.refresh(existing_user)
 
     original_id = existing_user.id
-    new_auth_id = 5500000000001
+    new_auth_id = "5500000000001"
 
     # 같은 이메일로 Supabase 로그인
     token = create_test_token(
@@ -70,7 +70,7 @@ async def test_step2_email_matching(client: AsyncClient, db_session: AsyncSessio
 @pytest.mark.asyncio
 async def test_step3_new_user_creation(client, db_session: AsyncSession):
     """3단계: 완전히 새로운 유저 자동 생성"""
-    brand_new_auth_id = 5500000000002
+    brand_new_auth_id = "5500000000002"
 
     # 이 auth_user_id도, 이메일도 DB에 없는 상태
     token = create_test_token(
@@ -96,7 +96,7 @@ async def test_step3_new_user_creation(client, db_session: AsyncSession):
 @pytest.mark.asyncio
 async def test_step3_new_user_name_from_email_prefix(client, db_session: AsyncSession):
     """3단계: name이 없을 때 이메일 prefix를 username으로 사용"""
-    auth_id = 5500000000003
+    auth_id = "5500000000003"
 
     # name을 빈 문자열로 설정
     from datetime import UTC, datetime, timedelta
@@ -149,7 +149,7 @@ async def test_step2_email_matching_updates_in_db(client, db_session: AsyncSessi
     await db_session.commit()
     await db_session.refresh(old_user)
 
-    new_auth_id = 5500000000004
+    new_auth_id = "5500000000004"
     token = create_test_token(auth_user_id=new_auth_id, email="old_sso@example.com", name="구유저")
 
     # 로그인 → 2단계 매칭 트리거
