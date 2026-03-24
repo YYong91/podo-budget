@@ -3,7 +3,7 @@ name: CD (Dev)
 
 on:
   push:
-    branches: [develop, 'release/**']
+    branches: [develop]
 
 # 동시 배포 방지
 concurrency:
