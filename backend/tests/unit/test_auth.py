@@ -22,7 +22,7 @@ def test_create_test_token():
 
     assert isinstance(token, str)
 
-    payload = jwt.decode(token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM])
+    payload = jwt.decode(token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM], audience="authenticated")
     assert payload["sub"] == str(TEST_AUTH_USER_ID_1)
     assert payload["email"] == "user@test.com"
     assert payload["role"] == "authenticated"

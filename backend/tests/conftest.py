@@ -77,6 +77,7 @@ def create_test_token(auth_user_id: str, email: str = "test@example.com", name: 
     payload = {
         "sub": str(auth_user_id),
         "email": email,
+        "aud": "authenticated",
         "role": "authenticated",
         "iss": "https://test.supabase.co/auth/v1",
         "exp": expire,
@@ -91,6 +92,25 @@ def _disable_rate_limit():
     limiter.enabled = False
     yield
     limiter.enabled = True
+
+
+@pytest.fixture(autouse=True)
+def _mock_jwt_decode():
+    """테스트에서는 HS256으로 JWT 검증 (JWKS fetch 불필요)
+
+    audience="authenticated" 검증을 포함하여 Supabase 발급이 아닌 토큰은 거부.
+    """
+
+    async def _test_decode(token: str) -> dict:
+        return jwt.decode(
+            token,
+            settings.JWT_SECRET,
+            algorithms=[settings.JWT_ALGORITHM],
+            audience="authenticated",
+        )
+
+    with patch("app.core.auth._decode_token", side_effect=_test_decode):
+        yield
 
 
 @pytest.fixture(autouse=True)

@@ -16,6 +16,13 @@ from jose.utils import long_to_base64
 
 TEST_SUPABASE_USER_ID = "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
 
+
+@pytest.fixture(autouse=True)
+def _mock_jwt_decode():
+    """이 모듈에서는 conftest의 HS256 패치를 비활성화 — ES256 경로를 직접 테스트"""
+    yield
+
+
 # 테스트용 ES256 키 페어 생성
 _test_private_key = ec.generate_private_key(ec.SECP256R1())
 _test_public_key = _test_private_key.public_key()
@@ -115,7 +122,7 @@ async def test_get_current_user_es256(db_session):
     credentials = MagicMock()
     credentials.credentials = token
 
-    # _get_jwks_key를 모킹하여 테스트 공개키 반환
+    # _get_jwks_key를 모킹하여 테스트 공개키 반환 (_decode_token 패치 해제 + JWKS만 모킹)
     with patch("app.core.auth._get_jwks_key", new_callable=AsyncMock, return_value=TEST_JWK):
         user = await get_current_user(credentials=credentials, db=db_session)
 
