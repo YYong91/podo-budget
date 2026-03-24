@@ -13,6 +13,8 @@ from datetime import UTC, datetime, timedelta
 import pytest
 from jose import jwt
 
+from fastapi import HTTPException
+
 from app.core.config import settings
 
 # Supabase 형식의 테스트 UUID
