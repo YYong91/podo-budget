@@ -1,7 +1,8 @@
 """자산 관리 비즈니스 로직"""
 
 import json
-from datetime import date
+from datetime import datetime
+from zoneinfo import ZoneInfo
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -131,7 +132,7 @@ async def get_asset_summary(db: AsyncSession, user: User, household_id: int | No
 async def create_snapshot(db: AsyncSession, user: User, household_id: int | None = None) -> AssetSnapshot:
     """월별 스냅샷 생성"""
     summary = await get_asset_summary(db, user, household_id)
-    today = date.today().replace(day=1)  # 월초로 정규화
+    today = datetime.now(ZoneInfo("Asia/Seoul")).date().replace(day=1)  # 월초로 정규화
 
     # 이미 이번 달 스냅샷이 있으면 업데이트
     result = await db.execute(

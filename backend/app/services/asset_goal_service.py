@@ -1,6 +1,7 @@
 """순자산 목표 비즈니스 로직"""
 
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
+from zoneinfo import ZoneInfo
 
 from sqlalchemy import extract, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -76,7 +77,7 @@ async def get_goal_with_insight(
     progress_pct = min((current_nw / target_nw * 100) if target_nw > 0 else 0, 100)
 
     # 남은 개월
-    today = date.today()
+    today = datetime.now(ZoneInfo("Asia/Seoul")).date()
     days_left = (goal.target_date - today).days
     months_left = max(days_left / 30.0, 0.1)
     remaining = target_nw - current_nw
@@ -142,7 +143,7 @@ def _calc_avg_monthly_growth(snapshots: list[AssetSnapshot]) -> float | None:
 
 async def get_monthly_savings(household_id: int, db: AsyncSession) -> dict:
     """이번 달 수입 - 지출 = 순저축액 (exclude_from_stats 항목 제외, #182)"""
-    today = date.today()
+    today = datetime.now(ZoneInfo("Asia/Seoul")).date()
     year = today.year
     month = today.month
 

@@ -1,6 +1,7 @@
 """LLM 프롬프트 템플릿 모듈"""
 
-from datetime import date, timedelta
+from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 
 # 지출 파싱용 시스템 프롬프트
 EXPENSE_PARSER_SYSTEM_PROMPT = """당신은 한국어 가계부 입력을 분석하는 전문가입니다.
@@ -176,7 +177,7 @@ def get_expense_parser_prompt(
         history_hints: 과거 거래 패턴 dict (설명 → 카테고리). 제공 시 프롬프트에 주입.
         category_mappings: 카테고리 별칭 매핑 dict (소스이름 → 대상이름). 예: {"식비": "외식비"}
     """
-    today = date.today()
+    today = datetime.now(ZoneInfo("Asia/Seoul")).date()
     yesterday = today - timedelta(days=1)
     prompt = EXPENSE_PARSER_SYSTEM_PROMPT.format(
         today=today.isoformat(),
@@ -266,7 +267,7 @@ OCR_EXPENSE_PARSER_PROMPT = """당신은 모바일 결제 스크린샷과 영수
 
 def get_ocr_expense_prompt() -> str:
     """오늘 날짜를 삽입한 OCR 시스템 프롬프트 반환"""
-    today = date.today()
+    today = datetime.now(ZoneInfo("Asia/Seoul")).date()
     return OCR_EXPENSE_PARSER_PROMPT.format(today=today.isoformat())
 
 
