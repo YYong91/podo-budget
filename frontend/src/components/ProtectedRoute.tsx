@@ -1,9 +1,10 @@
 /**
  * @file ProtectedRoute.tsx
- * @description 인증이 필요한 라우트를 보호하는 컴포넌트
- * - isAuthenticated (토큰 기반, 동기적) 판단
- * - 인증 후 initializeApp으로 households + invitations fetch
- * - hasInitialized 완료 전까지 로딩 UI 표시 (premature redirect 방지)
+ * @description 인증이 필요한 라우트를 보호하는 컴포넌트 (#337)
+ *
+ * Supabase Auth 전환:
+ * - 미인증 시 /login 페이지로 (앱 내장, podo-auth 외부 리디렉션 제거)
+ * - initializeApp으로 households + invitations fetch
  * - 가구가 없으면 온보딩 페이지로 리디렉션
  */
 
@@ -12,28 +13,24 @@ import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useHouseholdStore } from '../stores/useHouseholdStore'
 
-const AUTH_URL = import.meta.env.VITE_AUTH_URL || 'https://auth.podonest.com'
-const CALLBACK_URL =
-  typeof window !== 'undefined'
-    ? import.meta.env.VITE_AUTH_CALLBACK_URL || `${window.location.origin}/auth/callback`
-    : ''
-
 export default function ProtectedRoute() {
-  const { isAuthenticated } = useAuth()
+  const { isAuthenticated, loading } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const { households, hasInitialized, initError, initializeApp } = useHouseholdStore()
 
-  // 미인증 → SSO 로그인
+  // 로딩 중이면 대기
+  // 미인증 → /login 리디렉션 (intended path 저장)
   useEffect(() => {
+    if (loading) return
     if (!isAuthenticated) {
       sessionStorage.setItem(
         'intended_path',
         window.location.pathname + window.location.search
       )
-      window.location.href = `${AUTH_URL}/login?redirect_uri=${encodeURIComponent(CALLBACK_URL)}`
+      navigate('/login', { replace: true })
     }
-  }, [isAuthenticated])
+  }, [isAuthenticated, loading, navigate])
 
   // 인증 후 앱 초기화 (households + invitations fetch)
   useEffect(() => {
@@ -42,7 +39,7 @@ export default function ProtectedRoute() {
     }
   }, [isAuthenticated, initializeApp])
 
-  // 초기화 완료 + 가구 없음 → 온보딩 (단, 초대 수락 경로는 제외)
+  // 초기화 완료 + 가구 없음 → 온보딩
   useEffect(() => {
     if (
       isAuthenticated &&
@@ -56,9 +53,17 @@ export default function ProtectedRoute() {
     }
   }, [isAuthenticated, hasInitialized, initError, households.length, location.pathname, navigate])
 
-  if (!isAuthenticated) return null
+  // 로딩 중 또는 미인증
+  if (loading || !isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-[var(--surface)] flex flex-col items-center justify-center gap-3">
+        <img src="/logo-transparent-192.png" alt="포도가계부" className="w-12 h-12" />
+        <div className="animate-spin rounded-full border-b-2 border-grape-600 w-6 h-6" />
+      </div>
+    )
+  }
 
-  // 초기화 중 → 로딩 UI
+  // 초기화 중
   if (!hasInitialized) {
     return (
       <div className="min-h-screen bg-[var(--surface)] flex flex-col items-center justify-center gap-3">
@@ -68,7 +73,7 @@ export default function ProtectedRoute() {
     )
   }
 
-  // 초기화 실패 → 재시도 UI
+  // 초기화 실패
   if (initError) {
     return (
       <div className="min-h-screen bg-[var(--surface)] flex flex-col items-center justify-center gap-4 p-4">

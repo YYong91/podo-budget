@@ -40,7 +40,8 @@ async def _make_fresh_client(db_session: AsyncSession) -> tuple[AsyncClient, Use
         "sub": str(fresh_user.auth_user_id),
         "email": fresh_user.email,
         "name": fresh_user.username,
-        "iss": "podo-auth",
+        "role": "authenticated",
+        "iss": "https://test.supabase.co/auth/v1",
         "exp": datetime.now(UTC) + timedelta(hours=1),
     }
     token = pyjwt.encode(payload, settings.JWT_SECRET, algorithm=settings.JWT_ALGORITHM)
