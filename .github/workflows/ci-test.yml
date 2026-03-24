@@ -48,7 +48,8 @@ jobs:
 
       - name: 의존성 취약점 스캔
         # CVE-2024-23342(ecdsa): python-jose의 transitive dep, 최신 버전(0.19.1)에도 수정 없음 — ignore (#237)
-        run: uv run pip-audit --ignore-vuln CVE-2024-23342
+        # CVE-2026-4539(pygments): dev dep, fix 버전 미출시 — ignore
+        run: uv run pip-audit --ignore-vuln CVE-2024-23342 --ignore-vuln CVE-2026-4539
 
       - name: 타입 체크 (pyright)
         run: |
