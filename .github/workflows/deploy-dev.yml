@@ -75,7 +75,7 @@ jobs:
         env:
           VITE_API_URL: https://podo-budget-dev.fly.dev/api
           VITE_SUPABASE_URL: https://ycdjgoaqhvnfdagwcwre.supabase.co
-          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          VITE_SUPABASE_ANON_KEY: sb_publishable_8tQnNwzfhvLyxRnWJe6Flg_27qFcfQ8
           VITE_AUTH_CALLBACK_URL: https://podo-budget-dev.pages.dev/auth/callback
           VITE_BOOKSHELF_URL: ${{ secrets.VITE_BOOKSHELF_URL }}
           VITE_SENTRY_DSN: ${{ secrets.VITE_SENTRY_DSN }}
