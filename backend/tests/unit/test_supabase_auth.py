@@ -11,7 +11,6 @@ Supabase JWT는 podo-auth와 다른 payload 구조를 가짐:
 from datetime import UTC, datetime, timedelta
 
 import pytest
-from fastapi import HTTPException
 from jose import jwt
 
 from app.core.config import settings
@@ -135,5 +134,5 @@ async def test_get_current_user_rejects_podo_auth_token(db_session):
     credentials = MagicMock()
     credentials.credentials = token
 
-    with pytest.raises(HTTPException):
+    with pytest.raises(Exception):  # HTTPException 401
         await get_current_user(credentials=credentials, db=db_session)

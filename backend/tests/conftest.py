@@ -4,7 +4,7 @@
 - 테스트 DB: SQLite in-memory (CI 속도 + 외부 의존성 없음, 프로덕션은 Supabase PostgreSQL)
 - LLM 서비스: Mock으로 대체
 - AsyncClient: 통합/E2E 테스트용 HTTP 클라이언트
-- SSO 인증: Supabase 스타일 JWT 토큰으로 테스트 (Shadow User 패턴)
+- SSO 인증: podo-auth 스타일 JWT 토큰으로 테스트 (Shadow User 패턴)
 """
 
 import asyncio
@@ -55,7 +55,7 @@ def pytest_sessionfinish(session, exitstatus):
         loop.close()
 
 
-# 테스트용 auth_user_id 값 (Supabase UUID 시뮬레이션)
+# 테스트용 auth_user_id 값 (podo-auth TSID 시뮬레이션)
 TEST_AUTH_USER_ID_1 = "a1b2c3d4-0001-0000-0000-000000000001"
 TEST_AUTH_USER_ID_2 = "a1b2c3d4-0002-0000-0000-000000000002"
 
@@ -143,7 +143,7 @@ async def test_household(db_session: AsyncSession) -> Household:
 async def test_user(db_session: AsyncSession, test_household: Household) -> User:
     """테스트용 사용자 생성 (Shadow User 패턴)
 
-    Supabase Auth로 최초 로그인한 사용자처럼 auth_user_id가 설정된 사용자를 생성합니다.
+    podo-auth SSO로 최초 로그인한 사용자처럼 auth_user_id가 설정된 사용자를 생성합니다.
     기본 가구에 owner로 가입됩니다.
 
     Returns:
@@ -223,7 +223,7 @@ async def auth_token(test_user: User) -> str:
         test_user: 테스트용 사용자
 
     Returns:
-        Supabase 형식의 JWT 액세스 토큰
+        podo-auth 형식의 JWT 액세스 토큰
     """
     return create_test_token(
         auth_user_id=test_user.auth_user_id,
@@ -240,7 +240,7 @@ async def auth_token2(test_user2: User) -> str:
         test_user2: 두 번째 테스트용 사용자
 
     Returns:
-        Supabase 형식의 JWT 액세스 토큰
+        podo-auth 형식의 JWT 액세스 토큰
     """
     return create_test_token(
         auth_user_id=test_user2.auth_user_id,
