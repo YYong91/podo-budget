@@ -82,9 +82,7 @@ async def run_async_migrations() -> None:
     # MIGRATION_DATABASE_URL이 있으면 Direct connection 사용 (pooler 제약 없음)
     migration_url = settings.MIGRATION_DATABASE_URL or settings.DATABASE_URL
     connect_args = (
-        {"prepared_statement_cache_size": 0, "statement_cache_size": 0}
-        if "postgresql" in migration_url and not settings.MIGRATION_DATABASE_URL
-        else {}
+        {"prepared_statement_cache_size": 0, "statement_cache_size": 0} if "postgresql" in migration_url and not settings.MIGRATION_DATABASE_URL else {}
     )
 
     connectable = create_async_engine(
