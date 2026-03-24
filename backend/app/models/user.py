@@ -4,7 +4,7 @@
 각 사용자는 개인 지출 데이터를 가지며, 가구(Household)에 속하여 공유 데이터를 관리할 수 있습니다.
 """
 
-from sqlalchemy import BigInteger, Boolean, Column, DateTime, Integer, Numeric, String
+from sqlalchemy import Boolean, Column, DateTime, Integer, Numeric, String
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
@@ -27,7 +27,7 @@ class User(Base):
     __tablename__ = "users"
 
     id = Column(Integer, primary_key=True, index=True)
-    auth_user_id = Column(BigInteger, unique=True, index=True, nullable=True)  # podo-auth TSID
+    auth_user_id = Column(String, unique=True, index=True, nullable=True)  # Supabase UUID
     username = Column(String, unique=True, index=True, nullable=False)
     email = Column(String(255), unique=True, index=True, nullable=True)  # 초대 시스템용 이메일
     hashed_password = Column(String, nullable=True)  # SSO 유저는 로컬 패스워드 없음

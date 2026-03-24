@@ -56,30 +56,31 @@ def pytest_sessionfinish(session, exitstatus):
 
 
 # 테스트용 auth_user_id 값 (podo-auth TSID 시뮬레이션)
-TEST_AUTH_USER_ID_1 = 1000000000001
-TEST_AUTH_USER_ID_2 = 1000000000002
+TEST_AUTH_USER_ID_1 = "a1b2c3d4-0001-0000-0000-000000000001"
+TEST_AUTH_USER_ID_2 = "a1b2c3d4-0002-0000-0000-000000000002"
 
 
-def create_test_token(auth_user_id: int, email: str = "test@example.com", name: str = "테스터") -> str:
-    """테스트용 podo-auth 스타일 JWT 토큰 생성
+def create_test_token(auth_user_id: str, email: str = "test@example.com", name: str = "테스터") -> str:
+    """테스트용 Supabase Auth 스타일 JWT 토큰 생성
 
-    podo-auth가 발급하는 형식의 JWT를 생성하여 Shadow User 인증 플로우를 테스트합니다.
+    Supabase가 발급하는 형식의 JWT를 생성하여 Shadow User 인증 플로우를 테스트합니다.
 
     Args:
-        auth_user_id: podo-auth 사용자 ID (TSID BigInteger)
+        auth_user_id: Supabase 사용자 UUID
         email: 사용자 이메일
         name: 사용자 이름
 
     Returns:
-        podo-auth 형식의 JWT 토큰
+        Supabase 형식의 JWT 토큰
     """
     expire = datetime.now(UTC) + timedelta(days=7)
     payload = {
         "sub": str(auth_user_id),
         "email": email,
-        "name": name,
-        "iss": "podo-auth",
+        "role": "authenticated",
+        "iss": "https://test.supabase.co/auth/v1",
         "exp": expire,
+        "user_metadata": {"name": name},
     }
     return jwt.encode(payload, settings.JWT_SECRET, algorithm=settings.JWT_ALGORITHM)
 
@@ -216,7 +217,7 @@ async def test_user2(db_session: AsyncSession, test_household2: Household) -> Us
 
 @pytest_asyncio.fixture
 async def auth_token(test_user: User) -> str:
-    """테스트용 podo-auth 스타일 JWT 토큰 생성
+    """테스트용 Supabase Auth 스타일 JWT 토큰 생성
 
     Args:
         test_user: 테스트용 사용자
