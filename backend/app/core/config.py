@@ -14,10 +14,11 @@ class Settings(BaseSettings):
     DEBUG: bool = False
     SECRET_KEY: str = ""  # 레거시 호환성 유지 (lifespan에서 검증)
 
-    # podo-auth SSO 연동
+    # Supabase Auth
     JWT_SECRET: str = "podo-jwt-secret-change-in-production"  # pragma: allowlist secret
     JWT_ALGORITHM: str = "HS256"
-    AUTH_SERVER_URL: str = "https://auth.podonest.com"
+    SUPABASE_URL: str = ""  # https://xxxx.supabase.co
+    SUPABASE_ANON_KEY: str = ""
 
     # Database
     DATABASE_URL: str = "postgresql+asyncpg://localhost:5432/podo_budget"

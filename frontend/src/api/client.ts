@@ -3,7 +3,6 @@
 import axios from 'axios'
 import toast from 'react-hot-toast'
 import { captureException } from '../utils/sentry'
-import { getCookieToken } from '../utils/token'
 
 const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_URL || '/api',
@@ -11,19 +10,7 @@ const apiClient = axios.create({
   headers: { 'Content-Type': 'application/json' },
 })
 
-// 요청 인터셉터: 쿠키/localStorage에서 토큰을 읽어 Authorization 헤더에 자동 추가
-// 참고: AuthContext에도 동일 인터셉터가 등록되며 LIFO로 먼저 실행됨
-//       AuthContext 인터셉터는 tokenRef(in-memory)를 우선 사용 → Safari Private 모드 대응
-apiClient.interceptors.request.use(
-  (config) => {
-    const token = getCookieToken()
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`
-    }
-    return config
-  },
-  (error) => Promise.reject(error)
-)
+// 요청 인터셉터: AuthContext에서 Supabase 토큰을 자동 추가 (#337)
 
 // 409 Conflict 자동 재시도 (Fly.io 콜드 스타트 또는 동시 요청 레이스 컨디션)
 const MAX_RETRIES = 2
