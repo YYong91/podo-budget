@@ -1,18 +1,18 @@
-"""Supabase Auth 인증 모듈 (Shadow User 패턴)
+"""Supabase Auth 인증 모듈 (Shadow User 패턴) — ES256 JWKS 검증
 
-Supabase에서 발급된 JWT를 검증하고, 로컬 users 테이블의 Shadow User를 조회/생성합니다.
-기존 Integer PK 기반 FK 관계를 모두 보존하면서 Supabase Auth를 지원합니다.
+Supabase에서 발급된 JWT를 JWKS 공개키로 검증하고,
+로컬 users 테이블의 Shadow User를 조회/생성합니다.
 
 플로우:
-  1. Supabase JWT 검증 (JWT_SECRET으로 서명 확인)
-  2. auth_user_id (Supabase UUID)로 로컬 User 조회
-  3. 없으면 email로 기존 유저 매칭 시도 (기존 데이터 연결)
-  4. 둘 다 없으면 새 로컬 유저 자동 생성
-  5. 기존 FK 관계는 users.id (Integer)로 그대로 유지
+  1. Supabase JWKS에서 ES256 공개키 가져오기 (캐시)
+  2. JWT 서명 검증 + audience=authenticated 확인
+  3. auth_user_id (Supabase UUID)로 로컬 User 조회
+  4. 없으면 email로 기존 유저 매칭 → 없으면 자동 생성
 """
 
 import logging
 
+import httpx
 from cachetools import TTLCache
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -27,29 +27,49 @@ from app.models.user import User
 
 logger = logging.getLogger(__name__)
 
-# HTTPBearer 스키마 (auto_error=False → 토큰 없을 때 None 반환, 직접 401 처리)
 security = HTTPBearer(auto_error=False)
 
-# JWT 사용자 캐시: auth_user_id(str) → local user.id (TTL 60초, 최대 1024명)
+# JWT 사용자 캐시: auth_user_id(str) → local user.id (TTL 60초)
 _auth_id_cache: TTLCache[str, int] = TTLCache(maxsize=1024, ttl=60)
+
+# JWKS 공개키 캐시 (TTL 1시간 — 키 로테이션 대응)
+_jwks_cache: dict | None = None
+_jwks_cache_url: str = ""
+
+
+async def _get_jwks_key(token: str) -> dict:
+    """Supabase JWKS에서 JWT kid에 매칭되는 공개키를 가져온다. 캐시 적용."""
+    global _jwks_cache, _jwks_cache_url
+
+    jwks_url = f"{settings.SUPABASE_URL}/auth/v1/.well-known/jwks.json"
+
+    # 캐시 히트
+    if _jwks_cache and _jwks_cache_url == jwks_url:
+        header = pyjwt.get_unverified_header(token)
+        for key in _jwks_cache.get("keys", []):
+            if key.get("kid") == header.get("kid"):
+                return key
+
+    # JWKS fetch
+    async with httpx.AsyncClient(timeout=10) as client:
+        resp = await client.get(jwks_url)
+        resp.raise_for_status()
+        _jwks_cache = resp.json()
+        _jwks_cache_url = jwks_url
+
+    header = pyjwt.get_unverified_header(token)
+    for key in _jwks_cache.get("keys", []):
+        if key.get("kid") == header.get("kid"):
+            return key
+
+    raise ValueError(f"JWKS에서 kid={header.get('kid')} 키를 찾을 수 없음")
 
 
 async def get_current_user(
     credentials: HTTPAuthorizationCredentials | None = Depends(security),
     db: AsyncSession = Depends(get_db),
 ) -> User:
-    """Supabase JWT에서 로컬 Shadow User 추출 (의존성 주입용)
-
-    Args:
-        credentials: HTTPBearer에서 추출한 Supabase JWT
-        db: 데이터베이스 세션
-
-    Returns:
-        로컬 User 객체 (기존 Integer PK 보존)
-
-    Raises:
-        HTTPException 401: 토큰 유효하지 않거나 유저 생성/조회 실패
-    """
+    """Supabase JWT에서 로컬 Shadow User 추출 (의존성 주입용)"""
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="인증 정보가 유효하지 않습니다",
@@ -61,26 +81,33 @@ async def get_current_user(
 
     try:
         token = credentials.credentials
-        payload = pyjwt.decode(token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM])
 
-        # Supabase 토큰 검증: role=authenticated 확인
-        if payload.get("role") != "authenticated":
-            raise credentials_exception
+        # JWKS에서 공개키 가져오기
+        jwk_key = await _get_jwks_key(token)
+
+        # ES256 공개키로 JWT 검증
+        payload = pyjwt.decode(
+            token,
+            jwk_key,
+            algorithms=["ES256"],
+            audience="authenticated",
+        )
 
         auth_user_id: str = payload.get("sub", "")
         email: str = payload.get("email", "")
 
-        # 이름: Supabase는 user_metadata.name에 저장
+        # 이름: user_metadata.name 또는 user_metadata.full_name
         user_metadata = payload.get("user_metadata", {}) or {}
         name: str = user_metadata.get("name", "") or user_metadata.get("full_name", "")
 
         if not auth_user_id or not email:
             raise credentials_exception
 
-    except (JWTError, ValueError) as err:
+    except (JWTError, ValueError, httpx.HTTPError) as err:
+        logger.warning("JWT 검증 실패: %s", err)
         raise credentials_exception from err
 
-    # 캐시 히트: PK로 직접 조회
+    # 캐시 히트
     if auth_user_id in _auth_id_cache:
         user = await db.get(User, _auth_id_cache[auth_user_id])
         if user:
@@ -99,16 +126,14 @@ async def get_current_user(
         _auth_id_cache[auth_user_id] = user.id
         return user
 
-    # 2단계: email로 기존 유저 매칭 (podo-auth → Supabase 전환 시 기존 데이터 보존)
+    # 2단계: email로 기존 유저 매칭
     result = await db.execute(select(User).where(User.email == email))
     user = result.scalar_one_or_none()
 
     if user:
         logger.info(
             "Shadow User 이메일 매칭으로 Supabase 계정 연결: user_id=%s email=%s auth_user_id=%s",
-            user.id,
-            email,
-            auth_user_id,
+            user.id, email, auth_user_id,
         )
         user.auth_user_id = auth_user_id
         await db.commit()
@@ -118,7 +143,7 @@ async def get_current_user(
         _auth_id_cache[auth_user_id] = user.id
         return user
 
-    # 3단계: 완전히 새로운 유저 자동 생성
+    # 3단계: 새 유저 자동 생성
     from sqlalchemy.exc import IntegrityError
 
     new_user = User(

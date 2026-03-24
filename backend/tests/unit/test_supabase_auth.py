@@ -1,139 +1,144 @@
-"""Supabase Auth JWT 검증 테스트 (#337)
+"""Supabase Auth ES256 JWT 검증 테스트 (#337)
 
-podo-auth → Supabase Auth 전환에 따른 JWT 검증 로직 변경 테스트.
-Supabase JWT는 podo-auth와 다른 payload 구조를 가짐:
-  - sub: UUID string (기존: BigInt string)
-  - iss: https://xxxx.supabase.co/auth/v1 (기존: podo-auth)
-  - email: 그대로
-  - name: user_metadata.name (기존: top-level name)
+JWKS 공개키 기반 ES256 검증 + Shadow User 로직 테스트.
 """
 
 from datetime import UTC, datetime, timedelta
+from unittest.mock import AsyncMock, patch
 
 import pytest
+from cryptography.hazmat.primitives.asymmetric import ec
 from fastapi import HTTPException
-from jose import jwt
+from jose import jwt as pyjwt
 
-from app.core.config import settings
-
-# Supabase 형식의 테스트 UUID
 TEST_SUPABASE_USER_ID = "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
 
+# 테스트용 ES256 키 페어 생성
+_test_private_key = ec.generate_private_key(ec.SECP256R1())
+_test_public_key = _test_private_key.public_key()
 
-def create_supabase_test_token(
+# JWK 형태의 공개키 (python-jose 호환)
+from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
+from jose.utils import long_to_base64
+_pub_numbers = _test_public_key.public_numbers()
+TEST_JWK = {
+    "kty": "EC",
+    "crv": "P-256",
+    "x": long_to_base64(_pub_numbers.x).decode(),
+    "y": long_to_base64(_pub_numbers.y).decode(),
+    "kid": "test-kid-001",
+    "alg": "ES256",
+    "use": "sig",
+}
+TEST_JWKS = {"keys": [TEST_JWK]}
+
+
+def create_es256_test_token(
     user_id: str = TEST_SUPABASE_USER_ID,
     email: str = "test@example.com",
     name: str = "테스터",
 ) -> str:
-    """Supabase Auth 형식의 JWT 토큰 생성"""
-    expire = datetime.now(UTC) + timedelta(days=7)
+    """ES256 서명된 Supabase 형식 JWT 생성 (테스트용)"""
+    from cryptography.hazmat.primitives.serialization import Encoding, NoEncryption, PrivateFormat
+
     payload = {
         "sub": user_id,
         "email": email,
-        "iss": f"https://{settings.SUPABASE_URL.replace('https://', '')}/auth/v1"
-        if hasattr(settings, "SUPABASE_URL") and settings.SUPABASE_URL
-        else "https://test.supabase.co/auth/v1",
+        "aud": "authenticated",
         "role": "authenticated",
-        "exp": expire,
-        "user_metadata": {
-            "name": name,
-        },
+        "iss": "https://test.supabase.co/auth/v1",
+        "exp": datetime.now(UTC) + timedelta(days=7),
+        "user_metadata": {"name": name, "full_name": name},
     }
-    return jwt.encode(payload, settings.JWT_SECRET, algorithm=settings.JWT_ALGORITHM)
+
+    # python-jose는 PEM 키로 ES256 서명 가능
+    pem = _test_private_key.private_bytes(Encoding.PEM, PrivateFormat.PKCS8, NoEncryption())
+    return pyjwt.encode(payload, pem, algorithm="ES256", headers={"kid": "test-kid-001"})
 
 
-def test_supabase_token_has_uuid_sub():
-    """Supabase 토큰의 sub은 UUID 문자열"""
-    token = create_supabase_test_token()
-    payload = jwt.decode(token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM])
+def test_es256_token_creation():
+    """ES256 테스트 토큰이 올바르게 생성되는지 확인"""
+    token = create_es256_test_token()
+    assert isinstance(token, str)
+    assert token.count(".") == 2
+
+    header = pyjwt.get_unverified_header(token)
+    assert header["alg"] == "ES256"
+    assert header["kid"] == "test-kid-001"
+
+
+def test_es256_token_verification():
+    """ES256 토큰이 공개키로 검증 가능한지 확인"""
+    token = create_es256_test_token(email="verify@test.com")
+    payload = pyjwt.decode(token, TEST_JWK, algorithms=["ES256"], audience="authenticated")
+
     assert payload["sub"] == TEST_SUPABASE_USER_ID
-    assert "-" in payload["sub"]  # UUID 형태
-
-
-def test_supabase_token_has_supabase_issuer():
-    """Supabase 토큰의 iss는 supabase URL 기반"""
-    token = create_supabase_test_token()
-    payload = jwt.decode(token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM])
-    assert "supabase" in payload["iss"]
-
-
-def test_supabase_token_has_role():
-    """Supabase 토큰에 role=authenticated 포함"""
-    token = create_supabase_test_token()
-    payload = jwt.decode(token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM])
+    assert payload["email"] == "verify@test.com"
     assert payload["role"] == "authenticated"
 
 
-def test_supabase_token_name_in_metadata():
-    """Supabase 토큰의 이름은 user_metadata.name에 위치"""
-    token = create_supabase_test_token(name="홍길동")
-    payload = jwt.decode(token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM])
-    assert payload.get("name") is None  # top-level에는 없음
-    assert payload["user_metadata"]["name"] == "홍길동"
+def test_es256_token_wrong_key_rejected():
+    """다른 키로 서명된 토큰은 거부"""
+    other_key = ec.generate_private_key(ec.SECP256R1())
+    from cryptography.hazmat.primitives.serialization import Encoding, NoEncryption, PrivateFormat
+    other_pem = other_key.private_bytes(Encoding.PEM, PrivateFormat.PKCS8, NoEncryption())
 
-
-def test_podo_auth_token_rejected():
-    """기존 podo-auth 형식 토큰은 거부되어야 함"""
-    expire = datetime.now(UTC) + timedelta(days=7)
-    podo_auth_payload = {
-        "sub": "1000000000001",  # BigInt string
-        "email": "test@example.com",
-        "name": "테스터",
-        "iss": "podo-auth",
-        "exp": expire,
+    payload = {
+        "sub": TEST_SUPABASE_USER_ID,
+        "email": "test@test.com",
+        "aud": "authenticated",
+        "role": "authenticated",
+        "exp": datetime.now(UTC) + timedelta(days=7),
     }
-    token = jwt.encode(podo_auth_payload, settings.JWT_SECRET, algorithm=settings.JWT_ALGORITHM)
-    payload = jwt.decode(token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM])
-    # podo-auth issuer는 Supabase 검증에서 거부해야 함
-    assert payload["iss"] == "podo-auth"
-    assert "supabase" not in payload["iss"]
+    bad_token = pyjwt.encode(payload, other_pem, algorithm="ES256", headers={"kid": "test-kid-001"})
 
-
-# ── 통합 테스트: get_current_user가 Supabase JWT를 처리하는지 ──
+    with pytest.raises(Exception):
+        pyjwt.decode(bad_token, TEST_JWK, algorithms=["ES256"], audience="authenticated")
 
 
 @pytest.mark.asyncio
-async def test_get_current_user_accepts_supabase_token(db_session):
-    """get_current_user가 Supabase 형식 JWT로 Shadow User를 생성/조회해야 함"""
+async def test_get_current_user_es256(db_session):
+    """get_current_user가 ES256 JWT로 Shadow User를 생성/조회"""
     from unittest.mock import MagicMock
-
     from app.core.auth import get_current_user
 
-    token = create_supabase_test_token(
+    token = create_es256_test_token(
         user_id=TEST_SUPABASE_USER_ID,
-        email="supabase@test.com",
-        name="수파베이스",
+        email="es256@test.com",
+        name="ES256유저",
     )
 
     credentials = MagicMock()
     credentials.credentials = token
 
-    user = await get_current_user(credentials=credentials, db=db_session)
+    # _get_jwks_key를 모킹하여 테스트 공개키 반환
+    with patch("app.core.auth._get_jwks_key", new_callable=AsyncMock, return_value=TEST_JWK):
+        user = await get_current_user(credentials=credentials, db=db_session)
 
     assert user is not None
-    assert user.email == "supabase@test.com"
+    assert user.email == "es256@test.com"
     assert str(user.auth_user_id) == TEST_SUPABASE_USER_ID
 
 
 @pytest.mark.asyncio
-async def test_get_current_user_rejects_podo_auth_token(db_session):
-    """get_current_user가 podo-auth 형식 JWT를 거부해야 함"""
+async def test_get_current_user_rejects_hs256(db_session):
+    """HS256 토큰은 거부 (podo-auth 형식)"""
     from unittest.mock import MagicMock
-
     from app.core.auth import get_current_user
 
-    expire = datetime.now(UTC) + timedelta(days=7)
-    podo_payload = {
-        "sub": "1000000000001",
+    # HS256 토큰 생성
+    payload = {
+        "sub": "old-user-id",
         "email": "old@test.com",
-        "name": "기존유저",
-        "iss": "podo-auth",
-        "exp": expire,
+        "role": "authenticated",
+        "aud": "authenticated",
+        "exp": datetime.now(UTC) + timedelta(days=7),
     }
-    token = jwt.encode(podo_payload, settings.JWT_SECRET, algorithm=settings.JWT_ALGORITHM)
+    hs256_token = pyjwt.encode(payload, "some-secret", algorithm="HS256")
 
     credentials = MagicMock()
-    credentials.credentials = token
+    credentials.credentials = hs256_token
 
-    with pytest.raises(HTTPException):
-        await get_current_user(credentials=credentials, db=db_session)
+    with patch("app.core.auth._get_jwks_key", new_callable=AsyncMock, return_value=TEST_JWK):
+        with pytest.raises(HTTPException):
+            await get_current_user(credentials=credentials, db=db_session)
