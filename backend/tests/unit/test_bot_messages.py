@@ -5,6 +5,7 @@
 """
 
 from datetime import date, datetime, timedelta
+from zoneinfo import ZoneInfo
 
 from app.services.bot_messages import (
     format_budget_status,
@@ -32,17 +33,17 @@ class TestFormatKoreanDate:
 
     def test_today_returns_오늘(self):
         """오늘 날짜 → '오늘'"""
-        today = date.today()
+        today = datetime.now(ZoneInfo("Asia/Seoul")).date()
         assert format_korean_date(today) == "오늘"
 
     def test_today_datetime(self):
         """datetime 타입도 지원"""
-        now = datetime.now()
+        now = datetime.now(ZoneInfo("Asia/Seoul"))
         assert format_korean_date(now) == "오늘"
 
     def test_yesterday_returns_어제(self):
         """어제 날짜 → '어제'"""
-        yesterday = date.today() - timedelta(days=1)
+        yesterday = datetime.now(ZoneInfo("Asia/Seoul")).date() - timedelta(days=1)
         assert format_korean_date(yesterday) == "어제"
 
     def test_other_date_format(self):
@@ -62,7 +63,7 @@ class TestFormatKoreanDate:
 
     def test_string_today(self):
         """오늘 날짜 문자열도 '오늘' 반환"""
-        today_str = date.today().isoformat()
+        today_str = datetime.now(ZoneInfo("Asia/Seoul")).date().isoformat()
         assert format_korean_date(today_str) == "오늘"
 
 
