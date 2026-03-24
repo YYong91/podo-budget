@@ -21,6 +21,8 @@ class Settings(BaseSettings):
 
     # Database
     DATABASE_URL: str = "postgresql+asyncpg://localhost:5432/podo_budget"
+    # Alembic 마이그레이션 전용 URL (Direct connection 권장, 미설정 시 DATABASE_URL 사용)
+    MIGRATION_DATABASE_URL: str = ""
 
     # LLM — 기본 프로바이더/모델 (모든 기능에 적용)
     LLM_PROVIDER: LLMProviderType = "anthropic"

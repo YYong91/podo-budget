@@ -5,8 +5,7 @@ primary_region = "nrt"
 
 [build]
 
-[deploy]
-  release_command = "uv run alembic upgrade head"
+# release_command 제거 — main.py lifespan에서 sys.executable로 alembic 실행 (#336)
 
 [env]
   PORT = "8000"
