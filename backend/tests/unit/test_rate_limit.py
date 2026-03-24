@@ -1,7 +1,7 @@
 """Rate Limit 유틸리티 단위 테스트
 
 get_user_identifier 함수의 다양한 시나리오를 테스트합니다:
-- 유효한 podo-auth JWT 토큰 → auth_user_id 반환
+- 유효한 Supabase JWT 토큰 → auth_user_id 반환
 - 유효하지 않은 토큰 → IP 폴백
 - 토큰 없음 → IP 폴백
 - Fly-Client-IP 헤더 → 해당 IP 사용 (X-Forwarded-For 대신, #132)
@@ -32,7 +32,7 @@ def _make_request(
 
 
 def test_valid_jwt_returns_user_id():
-    """유효한 podo-auth JWT 토큰이 있으면 user:{auth_user_id} 반환"""
+    """유효한 Supabase JWT 토큰이 있으면 user:{auth_user_id} 반환"""
     token = create_test_token(auth_user_id=TEST_AUTH_USER_ID_1, email="test@example.com")
     request = _make_request(auth_header=f"Bearer {token}")
 
@@ -94,7 +94,7 @@ def test_no_client_returns_unknown():
 
 
 def test_non_podo_auth_token_falls_back_to_ip():
-    """iss가 podo-auth가 아닌 토큰은 IP로 폴백"""
+    """role이 authenticated가 아닌 토큰은 IP로 폴백"""
     from datetime import UTC, datetime, timedelta
 
     from jose import jwt

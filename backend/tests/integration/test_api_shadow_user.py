@@ -1,6 +1,6 @@
 """Shadow User 3단계 조회 로직 통합 테스트
 
-podo-auth SSO 기반 Shadow User 패턴 검증:
+Supabase Auth 기반 Shadow User 패턴 검증:
   1단계: auth_user_id로 기존 유저 조회
   2단계: email 매칭으로 기존 유저 연결
   3단계: 완전히 새로운 유저 자동 생성
@@ -47,7 +47,7 @@ async def test_step2_email_matching(client: AsyncClient, db_session: AsyncSessio
     original_id = existing_user.id
     new_auth_id = 5500000000001
 
-    # 같은 이메일로 podo-auth SSO 로그인
+    # 같은 이메일로 Supabase 로그인
     token = create_test_token(
         auth_user_id=new_auth_id,
         email="legacy@example.com",
@@ -110,7 +110,8 @@ async def test_step3_new_user_name_from_email_prefix(client, db_session: AsyncSe
         "sub": str(auth_id),
         "email": "prefix.test@example.com",
         "name": "",  # 빈 이름
-        "iss": "podo-auth",
+        "role": "authenticated",
+        "iss": "https://test.supabase.co/auth/v1",
         "exp": expire,
     }
     token = jwt.encode(payload, settings.JWT_SECRET, algorithm=settings.JWT_ALGORITHM)
