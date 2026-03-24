@@ -74,7 +74,8 @@ jobs:
         run: cd frontend && npm ci && npm run build
         env:
           VITE_API_URL: https://podo-budget-dev.fly.dev/api
-          VITE_AUTH_URL: ${{ secrets.VITE_AUTH_URL }}
+          VITE_SUPABASE_URL: https://ycdjgoaqhvnfdagwcwre.supabase.co
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
           VITE_AUTH_CALLBACK_URL: https://podo-budget-dev.pages.dev/auth/callback
           VITE_BOOKSHELF_URL: ${{ secrets.VITE_BOOKSHELF_URL }}
           VITE_SENTRY_DSN: ${{ secrets.VITE_SENTRY_DSN }}
