@@ -1,18 +1,24 @@
 /**
  * @file HouseholdDetailPage.test.tsx
  * @description 공유 가계부 상세 페이지 테스트
+ * 탭 전환, 로딩/에러 상태, 권한별 UI를 검증한다.
  */
 
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import HouseholdDetailPage from '../HouseholdDetailPage'
 
-const mockHousehold = {
+/* ------------------------------------------------------------------ */
+/*  모킹 데이터 — 테스트마다 storeState를 변경하여 다양한 시나리오 검증  */
+/* ------------------------------------------------------------------ */
+
+const baseMockHousehold = {
   id: 1,
   name: '우리집',
   description: '가족 가계부',
-  my_role: 'owner',
+  my_role: 'owner' as string,
   members: [
     {
       user_id: 1,
@@ -31,18 +37,25 @@ const mockHousehold = {
   ],
 }
 
-const fetchHouseholdDetail = vi.fn().mockResolvedValue(mockHousehold)
+const fetchHouseholdDetail = vi.fn().mockResolvedValue(baseMockHousehold)
+const fetchHouseholdInvitations = vi.fn().mockResolvedValue(undefined)
 const clearCurrentHousehold = vi.fn()
 const clearError = vi.fn()
+const addToast = vi.fn()
+
+/** 테스트마다 변경할 수 있는 스토어 상태 */
+let storeState: {
+  currentHousehold: typeof baseMockHousehold | null
+  isLoading: boolean
+  error: string | null
+  householdInvitations: Array<{ id: number; invitee_email: string; status: string; token: string }>
+}
 
 vi.mock('../../stores/useHouseholdStore', () => ({
   useHouseholdStore: () => ({
-    currentHousehold: mockHousehold,
-    isLoading: false,
-    error: null,
-    householdInvitations: [],
+    ...storeState,
     fetchHouseholdDetail,
-    fetchHouseholdInvitations: vi.fn().mockResolvedValue(undefined),
+    fetchHouseholdInvitations,
     updateHousehold: vi.fn(),
     deleteHousehold: vi.fn(),
     inviteMember: vi.fn(),
@@ -56,7 +69,7 @@ vi.mock('../../stores/useHouseholdStore', () => ({
 }))
 
 vi.mock('../../hooks/useToast', () => ({
-  useToast: () => ({ addToast: vi.fn() }),
+  useToast: () => ({ addToast }),
 }))
 
 vi.mock('../../contexts/AuthContext', () => ({
@@ -73,10 +86,26 @@ function renderPage() {
   )
 }
 
+/* ------------------------------------------------------------------ */
+/*  테스트                                                              */
+/* ------------------------------------------------------------------ */
+
 describe('HouseholdDetailPage', () => {
-  it('가구 역할 뱃지를 표시한다', async () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    // 기본 상태: owner, 로딩 완료, 에러 없음
+    storeState = {
+      currentHousehold: { ...baseMockHousehold, my_role: 'owner' },
+      isLoading: false,
+      error: null,
+      householdInvitations: [],
+    }
+  })
+
+  /* ---------- 기본 렌더링 ---------- */
+
+  it('가구 역할 뱃지를 표시한다', () => {
     renderPage()
-    // 헤더의 역할 뱃지 + 테이블의 역할 뱃지 모두 표시됨
     expect(screen.getAllByText('소유자').length).toBeGreaterThan(0)
   })
 
@@ -87,7 +116,6 @@ describe('HouseholdDetailPage', () => {
 
   it('멤버 탭이 기본 선택되어 있다', () => {
     renderPage()
-    // "멤버" 텍스트는 탭 + 테이블 역할 드롭다운에 모두 존재
     expect(screen.getAllByText('멤버').length).toBeGreaterThan(0)
   })
 
@@ -103,7 +131,73 @@ describe('HouseholdDetailPage', () => {
     expect(screen.getByText('kim@example.com')).toBeInTheDocument()
   })
 
-  it('소유자에게 초대 탭과 설정 탭을 표시한다', () => {
+  it('가구 정보 로드를 요청한다', async () => {
+    renderPage()
+    await waitFor(() => {
+      expect(fetchHouseholdDetail).toHaveBeenCalledWith(1)
+    })
+  })
+
+  it('자기 자신은 (나) 표시가 된다', () => {
+    renderPage()
+    expect(screen.getByText('(나)')).toBeInTheDocument()
+  })
+
+  it('설명이 없으면 설명 영역을 표시하지 않는다', () => {
+    storeState.currentHousehold = { ...baseMockHousehold, description: '', my_role: 'owner' }
+    renderPage()
+    expect(screen.queryByText('가족 가계부')).not.toBeInTheDocument()
+  })
+
+  /* ---------- 로딩 상태 ---------- */
+
+  it('로딩 중이고 데이터가 없으면 로딩 스피너를 표시한다', () => {
+    storeState.isLoading = true
+    storeState.currentHousehold = null
+    renderPage()
+    // LoadingSpinner 컴포넌트의 animate-spin 요소가 렌더링된다
+    expect(document.querySelector('.animate-spin')).toBeInTheDocument()
+  })
+
+  it('로딩 중이지만 데이터가 있으면 콘텐츠를 표시한다', () => {
+    storeState.isLoading = true
+    // currentHousehold는 기본값(있음)
+    renderPage()
+    expect(screen.getByText('홍길동')).toBeInTheDocument()
+  })
+
+  /* ---------- 에러 상태 ---------- */
+
+  it('에러가 있고 데이터가 없으면 ErrorState를 표시한다', () => {
+    storeState.error = '서버 에러'
+    storeState.currentHousehold = null
+    renderPage()
+    // ErrorState의 재시도 버튼
+    expect(screen.getByText('다시 시도')).toBeInTheDocument()
+  })
+
+  it('에러가 있지만 데이터가 있으면 콘텐츠를 표시하고 토스트를 호출한다', () => {
+    storeState.error = '서버 에러'
+    renderPage()
+    // 콘텐츠는 표시됨
+    expect(screen.getByText('홍길동')).toBeInTheDocument()
+    // error useEffect가 토스트를 호출
+    expect(addToast).toHaveBeenCalledWith('error', '처리에 실패했습니다')
+    expect(clearError).toHaveBeenCalled()
+  })
+
+  /* ---------- 가구 정보 없음 ---------- */
+
+  it('가구 데이터가 null이면 EmptyState를 표시한다', () => {
+    storeState.currentHousehold = null
+    renderPage()
+    expect(screen.getByText('가구를 찾을 수 없습니다')).toBeInTheDocument()
+    expect(screen.getByText('가구 목록으로')).toBeInTheDocument()
+  })
+
+  /* ---------- 소유자 권한 ---------- */
+
+  it('소유자에게 초대/설정 탭을 표시한다', () => {
     renderPage()
     expect(screen.getByRole('button', { name: /초대/ })).toBeInTheDocument()
     expect(screen.getByText('설정')).toBeInTheDocument()
@@ -114,15 +208,97 @@ describe('HouseholdDetailPage', () => {
     expect(screen.getByText('추방')).toBeInTheDocument()
   })
 
-  it('자기 자신은 (나) 표시가 된다', () => {
+  /* ---------- 관리자 권한 ---------- */
+
+  it('관리자에게 초대/설정 탭을 표시한다', () => {
+    storeState.currentHousehold = { ...baseMockHousehold, my_role: 'admin' }
     renderPage()
-    expect(screen.getByText('(나)')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /초대/ })).toBeInTheDocument()
+    expect(screen.getByText('설정')).toBeInTheDocument()
   })
 
-  it('가구 정보 로드를 요청한다', async () => {
+  /* ---------- 일반 멤버 권한 ---------- */
+
+  it('일반 멤버에게는 초대/설정 탭을 표시하지 않는다', () => {
+    storeState.currentHousehold = { ...baseMockHousehold, my_role: 'member' }
+    renderPage()
+    // 탭 버튼으로서의 "초대"가 없어야 한다 (멤버 탭의 텍스트와 구분)
+    const tabs = screen.getAllByRole('button')
+    const invitationTab = tabs.find(
+      (btn) => btn.textContent?.includes('초대') && !btn.textContent?.includes('멤버'),
+    )
+    expect(invitationTab).toBeUndefined()
+    expect(screen.queryByText('설정')).not.toBeInTheDocument()
+  })
+
+  it('일반 멤버는 추방 버튼을 볼 수 없다', () => {
+    storeState.currentHousehold = { ...baseMockHousehold, my_role: 'member' }
+    renderPage()
+    expect(screen.queryByText('추방')).not.toBeInTheDocument()
+  })
+
+  /* ---------- 탭 전환 ---------- */
+
+  it('초대 탭을 클릭하면 초대 탭 콘텐츠가 표시된다', async () => {
+    storeState.householdInvitations = [
+      { id: 10, invitee_email: 'new@test.com', status: 'pending', token: 'abc' },
+    ]
+    renderPage()
+
+    const invitationTab = screen.getByRole('button', { name: /초대/ })
+    await userEvent.click(invitationTab)
+
+    // InvitationsTab이 렌더링된다 — "+ 멤버 초대" 버튼이 표시됨
+    expect(screen.getByText('+ 멤버 초대')).toBeInTheDocument()
+  })
+
+  it('설정 탭을 클릭하면 설정 탭 콘텐츠가 표시된다', async () => {
+    renderPage()
+
+    const settingsTab = screen.getByText('설정')
+    await userEvent.click(settingsTab)
+
+    // SettingsTab이 렌더링된다 — "가구 정보" 섹션 제목이 표시됨
+    expect(screen.getByText('가구 정보')).toBeInTheDocument()
+  })
+
+  it('초대 탭에서 pending 초대 수를 뱃지로 표시한다', () => {
+    storeState.householdInvitations = [
+      { id: 10, invitee_email: 'a@test.com', status: 'pending', token: 'abc' },
+      { id: 11, invitee_email: 'b@test.com', status: 'pending', token: 'def' },
+      { id: 12, invitee_email: 'c@test.com', status: 'accepted', token: 'ghi' },
+    ]
+    renderPage()
+
+    // pending 2건 뱃지
+    expect(screen.getByText('2')).toBeInTheDocument()
+  })
+
+  /* ---------- 언마운트 시 정리 ---------- */
+
+  it('언마운트 시 clearCurrentHousehold를 호출한다', () => {
+    const { unmount } = renderPage()
+    unmount()
+    expect(clearCurrentHousehold).toHaveBeenCalled()
+  })
+
+  /* ---------- admin인 경우 초대 목록 조회 ---------- */
+
+  it('admin인 경우 초대 목록을 조회한다', async () => {
+    storeState.currentHousehold = { ...baseMockHousehold, my_role: 'admin' }
     renderPage()
     await waitFor(() => {
-      expect(fetchHouseholdDetail).toHaveBeenCalledWith(1)
+      expect(fetchHouseholdInvitations).toHaveBeenCalledWith(1)
     })
+  })
+
+  it('일반 멤버인 경우 초대 목록을 조회하지 않는다', async () => {
+    storeState.currentHousehold = { ...baseMockHousehold, my_role: 'member' }
+    renderPage()
+    // fetchHouseholdDetail은 호출되지만 fetchHouseholdInvitations는 호출되지 않아야 한다
+    await waitFor(() => {
+      expect(fetchHouseholdDetail).toHaveBeenCalled()
+    })
+    expect(fetchHouseholdInvitations).not.toHaveBeenCalled()
   })
 })
