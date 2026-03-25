@@ -14,6 +14,16 @@ import SettingsPage from '../SettingsPage'
 import { ThemeProvider } from '../../contexts/ThemeContext'
 import { changelogs } from '../../data/changelogs'
 
+// Supabase 모킹
+vi.mock('../../utils/supabase', () => ({
+  supabase: {
+    auth: {
+      updateUser: vi.fn().mockResolvedValue({ error: null }),
+      signOut: vi.fn().mockResolvedValue({ error: null }),
+    },
+  },
+}))
+
 // refreshUser는 테스트마다 호출 여부를 검증할 수 있도록 vi.fn()으로 분리
 const mockRefreshUser = vi.fn()
 
@@ -136,9 +146,14 @@ describe('SettingsPage', () => {
       expect(screen.getByText('텔레그램')).toBeInTheDocument()
     })
 
-    it('podo-auth 안내를 표시한다', () => {
+    it('비밀번호 변경 버튼을 표시한다', () => {
       renderSettingsPage('/settings/my-account')
-      expect(screen.getAllByText(/포도 통합 계정/).length).toBeGreaterThan(0)
+      expect(screen.getByText('비밀번호 변경')).toBeInTheDocument()
+    })
+
+    it('계정 삭제 버튼을 표시한다', () => {
+      renderSettingsPage('/settings/my-account')
+      expect(screen.getByText('계정 삭제')).toBeInTheDocument()
     })
   })
 
