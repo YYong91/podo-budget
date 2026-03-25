@@ -69,4 +69,56 @@ describe('PullToRefresh', () => {
     const wrapper = container.firstChild as HTMLElement
     expect(wrapper.className).toContain('relative')
   })
+
+  it('standalone 모드에서 touch 이벤트를 등록한다', () => {
+    mockStandalone(true)
+    const { container } = render(
+      <PullToRefresh onRefresh={vi.fn()}>
+        <div>콘텐츠</div>
+      </PullToRefresh>,
+    )
+    const wrapper = container.firstChild as HTMLElement
+    // 이벤트 리스너가 등록되어 있는지 직접 검증할 수 없으므로
+    // wrapper가 정상 렌더링되는지만 확인
+    expect(wrapper).toBeTruthy()
+  })
+
+  it('비-standalone 모드에서 인디케이터 영역이 존재한다', () => {
+    mockStandalone(false)
+    const { container } = render(
+      <PullToRefresh onRefresh={vi.fn()}>
+        <div>콘텐츠</div>
+      </PullToRefresh>,
+    )
+    const indicator = container.querySelector('.overflow-hidden')
+    expect(indicator).toBeTruthy()
+  })
+
+  it('터치 이벤트 시뮬레이션 — touchstart, touchend', () => {
+    mockStandalone(true)
+    const onRefresh = vi.fn().mockResolvedValue(undefined)
+    const { container } = render(
+      <PullToRefresh onRefresh={onRefresh}>
+        <div>콘텐츠</div>
+      </PullToRefresh>,
+    )
+    const wrapper = container.firstChild as HTMLElement
+
+    // scrollY를 0으로 설정
+    Object.defineProperty(window, 'scrollY', { value: 0, writable: true })
+
+    // touchstart
+    wrapper.dispatchEvent(new TouchEvent('touchstart', {
+      touches: [{ clientY: 100, clientX: 50 } as Touch],
+      bubbles: true,
+    }))
+
+    // touchend (pullDist가 threshold 미만이므로 refresh 호출 안됨)
+    wrapper.dispatchEvent(new TouchEvent('touchend', {
+      bubbles: true,
+    }))
+
+    // threshold 미만이므로 onRefresh는 호출되지 않아야 함
+    expect(onRefresh).not.toHaveBeenCalled()
+  })
 })

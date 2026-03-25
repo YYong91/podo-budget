@@ -86,4 +86,30 @@ describe('SettingsTab', () => {
     const nameInput = screen.getByDisplayValue('우리집')
     expect(nameInput).toBeDisabled()
   })
+
+  it('저장 시 onUpdate를 호출한다', async () => {
+    const onUpdate = vi.fn().mockResolvedValue(undefined)
+    const user = userEvent.setup()
+    render(<SettingsTab {...defaultProps} onUpdate={onUpdate} />)
+    await user.click(screen.getByText('수정'))
+    const input = screen.getByDisplayValue('우리집')
+    await user.clear(input)
+    await user.type(input, '새 이름')
+    await user.click(screen.getByText('저장'))
+    expect(onUpdate).toHaveBeenCalledWith(expect.objectContaining({ name: '새 이름' }))
+  })
+
+  it('편집 모드에서 입력 필드가 활성화된다', async () => {
+    const user = userEvent.setup()
+    render(<SettingsTab {...defaultProps} />)
+    await user.click(screen.getByText('수정'))
+    const nameInput = screen.getByDisplayValue('우리집')
+    expect(nameInput).not.toBeDisabled()
+  })
+
+  it('설명 없는 가구도 표시한다', () => {
+    const household = { ...mockHousehold, description: '' }
+    render(<SettingsTab {...defaultProps} household={household} />)
+    expect(screen.getByDisplayValue('우리집')).toBeInTheDocument()
+  })
 })

@@ -179,6 +179,20 @@ describe('SettingsPage', () => {
     })
   })
 
+  describe('화면 모드 서브 페이지', () => {
+    it('화면 모드 옵션을 표시한다', () => {
+      renderSettingsPage('/settings/appearance')
+      expect(screen.getByText('시스템 설정')).toBeInTheDocument()
+      expect(screen.getByText('라이트 모드')).toBeInTheDocument()
+      expect(screen.getByText('다크 모드')).toBeInTheDocument()
+    })
+
+    it('화면 모드 제목을 표시한다', () => {
+      renderSettingsPage('/settings/appearance')
+      expect(screen.getByText('화면 모드')).toBeInTheDocument()
+    })
+  })
+
   describe('텔레그램 연동 (내 계정 서브 페이지)', () => {
     it('텔레그램 연동 코드 발급 버튼 클릭 시 코드가 화면에 표시된다', async () => {
       // MSW에 텔레그램 코드 발급 핸들러 등록

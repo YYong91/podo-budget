@@ -99,4 +99,66 @@ describe('API client error interceptor', () => {
 
     expect(mockToastError).toHaveBeenCalledWith('요청 처리 중 오류가 발생했습니다')
   })
+
+  it('5xx 에러 시 Sentry captureException이 호출된다', async () => {
+    const { captureException } = await import('../../utils/sentry')
+    const { default: apiClient } = await import('../client')
+
+    const handler = (apiClient.interceptors.response as unknown as { handlers: Array<{ rejected: (e: unknown) => Promise<unknown> }> }).handlers.find(
+      (h) => h.rejected
+    )
+
+    const error = {
+      response: { status: 500, data: { detail: '서버 오류' } },
+    }
+
+    try {
+      await handler!.rejected(error)
+    } catch {
+      // expected
+    }
+
+    expect(captureException).toHaveBeenCalledWith(error)
+  })
+
+  it('네트워크 에러(status 없음) 시 Sentry에 보고된다', async () => {
+    const { captureException } = await import('../../utils/sentry')
+    const { default: apiClient } = await import('../client')
+
+    const handler = (apiClient.interceptors.response as unknown as { handlers: Array<{ rejected: (e: unknown) => Promise<unknown> }> }).handlers.find(
+      (h) => h.rejected
+    )
+
+    const error = { response: undefined }
+
+    try {
+      await handler!.rejected(error)
+    } catch {
+      // expected
+    }
+
+    expect(captureException).toHaveBeenCalledWith(error)
+  })
+
+  it('409 에러 시 toast가 표시되지 않고 재시도 로직으로 전달된다', async () => {
+    const { default: apiClient } = await import('../client')
+
+    const handler = (apiClient.interceptors.response as unknown as { handlers: Array<{ rejected: (e: unknown) => Promise<unknown> }> }).handlers.find(
+      (h) => h.rejected
+    )
+
+    const error = {
+      response: { status: 409, data: { detail: 'Conflict' } },
+      config: undefined, // config 없으면 retryOn409에서 reject
+    }
+
+    try {
+      await handler!.rejected(error)
+    } catch {
+      // expected
+    }
+
+    // 409는 toast를 표시하지 않고 retryOn409로 넘김
+    expect(mockToastError).not.toHaveBeenCalled()
+  })
 })

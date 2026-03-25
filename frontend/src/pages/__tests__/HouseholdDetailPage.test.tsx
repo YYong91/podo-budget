@@ -301,4 +301,59 @@ describe('HouseholdDetailPage', () => {
     })
     expect(fetchHouseholdInvitations).not.toHaveBeenCalled()
   })
+
+  /* ---------- 에러 상태에서 재시도 ---------- */
+
+  it('에러 상태에서 재시도 버튼 클릭 시 fetchHouseholdDetail을 재호출한다', async () => {
+    storeState.error = '서버 에러'
+    storeState.currentHousehold = null
+    const user = userEvent.setup()
+    renderPage()
+
+    expect(screen.getByText('다시 시도')).toBeInTheDocument()
+    await user.click(screen.getByText('다시 시도'))
+    // 마운트 1회 + 재시도 1회 = 2회
+    expect(fetchHouseholdDetail).toHaveBeenCalledTimes(2)
+  })
+
+  /* ---------- 멤버 역할 표시 ---------- */
+
+  it('일반 멤버에게는 "멤버" 역할이 표시된다', () => {
+    storeState.currentHousehold = { ...baseMockHousehold, my_role: 'member' }
+    renderPage()
+    expect(screen.getAllByText('멤버').length).toBeGreaterThan(0)
+  })
+
+  /* ---------- 소유자 역할 변경 ---------- */
+
+  it('소유자는 멤버의 역할 변경 드롭다운을 볼 수 있다', () => {
+    renderPage()
+    // 김철수(member)의 역할 변경 combobox
+    const selects = screen.getAllByRole('combobox')
+    expect(selects.length).toBeGreaterThan(0)
+  })
+
+  /* ---------- 설정 탭에서 가구 정보 수정 ---------- */
+
+  it('설정 탭에서 가구 이름과 설명을 표시한다', async () => {
+    const user = userEvent.setup()
+    renderPage()
+    await user.click(screen.getByText('설정'))
+    expect(screen.getByText('가구 정보')).toBeInTheDocument()
+  })
+
+  /* ---------- 초대 탭에서 초대 수락/대기 목록 ---------- */
+
+  it('초대 탭에서 대기중인 초대를 표시한다', async () => {
+    storeState.householdInvitations = [
+      { id: 10, invitee_email: 'new@test.com', status: 'pending', token: 'abc' },
+    ]
+    const user = userEvent.setup()
+    renderPage()
+
+    await user.click(screen.getByRole('button', { name: /초대/ }))
+
+    // pending 초대가 표시된다
+    expect(screen.getByText('new@test.com')).toBeInTheDocument()
+  })
 })

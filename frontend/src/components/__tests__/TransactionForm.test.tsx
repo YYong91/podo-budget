@@ -242,6 +242,256 @@ describe('TransactionForm', () => {
     })
   })
 
+  describe('폼 입력 성공 제출', () => {
+    it('expense: 올바른 폼 데이터로 제출 시 성공 토스트 + 네비게이션', async () => {
+      server.use(
+        http.post('/api/expenses', () => {
+          return HttpResponse.json({ id: 99, amount: 10000, description: '테스트' }, { status: 201 })
+        })
+      )
+
+      const user = userEvent.setup()
+      renderForm('expense')
+      await user.click(screen.getByText('직접 입력'))
+      await waitFor(() => expect(screen.getByPlaceholderText('김치찌개')).toBeInTheDocument())
+
+      await user.type(screen.getByPlaceholderText('10000'), '10000')
+      await user.type(screen.getByPlaceholderText('김치찌개'), '테스트 지출')
+      await user.click(screen.getByText('저장하기'))
+
+      await waitFor(() => {
+        expect(mockAddToast).toHaveBeenCalledWith('success', '지출이 저장되었습니다')
+      })
+    })
+
+    it('income: 올바른 폼 데이터로 제출 시 성공 토스트', async () => {
+      server.use(
+        http.get('/api/categories', () => {
+          return HttpResponse.json(mockIncomeCategoriesAll)
+        }),
+        http.post('/api/income', () => {
+          return HttpResponse.json({ id: 99, amount: 3500000, description: '월급' }, { status: 201 })
+        })
+      )
+
+      const user = userEvent.setup()
+      renderForm('income')
+      await user.click(screen.getByText('직접 입력'))
+      await waitFor(() => expect(screen.getByPlaceholderText('월급')).toBeInTheDocument())
+
+      await user.type(screen.getByPlaceholderText('3500000'), '3500000')
+      await user.type(screen.getByPlaceholderText('월급'), '2월 월급')
+      await user.click(screen.getByText('저장하기'))
+
+      await waitFor(() => {
+        expect(mockAddToast).toHaveBeenCalledWith('success', '수입이 저장되었습니다')
+      })
+    })
+
+    it('expense: 폼 제출 실패 시 에러 토스트', async () => {
+      server.use(
+        http.post('/api/expenses', () => {
+          return HttpResponse.json({ detail: '실패' }, { status: 500 })
+        })
+      )
+
+      const user = userEvent.setup()
+      renderForm('expense')
+      await user.click(screen.getByText('직접 입력'))
+      await waitFor(() => expect(screen.getByPlaceholderText('김치찌개')).toBeInTheDocument())
+
+      await user.type(screen.getByPlaceholderText('10000'), '10000')
+      await user.type(screen.getByPlaceholderText('김치찌개'), '테스트')
+      await user.click(screen.getByText('저장하기'))
+
+      await waitFor(() => {
+        expect(mockAddToast).toHaveBeenCalledWith('error', '지출 저장에 실패했습니다')
+      })
+    })
+
+    it('expense: 날짜 비어있으면 에러 토스트', async () => {
+      const user = userEvent.setup()
+      renderForm('expense')
+      await user.click(screen.getByText('직접 입력'))
+      await waitFor(() => expect(screen.getByPlaceholderText('김치찌개')).toBeInTheDocument())
+
+      await user.type(screen.getByPlaceholderText('10000'), '10000')
+      await user.type(screen.getByPlaceholderText('김치찌개'), '테스트')
+      // 날짜 필드를 비우기
+      const dateInput = screen.getByLabelText(/날짜/)
+      await user.clear(dateInput)
+      await user.click(screen.getByText('저장하기'))
+
+      expect(mockAddToast).toHaveBeenCalledWith('error', '날짜를 선택해주세요')
+    })
+  })
+
+  describe('폼 카테고리 생성', () => {
+    it('+ 새 카테고리 클릭 시 카테고리 생성 입력 필드가 표시된다', async () => {
+      const user = userEvent.setup()
+      renderForm('expense')
+      await user.click(screen.getByText('직접 입력'))
+      await waitFor(() => expect(screen.getByText('+ 새 카테고리')).toBeInTheDocument())
+
+      await user.click(screen.getByText('+ 새 카테고리'))
+      expect(screen.getByPlaceholderText('새 카테고리 이름')).toBeInTheDocument()
+    })
+
+    it('카테고리 생성 취소 버튼 클릭 시 입력 필드가 사라진다', async () => {
+      const user = userEvent.setup()
+      renderForm('expense')
+      await user.click(screen.getByText('직접 입력'))
+      await waitFor(() => expect(screen.getByText('+ 새 카테고리')).toBeInTheDocument())
+
+      await user.click(screen.getByText('+ 새 카테고리'))
+      expect(screen.getByPlaceholderText('새 카테고리 이름')).toBeInTheDocument()
+      // 카테고리 입력 필드 옆의 취소 버튼을 찾음 — 같은 div 안에 위치
+      const categoryInput = screen.getByPlaceholderText('새 카테고리 이름')
+      const categoryRow = categoryInput.closest('.flex')!
+      const cancelBtn = categoryRow.querySelector('button:last-child') as HTMLButtonElement
+      await user.click(cancelBtn)
+      expect(screen.queryByPlaceholderText('새 카테고리 이름')).not.toBeInTheDocument()
+    })
+
+    it('카테고리 생성 성공 시 토스트가 표시된다', async () => {
+      server.use(
+        http.post('/api/categories', () => {
+          return HttpResponse.json({ id: 100, name: '테스트 카테고리' }, { status: 201 })
+        })
+      )
+
+      const user = userEvent.setup()
+      renderForm('expense')
+      await user.click(screen.getByText('직접 입력'))
+      await waitFor(() => expect(screen.getByText('+ 새 카테고리')).toBeInTheDocument())
+
+      await user.click(screen.getByText('+ 새 카테고리'))
+      await user.type(screen.getByPlaceholderText('새 카테고리 이름'), '테스트 카테고리')
+      await user.click(screen.getByText('추가'))
+
+      await waitFor(() => {
+        expect(mockAddToast).toHaveBeenCalledWith('success', '"테스트 카테고리" 카테고리가 추가되었습니다')
+      })
+    })
+
+    it('카테고리 생성 실패 시 에러 토스트', async () => {
+      server.use(
+        http.post('/api/categories', () => {
+          return HttpResponse.json({ detail: '실패' }, { status: 500 })
+        })
+      )
+
+      const user = userEvent.setup()
+      renderForm('expense')
+      await user.click(screen.getByText('직접 입력'))
+      await waitFor(() => expect(screen.getByText('+ 새 카테고리')).toBeInTheDocument())
+
+      await user.click(screen.getByText('+ 새 카테고리'))
+      await user.type(screen.getByPlaceholderText('새 카테고리 이름'), '실패 테스트')
+      await user.click(screen.getByText('추가'))
+
+      await waitFor(() => {
+        expect(mockAddToast).toHaveBeenCalledWith('error', '카테고리 생성에 실패했습니다')
+      })
+    })
+  })
+
+  describe('OCR 모드 파일 업로드', () => {
+    it('OCR 파일 업로드 성공 시 프리뷰 카드가 표시된다', async () => {
+      server.use(
+        http.post('/api/expenses/ocr', () => {
+          return HttpResponse.json({
+            parsed_expenses: [
+              { amount: 4500, description: '아메리카노', category: '식비', date: '2026-03-19', memo: '', type: 'expense' },
+            ],
+          })
+        })
+      )
+
+      const user = userEvent.setup()
+      renderForm('expense')
+      await user.click(screen.getByText('이미지'))
+
+      await waitFor(() => {
+        expect(screen.getByText('결제 화면 이미지 인식')).toBeInTheDocument()
+      })
+
+      // 파일 input에 파일 업로드 시뮬레이션
+      const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement
+      const file = new File(['test'], 'receipt.jpg', { type: 'image/jpeg' })
+      await user.upload(fileInput, file)
+
+      await waitFor(() => {
+        expect(screen.getByText(/1건의 지출을 인식했습니다/)).toBeInTheDocument()
+      })
+    })
+
+    it('OCR 파일 업로드 실패 시 에러 토스트', async () => {
+      server.use(
+        http.post('/api/expenses/ocr', () => {
+          return HttpResponse.json({ detail: '실패' }, { status: 500 })
+        })
+      )
+
+      const user = userEvent.setup()
+      renderForm('expense')
+      await user.click(screen.getByText('이미지'))
+
+      const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement
+      const file = new File(['test'], 'receipt.jpg', { type: 'image/jpeg' })
+      await user.upload(fileInput, file)
+
+      await waitFor(() => {
+        expect(mockAddToast).toHaveBeenCalledWith('error', 'OCR 처리에 실패했습니다')
+      })
+    })
+
+    it('OCR 결과가 빈 배열이면 안내 메시지가 표시된다', async () => {
+      server.use(
+        http.post('/api/expenses/ocr', () => {
+          return HttpResponse.json({
+            parsed_expenses: [],
+            message: '결제 정보를 인식하지 못했습니다',
+          })
+        })
+      )
+
+      const user = userEvent.setup()
+      renderForm('expense')
+      await user.click(screen.getByText('이미지'))
+
+      const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement
+      const file = new File(['test'], 'receipt.jpg', { type: 'image/jpeg' })
+      await user.upload(fileInput, file)
+
+      await waitFor(() => {
+        expect(mockAddToast).toHaveBeenCalledWith('info', '결제 정보를 인식하지 못했습니다')
+      })
+    })
+  })
+
+  describe('모드 전환', () => {
+    it('자연어→폼→OCR 모드 전환이 동작한다', async () => {
+      const user = userEvent.setup()
+      renderForm('expense')
+
+      // 기본: 자연어 모드
+      expect(screen.getByText('말하듯이 지출 입력하기')).toBeInTheDocument()
+
+      // 폼 모드
+      await user.click(screen.getByText('직접 입력'))
+      await waitFor(() => expect(screen.getByPlaceholderText('김치찌개')).toBeInTheDocument())
+
+      // OCR 모드
+      await user.click(screen.getByText('이미지'))
+      await waitFor(() => expect(screen.getByText('결제 화면 이미지 인식')).toBeInTheDocument())
+
+      // 다시 자연어
+      await user.click(screen.getByText('간편 입력'))
+      await waitFor(() => expect(screen.getByText('말하듯이 지출 입력하기')).toBeInTheDocument())
+    })
+  })
+
   describe('취소 버튼 라우팅', () => {
     it('expense: 취소 클릭 시 /expenses로 이동', async () => {
       const user = userEvent.setup()

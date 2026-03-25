@@ -161,6 +161,17 @@ export const handlers = [
   }),
 
   /**
+   * POST /api/expenses/ocr - OCR 이미지 파싱
+   */
+  http.post(`${BASE_URL}/expenses/ocr`, () => {
+    return HttpResponse.json({
+      parsed_expenses: [
+        { amount: 4500, description: '아메리카노', category: '식비', date: '2026-03-19', memo: '', type: 'expense' },
+      ],
+    })
+  }),
+
+  /**
    * GET /api/expenses/stats/monthly - 월별 통계
    */
   http.get(`${BASE_URL}/expenses/stats/monthly`, ({ request }) => {

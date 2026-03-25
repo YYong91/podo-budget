@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { formatAmount, formatAmountWithSign, formatCompactAmount } from '../format'
+import { formatAmount, formatAmountWithSign, formatCompactAmount, maskUsername } from '../format'
 
 describe('formatCompactAmount', () => {
   it('1만 미만은 그대로 표시', () => {
@@ -53,5 +53,32 @@ describe('formatAmountWithSign', () => {
   it('지출(expense)이면 접두사 없이 표시한다', () => {
     expect(formatAmountWithSign(8000, 'expense')).toBe('₩8,000')
     expect(formatAmountWithSign(100000, 'expense')).toBe('₩100,000')
+  })
+})
+
+describe('maskUsername', () => {
+  it('빈 문자열은 그대로 반환한다', () => {
+    expect(maskUsername('')).toBe('')
+  })
+
+  it('1글자 이하는 그대로 반환한다', () => {
+    expect(maskUsername('A')).toBe('A')
+  })
+
+  it('kakao_ 접두사를 카카오로 변환한다', () => {
+    expect(maskUsername('kakao_5f2a8b')).toBe('카카오(5f**)')
+  })
+
+  it('telegram_ 접두사를 텔레그램으로 변환한다', () => {
+    expect(maskUsername('telegram_123456')).toBe('텔레그램(12**)')
+  })
+
+  it('일반 유저 이름은 첫 글자 + ** 처리한다', () => {
+    expect(maskUsername('김수연')).toBe('김**')
+    expect(maskUsername('John')).toBe('J**')
+  })
+
+  it('2글자 이름도 마스킹한다', () => {
+    expect(maskUsername('AB')).toBe('A*')
   })
 })
