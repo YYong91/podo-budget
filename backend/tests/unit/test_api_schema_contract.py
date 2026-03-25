@@ -69,9 +69,9 @@ class TestEndpointContract:
         """엔드포인트 수가 기준선 이상이어야 한다 (의도치 않은 삭제 방지)"""
         schema = _get_openapi_schema()
         paths = schema.get("paths", {})
-        assert len(paths) >= MIN_ENDPOINT_COUNT, (
-            f"엔드포인트가 {MIN_ENDPOINT_COUNT}개 이상이어야 하지만 {len(paths)}개만 존재. 의도치 않은 라우터 삭제 확인 필요."
-        )
+        assert (
+            len(paths) >= MIN_ENDPOINT_COUNT
+        ), f"엔드포인트가 {MIN_ENDPOINT_COUNT}개 이상이어야 하지만 {len(paths)}개만 존재. 의도치 않은 라우터 삭제 확인 필요."
 
     def test_required_endpoints_exist(self):
         """핵심 API 엔드포인트가 모두 존재해야 한다"""
