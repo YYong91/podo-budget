@@ -34,7 +34,7 @@
 
 2. 작업 + 커밋      (커밋 전 체크 규칙 준수)
 
-3. 로컬 테스트      cd backend && pytest --ignore=tests/integration/test_api_budget_bulk.py
+3. 로컬 테스트      cd backend && pytest
                     cd frontend && npm run lint && npm run test:run && npm run build
 
 4. PR 생성          git push -u origin feature/xxx

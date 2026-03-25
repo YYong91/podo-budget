@@ -128,6 +128,40 @@ class BudgetMonthlyStatsResponse(BaseModel):
     categories: list[BudgetMonthlyCategoryStats]
 
 
+class BudgetBulkItem(BaseModel):
+    """벌크 저장 요청 내 개별 예산 항목"""
+
+    category_id: int = Field(..., description="카테고리 ID")
+    amount: float = Field(..., gt=0, description="예산 금액 (양수)")
+
+
+class BudgetBulkSaveRequest(BaseModel):
+    """벌크 예산 저장 요청 스키마
+
+    해당 월의 전체 예산을 한번에 갱신합니다.
+    - 기존에 없는 category_id → 생성
+    - 기존에 있는 category_id → 금액 업데이트
+    - 요청에 없는 기존 예산 → 삭제
+
+    Attributes:
+        month: 대상 월 (YYYY-MM)
+        alert_threshold: 알림 임계값 (0.0~1.0)
+        budgets: 카테고리별 예산 목록
+    """
+
+    month: str = Field(..., description="대상 월 (YYYY-MM)", pattern=r"^\d{4}-\d{2}$")
+    alert_threshold: float = Field(default=0.8, ge=0.0, le=1.0, description="알림 임계값")
+    budgets: list[BudgetBulkItem] = Field(..., description="카테고리별 예산 목록")
+
+
+class BudgetBulkSaveResponse(BaseModel):
+    """벌크 예산 저장 응답 스키마"""
+
+    created: int = Field(..., description="새로 생성된 예산 수")
+    updated: int = Field(..., description="업데이트된 예산 수")
+    deleted: int = Field(..., description="삭제된 예산 수")
+
+
 class BudgetAlert(BaseModel):
     """예산 초과/경고 알림 스키마
 
