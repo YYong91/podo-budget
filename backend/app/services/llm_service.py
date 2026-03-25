@@ -156,14 +156,15 @@ class AnthropicProvider(LLMProvider):
                     else:
                         return {"error": "잘못된 형식입니다"}
 
+            except json.JSONDecodeError:
+                # JSONDecodeError는 ValueError의 서브클래스 — 반드시 ValueError보다 먼저 catch
+                logger.warning(f"JSON 파싱 실패 (시도 {attempt + 1}/{max_retries}): {text}")
+                if attempt == max_retries - 1:
+                    return {"error": "응답을 파싱할 수 없습니다"}
             except ValueError as e:
                 if str(e) == "max_tokens_exceeded":
                     return {"error": "입력이 너무 길어 처리할 수 없습니다. 날짜별로 나누어 입력해주세요."}
                 raise
-            except json.JSONDecodeError:
-                logger.warning(f"JSON 파싱 실패 (시도 {attempt + 1}/{max_retries}): {text}")
-                if attempt == max_retries - 1:
-                    return {"error": "응답을 파싱할 수 없습니다"}
             except Exception as e:
                 logger.error(f"Claude API 호출 실패: {e}")
                 if attempt == max_retries - 1:
@@ -379,14 +380,15 @@ class OpenAIProvider(LLMProvider):
                     else:
                         return {"error": "잘못된 형식입니다"}
 
+            except json.JSONDecodeError:
+                # JSONDecodeError는 ValueError의 서브클래스 — 반드시 ValueError보다 먼저 catch
+                logger.warning(f"JSON 파싱 실패 (시도 {attempt + 1}/{max_retries}): {text}")
+                if attempt == max_retries - 1:
+                    return {"error": "응답을 파싱할 수 없습니다"}
             except ValueError as e:
                 if str(e) == "max_tokens_exceeded":
                     return {"error": "입력이 너무 길어 처리할 수 없습니다. 날짜별로 나누어 입력해주세요."}
                 raise
-            except json.JSONDecodeError:
-                logger.warning(f"JSON 파싱 실패 (시도 {attempt + 1}/{max_retries}): {text}")
-                if attempt == max_retries - 1:
-                    return {"error": "응답을 파싱할 수 없습니다"}
             except Exception as e:
                 logger.error(f"OpenAI API 호출 실패: {e}")
                 if attempt == max_retries - 1:
