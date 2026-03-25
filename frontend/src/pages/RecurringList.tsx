@@ -16,23 +16,7 @@ import ErrorState from '../components/ErrorState'
 import type { RecurringTransaction, RecurringTransactionCreate, Category } from '../types'
 import { formatAmount , getLocalDateString } from '../utils/format'
 import { trackEvent } from '../utils/analytics'
-
-/* 빈도 한국어 표시 */
-function formatFrequency(r: RecurringTransaction): string {
-  const days = ['월', '화', '수', '목', '금', '토', '일']
-  switch (r.frequency) {
-    case 'monthly':
-      return `매월 ${r.day_of_month}일`
-    case 'weekly':
-      return `매주 ${days[r.day_of_week ?? 0]}요일`
-    case 'yearly':
-      return `매년 ${r.month_of_year}월 ${r.day_of_month}일`
-    case 'custom':
-      return `${r.interval}일마다`
-    default:
-      return r.frequency
-  }
-}
+import { formatFrequency } from '../utils/recurringUtils'
 
 /* 빈 폼 데이터 */
 const emptyForm = {

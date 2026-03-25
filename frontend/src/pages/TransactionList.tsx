@@ -22,6 +22,10 @@ import ErrorState from '../components/ErrorState'
 import type { Expense, Income, Category, RecurringTransaction } from '../types'
 import { formatAmount , getLocalDateString } from '../utils/format'
 import { getMonthRange, formatDateHeader } from '../utils/calendar'
+import {
+  groupTransactionsByDate, filterByType, calcTotals, calcDaySummaries,
+  type UnifiedTransaction,
+} from '../utils/transactionUtils'
 import { Search, X } from 'lucide-react'
 import WelcomeCard from '../components/WelcomeCard'
 import { useAuth } from '../contexts/AuthContext'
@@ -50,17 +54,6 @@ function addRecentSearch(query: string): void {
 function removeRecentSearch(query: string): void {
   const searches = getRecentSearches().filter(s => s !== query)
   localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(searches))
-}
-
-interface UnifiedTransaction {
-  id: number
-  type: 'expense' | 'income'
-  date: string
-  description: string
-  amount: number
-  category_id: number | null
-  exclude_from_stats?: boolean
-  raw_input?: string | null
 }
 
 export default function TransactionList() {
@@ -389,63 +382,27 @@ export default function TransactionList() {
   // 카테고리 O(1) 조회용 Map — TransactionItem에 배열 대신 전달 (#180)
   const categoryMap = useMemo(() => new Map(categories.map(c => [c.id, c])), [categories])
 
-  // 통합 + 정렬 + 그룹핑
+  // 통합 + 정렬 + 그룹핑 (순수 유틸 함수 사용)
   const { grouped, totalExpense, totalIncome, daySummaries } = useMemo(() => {
     const all: UnifiedTransaction[] = [
       ...expenses.map(e => ({ ...e, type: 'expense' as const })),
       ...incomes.map(i => ({ ...i, type: 'income' as const })),
     ]
 
-    // 필터 적용
-    const filtered = filter === 'all' ? all : all.filter(t => t.type === filter)
-
-    // 날짜 역순 + 같은 날짜 내 id 역순
-    filtered.sort((a, b) => {
-      const dateCmp = b.date.localeCompare(a.date)
-      if (dateCmp !== 0) return dateCmp
-      return b.id - a.id
-    })
-
-    // 날짜별 그룹핑
-    const grouped = new Map<string, UnifiedTransaction[]>()
-    for (const tx of filtered) {
-      const dateKey = tx.date.slice(0, 10)
-      const group = grouped.get(dateKey)
-      if (group) group.push(tx)
-      else grouped.set(dateKey, [tx])
-    }
-
-    // 요약 (항상 전체 데이터 기준)
-    let totalExpense = 0
-    let totalIncome = 0
-    for (const e of expenses) totalExpense += e.amount
-    for (const i of incomes) totalIncome += i.amount
-
-    // 캘린더 날짜별 요약 (필터 반영)
-    const daySummaries = new Map<string, { expense: number; income: number }>()
-    const calendarSource = filter === 'all' ? all : all.filter(t => t.type === filter)
-    for (const tx of calendarSource) {
-      const key = tx.date.slice(0, 10)
-      const s = daySummaries.get(key) ?? { expense: 0, income: 0 }
-      if (tx.type === 'expense') s.expense += tx.amount
-      else s.income += tx.amount
-      daySummaries.set(key, s)
-    }
+    const filtered = filterByType(all, filter)
+    const grouped = groupTransactionsByDate(filtered)
+    const { totalExpense, totalIncome } = calcTotals(expenses, incomes)
+    const calendarSource = filterByType(all, filter)
+    const daySummaries = calcDaySummaries(calendarSource)
 
     return { grouped, totalExpense, totalIncome, daySummaries }
   }, [expenses, incomes, filter])
 
-  // 검색 결과 날짜별 그룹핑
-  const searchGrouped = useMemo(() => {
-    const grouped = new Map<string, UnifiedTransaction[]>()
-    for (const tx of searchResults) {
-      const dateKey = tx.date.slice(0, 10)
-      const group = grouped.get(dateKey)
-      if (group) group.push(tx)
-      else grouped.set(dateKey, [tx])
-    }
-    return grouped
-  }, [searchResults])
+  // 검색 결과 날짜별 그룹핑 (순수 유틸 함수 사용)
+  const searchGrouped = useMemo(
+    () => groupTransactionsByDate(searchResults),
+    [searchResults],
+  )
 
   // TransactionItem.onCategoryClick 안정화 — 데이터 변경 시에만 재생성 (#240)
   // 검색 모드: 카테고리 뱃지 클릭 → 카테고리 필터 토글 (#323)
