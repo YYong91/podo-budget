@@ -32,8 +32,8 @@ export default function PrivacyPolicyPage() {
                 포도가계부(이하 "서비스")는 다음과 같은 개인정보를 수집합니다:
               </p>
               <ul className="list-disc list-inside space-y-1 ml-4">
-                <li><strong>필수 항목</strong>: 사용자명, 비밀번호(암호화 저장), 지출 내역(금액, 설명, 카테고리, 날짜)</li>
-                <li><strong>선택 항목</strong>: 이메일(공유 가계부 초대 기능 이용 시 권장)</li>
+                <li><strong>필수 항목</strong>: 이메일, 비밀번호(Supabase Auth를 통해 암호화 관리), 지출/수입 내역(금액, 설명, 카테고리, 날짜)</li>
+                <li><strong>선택 항목</strong>: 이름, Google 계정 정보(소셜 로그인 이용 시)</li>
                 <li><strong>자동 수집 항목</strong>: 서비스 이용 기록(페이지 방문, 기능 사용 빈도), 기기 정보(브라우저 유형, 화면 해상도), 접속 IP</li>
               </ul>
               <p className="mt-2">
@@ -66,9 +66,15 @@ export default function PrivacyPolicyPage() {
                 <li><strong>보유 기간</strong>: 각 제3자의 개인정보처리방침에 따름</li>
               </ul>
               <ul className="list-disc list-inside space-y-1 ml-4 mt-3">
-                <li><strong>제공받는 자</strong>: Google (Google Analytics)</li>
-                <li><strong>제공 항목</strong>: 서비스 이용 기록(페이지 방문, 기능 사용 이벤트), 기기 정보, 접속 IP(익명화 처리)</li>
-                <li><strong>제공 목적</strong>: 서비스 이용 통계 분석 및 개선</li>
+                <li><strong>제공받는 자</strong>: Supabase (인증 및 데이터베이스)</li>
+                <li><strong>제공 항목</strong>: 이메일, 비밀번호(암호화), 서비스 데이터</li>
+                <li><strong>제공 목적</strong>: 회원 인증, 데이터 저장 및 관리</li>
+                <li><strong>보유 기간</strong>: Supabase의 개인정보처리방침에 따름</li>
+              </ul>
+              <ul className="list-disc list-inside space-y-1 ml-4 mt-3">
+                <li><strong>제공받는 자</strong>: Google (Google Analytics, Google OAuth)</li>
+                <li><strong>제공 항목</strong>: 서비스 이용 기록(페이지 방문, 기능 사용 이벤트), 기기 정보, 접속 IP(익명화 처리), 소셜 로그인 시 이메일/이름</li>
+                <li><strong>제공 목적</strong>: 서비스 이용 통계 분석 및 개선, 소셜 로그인 인증</li>
                 <li><strong>보유 기간</strong>: Google의 개인정보처리방침에 따름</li>
               </ul>
               <p className="mt-2">
@@ -115,7 +121,7 @@ export default function PrivacyPolicyPage() {
               </p>
               <ul className="list-none ml-4 mt-2 space-y-1">
                 <li><strong>책임자</strong>: 포도가계부 운영팀</li>
-                <li><strong>이메일</strong>: privacy@podobudget.com</li>
+                <li><strong>이메일</strong>: seungyongkim0327@gmail.com</li>
               </ul>
               <p className="mt-2">
                 개인정보 관련 문의, 불만 처리, 피해 구제 등이 필요하신 경우 위 연락처로 문의해주시기 바랍니다.
@@ -128,7 +134,7 @@ export default function PrivacyPolicyPage() {
                 본 개인정보처리방침은 법령 및 서비스 정책 변경에 따라 수정될 수 있으며, 변경 시 서비스 내 공지사항을 통해 안내합니다.
               </p>
               <p className="mt-2">
-                <strong>시행일자</strong>: 2026년 2월 13일
+                <strong>시행일자</strong>: 2026년 3월 25일
               </p>
             </section>
           </div>

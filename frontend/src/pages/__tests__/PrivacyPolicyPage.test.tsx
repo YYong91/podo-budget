@@ -37,7 +37,7 @@ describe('PrivacyPolicyPage', () => {
 
   it('시행일자를 표시한다', () => {
     renderPage()
-    expect(screen.getByText(/2026년 2월 13일/)).toBeInTheDocument()
+    expect(screen.getByText(/2026년 3월 25일/)).toBeInTheDocument()
   })
 
   it('로그인 페이지로 돌아가기 링크를 표시한다', () => {
