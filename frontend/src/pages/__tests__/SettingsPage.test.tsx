@@ -229,4 +229,41 @@ describe('SettingsPage', () => {
       expect(screen.queryByRole('button', { name: '연동 해제' })).not.toBeInTheDocument()
     })
   })
+
+  describe('화면 모드 서브 페이지', () => {
+    it('화면 모드 설정을 표시한다', () => {
+      renderSettingsPage('/settings/appearance')
+      expect(screen.getByText('화면 모드')).toBeInTheDocument()
+    })
+  })
+
+  describe('섹션 라우팅', () => {
+    it('잘못된 섹션 접근 시 null을 반환한다 (navigate로 리디렉션)', () => {
+      const { container } = renderSettingsPage('/settings/invalid-section')
+      // navigate({ replace: true })가 호출되고 null 반환 → 빈 DOM
+      expect(container.textContent).toBe('')
+    })
+
+    it('이전 URL(account-info) 접근 시 null을 반환한다 (navigate로 리디렉션)', () => {
+      const { container } = renderSettingsPage('/settings/account-info')
+      expect(container.textContent).toBe('')
+    })
+
+    it('이전 URL(telegram) 접근 시 null을 반환한다 (navigate로 리디렉션)', () => {
+      const { container } = renderSettingsPage('/settings/telegram')
+      expect(container.textContent).toBe('')
+    })
+
+    it('이전 URL(management) 접근 시 null을 반환한다 (navigate로 리디렉션)', () => {
+      const { container } = renderSettingsPage('/settings/management')
+      expect(container.textContent).toBe('')
+    })
+  })
+
+  describe('PWA 설치 버튼', () => {
+    it('설정 메인에서 앱으로 설치 버튼이 표시된다', () => {
+      renderSettingsPage()
+      expect(screen.getByText('앱으로 설치')).toBeInTheDocument()
+    })
+  })
 })
