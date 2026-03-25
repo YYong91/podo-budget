@@ -16,6 +16,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.dependencies import get_household_member, get_user_active_household_id
 from app.core.auth import get_current_user
 from app.core.database import get_db
+from app.models.expense import Expense
+from app.models.income import Income
 from app.models.recurring_transaction import RecurringTransaction
 from app.models.user import User
 from app.schemas.recurring_transaction import (
@@ -27,6 +29,7 @@ from app.schemas.recurring_transaction import (
 )
 from app.services.recurring_service import (
     calculate_initial_due_date,
+    calculate_next_due_date,
     execute_recurring,
     skip_recurring,
 )
@@ -34,6 +37,24 @@ from app.services.recurring_service import (
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
+
+async def _get_source_record(
+    db: AsyncSession,
+    source_id: int,
+    record_type: str,
+    household_id: int,
+) -> Expense | Income:
+    """source_id로 원본 거래를 조회하고 소유권/타입을 검증한다"""
+    model = Expense if record_type == "expense" else Income
+    result = await db.execute(select(model).where(model.id == source_id, model.household_id == household_id))
+    record = result.scalar_one_or_none()
+    if record is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="원본 거래를 찾을 수 없습니다",
+        )
+    return record
 
 
 @router.post("", response_model=RecurringTransactionResponse, status_code=status.HTTP_201_CREATED)
@@ -57,6 +78,23 @@ async def create_recurring(
         data.month_of_year,
     )
 
+    # source_id 검증 (있으면 원본 거래 조회)
+    source_record = None
+    if data.source_id is not None:
+        source_record = await _get_source_record(db, data.source_id, data.type, household_id)
+
+        # 이미 기록된 거래에서 등록하는 것이므로 next_due가 오늘 이전이면 다음 주기로 보정
+        today = datetime.now(ZoneInfo("Asia/Seoul")).date()
+        if next_due <= today:
+            next_due = calculate_next_due_date(
+                next_due,
+                data.frequency,
+                data.interval,
+                data.day_of_month,
+                data.day_of_week,
+                data.month_of_year,
+            )
+
     recurring = RecurringTransaction(
         user_id=current_user.id,
         household_id=household_id,
@@ -74,6 +112,12 @@ async def create_recurring(
         next_due_date=next_due,
     )
     db.add(recurring)
+    await db.flush()  # ID 생성 (commit 전에 recurring.id 확보)
+
+    # 원본 거래에 새 정기 거래 FK 연결
+    if source_record is not None:
+        source_record.recurring_transaction_id = recurring.id
+
     await db.commit()
     await db.refresh(recurring)
     logger.info("정기 거래 생성: user=%s, description=%s, amount=%s", current_user.id, data.description, data.amount)
