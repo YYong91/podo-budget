@@ -6,7 +6,8 @@
 """
 
 import logging
-from datetime import date
+from datetime import datetime
+from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
@@ -107,7 +108,7 @@ async def get_pending_recurring(
     db: AsyncSession = Depends(get_db),
 ):
     """처리 대기 중인 정기 거래 조회 (next_due_date <= today)"""
-    today = date.today()
+    today = datetime.now(ZoneInfo("Asia/Seoul")).date()
 
     if household_id is None:
         household_id = await get_user_active_household_id(current_user, db)

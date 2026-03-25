@@ -9,6 +9,7 @@
 """
 
 from datetime import date, datetime, timedelta
+from zoneinfo import ZoneInfo
 
 # 한국어 요일 매핑
 _WEEKDAY_NAMES = ["월", "화", "수", "목", "금", "토", "일"]
@@ -27,7 +28,7 @@ def format_korean_date(d: date | datetime | str) -> str:
     if isinstance(d, datetime):
         d = d.date()
 
-    today = date.today()
+    today = datetime.now(ZoneInfo("Asia/Seoul")).date()
     if d == today:
         return "오늘"
     if d == today - timedelta(days=1):

@@ -1,10 +1,10 @@
 /**
- * E2E 테스트 인증 fixture
+ * E2E 테스트 인증 fixture — Supabase Auth 대응
  *
- * /api/e2e/setup → JWT 발급 → addInitScript로 페이지 로드 전 토큰 주입
+ * /api/e2e/setup → JWT 발급 → Supabase 세션 스토리지에 주입
  *
- * 핵심: page.addInitScript는 모든 page.goto 전에 실행되어
- * React가 마운트될 때 getCookieToken()이 토큰을 읽을 수 있음.
+ * Supabase JS는 localStorage의 `sb-{ref}-auth-token`에서 세션을 읽으므로
+ * 여기에 가짜 세션을 설정하면 AuthContext가 인증된 것으로 인식한다.
  */
 
 import { test as base, expect } from '@playwright/test'
@@ -12,6 +12,11 @@ import type { Page } from '@playwright/test'
 
 const API_URL = process.env.E2E_API_URL || 'http://localhost:8000'
 const BASE_URL = process.env.E2E_BASE_URL || 'http://localhost:5173'
+
+// Supabase URL에서 프로젝트 ref 추출 (sb-{ref}-auth-token 키 생성용)
+const SUPABASE_URL = process.env.VITE_SUPABASE_URL || 'https://ycdjgoaqhvnfdagwcwre.supabase.co'
+const SUPABASE_REF = new URL(SUPABASE_URL).hostname.split('.')[0]
+const SUPABASE_STORAGE_KEY = `sb-${SUPABASE_REF}-auth-token`
 
 interface AuthFixtures {
   authedPage: Page
@@ -31,6 +36,26 @@ async function setupE2EUser(
   return res.json()
 }
 
+/** E2E 토큰을 Supabase 세션 형태로 변환 */
+function buildFakeSupabaseSession(token: string, email: string) {
+  // Supabase JS가 인식하는 최소 세션 구조
+  return JSON.stringify({
+    access_token: token,
+    token_type: 'bearer',
+    expires_in: 3600,
+    expires_at: Math.floor(Date.now() / 1000) + 3600,
+    refresh_token: 'e2e-fake-refresh-token',
+    user: {
+      id: 'e2e-fake-user-id',
+      email,
+      app_metadata: { provider: 'email' },
+      user_metadata: { name: 'E2E Test User' },
+      aud: 'authenticated',
+      role: 'authenticated',
+    },
+  })
+}
+
 export const test = base.extend<AuthFixtures>({
   authedPage: async ({ page }, use) => {
     const { token } = await setupE2EUser(page.request)
@@ -45,11 +70,14 @@ export const test = base.extend<AuthFixtures>({
     })
 
     // addInitScript: 모든 page.goto/reload 전에 실행됨
-    // React가 마운트되기 전에 localStorage + cookie에 토큰 주입
-    await page.addInitScript((t) => {
-      localStorage.setItem('podo_access_token', t)
-      document.cookie = `podo_access_token=${t}; Path=/; SameSite=Lax`
-    }, token)
+    // Supabase 세션 스토리지에 가짜 세션 주입
+    const fakeSession = buildFakeSupabaseSession(token, 'e2e@test.com')
+    await page.addInitScript(
+      ({ storageKey, session }) => {
+        localStorage.setItem(storageKey, session)
+      },
+      { storageKey: SUPABASE_STORAGE_KEY, session: fakeSession },
+    )
 
     // 앱 로드
     await page.goto(BASE_URL, { waitUntil: 'domcontentloaded' })
@@ -71,9 +99,8 @@ export const test = base.extend<AuthFixtures>({
       )
     }
 
-    // ProtectedRoute initializeApp 완료 대기 — nav 또는 onboarding 또는 로딩 스피너 후 콘텐츠
+    // ProtectedRoute 완료 대기 — nav 또는 onboarding 또는 main
     try {
-      // nav가 보이면 앱 정상 로드, 온보딩이면 /onboarding으로 이동
       await page.waitForSelector('nav, [class*="onboarding"], main', { timeout: 15000 })
     } catch {
       const url = page.url()
@@ -90,10 +117,21 @@ export const test = base.extend<AuthFixtures>({
 export { expect, API_URL, BASE_URL }
 
 /**
- * API 요청용 토큰 추출 — localStorage에서 읽음
+ * API 요청용 토큰 추출 — Supabase 세션 스토리지에서 읽음
  */
 export async function getAuthToken(page: Page): Promise<string> {
-  const token = await page.evaluate(() => localStorage.getItem('podo_access_token'))
-  if (!token) throw new Error('podo_access_token을 찾을 수 없습니다')
+  const token = await page.evaluate(
+    (key) => {
+      const raw = localStorage.getItem(key)
+      if (!raw) return null
+      try {
+        return JSON.parse(raw).access_token
+      } catch {
+        return null
+      }
+    },
+    SUPABASE_STORAGE_KEY,
+  )
+  if (!token) throw new Error('Supabase 세션 토큰을 찾을 수 없습니다')
   return token
 }

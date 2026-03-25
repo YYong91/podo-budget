@@ -12,10 +12,6 @@ from jose import JWTError
 from jose import jwt as pyjwt
 from slowapi import Limiter
 
-from app.core.config import settings
-
-# JWT 알고리즘은 settings에서 단일 관리 — 하드코딩 금지 (#163)
-
 
 def get_user_identifier(request: Request) -> str:
     """요청에서 사용자 식별자를 추출하는 key function
@@ -44,10 +40,11 @@ def get_user_identifier(request: Request) -> str:
         token = auth_header.replace("Bearer ", "")
 
         try:
-            # podo-auth JWT 디코딩 및 사용자 ID(sub) 추출
-            payload = pyjwt.decode(token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM])
-            # podo-auth 발급 토큰만 허용
-            if payload.get("iss") == "podo-auth":
+            # JWT의 claims만 추출 (서명 검증은 auth 미들웨어가 담당)
+            # rate limit은 식별자 추출 목적이므로 unverified claims로 충분
+            payload = pyjwt.get_unverified_claims(token)
+            # Supabase 인증 토큰만 허용
+            if payload.get("role") == "authenticated":
                 user_id = payload.get("sub")
                 if user_id:
                     # 인증된 사용자는 auth_user_id를 식별자로 사용
