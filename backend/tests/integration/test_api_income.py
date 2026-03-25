@@ -207,7 +207,7 @@ async def test_create_income_with_date_only_format(authenticated_client, test_us
         "date": "2026-02-01",  # LLM이 반환하는 형식 — 시간 없는 날짜
     }
     response = await authenticated_client.post("/api/income", json=payload)
-    assert response.status_code == 201, "YYYY-MM-DD 형식 날짜로 수입 생성이 실패함. " "IncomeCreate.date 필드가 날짜만 있는 문자열을 허용해야 합니다."
+    assert response.status_code == 201, "YYYY-MM-DD 형식 날짜로 수입 생성이 실패함. IncomeCreate.date 필드가 날짜만 있는 문자열을 허용해야 합니다."
     data = response.json()
     assert data["description"] == "2월 월급"
     assert data["amount"] == 3500000

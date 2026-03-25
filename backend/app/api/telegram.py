@@ -266,7 +266,7 @@ async def _handle_start_command(chat_id: int, user_text: str, bot_user: Any, db:
             }
             await send_telegram_message(
                 chat_id,
-                "🔗 연동 완료! 이제 포도가계부를 사용할 수 있어요 🍇\n\n" "말하듯 편하게 지출을 입력해보세요.\n" '"점심 김치찌개 8000원"',
+                '🔗 연동 완료! 이제 포도가계부를 사용할 수 있어요 🍇\n\n말하듯 편하게 지출을 입력해보세요.\n"점심 김치찌개 8000원"',
                 reply_markup=reply_markup,
             )
             return {"ok": True}

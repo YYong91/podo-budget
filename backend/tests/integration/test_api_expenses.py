@@ -326,7 +326,7 @@ async def test_create_expense_with_date_only_format(authenticated_client, test_u
         "date": "2026-02-11",
     }
     response = await authenticated_client.post("/api/expenses", json=payload)
-    assert response.status_code == 201, "YYYY-MM-DD 형식 날짜로 지출 생성이 실패함. " "ExpenseCreate.date 필드가 날짜만 있는 문자열을 허용해야 합니다."
+    assert response.status_code == 201, "YYYY-MM-DD 형식 날짜로 지출 생성이 실패함. ExpenseCreate.date 필드가 날짜만 있는 문자열을 허용해야 합니다."
     data = response.json()
     assert data["description"] == "전기차충전"
     assert data["amount"] == 11680
