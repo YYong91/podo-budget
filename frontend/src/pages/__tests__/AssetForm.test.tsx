@@ -8,7 +8,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
-import AssetForm, { _resetStocksKrCache } from '../AssetForm'
+import AssetForm from '../AssetForm'
+import { _resetStocksKrCache } from '../../hooks/useTickerSearch'
 
 // useNavigate 모킹
 const mockNavigate = vi.fn()

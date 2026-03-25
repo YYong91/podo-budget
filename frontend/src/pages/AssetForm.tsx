@@ -1,38 +1,16 @@
 /* 자산 등록/수정 폼 */
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate, useParams, Link } from 'react-router-dom'
 import { ArrowLeft, Search, Trash2 } from 'lucide-react'
 import { useToast } from '../hooks/useToast'
+import { useTickerSearch } from '../hooks/useTickerSearch'
 import { assetApi } from '../api/assets'
 import { accountApi } from '../api/accounts'
 import { useHouseholdStore } from '../stores/useHouseholdStore'
 import LoadingSpinner from '../components/LoadingSpinner'
-import type { AssetSearchResult, CreateAssetParams, Account } from '../types'
+import type { CreateAssetParams, Account } from '../types'
 import { trackEvent } from '../utils/analytics'
-
-// 한국 주식 정적 종목 리스트 (lazy load)
-let _stocksKrCache: AssetSearchResult[] | null = null
-async function loadStocksKr(): Promise<AssetSearchResult[]> {
-  if (_stocksKrCache) return _stocksKrCache
-  const resp = await fetch('/stocks_kr.json')
-  _stocksKrCache = await resp.json()
-  return _stocksKrCache!
-}
-/** 테스트용 캐시 초기화 */
-export function _resetStocksKrCache() { _stocksKrCache = null }
-
-function searchStocksKrLocal(stocks: AssetSearchResult[], query: string): AssetSearchResult[] {
-  const q = query.toLowerCase()
-  const results: AssetSearchResult[] = []
-  for (const s of stocks) {
-    if (s.name.toLowerCase().includes(q) || s.ticker.includes(q)) {
-      results.push(s)
-      if (results.length >= 20) break
-    }
-  }
-  return results
-}
 
 type Mode = 'natural' | 'direct'
 type AssetType = 'stock_kr' | 'stock_us' | 'crypto' | 'deposit' | 'real_estate' | 'other' | 'loan'
@@ -81,14 +59,13 @@ export default function AssetForm() {
   const { activeHouseholdId } = useHouseholdStore()
 
   // 종목 검색
-  const [searchQuery, setSearchQuery] = useState('')
-  const [searchResults, setSearchResults] = useState<AssetSearchResult[]>([])
-  const [showDropdown, setShowDropdown] = useState(false)
-  const [searchLoading, setSearchLoading] = useState(false)
-  const [searchError, setSearchError] = useState<string | null>(null)
-  const [manualMode, setManualMode] = useState(false)
-  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const dropdownRef = useRef<HTMLDivElement>(null)
+  const {
+    searchQuery, setSearchQuery,
+    searchResults, showDropdown, setShowDropdown,
+    searchLoading, searchError,
+    manualMode, setManualMode,
+    dropdownRef, resetSearch,
+  } = useTickerSearch(assetType)
 
   // 계좌 목록 로드
   useEffect(() => {
@@ -136,80 +113,8 @@ export default function AssetForm() {
   useEffect(() => {
     if (isEdit) return
     setForm({ name: '', type: assetType, is_liability: isLiabilityType(assetType) })
-    setSearchQuery('')
-    setSearchResults([])
-    setManualMode(false)
-  }, [assetType, isEdit])
-
-  // 한국 주식 로컬 검색
-  const searchKrLocal = useCallback(async (query: string) => {
-    try {
-      const stocks = await loadStocksKr()
-      setSearchResults(searchStocksKrLocal(stocks, query))
-      setShowDropdown(true)
-      setSearchError(null)
-    } catch {
-      setSearchResults([])
-      setShowDropdown(true)
-      setSearchError('종목 데이터를 불러오지 못했습니다')
-    } finally {
-      setSearchLoading(false)
-    }
-  }, [])
-
-  // 종목 검색 디바운스
-  useEffect(() => {
-    if (!searchQuery || searchQuery.length < 1 || manualMode) {
-      setSearchResults([])
-      setShowDropdown(false)
-      setSearchLoading(false)
-      setSearchError(null)
-      return
-    }
-    const market =
-      assetType === 'stock_kr' ? 'kr' :
-      assetType === 'stock_us' ? 'us' :
-      assetType === 'crypto' ? 'crypto' : undefined
-
-    if (!market) return
-
-    if (searchTimer.current) clearTimeout(searchTimer.current)
-    setSearchLoading(true)
-    setSearchError(null)
-
-    if (market === 'kr') {
-      // 한국 주식: 정적 JSON 로컬 검색 (빠름, 디바운스 짧게)
-      searchTimer.current = setTimeout(() => searchKrLocal(searchQuery), 100)
-    } else {
-      // 미국 주식/코인: 백엔드 API
-      searchTimer.current = setTimeout(() => {
-        assetApi.search(searchQuery, market)
-          .then(res => {
-            setSearchResults(res.data)
-            setShowDropdown(true)
-            setSearchError(null)
-          })
-          .catch(() => {
-            setSearchResults([])
-            setShowDropdown(true)
-            setSearchError('검색 중 오류가 발생했습니다')
-          })
-          .finally(() => setSearchLoading(false))
-      }, 300)
-    }
-  }, [searchQuery, assetType, manualMode, searchKrLocal])
-
-  // 바깥 클릭 시 드롭다운 닫기
-  useEffect(() => {
-    if (!showDropdown) return
-    const handler = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setShowDropdown(false)
-      }
-    }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
-  }, [showDropdown])
+    resetSearch()
+  }, [assetType, isEdit, resetSearch])
 
   // 자연어 분석
   async function handleNaturalParse() {
