@@ -98,12 +98,12 @@ def format_parse_error(strike: int | str = 1) -> str:
     if isinstance(strike, str):
         strike = 1
     if strike <= 1:
-        return "🤔 금액을 찾지 못했어요\n\n" "이렇게 입력해보세요:\n" '"점심 김치찌개 8000원"'
+        return '🤔 금액을 찾지 못했어요\n\n이렇게 입력해보세요:\n"점심 김치찌개 8000원"'
     elif strike == 2:
-        return "😅 아직 이해하지 못했어요\n\n" "다른 방식으로 입력해볼까요?\n" '"8000원 점심" 처럼 금액을 먼저 써도 돼요'
+        return '😅 아직 이해하지 못했어요\n\n다른 방식으로 입력해볼까요?\n"8000원 점심" 처럼 금액을 먼저 써도 돼요'
     else:
         # strike >= 3
-        return "제가 아직 이해하기 어려운 표현인 것 같아요 😊\n\n" "아래 버튼으로 도움말을 확인해보세요"
+        return "제가 아직 이해하기 어려운 표현인 것 같아요 😊\n\n아래 버튼으로 도움말을 확인해보세요"
 
 
 def format_unknown_input(**kwargs) -> str:
@@ -137,12 +137,7 @@ def format_help_message(platform: str = "telegram") -> str:
         )
     else:
         commands = (
-            "\n명령어:\n"
-            "/report — 이번 달 지출 요약\n"
-            "/budget — 예산 현황\n"
-            "/link 코드 — 웹 계정 연동\n"
-            "피드백 [내용] — 의견이나 버그 신고\n"
-            "/help — 이 도움말"
+            "\n명령어:\n/report — 이번 달 지출 요약\n/budget — 예산 현황\n/link 코드 — 웹 계정 연동\n피드백 [내용] — 의견이나 버그 신고\n/help — 이 도움말"
         )
 
     return base + commands
@@ -161,24 +156,12 @@ def format_welcome_message() -> str:
 
 def format_link_usage_message() -> str:
     """연동 코드 사용법 (텔레그램)"""
-    return (
-        "🔗 웹 계정 연동 방법\n\n"
-        "1. 포도가계부 웹 → 설정 → 텔레그램 연동\n"
-        "2. 코드를 발급받아 아래처럼 입력\n\n"
-        "/link ABC123\n\n"
-        "⏰ 코드는 15분 후 만료돼요"
-    )
+    return "🔗 웹 계정 연동 방법\n\n1. 포도가계부 웹 → 설정 → 텔레그램 연동\n2. 코드를 발급받아 아래처럼 입력\n\n/link ABC123\n\n⏰ 코드는 15분 후 만료돼요"
 
 
 def format_kakao_link_usage_message() -> str:
     """연동 코드 사용법 (카카오톡)"""
-    return (
-        "🔗 웹 계정 연동 방법\n\n"
-        "1. 포도가계부 웹 → 설정 → 카카오톡 연동\n"
-        "2. 코드를 발급받아 아래처럼 입력\n\n"
-        "연동 ABC123\n\n"
-        "⏰ 코드는 15분 후 만료돼요"
-    )
+    return "🔗 웹 계정 연동 방법\n\n1. 포도가계부 웹 → 설정 → 카카오톡 연동\n2. 코드를 발급받아 아래처럼 입력\n\n연동 ABC123\n\n⏰ 코드는 15분 후 만료돼요"
 
 
 def format_delete_confirm(amount: float, description: str, **kwargs) -> str:
@@ -340,10 +323,4 @@ def format_feedback_received() -> str:
 
 def format_feedback_guide() -> str:
     """피드백 사용법 안내 메시지"""
-    return (
-        "💬 피드백을 보내주세요!\n\n"
-        "예시:\n"
-        "· 피드백 검색 기능이 있으면 좋겠어요\n"
-        "· 버그 카테고리가 안 보여요\n\n"
-        "'버그'로 시작하면 버그 신고로 분류돼요."
-    )
+    return "💬 피드백을 보내주세요!\n\n예시:\n· 피드백 검색 기능이 있으면 좋겠어요\n· 버그 카테고리가 안 보여요\n\n'버그'로 시작하면 버그 신고로 분류돼요."
