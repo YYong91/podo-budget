@@ -494,8 +494,11 @@ async def test_create_recurring_with_source_id_links_expense(authenticated_clien
     await db_session.flush()
 
     expense = Expense(
-        user_id=test_user.id, household_id=test_household.id,
-        amount=10000, description="점심", category_id=cat.id,
+        user_id=test_user.id,
+        household_id=test_household.id,
+        amount=10000,
+        description="점심",
+        category_id=cat.id,
         date=datetime.now(),
     )
     db_session.add(expense)
@@ -503,17 +506,20 @@ async def test_create_recurring_with_source_id_links_expense(authenticated_clien
     await db_session.refresh(expense)
 
     today = date.today()
-    response = await authenticated_client.post("/api/recurring", json={
-        "type": "expense",
-        "amount": 10000,
-        "description": "점심",
-        "category_id": cat.id,
-        "frequency": "monthly",
-        "day_of_month": today.day,
-        "start_date": today.isoformat(),
-        "household_id": test_household.id,
-        "source_id": expense.id,
-    })
+    response = await authenticated_client.post(
+        "/api/recurring",
+        json={
+            "type": "expense",
+            "amount": 10000,
+            "description": "점심",
+            "category_id": cat.id,
+            "frequency": "monthly",
+            "day_of_month": today.day,
+            "start_date": today.isoformat(),
+            "household_id": test_household.id,
+            "source_id": expense.id,
+        },
+    )
     assert response.status_code == 201
     recurring_id = response.json()["id"]
 
@@ -532,8 +538,11 @@ async def test_create_recurring_with_source_id_advances_next_due(authenticated_c
     await db_session.flush()
 
     expense = Expense(
-        user_id=test_user.id, household_id=test_household.id,
-        amount=10000, description="점심", category_id=cat.id,
+        user_id=test_user.id,
+        household_id=test_household.id,
+        amount=10000,
+        description="점심",
+        category_id=cat.id,
         date=datetime.now(),
     )
     db_session.add(expense)
@@ -541,17 +550,20 @@ async def test_create_recurring_with_source_id_advances_next_due(authenticated_c
     await db_session.refresh(expense)
 
     today = date.today()
-    response = await authenticated_client.post("/api/recurring", json={
-        "type": "expense",
-        "amount": 10000,
-        "description": "점심",
-        "category_id": cat.id,
-        "frequency": "monthly",
-        "day_of_month": today.day,
-        "start_date": today.isoformat(),
-        "household_id": test_household.id,
-        "source_id": expense.id,
-    })
+    response = await authenticated_client.post(
+        "/api/recurring",
+        json={
+            "type": "expense",
+            "amount": 10000,
+            "description": "점심",
+            "category_id": cat.id,
+            "frequency": "monthly",
+            "day_of_month": today.day,
+            "start_date": today.isoformat(),
+            "household_id": test_household.id,
+            "source_id": expense.id,
+        },
+    )
     assert response.status_code == 201
     next_due = response.json()["next_due_date"]
     assert next_due > today.isoformat()
@@ -561,16 +573,19 @@ async def test_create_recurring_with_source_id_advances_next_due(authenticated_c
 async def test_create_recurring_source_id_not_found(authenticated_client, test_household):
     """존재하지 않는 source_id → 404"""
     today = date.today()
-    response = await authenticated_client.post("/api/recurring", json={
-        "type": "expense",
-        "amount": 10000,
-        "description": "점심",
-        "frequency": "monthly",
-        "day_of_month": today.day,
-        "start_date": today.isoformat(),
-        "household_id": test_household.id,
-        "source_id": 99999,
-    })
+    response = await authenticated_client.post(
+        "/api/recurring",
+        json={
+            "type": "expense",
+            "amount": 10000,
+            "description": "점심",
+            "frequency": "monthly",
+            "day_of_month": today.day,
+            "start_date": today.isoformat(),
+            "household_id": test_household.id,
+            "source_id": 99999,
+        },
+    )
     assert response.status_code == 404
 
 
@@ -585,8 +600,11 @@ async def test_create_recurring_source_id_type_mismatch(authenticated_client, te
     await db_session.flush()
 
     expense = Expense(
-        user_id=test_user.id, household_id=test_household.id,
-        amount=10000, description="점심", category_id=cat.id,
+        user_id=test_user.id,
+        household_id=test_household.id,
+        amount=10000,
+        description="점심",
+        category_id=cat.id,
         date=datetime.now(),
     )
     db_session.add(expense)
@@ -594,16 +612,19 @@ async def test_create_recurring_source_id_type_mismatch(authenticated_client, te
     await db_session.refresh(expense)
 
     today = date.today()
-    response = await authenticated_client.post("/api/recurring", json={
-        "type": "income",  # expense ID인데 income으로 요청
-        "amount": 10000,
-        "description": "점심",
-        "frequency": "monthly",
-        "day_of_month": today.day,
-        "start_date": today.isoformat(),
-        "household_id": test_household.id,
-        "source_id": expense.id,
-    })
+    response = await authenticated_client.post(
+        "/api/recurring",
+        json={
+            "type": "income",  # expense ID인데 income으로 요청
+            "amount": 10000,
+            "description": "점심",
+            "frequency": "monthly",
+            "day_of_month": today.day,
+            "start_date": today.isoformat(),
+            "household_id": test_household.id,
+            "source_id": expense.id,
+        },
+    )
     assert response.status_code == 404
 
 
@@ -611,14 +632,17 @@ async def test_create_recurring_source_id_type_mismatch(authenticated_client, te
 async def test_create_recurring_without_source_id_keeps_existing_behavior(authenticated_client, test_household):
     """source_id 없이 생성 시 기존 동작 유지"""
     today = date.today()
-    response = await authenticated_client.post("/api/recurring", json={
-        "type": "expense",
-        "amount": 10000,
-        "description": "점심",
-        "frequency": "monthly",
-        "day_of_month": today.day,
-        "start_date": today.isoformat(),
-        "household_id": test_household.id,
-    })
+    response = await authenticated_client.post(
+        "/api/recurring",
+        json={
+            "type": "expense",
+            "amount": 10000,
+            "description": "점심",
+            "frequency": "monthly",
+            "day_of_month": today.day,
+            "start_date": today.isoformat(),
+            "household_id": test_household.id,
+        },
+    )
     assert response.status_code == 201
     assert response.json()["next_due_date"] == today.isoformat()

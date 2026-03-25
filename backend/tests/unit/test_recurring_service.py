@@ -122,10 +122,16 @@ async def test_execute_recurring_sets_recurring_transaction_id(db_session, test_
     await db_session.flush()
 
     recurring = RecurringTransaction(
-        user_id=test_user.id, household_id=test_household.id,
-        type="expense", amount=10000, description="점심",
-        category_id=cat.id, frequency="monthly", day_of_month=25,
-        start_date=date.today(), next_due_date=date.today(),
+        user_id=test_user.id,
+        household_id=test_household.id,
+        type="expense",
+        amount=10000,
+        description="점심",
+        category_id=cat.id,
+        frequency="monthly",
+        day_of_month=25,
+        start_date=date.today(),
+        next_due_date=date.today(),
     )
     db_session.add(recurring)
     await db_session.commit()
