@@ -128,3 +128,33 @@ async def unlink_kakao(
     await db.execute(update(User).where(User.id == current_user.id).values(kakao_user_id=None, kakao_link_code=None, kakao_link_code_expires_at=None))
     await db.commit()
     return MessageResponse(message="카카오톡 연동이 해제되었습니다.")
+
+
+@router.delete("/me", response_model=MessageResponse)
+async def delete_account(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """계정 삭제 (소프트 삭제 + 개인정보 익명화)
+
+    물리 삭제 대신 is_active=False로 비활성화하고 개인정보를 익명화합니다.
+    기존 거래 데이터는 household 소속이므로 보존됩니다.
+    """
+    # auth_user_id는 유지 — is_active=False 가드가 재로그인 차단 (403)
+    await db.execute(
+        update(User)
+        .where(User.id == current_user.id)
+        .values(
+            is_active=False,
+            email=None,
+            username=f"deleted_{current_user.id}",
+            telegram_chat_id=None,
+            telegram_link_code=None,
+            telegram_link_code_expires_at=None,
+            kakao_user_id=None,
+            kakao_link_code=None,
+            kakao_link_code_expires_at=None,
+        )
+    )
+    await db.commit()
+    return MessageResponse(message="계정이 삭제되었습니다.")

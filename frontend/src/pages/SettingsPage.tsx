@@ -3,13 +3,13 @@
  * @description 설정 페이지 - 메뉴 목록 → 서브 페이지 네스팅 구조
  */
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
 import { useGoBack } from '../hooks/useGoBack'
 import {
   Tags, PiggyBank, Repeat, Users, LogOut, BookOpen, MessageSquarePlus,
   Megaphone, ChevronRight, ArrowLeft, User, Send, MessageCircle, ShieldCheck,
-  Sun, Moon, Monitor, FileText, ScrollText, Download,
+  Sun, Moon, Monitor, FileText, ScrollText, Download, Key, Trash2,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { generateTelegramLinkCode, unlinkTelegram } from '../api/telegram'
@@ -23,8 +23,8 @@ import { useTheme } from '../contexts/ThemeContext'
 import type { ThemeMode } from '../contexts/ThemeContext'
 import type { ChangelogItem } from '../data/changelogs'
 import { trackEvent } from '../utils/analytics'
-
-const AUTH_URL = import.meta.env.VITE_AUTH_URL || 'https://auth.podonest.com'
+import { supabase } from '../utils/supabase'
+import apiClient from '../api/client'
 
 const TAG_STYLES: Record<ChangelogItem['tag'], string> = {
   '신규': 'bg-grape-100 text-grape-600',
@@ -590,17 +590,12 @@ function MyAccountSection() {
         )}
       </div>
 
+      {/* 비밀번호 변경 */}
+      <PasswordChangeCard />
+
       {/* 계정 액션 */}
       <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] p-6">
         <div className="flex flex-wrap gap-3">
-          <a
-            href={AUTH_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-grape-300 text-grape-600 text-sm font-medium hover:bg-grape-50 transition-colors"
-          >
-            포도 통합 계정 관리 →
-          </a>
           <button
             onClick={logout}
             className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-[var(--border-default)] text-[var(--text-secondary)] text-sm font-medium hover:bg-red-50 hover:border-red-300 hover:text-red-600 transition-colors"
@@ -610,7 +605,177 @@ function MyAccountSection() {
           </button>
         </div>
       </div>
+
+      {/* 계정 삭제 */}
+      <AccountDeleteCard />
     </SubPageWrapper>
+  )
+}
+
+/** 비밀번호 변경 카드 */
+function PasswordChangeCard() {
+  const { addToast } = useToast()
+  const [open, setOpen] = useState(false)
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
+
+  const handleSubmit = useCallback(async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError('')
+
+    if (newPassword !== confirmPassword) {
+      setError('새 비밀번호가 일치하지 않습니다')
+      return
+    }
+
+    setLoading(true)
+    try {
+      const { error: updateError } = await supabase.auth.updateUser({ password: newPassword })
+      if (updateError) throw updateError
+
+      addToast('success', '비밀번호가 변경되었습니다')
+      setOpen(false)
+      setNewPassword('')
+      setConfirmPassword('')
+    } catch (err) {
+      const message = (err as Error).message
+      if (message.includes('should be at least')) {
+        setError('비밀번호는 6자 이상이어야 합니다')
+      } else if (message.includes('same password')) {
+        setError('현재 비밀번호와 동일합니다')
+      } else {
+        setError(message || '비밀번호 변경에 실패했습니다')
+      }
+    } finally {
+      setLoading(false)
+    }
+  }, [newPassword, confirmPassword, addToast])
+
+  return (
+    <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] p-6">
+      {!open ? (
+        <button
+          onClick={() => setOpen(true)}
+          className="inline-flex items-center gap-2 text-sm font-medium text-[var(--text-secondary)] hover:text-grape-600 transition-colors"
+        >
+          <Key className="w-4 h-4" />
+          비밀번호 변경
+        </button>
+      ) : (
+        <form onSubmit={handleSubmit} className="space-y-3">
+          <h3 className="text-sm font-semibold text-[var(--text-primary)]">비밀번호 변경</h3>
+          <input
+            type="password"
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+            placeholder="새 비밀번호 (6자 이상)"
+            required
+            minLength={6}
+            className="w-full px-3 py-2 border border-[var(--input-border)] rounded-xl bg-[var(--surface)] text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-grape-300"
+          />
+          <input
+            type="password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            placeholder="새 비밀번호 확인"
+            required
+            minLength={6}
+            className="w-full px-3 py-2 border border-[var(--input-border)] rounded-xl bg-[var(--surface)] text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-grape-300"
+          />
+          {error && <p className="text-xs text-rose-500">{error}</p>}
+          <div className="flex gap-2">
+            <button
+              type="submit"
+              disabled={loading}
+              className="px-4 py-2 text-sm font-medium text-white bg-grape-600 rounded-xl hover:bg-grape-700 disabled:opacity-50 transition-colors"
+            >
+              {loading ? '변경 중...' : '변경'}
+            </button>
+            <button
+              type="button"
+              onClick={() => { setOpen(false); setError('') }}
+              className="px-4 py-2 text-sm font-medium text-[var(--text-secondary)] border border-[var(--border-default)] rounded-xl hover:bg-[var(--surface-elevated)] transition-colors"
+            >
+              취소
+            </button>
+          </div>
+        </form>
+      )}
+    </div>
+  )
+}
+
+/** 계정 삭제 카드 */
+function AccountDeleteCard() {
+  const { logout } = useAuth()
+  const { addToast } = useToast()
+  const [step, setStep] = useState<'idle' | 'confirm' | 'deleting'>('idle')
+  const [confirmText, setConfirmText] = useState('')
+
+  const handleDelete = useCallback(async () => {
+    setStep('deleting')
+    try {
+      // 백엔드에 계정 삭제 요청 (소프트 삭제 + 익명화)
+      await apiClient.delete('/api/auth/me')
+    } catch {
+      addToast('error', '계정 삭제에 실패했습니다. 다시 시도해주세요.')
+      setStep('idle')
+      return
+    }
+    // 백엔드 삭제 성공 후에는 무조건 로그아웃 (Supabase signOut 실패해도 진행)
+    try { await supabase.auth.signOut() } catch { /* 무시 */ }
+    addToast('success', '계정이 삭제되었습니다')
+    logout()
+  }, [logout, addToast])
+
+  if (step === 'idle') {
+    return (
+      <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-red-200 dark:border-red-900/30 p-6">
+        <button
+          onClick={() => setStep('confirm')}
+          className="inline-flex items-center gap-2 text-sm font-medium text-red-500 hover:text-red-600 transition-colors"
+        >
+          <Trash2 className="w-4 h-4" />
+          계정 삭제
+        </button>
+      </div>
+    )
+  }
+
+  return (
+    <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-red-300 dark:border-red-900/50 p-6 space-y-3">
+      <h3 className="text-sm font-semibold text-red-600">계정을 정말 삭제하시겠습니까?</h3>
+      <p className="text-xs text-[var(--text-tertiary)]">
+        모든 데이터(거래 내역, 예산, 카테고리 등)가 영구적으로 삭제됩니다. 이 작업은 되돌릴 수 없습니다.
+      </p>
+      <p className="text-xs text-[var(--text-secondary)]">
+        확인하려면 아래에 <strong>삭제</strong>를 입력하세요.
+      </p>
+      <input
+        type="text"
+        value={confirmText}
+        onChange={(e) => setConfirmText(e.target.value)}
+        placeholder="삭제"
+        className="w-full px-3 py-2 border border-red-300 rounded-xl bg-[var(--surface)] text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-red-300"
+      />
+      <div className="flex gap-2">
+        <button
+          onClick={handleDelete}
+          disabled={confirmText !== '삭제' || step === 'deleting'}
+          className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-xl hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        >
+          {step === 'deleting' ? '삭제 중...' : '계정 영구 삭제'}
+        </button>
+        <button
+          onClick={() => { setStep('idle'); setConfirmText('') }}
+          className="px-4 py-2 text-sm font-medium text-[var(--text-secondary)] border border-[var(--border-default)] rounded-xl hover:bg-[var(--surface-elevated)] transition-colors"
+        >
+          취소
+        </button>
+      </div>
+    </div>
   )
 }
 
