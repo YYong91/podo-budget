@@ -1,11 +1,14 @@
 """정기 거래 서비스 단위 테스트
 
 calculate_next_due_date, calculate_initial_due_date 순수 함수 테스트
+execute_recurring 통합 동작 테스트
 """
 
 from datetime import date
 
 import pytest
+import pytest_asyncio
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.services.recurring_service import calculate_initial_due_date, calculate_next_due_date
 
@@ -104,3 +107,34 @@ class TestCalculateInitialDueDate:
     def test_알수없는_빈도_에러(self):
         with pytest.raises(ValueError, match="알 수 없는 빈도"):
             calculate_initial_due_date(date(2026, 2, 16), "biweekly")
+
+
+@pytest.mark.asyncio
+async def test_execute_recurring_sets_recurring_transaction_id(db_session, test_user, test_household):
+    """execute_recurring으로 생성된 거래에 recurring_transaction_id가 설정된다"""
+    from sqlalchemy import select
+
+    from app.models.category import Category
+    from app.models.expense import Expense
+    from app.models.recurring_transaction import RecurringTransaction
+    from app.services.recurring_service import execute_recurring
+
+    cat = Category(name="식비", type="expense", user_id=test_user.id, household_id=test_household.id)
+    db_session.add(cat)
+    await db_session.flush()
+
+    recurring = RecurringTransaction(
+        user_id=test_user.id, household_id=test_household.id,
+        type="expense", amount=10000, description="점심",
+        category_id=cat.id, frequency="monthly", day_of_month=25,
+        start_date=date.today(), next_due_date=date.today(),
+    )
+    db_session.add(recurring)
+    await db_session.commit()
+    await db_session.refresh(recurring)
+
+    created_id = await execute_recurring(recurring, db_session)
+
+    result = await db_session.execute(select(Expense).where(Expense.id == created_id))
+    expense = result.scalar_one()
+    assert expense.recurring_transaction_id == recurring.id
