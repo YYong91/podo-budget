@@ -7,7 +7,7 @@
  */
 
 import { useState, useCallback } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../utils/supabase'
 
 export default function LoginPage() {
@@ -19,6 +19,7 @@ export default function LoginPage() {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [loading, setLoading] = useState(false)
+  const [agreeTerms, setAgreeTerms] = useState(false)
 
   const handleEmailAuth = useCallback(async (e: React.FormEvent) => {
     e.preventDefault()
@@ -122,6 +123,14 @@ export default function LoginPage() {
 
           {/* 카카오 (비즈앱 승인 후 활성화 #349) */}
           {/* <button className="w-full ...">카카오로 계속하기</button> */}
+
+          <p className="text-xs text-center text-[var(--text-muted)]">
+            계속 진행 시{' '}
+            <Link to="/terms" target="_blank" className="underline hover:text-[var(--text-secondary)]">이용약관</Link>
+            {' '}및{' '}
+            <Link to="/privacy" target="_blank" className="underline hover:text-[var(--text-secondary)]">개인정보처리방침</Link>
+            에 동의합니다
+          </p>
         </div>
 
         {/* 구분선 */}
@@ -182,6 +191,24 @@ export default function LoginPage() {
             </div>
           )}
 
+          {mode === 'signup' && (
+            <label className="flex items-start gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={agreeTerms}
+                onChange={(e) => setAgreeTerms(e.target.checked)}
+                aria-label="이용약관 및 개인정보처리방침에 동의"
+                className="mt-0.5 w-4 h-4 rounded border-[var(--input-border)] text-grape-600 focus:ring-grape-300"
+              />
+              <span className="text-xs text-[var(--text-tertiary)]">
+                <Link to="/terms" target="_blank" className="underline hover:text-[var(--text-secondary)]">이용약관</Link>
+                {' '}및{' '}
+                <Link to="/privacy" target="_blank" className="underline hover:text-[var(--text-secondary)]">개인정보처리방침</Link>
+                에 동의합니다
+              </span>
+            </label>
+          )}
+
           {error && (
             <p className="text-sm text-rose-500">{error}</p>
           )}
@@ -192,7 +219,7 @@ export default function LoginPage() {
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || (mode === 'signup' && !agreeTerms)}
             className="w-full py-3 text-sm font-semibold text-white bg-grape-600 rounded-xl hover:bg-grape-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
           >
             {loading ? '처리 중...' : mode === 'login' ? '로그인' : mode === 'signup' ? '회원가입' : '재설정 메일 보내기'}
@@ -203,7 +230,7 @@ export default function LoginPage() {
         {mode === 'login' && (
           <p className="text-center">
             <button
-              onClick={() => { setMode('reset'); setError(''); setSuccess('') }}
+              onClick={() => { setMode('reset'); setError(''); setSuccess(''); setAgreeTerms(false) }}
               className="text-sm text-[var(--text-muted)] hover:underline"
             >
               비밀번호를 잊으셨나요?
@@ -217,7 +244,7 @@ export default function LoginPage() {
             <>
               계정이 없으신가요?{' '}
               <button
-                onClick={() => { setMode('signup'); setError(''); setSuccess('') }}
+                onClick={() => { setMode('signup'); setError(''); setSuccess(''); setAgreeTerms(false) }}
                 className="text-grape-600 font-medium hover:underline"
               >
                 회원가입
@@ -227,7 +254,7 @@ export default function LoginPage() {
             <>
               이미 계정이 있으신가요?{' '}
               <button
-                onClick={() => { setMode('login'); setError(''); setSuccess('') }}
+                onClick={() => { setMode('login'); setError(''); setSuccess(''); setAgreeTerms(false) }}
                 className="text-grape-600 font-medium hover:underline"
               >
                 로그인
