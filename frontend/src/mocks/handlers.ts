@@ -632,4 +632,121 @@ export const handlers = [
       income_count: 50,
     })
   }),
+
+  // ==================== 예산 일괄 수정 API ====================
+
+  /**
+   * PUT /api/budgets/bulk - 예산 일괄 수정
+   */
+  http.put(`${BASE_URL}/budgets/bulk`, async ({ request }) => {
+    const body = (await request.json()) as Array<{ category_id: number; amount: number }>
+    const budgets = body.map((b, i) => ({
+      id: i + 1,
+      category_id: b.category_id,
+      amount: b.amount,
+      month: '2026-03',
+      household_id: 1,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }))
+    return HttpResponse.json(budgets)
+  }),
+
+  // ==================== 초대 수락/거절 API ====================
+
+  /**
+   * POST /api/invitations/:token/accept - 초대 수락
+   */
+  http.post(`${BASE_URL}/invitations/:token/accept`, ({ params }) => {
+    return HttpResponse.json({
+      household_id: 1,
+      household_name: '테스트 가구',
+      token: params.token,
+    })
+  }),
+
+  /**
+   * POST /api/invitations/:token/reject - 초대 거절
+   */
+  http.post(`${BASE_URL}/invitations/:token/reject`, () => {
+    return HttpResponse.json({ message: '초대를 거절했습니다' })
+  }),
+
+  // ==================== 계좌 API ====================
+
+  /**
+   * POST /api/accounts - 계좌 생성
+   */
+  http.post(`${BASE_URL}/accounts`, async ({ request }) => {
+    const body = (await request.json()) as Record<string, unknown>
+    return HttpResponse.json({
+      id: 99,
+      name: body.name ?? '',
+      type: body.type ?? 'brokerage',
+      household_id: 1,
+      user_id: 1,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }, { status: 201 })
+  }),
+
+  /**
+   * GET /api/accounts - 계좌 목록 조회
+   */
+  http.get(`${BASE_URL}/accounts`, () => {
+    return HttpResponse.json([
+      {
+        id: 1,
+        name: '키움증권',
+        type: 'brokerage',
+        household_id: 1,
+        user_id: 1,
+        created_at: '2026-01-01T00:00:00Z',
+        updated_at: '2026-01-01T00:00:00Z',
+      },
+    ])
+  }),
+
+  // ==================== 가구 멤버 관리 API ====================
+
+  /**
+   * PATCH /api/households/:id/members/:userId/role - 멤버 역할 변경
+   */
+  http.patch(`${BASE_URL}/households/:id/members/:userId/role`, async ({ params, request }) => {
+    const body = (await request.json()) as { role: string }
+    return HttpResponse.json({
+      user_id: Number(params.userId),
+      household_id: Number(params.id),
+      role: body.role,
+    })
+  }),
+
+  /**
+   * POST /api/households/:id/leave - 가구 나가기
+   */
+  http.post(`${BASE_URL}/households/:id/leave`, () => {
+    return HttpResponse.json({ message: '가구에서 나갔습니다' })
+  }),
+
+  // ==================== 인증 연동 코드 API ====================
+
+  /**
+   * POST /api/auth/telegram-link-code - 텔레그램 연동 코드 발급
+   */
+  http.post(`${BASE_URL}/auth/telegram-link-code`, () => {
+    return HttpResponse.json({
+      code: 'TG-ABC123',
+      expires_at: new Date(Date.now() + 600000).toISOString(),
+    })
+  }),
+
+  /**
+   * POST /api/auth/kakao-link-code - 카카오 연동 코드 발급
+   */
+  http.post(`${BASE_URL}/auth/kakao-link-code`, () => {
+    return HttpResponse.json({
+      code: 'KK-XYZ789',
+      expires_at: new Date(Date.now() + 600000).toISOString(),
+    })
+  }),
 ]
