@@ -1,22 +1,26 @@
 /**
  * @file HouseholdDetailPage.tsx
  * @description 공유 가계부 상세 페이지
- * 멤버 목록, 초대, 역할 변경, 가구 설정 등을 관리한다.
+ * 탭 라우터 역할만 수행하며, 각 탭은 별도 컴포넌트로 분리되어 있다.
  */
 
 import type { } from 'react'
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Link2 } from 'lucide-react'
+import { ArrowLeft } from 'lucide-react'
 import { useHouseholdStore } from '../stores/useHouseholdStore'
 import { useToast } from '../hooks/useToast'
 import { useAuth } from '../contexts/AuthContext'
+import { useHouseholdRole } from '../hooks/useHouseholdRole'
 import InviteMemberModal from '../components/InviteMemberModal'
 import EmptyState from '../components/EmptyState'
 import LoadingSpinner from '../components/LoadingSpinner'
 import ErrorState from '../components/ErrorState'
-import type { InviteMemberDto, UpdateHouseholdDto, MemberRole } from '../types'
-import { formatDate, formatRole, getRoleBadgeColor } from '../utils/household'
+import MembersTab from '../components/household/MembersTab'
+import InvitationsTab from '../components/household/InvitationsTab'
+import SettingsTab from '../components/household/SettingsTab'
+import type { InviteMemberDto, MemberRole } from '../types'
+import { formatRole, getRoleBadgeColor } from '../utils/household'
 import { trackEvent } from '../utils/analytics'
 
 type TabType = 'members' | 'invitations' | 'settings'
@@ -46,17 +50,13 @@ export default function HouseholdDetailPage() {
     clearCurrentHousehold,
   } = useHouseholdStore()
 
+  // 역할 기반 권한
+  const { isOwner, isAdmin, canManageMember } = useHouseholdRole(currentHousehold)
+
   // 로컬 상태
   const [activeTab, setActiveTab] = useState<TabType>('members')
   const [showInviteModal, setShowInviteModal] = useState(false)
   const [isInviting, setIsInviting] = useState(false)
-
-  // 설정 탭 상태
-  const [editMode, setEditMode] = useState(false)
-  const [formData, setFormData] = useState<UpdateHouseholdDto>({
-    name: '',
-    description: '',
-  })
 
   /**
    * 컴포넌트 마운트 시 상세 정보 조회
@@ -83,18 +83,6 @@ export default function HouseholdDetailPage() {
       fetchHouseholdInvitations(Number(id)).catch(() => {})
     }
   }, [id, currentHousehold?.my_role, fetchHouseholdInvitations])
-
-  /**
-   * 가구 정보가 로드되면 폼 데이터 초기화
-   */
-  useEffect(() => {
-    if (currentHousehold) {
-      setFormData({
-        name: currentHousehold.name,
-        description: currentHousehold.description || '',
-      })
-    }
-  }, [currentHousehold])
 
   /**
    * 에러 발생 시 자동으로 토스트 표시
@@ -186,14 +174,12 @@ export default function HouseholdDetailPage() {
   /**
    * 가구 정보 수정 핸들러
    */
-  const handleUpdateHousehold = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleUpdateHousehold = async (formData: { name?: string; description?: string }) => {
     if (!id) return
 
     try {
       await updateHousehold(Number(id), formData)
       addToast('success', '가구 정보가 수정되었습니다')
-      setEditMode(false)
     } catch (err) {
       console.error('가구 수정 실패:', err)
       addToast('error', '가구 수정에 실패했습니다')
@@ -215,6 +201,31 @@ export default function HouseholdDetailPage() {
       console.error('가구 삭제 실패:', err)
       addToast('error', '가구 삭제에 실패했습니다')
     }
+  }
+
+  /**
+   * 초대 취소 핸들러
+   */
+  const handleCancelInvitation = async (invitationId: number) => {
+    if (!id) return
+    const inv = householdInvitations.find(i => i.id === invitationId)
+    if (inv && !confirm(`${inv.invitee_email}의 초대를 취소하시겠습니까?`)) return
+
+    try {
+      await cancelInvitation(Number(id), invitationId)
+      addToast('success', '초대를 취소했습니다')
+    } catch {
+      addToast('error', '초대 취소에 실패했습니다')
+    }
+  }
+
+  /**
+   * 초대 링크 복사 핸들러
+   */
+  const handleCopyInviteLink = async (token: string) => {
+    const link = `${window.location.origin}/invitations/accept?token=${token}`
+    await navigator.clipboard.writeText(link)
+    addToast('success', '초대 링크가 복사되었습니다')
   }
 
   /**
@@ -255,9 +266,6 @@ export default function HouseholdDetailPage() {
       />
     )
   }
-
-  const isOwner = currentHousehold.my_role === 'owner'
-  const isAdmin = currentHousehold.my_role === 'admin' || isOwner
 
   return (
     <div className="space-y-6">
@@ -332,298 +340,34 @@ export default function HouseholdDetailPage() {
         </div>
       </div>
 
-      {/* 멤버 탭 */}
+      {/* 탭 콘텐츠 */}
       {activeTab === 'members' && (
-        <div className="space-y-4">
-          {/* 멤버 목록 */}
-          <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-[var(--surface-elevated)] border-b border-[var(--border-default)]">
-                  <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-[var(--text-tertiary)] uppercase tracking-wider">
-                      이름
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-[var(--text-tertiary)] uppercase tracking-wider">
-                      이메일
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-[var(--text-tertiary)] uppercase tracking-wider">
-                      역할
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-[var(--text-tertiary)] uppercase tracking-wider">
-                      가입일
-                    </th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-[var(--text-tertiary)] uppercase tracking-wider">
-                      관리
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[var(--border-default)]">
-                  {currentHousehold.members.map((member) => {
-                    const isMe = member.user_id === user?.id
-                    const canManage = isOwner && !isMe && member.role !== 'owner'
-
-                    return (
-                      <tr key={member.user_id} className="hover:bg-[var(--surface-hover)]">
-                        <td className="px-4 py-3 text-sm font-medium text-[var(--text-primary)]">
-                          {member.username}
-                          {isMe && (
-                            <span className="ml-2 text-xs text-[var(--text-tertiary)]">(나)</span>
-                          )}
-                        </td>
-                        <td className="px-4 py-3 text-sm text-[var(--text-secondary)]">
-                          {member.email || '-'}
-                        </td>
-                        <td className="px-4 py-3">
-                          {canManage ? (
-                            <select
-                              value={member.role}
-                              onChange={(e) =>
-                                handleRoleChange(
-                                  member.user_id,
-                                  e.target.value as MemberRole
-                                )
-                              }
-                              className="text-sm px-2 py-1 border border-[var(--input-border)] rounded bg-[var(--surface-card)] focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
-                            >
-                              <option value="member">멤버</option>
-                              <option value="admin">관리자</option>
-                            </select>
-                          ) : (
-                            <span
-                              className={`inline-block text-xs px-2 py-1 rounded-full ${getRoleBadgeColor(
-                                member.role
-                              )}`}
-                            >
-                              {formatRole(member.role)}
-                            </span>
-                          )}
-                        </td>
-                        <td className="px-4 py-3 text-sm text-[var(--text-secondary)]">
-                          {formatDate(member.joined_at)}
-                        </td>
-                        <td className="px-4 py-3 text-sm text-right">
-                          {canManage ? (
-                            <button
-                              onClick={() =>
-                                handleRemoveMember(member.user_id, member.username)
-                              }
-                              className="text-rose-600 hover:text-rose-700 font-medium"
-                            >
-                              추방
-                            </button>
-                          ) : isMe && (member.role !== 'owner' || currentHousehold.members.length > 1) ? (
-                            <button
-                              onClick={handleLeave}
-                              className="text-rose-600 hover:text-rose-700 font-medium"
-                            >
-                              탈퇴
-                            </button>
-                          ) : (
-                            <span className="text-[var(--text-muted)]">-</span>
-                          )}
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
+        <MembersTab
+          household={currentHousehold}
+          currentUserId={user?.id ?? 0}
+          canManageMember={canManageMember}
+          onRoleChange={handleRoleChange}
+          onRemoveMember={handleRemoveMember}
+          onLeave={handleLeave}
+        />
       )}
 
-      {/* 초대 탭 */}
       {activeTab === 'invitations' && isAdmin && (
-        <div className="space-y-4">
-          <div className="flex justify-end">
-            <button
-              onClick={() => setShowInviteModal(true)}
-              className="px-4 py-2 text-sm font-medium text-white bg-grape-600 rounded-lg hover:bg-grape-700 transition-colors"
-            >
-              + 멤버 초대
-            </button>
-          </div>
-
-          {householdInvitations.length === 0 ? (
-            <div className="text-center py-8 text-sm text-[var(--text-muted)]">
-              보낸 초대가 없습니다
-            </div>
-          ) : (
-            <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] overflow-hidden">
-              <div className="divide-y divide-[var(--border-default)]">
-                {householdInvitations.map((inv) => {
-                  const isPending = inv.status === 'pending'
-                  const statusText: Record<string, string> = {
-                    pending: '대기 중',
-                    accepted: '수락됨',
-                    rejected: '거절됨',
-                    expired: '만료됨',
-                  }
-                  const statusColor: Record<string, string> = {
-                    pending: 'bg-yellow-100 text-yellow-600',
-                    accepted: 'bg-green-100 text-green-600',
-                    rejected: 'bg-warm-100 text-warm-600',
-                    expired: 'bg-warm-100 text-[var(--text-muted)]',
-                  }
-
-                  return (
-                    <div key={inv.id} className="flex items-center justify-between p-4">
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium text-[var(--text-primary)] truncate">
-                          {inv.invitee_email}
-                        </p>
-                        <div className="flex items-center gap-2 mt-1">
-                          <span className={`text-xs px-2 py-0.5 rounded-full ${statusColor[inv.status] || ''}`}>
-                            {statusText[inv.status] || inv.status}
-                          </span>
-                          <span className="text-xs text-[var(--text-muted)]">
-                            {inv.role === 'admin' ? '관리자' : '멤버'}
-                          </span>
-                        </div>
-                      </div>
-                      {isPending && (
-                        <div className="flex items-center gap-2 ml-3">
-                          {inv.token && (
-                            <button
-                              onClick={async () => {
-                                const link = `${window.location.origin}/invitations/accept?token=${inv.token}`
-                                await navigator.clipboard.writeText(link)
-                                addToast('success', '초대 링크가 복사되었습니다')
-                              }}
-                              className="text-xs text-grape-600 hover:text-grape-700 font-medium flex items-center gap-1"
-                              title="초대 링크 복사"
-                            >
-                              <Link2 className="w-3.5 h-3.5" />
-                              링크 복사
-                            </button>
-                          )}
-                          <button
-                            onClick={async () => {
-                              if (!confirm(`${inv.invitee_email}의 초대를 취소하시겠습니까?`)) return
-                              try {
-                                await cancelInvitation(Number(id), inv.id)
-                                addToast('success', '초대를 취소했습니다')
-                              } catch {
-                                addToast('error', '초대 취소에 실패했습니다')
-                              }
-                            }}
-                            className="text-xs text-rose-600 hover:text-rose-700 font-medium"
-                          >
-                            취소
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
-          )}
-        </div>
+        <InvitationsTab
+          invitations={householdInvitations}
+          onOpenInviteModal={() => setShowInviteModal(true)}
+          onCancelInvitation={handleCancelInvitation}
+          onCopyInviteLink={handleCopyInviteLink}
+        />
       )}
 
-      {/* 설정 탭 */}
       {activeTab === 'settings' && isAdmin && (
-        <div className="space-y-6">
-          {/* 가구 정보 수정 */}
-          <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] p-6">
-            <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-4">
-              가구 정보
-            </h2>
-
-            <form onSubmit={handleUpdateHousehold} className="space-y-4">
-              <div>
-                <label
-                  htmlFor="name"
-                  className="block text-sm font-medium text-[var(--text-secondary)] mb-1"
-                >
-                  가구 이름
-                </label>
-                <input
-                  id="name"
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full px-3 py-2 border border-[var(--input-border)] rounded-xl focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
-                  disabled={!editMode}
-                  required
-                />
-              </div>
-
-              <div>
-                <label
-                  htmlFor="description"
-                  className="block text-sm font-medium text-[var(--text-secondary)] mb-1"
-                >
-                  설명
-                </label>
-                <textarea
-                  id="description"
-                  value={formData.description}
-                  onChange={(e) =>
-                    setFormData({ ...formData, description: e.target.value })
-                  }
-                  className="w-full px-3 py-2 border border-[var(--input-border)] rounded-xl focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500 resize-none"
-                  rows={3}
-                  disabled={!editMode}
-                />
-              </div>
-
-              <div className="flex gap-3">
-                {editMode ? (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setEditMode(false)
-                        setFormData({
-                          name: currentHousehold.name,
-                          description: currentHousehold.description || '',
-                        })
-                      }}
-                      className="px-4 py-2 text-sm font-medium text-[var(--text-secondary)] bg-[var(--surface-card)] border border-[var(--input-border)] rounded-lg hover:bg-[var(--surface-hover)] transition-colors"
-                    >
-                      취소
-                    </button>
-                    <button
-                      type="submit"
-                      className="px-4 py-2 text-sm font-medium text-white bg-grape-600 rounded-lg hover:bg-grape-700 transition-colors"
-                    >
-                      저장
-                    </button>
-                  </>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => setEditMode(true)}
-                    className="px-4 py-2 text-sm font-medium text-white bg-grape-600 rounded-lg hover:bg-grape-700 transition-colors"
-                  >
-                    수정
-                  </button>
-                )}
-              </div>
-            </form>
-          </div>
-
-          {/* 가구 삭제 (owner만) */}
-          {isOwner && (
-            <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-rose-200 p-6">
-              <h2 className="text-lg font-semibold text-rose-600 mb-2">
-                위험 영역
-              </h2>
-              <p className="text-sm text-[var(--text-secondary)] mb-4">
-                가구를 삭제하면 모든 데이터가 영구적으로 삭제됩니다. 이 작업은 되돌릴 수 없습니다.
-              </p>
-              <button
-                onClick={handleDelete}
-                className="px-4 py-2 text-sm font-medium text-white bg-rose-600 rounded-lg hover:bg-rose-700 transition-colors"
-              >
-                가구 삭제
-              </button>
-            </div>
-          )}
-        </div>
+        <SettingsTab
+          household={currentHousehold}
+          isOwner={isOwner}
+          onUpdate={handleUpdateHousehold}
+          onDelete={handleDelete}
+        />
       )}
 
       {/* 멤버 초대 모달 */}
