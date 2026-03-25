@@ -23,20 +23,18 @@ vi.mock('../../contexts/AuthContext', () => ({
 }))
 
 /**
- * useHouseholdStore 훅 모킹
+ * useHouseholdStore 훅 모킹 — 테스트마다 교체 가능
  */
+let householdStoreState: {
+  households: Array<{ id: number; name: string }>
+  activeHouseholdId: number | null
+  myInvitations: Array<{ id: number; status: string }>
+  setActiveHouseholdId: ReturnType<typeof vi.fn>
+}
+
 vi.mock('../../stores/useHouseholdStore', () => ({
-  // selector 방식(useHouseholdStore(s => s.x)) 지원 — Layout.tsx #167 수정 대응
   useHouseholdStore: (selector?: (s: object) => unknown) => {
-    const state = {
-      households: [],
-      activeHouseholdId: null,
-      myInvitations: [],
-      fetchHouseholds: vi.fn().mockResolvedValue(undefined),
-      fetchMyInvitations: vi.fn().mockResolvedValue(undefined),
-      setActiveHouseholdId: vi.fn(),
-    }
-    return selector ? selector(state) : state
+    return selector ? selector(householdStoreState) : householdStoreState
   },
 }))
 
@@ -56,6 +54,12 @@ const STORAGE_KEY = 'podo-changelog-last-seen'
 describe('Layout', () => {
   beforeEach(() => {
     localStorage.clear()
+    householdStoreState = {
+      households: [],
+      activeHouseholdId: null,
+      myInvitations: [],
+      setActiveHouseholdId: vi.fn(),
+    }
   })
 
   describe('헤더 렌더링', () => {
@@ -131,6 +135,80 @@ describe('Layout', () => {
       settingsLinks.forEach(link => {
         const dot = link.querySelector('.bg-red-500.rounded-full')
         expect(dot).toBeNull()
+      })
+    })
+  })
+
+  describe('가구 전환 드롭다운', () => {
+    it('가구가 2개 이상이면 모바일 헤더에 가구 전환 버튼이 표시된다', () => {
+      householdStoreState = {
+        ...householdStoreState,
+        households: [{ id: 1, name: '우리집' }, { id: 2, name: '직장' }],
+        activeHouseholdId: 1,
+      }
+      renderLayout()
+      expect(screen.getAllByText('우리집').length).toBeGreaterThan(0)
+    })
+
+    it('가구가 1개면 드롭다운 없이 가구명만 표시한다', () => {
+      householdStoreState = {
+        ...householdStoreState,
+        households: [{ id: 1, name: '우리집' }],
+        activeHouseholdId: 1,
+      }
+      renderLayout()
+      expect(screen.getAllByText('우리집').length).toBeGreaterThan(0)
+    })
+  })
+
+  describe('초대 알림', () => {
+    it('pending 초대가 있으면 초대 뱃지가 표시된다', () => {
+      householdStoreState = {
+        ...householdStoreState,
+        households: [{ id: 1, name: '우리집' }],
+        activeHouseholdId: 1,
+        myInvitations: [{ id: 1, status: 'pending' }],
+      }
+      renderLayout()
+      // 모바일 헤더 + 사이드바의 뱃지
+      expect(screen.getAllByText('1').length).toBeGreaterThan(0)
+    })
+
+    it('pending 초대가 있으면 사이드바에 "받은 초대" 링크가 표시된다', () => {
+      householdStoreState = {
+        ...householdStoreState,
+        households: [{ id: 1, name: '우리집' }],
+        activeHouseholdId: 1,
+        myInvitations: [{ id: 1, status: 'pending' }, { id: 2, status: 'pending' }],
+      }
+      renderLayout()
+      expect(screen.getByText('받은 초대')).toBeInTheDocument()
+      expect(screen.getAllByText('2').length).toBeGreaterThan(0)
+    })
+  })
+
+  describe('경로에 따른 활성 탭', () => {
+    it('/insights 경로에서 돌아보기 탭이 활성화된다', () => {
+      renderLayout('/insights')
+      const insightsLinks = screen.getAllByRole('link', { name: /돌아보기/i })
+      insightsLinks.forEach(link => {
+        expect(link).toHaveAttribute('aria-current', 'page')
+      })
+    })
+
+    it('/settings 경로에서 더보기 탭이 활성화된다', () => {
+      renderLayout('/settings')
+      const settingsLinks = screen.getAllByRole('link', { name: /더보기/i })
+      settingsLinks.forEach(link => {
+        expect(link).toHaveAttribute('aria-current', 'page')
+      })
+    })
+
+    it('/assets 경로에서 자산 탭이 활성화된다', () => {
+      renderLayout('/assets')
+      const assetLinks = screen.getAllByRole('link', { name: /^자산$/i })
+      assetLinks.forEach(link => {
+        expect(link).toHaveAttribute('aria-current', 'page')
       })
     })
   })

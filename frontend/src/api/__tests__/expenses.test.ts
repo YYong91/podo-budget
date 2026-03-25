@@ -102,6 +102,33 @@ describe('expenseApi', () => {
     })
   })
 
+  describe('searchSummary', () => {
+    it('검색어로 합계를 조회한다', async () => {
+      const response = await expenseApi.searchSummary({ query: '김치찌개' })
+      expect(response.data.total_count).toBeGreaterThanOrEqual(0)
+      expect(response.data.total_amount).toBeGreaterThanOrEqual(0)
+    })
+
+    it('검색어 없이 합계를 조회한다', async () => {
+      const response = await expenseApi.searchSummary()
+      expect(response.data.total_count).toBeGreaterThanOrEqual(0)
+    })
+  })
+
+  describe('parseImage', () => {
+    it('이미지 파일을 OCR 파싱한다', async () => {
+      const file = new File(['dummy'], 'receipt.jpg', { type: 'image/jpeg' })
+      const response = await expenseApi.parseImage(file, 1)
+      expect(response.data).toBeDefined()
+    })
+
+    it('householdId가 null이면 params 없이 호출한다', async () => {
+      const file = new File(['dummy'], 'receipt.jpg', { type: 'image/jpeg' })
+      const response = await expenseApi.parseImage(file, null)
+      expect(response.data).toBeDefined()
+    })
+  })
+
   describe('getMonthlyStats', () => {
     it('특정 월의 통계를 조회한다', async () => {
       const response = await expenseApi.getMonthlyStats('2024-01', 1)

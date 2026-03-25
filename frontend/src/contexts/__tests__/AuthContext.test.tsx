@@ -104,4 +104,64 @@ describe('AuthContext (Supabase)', () => {
 
     expect(screen.getByTestId('loading')).toHaveTextContent('loading')
   })
+
+  it('세션이 있는데 프로필이 아직 안 가져온 상태에서 loading=true', async () => {
+    // getSession은 바로 resolve, getCurrentUser는 느리게
+    mockGetSession.mockResolvedValue({
+      data: {
+        session: {
+          access_token: 'new-token',
+          user: { id: 'uuid-123', email: 'test@example.com' },
+        },
+      },
+    })
+
+    const authApi = await import('../../api/auth')
+    vi.mocked(authApi.default.getCurrentUser).mockImplementation(() => new Promise(() => {}))
+
+    render(
+      <AuthProvider>
+        <TestConsumer />
+      </AuthProvider>
+    )
+
+    // initialized 후 세션 있지만 프로필 미로드 → loading
+    await waitFor(() => {
+      expect(screen.getByTestId('loading')).toHaveTextContent('loading')
+    })
+  })
+
+  it('프로필 로드 실패해도 크래시하지 않는다', async () => {
+    mockGetSession.mockResolvedValue({
+      data: {
+        session: {
+          access_token: 'fail-token',
+          user: { id: 'uuid-456', email: 'fail@example.com' },
+        },
+      },
+    })
+
+    const authApi = await import('../../api/auth')
+    vi.mocked(authApi.default.getCurrentUser).mockRejectedValue(new Error('Network Error'))
+
+    render(
+      <AuthProvider>
+        <TestConsumer />
+      </AuthProvider>
+    )
+
+    // 에러 후에도 ready 상태로 전환된다
+    await waitFor(() => {
+      expect(screen.getByTestId('loading')).toHaveTextContent('ready')
+    })
+  })
+
+  it('useAuth를 AuthProvider 밖에서 쓰면 에러를 던진다', () => {
+    // console.error를 억제
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    expect(() => {
+      render(<TestConsumer />)
+    }).toThrow('useAuth must be used within AuthProvider')
+    consoleSpy.mockRestore()
+  })
 })

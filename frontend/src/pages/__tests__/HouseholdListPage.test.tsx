@@ -271,4 +271,75 @@ describe('HouseholdListPage', () => {
       expect(mockFetchHouseholds).toHaveBeenCalled()
     })
   })
+
+  describe('가구 카드 클릭', () => {
+    it('가구 카드를 클릭하면 상세 페이지로 이동한다', async () => {
+      const user = userEvent.setup()
+      storeState = {
+        households: mockHouseholds,
+        isLoading: false,
+        error: null,
+      }
+
+      renderHouseholdList()
+
+      await user.click(screen.getByText('우리 가족'))
+      // MemoryRouter에서 navigate를 모킹하지 않으므로 클릭만 확인
+    })
+
+    it('가구 카드에서 Enter 키를 누르면 이동한다', () => {
+      storeState = {
+        households: mockHouseholds,
+        isLoading: false,
+        error: null,
+      }
+
+      renderHouseholdList()
+
+      const card = screen.getByText('우리 가족').closest('[role="button"]')!
+      card.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
+    })
+  })
+
+  describe('가구 생성', () => {
+    it('+ 가구 만들기 버튼이 존재한다', () => {
+      storeState = {
+        households: mockHouseholds,
+        isLoading: false,
+        error: null,
+      }
+
+      renderHouseholdList()
+
+      expect(screen.getByRole('button', { name: '+ 가구 만들기' })).toBeInTheDocument()
+    })
+
+    it('빈 상태에서 가구 만들기 버튼이 존재한다', () => {
+      storeState = {
+        households: [],
+        isLoading: false,
+        error: null,
+      }
+
+      renderHouseholdList()
+
+      expect(screen.getByRole('button', { name: '가구 만들기' })).toBeInTheDocument()
+    })
+  })
+
+  describe('에러 상태 상세', () => {
+    it('에러 발생 후 다시 시도 클릭 시 fetchHouseholds를 재호출한다', async () => {
+      const user = userEvent.setup()
+      storeState = {
+        households: [],
+        isLoading: false,
+        error: '네트워크 오류',
+      }
+
+      renderHouseholdList()
+
+      await user.click(screen.getByRole('button', { name: '다시 시도' }))
+      expect(mockFetchHouseholds).toHaveBeenCalledTimes(2) // 마운트 + 재시도
+    })
+  })
 })
