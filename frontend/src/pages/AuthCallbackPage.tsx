@@ -10,12 +10,14 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import { useToast } from '../hooks/useToast'
 import { supabase } from '../utils/supabase'
 import { trackEvent } from '../utils/analytics'
 
 export default function AuthCallbackPage() {
   const navigate = useNavigate()
   const { isAuthenticated } = useAuth()
+  const { addToast } = useToast()
   const [isRecovery, setIsRecovery] = useState(false)
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -63,6 +65,7 @@ export default function AuthCallbackPage() {
       const { error: updateError } = await supabase.auth.updateUser({ password })
       if (updateError) throw updateError
 
+      addToast('success', '비밀번호가 변경되었습니다')
       navigate('/', { replace: true })
     } catch (err) {
       const message = (err as Error).message

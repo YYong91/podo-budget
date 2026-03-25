@@ -24,6 +24,10 @@ vi.mock('../../utils/analytics', () => ({
   trackEvent: vi.fn(),
 }))
 
+vi.mock('../../hooks/useToast', () => ({
+  useToast: () => ({ addToast: vi.fn(), removeToast: vi.fn() }),
+}))
+
 // onAuthStateChange 콜백을 캡처하기 위한 변수
 let authStateCallback: ((event: string) => void) | null = null
 

@@ -227,3 +227,23 @@ async def test_inactive_user_returns_403(client: AsyncClient, db_session: AsyncS
     )
     assert response.status_code == 403
     assert "비활성화" in response.json()["detail"]
+
+
+@pytest.mark.asyncio
+async def test_delete_account_success(authenticated_client: AsyncClient, test_user: User, db_session: AsyncSession):
+    """계정 삭제 — is_active=False로 비활성화, 개인정보 익명화"""
+    response = await authenticated_client.delete("/api/auth/me")
+    assert response.status_code == 200
+
+    # DB에서 유저 확인 — 비활성화 + 익명화
+    await db_session.refresh(test_user)
+    assert test_user.is_active is False
+    assert test_user.email is None
+    assert "deleted" in test_user.username
+
+
+@pytest.mark.asyncio
+async def test_delete_account_unauthenticated(client: AsyncClient):
+    """미인증 상태에서 계정 삭제 시 401"""
+    response = await client.delete("/api/auth/me")
+    assert response.status_code == 401
