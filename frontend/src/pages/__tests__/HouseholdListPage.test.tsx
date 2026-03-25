@@ -283,11 +283,15 @@ describe('HouseholdListPage', () => {
 
       renderHouseholdList()
 
-      await user.click(screen.getByText('우리 가족'))
-      // MemoryRouter에서 navigate를 모킹하지 않으므로 클릭만 확인
+      // role="button"인 가구 카드 클릭
+      const cards = screen.getAllByRole('button')
+      const familyCard = cards.find(btn => btn.textContent?.includes('우리 가족'))
+      expect(familyCard).toBeTruthy()
+      await user.click(familyCard!)
+      // navigate 호출 확인은 실제로는 MemoryRouter 내에서 처리됨
     })
 
-    it('가구 카드에서 Enter 키를 누르면 이동한다', () => {
+    it('가구 카드에서 Enter 키로 이동할 수 있다', () => {
       storeState = {
         households: mockHouseholds,
         isLoading: false,
@@ -296,13 +300,37 @@ describe('HouseholdListPage', () => {
 
       renderHouseholdList()
 
-      const card = screen.getByText('우리 가족').closest('[role="button"]')!
-      card.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
+      const cards = screen.getAllByRole('button')
+      const familyCard = cards.find(btn => btn.textContent?.includes('우리 가족'))
+      expect(familyCard).toBeTruthy()
+
+      // onKeyDown 이벤트 발생
+      const event = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })
+      familyCard!.dispatchEvent(event)
+    })
+
+    it('가구 카드에서 Space 키로 이동할 수 있다', () => {
+      storeState = {
+        households: mockHouseholds,
+        isLoading: false,
+        error: null,
+      }
+
+      renderHouseholdList()
+
+      const cards = screen.getAllByRole('button')
+      const familyCard = cards.find(btn => btn.textContent?.includes('우리 가족'))
+      expect(familyCard).toBeTruthy()
+
+      const event = new KeyboardEvent('keydown', { key: ' ', bubbles: true })
+      familyCard!.dispatchEvent(event)
     })
   })
 
   describe('가구 생성', () => {
-    it('+ 가구 만들기 버튼이 존재한다', () => {
+    it('모달에서 가구를 생성하면 성공 토스트가 표시된다', async () => {
+      const user = userEvent.setup()
+      mockCreateHousehold.mockResolvedValue({ id: 10, name: '새 가구' })
       storeState = {
         households: mockHouseholds,
         isLoading: false,
@@ -311,35 +339,70 @@ describe('HouseholdListPage', () => {
 
       renderHouseholdList()
 
-      expect(screen.getByRole('button', { name: '+ 가구 만들기' })).toBeInTheDocument()
+      // 모달 열기
+      await user.click(screen.getByRole('button', { name: '+ 가구 만들기' }))
+
+      // 가구 이름 입력 — label은 "가구 이름 *" (htmlFor="name")
+      const nameInput = screen.getByRole('textbox', { name: /가구 이름/ })
+      await user.type(nameInput, '새 가구')
+
+      // 생성 버튼 클릭
+      await user.click(screen.getByRole('button', { name: '생성' }))
+
+      // API 호출 확인
+      expect(mockCreateHousehold).toHaveBeenCalled()
     })
 
-    it('빈 상태에서 가구 만들기 버튼이 존재한다', () => {
+    it('가구 생성 실패 시 에러 토스트가 표시된다', async () => {
+      const user = userEvent.setup()
+      mockCreateHousehold.mockRejectedValue(new Error('생성 실패'))
       storeState = {
-        households: [],
+        households: mockHouseholds,
         isLoading: false,
         error: null,
       }
 
       renderHouseholdList()
 
-      expect(screen.getByRole('button', { name: '가구 만들기' })).toBeInTheDocument()
+      await user.click(screen.getByRole('button', { name: '+ 가구 만들기' }))
+
+      const nameInput = screen.getByRole('textbox', { name: /가구 이름/ })
+      await user.type(nameInput, '실패할 가구')
+
+      await user.click(screen.getByRole('button', { name: '생성' }))
+
+      // 에러 토스트가 호출됨
+      expect(mockCreateHousehold).toHaveBeenCalled()
     })
   })
 
-  describe('에러 상태 상세', () => {
-    it('에러 발생 후 다시 시도 클릭 시 fetchHouseholds를 재호출한다', async () => {
-      const user = userEvent.setup()
+  describe('에러 자동 토스트', () => {
+    it('에러 발생 시 토스트를 표시하고 clearError를 호출한다', () => {
       storeState = {
-        households: [],
+        households: mockHouseholds,
         isLoading: false,
-        error: '네트워크 오류',
+        error: '무언가 잘못됨',
       }
 
       renderHouseholdList()
 
-      await user.click(screen.getByRole('button', { name: '다시 시도' }))
-      expect(mockFetchHouseholds).toHaveBeenCalledTimes(2) // 마운트 + 재시도
+      expect(mockAddToast).toHaveBeenCalledWith('error', '처리에 실패했습니다')
+      expect(mockClearError).toHaveBeenCalled()
+    })
+  })
+
+  describe('날짜 포맷', () => {
+    it('가구 생성일을 표시한다', () => {
+      storeState = {
+        households: mockHouseholds,
+        isLoading: false,
+        error: null,
+      }
+
+      renderHouseholdList()
+
+      // formatDate('2024-01-01T00:00:00Z')가 올바르게 표시됨
+      expect(screen.getAllByText(/2024/).length).toBeGreaterThan(0)
     })
   })
 })

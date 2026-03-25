@@ -437,4 +437,117 @@ describe('RecurringList', () => {
       expect(mockAddToast).toHaveBeenCalledWith('error', '변경에 실패했습니다')
     })
   })
+
+  // ==================== 신규 추가 제출 성공 ====================
+
+  it('신규 반복 거래를 성공적으로 추가한다', async () => {
+    server.use(
+      http.get('/api/recurring', () => HttpResponse.json([])),
+      http.get('/api/categories', () => HttpResponse.json([])),
+      http.post('/api/recurring', () =>
+        HttpResponse.json({
+          id: 99, type: 'expense', amount: 10000, description: '테스트',
+          frequency: 'monthly', day_of_month: 25, is_active: true,
+          next_due_date: '2026-04-25',
+        }, { status: 201 })
+      ),
+    )
+
+    const user = userEvent.setup()
+    renderRecurringList()
+
+    await waitFor(() => {
+      expect(screen.getByText(/등록된 반복 거래가 없습니다/)).toBeInTheDocument()
+    })
+
+    await user.click(screen.getByText('반복 거래 추가'))
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+
+    await user.type(screen.getByLabelText('설명'), '테스트 반복')
+    await user.type(screen.getByLabelText('금액'), '10000')
+    await user.click(screen.getByText('추가하기'))
+
+    await waitFor(() => {
+      expect(mockAddToast).toHaveBeenCalledWith('success', '반복 거래가 추가되었습니다')
+    })
+  })
+
+  it('수정 모달에서 저장 시 수정 성공 메시지를 표시한다', async () => {
+    server.use(
+      http.get('/api/recurring', () => HttpResponse.json([mockItems[0]])),
+      http.get('/api/categories', () => HttpResponse.json([])),
+      http.put('/api/recurring/1', () =>
+        HttpResponse.json({ ...mockItems[0], description: '수정된 넷플릭스' })
+      ),
+    )
+
+    const user = userEvent.setup()
+    renderRecurringList()
+
+    await waitFor(() => {
+      expect(screen.getAllByText('넷플릭스').length).toBeGreaterThan(0)
+    })
+
+    const editBtns = screen.getAllByTitle('수정')
+    await user.click(editBtns[0])
+
+    expect(screen.getByText('반복 거래 수정')).toBeInTheDocument()
+
+    // 수정 모달의 저장 버튼 클릭
+    await user.click(screen.getByText('수정하기'))
+
+    await waitFor(() => {
+      expect(mockAddToast).toHaveBeenCalledWith('success', '반복 거래가 수정되었습니다')
+    })
+  })
+
+  it('삭제 실패 시 에러 토스트를 표시한다', async () => {
+    server.use(
+      http.get('/api/recurring', () => HttpResponse.json([mockItems[0]])),
+      http.get('/api/categories', () => HttpResponse.json([])),
+      http.delete('/api/recurring/1', () =>
+        HttpResponse.json({ detail: 'Error' }, { status: 500 })
+      ),
+    )
+
+    const user = userEvent.setup()
+    renderRecurringList()
+
+    await waitFor(() => {
+      expect(screen.getAllByText('넷플릭스').length).toBeGreaterThan(0)
+    })
+
+    const deleteBtns = screen.getAllByTitle('삭제')
+    await user.click(deleteBtns[0])
+
+    await waitFor(() => {
+      expect(mockAddToast).toHaveBeenCalledWith('error', '삭제에 실패했습니다')
+    })
+  })
+
+  it('저장 실패 시 에러 토스트를 표시한다', async () => {
+    server.use(
+      http.get('/api/recurring', () => HttpResponse.json([])),
+      http.get('/api/categories', () => HttpResponse.json([])),
+      http.post('/api/recurring', () =>
+        HttpResponse.json({ detail: 'Error' }, { status: 500 })
+      ),
+    )
+
+    const user = userEvent.setup()
+    renderRecurringList()
+
+    await waitFor(() => {
+      expect(screen.getByText(/등록된 반복 거래가 없습니다/)).toBeInTheDocument()
+    })
+
+    await user.click(screen.getByText('반복 거래 추가'))
+    await user.type(screen.getByLabelText('설명'), '실패 테스트')
+    await user.type(screen.getByLabelText('금액'), '10000')
+    await user.click(screen.getByText('추가하기'))
+
+    await waitFor(() => {
+      expect(mockAddToast).toHaveBeenCalledWith('error', '저장에 실패했습니다')
+    })
+  })
 })
