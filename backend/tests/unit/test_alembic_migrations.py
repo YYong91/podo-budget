@@ -19,6 +19,7 @@ import tempfile
 from pathlib import Path
 
 import pytest
+
 from alembic.config import Config
 from alembic.script import ScriptDirectory
 
