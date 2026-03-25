@@ -52,13 +52,13 @@ exports[`PrivacyPolicyPage > 스냅샷과 일치한다 1`] = `
                 <strong>
                   필수 항목
                 </strong>
-                : 사용자명, 비밀번호(암호화 저장), 지출 내역(금액, 설명, 카테고리, 날짜)
+                : 이메일, 비밀번호(Supabase Auth를 통해 암호화 관리), 지출/수입 내역(금액, 설명, 카테고리, 날짜)
               </li>
               <li>
                 <strong>
                   선택 항목
                 </strong>
-                : 이메일(공유 가계부 초대 기능 이용 시 권장)
+                : 이름, Google 계정 정보(소셜 로그인 이용 시)
               </li>
               <li>
                 <strong>
@@ -148,19 +148,47 @@ exports[`PrivacyPolicyPage > 스냅샷과 일치한다 1`] = `
                 <strong>
                   제공받는 자
                 </strong>
-                : Google (Google Analytics)
+                : Supabase (인증 및 데이터베이스)
               </li>
               <li>
                 <strong>
                   제공 항목
                 </strong>
-                : 서비스 이용 기록(페이지 방문, 기능 사용 이벤트), 기기 정보, 접속 IP(익명화 처리)
+                : 이메일, 비밀번호(암호화), 서비스 데이터
               </li>
               <li>
                 <strong>
                   제공 목적
                 </strong>
-                : 서비스 이용 통계 분석 및 개선
+                : 회원 인증, 데이터 저장 및 관리
+              </li>
+              <li>
+                <strong>
+                  보유 기간
+                </strong>
+                : Supabase의 개인정보처리방침에 따름
+              </li>
+            </ul>
+            <ul
+              class="list-disc list-inside space-y-1 ml-4 mt-3"
+            >
+              <li>
+                <strong>
+                  제공받는 자
+                </strong>
+                : Google (Google Analytics, Google OAuth)
+              </li>
+              <li>
+                <strong>
+                  제공 항목
+                </strong>
+                : 서비스 이용 기록(페이지 방문, 기능 사용 이벤트), 기기 정보, 접속 IP(익명화 처리), 소셜 로그인 시 이메일/이름
+              </li>
+              <li>
+                <strong>
+                  제공 목적
+                </strong>
+                : 서비스 이용 통계 분석 및 개선, 소셜 로그인 인증
               </li>
               <li>
                 <strong>
@@ -279,7 +307,7 @@ exports[`PrivacyPolicyPage > 스냅샷과 일치한다 1`] = `
                 <strong>
                   이메일
                 </strong>
-                : privacy@podobudget.com
+                : seungyongkim0327@gmail.com
               </li>
             </ul>
             <p
@@ -303,7 +331,7 @@ exports[`PrivacyPolicyPage > 스냅샷과 일치한다 1`] = `
               <strong>
                 시행일자
               </strong>
-              : 2026년 2월 13일
+              : 2026년 3월 25일
             </p>
           </section>
         </div>
