@@ -420,6 +420,7 @@ export const mockChatResponse = {
       household_id: 1,
       user_id: 1,
       exclude_from_stats: false,
+      recurring_transaction_id: null,
       date: '2026-03-14T12:00:00Z',
       created_at: '2026-03-14T12:00:00Z',
       updated_at: '2026-03-14T12:00:00Z',

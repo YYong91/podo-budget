@@ -7,8 +7,6 @@ execute_recurring 통합 동작 테스트
 from datetime import date
 
 import pytest
-import pytest_asyncio
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.services.recurring_service import calculate_initial_due_date, calculate_next_due_date
 

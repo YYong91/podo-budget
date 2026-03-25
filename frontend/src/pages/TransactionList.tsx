@@ -876,7 +876,6 @@ export default function TransactionList() {
                         categoryId={tx.category_id}
                         categoryMap={categoryMap}
                         excludeFromStats={tx.exclude_from_stats}
-                        rawInput={tx.raw_input}
                         recurringTransactionId={tx.recurring_transaction_id}
                         onCategoryClick={categoryClickHandlers.get(`${tx.type}-${tx.id}`) ?? (() => {})}
                       />
@@ -962,7 +961,6 @@ export default function TransactionList() {
                         categoryId={tx.category_id}
                         categoryMap={categoryMap}
                         excludeFromStats={tx.exclude_from_stats}
-                        rawInput={tx.raw_input}
                         recurringTransactionId={tx.recurring_transaction_id}
                         onCategoryClick={categoryClickHandlers.get(`${tx.type}-${tx.id}`)!}
                       />

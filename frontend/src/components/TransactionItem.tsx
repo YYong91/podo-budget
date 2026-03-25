@@ -17,7 +17,6 @@ interface TransactionItemProps {
   /** O(1) 카테고리 조회를 위해 Map으로 전달 (#180) */
   categoryMap: Map<number, Category>
   excludeFromStats?: boolean
-  rawInput?: string | null
   recurringTransactionId?: number | null
   /** 안정적 콜백 — TransactionList에서 useMemo로 생성된 핸들러 전달 (#240) */
   onCategoryClick: () => void
@@ -31,7 +30,6 @@ function TransactionItem({
   categoryId,
   categoryMap,
   excludeFromStats,
-  rawInput: _rawInput, // eslint-disable-line @typescript-eslint/no-unused-vars
   recurringTransactionId,
   onCategoryClick,
 }: TransactionItemProps) {
