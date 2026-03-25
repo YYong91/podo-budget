@@ -61,6 +61,7 @@ interface UnifiedTransaction {
   category_id: number | null
   exclude_from_stats?: boolean
   raw_input?: string | null
+  recurring_transaction_id?: number | null
 }
 
 export default function TransactionList() {
@@ -876,6 +877,7 @@ export default function TransactionList() {
                         categoryMap={categoryMap}
                         excludeFromStats={tx.exclude_from_stats}
                         rawInput={tx.raw_input}
+                        recurringTransactionId={tx.recurring_transaction_id}
                         onCategoryClick={categoryClickHandlers.get(`${tx.type}-${tx.id}`) ?? (() => {})}
                       />
                     ))}
@@ -961,6 +963,7 @@ export default function TransactionList() {
                         categoryMap={categoryMap}
                         excludeFromStats={tx.exclude_from_stats}
                         rawInput={tx.raw_input}
+                        recurringTransactionId={tx.recurring_transaction_id}
                         onCategoryClick={categoryClickHandlers.get(`${tx.type}-${tx.id}`)!}
                       />
                     ))}
