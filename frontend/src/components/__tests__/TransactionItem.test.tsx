@@ -76,7 +76,7 @@ describe('TransactionItem', () => {
   })
 
   it('정기 거래는 "정기" 뱃지를 표시한다', () => {
-    renderItem({ rawInput: '[정기] 넷플릭스' })
+    renderItem({ recurringTransactionId: 1 })
     expect(screen.getByText('정기')).toBeInTheDocument()
   })
 

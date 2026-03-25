@@ -487,13 +487,11 @@ async def test_google_provider_api_key():
 
 @pytest.mark.asyncio
 async def test_anthropic_parse_expense_json_decode_error():
-    """Anthropic 응답이 유효하지 않은 JSON → JSONDecodeError 발생
+    """Anthropic 응답이 유효하지 않은 JSON → 재시도 후 에러 dict 반환
 
-    NOTE: JSONDecodeError는 ValueError의 하위 클래스이므로
-    except ValueError에서 먼저 잡히고 re-raise된다 (기존 동작).
+    JSONDecodeError는 내부에서 잡혀 재시도되며, 모든 재시도 실패 시
+    {"error": "응답을 파싱할 수 없습니다"}를 반환한다.
     """
-    import json
-
     mock_response = MagicMock()
     mock_response.stop_reason = "end_turn"
     mock_response.content = [MagicMock(text="이것은 JSON이 아닙니다")]
@@ -507,9 +505,9 @@ async def test_anthropic_parse_expense_json_decode_error():
             mock_anthropic.return_value = mock_client
 
             provider = AnthropicProvider()
-            # JSONDecodeError는 ValueError 하위 클래스 → except ValueError에서 re-raise
-            with pytest.raises(json.JSONDecodeError):
-                await provider.parse_expense("테스트")
+            result = await provider.parse_expense("테스트")
+            assert "error" in result
+            assert result["error"] == "응답을 파싱할 수 없습니다"
 
 
 @pytest.mark.asyncio

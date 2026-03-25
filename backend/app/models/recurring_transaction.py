@@ -56,3 +56,5 @@ class RecurringTransaction(Base):
     user = relationship("User")
     category = relationship("Category")
     household = relationship("Household")
+    expenses = relationship("Expense", back_populates="recurring_transaction")
+    incomes = relationship("Income", back_populates="recurring_transaction")

@@ -13,6 +13,7 @@ export interface UnifiedTransaction {
   category_id: number | null
   exclude_from_stats?: boolean
   raw_input?: string | null
+  recurring_transaction_id?: number | null
 }
 
 type FilterType = 'all' | 'expense' | 'income'

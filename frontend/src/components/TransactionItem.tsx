@@ -17,7 +17,7 @@ interface TransactionItemProps {
   /** O(1) 카테고리 조회를 위해 Map으로 전달 (#180) */
   categoryMap: Map<number, Category>
   excludeFromStats?: boolean
-  rawInput?: string | null
+  recurringTransactionId?: number | null
   /** 안정적 콜백 — TransactionList에서 useMemo로 생성된 핸들러 전달 (#240) */
   onCategoryClick: () => void
 }
@@ -30,13 +30,14 @@ function TransactionItem({
   categoryId,
   categoryMap,
   excludeFromStats,
-  rawInput,
+  recurringTransactionId,
   onCategoryClick,
 }: TransactionItemProps) {
   // O(1) 조회 — 이전 O(n) find 대비 300건×20카테고리=6,000비교 → 300번 해시 조회 (#180)
   const category = categoryId != null ? categoryMap.get(categoryId) : null
   const detailPath = type === 'expense' ? `/expenses/${id}` : `/income/${id}`
-  const isRecurring = rawInput?.startsWith('[정기]')
+  // FK 기반 정기거래 감지 — 이전 raw_input '[정기]' 접두사 방식 대체
+  const isRecurring = recurringTransactionId != null
 
   return (
     <Link

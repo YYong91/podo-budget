@@ -40,6 +40,7 @@ class IncomeResponse(IncomeBase):
     household_id: int | None = None
     user_id: int
     exclude_from_stats: bool = False
+    recurring_transaction_id: int | None = None
     created_at: datetime
     updated_at: datetime
 

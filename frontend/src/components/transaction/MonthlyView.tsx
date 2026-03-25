@@ -177,7 +177,7 @@ export default function MonthlyView({
                     categoryId={tx.category_id}
                     categoryMap={monthly.categoryMap}
                     excludeFromStats={tx.exclude_from_stats}
-                    rawInput={tx.raw_input}
+                    recurringTransactionId={tx.recurring_transaction_id}
                     onCategoryClick={categoryClickHandlers.get(`${tx.type}-${tx.id}`)!}
                   />
                 ))}

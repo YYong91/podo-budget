@@ -1,6 +1,6 @@
 """정기 거래 API 통합 테스트"""
 
-from datetime import date
+from datetime import date, datetime
 
 import pytest
 
@@ -478,3 +478,171 @@ async def test_not_found(authenticated_client):
     """존재하지 않는 정기 거래 조회 시 404"""
     response = await authenticated_client.get("/api/recurring/99999")
     assert response.status_code == 404
+
+
+# --- source_id 연결 ---
+
+
+@pytest.mark.asyncio
+async def test_create_recurring_with_source_id_links_expense(authenticated_client, test_user, test_household, db_session):
+    """source_id 전달 시 원본 지출의 recurring_transaction_id가 설정된다"""
+    from app.models.category import Category
+    from app.models.expense import Expense
+
+    cat = Category(name="식비", type="expense", user_id=test_user.id, household_id=test_household.id)
+    db_session.add(cat)
+    await db_session.flush()
+
+    expense = Expense(
+        user_id=test_user.id,
+        household_id=test_household.id,
+        amount=10000,
+        description="점심",
+        category_id=cat.id,
+        date=datetime.now(),
+    )
+    db_session.add(expense)
+    await db_session.commit()
+    await db_session.refresh(expense)
+
+    today = date.today()
+    response = await authenticated_client.post(
+        "/api/recurring",
+        json={
+            "type": "expense",
+            "amount": 10000,
+            "description": "점심",
+            "category_id": cat.id,
+            "frequency": "monthly",
+            "day_of_month": today.day,
+            "start_date": today.isoformat(),
+            "household_id": test_household.id,
+            "source_id": expense.id,
+        },
+    )
+    assert response.status_code == 201
+    recurring_id = response.json()["id"]
+
+    await db_session.refresh(expense)
+    assert expense.recurring_transaction_id == recurring_id
+
+
+@pytest.mark.asyncio
+async def test_create_recurring_with_source_id_advances_next_due(authenticated_client, test_user, test_household, db_session):
+    """source_id 전달 + start_date가 오늘이면 next_due_date가 다음 주기로 설정된다"""
+    from app.models.category import Category
+    from app.models.expense import Expense
+
+    cat = Category(name="식비", type="expense", user_id=test_user.id, household_id=test_household.id)
+    db_session.add(cat)
+    await db_session.flush()
+
+    expense = Expense(
+        user_id=test_user.id,
+        household_id=test_household.id,
+        amount=10000,
+        description="점심",
+        category_id=cat.id,
+        date=datetime.now(),
+    )
+    db_session.add(expense)
+    await db_session.commit()
+    await db_session.refresh(expense)
+
+    today = date.today()
+    response = await authenticated_client.post(
+        "/api/recurring",
+        json={
+            "type": "expense",
+            "amount": 10000,
+            "description": "점심",
+            "category_id": cat.id,
+            "frequency": "monthly",
+            "day_of_month": today.day,
+            "start_date": today.isoformat(),
+            "household_id": test_household.id,
+            "source_id": expense.id,
+        },
+    )
+    assert response.status_code == 201
+    next_due = response.json()["next_due_date"]
+    assert next_due > today.isoformat()
+
+
+@pytest.mark.asyncio
+async def test_create_recurring_source_id_not_found(authenticated_client, test_household):
+    """존재하지 않는 source_id → 404"""
+    today = date.today()
+    response = await authenticated_client.post(
+        "/api/recurring",
+        json={
+            "type": "expense",
+            "amount": 10000,
+            "description": "점심",
+            "frequency": "monthly",
+            "day_of_month": today.day,
+            "start_date": today.isoformat(),
+            "household_id": test_household.id,
+            "source_id": 99999,
+        },
+    )
+    assert response.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_create_recurring_source_id_type_mismatch(authenticated_client, test_user, test_household, db_session):
+    """source_id의 type 불일치 → 404 (해당 타입 테이블에서 미발견)"""
+    from app.models.category import Category
+    from app.models.expense import Expense
+
+    cat = Category(name="식비", type="expense", user_id=test_user.id, household_id=test_household.id)
+    db_session.add(cat)
+    await db_session.flush()
+
+    expense = Expense(
+        user_id=test_user.id,
+        household_id=test_household.id,
+        amount=10000,
+        description="점심",
+        category_id=cat.id,
+        date=datetime.now(),
+    )
+    db_session.add(expense)
+    await db_session.commit()
+    await db_session.refresh(expense)
+
+    today = date.today()
+    response = await authenticated_client.post(
+        "/api/recurring",
+        json={
+            "type": "income",  # expense ID인데 income으로 요청
+            "amount": 10000,
+            "description": "점심",
+            "frequency": "monthly",
+            "day_of_month": today.day,
+            "start_date": today.isoformat(),
+            "household_id": test_household.id,
+            "source_id": expense.id,
+        },
+    )
+    assert response.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_create_recurring_without_source_id_keeps_existing_behavior(authenticated_client, test_household):
+    """source_id 없이 생성 시 기존 동작 유지"""
+    today = date.today()
+    response = await authenticated_client.post(
+        "/api/recurring",
+        json={
+            "type": "expense",
+            "amount": 10000,
+            "description": "점심",
+            "frequency": "monthly",
+            "day_of_month": today.day,
+            "start_date": today.isoformat(),
+            "household_id": test_household.id,
+        },
+    )
+    assert response.status_code == 201
+    assert response.json()["next_due_date"] == today.isoformat()
