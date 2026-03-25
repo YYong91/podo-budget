@@ -36,4 +36,4 @@ await get_household_member(household_id, current_user, db)
 - DB: SQLite in-memory (StaticPool, CI 속도용), 테스트마다 테이블 생성/삭제. 프로덕션은 Supabase PostgreSQL
 - conftest.py fixtures: `test_user`, `test_household`, `db_session`, `authenticated_client`
 - 테스트 데이터에 household_id 필수 포함
-- 기존 실패 중: `tests/integration/test_api_budget_bulk.py` (CI에서 `--ignore`)
+- `test_api_budget_bulk.py` — 벌크 저장 + 월별 알림 6개 테스트 (#354)

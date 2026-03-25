@@ -85,7 +85,7 @@ def upgrade() -> None:
 
         # 이 이름의 비시스템 카테고리 전부 조회
         old_cats = conn.execute(
-            sa.text("SELECT id FROM categories WHERE name = :name " "AND NOT (user_id IS NULL AND household_id IS NULL)"),
+            sa.text("SELECT id FROM categories WHERE name = :name AND NOT (user_id IS NULL AND household_id IS NULL)"),
             {"name": old_name},
         ).fetchall()
 
@@ -108,7 +108,7 @@ def upgrade() -> None:
             ).fetchone()
             if existing is None:
                 conn.execute(
-                    sa.text("INSERT INTO category_mappings (household_id, user_id, source_name, target_category_id) " "VALUES (:hh, NULL, :src, :target)"),
+                    sa.text("INSERT INTO category_mappings (household_id, user_id, source_name, target_category_id) VALUES (:hh, NULL, :src, :target)"),
                     {"hh": hh_id, "src": old_name, "target": sys_id},
                 )
 

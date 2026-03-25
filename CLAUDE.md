@@ -169,5 +169,4 @@ Frontend: `frontend/.env.development`:
 
 ## Known Issues
 
-- `tests/integration/test_api_budget_bulk.py` — 4개 테스트 기존부터 실패 중 (CI에서 `--ignore` 처리됨, 별도 수정 필요)
 - PWA 서비스 워커 캐시: 앱 구조 크게 변경 시 `frontend/vite.config.ts`의 `workbox.cacheId` 버전 올릴 것 (현재 `podo-budget-v2`)

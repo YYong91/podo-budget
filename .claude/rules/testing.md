@@ -29,7 +29,7 @@ async def test_기능_설명(authenticated_client, test_user, db_session):
 ### 주의사항
 - 테스트 데이터에 `household_id` 필수 포함
 - rate limiter는 테스트 시 비활성화됨
-- `test_api_budget_bulk.py`는 기존 실패 — CI에서 `--ignore` 처리
+- `test_api_budget_bulk.py` — 벌크 저장 + 월별 알림 6개 테스트 (#354)
 
 ## 프론트엔드 (Vitest + React Testing Library + MSW)
 
@@ -77,7 +77,7 @@ vi.mock('../../hooks/useToast', () => ({
 ## 전체 테스트 실행
 ```bash
 # 백엔드
-cd backend && pytest --ignore=tests/integration/test_api_budget_bulk.py -v
+cd backend && pytest -v
 
 # 프론트엔드
 cd frontend && npm run test:run
