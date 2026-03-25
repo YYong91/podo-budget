@@ -12,19 +12,30 @@ import { supabase } from '../utils/supabase'
 
 export default function LoginPage() {
   const navigate = useNavigate()
-  const [mode, setMode] = useState<'login' | 'signup'>('login')
+  const [mode, setMode] = useState<'login' | 'signup' | 'reset'>('login')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [name, setName] = useState('')
   const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
   const [loading, setLoading] = useState(false)
 
   const handleEmailAuth = useCallback(async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
+    setSuccess('')
     setLoading(true)
 
     try {
+      if (mode === 'reset') {
+        const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: `${window.location.origin}/auth/callback`,
+        })
+        if (resetError) throw resetError
+        setSuccess('비밀번호 재설정 메일을 발송했습니다. 이메일을 확인해주세요.')
+        return
+      }
+
       if (mode === 'signup') {
         const { error: signUpError } = await supabase.auth.signUp({
           email,
@@ -55,8 +66,10 @@ export default function LoginPage() {
         setError('이미 가입된 이메일입니다')
       } else if (message.includes('Password should be at least')) {
         setError('비밀번호는 6자 이상이어야 합니다')
+      } else if (message.includes('rate limit')) {
+        setError('요청이 너무 많습니다. 잠시 후 다시 시도해주세요.')
       } else {
-        setError(message || '로그인에 실패했습니다')
+        setError(message || '처리에 실패했습니다')
       }
     } finally {
       setLoading(false)
@@ -151,24 +164,30 @@ export default function LoginPage() {
             />
           </div>
 
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium text-[var(--text-secondary)] mb-1">
-              비밀번호
-            </label>
-            <input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="6자 이상"
-              required
-              minLength={6}
-              className="w-full px-4 py-2.5 border border-[var(--input-border)] rounded-xl bg-[var(--surface-card)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-grape-300 focus:border-grape-300"
-            />
-          </div>
+          {mode !== 'reset' && (
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium text-[var(--text-secondary)] mb-1">
+                비밀번호
+              </label>
+              <input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="6자 이상"
+                required
+                minLength={6}
+                className="w-full px-4 py-2.5 border border-[var(--input-border)] rounded-xl bg-[var(--surface-card)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-grape-300 focus:border-grape-300"
+              />
+            </div>
+          )}
 
           {error && (
             <p className="text-sm text-rose-500">{error}</p>
+          )}
+
+          {success && (
+            <p className="text-sm text-emerald-600">{success}</p>
           )}
 
           <button
@@ -176,9 +195,21 @@ export default function LoginPage() {
             disabled={loading}
             className="w-full py-3 text-sm font-semibold text-white bg-grape-600 rounded-xl hover:bg-grape-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
           >
-            {loading ? '처리 중...' : mode === 'login' ? '로그인' : '회원가입'}
+            {loading ? '처리 중...' : mode === 'login' ? '로그인' : mode === 'signup' ? '회원가입' : '재설정 메일 보내기'}
           </button>
         </form>
+
+        {/* 비밀번호 찾기 (로그인 모드에서만) */}
+        {mode === 'login' && (
+          <p className="text-center">
+            <button
+              onClick={() => { setMode('reset'); setError(''); setSuccess('') }}
+              className="text-sm text-[var(--text-muted)] hover:underline"
+            >
+              비밀번호를 잊으셨나요?
+            </button>
+          </p>
+        )}
 
         {/* 모드 전환 */}
         <p className="text-center text-sm text-[var(--text-tertiary)]">
@@ -186,7 +217,7 @@ export default function LoginPage() {
             <>
               계정이 없으신가요?{' '}
               <button
-                onClick={() => { setMode('signup'); setError('') }}
+                onClick={() => { setMode('signup'); setError(''); setSuccess('') }}
                 className="text-grape-600 font-medium hover:underline"
               >
                 회원가입
@@ -196,7 +227,7 @@ export default function LoginPage() {
             <>
               이미 계정이 있으신가요?{' '}
               <button
-                onClick={() => { setMode('login'); setError('') }}
+                onClick={() => { setMode('login'); setError(''); setSuccess('') }}
                 className="text-grape-600 font-medium hover:underline"
               >
                 로그인
