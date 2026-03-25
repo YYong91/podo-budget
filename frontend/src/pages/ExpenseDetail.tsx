@@ -190,12 +190,14 @@ export default function ExpenseDetail() {
             </>
           ) : (
             <>
-              <button
-                onClick={() => setShowRecurringModal(true)}
-                className="shrink-0 whitespace-nowrap px-4 py-2 text-sm font-medium text-[var(--text-secondary)] bg-[var(--surface-hover)] rounded-xl hover:bg-[var(--border-default)] transition-colors"
-              >
-                반복 거래 등록
-              </button>
+              {!expense.recurring_transaction_id && (
+                <button
+                  onClick={() => setShowRecurringModal(true)}
+                  className="shrink-0 whitespace-nowrap px-4 py-2 text-sm font-medium text-[var(--text-secondary)] bg-[var(--surface-hover)] rounded-xl hover:bg-[var(--border-default)] transition-colors"
+                >
+                  반복 거래 등록
+                </button>
+              )}
               <button
                 onClick={() => setIsEditing(true)}
                 className="shrink-0 px-4 py-2 text-sm font-medium text-grape-600 bg-grape-50 rounded-xl hover:bg-grape-100 transition-colors"
@@ -383,8 +385,12 @@ export default function ExpenseDetail() {
           category_id={expense.category_id}
           categories={categories}
           initialDate={expense.date}
+          sourceId={expense.id}
           onClose={() => setShowRecurringModal(false)}
-          onSuccess={() => setShowRecurringModal(false)}
+          onSuccess={() => {
+            setShowRecurringModal(false)
+            fetchData()
+          }}
         />
       )}
 

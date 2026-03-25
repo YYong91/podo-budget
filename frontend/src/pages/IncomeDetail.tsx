@@ -176,12 +176,14 @@ export default function IncomeDetail() {
             </>
           ) : (
             <>
-              <button
-                onClick={() => setShowRecurringModal(true)}
-                className="shrink-0 whitespace-nowrap px-4 py-2 text-sm font-medium text-[var(--text-secondary)] bg-[var(--surface-hover)] rounded-xl hover:bg-[var(--border-default)] transition-colors"
-              >
-                반복 거래 등록
-              </button>
+              {!income.recurring_transaction_id && (
+                <button
+                  onClick={() => setShowRecurringModal(true)}
+                  className="shrink-0 whitespace-nowrap px-4 py-2 text-sm font-medium text-[var(--text-secondary)] bg-[var(--surface-hover)] rounded-xl hover:bg-[var(--border-default)] transition-colors"
+                >
+                  반복 거래 등록
+                </button>
+              )}
               <button
                 onClick={() => setIsEditing(true)}
                 className="shrink-0 px-4 py-2 text-sm font-medium text-leaf-600 bg-leaf-50 rounded-xl hover:bg-leaf-100 transition-colors"
@@ -347,8 +349,12 @@ export default function IncomeDetail() {
           category_id={income.category_id}
           categories={categories}
           initialDate={income.date}
+          sourceId={income.id}
           onClose={() => setShowRecurringModal(false)}
-          onSuccess={() => setShowRecurringModal(false)}
+          onSuccess={() => {
+            setShowRecurringModal(false)
+            fetchData()
+          }}
         />
       )}
 
