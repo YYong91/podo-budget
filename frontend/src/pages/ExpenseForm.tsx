@@ -7,50 +7,40 @@ import { getLocalDateString } from '../utils/format'
  * 2. 폼 입력 모드: 금액, 설명, 카테고리 등을 직접 입력
  */
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useRef } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { ArrowLeft, Camera } from 'lucide-react'
 import { useToast } from '../hooks/useToast'
 import { expenseApi } from '../api/expenses'
-import { incomeApi } from '../api/income'
 import { categoryApi } from '../api/categories'
-import { chatApi } from '../api/chat'
 import { useHouseholdStore } from '../stores/useHouseholdStore'
-import type { Category, ParsedExpenseItem } from '../types'
+import { useNaturalInput } from '../hooks/useNaturalInput'
 import ParsedItemPreviewCard from '../components/ParsedItemPreviewCard'
 import { trackEvent } from '../utils/analytics'
 
 type InputMode = 'natural' | 'form' | 'ocr'
-
-/** 프리뷰 카드에서 편집 가능한 항목 */
-interface EditableExpense extends ParsedExpenseItem {
-  category_id: number | null
-}
 
 export default function ExpenseForm() {
   const navigate = useNavigate()
   const { addToast } = useToast()
   const activeHouseholdId = useHouseholdStore((s) => s.activeHouseholdId)
 
+  // 자연어 입력 훅
+  const ni = useNaturalInput('expense')
+
   // 입력 모드 상태
   const [mode, setMode] = useState<InputMode>('natural')
-  const [loading, setLoading] = useState(false)
-
-  // 자연어 입력 상태
-  const [naturalInput, setNaturalInput] = useState('')
-  const [previewItems, setPreviewItems] = useState<EditableExpense[] | null>(null)
-  const [rawInput, setRawInput] = useState('')
 
   // OCR 상태
   const [ocrPreview, setOcrPreview] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   // 폼 입력 상태
-  const [categories, setCategories] = useState<Category[]>([])
-  // 프리뷰 카드 인라인 카테고리 추가 상태
-  const [showNewCategoryFor, setShowNewCategoryFor] = useState<number | null>(null)
-  const [newCategoryName, setNewCategoryName] = useState('')
-  const [creatingCategory, setCreatingCategory] = useState(false)
+  const [formLoading, setFormLoading] = useState(false)
+  // 폼용 카테고리 추가 상태
+  const [showNewCategoryForForm, setShowNewCategoryForForm] = useState(false)
+  const [newCategoryNameForForm, setNewCategoryNameForForm] = useState('')
+  const [creatingCategoryForForm, setCreatingCategoryForForm] = useState(false)
   const [formData, setFormData] = useState({
     amount: '',
     description: '',
@@ -60,156 +50,27 @@ export default function ExpenseForm() {
     exclude_from_stats: false,
   })
 
-  useEffect(() => {
-    categoryApi
-      .getAll({ type: 'expense' })
-      .then((res) => setCategories(res.data))
-      .catch(() => {
-        addToast('warning', '카테고리 목록을 불러오지 못했습니다')
-      })
-  }, [])
-
-  /** 카테고리 이름으로 ID 찾기 */
-  function findCategoryId(name: string): number | null {
-    const cat = categories.find((c) => c.name === name)
-    return cat ? cat.id : null
-  }
-
-  /**
-   * Step 1: 자연어 입력 → LLM 프리뷰 요청
-   */
-  const handlePreview = async (e: React.FormEvent) => {
-    e.preventDefault()
-
-    if (!naturalInput.trim()) {
-      addToast('error', '메시지를 입력해주세요')
-      return
-    }
-
-    setLoading(true)
-    try {
-      const res = await chatApi.sendMessage(naturalInput.trim(), activeHouseholdId!, true)
-
-      if (res.data.parsed_expenses && res.data.parsed_expenses.length > 0) {
-        // 파싱 결과를 편집 가능한 형태로 변환
-        const editables: EditableExpense[] = res.data.parsed_expenses.map((item) => ({
-          ...item,
-          category_id: findCategoryId(item.category),
-        }))
-        setPreviewItems(editables)
-        setRawInput(naturalInput.trim())
-        trackEvent('expense_preview', { mode: 'natural', item_count: editables.length })
-      } else {
-        addToast('info', res.data.message || '지출 정보를 인식하지 못했습니다')
-      }
-    } catch {
-      addToast('error', '파싱에 실패했습니다')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  /**
-   * Step 2: 프리뷰 수정 후 확인 → 개별 expense create API로 저장
-   */
-  const handleConfirmSave = async () => {
-    if (!previewItems || previewItems.length === 0) return
-
-    setLoading(true)
-    try {
-      let savedCount = 0
-      for (const item of previewItems) {
-        // date input은 YYYY-MM-DD 형식이므로 datetime으로 변환 (Pydantic v2는 날짜 전용 문자열 거부)
-        const dateValue = item.date.includes('T') ? item.date : `${item.date}T00:00:00`
-        const payload = {
-          amount: item.amount,
-          description: item.description,
-          category_id: item.category_id,
-          date: dateValue,
-          household_id: activeHouseholdId,
-          raw_input: rawInput,
-          memo: item.memo || undefined,
-        }
-        if (item.type === 'income') {
-          await incomeApi.create(payload)
-        } else {
-          await expenseApi.create(payload)
-        }
-        savedCount++
-      }
-      trackEvent('expense_saved', { mode: 'natural', item_count: savedCount })
-      addToast('success', '거래가 저장되었습니다')
-      setPreviewItems(null)
-      setNaturalInput('')
-      setTimeout(() => navigate('/expenses'), 500)
-    } catch {
-      addToast('error', '저장에 실패했습니다')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  /** 프리뷰 항목 수정 */
-  const updatePreviewItem = (index: number, field: string, value: string | number | null) => {
-    if (!previewItems) return
-    const updated = [...previewItems]
-    updated[index] = { ...updated[index], [field]: value }
-    // 카테고리 select 변경 시 category 이름도 동기화
-    if (field === 'category_id') {
-      const cat = categories.find((c) => c.id === value)
-      updated[index].category = cat?.name ?? '기타'
-    }
-    setPreviewItems(updated)
-  }
-
-  /** 프리뷰 항목 삭제 */
-  const removePreviewItem = (index: number) => {
-    if (!previewItems) return
-    const updated = previewItems.filter((_, i) => i !== index)
-    if (updated.length === 0) {
-      setPreviewItems(null)
-    } else {
-      setPreviewItems(updated)
-    }
-  }
+  // 폼 모드의 카테고리 목록 (allCategories에서 expense 타입만 — 훅의 categories와 동일)
+  const formCategories = ni.categories
 
   /** 폼 입력 모드에서 새 카테고리 즉시 생성 후 적용 */
   const handleCreateCategoryForForm = async () => {
-    const name = newCategoryName.trim()
+    const name = newCategoryNameForForm.trim()
     if (!name) return
-    setCreatingCategory(true)
+    setCreatingCategoryForForm(true)
     try {
       const res = await categoryApi.create({ name })
       const newCat = res.data
-      setCategories((prev) => [...prev, newCat])
+      // 훅 내부 카테고리 목록에도 추가할 수 없으므로 별도 관리하지 않음
+      // 대신 formData에 새 카테고리 ID를 설정
       setFormData((prev) => ({ ...prev, category_id: String(newCat.id) }))
-      setShowNewCategoryFor(null)
-      setNewCategoryName('')
+      setShowNewCategoryForForm(false)
+      setNewCategoryNameForForm('')
       addToast('success', `"${name}" 카테고리가 추가되었습니다`)
     } catch {
       addToast('error', '카테고리 생성에 실패했습니다')
     } finally {
-      setCreatingCategory(false)
-    }
-  }
-
-  /** 프리뷰 카드에서 새 카테고리 즉시 생성 후 적용 */
-  const handleCreateCategory = async (index: number) => {
-    const name = newCategoryName.trim()
-    if (!name) return
-    setCreatingCategory(true)
-    try {
-      const res = await categoryApi.create({ name })
-      const newCat = res.data
-      setCategories((prev) => [...prev, newCat])
-      updatePreviewItem(index, 'category_id', newCat.id)
-      setShowNewCategoryFor(null)
-      setNewCategoryName('')
-      addToast('success', `"${name}" 카테고리가 추가되었습니다`)
-    } catch {
-      addToast('error', '카테고리 생성에 실패했습니다')
-    } finally {
-      setCreatingCategory(false)
+      setCreatingCategoryForForm(false)
     }
   }
 
@@ -224,17 +85,11 @@ export default function ExpenseForm() {
     const url = URL.createObjectURL(file)
     setOcrPreview(url)
 
-    setLoading(true)
+    setFormLoading(true)
     try {
       const res = await expenseApi.parseImage(file, activeHouseholdId)
       if (res.data.parsed_expenses && res.data.parsed_expenses.length > 0) {
-        const editables: EditableExpense[] = res.data.parsed_expenses.map((item) => ({
-          ...item,
-          category_id: findCategoryId(item.category),
-        }))
-        setPreviewItems(editables)
-        setRawInput(`[OCR] ${file.name}`)
-        trackEvent('ocr_upload', { item_count: editables.length })
+        ni.setOcrPreviewItems(res.data.parsed_expenses, file.name)
       } else {
         addToast('info', res.data.message || '결제 정보를 인식하지 못했습니다')
         setOcrPreview(null)
@@ -243,7 +98,7 @@ export default function ExpenseForm() {
       addToast('error', 'OCR 처리에 실패했습니다')
       setOcrPreview(null)
     } finally {
-      setLoading(false)
+      setFormLoading(false)
       // 같은 파일 재선택 허용
       if (fileInputRef.current) fileInputRef.current.value = ''
     }
@@ -271,7 +126,7 @@ export default function ExpenseForm() {
       return
     }
 
-    setLoading(true)
+    setFormLoading(true)
     try {
       await expenseApi.create({
         amount,
@@ -289,9 +144,11 @@ export default function ExpenseForm() {
     } catch {
       addToast('error', '지출 저장에 실패했습니다')
     } finally {
-      setLoading(false)
+      setFormLoading(false)
     }
   }
+
+  const loading = ni.loading || formLoading
 
   return (
     <div className="space-y-6 max-w-2xl">
@@ -306,7 +163,7 @@ export default function ExpenseForm() {
       {/* 모드 전환 탭 */}
       <div className="bg-[var(--surface-card)] rounded-xl shadow-sm border border-[var(--border-default)]/60 p-2 flex gap-2">
         <button
-          onClick={() => { setMode('natural'); setPreviewItems(null) }}
+          onClick={() => { setMode('natural'); ni.setPreviewItems(null) }}
           className={`
             flex-1 px-3 py-2.5 text-sm font-medium rounded-lg transition-all
             ${mode === 'natural'
@@ -318,7 +175,7 @@ export default function ExpenseForm() {
           간편 입력
         </button>
         <button
-          onClick={() => { setMode('form'); setPreviewItems(null) }}
+          onClick={() => { setMode('form'); ni.setPreviewItems(null) }}
           className={`
             flex-1 px-3 py-2.5 text-sm font-medium rounded-lg transition-all
             ${mode === 'form'
@@ -330,7 +187,7 @@ export default function ExpenseForm() {
           직접 입력
         </button>
         <button
-          onClick={() => { setMode('ocr'); setPreviewItems(null); setOcrPreview(null) }}
+          onClick={() => { setMode('ocr'); ni.setPreviewItems(null); setOcrPreview(null) }}
           className={`
             flex-1 px-3 py-2.5 text-sm font-medium rounded-lg transition-all flex items-center justify-center gap-1.5
             ${mode === 'ocr'
@@ -345,16 +202,16 @@ export default function ExpenseForm() {
       </div>
 
       {/* 자연어 입력 모드 */}
-      {mode === 'natural' && !previewItems && (
-        <form onSubmit={handlePreview} className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)]/60 p-6 space-y-4">
+      {mode === 'natural' && !ni.previewItems && (
+        <form onSubmit={ni.handlePreview} className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)]/60 p-6 space-y-4">
           <div>
             <label htmlFor="expense-natural-input" className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
               말하듯이 지출 입력하기
             </label>
             <textarea
               id="expense-natural-input"
-              value={naturalInput}
-              onChange={(e) => setNaturalInput(e.target.value)}
+              value={ni.naturalInput}
+              onChange={(e) => ni.setNaturalInput(e.target.value)}
               placeholder="예: 오늘 점심에 김치찌개 8000원 먹었어&#10;어제 스타벅스에서 아메리카노 4500원"
               rows={5}
               className="w-full px-4 py-3 bg-grape-50/50 border border-[var(--input-border)] rounded-xl focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500 resize-none"
@@ -367,7 +224,7 @@ export default function ExpenseForm() {
 
           <button
             type="submit"
-            disabled={loading || !naturalInput.trim()}
+            disabled={loading || !ni.naturalInput.trim()}
             className="w-full px-4 py-3 text-sm font-medium text-white bg-grape-600 rounded-xl hover:bg-grape-700 shadow-sm shadow-grape-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
           >
             {loading ? '분석 중...' : '분석하기'}
@@ -376,7 +233,7 @@ export default function ExpenseForm() {
       )}
 
       {/* OCR 입력 모드 */}
-      {mode === 'ocr' && !previewItems && (
+      {mode === 'ocr' && !ni.previewItems && (
         <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)]/60 p-6 space-y-4">
           <div>
             <span className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
@@ -444,7 +301,7 @@ export default function ExpenseForm() {
       )}
 
       {/* 파싱 결과 프리뷰 카드 (OCR 모드) */}
-      {mode === 'ocr' && previewItems && (
+      {mode === 'ocr' && ni.previewItems && (
         <div className="space-y-4">
           {/* OCR 원본 이미지 */}
           {ocrPreview && (
@@ -455,93 +312,93 @@ export default function ExpenseForm() {
 
           <div className="bg-grape-50 border border-grape-200 rounded-2xl p-4">
             <p className="text-sm text-grape-600 font-medium">
-              {previewItems.length}건의 지출을 인식했습니다. 내용을 확인하고 수정한 뒤 저장하세요.
+              {ni.previewItems.length}건의 지출을 인식했습니다. 내용을 확인하고 수정한 뒤 저장하세요.
             </p>
           </div>
 
-          {previewItems.map((item, index) => (
+          {ni.previewItems.map((item, index) => (
             <ParsedItemPreviewCard
               key={index}
               item={item}
               index={index}
-              totalCount={previewItems.length}
-              categories={categories}
+              totalCount={ni.previewItems!.length}
+              categories={ni.categories}
               colorScheme={item.type === 'income' ? 'leaf' : 'grape'}
               label={item.type === 'income' ? '수입' : '지출'}
-              onUpdate={updatePreviewItem}
-              onRemove={removePreviewItem}
-              showNewCategoryFor={showNewCategoryFor}
-              newCategoryName={newCategoryName}
-              creatingCategory={creatingCategory}
-              onSetShowNewCategory={setShowNewCategoryFor}
-              onSetNewCategoryName={setNewCategoryName}
-              onCreateCategory={handleCreateCategory}
+              onUpdate={ni.updatePreviewItem}
+              onRemove={ni.removePreviewItem}
+              showNewCategoryFor={ni.showNewCategoryFor}
+              newCategoryName={ni.newCategoryName}
+              creatingCategory={ni.creatingCategory}
+              onSetShowNewCategory={ni.setShowNewCategoryFor}
+              onSetNewCategoryName={ni.setNewCategoryName}
+              onCreateCategory={ni.handleCreateCategory}
             />
           ))}
 
           <div className="flex gap-3">
             <button
-              onClick={() => { setPreviewItems(null); setOcrPreview(null) }}
+              onClick={() => { ni.setPreviewItems(null); setOcrPreview(null) }}
               className="flex-1 px-4 py-3 text-sm font-medium text-[var(--text-secondary)] bg-[var(--surface-hover)] rounded-xl hover:bg-[var(--surface-hover)] transition-colors"
               disabled={loading}
             >
               다시 선택
             </button>
             <button
-              onClick={handleConfirmSave}
+              onClick={ni.handleConfirmSave}
               disabled={loading}
               className="flex-1 px-4 py-3 text-sm font-medium text-white bg-grape-600 rounded-xl hover:bg-grape-700 shadow-sm shadow-grape-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
             >
-              {loading ? '저장 중...' : `${previewItems.length}건 저장하기`}
+              {loading ? '저장 중...' : `${ni.previewItems.length}건 저장하기`}
             </button>
           </div>
         </div>
       )}
 
       {/* 파싱 결과 프리뷰 카드 */}
-      {mode === 'natural' && previewItems && (
+      {mode === 'natural' && ni.previewItems && (
         <div className="space-y-4">
           <div className="bg-grape-50 border border-grape-200 rounded-2xl p-4">
             <p className="text-sm text-grape-600 font-medium">
-              {previewItems.length}건의 지출을 인식했습니다. 내용을 확인하고 수정한 뒤 저장하세요.
+              {ni.previewItems.length}건의 지출을 인식했습니다. 내용을 확인하고 수정한 뒤 저장하세요.
             </p>
           </div>
 
-          {previewItems.map((item, index) => (
+          {ni.previewItems.map((item, index) => (
             <ParsedItemPreviewCard
               key={index}
               item={item}
               index={index}
-              totalCount={previewItems.length}
-              categories={categories}
+              totalCount={ni.previewItems!.length}
+              categories={ni.categories}
               colorScheme={item.type === 'income' ? 'leaf' : 'grape'}
               label={item.type === 'income' ? '수입' : '지출'}
-              onUpdate={updatePreviewItem}
-              onRemove={removePreviewItem}
-              showNewCategoryFor={showNewCategoryFor}
-              newCategoryName={newCategoryName}
-              creatingCategory={creatingCategory}
-              onSetShowNewCategory={setShowNewCategoryFor}
-              onSetNewCategoryName={setNewCategoryName}
-              onCreateCategory={handleCreateCategory}
+              onUpdate={ni.updatePreviewItem}
+              onRemove={ni.removePreviewItem}
+              showNewCategoryFor={ni.showNewCategoryFor}
+              newCategoryName={ni.newCategoryName}
+              creatingCategory={ni.creatingCategory}
+              onSetShowNewCategory={ni.setShowNewCategoryFor}
+              onSetNewCategoryName={ni.setNewCategoryName}
+              onCreateCategory={ni.handleCreateCategory}
             />
           ))}
 
           {/* 확인/취소 버튼 */}
           <div className="flex gap-3">
             <button
-              onClick={() => { setPreviewItems(null) }}
+              onClick={() => { ni.setPreviewItems(null) }}
               className="flex-1 px-4 py-3 text-sm font-medium text-[var(--text-secondary)] bg-[var(--surface-hover)] rounded-xl hover:bg-[var(--surface-hover)] transition-colors"
               disabled={loading}
             >
               다시 입력
             </button>
             <button
-              onClick={handleConfirmSave}
+              onClick={ni.handleConfirmSave}
               disabled={loading}
               className="flex-1 px-4 py-3 text-sm font-medium text-white bg-grape-600 rounded-xl hover:bg-grape-700 shadow-sm shadow-grape-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
             >
-              {loading ? '저장 중...' : `${previewItems.length}건 저장하기`}
+              {loading ? '저장 중...' : `${ni.previewItems.length}건 저장하기`}
             </button>
           </div>
         </div>
@@ -600,18 +457,18 @@ export default function ExpenseForm() {
               disabled={loading}
             >
               <option value="">미분류</option>
-              {categories.map((cat) => (
+              {formCategories.map((cat) => (
                 <option key={cat.id} value={cat.id}>
                   {cat.name}
                 </option>
               ))}
             </select>
-            {showNewCategoryFor === -1 ? (
+            {showNewCategoryForForm ? (
               <div className="flex gap-1.5 mt-2">
                 <input
                   type="text"
-                  value={newCategoryName}
-                  onChange={(e) => setNewCategoryName(e.target.value)}
+                  value={newCategoryNameForForm}
+                  onChange={(e) => setNewCategoryNameForForm(e.target.value)}
                   placeholder="새 카테고리 이름"
                   className="flex-1 px-3 py-2 border border-grape-300 rounded-lg text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
                   onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleCreateCategoryForForm() } }}
@@ -621,14 +478,14 @@ export default function ExpenseForm() {
                 <button
                   type="button"
                   onClick={handleCreateCategoryForForm}
-                  disabled={creatingCategory || !newCategoryName.trim()}
+                  disabled={creatingCategoryForForm || !newCategoryNameForForm.trim()}
                   className="px-3 py-2 text-sm font-medium text-white bg-grape-600 rounded-lg hover:bg-grape-700 disabled:opacity-50"
                 >
-                  {creatingCategory ? '...' : '추가'}
+                  {creatingCategoryForForm ? '...' : '추가'}
                 </button>
                 <button
                   type="button"
-                  onClick={() => { setShowNewCategoryFor(null); setNewCategoryName('') }}
+                  onClick={() => { setShowNewCategoryForForm(false); setNewCategoryNameForForm('') }}
                   className="px-3 py-2 text-sm font-medium text-[var(--text-secondary)] bg-[var(--surface-hover)] rounded-lg hover:bg-[var(--surface-hover)]"
                 >
                   취소
@@ -637,7 +494,7 @@ export default function ExpenseForm() {
             ) : (
               <button
                 type="button"
-                onClick={() => { setShowNewCategoryFor(-1); setNewCategoryName('') }}
+                onClick={() => { setShowNewCategoryForForm(true); setNewCategoryNameForForm('') }}
                 className="mt-2 text-sm text-grape-600 hover:text-grape-600 font-medium"
               >
                 + 새 카테고리
