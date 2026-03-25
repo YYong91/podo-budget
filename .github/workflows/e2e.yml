@@ -93,6 +93,8 @@ jobs:
           sleep 2
         env:
           VITE_API_URL: http://localhost:8000/api
+          VITE_SUPABASE_URL: https://e2e-test.supabase.co
+          VITE_SUPABASE_ANON_KEY: e2e-dummy-anon-key
 
       - name: E2E 의존성 설치
         run: npm ci
@@ -105,6 +107,7 @@ jobs:
           E2E_BASE_URL: http://localhost:5173
           E2E_API_URL: http://localhost:8000
           E2E_JWT_SECRET: e2e-jwt-secret  # pragma: allowlist secret
+          VITE_SUPABASE_URL: https://e2e-test.supabase.co
         run: npx playwright test --config e2e/playwright.config.ts
 
       - name: 테스트 실패 리포트 업로드
