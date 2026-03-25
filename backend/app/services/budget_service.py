@@ -15,7 +15,7 @@ from app.models.expense import Expense
 from app.schemas.budget import BudgetAlert, CategoryBudgetOverview, MonthlySpending
 
 
-async def get_budget_alerts(db: AsyncSession, household_id: int) -> list[BudgetAlert]:
+async def get_budget_alerts(db: AsyncSession, household_id: int, *, month: str | None = None) -> list[BudgetAlert]:
     """예산 초과/경고 알림 계산 (#176)
 
     카테고리별 예산과 현재까지의 지출을 비교하여 알림 목록을 반환합니다.
@@ -24,6 +24,7 @@ async def get_budget_alerts(db: AsyncSession, household_id: int) -> list[BudgetA
     Args:
         db: 데이터베이스 세션
         household_id: 가구 ID
+        month: 대상 월 YYYY-MM (None이면 현재 월)
 
     Returns:
         초과/경고 순으로 정렬된 BudgetAlert 목록
@@ -34,8 +35,15 @@ async def get_budget_alerts(db: AsyncSession, household_id: int) -> list[BudgetA
     alerts: list[BudgetAlert] = []
     now = datetime.now(UTC).replace(tzinfo=None)
 
+    # month 파라미터가 있으면 해당 월 기준, 없으면 현재 시점 기준
+    if month:
+        year, mon = map(int, month.split("-"))
+        ref_date = datetime(year, mon, 1)
+    else:
+        ref_date = now
+
     # 유효한 예산만 필터 (기간 미시작 제외)
-    active_budgets = [b for b in budgets if b.start_date <= now]
+    active_budgets = [b for b in budgets if b.start_date <= ref_date]
     if not active_budgets:
         return alerts
 
@@ -44,22 +52,29 @@ async def get_budget_alerts(db: AsyncSession, household_id: int) -> list[BudgetA
     cat_result = await db.execute(select(Category).where(Category.id.in_(category_ids)))
     categories_map = {c.id: c for c in cat_result.scalars().all()}
 
-    # period_start별로 예산 그룹화 (period 타입별로 동일한 period_start 공유)
-    budgets_by_period: dict[datetime, list] = {}
+    # period_start/period_end별로 예산 그룹화
+    budgets_by_period: dict[tuple[datetime, datetime], list] = {}
     for budget in active_budgets:
-        if budget.period == "monthly":
+        if month:
+            # month 지정 시: 해당 월 전체 기간으로 고정
+            period_start = datetime(year, mon, 1)
+            period_end = datetime(year + 1, 1, 1) if mon == 12 else datetime(year, mon + 1, 1)
+        elif budget.period == "monthly":
             period_start = datetime(now.year, now.month, 1)
+            period_end = now
         elif budget.period == "weekly":
             days_since_monday = now.weekday()
             period_start = datetime(now.year, now.month, now.day) - timedelta(days=days_since_monday)
+            period_end = now
         else:  # daily
             period_start = datetime(now.year, now.month, now.day)
-        budgets_by_period.setdefault(period_start, []).append(budget)
+            period_end = now
+        budgets_by_period.setdefault((period_start, period_end), []).append(budget)
 
-    # period_start별 지출 합계 배치 조회 (period 유형 수만큼 쿼리 — 보통 1~3회)
+    # period별 지출 합계 배치 조회
     expense_scope = Expense.household_id == household_id
     spent_map: dict[int, float] = {}
-    for period_start, period_budgets in budgets_by_period.items():
+    for (period_start, period_end), period_budgets in budgets_by_period.items():
         period_cat_ids = [b.category_id for b in period_budgets]
         expense_result = await db.execute(
             select(Expense.category_id, func.sum(Expense.amount).label("total"))
@@ -67,7 +82,7 @@ async def get_budget_alerts(db: AsyncSession, household_id: int) -> list[BudgetA
                 expense_scope,
                 Expense.category_id.in_(period_cat_ids),
                 Expense.date >= period_start,
-                Expense.date <= now,
+                Expense.date < period_end,
             )
             .group_by(Expense.category_id)
         )

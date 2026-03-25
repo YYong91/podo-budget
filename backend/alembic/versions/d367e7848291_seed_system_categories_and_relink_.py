@@ -102,7 +102,7 @@ def upgrade() -> None:
         if new_sys_id is None:
             continue
         old_cats = conn.execute(
-            sa.text("SELECT id FROM categories WHERE name = :name " "AND NOT (user_id IS NULL AND household_id IS NULL)"),
+            sa.text("SELECT id FROM categories WHERE name = :name AND NOT (user_id IS NULL AND household_id IS NULL)"),
             {"name": old_name},
         ).fetchall()
         for (old_id,) in old_cats:
@@ -114,7 +114,7 @@ def upgrade() -> None:
         if sys_id is None:
             continue
         dup_cats = conn.execute(
-            sa.text("SELECT id FROM categories WHERE name = :name AND id != :sys_id " "AND NOT (user_id IS NULL AND household_id IS NULL)"),
+            sa.text("SELECT id FROM categories WHERE name = :name AND id != :sys_id AND NOT (user_id IS NULL AND household_id IS NULL)"),
             {"name": sys_name, "sys_id": sys_id},
         ).fetchall()
         for (dup_id,) in dup_cats:
@@ -134,7 +134,7 @@ def upgrade() -> None:
             ).fetchone()
             if existing is None:
                 conn.execute(
-                    sa.text("INSERT INTO category_mappings (household_id, user_id, source_name, target_category_id) " "VALUES (:hh, NULL, :src, :target)"),
+                    sa.text("INSERT INTO category_mappings (household_id, user_id, source_name, target_category_id) VALUES (:hh, NULL, :src, :target)"),
                     {"hh": hh_id, "src": old_name, "target": new_sys_id},
                 )
 

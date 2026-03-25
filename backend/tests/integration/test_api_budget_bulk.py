@@ -8,14 +8,15 @@ from httpx import AsyncClient
 from app.models.budget import Budget
 from app.models.category import Category
 from app.models.expense import Expense
+from app.models.household import Household
 from app.models.user import User
 
 
 @pytest.mark.asyncio
-async def test_bulk_save_create_budgets(authenticated_client: AsyncClient, test_user: User, db_session):
+async def test_bulk_save_create_budgets(authenticated_client: AsyncClient, test_user: User, test_household: Household, db_session):
     """벌크 저장 - 새 예산 생성"""
-    cat1 = Category(user_id=test_user.id, name="식비", type="expense")
-    cat2 = Category(user_id=test_user.id, name="교통비", type="expense")
+    cat1 = Category(user_id=test_user.id, household_id=test_household.id, name="식비", type="expense")
+    cat2 = Category(user_id=test_user.id, household_id=test_household.id, name="교통비", type="expense")
     db_session.add_all([cat1, cat2])
     await db_session.commit()
     await db_session.refresh(cat1)
@@ -41,9 +42,9 @@ async def test_bulk_save_create_budgets(authenticated_client: AsyncClient, test_
 
 
 @pytest.mark.asyncio
-async def test_bulk_save_update_existing(authenticated_client: AsyncClient, test_user: User, db_session):
+async def test_bulk_save_update_existing(authenticated_client: AsyncClient, test_user: User, test_household: Household, db_session):
     """벌크 저장 - 기존 예산 업데이트"""
-    cat = Category(user_id=test_user.id, name="식비", type="expense")
+    cat = Category(user_id=test_user.id, household_id=test_household.id, name="식비", type="expense")
     db_session.add(cat)
     await db_session.commit()
     await db_session.refresh(cat)
@@ -51,6 +52,7 @@ async def test_bulk_save_update_existing(authenticated_client: AsyncClient, test
     # 기존 예산 생성
     budget = Budget(
         user_id=test_user.id,
+        household_id=test_household.id,
         category_id=cat.id,
         amount=200000,
         period="monthly",
@@ -79,10 +81,10 @@ async def test_bulk_save_update_existing(authenticated_client: AsyncClient, test
 
 
 @pytest.mark.asyncio
-async def test_bulk_save_delete_missing(authenticated_client: AsyncClient, test_user: User, db_session):
+async def test_bulk_save_delete_missing(authenticated_client: AsyncClient, test_user: User, test_household: Household, db_session):
     """벌크 저장 - 요청에 없는 예산 삭제"""
-    cat1 = Category(user_id=test_user.id, name="식비", type="expense")
-    cat2 = Category(user_id=test_user.id, name="교통비", type="expense")
+    cat1 = Category(user_id=test_user.id, household_id=test_household.id, name="식비", type="expense")
+    cat2 = Category(user_id=test_user.id, household_id=test_household.id, name="교통비", type="expense")
     db_session.add_all([cat1, cat2])
     await db_session.commit()
     await db_session.refresh(cat1)
@@ -93,6 +95,7 @@ async def test_bulk_save_delete_missing(authenticated_client: AsyncClient, test_
         db_session.add(
             Budget(
                 user_id=test_user.id,
+                household_id=test_household.id,
                 category_id=cat.id,
                 amount=100000,
                 period="monthly",
@@ -121,9 +124,9 @@ async def test_bulk_save_delete_missing(authenticated_client: AsyncClient, test_
 
 
 @pytest.mark.asyncio
-async def test_bulk_save_empty_clears_all(authenticated_client: AsyncClient, test_user: User, db_session):
+async def test_bulk_save_empty_clears_all(authenticated_client: AsyncClient, test_user: User, test_household: Household, db_session):
     """벌크 저장 - 빈 배열이면 전체 삭제"""
-    cat = Category(user_id=test_user.id, name="식비", type="expense")
+    cat = Category(user_id=test_user.id, household_id=test_household.id, name="식비", type="expense")
     db_session.add(cat)
     await db_session.commit()
     await db_session.refresh(cat)
@@ -131,6 +134,7 @@ async def test_bulk_save_empty_clears_all(authenticated_client: AsyncClient, tes
     db_session.add(
         Budget(
             user_id=test_user.id,
+            household_id=test_household.id,
             category_id=cat.id,
             amount=100000,
             period="monthly",
@@ -151,9 +155,9 @@ async def test_bulk_save_empty_clears_all(authenticated_client: AsyncClient, tes
 
 
 @pytest.mark.asyncio
-async def test_alerts_with_month_filter(authenticated_client: AsyncClient, test_user: User, db_session):
+async def test_alerts_with_month_filter(authenticated_client: AsyncClient, test_user: User, test_household: Household, db_session):
     """월별 알림 조회 - month 파라미터 사용"""
-    cat = Category(user_id=test_user.id, name="식비", type="expense")
+    cat = Category(user_id=test_user.id, household_id=test_household.id, name="식비", type="expense")
     db_session.add(cat)
     await db_session.commit()
     await db_session.refresh(cat)
@@ -162,6 +166,7 @@ async def test_alerts_with_month_filter(authenticated_client: AsyncClient, test_
     db_session.add(
         Budget(
             user_id=test_user.id,
+            household_id=test_household.id,
             category_id=cat.id,
             amount=300000,
             period="monthly",
@@ -174,6 +179,7 @@ async def test_alerts_with_month_filter(authenticated_client: AsyncClient, test_
     db_session.add(
         Expense(
             user_id=test_user.id,
+            household_id=test_household.id,
             amount=250000,
             description="2월 식비",
             category_id=cat.id,
@@ -192,9 +198,9 @@ async def test_alerts_with_month_filter(authenticated_client: AsyncClient, test_
 
 
 @pytest.mark.asyncio
-async def test_alerts_month_filter_ignores_other_months(authenticated_client: AsyncClient, test_user: User, db_session):
+async def test_alerts_month_filter_ignores_other_months(authenticated_client: AsyncClient, test_user: User, test_household: Household, db_session):
     """월별 알림 - 다른 달 지출은 포함하지 않음"""
-    cat = Category(user_id=test_user.id, name="식비", type="expense")
+    cat = Category(user_id=test_user.id, household_id=test_household.id, name="식비", type="expense")
     db_session.add(cat)
     await db_session.commit()
     await db_session.refresh(cat)
@@ -203,6 +209,7 @@ async def test_alerts_month_filter_ignores_other_months(authenticated_client: As
     db_session.add(
         Budget(
             user_id=test_user.id,
+            household_id=test_household.id,
             category_id=cat.id,
             amount=300000,
             period="monthly",
@@ -215,6 +222,7 @@ async def test_alerts_month_filter_ignores_other_months(authenticated_client: As
     db_session.add(
         Expense(
             user_id=test_user.id,
+            household_id=test_household.id,
             amount=500000,
             description="1월 식비",
             category_id=cat.id,

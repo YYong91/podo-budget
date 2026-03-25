@@ -47,8 +47,8 @@ async def e2e_setup(request: E2ESetupRequest):
             user = result.scalar_one_or_none()
 
             if not user:
-                # 고유한 auth_user_id 생성 (UNIQUE 제약 충돌 방지)
-                auth_user_id = uuid.uuid4().int % 10**9
+                # 고유한 auth_user_id 생성 (UNIQUE 제약 충돌 방지, String 타입)
+                auth_user_id = str(uuid.uuid4())
                 user = User(
                     username=request.username,
                     email=request.email,

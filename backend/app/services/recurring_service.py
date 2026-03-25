@@ -108,6 +108,7 @@ async def execute_recurring(
             category_id=recurring.category_id,
             raw_input=f"[정기] {recurring.description}",
             date=recurring.next_due_date,
+            recurring_transaction_id=recurring.id,
         )
     else:
         record = Income(
@@ -118,6 +119,7 @@ async def execute_recurring(
             category_id=recurring.category_id,
             raw_input=f"[정기] {recurring.description}",
             date=recurring.next_due_date,
+            recurring_transaction_id=recurring.id,
         )
 
     db.add(record)

@@ -23,6 +23,8 @@ from app.models.expense import Expense
 from app.models.user import User
 from app.schemas.budget import (
     BudgetAlert,
+    BudgetBulkSaveRequest,
+    BudgetBulkSaveResponse,
     BudgetCreate,
     BudgetMonthlyCategoryStats,
     BudgetMonthlyStatsResponse,
@@ -137,14 +139,92 @@ async def update_total_budget(
     )
 
 
-# NOTE: 고정 경로 엔드포인트(alerts, category-overview, monthly-stats, total-budget)를 반드시 /{budget_id} 앞에 정의해야 함.
+# NOTE: 고정 경로 엔드포인트(alerts, category-overview, monthly-stats, total-budget, bulk)를 반드시 /{budget_id} 앞에 정의해야 함.
 # FastAPI 0.109 (Starlette 0.35)에서는 /{budget_id} partial match 후 탐색을 멈춰
 # 뒤에 정의된 고정 경로가 Method Not Allowed를 반환하는 버그가 있음.
+
+
+@router.put("/bulk", response_model=BudgetBulkSaveResponse)
+async def bulk_save_budgets(
+    data: BudgetBulkSaveRequest,
+    household_id: int | None = Query(None, description="가구 ID (없으면 활성 가구 자동 감지)"),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """월별 예산 벌크 저장
+
+    해당 월의 전체 예산을 한번에 갱신합니다.
+    요청에 포함된 카테고리는 생성/업데이트, 누락된 기존 예산은 삭제됩니다.
+    """
+    if household_id is None:
+        household_id = await get_user_active_household_id(current_user, db)
+    await get_household_member(household_id, current_user, db)
+
+    year, mon = map(int, data.month.split("-"))
+    start_date = datetime(year, mon, 1)
+
+    # 해당 월의 기존 예산 조회
+    existing_result = await db.execute(
+        select(Budget).where(
+            Budget.household_id == household_id,
+            Budget.period == "monthly",
+            Budget.start_date == start_date,
+        )
+    )
+    existing_budgets = {b.category_id: b for b in existing_result.scalars().all()}
+
+    # 요청 카테고리 ID 집합
+    request_category_ids = {item.category_id for item in data.budgets}
+
+    created = 0
+    updated = 0
+    deleted = 0
+
+    # 생성/업데이트
+    for item in data.budgets:
+        if item.category_id in existing_budgets:
+            # 기존 예산 업데이트
+            budget = existing_budgets[item.category_id]
+            budget.amount = item.amount
+            budget.alert_threshold = data.alert_threshold
+            updated += 1
+        else:
+            # 새 예산 생성
+            new_budget = Budget(
+                user_id=current_user.id,
+                household_id=household_id,
+                category_id=item.category_id,
+                amount=item.amount,
+                period="monthly",
+                start_date=start_date,
+                alert_threshold=data.alert_threshold,
+            )
+            db.add(new_budget)
+            created += 1
+
+    # 요청에 없는 기존 예산 삭제
+    for cat_id, budget in existing_budgets.items():
+        if cat_id not in request_category_ids:
+            await db.delete(budget)
+            deleted += 1
+
+    await db.commit()
+    logger.info(
+        "예산 벌크 저장: user=%s, household=%s, month=%s, created=%d, updated=%d, deleted=%d",
+        current_user.id,
+        household_id,
+        data.month,
+        created,
+        updated,
+        deleted,
+    )
+    return BudgetBulkSaveResponse(created=created, updated=updated, deleted=deleted)
 
 
 @router.get("/alerts", response_model=list[BudgetAlert])
 async def get_budget_alerts(
     household_id: int | None = Query(None, description="가구 ID (없으면 개인 예산)"),
+    month: str | None = Query(None, description="YYYY-MM 형식 (없으면 현재 월)", pattern=r"^\d{4}-\d{2}$"),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
@@ -152,7 +232,7 @@ async def get_budget_alerts(
     if household_id is None:
         household_id = await get_user_active_household_id(current_user, db)
     await get_household_member(household_id, current_user, db)
-    return await budget_service.get_budget_alerts(db, household_id)
+    return await budget_service.get_budget_alerts(db, household_id, month=month)
 
 
 @router.get("/category-overview", response_model=list[CategoryBudgetOverview])

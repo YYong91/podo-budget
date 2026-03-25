@@ -71,7 +71,6 @@ jobs:
           ANTHROPIC_API_KEY: test-key  # pragma: allowlist secret
         run: |
           PYTHONPATH=backend uv run pytest backend/tests/ \
-            --ignore=backend/tests/integration/test_api_budget_bulk.py \
             --cov=app --cov-report=term --cov-report=json:backend-coverage.json
 
       - name: 커버리지 리포트 업로드

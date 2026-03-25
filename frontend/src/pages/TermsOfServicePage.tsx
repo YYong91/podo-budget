@@ -39,12 +39,14 @@ export default function TermsOfServicePage() {
                 서비스는 다음과 같은 기능을 제공합니다:
               </p>
               <ul className="list-disc list-inside space-y-1 ml-4">
-                <li>간편 입력을 통한 지출 기록 및 자동 분류</li>
-                <li>카테고리별 지출 관리 및 통계</li>
-                <li>월별 지출 인사이트 생성(AI 기반)</li>
+                <li>자연어 입력을 통한 지출/수입 기록 및 AI 자동 분류</li>
+                <li>카테고리별 지출/수입 관리 및 통계</li>
+                <li>월별 종합 재무 리포트 생성(AI 기반)</li>
                 <li>예산 설정 및 현황 조회</li>
+                <li>자산/부채 관리 및 순자산 추적</li>
+                <li>정기 거래(구독, 고정 지출) 관리</li>
                 <li>공유 가계부 기능(가족, 친구 등과 함께 사용)</li>
-                <li>텔레그램 봇 연동(선택)</li>
+                <li>텔레그램/카카오톡 봇 연동(선택)</li>
               </ul>
               <p className="mt-2">
                 서비스는 사전 통지 없이 기능을 추가, 변경, 중단할 수 있습니다.
@@ -55,10 +57,10 @@ export default function TermsOfServicePage() {
               <h2 className="text-xl font-semibold text-[var(--text-primary)] mb-3">제3조 (회원가입 및 계정 관리)</h2>
               <ol className="list-decimal list-inside space-y-2 ml-4">
                 <li>
-                  <strong>가입 조건</strong>: 본 약관과 개인정보처리방침에 동의한 사용자는 회원가입을 통해 서비스를 이용할 수 있습니다.
+                  <strong>가입 조건</strong>: 본 약관과 개인정보처리방침에 동의한 사용자는 이메일+비밀번호 또는 Google 소셜 로그인을 통해 서비스를 이용할 수 있습니다.
                 </li>
                 <li>
-                  <strong>계정 책임</strong>: 회원은 자신의 계정 정보(사용자명, 비밀번호)를 안전하게 관리할 책임이 있으며, 계정 공유 또는 타인의 무단 사용으로 인한 피해는 회원 본인의 책임입니다.
+                  <strong>계정 책임</strong>: 회원은 자신의 계정 정보(이메일, 비밀번호)를 안전하게 관리할 책임이 있으며, 계정 공유 또는 타인의 무단 사용으로 인한 피해는 회원 본인의 책임입니다.
                 </li>
                 <li>
                   <strong>정보의 정확성</strong>: 회원은 회원가입 시 정확하고 최신의 정보를 제공해야 하며, 변경 시 즉시 수정해야 합니다.
@@ -95,7 +97,7 @@ export default function TermsOfServicePage() {
                   <strong>AI 기능 정확성</strong>: AI 기반 자동 분류 및 인사이트는 참고용이며, 정확성을 보장하지 않습니다. 회원은 AI 결과를 검토하고 수정할 책임이 있습니다.
                 </li>
                 <li>
-                  <strong>제3자 서비스</strong>: 텔레그램 봇 등 제3자 플랫폼을 통한 서비스 이용 시 발생하는 문제는 해당 플랫폼의 책임이며, 서비스 제공자는 이에 대해 책임지지 않습니다.
+                  <strong>제3자 서비스</strong>: 텔레그램/카카오톡 봇, Google 소셜 로그인, Supabase 인증 등 제3자 플랫폼을 통한 서비스 이용 시 발생하는 문제는 해당 플랫폼의 책임이며, 서비스 제공자는 이에 대해 책임지지 않습니다.
                 </li>
               </ol>
             </section>
@@ -146,7 +148,7 @@ export default function TermsOfServicePage() {
 
             <section className="pt-4">
               <p>
-                <strong>시행일자</strong>: 2026년 2월 13일
+                <strong>시행일자</strong>: 2026년 3월 25일
               </p>
             </section>
           </div>

@@ -34,6 +34,7 @@ class RecurringTransactionBase(BaseModel):
 
 class RecurringTransactionCreate(RecurringTransactionBase):
     household_id: int | None = None
+    source_id: int | None = None  # 원본 거래 ID (기존 거래에서 등록 시)
 
 
 class RecurringTransactionUpdate(BaseModel):
