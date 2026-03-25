@@ -1,46 +1,32 @@
 /**
  * @file RecurringList.tsx
  * @description 반복 거래 관리 페이지
- * 정기 지출/수입 목록 조회, 추가, 수정, 삭제, 일시정지/재개 기능을 제공한다.
+ * 목록 표시 + 필터만 담당하며, 모달은 RecurringModal로 분리되어 있다.
  */
 
 import { useState, useEffect } from 'react'
 import { useGoBack } from '../hooks/useGoBack'
-import { ArrowLeft, Plus, Pencil, Trash2, Pause, Play, X, Zap } from 'lucide-react'
+import { ArrowLeft, Plus, Pencil, Trash2, Pause, Play, Zap } from 'lucide-react'
 import { useToast } from '../hooks/useToast'
 import { recurringApi } from '../api/recurring'
 import { categoryApi } from '../api/categories'
 import { useHouseholdStore } from '../stores/useHouseholdStore'
 import EmptyState from '../components/EmptyState'
 import ErrorState from '../components/ErrorState'
+import RecurringModal from '../components/recurring/RecurringModal'
+import type { RecurringFormData } from '../components/recurring/RecurringModal'
 import type { RecurringTransaction, RecurringTransactionCreate, Category } from '../types'
-import { formatAmount , getLocalDateString } from '../utils/format'
+import { formatAmount, getLocalDateString } from '../utils/format'
 import { trackEvent } from '../utils/analytics'
-
-/* 빈도 한국어 표시 */
-function formatFrequency(r: RecurringTransaction): string {
-  const days = ['월', '화', '수', '목', '금', '토', '일']
-  switch (r.frequency) {
-    case 'monthly':
-      return `매월 ${r.day_of_month}일`
-    case 'weekly':
-      return `매주 ${days[r.day_of_week ?? 0]}요일`
-    case 'yearly':
-      return `매년 ${r.month_of_year}월 ${r.day_of_month}일`
-    case 'custom':
-      return `${r.interval}일마다`
-    default:
-      return r.frequency
-  }
-}
+import { formatFrequency } from '../utils/recurringUtils'
 
 /* 빈 폼 데이터 */
-const emptyForm = {
-  type: 'expense' as 'expense' | 'income',
+const emptyForm: RecurringFormData = {
+  type: 'expense',
   amount: '',
   description: '',
   category_id: '',
-  frequency: 'monthly' as 'monthly' | 'weekly' | 'yearly' | 'custom',
+  frequency: 'monthly',
   day_of_month: '25',
   day_of_week: '0',
   month_of_year: '1',
@@ -65,7 +51,7 @@ export default function RecurringList() {
   /* 모달 */
   const [showModal, setShowModal] = useState(false)
   const [editingId, setEditingId] = useState<number | null>(null)
-  const [formData, setFormData] = useState(emptyForm)
+  const [formData, setFormData] = useState<RecurringFormData>(emptyForm)
   const [submitting, setSubmitting] = useState(false)
 
   /* 데이터 로드 */
@@ -214,11 +200,6 @@ export default function RecurringList() {
     }
   }
 
-  /* 카테고리 필터링 (타입에 맞는 카테고리만) */
-  const filteredCategories = categories.filter(
-    (c) => c.type === formData.type || c.type === 'both'
-  )
-
   if (error) {
     return (
       <div className="space-y-6">
@@ -280,7 +261,7 @@ export default function RecurringList() {
         </div>
       ) : (
         <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)]/60 overflow-hidden">
-          {/* 모바일: 카드 리스트, 데스크톱: 테이블 */}
+          {/* 데스크톱: 테이블 */}
           <div className="hidden md:block">
             <table className="w-full text-sm">
               <thead>
@@ -381,204 +362,15 @@ export default function RecurringList() {
 
       {/* 추가/수정 모달 */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" role="dialog" aria-modal="true" aria-labelledby="recurring-modal-title">
-          <div className="bg-[var(--surface-card)] rounded-2xl shadow-xl w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between p-5 border-b border-[var(--border-subtle)]">
-              <h2 id="recurring-modal-title" className="text-lg font-semibold text-[var(--text-primary)]">
-                {editingId ? '반복 거래 수정' : '반복 거래 추가'}
-              </h2>
-              <button onClick={() => setShowModal(false)} className="p-1 rounded-md hover:bg-[var(--surface-hover)]" aria-label="닫기">
-                <X className="w-5 h-5 text-[var(--text-tertiary)]" />
-              </button>
-            </div>
-            <form onSubmit={handleSubmit} className="p-5 space-y-4">
-              {/* 타입 선택 (추가 시에만) */}
-              {!editingId && (
-                <div>
-                  <span className="block text-sm font-medium text-[var(--text-secondary)] mb-2">유형</span>
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setFormData({ ...formData, type: 'expense', category_id: '' })}
-                      className={`flex-1 py-2 rounded-xl text-sm font-medium transition-colors ${
-                        formData.type === 'expense' ? 'bg-grape-100 text-grape-600' : 'bg-[var(--surface-hover)] text-[var(--text-secondary)]'
-                      }`}
-                    >
-                      지출
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setFormData({ ...formData, type: 'income', category_id: '' })}
-                      className={`flex-1 py-2 rounded-xl text-sm font-medium transition-colors ${
-                        formData.type === 'income' ? 'bg-leaf-100 text-leaf-600' : 'bg-[var(--surface-hover)] text-[var(--text-secondary)]'
-                      }`}
-                    >
-                      수입
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* 설명 */}
-              <div>
-                <label htmlFor="reclist-description" className="block text-sm font-medium text-[var(--text-secondary)] mb-2">설명</label>
-                <input
-                  id="reclist-description"
-                  type="text"
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  placeholder="예: 넷플릭스, 월급"
-                  className="w-full px-3 py-2 rounded-xl border border-[var(--input-border)] text-sm focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
-                />
-              </div>
-
-              {/* 금액 */}
-              <div>
-                <label htmlFor="reclist-amount" className="block text-sm font-medium text-[var(--text-secondary)] mb-2">금액</label>
-                <input
-                  id="reclist-amount"
-                  type="number"
-                  value={formData.amount}
-                  onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-                  placeholder="0"
-                  min="1"
-                  className="w-full px-3 py-2 rounded-xl border border-[var(--input-border)] text-sm focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
-                />
-              </div>
-
-              {/* 카테고리 */}
-              <div>
-                <label htmlFor="reclist-category" className="block text-sm font-medium text-[var(--text-secondary)] mb-2">카테고리</label>
-                <select
-                  id="reclist-category"
-                  value={formData.category_id}
-                  onChange={(e) => setFormData({ ...formData, category_id: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl border border-[var(--input-border)] text-sm focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
-                >
-                  <option value="">선택 안 함</option>
-                  {filteredCategories.map((c) => (
-                    <option key={c.id} value={c.id}>{c.name}</option>
-                  ))}
-                </select>
-              </div>
-
-              {/* 빈도 (추가 시에만) */}
-              {!editingId && (
-                <>
-                  <div>
-                    <label htmlFor="reclist-frequency" className="block text-sm font-medium text-[var(--text-secondary)] mb-2">반복 빈도</label>
-                    <select
-                      id="reclist-frequency"
-                      value={formData.frequency}
-                      onChange={(e) => setFormData({ ...formData, frequency: e.target.value as typeof formData.frequency })}
-                      className="w-full px-3 py-2 rounded-xl border border-[var(--input-border)] text-sm focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
-                    >
-                      <option value="monthly">매월</option>
-                      <option value="weekly">매주</option>
-                      <option value="yearly">매년</option>
-                      <option value="custom">사용자 지정</option>
-                    </select>
-                  </div>
-
-                  {/* 빈도별 추가 필드 */}
-                  {(formData.frequency === 'monthly' || formData.frequency === 'yearly') && (
-                    <div>
-                      <label htmlFor="reclist-day-of-month" className="block text-sm font-medium text-[var(--text-secondary)] mb-2">반복일</label>
-                      <input
-                        id="reclist-day-of-month"
-                        type="number"
-                        value={formData.day_of_month}
-                        onChange={(e) => setFormData({ ...formData, day_of_month: e.target.value })}
-                        min="1"
-                        max="31"
-                        className="w-full px-3 py-2 rounded-xl border border-[var(--input-border)] text-sm focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
-                      />
-                    </div>
-                  )}
-
-                  {formData.frequency === 'weekly' && (
-                    <div>
-                      <label htmlFor="reclist-day-of-week" className="block text-sm font-medium text-[var(--text-secondary)] mb-2">요일</label>
-                      <select
-                        id="reclist-day-of-week"
-                        value={formData.day_of_week}
-                        onChange={(e) => setFormData({ ...formData, day_of_week: e.target.value })}
-                        className="w-full px-3 py-2 rounded-xl border border-[var(--input-border)] text-sm focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
-                      >
-                        {['월', '화', '수', '목', '금', '토', '일'].map((d, i) => (
-                          <option key={i} value={i}>{d}요일</option>
-                        ))}
-                      </select>
-                    </div>
-                  )}
-
-                  {formData.frequency === 'yearly' && (
-                    <div>
-                      <label htmlFor="reclist-month-of-year" className="block text-sm font-medium text-[var(--text-secondary)] mb-2">반복 월</label>
-                      <select
-                        id="reclist-month-of-year"
-                        value={formData.month_of_year}
-                        onChange={(e) => setFormData({ ...formData, month_of_year: e.target.value })}
-                        className="w-full px-3 py-2 rounded-xl border border-[var(--input-border)] text-sm focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
-                      >
-                        {Array.from({ length: 12 }, (_, i) => (
-                          <option key={i + 1} value={i + 1}>{i + 1}월</option>
-                        ))}
-                      </select>
-                    </div>
-                  )}
-
-                  {formData.frequency === 'custom' && (
-                    <div>
-                      <label htmlFor="reclist-interval" className="block text-sm font-medium text-[var(--text-secondary)] mb-2">반복 주기 (일)</label>
-                      <input
-                        id="reclist-interval"
-                        type="number"
-                        value={formData.interval}
-                        onChange={(e) => setFormData({ ...formData, interval: e.target.value })}
-                        min="1"
-                        className="w-full px-3 py-2 rounded-xl border border-[var(--input-border)] text-sm focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
-                      />
-                    </div>
-                  )}
-
-                  {/* 시작일 */}
-                  <div>
-                    <label htmlFor="reclist-start-date" className="block text-sm font-medium text-[var(--text-secondary)] mb-2">시작일</label>
-                    <input
-                      id="reclist-start-date"
-                      type="date"
-                      value={formData.start_date}
-                      onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
-                      className="w-full px-3 py-2 rounded-xl border border-[var(--input-border)] text-sm focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
-                    />
-                  </div>
-                </>
-              )}
-
-              {/* 종료일 (항상 표시) */}
-              <div>
-                <label htmlFor="reclist-end-date" className="block text-sm font-medium text-[var(--text-secondary)] mb-2">종료일 (선택)</label>
-                <input
-                  id="reclist-end-date"
-                  type="date"
-                  value={formData.end_date}
-                  onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl border border-[var(--input-border)] text-sm focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
-                />
-              </div>
-
-              {/* 저장 버튼 */}
-              <button
-                type="submit"
-                disabled={submitting}
-                className="w-full py-3 bg-grape-600 text-white rounded-xl text-sm font-medium shadow-sm hover:bg-grape-700 transition-colors disabled:opacity-50"
-              >
-                {submitting ? '저장 중...' : editingId ? '수정하기' : '추가하기'}
-              </button>
-            </form>
-          </div>
-        </div>
+        <RecurringModal
+          editingId={editingId}
+          formData={formData}
+          onFormChange={setFormData}
+          categories={categories}
+          submitting={submitting}
+          onSubmit={handleSubmit}
+          onClose={() => setShowModal(false)}
+        />
       )}
     </div>
   )
