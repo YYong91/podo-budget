@@ -21,6 +21,7 @@ interface Props {
   initialDate: string
   onClose: () => void
   onSuccess: () => void
+  sourceId?: number
 }
 
 export default function RegisterRecurringModal({
@@ -32,6 +33,7 @@ export default function RegisterRecurringModal({
   initialDate,
   onClose,
   onSuccess,
+  sourceId,
 }: Props) {
   const { addToast } = useToast()
   const activeHouseholdId = useHouseholdStore((s) => s.activeHouseholdId)
@@ -68,6 +70,7 @@ export default function RegisterRecurringModal({
         start_date: formData.start_date,
         end_date: formData.end_date || null,
         household_id: activeHouseholdId,
+        source_id: sourceId ?? null,
       }
       if (formData.frequency === 'monthly' || formData.frequency === 'yearly') {
         payload.day_of_month = Number(formData.day_of_month)
