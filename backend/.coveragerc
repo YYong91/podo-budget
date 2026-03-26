@@ -1,0 +1,4 @@
+[run]
+omit =
+    */api/e2e.py
+concurrency = greenlet
