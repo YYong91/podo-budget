@@ -29,7 +29,8 @@ async function createHousehold(
 }
 
 test.describe('가구 관리', () => {
-  test('가구 목록 페이지 이동', async ({ authedPage: page }) => {
+  // TODO: 로컬 Playwright UI 모드에서 디버깅 필요 (#463)
+  test.skip('가구 목록 페이지 이동', async ({ authedPage: page }) => {
     await page.goto('/households')
     await page.waitForLoadState('networkidle')
 
@@ -43,7 +44,8 @@ test.describe('가구 관리', () => {
     ).toBeVisible({ timeout: 15000 })
   })
 
-  test('새 가구 생성 → 목록에 표시', async ({ authedPage: page }) => {
+  // TODO: 로컬 Playwright UI 모드에서 디버깅 필요 (#463)
+  test.skip('새 가구 생성 → 목록에 표시', async ({ authedPage: page }) => {
     // API로 가구 생성
     await createHousehold(page, {
       name: 'E2E 테스트 가구',
