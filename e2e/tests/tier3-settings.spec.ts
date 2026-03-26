@@ -34,6 +34,9 @@ test.describe('설정 페이지', () => {
     await page.goto('/settings/appearance')
     await page.waitForLoadState('networkidle')
 
+    // Suspense lazy loading 대기
+    await page.waitForTimeout(1000)
+
     // 화면 모드 헤딩이 보여야 함
     await expect(page.getByText('화면 모드')).toBeVisible({ timeout: 15000 })
 

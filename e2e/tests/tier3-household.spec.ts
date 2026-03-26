@@ -35,6 +35,7 @@ test.describe('가구 관리', () => {
 
     // 가구 목록 페이지가 로드됨 — "가구 만들기" 버튼 또는 기존 가구 카드
     // E2E setup이 자동으로 기본 가구를 생성하므로 목록에 1개 이상 표시
+    // 버튼 텍스트: "+ 가구 만들기" (HouseholdListPage line 120)
     await expect(
       page.getByText('가구 만들기').or(page.locator('[role="button"]').first()),
     ).toBeVisible({ timeout: 15000 })
@@ -84,11 +85,21 @@ test.describe('가구 관리', () => {
     await page.waitForLoadState('networkidle')
 
     // 설정 탭 클릭 (owner/admin만 보임 — E2E 유저는 owner)
-    await page.getByText('설정', { exact: true }).click()
+    const settingsTab = page.locator('button').filter({ hasText: '설정' })
+    await expect(settingsTab).toBeVisible({ timeout: 15000 })
+    await settingsTab.click()
 
-    // 가구 이름 입력 필드가 보여야 함
-    const nameInput = page.locator('input').first()
+    // 설정 탭 로딩 대기 — "가구 정보" 헤딩 확인
+    await expect(page.getByText('가구 정보')).toBeVisible({ timeout: 15000 })
+
+    // SettingsTab은 editMode가 false일 때 input이 disabled 상태
+    // "수정" 버튼을 클릭하여 editMode 활성화
+    await page.getByRole('button', { name: '수정' }).click()
+
+    // 가구 이름 입력 필드가 이제 활성화됨
+    const nameInput = page.locator('input#name')
     await expect(nameInput).toBeVisible({ timeout: 15000 })
+    await expect(nameInput).toBeEnabled()
 
     // 이름 수정
     await nameInput.fill('E2E 수정 후 가구')
@@ -98,7 +109,7 @@ test.describe('가구 관리', () => {
       page.waitForResponse(
         (res) => res.url().includes('/api/households/') && res.request().method() === 'PUT',
       ),
-      page.getByRole('button', { name: /저장/ }).click(),
+      page.getByRole('button', { name: '저장' }).click(),
     ])
 
     // 수정된 이름이 반영되었는지 확인 — 페이지 새로고침 후 확인
@@ -106,8 +117,11 @@ test.describe('가구 관리', () => {
     await page.waitForLoadState('networkidle')
 
     // 설정 탭에서 수정된 이름이 보여야 함
-    await page.getByText('설정', { exact: true }).click()
-    const updatedInput = page.locator('input').first()
+    const settingsTab2 = page.locator('button').filter({ hasText: '설정' })
+    await expect(settingsTab2).toBeVisible({ timeout: 15000 })
+    await settingsTab2.click()
+    await expect(page.getByText('가구 정보')).toBeVisible({ timeout: 15000 })
+    const updatedInput = page.locator('input#name')
     await expect(updatedInput).toHaveValue('E2E 수정 후 가구', { timeout: 15000 })
   })
 })

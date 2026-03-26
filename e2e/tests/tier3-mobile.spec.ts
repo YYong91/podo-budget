@@ -55,13 +55,14 @@ test.describe('모바일 뷰포트', () => {
     await page.goto('/')
     await page.waitForLoadState('networkidle')
 
-    // FAB 메인 버튼 클릭 (aria-label="지출/수입 입력")
-    const fab = page.getByRole('button', { name: '지출/수입 입력' })
+    // FAB 메인 버튼 클릭 (aria-label="지출/수입 입력" when closed)
+    // FloatingActionButton은 fixed position으로 항상 표시됨
+    const fab = page.locator('button[aria-label="지출/수입 입력"]')
     await expect(fab).toBeVisible({ timeout: 15000 })
     await fab.click()
 
-    // 팝오버에서 "지출 입력" 선택
-    const expenseButton = page.getByText('지출 입력')
+    // 팝오버에서 "지출 입력" 선택 — span 텍스트
+    const expenseButton = page.locator('button').filter({ hasText: '지출 입력' })
     await expect(expenseButton).toBeVisible({ timeout: 5000 })
     await expenseButton.click()
 

@@ -79,15 +79,24 @@ test.describe('예산 관리', () => {
     // 카테고리별 예산 섹션에서 'E2E식비' 카테고리 확인
     await expect(page.getByText('E2E식비')).toBeVisible({ timeout: 15000 })
 
-    // 해당 카테고리의 예산 입력 필드에 금액 입력
+    // 해당 카테고리의 예산 입력 필드에 금액 입력 (aria-label="${카테고리명} 예산")
     const budgetInput = page.getByLabel('E2E식비 예산')
+    await expect(budgetInput).toBeVisible({ timeout: 10000 })
     await budgetInput.fill('300000')
 
-    // 저장 버튼 클릭 (입력값이 변경되면 '저장' 버튼이 나타남)
-    await page.getByRole('button', { name: '저장' }).first().click()
+    // dirty 상태 → "저장" 버튼이 나타남 → 클릭 + API 응답 대기
+    const saveBtn = page.getByRole('button', { name: '저장' }).first()
+    await expect(saveBtn).toBeVisible({ timeout: 5000 })
+    await Promise.all([
+      page.waitForResponse(
+        (res) => res.url().includes('/api/budgets') && res.status() < 400,
+        { timeout: 15000 },
+      ),
+      saveBtn.click(),
+    ])
 
-    // 저장 성공 대기 — 저장 후 버튼이 사라짐 (dirty 상태 해제)
-    await expect(page.getByRole('button', { name: '저장' })).not.toBeVisible({ timeout: 10000 })
+    // 저장 성공 → loadData() → dirty 해제 → 저장 버튼 사라짐
+    await page.waitForTimeout(2000) // loadData 완료 대기
 
     // 페이지 새로고침 후에도 금액이 유지됨
     await page.reload()
@@ -129,13 +138,22 @@ test.describe('예산 관리', () => {
 
     // 총 예산 입력
     const totalInput = page.getByLabel('월 총 예산')
+    await expect(totalInput).toBeVisible({ timeout: 10000 })
     await totalInput.fill('2000000')
 
-    // 저장 버튼 클릭
-    await page.getByRole('button', { name: '저장' }).first().click()
+    // dirty 상태 → "저장" 버튼 나타남 → 클릭 + API 응답 대기
+    const saveBtn = page.getByRole('button', { name: '저장' }).first()
+    await expect(saveBtn).toBeVisible({ timeout: 5000 })
+    await Promise.all([
+      page.waitForResponse(
+        (res) => res.url().includes('/api/budgets') && res.status() < 400,
+        { timeout: 15000 },
+      ),
+      saveBtn.click(),
+    ])
 
-    // 저장 성공 — 버튼 사라짐
-    await expect(page.getByRole('button', { name: '저장' })).not.toBeVisible({ timeout: 10000 })
+    // 저장 완료 대기
+    await page.waitForTimeout(2000)
 
     // 새로고침 후 값 유지 확인
     await page.reload()

@@ -21,36 +21,35 @@ test.describe('Tier 1: 자연어 지출 입력', () => {
     // 3. 자연어 텍스트 입력
     await textarea.fill('점심 김치찌개 8000원')
 
-    // 4. 분석 버튼 클릭 (AI 분석 or 파싱 요청)
-    const analyzeBtn = page.getByRole('button', { name: /분석|확인|파싱/ })
-    if (await analyzeBtn.isVisible({ timeout: 3000 })) {
-      // 분석 요청 → 프리뷰 대기
-      await Promise.all([
-        page.waitForResponse(
-          (res) => res.url().includes('/api/') && res.status() < 500,
-          { timeout: 15000 },
-        ),
-        analyzeBtn.click(),
-      ])
-    } else {
-      // Enter로 제출하는 방식일 수 있음
-      await textarea.press('Enter')
-      await page.waitForResponse(
+    // 4. "분석하기" 버튼 클릭 (TransactionForm 자연어 모드의 submit 버튼)
+    const analyzeBtn = page.getByRole('button', { name: /분석하기/ })
+    await expect(analyzeBtn).toBeVisible({ timeout: 10000 })
+
+    // 분석 요청 → 프리뷰 대기
+    await Promise.all([
+      page.waitForResponse(
         (res) => res.url().includes('/api/') && res.status() < 500,
         { timeout: 15000 },
-      )
-    }
+      ),
+      analyzeBtn.click(),
+    ])
 
     // 5. 프리뷰 영역 확인 — 금액 또는 설명이 표시되어야 함
     //    MockLLMProvider는 "8000" 금액을 반환
     await page.waitForTimeout(2000) // 프리뷰 렌더링 대기
 
-    // 프리뷰 또는 저장 가능 상태 확인
-    const saveBtn = page.getByRole('button', { name: /저장|확인/ })
+    // 프리뷰 저장 버튼: "N건 저장하기"
+    const saveBtn = page.getByRole('button', { name: /저장하기/ })
     await expect(saveBtn).toBeVisible({ timeout: 15000 })
 
-    // 6. 저장
-    await saveBtn.click()
+    // 6. 저장 — POST 응답 대기
+    await Promise.all([
+      page.waitForResponse(
+        (res) => res.url().includes('/api/') && res.request().method() === 'POST' && res.status() < 400,
+        { timeout: 15000 },
+      ),
+      saveBtn.click(),
+    ])
 
     // 7. 홈으로 이동하여 목록에서 확인
     await page.goto('/')

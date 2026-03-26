@@ -54,8 +54,11 @@ test.describe('정기 거래 관리', () => {
     await page.goto('/recurring')
     await page.waitForLoadState('networkidle')
 
-    // 추가 버튼 클릭
-    await page.getByRole('button', { name: '추가' }).click()
+    // 추가 버튼 클릭 — 모달 열기
+    await page.getByRole('button', { name: /추가/ }).click()
+
+    // 모달이 열릴 때까지 대기
+    await expect(page.getByText('반복 거래 추가')).toBeVisible({ timeout: 10000 })
 
     // 모달에서 폼 작성
     // 설명 입력 (placeholder: "예: 넷플릭스, 월급")
@@ -63,8 +66,14 @@ test.describe('정기 거래 관리', () => {
     // 금액 입력 (placeholder: "0")
     await page.getByPlaceholder('0').fill('500000')
 
-    // 추가하기 버튼 클릭
-    await page.getByRole('button', { name: '추가하기' }).click()
+    // 추가하기 버튼 클릭 + API 응답 대기
+    await Promise.all([
+      page.waitForResponse(
+        (res) => res.url().includes('/api/recurring') && res.request().method() === 'POST' && res.status() < 400,
+        { timeout: 15000 },
+      ),
+      page.getByRole('button', { name: '추가하기' }).click(),
+    ])
 
     // 목록에 추가된 항목 표시
     await expect(page.getByText('E2E 월세')).toBeVisible({ timeout: 15000 })
@@ -100,7 +109,15 @@ test.describe('정기 거래 관리', () => {
     await expect(page.getByText('E2E 실행테스트')).toBeVisible({ timeout: 15000 })
 
     // 바로 등록(execute) 버튼 클릭 (title="바로 등록")
-    await page.getByTitle('바로 등록').click()
+    const executeBtn = page.getByTitle('바로 등록').first()
+    await expect(executeBtn).toBeVisible({ timeout: 10000 })
+    await Promise.all([
+      page.waitForResponse(
+        (res) => res.url().includes('/api/recurring/') && res.url().includes('/execute') && res.status() < 400,
+        { timeout: 15000 },
+      ),
+      executeBtn.click(),
+    ])
 
     // 등록 성공 토스트 확인
     await expect(page.getByText(/등록되었습니다/)).toBeVisible({ timeout: 10000 })
@@ -127,13 +144,25 @@ test.describe('정기 거래 관리', () => {
     await expect(page.getByText('E2E 지출정기')).toBeVisible({ timeout: 15000 })
     await expect(page.getByText('E2E 수입정기')).toBeVisible()
 
-    // 지출 탭 클릭
-    await page.getByRole('button', { name: '지출' }).click()
+    // 지출 탭 클릭 — 필터 변경 시 API 재요청
+    await Promise.all([
+      page.waitForResponse(
+        (res) => res.url().includes('/api/recurring') && res.status() < 400,
+        { timeout: 15000 },
+      ),
+      page.getByRole('button', { name: '지출' }).click(),
+    ])
     await expect(page.getByText('E2E 지출정기')).toBeVisible({ timeout: 15000 })
     await expect(page.getByText('E2E 수입정기')).not.toBeVisible()
 
     // 수입 탭 클릭
-    await page.getByRole('button', { name: '수입' }).click()
+    await Promise.all([
+      page.waitForResponse(
+        (res) => res.url().includes('/api/recurring') && res.status() < 400,
+        { timeout: 15000 },
+      ),
+      page.getByRole('button', { name: '수입' }).click(),
+    ])
     await expect(page.getByText('E2E 수입정기')).toBeVisible({ timeout: 15000 })
     await expect(page.getByText('E2E 지출정기')).not.toBeVisible()
   })
