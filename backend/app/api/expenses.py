@@ -18,6 +18,7 @@ from sqlalchemy import extract, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import get_household_member, get_user_active_household_id
+from app.api.payment_methods import get_default_payment_method_id
 from app.core.auth import get_current_user
 from app.core.database import get_db
 from app.core.rate_limit import limiter
@@ -99,6 +100,11 @@ async def create_expense(
     await get_household_member(household_id, current_user, db)
 
     expense_data = expense.model_dump(exclude={"household_id"})
+
+    # 기본 결제수단 자동 적용 — 명시적 지정이 없으면 사용자 기본값 폴백
+    if expense_data.get("payment_method_id") is None:
+        expense_data["payment_method_id"] = await get_default_payment_method_id(db, household_id, current_user.id)  # type: ignore[arg-type]
+
     db_expense = Expense(**expense_data, user_id=current_user.id, household_id=household_id)
     db.add(db_expense)
     await db.commit()

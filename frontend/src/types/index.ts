@@ -124,6 +124,7 @@ export interface Expense {
   amount: number
   description: string
   category_id: number | null
+  payment_method_id: number | null
   raw_input: string | null
   memo: string | null
   household_id: number | null
@@ -186,6 +187,8 @@ export interface ParsedExpenseItem {
   date: string
   memo: string
   type: string
+  /** LLM이 추출한 결제수단 이름 */
+  payment_method?: string | null
   /** 원본 통화 코드 (예: USD, JPY) — 해외 지출 지원 (#245) */
   currency?: string | null
   /** 원본 통화 금액 */
@@ -521,6 +524,33 @@ export interface AdminUserDetail {
   household_count: number
   is_telegram_linked: boolean
   last_activity_at: string | null
+}
+
+/* 결제수단 관련 타입 */
+
+export type PaymentMethodType = 'credit_card' | 'debit_card' | 'cash' | 'transfer'
+
+export interface PaymentMethod {
+  id: number
+  household_id: number
+  created_by: number
+  name: string
+  type: PaymentMethodType
+  monthly_target: number | null
+  is_default: boolean
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface PaymentMethodUsage {
+  id: number
+  name: string
+  type: string
+  monthly_target: number | null
+  spent_amount: number
+  usage_percentage: number | null
+  remaining: number | null
 }
 
 /* Household 관련 타입 */

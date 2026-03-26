@@ -6,7 +6,7 @@
  * colorScheme prop으로 색상 테마를 분리한다.
  */
 
-import type { Category } from '../types'
+import type { Category, PaymentMethod } from '../types'
 
 /** 프리뷰 카드에서 편집 가능한 공통 항목 구조 */
 export interface PreviewItem {
@@ -17,6 +17,10 @@ export interface PreviewItem {
   category: string
   category_id: number | null
   memo: string | null
+  /** 결제수단 ID */
+  payment_method_id?: number | null
+  /** LLM이 추출한 결제수단 이름 */
+  payment_method?: string | null
 }
 
 type ColorScheme = 'grape' | 'leaf'
@@ -26,6 +30,8 @@ interface ParsedItemPreviewCardProps {
   index: number
   totalCount: number
   categories: Category[]
+  /** 결제수단 목록 (지출 전용, 없으면 드롭다운 미표시) */
+  paymentMethods?: PaymentMethod[]
   /** 색상 테마: 지출=grape, 수입=leaf */
   colorScheme: ColorScheme
   /** 항목 레이블 (예: "지출", "수입") */
@@ -62,6 +68,7 @@ export default function ParsedItemPreviewCard({
   index,
   totalCount,
   categories,
+  paymentMethods,
   colorScheme,
   label,
   onUpdate,
@@ -203,6 +210,28 @@ export default function ParsedItemPreviewCard({
             </button>
           )}
         </div>
+
+        {/* 결제수단 (paymentMethods가 있을 때만 표시) */}
+        {paymentMethods && paymentMethods.length > 0 && (
+          <div>
+            <label htmlFor={`preview-payment-method-${index}`} className="block text-xs text-[var(--text-tertiary)] mb-1">결제수단</label>
+            <select
+              id={`preview-payment-method-${index}`}
+              value={item.payment_method_id ?? ''}
+              onChange={(e) =>
+                onUpdate(index, 'payment_method_id', e.target.value ? Number(e.target.value) : null)
+              }
+              className={`w-full px-3 py-2 border border-[var(--input-border)] rounded-xl text-sm focus:ring-2 ${c.input}`}
+            >
+              <option value="">선택 안 함{item.payment_method ? ` (${item.payment_method})` : ''}</option>
+              {paymentMethods.map((pm) => (
+                <option key={pm.id} value={pm.id}>
+                  {pm.name}{pm.is_default ? ' (기본)' : ''}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
 
         {/* 메모 (선택) */}
         <div className="sm:col-span-2">

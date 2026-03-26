@@ -4,7 +4,7 @@
  * API 응답을 모킹하기 위한 샘플 데이터를 정의한다.
  */
 
-import type { Expense, Income, Category, MonthlyStats, InsightsResponse, StatsResponse, ComparisonResponse, RecurringTransaction, AssetSummary, AssetSnapshot, StructuredInsights, StockSearchResult } from '../types'
+import type { Expense, Income, Category, MonthlyStats, InsightsResponse, StatsResponse, ComparisonResponse, RecurringTransaction, AssetSummary, AssetSnapshot, StructuredInsights, StockSearchResult, PaymentMethod, PaymentMethodUsage } from '../types'
 
 /**
  * 테스트용 카테고리 목록
@@ -51,6 +51,7 @@ export const mockExpenses: Expense[] = [
     amount: 8000,
     description: '김치찌개',
     category_id: 1,
+    payment_method_id: null,
     raw_input: '오늘 점심에 김치찌개 8000원 먹었어',
     memo: null,
     household_id: 1,
@@ -66,6 +67,7 @@ export const mockExpenses: Expense[] = [
     amount: 3500,
     description: '버스',
     category_id: 2,
+    payment_method_id: null,
     raw_input: '버스 3500원',
     memo: null,
     household_id: 1,
@@ -81,6 +83,7 @@ export const mockExpenses: Expense[] = [
     amount: 50000,
     description: '옷',
     category_id: 3,
+    payment_method_id: null,
     raw_input: null,
     memo: null,
     household_id: 1,
@@ -438,6 +441,7 @@ export const mockChatResponse = {
       amount: 8000,
       description: '김치찌개',
       category_id: 1,
+      payment_method_id: null,
       raw_input: '오늘 점심에 김치찌개 8000원 먹었어',
       memo: null,
       household_id: 1,
@@ -530,3 +534,69 @@ export const mockStructuredInsights: StructuredInsights = {
   ],
   encouragement: '저축률 36%는 매우 우수합니다! 이 습관을 유지하세요',
 }
+
+/**
+ * 테스트용 결제수단 목록
+ */
+export const mockPaymentMethods: PaymentMethod[] = [
+  {
+    id: 1,
+    household_id: 1,
+    created_by: 1,
+    name: '삼성카드',
+    type: 'credit_card',
+    monthly_target: 300000,
+    is_default: true,
+    is_active: true,
+    created_at: '2026-01-01T00:00:00Z',
+    updated_at: '2026-01-01T00:00:00Z',
+  },
+  {
+    id: 2,
+    household_id: 1,
+    created_by: 1,
+    name: '현금',
+    type: 'cash',
+    monthly_target: null,
+    is_default: false,
+    is_active: true,
+    created_at: '2026-01-01T00:00:00Z',
+    updated_at: '2026-01-01T00:00:00Z',
+  },
+  {
+    id: 3,
+    household_id: 1,
+    created_by: 1,
+    name: '국민카드',
+    type: 'credit_card',
+    monthly_target: 500000,
+    is_default: false,
+    is_active: true,
+    created_at: '2026-01-01T00:00:00Z',
+    updated_at: '2026-01-01T00:00:00Z',
+  },
+]
+
+/**
+ * 테스트용 결제수단별 월 사용액
+ */
+export const mockPaymentMethodUsage: PaymentMethodUsage[] = [
+  {
+    id: 1,
+    name: '삼성카드',
+    type: 'credit_card',
+    monthly_target: 300000,
+    spent_amount: 220000,
+    usage_percentage: 73.3,
+    remaining: 80000,
+  },
+  {
+    id: 3,
+    name: '국민카드',
+    type: 'credit_card',
+    monthly_target: 500000,
+    spent_amount: 150000,
+    usage_percentage: 30.0,
+    remaining: 350000,
+  },
+]

@@ -9,7 +9,7 @@ import { Link, useParams, useNavigate } from 'react-router-dom'
 import {
   Tags, PiggyBank, Repeat, Users, BookOpen, MessageSquarePlus,
   Megaphone, ChevronRight, User, Sun, Moon,
-  ShieldCheck, Download,
+  ShieldCheck, Download, CreditCard,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
@@ -111,6 +111,12 @@ export default function SettingsPage() {
       label: '예산 관리',
       description: '카테고리별/월 총 예산 설정',
       icon: PiggyBank,
+    },
+    {
+      to: '/payment-methods',
+      label: '결제수단',
+      description: '카드/현금 태깅 + 실적 추적',
+      icon: CreditCard,
     },
     {
       to: '/recurring',

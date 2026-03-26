@@ -26,6 +26,8 @@ import {
   mockStructuredInsights,
   mockIncomeComparison,
   mockStocks,
+  mockPaymentMethods,
+  mockPaymentMethodUsage,
 } from './fixtures'
 
 const BASE_URL = '/api'
@@ -556,6 +558,61 @@ export const handlers = [
   http.delete(`${BASE_URL}/assets/:id`, ({ params }) => {
     const asset = mockAssets.find((a) => a.id === Number(params.id))
     if (!asset) return HttpResponse.json({ detail: 'Not found' }, { status: 404 })
+    return HttpResponse.json(null, { status: 204 })
+  }),
+
+  // ==================== 결제수단 API ====================
+
+  /**
+   * GET /api/payment-methods/stats/monthly - 결제수단별 월 사용액 (구체적 경로 먼저)
+   */
+  http.get(`${BASE_URL}/payment-methods/stats/monthly`, () => {
+    return HttpResponse.json(mockPaymentMethodUsage)
+  }),
+
+  /**
+   * GET /api/payment-methods - 결제수단 목록 조회
+   */
+  http.get(`${BASE_URL}/payment-methods`, () => {
+    return HttpResponse.json(mockPaymentMethods)
+  }),
+
+  /**
+   * POST /api/payment-methods - 결제수단 생성
+   */
+  http.post(`${BASE_URL}/payment-methods`, async ({ request }) => {
+    const body = (await request.json()) as Record<string, unknown>
+    const newMethod = {
+      id: Math.max(...mockPaymentMethods.map((m) => m.id)) + 1,
+      household_id: 1,
+      created_by: 1,
+      name: body.name ?? '',
+      type: body.type ?? 'credit_card',
+      monthly_target: body.monthly_target ?? null,
+      is_default: body.is_default ?? false,
+      is_active: true,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }
+    return HttpResponse.json(newMethod, { status: 201 })
+  }),
+
+  /**
+   * PUT /api/payment-methods/:id - 결제수단 수정
+   */
+  http.put(`${BASE_URL}/payment-methods/:id`, async ({ params, request }) => {
+    const method = mockPaymentMethods.find((m) => m.id === Number(params.id))
+    if (!method) return HttpResponse.json({ detail: 'Not found' }, { status: 404 })
+    const body = (await request.json()) as Record<string, unknown>
+    return HttpResponse.json({ ...method, ...body, updated_at: new Date().toISOString() })
+  }),
+
+  /**
+   * DELETE /api/payment-methods/:id - 결제수단 삭제 (soft delete)
+   */
+  http.delete(`${BASE_URL}/payment-methods/:id`, ({ params }) => {
+    const method = mockPaymentMethods.find((m) => m.id === Number(params.id))
+    if (!method) return HttpResponse.json({ detail: 'Not found' }, { status: 404 })
     return HttpResponse.json(null, { status: 204 })
   }),
 
