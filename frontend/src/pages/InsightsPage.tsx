@@ -17,6 +17,7 @@ import { incomeApi } from '../api/income'
 import { getMonthlyStats } from '../api/budgets'
 import { assetApi } from '../api/assets'
 import { categoryApi } from '../api/categories'
+import { paymentMethodApi } from '../api/paymentMethods'
 import { useHouseholdStore } from '../stores/useHouseholdStore'
 
 // 컴포넌트
@@ -24,6 +25,7 @@ import PeriodNavigator from '../components/stats/PeriodNavigator'
 import UnifiedSummaryCards from '../components/stats/UnifiedSummaryCards'
 import CategoryTopList from '../components/stats/CategoryTopList'
 import BudgetVsActual from '../components/stats/BudgetVsActual'
+import CardUsageSummary from '../components/stats/CardUsageSummary'
 import AssetChangeSummary from '../components/stats/AssetChangeSummary'
 import MonthlyHighlights from '../components/stats/MonthlyHighlights'
 import FinancialHealthScore from '../components/stats/FinancialHealthScore'
@@ -42,6 +44,7 @@ import { trackEvent } from '../utils/analytics'
 import type {
   StatsResponse, ComparisonResponse, BudgetMonthlyStatsResponse,
   AssetSummary, AssetSnapshot, StructuredInsights, HealthScore,
+  PaymentMethodUsage,
 } from '../types'
 
 // ── 날짜 유틸 ──
@@ -79,6 +82,7 @@ export default function InsightsPage() {
   const [incomeComparison, setIncomeComparison] = useState<ComparisonResponse | null>(null)
   const [assetSummary, setAssetSummary] = useState<AssetSummary | null>(null)
   const [prevSnapshot, setPrevSnapshot] = useState<AssetSnapshot | null>(null)
+  const [cardUsage, setCardUsage] = useState<PaymentMethodUsage[]>([])
 
   // 섹션 표시 설정
   const [sectionVisibility, setSectionVisibility] = useState<SectionVisibility>(loadSectionSettings)
@@ -109,8 +113,8 @@ export default function InsightsPage() {
         const dateStr = `${monthStr}-15`
         const hhId = activeHouseholdId
 
-        // 1차 병렬: 지출/수입 통계 + 비교 + 예산 + 자산 + 카테고리
-        const [expRes, incRes, compRes, incCompRes, budgetRes, assetRes, snapRes, catRes] = await Promise.allSettled([
+        // 1차 병렬: 지출/수입 통계 + 비교 + 예산 + 자산 + 카테고리 + 카드 실적
+        const [expRes, incRes, compRes, incCompRes, budgetRes, assetRes, snapRes, catRes, cardRes] = await Promise.allSettled([
           statsApi.getStats('monthly', dateStr, hhId),
           incomeApi.getStats('monthly', dateStr, hhId),
           statsApi.getComparison('monthly', dateStr, 3, hhId),
@@ -119,6 +123,7 @@ export default function InsightsPage() {
           assetApi.getSummary(hhId),
           assetApi.getSnapshots(hhId, 2),
           categoryApi.getAll({ type: 'expense' }),
+          paymentMethodApi.getMonthlyUsage(monthStr, hhId),
         ])
 
         if (cancelled) return
@@ -131,6 +136,7 @@ export default function InsightsPage() {
         const asset = assetRes.status === 'fulfilled' ? assetRes.value.data : null
         const snaps = snapRes.status === 'fulfilled' ? snapRes.value.data : []
         const cats = catRes.status === 'fulfilled' ? catRes.value.data : []
+        const cards = cardRes.status === 'fulfilled' ? cardRes.value.data : []
 
         // 핵심 데이터(지출+수입) 모두 실패하면 에러 상태
         if (!exp && !inc && expRes.status === 'rejected' && incRes.status === 'rejected') {
@@ -144,6 +150,7 @@ export default function InsightsPage() {
         setIncomeComparison(incComp)
         setBudgetStats(budget)
         setAssetSummary(asset)
+        setCardUsage(cards)
 
         // 이전 스냅샷 (가장 오래된 것)
         const sortedSnaps = (snaps ?? []).sort((a: AssetSnapshot, b: AssetSnapshot) =>
@@ -349,12 +356,17 @@ export default function InsightsPage() {
             <BudgetVsActual budgetStats={budgetStats} monthStr={monthStr} />
           )}
 
-          {/* 5. 자산 변화 */}
+          {/* 5. 카드 실적 */}
+          {sectionVisibility.cardUsage && cardUsage.length > 0 && (
+            <CardUsageSummary usage={cardUsage} />
+          )}
+
+          {/* 6. 자산 변화 */}
           {sectionVisibility.assets && (
             <AssetChangeSummary summary={assetSummary} previousSnapshot={prevSnapshot} />
           )}
 
-          {/* 6. AI 상세 분석 */}
+          {/* 7. AI 상세 분석 */}
           {sectionVisibility.ai && (
             <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)]/60 p-4">
               <div className="flex items-center justify-between mb-4">

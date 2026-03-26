@@ -23,11 +23,13 @@ from fastapi import APIRouter, Depends, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import get_household_member, get_user_active_household_id
+from app.api.payment_methods import get_default_payment_method_id
 from app.core.auth import get_current_user
 from app.core.database import get_db
 from app.core.rate_limit import limiter
 from app.models.expense import Expense
 from app.models.income import Income
+from app.models.payment_method import PaymentMethod
 from app.models.user import User
 from app.schemas.chat import ChatRequest, ChatResponse, ParsedExpenseItem
 from app.schemas.expense import ExpenseResponse
@@ -40,8 +42,12 @@ from app.services.llm_service import get_llm_provider
 router = APIRouter()
 
 
-async def _to_parsed_items(parsed: dict[str, Any] | list[dict[str, Any]], household_id: int | None = None) -> list[ParsedExpenseItem]:
-    """LLM 파싱 결과를 ParsedExpenseItem 리스트로 변환 (외화 환율 변환 포함)"""
+async def _to_parsed_items(
+    parsed: dict[str, Any] | list[dict[str, Any]],
+    household_id: int | None = None,
+    payment_method_map: dict[str, int] | None = None,
+) -> list[ParsedExpenseItem]:
+    """LLM 파싱 결과를 ParsedExpenseItem 리스트로 변환 (외화 환율 변환 + 결제수단 매칭 포함)"""
     items = [parsed] if isinstance(parsed, dict) else parsed
     result = []
     for item in items:
@@ -58,6 +64,12 @@ async def _to_parsed_items(parsed: dict[str, Any] | list[dict[str, Any]], househ
                 original_amount = amount
                 amount = round(amount * rate)
 
+        # 결제수단 이름 → ID 매칭
+        payment_method_name = item.get("payment_method")
+        payment_method_id = None
+        if payment_method_name and payment_method_map:
+            payment_method_id = payment_method_map.get(payment_method_name)
+
         result.append(
             ParsedExpenseItem(
                 amount=amount,
@@ -67,6 +79,8 @@ async def _to_parsed_items(parsed: dict[str, Any] | list[dict[str, Any]], househ
                 memo=item.get("memo", ""),
                 household_id=household_id,
                 type=item.get("type", "expense"),
+                payment_method=payment_method_name,
+                payment_method_id=payment_method_id,
                 currency=currency,
                 original_amount=original_amount,
                 exchange_rate=exchange_rate,
@@ -78,9 +92,10 @@ async def _to_parsed_items(parsed: dict[str, Any] | list[dict[str, Any]], househ
 async def _handle_preview(
     parsed: dict[str, Any] | list[dict[str, Any]],
     household_id: int,
+    payment_method_map: dict[str, int] | None = None,
 ) -> ChatResponse:
     """Preview 모드: LLM 파싱 결과만 반환 (DB 저장 안 함)"""
-    parsed_items = await _to_parsed_items(parsed, household_id=household_id)
+    parsed_items = await _to_parsed_items(parsed, household_id=household_id, payment_method_map=payment_method_map)
     count = len(parsed_items)
     total = sum(item.amount for item in parsed_items)
     income_count = sum(1 for item in parsed_items if item.type == "income")
@@ -116,6 +131,8 @@ async def _save_and_respond(
     household_id: int,
     current_user: User,
     db: AsyncSession,
+    payment_method_map: dict[str, int] | None = None,
+    default_payment_method_id: int | None = None,
 ) -> ChatResponse:
     """일반 모드: LLM 파싱 결과를 DB에 저장하고 응답 생성"""
     items = [parsed] if isinstance(parsed, dict) else parsed
@@ -141,7 +158,15 @@ async def _save_and_respond(
 
         saved_amounts.append(amount)
 
-        record_kwargs = {
+        # 결제수단 매칭: LLM 파싱 → 이름 매칭 → 기본값 폴백
+        pm_name = item.get("payment_method")
+        pm_id = None
+        if pm_name and payment_method_map:
+            pm_id = payment_method_map.get(pm_name)
+        if pm_id is None and item_type != "income":
+            pm_id = default_payment_method_id
+
+        record_kwargs: dict[str, Any] = {
             "user_id": current_user.id,
             "household_id": household_id,
             "amount": amount,
@@ -157,6 +182,7 @@ async def _save_and_respond(
             db.add(record)
             created_incomes.append(record)
         else:
+            record_kwargs["payment_method_id"] = pm_id
             record = Expense(**record_kwargs)
             db.add(record)
             created_expenses.append(record)
@@ -225,21 +251,39 @@ async def chat(
 
     llm = get_llm_provider("parse")
 
-    # 3개 독립 DB 쿼리를 asyncio.gather로 병렬 실행 — 직렬 대비 레이턴시 감소 (#239)
+    # 4개 독립 DB 쿼리를 asyncio.gather로 병렬 실행 — 직렬 대비 레이턴시 감소 (#239)
+    from sqlalchemy import select as sa_select
+
     from app.services.category_mapping_service import get_category_mappings_for_prompt
 
-    user_categories, history_hints, cat_mappings = await asyncio.gather(
+    async def _get_active_payment_methods() -> list[PaymentMethod]:
+        result = await db.execute(
+            sa_select(PaymentMethod).where(
+                PaymentMethod.household_id == household_id,
+                PaymentMethod.created_by == current_user.id,
+                PaymentMethod.is_active == True,  # noqa: E712
+            )
+        )
+        return list(result.scalars().all())
+
+    user_categories, history_hints, cat_mappings, user_payment_methods = await asyncio.gather(
         get_user_categories(db, current_user.id, household_id),  # type: ignore[arg-type]
         get_category_hints(db, current_user.id, household_id),  # type: ignore[arg-type]
         get_category_mappings_for_prompt(db, user_id=current_user.id, household_id=household_id),  # type: ignore[arg-type]
+        _get_active_payment_methods(),
     )
 
-    # LLM으로 사용자 입력 파싱
+    # 결제수단 이름 → ID 매핑 (LLM 파싱 결과 매칭용)
+    payment_method_map: dict[str, int] = {pm.name: pm.id for pm in user_payment_methods}  # type: ignore[misc]
+    payment_method_names = list(payment_method_map.keys()) or None
+
+    # LLM으로 사용자 입력 파싱 (결제수단 목록 포함)
     parsed = await llm.parse_expense(
         chat_request.message,
         categories=user_categories or None,
         history_hints=history_hints or None,
         category_mappings=cat_mappings or None,
+        payment_methods=payment_method_names,
     )
 
     # 파싱 실패 처리
@@ -264,8 +308,19 @@ async def chat(
             insights=None,
         )
 
+    # 기본 결제수단 ID 조회 (저장 시 폴백용)
+    default_pm_id = await get_default_payment_method_id(db, household_id, current_user.id)  # type: ignore[arg-type]
+
     # Preview 모드 vs 일반 모드 라우팅
     if chat_request.preview:
-        return await _handle_preview(parsed, household_id)
+        return await _handle_preview(parsed, household_id, payment_method_map=payment_method_map or None)
 
-    return await _save_and_respond(parsed, chat_request.message, household_id, current_user, db)
+    return await _save_and_respond(
+        parsed,
+        chat_request.message,
+        household_id,
+        current_user,
+        db,
+        payment_method_map=payment_method_map or None,
+        default_payment_method_id=default_pm_id,
+    )

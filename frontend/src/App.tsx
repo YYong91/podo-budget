@@ -25,6 +25,7 @@ const NotFoundPage = lazy(() => import('./pages/NotFoundPage'))
 const AssetDashboard = lazy(() => import('./pages/AssetDashboard'))
 const AssetForm = lazy(() => import('./pages/AssetForm'))
 const AccountManager = lazy(() => import('./pages/AccountManager'))
+const PaymentMethodManager = lazy(() => import('./pages/PaymentMethodManager'))
 const TransactionList = lazy(() => import('./pages/TransactionList'))
 const GuidePage = lazy(() => import('./pages/GuidePage'))
 const FeedbackPage = lazy(() => import('./pages/FeedbackPage'))
@@ -82,6 +83,7 @@ function App() {
             <Route path="/assets/new" element={<AssetForm />} />
             <Route path="/assets/:id" element={<AssetForm />} />
             <Route path="/accounts" element={<AccountManager />} />
+            <Route path="/payment-methods" element={<PaymentMethodManager />} />
             <Route path="/guide" element={<GuidePage />} />
             <Route path="/feedback" element={<FeedbackPage />} />
             <Route path="/admin" element={<AdminPage />} />

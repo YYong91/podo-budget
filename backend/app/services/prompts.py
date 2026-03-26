@@ -49,7 +49,8 @@ EXPENSE_PARSER_SYSTEM_PROMPT = """당신은 한국어 가계부 입력을 분석
   "category": "식비",
   "description": "김치찌개",
   "date": "2026-02-11",
-  "memo": ""
+  "memo": "",
+  "payment_method": null
 }}
 ```
 
@@ -61,14 +62,16 @@ EXPENSE_PARSER_SYSTEM_PROMPT = """당신은 한국어 가계부 입력을 분석
     "category": "식비",
     "description": "점심 김치찌개",
     "date": "{today}",
-    "memo": ""
+    "memo": "",
+    "payment_method": null
   }},
   {{
     "amount": 5000,
     "category": "식비",
     "description": "카페 아메리카노",
     "date": "{today}",
-    "memo": ""
+    "memo": "",
+    "payment_method": null
   }}
 ]
 ```
@@ -169,6 +172,7 @@ def get_expense_parser_prompt(
     categories: list[str] | None = None,
     history_hints: dict[str, str] | None = None,
     category_mappings: dict[str, str] | None = None,
+    payment_methods: list[str] | None = None,
 ) -> str:
     """오늘 날짜 및 사용자 컨텍스트를 삽입한 시스템 프롬프트 반환
 
@@ -201,6 +205,18 @@ def get_expense_parser_prompt(
             f"\n\n## 카테고리 매핑 규칙 (필수 적용)\n"
             f"아래 매핑은 사용자가 직접 설정한 것입니다. 해당 카테고리가 떠오르면 **반드시 매핑된 이름을 사용**하세요:\n"
             f"{mapping_pairs}"
+        )
+
+    # 결제수단 목록 주입 (사용자가 등록한 결제수단에서 자동 매칭)
+    if payment_methods:
+        pm_list = ", ".join(payment_methods)
+        prompt += (
+            f"\n\n## 결제수단 추출 규칙\n"
+            f"사용자가 등록한 결제수단: {pm_list}\n"
+            f'사용자 입력에서 결제수단 언급이 있으면 `"payment_method"` 필드에 가장 가까운 이름을 넣으세요.\n'
+            f'- 예: "삼성카드로 결제" → `"payment_method": "삼성카드"`\n'
+            f'- 예: "현금으로 냄" → `"payment_method": "현금"`\n'
+            f'- 결제수단을 언급하지 않으면 `"payment_method"` 필드를 생략하세요.'
         )
 
     # 히스토리 기반 패턴 주입 (유사 거래 카테고리 추론)

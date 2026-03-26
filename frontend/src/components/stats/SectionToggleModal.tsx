@@ -13,6 +13,7 @@ export type SectionVisibility = {
   highlights: boolean
   categoryTop: boolean
   budget: boolean
+  cardUsage: boolean
   assets: boolean
   ai: boolean
 }
@@ -21,6 +22,7 @@ export const DEFAULT_SECTIONS: SectionVisibility = {
   highlights: true,
   categoryTop: true,
   budget: true,
+  cardUsage: true,
   assets: true,
   ai: true,
 }
@@ -47,6 +49,7 @@ const SECTION_LIST: { key: keyof SectionVisibility; label: string }[] = [
   { key: 'highlights', label: '이달의 주목할 점' },
   { key: 'categoryTop', label: '지출 카테고리 TOP' },
   { key: 'budget', label: '예산 상황' },
+  { key: 'cardUsage', label: '카드 실적' },
   { key: 'assets', label: '자산 변화' },
   { key: 'ai', label: 'AI 상세 분석' },
 ]

@@ -27,6 +27,7 @@ from app.api import (
     invitations,
     kakao,
     onboarding,
+    payment_methods,
     recurring,
     stocks,
     telegram,
@@ -254,6 +255,7 @@ app.include_router(invitations.router, prefix="/api/invitations", tags=["invitat
 app.include_router(recurring.router, prefix="/api/recurring", tags=["recurring"])
 app.include_router(assets.router, prefix="/api/assets", tags=["assets"])
 app.include_router(accounts.router, prefix="/api/accounts", tags=["accounts"])
+app.include_router(payment_methods.router, prefix="/api/payment-methods", tags=["payment-methods"])
 app.include_router(admin.router, prefix="/api/admin", tags=["admin"])
 app.include_router(stocks.router, prefix="/api/stocks", tags=["stocks"])
 app.include_router(onboarding.router, prefix="/api/onboarding", tags=["onboarding"])

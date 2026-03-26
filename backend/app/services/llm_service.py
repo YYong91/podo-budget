@@ -52,6 +52,7 @@ class LLMProvider(ABC):
         categories: list[str] | None = None,
         history_hints: dict[str, Any] | None = None,
         category_mappings: dict[str, str] | None = None,
+        payment_methods: list[str] | None = None,
     ) -> dict[str, Any] | list[dict[str, Any]]:
         """사용자 입력을 파싱하여 지출 정보 추출
 
@@ -106,12 +107,13 @@ class AnthropicProvider(LLMProvider):
         categories: list[str] | None = None,
         history_hints: dict[str, Any] | None = None,
         category_mappings: dict[str, str] | None = None,
+        payment_methods: list[str] | None = None,
     ) -> dict[str, Any] | list[dict[str, Any]]:
         """Claude API로 자연어 지출 입력을 구조화된 데이터로 변환
 
         단일 지출 또는 여러 지출을 파싱합니다.
         여러 지출인 경우 리스트로 반환합니다.
-        categories, history_hints, category_mappings가 있으면 프롬프트에 주입하여 정확도를 높입니다.
+        categories, history_hints, category_mappings, payment_methods가 있으면 프롬프트에 주입하여 정확도를 높입니다.
         """
         from app.services.prompts import get_expense_parser_prompt
 
@@ -122,7 +124,9 @@ class AnthropicProvider(LLMProvider):
                     response = await self.client.messages.create(
                         model=self.model,
                         max_tokens=8192,  # Haiku 최대값 — 월간 40건+ 파싱 대응
-                        system=get_expense_parser_prompt(categories=categories, history_hints=history_hints, category_mappings=category_mappings),
+                        system=get_expense_parser_prompt(
+                            categories=categories, history_hints=history_hints, category_mappings=category_mappings, payment_methods=payment_methods
+                        ),
                         messages=[{"role": "user", "content": user_input}],
                         timeout=25.0,  # LLM 응답 타임아웃 (#172)
                     )
@@ -325,12 +329,13 @@ class OpenAIProvider(LLMProvider):
         categories: list[str] | None = None,
         history_hints: dict[str, Any] | None = None,
         category_mappings: dict[str, str] | None = None,
+        payment_methods: list[str] | None = None,
     ) -> dict[str, Any] | list[dict[str, Any]]:
         """OpenAI API로 자연어 지출 입력을 구조화된 데이터로 변환
 
         단일 지출 또는 여러 지출을 파싱합니다.
         여러 지출인 경우 리스트로 반환합니다.
-        categories, history_hints, category_mappings가 있으면 프롬프트에 주입하여 정확도를 높입니다.
+        categories, history_hints, category_mappings, payment_methods가 있으면 프롬프트에 주입하여 정확도를 높입니다.
         """
         from app.services.prompts import get_expense_parser_prompt
 
@@ -344,7 +349,9 @@ class OpenAIProvider(LLMProvider):
                         messages=[
                             {
                                 "role": "system",
-                                "content": get_expense_parser_prompt(categories=categories, history_hints=history_hints, category_mappings=category_mappings),
+                                "content": get_expense_parser_prompt(
+                                    categories=categories, history_hints=history_hints, category_mappings=category_mappings, payment_methods=payment_methods
+                                ),
                             },
                             {"role": "user", "content": user_input},
                         ],
@@ -474,11 +481,13 @@ class GoogleProvider(LLMProvider):
         self.model = model or DEFAULT_MODELS["google"]
         self.api_key = settings.GOOGLE_API_KEY
 
-    async def parse_expense(  # type: ignore[override]
+    async def parse_expense(
         self,
         user_input: str,
         categories: list[str] | None = None,
         history_hints: dict[str, Any] | None = None,
+        category_mappings: dict[str, str] | None = None,
+        payment_methods: list[str] | None = None,
     ) -> dict[str, Any] | list[dict[str, Any]]:
         raise NotImplementedError("Google Gemini 프로바이더는 아직 구현되지 않았습니다")
 
@@ -511,6 +520,7 @@ class MockLLMProvider(LLMProvider):
         categories: list[str] | None = None,
         history_hints: dict[str, Any] | None = None,
         category_mappings: dict[str, str] | None = None,
+        payment_methods: list[str] | None = None,
     ) -> dict[str, Any] | list[dict[str, Any]]:
         """텍스트에서 금액을 추출하여 고정 형식 반환 — E2E에서 안정적으로 동작"""
         import re

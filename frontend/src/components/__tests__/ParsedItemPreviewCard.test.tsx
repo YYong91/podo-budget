@@ -337,4 +337,50 @@ describe('ParsedItemPreviewCard', () => {
       expect(container.querySelector('.border-l-leaf-400')).toBeInTheDocument()
     })
   })
+
+  describe('결제수단 선택', () => {
+    const paymentMethods = [
+      { id: 1, household_id: 1, created_by: 1, name: '삼성카드', type: 'credit_card' as const, monthly_target: null, is_default: true, is_active: true, created_at: '', updated_at: '' },
+      { id: 2, household_id: 1, created_by: 1, name: '현금', type: 'cash' as const, monthly_target: null, is_default: false, is_active: true, created_at: '', updated_at: '' },
+    ]
+
+    it('결제수단 드롭다운을 표시한다', () => {
+      render(
+        <ParsedItemPreviewCard
+          {...defaultProps}
+          colorScheme="grape"
+          label="지출"
+          paymentMethods={paymentMethods}
+        />
+      )
+      expect(screen.getByLabelText('결제수단')).toBeInTheDocument()
+    })
+
+    it('결제수단 변경 시 onUpdate를 호출한다', () => {
+      const onUpdate = vi.fn()
+      render(
+        <ParsedItemPreviewCard
+          {...defaultProps}
+          colorScheme="grape"
+          label="지출"
+          paymentMethods={paymentMethods}
+          onUpdate={onUpdate}
+        />
+      )
+      const pmSelect = screen.getByLabelText('결제수단')
+      fireEvent.change(pmSelect, { target: { value: '1' } })
+      expect(onUpdate).toHaveBeenCalledWith(0, 'payment_method_id', 1)
+    })
+
+    it('paymentMethods가 없으면 드롭다운을 표시하지 않는다', () => {
+      render(
+        <ParsedItemPreviewCard
+          {...defaultProps}
+          colorScheme="grape"
+          label="지출"
+        />
+      )
+      expect(screen.queryByLabelText('결제수단')).not.toBeInTheDocument()
+    })
+  })
 })

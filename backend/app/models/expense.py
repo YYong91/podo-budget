@@ -50,6 +50,11 @@ class Expense(Base):  # type: ignore[misc]
         ForeignKey("recurring_transactions.id", ondelete="SET NULL"),
         nullable=True,
     )  # 정기 거래에서 생성된 경우 연결
+    payment_method_id = Column(
+        Integer,
+        ForeignKey("payment_methods.id", ondelete="SET NULL"),
+        nullable=True,
+    )  # 결제수단 (카드, 현금 등)
     date = Column(DateTime, nullable=False, default=func.now())
     created_at = Column(DateTime, default=func.now(), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now(), server_default=func.now(), nullable=False)
@@ -59,3 +64,4 @@ class Expense(Base):  # type: ignore[misc]
     category = relationship("Category", back_populates="expenses")
     household = relationship("Household", back_populates="expenses")
     recurring_transaction = relationship("RecurringTransaction", back_populates="expenses")
+    payment_method = relationship("PaymentMethod")
