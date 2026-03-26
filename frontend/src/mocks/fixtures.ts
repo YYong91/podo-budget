@@ -148,6 +148,24 @@ export const mockComparison: ComparisonResponse = {
 }
 
 /**
+ * 테스트용 수입 기간 비교
+ */
+export const mockIncomeComparison: ComparisonResponse = {
+  current: { label: '2024년 1월', total: 4000000 },
+  previous: { label: '2023년 12월', total: 3500000 },
+  change: { amount: 500000, percentage: 14.3 },
+  trend: [
+    { label: '2023년 11월', total: 3200000 },
+    { label: '2023년 12월', total: 3500000 },
+    { label: '2024년 1월', total: 4000000 },
+  ],
+  by_category_comparison: [
+    { category: '급여', current: 3500000, previous: 3000000, change_amount: 500000, change_percentage: 16.7 },
+    { category: '부수입', current: 500000, previous: 500000, change_amount: 0, change_percentage: 0 },
+  ],
+}
+
+/**
  * 테스트용 수입 카테고리 (type=income 또는 type=both인 카테고리 포함)
  */
 export const mockIncomeCategoriesAll: Category[] = [

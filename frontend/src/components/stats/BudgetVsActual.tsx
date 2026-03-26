@@ -12,9 +12,10 @@ import { formatAmount } from '../../utils/format'
 interface BudgetVsActualProps {
   budgetStats: BudgetMonthlyStatsResponse | null
   maxItems?: number
+  monthStr?: string
 }
 
-export default function BudgetVsActual({ budgetStats, maxItems = 5 }: BudgetVsActualProps) {
+export default function BudgetVsActual({ budgetStats, maxItems = 5, monthStr }: BudgetVsActualProps) {
   const [expanded, setExpanded] = useState(false)
 
   if (!budgetStats || budgetStats.categories.length === 0) return null
@@ -70,7 +71,12 @@ export default function BudgetVsActual({ budgetStats, maxItems = 5 }: BudgetVsAc
           <div key={cat.category_name}>
             <div className="flex justify-between items-center mb-1">
               <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-[var(--text-primary)]">{cat.category_name}</span>
+                <Link
+                  to={monthStr ? `/?month=${monthStr}&category=${cat.category_name}` : `/?category=${cat.category_name}`}
+                  className="text-sm font-medium text-[var(--text-primary)] hover:text-grape-600 transition-colors"
+                >
+                  {cat.category_name}
+                </Link>
                 {cat.is_exceeded && (
                   <span className="text-xs px-1.5 py-0.5 bg-red-100 text-red-600 rounded-full">초과</span>
                 )}

@@ -277,7 +277,7 @@ async def get_monthly_stats(
         .where(
             budget_scope,  # type: ignore[arg-type]
             Budget.period == "monthly",
-            Budget.start_date <= start,
+            Budget.start_date < end,  # 해당 월 안에 시작된 예산 포함 (#434)
             or_(Budget.end_date.is_(None), Budget.end_date >= start),
         )
         .order_by(Budget.created_at.desc())

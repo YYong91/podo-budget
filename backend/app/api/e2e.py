@@ -43,7 +43,7 @@ class E2ESetupResponse(BaseModel):
 
 
 @router.post("/e2e/setup", response_model=E2ESetupResponse)
-async def e2e_setup(request: E2ESetupRequest):
+async def e2e_setup(request: E2ESetupRequest) -> object:
     """E2E 테스트 유저 생성 + JWT 발급"""
     if not settings.DEBUG:
         raise HTTPException(status_code=404, detail="Not Found")
@@ -80,7 +80,7 @@ async def e2e_setup(request: E2ESetupRequest):
                 household_id = household.id
             else:
                 result = await db.execute(select(HouseholdMember.household_id).where(HouseholdMember.user_id == user.id).limit(1))
-                household_id = result.scalar_one_or_none() or 1
+                household_id = result.scalar_one_or_none() or 1  # type: ignore[assignment]
 
             payload = {
                 "sub": str(user.auth_user_id),
@@ -106,7 +106,7 @@ class E2ECleanupResponse(BaseModel):
 
 
 @router.post("/e2e/cleanup", response_model=E2ECleanupResponse)
-async def e2e_cleanup(request: E2ECleanupRequest, db: AsyncSession = Depends(get_db)):
+async def e2e_cleanup(request: E2ECleanupRequest, db: AsyncSession = Depends(get_db)) -> object:
     """E2E 테스트 데이터 정리 — 특정 유저의 모든 데이터를 삭제
 
     household_id를 통해 해당 가구에 속한 지출/수입/카테고리/예산/정기거래를 삭제합니다.
@@ -137,7 +137,7 @@ async def e2e_cleanup(request: E2ECleanupRequest, db: AsyncSession = Depends(get
             result = await db.execute(
                 delete(model).where(model.household_id.in_(household_ids))  # type: ignore[attr-defined]
             )
-            deleted[name] = result.rowcount  # type: ignore[assignment]
+            deleted[name] = result.rowcount or 0
 
         await db.commit()
 

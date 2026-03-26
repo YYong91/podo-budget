@@ -39,6 +39,7 @@ export function useMonthlyTransactions({ activeHouseholdId }: UseMonthlyTransact
   // 필터: URL → sessionStorage → 'all' 순서로 복원
   const urlFilter = searchParams.get('filter') as FilterType | null
   const filter: FilterType = urlFilter || (sessionStorage.getItem(FILTER_STORAGE_KEY) as FilterType) || 'all'
+  const categoryFilter = searchParams.get('category')
 
   // 필터 변경 시 sessionStorage에 백업 (상세→목록 복귀 시 복원용)
   useEffect(() => {
@@ -130,8 +131,14 @@ export function useMonthlyTransactions({ activeHouseholdId }: UseMonthlyTransact
       ...incomes.map(i => ({ ...i, type: 'income' as const })),
     ]
 
-    // 필터 적용
-    const filtered = filter === 'all' ? all : all.filter(t => t.type === filter)
+    // 필터 적용 (타입 + 카테고리)
+    let filtered = filter === 'all' ? all : all.filter(t => t.type === filter)
+    if (categoryFilter) {
+      filtered = filtered.filter(t => {
+        const cat = t.category_id != null ? categoryMap.get(t.category_id) : null
+        return cat?.name === categoryFilter
+      })
+    }
 
     // 날짜 역순 + 같은 날짜 내 id 역순
     filtered.sort((a, b) => {
@@ -155,9 +162,9 @@ export function useMonthlyTransactions({ activeHouseholdId }: UseMonthlyTransact
     for (const e of expenses) totalExpense += e.amount
     for (const i of incomes) totalIncome += i.amount
 
-    // 캘린더 날짜별 요약 (필터 반영)
+    // 캘린더 날짜별 요약 (타입+카테고리 필터 반영)
     const daySummaries = new Map<string, { expense: number; income: number }>()
-    const calendarSource = filter === 'all' ? all : all.filter(t => t.type === filter)
+    const calendarSource = filtered
     for (const tx of calendarSource) {
       const key = tx.date.slice(0, 10)
       const s = daySummaries.get(key) ?? { expense: 0, income: 0 }
@@ -167,7 +174,7 @@ export function useMonthlyTransactions({ activeHouseholdId }: UseMonthlyTransact
     }
 
     return { grouped, totalExpense, totalIncome, daySummaries }
-  }, [expenses, incomes, filter])
+  }, [expenses, incomes, filter, categoryFilter, categoryMap])
 
   const monthLabel = `${currentYear}년 ${currentMonth + 1}월`
 

@@ -14,6 +14,16 @@ repos:
       - id: detect-secrets
         args: ['--baseline', '.secrets.baseline']
 
+  # mypy: 타입 검사 (pre-push — 느려서 커밋마다는 X)
+  - repo: local
+    hooks:
+      - id: mypy
+        name: mypy (BE 타입 검사)
+        entry: bash -c 'cd backend && uv run mypy app/'
+        language: system
+        stages: [pre-push]
+        pass_filenames: false
+
   # 기본 체크
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0

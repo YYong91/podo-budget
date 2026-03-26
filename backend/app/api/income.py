@@ -10,10 +10,11 @@
 """
 
 import logging
+from calendar import monthrange
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import func, select
+from sqlalchemy import extract, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import get_household_member, get_user_active_household_id
@@ -22,7 +23,17 @@ from app.core.database import get_db
 from app.models.category import Category
 from app.models.income import Income
 from app.models.user import User
-from app.schemas.expense import CategoryStats, SearchSummary, StatsPeriod, StatsResponse, TrendPoint
+from app.schemas.expense import (
+    CategoryChange,
+    CategoryStats,
+    ChangeInfo,
+    ComparisonResponse,
+    PeriodTotal,
+    SearchSummary,
+    StatsPeriod,
+    StatsResponse,
+    TrendPoint,
+)
 from app.schemas.income import IncomeCreate, IncomeResponse, IncomeUpdate
 from app.utils.date_utils import get_month_range, get_week_label, get_week_range, get_year_range
 
@@ -244,6 +255,162 @@ async def get_incomes_search_summary(
     result = await db.execute(stmt)
     count, total = result.one()
     return SearchSummary(total_count=count, total_amount=float(total))
+
+
+@router.get("/stats/comparison", response_model=ComparisonResponse)
+async def get_income_stats_comparison(
+    period: str = Query(
+        ...,
+        description="비교 기간: monthly 또는 yearly",
+        pattern=r"^(monthly|yearly)$",
+    ),
+    date: str | None = Query(None, description="기준 날짜 YYYY-MM-DD (기본: 오늘)", alias="date"),
+    months: int = Query(3, ge=2, le=12, description="비교할 개월 수"),
+    household_id: int | None = None,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> object:
+    """수입 기간 비교 (전월 대비 + N개월 트렌드)"""
+    from datetime import date as date_type
+
+    ref_date = date_type.fromisoformat(date) if date else date_type.today()
+
+    # household_id 미지정 시 활성 가구 자동 감지
+    if household_id is None:
+        household_id = await get_user_active_household_id(current_user, db)
+    await get_household_member(household_id, current_user, db)
+    scope_filter = _build_income_scope_filter(household_id)
+
+    excl_filter = Income.exclude_from_stats == False  # noqa: E712
+
+    async def _month_total(year: int, month: int, end_day: int | None = None) -> float:
+        m_start = datetime(year, month, 1)
+        _, m_last = monthrange(year, month)
+        actual_end = min(end_day, m_last) if end_day is not None else m_last
+        m_end = datetime(year, month, actual_end, 23, 59, 59)
+        r = await db.execute(
+            select(func.coalesce(func.sum(Income.amount), 0)).where(scope_filter, excl_filter, Income.date >= m_start, Income.date <= m_end)  # type: ignore[arg-type]
+        )
+        return float(r.scalar())  # type: ignore[arg-type]
+
+    async def _month_by_category(year: int, month: int, end_day: int | None = None) -> dict[str, float]:
+        m_start = datetime(year, month, 1)
+        _, m_last = monthrange(year, month)
+        actual_end = min(end_day, m_last) if end_day is not None else m_last
+        m_end = datetime(year, month, actual_end, 23, 59, 59)
+        r = await db.execute(
+            select(Category.name, func.sum(Income.amount).label("amount"))
+            .join(Category, Income.category_id == Category.id, isouter=True)
+            .where(scope_filter, excl_filter, Income.date >= m_start, Income.date <= m_end)  # type: ignore[arg-type]
+            .group_by(Category.name)
+        )
+        return {row.name or "미분류": float(row.amount) for row in r.all()}
+
+    if period == "monthly":
+        cur_y, cur_m = ref_date.year, ref_date.month
+        prev_m = cur_m - 1 if cur_m > 1 else 12
+        prev_y = cur_y if cur_m > 1 else cur_y - 1
+
+        # 진행 중인 달이면 오늘까지만 비교 (전기 대비 동일 경과일 기준)
+        today = date_type.today()
+        is_current_month = cur_y == today.year and cur_m == today.month
+        end_day = today.day if is_current_month else None
+
+        current_total = await _month_total(cur_y, cur_m, end_day)
+        previous_total = await _month_total(prev_y, prev_m, end_day)
+
+        if is_current_month:
+            _, prev_last = monthrange(prev_y, prev_m)
+            prev_end_day = min(today.day, prev_last)
+            current_label = f"{cur_y}년 {cur_m}월 ({today.day}일까지)"
+            previous_label = f"{prev_y}년 {prev_m}월 ({prev_end_day}일까지)"
+        else:
+            current_label = f"{cur_y}년 {cur_m}월"
+            previous_label = f"{prev_y}년 {prev_m}월"
+
+        # N개월 트렌드 (현재 월 포함 과거 N개월) — 단일 GROUP BY 쿼리
+        trend_data: list[PeriodTotal] = []
+        y, m = cur_y, cur_m
+        for _ in range(months - 1):
+            m -= 1
+            if m < 1:
+                m = 12
+                y -= 1
+        start_y, start_m = y, m
+        _, end_last = monthrange(cur_y, cur_m)
+        trend_start = datetime(start_y, start_m, 1)
+        trend_end = datetime(cur_y, cur_m, end_last, 23, 59, 59)
+
+        yr_col = func.extract("year", Income.date).label("year")
+        mo_col = func.extract("month", Income.date).label("month")
+        trend_result = await db.execute(
+            select(yr_col, mo_col, func.coalesce(func.sum(Income.amount), 0).label("amount"))
+            .where(scope_filter, excl_filter, Income.date >= trend_start, Income.date <= trend_end)  # type: ignore[arg-type]
+            .group_by(yr_col, mo_col)
+            .order_by(yr_col, mo_col)
+        )
+        trend_map = {(int(r.year), int(r.month)): float(r.amount) for r in trend_result.all()}
+        for _ in range(months):
+            trend_data.append(PeriodTotal(label=f"{y}년 {m}월", total=trend_map.get((y, m), 0.0)))
+            m += 1
+            if m > 12:
+                m = 1
+                y += 1
+
+        # 카테고리별 비교 (동일 end_day 적용)
+        cur_cats = await _month_by_category(cur_y, cur_m, end_day)
+        prev_cats = await _month_by_category(prev_y, prev_m, end_day)
+        all_cats = set(cur_cats.keys()) | set(prev_cats.keys())
+        by_cat_comparison = []
+        for cat in sorted(all_cats):
+            c = cur_cats.get(cat, 0)
+            p = prev_cats.get(cat, 0)
+            change_pct = round((c - p) / p * 100, 1) if p > 0 else None
+            by_cat_comparison.append(
+                CategoryChange(
+                    category=cat,
+                    current=c,
+                    previous=p,
+                    change_amount=round(c - p, 2),
+                    change_percentage=change_pct,
+                )
+            )
+    else:  # yearly
+        cur_y = ref_date.year
+        prev_y = cur_y - 1
+
+        # 필요한 연도 목록 수집 (current, previous, trend)
+        trend_years = [cur_y - y_offset for y_offset in range(months - 1, -1, -1)]
+        years_needed = list({cur_y, prev_y, *trend_years})
+
+        # 연도별 합계를 단일 쿼리로 조회
+        year_totals_result = await db.execute(
+            select(extract("year", Income.date).label("year"), func.coalesce(func.sum(Income.amount), 0).label("total"))
+            .where(scope_filter, excl_filter, extract("year", Income.date).in_(years_needed))  # type: ignore[arg-type]
+            .group_by(extract("year", Income.date))
+        )
+        year_totals: dict[int, float] = {int(row.year): float(row.total) for row in year_totals_result.all()}
+
+        current_total = year_totals.get(cur_y, 0.0)
+        previous_total = year_totals.get(prev_y, 0.0)
+        current_label = f"{cur_y}년"
+        previous_label = f"{prev_y}년"
+
+        trend_data = [PeriodTotal(label=f"{y}년", total=year_totals.get(y, 0.0)) for y in trend_years]
+
+        by_cat_comparison = []
+
+    # 변화량 계산
+    change_amount = round(current_total - previous_total, 2)
+    change_pct = round(change_amount / previous_total * 100, 1) if previous_total > 0 else None
+
+    return ComparisonResponse(
+        current=PeriodTotal(label=current_label, total=current_total),
+        previous=PeriodTotal(label=previous_label, total=previous_total),
+        change=ChangeInfo(amount=change_amount, percentage=change_pct),
+        trend=trend_data,
+        by_category_comparison=by_cat_comparison,
+    )
 
 
 @router.get("/{income_id}", response_model=IncomeResponse)
