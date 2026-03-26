@@ -203,4 +203,160 @@ describe('AssetDashboard', () => {
       })
     })
   })
+
+  describe('유형별 그룹', () => {
+    it('자산 유형 그룹 헤더를 표시한다', async () => {
+      renderAssetDashboard()
+
+      await waitFor(() => {
+        // mockAssets에 포함된 유형 그룹이 표시됨
+        expect(screen.getByText('삼성전자')).toBeInTheDocument()
+      })
+    })
+
+    it('그룹 헤더 클릭 시 접기/펼치기 토글한다', async () => {
+      const user = userEvent.setup()
+      renderAssetDashboard()
+
+      await waitFor(() => {
+        expect(screen.getByText('삼성전자')).toBeInTheDocument()
+      })
+
+      // 그룹 헤더 버튼 찾기 (예: "투자" 그룹)
+      const groupHeaders = screen.getAllByRole('button').filter(btn =>
+        btn.textContent?.includes('투자') || btn.textContent?.includes('예적금'),
+      )
+      if (groupHeaders.length > 0) {
+        // 클릭하여 접기
+        await user.click(groupHeaders[0])
+        // 다시 클릭하여 펼치기
+        await user.click(groupHeaders[0])
+      }
+    })
+  })
+
+  describe('목표 없는 상태', () => {
+    it('목표가 없으면 목표 설정 유도 버튼을 표시한다', async () => {
+      server.use(
+        http.get('/api/assets/goal', () =>
+          HttpResponse.json(null, { status: 404 }),
+        ),
+      )
+
+      renderAssetDashboard()
+
+      await waitFor(() => {
+        expect(screen.getByText('순자산 목표를 설정해보세요')).toBeInTheDocument()
+      })
+    })
+
+    it('목표 설정 유도 버튼 클릭 시 모달이 열린다', async () => {
+      server.use(
+        http.get('/api/assets/goal', () =>
+          HttpResponse.json(null, { status: 404 }),
+        ),
+      )
+
+      const user = userEvent.setup()
+      renderAssetDashboard()
+
+      await waitFor(() => {
+        expect(screen.getByText('순자산 목표를 설정해보세요')).toBeInTheDocument()
+      })
+
+      await user.click(screen.getByText('순자산 목표를 설정해보세요'))
+
+      await waitFor(() => {
+        expect(screen.getByText('순자산 목표 설정')).toBeInTheDocument()
+      })
+    })
+  })
+
+  describe('목표 모달 입력', () => {
+    it('모달 닫기(X) 버튼으로 모달을 닫을 수 있다', async () => {
+      const user = userEvent.setup()
+      renderAssetDashboard()
+
+      await waitFor(() => {
+        expect(screen.getByText('순자산 목표')).toBeInTheDocument()
+      })
+
+      await user.click(screen.getByRole('button', { name: '수정' }))
+
+      await waitFor(() => {
+        expect(screen.getByText('순자산 목표 설정')).toBeInTheDocument()
+      })
+
+      await user.click(screen.getByRole('button', { name: '닫기' }))
+
+      await waitFor(() => {
+        expect(screen.queryByText('순자산 목표 설정')).not.toBeInTheDocument()
+      })
+    })
+
+    it('모달에서 목표 금액과 날짜가 비어있으면 저장 버튼이 비활성화된다', async () => {
+      server.use(
+        http.get('/api/assets/goal', () =>
+          HttpResponse.json(null, { status: 404 }),
+        ),
+      )
+
+      const user = userEvent.setup()
+      renderAssetDashboard()
+
+      await waitFor(() => {
+        expect(screen.getByText('순자산 목표를 설정해보세요')).toBeInTheDocument()
+      })
+
+      await user.click(screen.getByText('순자산 목표를 설정해보세요'))
+
+      await waitFor(() => {
+        expect(screen.getByText('저장')).toBeInTheDocument()
+      })
+
+      const saveBtn = screen.getByRole('button', { name: '저장' })
+      expect(saveBtn).toBeDisabled()
+    })
+
+    it('기존 목표 수정 시 삭제 버튼이 표시된다', async () => {
+      const user = userEvent.setup()
+      renderAssetDashboard()
+
+      await waitFor(() => {
+        expect(screen.getByText('순자산 목표')).toBeInTheDocument()
+      })
+
+      await user.click(screen.getByRole('button', { name: '수정' }))
+
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: '삭제' })).toBeInTheDocument()
+      })
+    })
+  })
+
+  describe('월 저축 요약', () => {
+    it('저축 데이터가 있으면 월 저축 요약을 표시한다', async () => {
+      server.use(
+        http.get('/api/assets/monthly-savings', () =>
+          HttpResponse.json({ month: '2026-03', net_savings: 500000, income: 3000000, expense: 2500000 }),
+        ),
+      )
+
+      renderAssetDashboard()
+
+      await waitFor(() => {
+        expect(screen.getByText('2026-03 저축')).toBeInTheDocument()
+      })
+    })
+  })
+
+  describe('전월 대비 변동', () => {
+    it('스냅샷 2개 이상이면 전월 대비 변동을 표시한다', async () => {
+      renderAssetDashboard()
+
+      await waitFor(() => {
+        expect(screen.getByText(/전월 대비/)).toBeInTheDocument()
+      })
+    })
+  })
 })

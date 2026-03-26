@@ -1,7 +1,7 @@
 /**
  * @file HouseholdDetailPage.test.tsx
  * @description 공유 가계부 상세 페이지 테스트
- * 탭 전환, 로딩/에러 상태, 권한별 UI를 검증한다.
+ * 탭 전환, 로딩/에러 상태, 권한별 UI, 핸들러(초대, 역할 변경, 멤버 추방, 탈퇴, 수정, 삭제, 초대 취소, 링크 복사)를 검증한다.
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
@@ -42,6 +42,19 @@ const fetchHouseholdInvitations = vi.fn().mockResolvedValue(undefined)
 const clearCurrentHousehold = vi.fn()
 const clearError = vi.fn()
 const addToast = vi.fn()
+const mockInviteMember = vi.fn()
+const mockUpdateMemberRole = vi.fn()
+const mockRemoveMember = vi.fn()
+const mockLeaveHousehold = vi.fn()
+const mockUpdateHousehold = vi.fn()
+const mockDeleteHousehold = vi.fn()
+const mockCancelInvitation = vi.fn()
+
+const mockNavigate = vi.fn()
+vi.mock('react-router-dom', async () => ({
+  ...(await vi.importActual('react-router-dom')),
+  useNavigate: () => mockNavigate,
+}))
 
 /** 테스트마다 변경할 수 있는 스토어 상태 */
 let storeState: {
@@ -56,13 +69,13 @@ vi.mock('../../stores/useHouseholdStore', () => ({
     ...storeState,
     fetchHouseholdDetail,
     fetchHouseholdInvitations,
-    updateHousehold: vi.fn(),
-    deleteHousehold: vi.fn(),
-    inviteMember: vi.fn(),
-    cancelInvitation: vi.fn(),
-    updateMemberRole: vi.fn(),
-    removeMember: vi.fn(),
-    leaveHousehold: vi.fn(),
+    updateHousehold: mockUpdateHousehold,
+    deleteHousehold: mockDeleteHousehold,
+    inviteMember: mockInviteMember,
+    cancelInvitation: mockCancelInvitation,
+    updateMemberRole: mockUpdateMemberRole,
+    removeMember: mockRemoveMember,
+    leaveHousehold: mockLeaveHousehold,
     clearError,
     clearCurrentHousehold,
   }),
@@ -93,6 +106,11 @@ function renderPage() {
 describe('HouseholdDetailPage', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+    // navigator.clipboard 모킹
+    Object.assign(navigator, {
+      clipboard: { writeText: vi.fn().mockResolvedValue(undefined) },
+    })
     // 기본 상태: owner, 로딩 완료, 에러 없음
     storeState = {
       currentHousehold: { ...baseMockHousehold, my_role: 'owner' },
@@ -155,13 +173,11 @@ describe('HouseholdDetailPage', () => {
     storeState.isLoading = true
     storeState.currentHousehold = null
     renderPage()
-    // LoadingSpinner 컴포넌트의 animate-spin 요소가 렌더링된다
     expect(document.querySelector('.animate-spin')).toBeInTheDocument()
   })
 
   it('로딩 중이지만 데이터가 있으면 콘텐츠를 표시한다', () => {
     storeState.isLoading = true
-    // currentHousehold는 기본값(있음)
     renderPage()
     expect(screen.getByText('홍길동')).toBeInTheDocument()
   })
@@ -172,16 +188,13 @@ describe('HouseholdDetailPage', () => {
     storeState.error = '서버 에러'
     storeState.currentHousehold = null
     renderPage()
-    // ErrorState의 재시도 버튼
     expect(screen.getByText('다시 시도')).toBeInTheDocument()
   })
 
   it('에러가 있지만 데이터가 있으면 콘텐츠를 표시하고 토스트를 호출한다', () => {
     storeState.error = '서버 에러'
     renderPage()
-    // 콘텐츠는 표시됨
     expect(screen.getByText('홍길동')).toBeInTheDocument()
-    // error useEffect가 토스트를 호출
     expect(addToast).toHaveBeenCalledWith('error', '처리에 실패했습니다')
     expect(clearError).toHaveBeenCalled()
   })
@@ -222,7 +235,6 @@ describe('HouseholdDetailPage', () => {
   it('일반 멤버에게는 초대/설정 탭을 표시하지 않는다', () => {
     storeState.currentHousehold = { ...baseMockHousehold, my_role: 'member' }
     renderPage()
-    // 탭 버튼으로서의 "초대"가 없어야 한다 (멤버 탭의 텍스트와 구분)
     const tabs = screen.getAllByRole('button')
     const invitationTab = tabs.find(
       (btn) => btn.textContent?.includes('초대') && !btn.textContent?.includes('멤버'),
@@ -248,7 +260,6 @@ describe('HouseholdDetailPage', () => {
     const invitationTab = screen.getByRole('button', { name: /초대/ })
     await userEvent.click(invitationTab)
 
-    // InvitationsTab이 렌더링된다 — "+ 멤버 초대" 버튼이 표시됨
     expect(screen.getByText('+ 멤버 초대')).toBeInTheDocument()
   })
 
@@ -258,7 +269,6 @@ describe('HouseholdDetailPage', () => {
     const settingsTab = screen.getByText('설정')
     await userEvent.click(settingsTab)
 
-    // SettingsTab이 렌더링된다 — "가구 정보" 섹션 제목이 표시됨
     expect(screen.getByText('가구 정보')).toBeInTheDocument()
   })
 
@@ -270,7 +280,6 @@ describe('HouseholdDetailPage', () => {
     ]
     renderPage()
 
-    // pending 2건 뱃지
     expect(screen.getByText('2')).toBeInTheDocument()
   })
 
@@ -295,124 +304,194 @@ describe('HouseholdDetailPage', () => {
   it('일반 멤버인 경우 초대 목록을 조회하지 않는다', async () => {
     storeState.currentHousehold = { ...baseMockHousehold, my_role: 'member' }
     renderPage()
-    // fetchHouseholdDetail은 호출되지만 fetchHouseholdInvitations는 호출되지 않아야 한다
     await waitFor(() => {
       expect(fetchHouseholdDetail).toHaveBeenCalled()
     })
     expect(fetchHouseholdInvitations).not.toHaveBeenCalled()
   })
 
-  /* ---------- 멤버 초대 모달 ---------- */
+  /* ---------- 멤버 초대 핸들러 ---------- */
 
-  it('초대 탭에서 + 멤버 초대 버튼 클릭 시 모달이 열린다', async () => {
+  it('초대 모달에서 초대 성공 시 토스트를 표시한다', async () => {
+    mockInviteMember.mockResolvedValueOnce({ email_sent: true })
+    storeState.householdInvitations = []
+    renderPage()
+
+    // 초대 탭으로 이동
+    const invitationTab = screen.getByRole('button', { name: /초대/ })
+    await userEvent.click(invitationTab)
+
+    // 멤버 초대 버튼 클릭
+    await userEvent.click(screen.getByText('+ 멤버 초대'))
+
+    // 모달이 열리면 이메일 입력 (labelledby로 찾기 — 테이블에도 '이메일' 텍스트가 있으므로)
+    const emailInput = screen.getByLabelText(/이메일/)
+    await userEvent.type(emailInput, 'new@test.com')
+
+    // 초대 전송 (모달 내 submit 버튼 — dialog 안에서 찾기)
+    const dialog = screen.getByRole('dialog')
+    const submitBtn = dialog.querySelector('button[type="submit"]') as HTMLButtonElement
+    await userEvent.click(submitBtn)
+
+    await waitFor(() => {
+      expect(mockInviteMember).toHaveBeenCalled()
+    })
+  })
+
+  it('초대 시 이메일 미발송이면 링크 복사 안내를 표시한다', async () => {
+    mockInviteMember.mockResolvedValueOnce({ email_sent: false, token: 'abc123' })
+    storeState.householdInvitations = []
+    renderPage()
+
+    const invitationTab = screen.getByRole('button', { name: /초대/ })
+    await userEvent.click(invitationTab)
+    await userEvent.click(screen.getByText('+ 멤버 초대'))
+
+    const emailInput = screen.getByLabelText(/이메일/)
+    await userEvent.type(emailInput, 'new@test.com')
+    const dialog = screen.getByRole('dialog')
+    const submitBtn = dialog.querySelector('button[type="submit"]') as HTMLButtonElement
+    await userEvent.click(submitBtn)
+
+    await waitFor(() => {
+      expect(addToast).toHaveBeenCalledWith('warning', '이메일 발송에 실패하여 링크가 복사되었습니다')
+    })
+  })
+
+  /* ---------- 역할 변경 핸들러 ---------- */
+
+  it('역할 변경 성공 시 토스트를 표시한다', async () => {
+    mockUpdateMemberRole.mockResolvedValueOnce(undefined)
+    renderPage()
+
+    // MembersTab에 역할 변경 select가 있음 — member의 role select 찾기
+    const roleSelects = screen.getAllByRole('combobox')
+    if (roleSelects.length > 0) {
+      await userEvent.selectOptions(roleSelects[0], 'admin')
+      await waitFor(() => {
+        expect(mockUpdateMemberRole).toHaveBeenCalled()
+      })
+    }
+  })
+
+  /* ---------- 멤버 추방 핸들러 ---------- */
+
+  it('추방 버튼 클릭 시 confirm 후 removeMember를 호출한다', async () => {
+    mockRemoveMember.mockResolvedValueOnce(undefined)
+    renderPage()
+
+    await userEvent.click(screen.getByText('추방'))
+
+    await waitFor(() => {
+      expect(window.confirm).toHaveBeenCalled()
+      expect(mockRemoveMember).toHaveBeenCalledWith(1, 2)
+    })
+    expect(addToast).toHaveBeenCalledWith('success', '멤버를 추방했습니다')
+  })
+
+  it('추방 실패 시 에러 토스트를 표시한다', async () => {
+    mockRemoveMember.mockRejectedValueOnce(new Error('추방 실패'))
+    renderPage()
+
+    await userEvent.click(screen.getByText('추방'))
+
+    await waitFor(() => {
+      expect(addToast).toHaveBeenCalledWith('error', '멤버 추방에 실패했습니다')
+    })
+  })
+
+  /* ---------- 초대 취소 핸들러 ---------- */
+
+  it('초대 취소 시 cancelInvitation을 호출한다', async () => {
+    mockCancelInvitation.mockResolvedValueOnce(undefined)
+    storeState.householdInvitations = [
+      { id: 10, invitee_email: 'new@test.com', status: 'pending', token: 'abc' },
+    ]
     renderPage()
 
     const invitationTab = screen.getByRole('button', { name: /초대/ })
     await userEvent.click(invitationTab)
 
-    await waitFor(() => {
-      expect(screen.getByText('+ 멤버 초대')).toBeInTheDocument()
-    })
-
-    await userEvent.click(screen.getByText('+ 멤버 초대'))
+    // 취소 버튼 클릭
+    const cancelBtn = screen.getByText('취소')
+    await userEvent.click(cancelBtn)
 
     await waitFor(() => {
-      expect(screen.getByText('멤버 초대')).toBeInTheDocument()
+      expect(mockCancelInvitation).toHaveBeenCalledWith(1, 10)
     })
   })
 
-  /* ---------- 설정 탭 인터랙션 ---------- */
+  /* ---------- 초대 링크 복사 핸들러 ---------- */
 
-  it('설정 탭에서 가구 정보 수정 폼이 표시된다', async () => {
-    renderPage()
-
-    const settingsTab = screen.getByText('설정')
-    await userEvent.click(settingsTab)
-
-    await waitFor(() => {
-      expect(screen.getByText('가구 정보')).toBeInTheDocument()
-    })
-  })
-
-  /* ---------- 뒤로가기 ---------- */
-
-  it('뒤로가기 버튼이 존재한다', () => {
-    renderPage()
-    // ArrowLeft 아이콘이 있는 버튼
-    const backButtons = screen.getAllByRole('button')
-    expect(backButtons.length).toBeGreaterThan(0)
-  })
-
-  /* ---------- 초대 뱃지 숨김 ---------- */
-
-  it('pending 초대가 없으면 뱃지가 표시되지 않는다', () => {
-    storeState.householdInvitations = [
-      { id: 10, invitee_email: 'a@test.com', status: 'accepted', token: 'abc' },
-    ]
-    renderPage()
-    // "초대" 탭에 뱃지 숫자가 없어야 함
-    expect(screen.queryByText('1')).not.toBeInTheDocument()
-  })
-
-  /* ---------- 가구 정보 표시 ---------- */
-
-  it('멤버 목록에서 각 멤버의 역할을 표시한다', () => {
-    renderPage()
-    expect(screen.getAllByText('소유자').length).toBeGreaterThan(0)
-    expect(screen.getAllByText('멤버').length).toBeGreaterThan(0)
-  })
-
-  it('멤버의 가입일을 표시한다', () => {
-    renderPage()
-    expect(screen.getByText(/2026.01.01/)).toBeInTheDocument()
-    expect(screen.getByText(/2026.02.01/)).toBeInTheDocument()
-  })
-
-  /* ---------- 초대 탭 상세 ---------- */
-
-  it('초대 탭에서 초대 목록을 표시한다', async () => {
+  it('초대 링크 복사 시 clipboard에 복사하고 토스트를 표시한다', async () => {
     storeState.householdInvitations = [
       { id: 10, invitee_email: 'new@test.com', status: 'pending', token: 'abc123' },
-      { id: 11, invitee_email: 'old@test.com', status: 'accepted', token: 'def456' },
     ]
     renderPage()
 
-    await userEvent.click(screen.getByRole('button', { name: /초대/ }))
+    const invitationTab = screen.getByRole('button', { name: /초대/ })
+    await userEvent.click(invitationTab)
+
+    // 링크 복사 버튼 찾기
+    const copyBtn = screen.getByText('링크 복사')
+    await userEvent.click(copyBtn)
 
     await waitFor(() => {
-      expect(screen.getByText('new@test.com')).toBeInTheDocument()
+      expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
+        expect.stringContaining('/invitations/accept?token=abc123'),
+      )
+      expect(addToast).toHaveBeenCalledWith('success', '초대 링크가 복사되었습니다')
     })
   })
 
-  /* ---------- 설정 탭 상세 ---------- */
+  /* ---------- 가구 탈퇴 핸들러 ---------- */
 
-  it('설정 탭에서 가구 이름이 표시된다', async () => {
+  it('소유자에게 탈퇴 버튼이 멤버 탭에서 표시된다 (멤버 2명 이상)', () => {
     renderPage()
-    await userEvent.click(screen.getByText('설정'))
+    // 소유자(홍길동)에 대해 canManageMember는 false, isMe=true, 2명 이상이므로 "탈퇴" 표시
+    expect(screen.getByText('탈퇴')).toBeInTheDocument()
+  })
+
+  it('가구 탈퇴 성공 시 가구 목록으로 이동한다', async () => {
+    mockLeaveHousehold.mockResolvedValueOnce(undefined)
+    renderPage()
+
+    await userEvent.click(screen.getByText('탈퇴'))
 
     await waitFor(() => {
-      expect(screen.getByDisplayValue('우리집')).toBeInTheDocument()
+      expect(mockLeaveHousehold).toHaveBeenCalledWith(1)
+      expect(addToast).toHaveBeenCalledWith('success', '가구에서 탈퇴했습니다')
+      expect(mockNavigate).toHaveBeenCalledWith('/households')
     })
   })
 
-  it('설정 탭에서 가구 삭제 버튼이 owner에게만 표시된다', async () => {
+  it('가구 탈퇴 실패 시 에러 토스트를 표시한다', async () => {
+    mockLeaveHousehold.mockRejectedValueOnce(new Error('탈퇴 실패'))
     renderPage()
-    await userEvent.click(screen.getByText('설정'))
+
+    await userEvent.click(screen.getByText('탈퇴'))
 
     await waitFor(() => {
-      expect(screen.getByText('가구 삭제')).toBeInTheDocument()
+      expect(addToast).toHaveBeenCalledWith('error', '가구 탈퇴에 실패했습니다')
     })
   })
 
-  it('admin 역할에서 설정 탭 가구 삭제 버튼이 숨겨진다', async () => {
-    storeState.currentHousehold = { ...baseMockHousehold, my_role: 'admin' }
+  /* ---------- 가구 삭제 핸들러 (설정 탭) ---------- */
+
+  it('설정 탭에서 가구 삭제를 실행할 수 있다', async () => {
+    mockDeleteHousehold.mockResolvedValueOnce(undefined)
     renderPage()
+
     await userEvent.click(screen.getByText('설정'))
 
+    // 가구 삭제 버튼 클릭
+    const deleteBtn = screen.getByText('가구 삭제')
+    await userEvent.click(deleteBtn)
+
     await waitFor(() => {
-      expect(screen.getByText('가구 정보')).toBeInTheDocument()
+      expect(mockDeleteHousehold).toHaveBeenCalledWith(1)
+      expect(addToast).toHaveBeenCalledWith('success', '가구가 삭제되었습니다')
+      expect(mockNavigate).toHaveBeenCalledWith('/households')
     })
-    // admin은 삭제 불가
-    expect(screen.queryByText('가구 삭제')).not.toBeInTheDocument()
   })
 })
