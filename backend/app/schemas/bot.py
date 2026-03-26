@@ -7,6 +7,7 @@ dispatch 레이어(telegram_webhook, handle_callback_query)에서만 실제 전�
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from typing import Any
 
 
 @dataclass(slots=True)
@@ -20,7 +21,7 @@ class BotResponse:
     """
 
     text: str
-    reply_markup: dict | None = None
+    reply_markup: dict[str, Any] | None = None
     callback_answer: str | None = None
 
 

@@ -10,7 +10,7 @@ from sqlalchemy.sql import func
 from app.core.database import Base
 
 
-class AssetGoal(Base):
+class AssetGoal(Base):  # type: ignore[misc]
     __tablename__ = "asset_goals"
 
     id = Column(Integer, primary_key=True, index=True)

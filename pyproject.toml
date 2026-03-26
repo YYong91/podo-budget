@@ -40,6 +40,8 @@ dev = [
     "radon>=6.0,<7.0",  # 코드 복잡도 분석 (#252)
     "vulture>=2.11,<3.0",  # dead code 탐지
     "pyright>=1.1,<2.0",  # 타입 체크
+    "mypy>=1.19,<2.0",  # strict 타입 체크 (#453)
+    "types-cachetools>=6.0",  # cachetools 타입 스텁
 ]
 
 [tool.ruff]
@@ -64,3 +66,23 @@ ignore = [
 
 [tool.ruff.lint.isort]
 known-first-party = ["app"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+warn_return_any = true
+warn_unused_configs = true
+plugins = ["pydantic.mypy"]
+
+# 써드파티 라이브러리 — 타입 스텁 없는 패키지
+[[tool.mypy.overrides]]
+module = [
+    "jose.*",
+    "passlib.*",
+    "slowapi.*",
+    "resend.*",
+    "asyncpg.*",
+    "openai.*",
+]
+ignore_missing_imports = true
+

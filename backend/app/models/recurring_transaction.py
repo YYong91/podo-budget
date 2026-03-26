@@ -12,7 +12,7 @@ from sqlalchemy.sql import func
 from app.core.database import Base
 
 
-class RecurringTransaction(Base):
+class RecurringTransaction(Base):  # type: ignore[misc]
     """정기 거래 엔티티
 
     Attributes:

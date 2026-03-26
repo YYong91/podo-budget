@@ -58,7 +58,7 @@ async def get_exchange_rate(currency: str) -> float | None:
             _rate_cache[currency] = (rate, now)
             record_external_api_call(service="frankfurter", success=True, latency_ms=latency)
             logger.info(f"환율 조회 성공: 1 {currency} = {rate:,.2f} KRW")
-            return rate
+            return rate  # type: ignore[no-any-return]
 
     except Exception as e:
         latency = (time.monotonic() - t0) * 1000

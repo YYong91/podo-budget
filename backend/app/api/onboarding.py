@@ -41,12 +41,12 @@ async def _count_active_households(user_id: int, db: AsyncSession) -> int:
 async def get_onboarding_status(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-):
+) -> object:
     """온보딩 상태 조회
 
     사용자가 가구에 소속되어 있는지 확인합니다.
     """
-    count = await _count_active_households(current_user.id, db)
+    count = await _count_active_households(current_user.id, db)  # type: ignore[arg-type]
     return OnboardingStatus(has_household=count > 0, household_count=count)
 
 
@@ -55,14 +55,14 @@ async def create_default_household(
     body: CreateDefaultHousehold,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-):
+) -> object:
     """기본 가구 생성 + owner 멤버십 추가
 
     가구 이름을 지정하지 않으면 "{username}님의 가계부"로 생성됩니다.
     이미 활성 가구가 있는 경우 중복 생성을 방지합니다 (#152).
     """
     # 이미 활성 가구가 있으면 중복 생성 방지 (#152)
-    existing_count = await _count_active_households(current_user.id, db)
+    existing_count = await _count_active_households(current_user.id, db)  # type: ignore[arg-type]
     if existing_count > 0:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,

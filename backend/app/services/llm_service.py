@@ -133,7 +133,7 @@ class AnthropicProvider(LLMProvider):
                         raise ValueError("max_tokens_exceeded")
 
                     # 텍스트 응답에서 JSON 추출 (```json 블록 처리)
-                    text = _extract_json_text(response.content[0].text)
+                    text = _extract_json_text(response.content[0].text)  # type: ignore[union-attr]
                     parsed = json.loads(text)
 
                     # 단일 지출 (dict)인 경우
@@ -190,7 +190,7 @@ class AnthropicProvider(LLMProvider):
                         {
                             "role": "user",
                             "content": [
-                                {
+                                {  # type: ignore[list-item]
                                     "type": "image",
                                     "source": {
                                         "type": "base64",
@@ -207,7 +207,7 @@ class AnthropicProvider(LLMProvider):
                     ],
                 )
 
-                text = _extract_json_text(response.content[0].text)
+                text = _extract_json_text(response.content[0].text)  # type: ignore[union-attr]
                 parsed = json.loads(text)
 
                 if isinstance(parsed, dict):
@@ -256,7 +256,7 @@ class AnthropicProvider(LLMProvider):
                 if response.stop_reason == "max_tokens":
                     logger.warning("인사이트 생성: max_tokens 초과로 응답이 잘렸습니다.")
 
-                return response.content[0].text
+                return response.content[0].text  # type: ignore[union-attr]
 
         except Exception as e:
             logger.error(f"인사이트 생성 실패: {e}")
@@ -271,7 +271,7 @@ class AnthropicProvider(LLMProvider):
                     max_tokens=2048,
                     messages=[{"role": "user", "content": prompt}],
                 )
-                return response.content[0].text
+                return response.content[0].text  # type: ignore[union-attr]
         except Exception as e:
             logger.error(f"Claude generate 실패: {e}")
             return ""
@@ -284,7 +284,7 @@ class AnthropicProvider(LLMProvider):
         )
 
         async with track_llm_call("anthropic"):
-            response = await self.client.messages.create(
+            response = await self.client.messages.create(  # type: ignore[call-overload]
                 model=self.model,
                 max_tokens=2000,
                 system=COMPREHENSIVE_INSIGHTS_SYSTEM_PROMPT,
@@ -307,7 +307,7 @@ class AnthropicProvider(LLMProvider):
             # tool_use 블록에서 구조화된 JSON 추출
             for block in response.content:
                 if block.type == "tool_use":
-                    return block.input
+                    return block.input  # type: ignore[no-any-return]
 
             raise ValueError("LLM이 구조화된 응답을 반환하지 않았습니다")
 
@@ -419,7 +419,7 @@ class OpenAIProvider(LLMProvider):
                 if response.choices[0].finish_reason == "length":
                     logger.warning("인사이트 생성: max_tokens 초과로 응답이 잘렸습니다.")
 
-                return response.choices[0].message.content
+                return response.choices[0].message.content  # type: ignore[no-any-return]
 
         except Exception as e:
             logger.error(f"인사이트 생성 실패: {e}")
@@ -434,7 +434,7 @@ class OpenAIProvider(LLMProvider):
                     max_tokens=2048,
                     messages=[{"role": "user", "content": prompt}],
                 )
-                return response.choices[0].message.content
+                return response.choices[0].message.content  # type: ignore[no-any-return]
         except Exception as e:
             logger.error(f"OpenAI generate 실패: {e}")
             return ""
@@ -466,7 +466,7 @@ class OpenAIProvider(LLMProvider):
                     },
                 },
             )
-            return json.loads(response.choices[0].message.content)
+            return json.loads(response.choices[0].message.content)  # type: ignore[no-any-return]
 
 
 class GoogleProvider(LLMProvider):
@@ -474,7 +474,7 @@ class GoogleProvider(LLMProvider):
         self.model = model or DEFAULT_MODELS["google"]
         self.api_key = settings.GOOGLE_API_KEY
 
-    async def parse_expense(
+    async def parse_expense(  # type: ignore[override]
         self,
         user_input: str,
         categories: list[str] | None = None,
@@ -569,7 +569,7 @@ class LocalLLMProvider(LLMProvider):
     def __init__(self, model: str = ""):
         self.model = model or DEFAULT_MODELS["local"]
 
-    async def parse_expense(
+    async def parse_expense(  # type: ignore[override]
         self,
         user_input: str,
         categories: list[str] | None = None,
@@ -621,7 +621,7 @@ def _create_provider(provider_name: str, model: str) -> LLMProvider:
     cls = providers.get(provider_name)
     if not cls:
         raise ValueError(f"Unknown LLM provider: {provider_name}")
-    return cls(model=model)
+    return cls(model=model)  # type: ignore[abstract]
 
 
 # 앱 레벨 프로바이더 캐시: (feature, provider_name, model) → LLMProvider 인스턴스 (#251)

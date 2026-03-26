@@ -18,8 +18,8 @@ class RecurringTransactionBase(BaseModel):
     start_date: date
     end_date: date | None = None
 
-    @model_validator(mode="after")
-    def validate_frequency_fields(self):
+    @model_validator(mode="after")  # type: ignore[misc]
+    def validate_frequency_fields(self) -> object:
         """빈도에 따른 필수 필드 검증"""
         if self.frequency == "monthly" and self.day_of_month is None:
             raise ValueError("monthly 빈도는 day_of_month가 필수입니다")

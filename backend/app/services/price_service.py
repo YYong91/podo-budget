@@ -9,6 +9,7 @@
 import asyncio
 import logging
 import time
+from typing import Any
 
 import httpx
 
@@ -179,14 +180,14 @@ async def get_stock_us_price(ticker: str) -> tuple[float | None, float | None]:
     if cached_usd is not _CACHE_MISS:
         if cached_usd is None:
             return None, None  # 실패 캐시 hit
-        return cached_usd, cached_usd * usd_krw if usd_krw else None
+        return cached_usd, cached_usd * usd_krw if usd_krw else None  # type: ignore[return-value,operator]
 
     async with _lock_for(key):
         cached_usd = _get_cached(key)
         if cached_usd is not _CACHE_MISS:
             if cached_usd is None:
                 return None, None
-            return cached_usd, cached_usd * usd_krw if usd_krw else None
+            return cached_usd, cached_usd * usd_krw if usd_krw else None  # type: ignore[return-value,operator]
 
         t0 = time.monotonic()
         try:
@@ -268,7 +269,7 @@ def _calc_profit(current_value: float, quantity: float, avg_buy_price: float | N
     return profit_loss, profit_loss_pct
 
 
-async def get_asset_current_value(asset) -> dict:
+async def get_asset_current_value(asset) -> dict[str, Any]:  # type: ignore[no-untyped-def]
     """자산의 현재 평가액 계산
 
     Returns: {current_price, current_value, profit_loss, profit_loss_pct}
@@ -278,33 +279,39 @@ async def get_asset_current_value(asset) -> dict:
     if asset.type == "stock_kr" and asset.ticker and asset.quantity:
         price = await get_stock_kr_price(asset.ticker)
         if price:
-            result["current_price"] = price
-            result["current_value"] = float(asset.quantity) * price
-            result["profit_loss"], result["profit_loss_pct"] = _calc_profit(
-                result["current_value"], float(asset.quantity), float(asset.avg_buy_price) if asset.avg_buy_price else None
+            result["current_price"] = price  # type: ignore[assignment]
+            result["current_value"] = float(asset.quantity) * price  # type: ignore[assignment]
+            result["profit_loss"], result["profit_loss_pct"] = _calc_profit(  # type: ignore[assignment]
+                result["current_value"],  # type: ignore[arg-type]
+                float(asset.quantity),
+                float(asset.avg_buy_price) if asset.avg_buy_price else None,
             )
 
     elif asset.type == "stock_us" and asset.ticker and asset.quantity:
         _price_usd, price_krw = await get_stock_us_price(asset.ticker)
         if price_krw:
-            result["current_price"] = price_krw
-            result["current_value"] = float(asset.quantity) * price_krw
-            result["profit_loss"], result["profit_loss_pct"] = _calc_profit(
-                result["current_value"], float(asset.quantity), float(asset.avg_buy_price) if asset.avg_buy_price else None
+            result["current_price"] = price_krw  # type: ignore[assignment]
+            result["current_value"] = float(asset.quantity) * price_krw  # type: ignore[assignment]
+            result["profit_loss"], result["profit_loss_pct"] = _calc_profit(  # type: ignore[assignment]
+                result["current_value"],  # type: ignore[arg-type]
+                float(asset.quantity),
+                float(asset.avg_buy_price) if asset.avg_buy_price else None,
             )
 
     elif asset.type == "crypto" and asset.ticker and asset.quantity:
         price = await get_crypto_price(asset.ticker)
         if price:
-            result["current_price"] = price
-            result["current_value"] = float(asset.quantity) * price
-            result["profit_loss"], result["profit_loss_pct"] = _calc_profit(
-                result["current_value"], float(asset.quantity), float(asset.avg_buy_price) if asset.avg_buy_price else None
+            result["current_price"] = price  # type: ignore[assignment]
+            result["current_value"] = float(asset.quantity) * price  # type: ignore[assignment]
+            result["profit_loss"], result["profit_loss_pct"] = _calc_profit(  # type: ignore[assignment]
+                result["current_value"],  # type: ignore[arg-type]
+                float(asset.quantity),
+                float(asset.avg_buy_price) if asset.avg_buy_price else None,
             )
 
     elif asset.type in ("deposit", "real_estate", "other", "loan"):
         value = float(asset.manual_value) if asset.manual_value else 0
-        result["current_value"] = value
+        result["current_value"] = value  # type: ignore[assignment]
 
     return result
 
@@ -312,7 +319,7 @@ async def get_asset_current_value(asset) -> dict:
 # ── 종목 검색 ──────────────────────────────────────────────────
 
 
-async def search_stock_kr(query: str) -> list[dict]:
+async def search_stock_kr(query: str) -> list[dict[str, Any]]:
     """한국 종목 검색 (프론트 정적 JSON으로 이전, 백엔드는 fallback용 유지)"""
     # 1차: 네이버 금융
     results = await _search_stock_kr_naver(query)
@@ -322,7 +329,7 @@ async def search_stock_kr(query: str) -> list[dict]:
     return await _search_stock_kr_yahoo(query)
 
 
-async def _search_stock_kr_naver(query: str) -> list[dict]:
+async def _search_stock_kr_naver(query: str) -> list[dict[str, Any]]:
     """네이버 금융 한국 종목 검색"""
     try:
         async with httpx.AsyncClient(timeout=10) as client:
@@ -342,7 +349,7 @@ async def _search_stock_kr_naver(query: str) -> list[dict]:
     return []
 
 
-async def _search_stock_kr_yahoo(query: str) -> list[dict]:
+async def _search_stock_kr_yahoo(query: str) -> list[dict[str, Any]]:
     """Yahoo Finance 한국 종목 검색 fallback (.KS/.KQ 필터)"""
     try:
         async with httpx.AsyncClient(timeout=10) as client:
@@ -366,7 +373,7 @@ async def _search_stock_kr_yahoo(query: str) -> list[dict]:
     return []
 
 
-async def search_stock_us(query: str) -> list[dict]:
+async def search_stock_us(query: str) -> list[dict[str, Any]]:
     """미국 종목 검색"""
     try:
         async with httpx.AsyncClient(timeout=10) as client:
@@ -387,7 +394,7 @@ async def search_stock_us(query: str) -> list[dict]:
     return []
 
 
-async def search_crypto(query: str) -> list[dict]:
+async def search_crypto(query: str) -> list[dict[str, Any]]:
     """코인 검색 (업비트 마켓)"""
     try:
         async with httpx.AsyncClient(timeout=10) as client:

@@ -18,7 +18,7 @@ async def create_account(
     account: AccountCreate,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-):
+) -> object:
     """계좌 등록"""
     account_data = account.model_dump()
     household_id = account_data.get("household_id")
@@ -33,7 +33,7 @@ async def get_accounts(
     household_id: int | None = Query(None),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-):
+) -> object:
     """계좌 목록"""
     if household_id is None:
         household_id = await get_user_active_household_id(current_user, db)
@@ -46,7 +46,7 @@ async def get_account(
     account_id: int,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-):
+) -> object:
     """계좌 상세"""
     account = await account_service.get_account_by_id(db, account_id, current_user)
     if not account:
@@ -54,7 +54,7 @@ async def get_account(
     # household 멤버십 검증 — IDOR 방지 (#137)
     if account.household_id is not None:
         try:
-            await get_household_member(account.household_id, current_user, db)
+            await get_household_member(account.household_id, current_user, db)  # type: ignore[arg-type]
         except HTTPException:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="계좌를 찾을 수 없습니다") from None
     return account
@@ -66,7 +66,7 @@ async def update_account(
     account_update: AccountUpdate,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-):
+) -> object:
     """계좌 수정"""
     from sqlalchemy import select
 
@@ -84,7 +84,7 @@ async def delete_account(
     account_id: int,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-):
+) -> None:
     """계좌 삭제"""
     from sqlalchemy import select
 

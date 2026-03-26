@@ -11,7 +11,7 @@ from sqlalchemy.sql import func
 from app.core.database import Base
 
 
-class Budget(Base):
+class Budget(Base):  # type: ignore[misc]
     """예산 엔티티
 
     Attributes:

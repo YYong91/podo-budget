@@ -7,6 +7,7 @@ Sentry DSN이 설정된 경우 sentry_sdk로 메트릭 전송.
 import logging
 import time
 from collections import defaultdict
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
 
@@ -51,8 +52,8 @@ def record_llm_call(provider: str, success: bool, latency_ms: float) -> None:
     try:
         import sentry_sdk
 
-        sentry_sdk.metrics.incr("llm.call", tags={"provider": provider, "success": str(success)})
-        sentry_sdk.metrics.distribution("llm.latency_ms", latency_ms, tags={"provider": provider})
+        sentry_sdk.metrics.incr("llm.call", tags={"provider": provider, "success": str(success)})  # type: ignore[attr-defined]
+        sentry_sdk.metrics.distribution("llm.latency_ms", latency_ms, tags={"provider": provider})  # type: ignore[call-arg]
     except Exception:
         pass
 
@@ -74,13 +75,13 @@ def record_external_api_call(service: str, success: bool, latency_ms: float) -> 
     try:
         import sentry_sdk
 
-        sentry_sdk.metrics.incr("external_api.call", tags={"service": service, "success": str(success)})
+        sentry_sdk.metrics.incr("external_api.call", tags={"service": service, "success": str(success)})  # type: ignore[attr-defined]
     except Exception:
         pass
 
 
 @asynccontextmanager
-async def track_llm_call(provider: str):
+async def track_llm_call(provider: str) -> AsyncIterator[None]:
     """LLM 호출 메트릭 자동 추적 컨텍스트 매니저"""
     t0 = time.monotonic()
     success = False
@@ -94,7 +95,7 @@ async def track_llm_call(provider: str):
         record_llm_call(provider=provider, success=success, latency_ms=latency)
 
 
-def get_metrics_summary() -> dict:
+def get_metrics_summary() -> dict[str, dict[str, object]]:
     """현재 메트릭 요약 반환"""
     return {
         key: {

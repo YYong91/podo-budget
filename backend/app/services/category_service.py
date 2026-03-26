@@ -16,7 +16,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.category import Category
 
 
-def _build_scope_filter(user_id: int | None, household_id: int | None):
+def _build_scope_filter(user_id: int | None, household_id: int | None) -> object:
     """카테고리 접근 범위 필터 조건 생성 (3-scope)"""
     conditions = [
         and_(Category.household_id.is_(None), Category.user_id.is_(None)),  # 시스템
@@ -51,7 +51,7 @@ async def get_or_create_category(
     """
     scope_filter = _build_scope_filter(user_id, household_id)
 
-    result = await db.execute(select(Category).where(Category.name == category_name, scope_filter))
+    result = await db.execute(select(Category).where(Category.name == category_name, scope_filter))  # type: ignore[arg-type]
     category = result.scalar_one_or_none()
 
     if category is None:
@@ -77,7 +77,7 @@ async def get_or_create_category(
         except IntegrityError:
             # 동시 요청으로 이미 생성된 경우 → 롤백 후 재조회
             await db.rollback()
-            result = await db.execute(select(Category).where(Category.name == category_name, scope_filter))
+            result = await db.execute(select(Category).where(Category.name == category_name, scope_filter))  # type: ignore[arg-type]
             category = result.scalar_one()
 
     return category

@@ -26,7 +26,7 @@ router = APIRouter()
 async def get_dashboard_stats(
     _admin: User = Depends(require_admin),
     db: AsyncSession = Depends(get_db),
-):
+) -> object:
     """운영 대시보드 통합 현황 — 헬스카드, 최근 활동 피드, 이탈 감지"""
     return await admin_service.get_dashboard_stats(db)
 
@@ -40,7 +40,7 @@ async def get_user_list(
     search: str | None = Query(None, description="이름/이메일 검색"),
     _admin: User = Depends(require_admin),
     db: AsyncSession = Depends(get_db),
-):
+) -> object:
     """사용자 목록 조회 (페이지네이션, 검색)"""
     return await admin_service.get_user_list(db, page=page, page_size=page_size, search=search)
 
@@ -50,7 +50,7 @@ async def get_user_detail(
     user_id: int,
     _admin: User = Depends(require_admin),
     db: AsyncSession = Depends(get_db),
-):
+) -> object:
     """사용자 상세 정보 조회"""
     result = await admin_service.get_user_detail(db, user_id)
     if not result:
@@ -67,7 +67,7 @@ async def update_user(
     data: AdminUserUpdateRequest,
     _admin: User = Depends(require_admin),
     db: AsyncSession = Depends(get_db),
-):
+) -> object:
     """사용자 정보 수정 (활성/비활성 토글)"""
     success = await admin_service.update_user(db, user_id, is_active=data.is_active)
     if not success:

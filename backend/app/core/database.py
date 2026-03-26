@@ -7,7 +7,7 @@ from app.core.config import settings
 _is_postgresql = "postgresql" in settings.DATABASE_URL
 
 
-def _build_connect_args() -> dict:
+def _build_connect_args() -> dict[str, object]:
     """PostgreSQL(Transaction pooler) vs SQLite(테스트) connect_args 분기"""
     if not _is_postgresql:
         return {}
@@ -16,7 +16,7 @@ def _build_connect_args() -> dict:
     # SQLAlchemy connect_args만으로는 asyncpg에 statement_cache_size가 전달되지 않는 문제 해결
     dsn = settings.DATABASE_URL.replace("postgresql+asyncpg://", "postgresql://")
 
-    async def _pgbouncer_connect(*_args, **_kwargs):
+    async def _pgbouncer_connect(*_args: object, **_kwargs: object) -> object:
         return await asyncpg.connect(dsn, statement_cache_size=0)
 
     return {
@@ -39,7 +39,7 @@ AsyncSessionLocal = async_sessionmaker(engine, class_=AsyncSession, expire_on_co
 Base = declarative_base()
 
 
-async def get_db():
+async def get_db() -> AsyncSession:  # type: ignore[misc]
     async with AsyncSessionLocal() as session:
         try:
             yield session

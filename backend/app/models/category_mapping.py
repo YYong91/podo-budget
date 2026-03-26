@@ -12,7 +12,7 @@ from sqlalchemy.sql import func
 from app.core.database import Base
 
 
-class CategoryMapping(Base):
+class CategoryMapping(Base):  # type: ignore[misc]
     """카테고리 별칭 매핑
 
     Attributes:

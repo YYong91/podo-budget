@@ -1,5 +1,7 @@
 """계좌 관리 비즈니스 로직"""
 
+from typing import Any
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -7,7 +9,7 @@ from app.models.account import Account
 from app.models.user import User
 
 
-async def create_account(db: AsyncSession, account_data: dict, user: User, household_id: int) -> Account:
+async def create_account(db: AsyncSession, account_data: dict[str, Any], user: User, household_id: int) -> Account:
     """계좌 생성 — household_id는 API 레이어에서 resolve 후 전달 (#193)"""
     account_data.pop("household_id", None)  # schema에 포함된 경우 제거
     account = Account(**account_data, created_by=user.id, household_id=household_id)
@@ -36,7 +38,7 @@ async def get_account_by_id(db: AsyncSession, account_id: int, user: User) -> Ac
     return account
 
 
-async def update_account(db: AsyncSession, account: Account, update_data: dict) -> Account:
+async def update_account(db: AsyncSession, account: Account, update_data: dict[str, Any]) -> Account:
     """계좌 수정"""
     for key, value in update_data.items():
         setattr(account, key, value)
