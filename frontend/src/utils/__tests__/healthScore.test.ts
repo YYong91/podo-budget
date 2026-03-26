@@ -100,6 +100,42 @@ describe('calculateHealthScore', () => {
     expect(score.debt).toBe(52)
   })
 
+  it('savingsTotal 제공 시 저축성 지출 기반으로 savings 점수를 계산한다', () => {
+    // savingsTotal=1000000 / incomeTotal=5000000 = 20% 저축률
+    const score = calculateHealthScore({
+      incomeTotal: 5000000,
+      expenseTotal: 3200000,
+      savingsTotal: 1000000,
+    })
+    // savingsRate=20% → savings = 30 + (20/50)*70 = 58
+    expect(score.savings).toBe(58)
+  })
+
+  it('savingsTotal=0이면 savings 점수가 30이다 (0% 저축률)', () => {
+    const score = calculateHealthScore({
+      incomeTotal: 5000000,
+      expenseTotal: 3200000,
+      savingsTotal: 0,
+    })
+    // savingsRate=0% → savings = 30 + (0/50)*70 = 30
+    expect(score.savings).toBe(30)
+  })
+
+  it('savingsTotal 미제공 시 기존 방식으로 계산한다', () => {
+    const withSavings = calculateHealthScore({
+      incomeTotal: 5000000,
+      expenseTotal: 3200000,
+      savingsTotal: 900000, // 18% 저축률
+    })
+    const withoutSavings = calculateHealthScore({
+      incomeTotal: 5000000,
+      expenseTotal: 3200000,
+      // savingsTotal 미제공 → (5000000-3200000)/5000000 = 36% 저축률
+    })
+    // 서로 다른 계산 방식이므로 점수가 다를 수 있음
+    expect(withSavings.savings).not.toBe(withoutSavings.savings)
+  })
+
   it('점수 범위는 항상 0-100 사이다', () => {
     // 극단적 케이스: 수입 없이 지출만 있음
     const worst = calculateHealthScore({

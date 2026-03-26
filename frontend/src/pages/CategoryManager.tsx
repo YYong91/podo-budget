@@ -25,11 +25,12 @@ export default function CategoryManager() {
   // 추가 폼 상태
   const [newName, setNewName] = useState('')
   const [newDescription, setNewDescription] = useState('')
+  const [newIsSavings, setNewIsSavings] = useState(false)
   const [isAdding, setIsAdding] = useState(false)
 
   // 편집 모드 (카테고리 ID)
   const [editingId, setEditingId] = useState<number | null>(null)
-  const [editForm, setEditForm] = useState({ name: '', description: '' })
+  const [editForm, setEditForm] = useState({ name: '', description: '', is_savings: false })
 
   // 삭제 확인 모달
   const [deleteTarget, setDeleteTarget] = useState<number | null>(null)
@@ -71,10 +72,12 @@ export default function CategoryManager() {
       await categoryApi.create({
         name: newName.trim(),
         description: newDescription.trim() || undefined,
+        is_savings: newIsSavings,
       })
       addToast('success', '카테고리가 추가되었습니다')
       setNewName('')
       setNewDescription('')
+      setNewIsSavings(false)
       setIsAdding(false)
       fetchCategories()
     } catch {
@@ -90,6 +93,7 @@ export default function CategoryManager() {
     setEditForm({
       name: category.name,
       description: category.description || '',
+      is_savings: category.is_savings,
     })
   }
 
@@ -106,6 +110,7 @@ export default function CategoryManager() {
       await categoryApi.update(id, {
         name: editForm.name.trim(),
         description: editForm.description.trim() || undefined,
+        is_savings: editForm.is_savings,
       })
       addToast('success', '카테고리가 수정되었습니다')
       setEditingId(null)
@@ -251,6 +256,17 @@ export default function CategoryManager() {
                     // eslint-disable-next-line jsx-a11y/no-autofocus
                     autoFocus
                   />
+                  {activeTab === 'expense' && (
+                    <label className="flex items-center gap-1.5 mt-2 text-xs text-[var(--text-secondary)] cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={newIsSavings}
+                        onChange={(e) => setNewIsSavings(e.target.checked)}
+                        className="rounded border-[var(--input-border)] text-grape-600 focus:ring-grape-500"
+                      />
+                      저축성 지출
+                    </label>
+                  )}
                 </td>
                 <td className="px-4 sm:px-6 py-4 hidden md:table-cell">
                   <input
@@ -275,6 +291,7 @@ export default function CategoryManager() {
                         setIsAdding(false)
                         setNewName('')
                         setNewDescription('')
+                        setNewIsSavings(false)
                       }}
                       className="px-3 py-1.5 text-sm font-medium text-[var(--text-secondary)] bg-[var(--surface-hover)] rounded-lg hover:bg-[var(--surface-hover)] transition-colors"
                     >
@@ -320,21 +337,41 @@ export default function CategoryManager() {
                     </td>
                     <td className="px-4 sm:px-6 py-4">
                       {isEditing ? (
-                        <input
-                          type="text"
-                          value={editForm.name}
-                          onChange={(e) =>
-                            setEditForm({ ...editForm, name: e.target.value })
-                          }
-                          className="w-full px-3 py-2 border border-[var(--input-border)] rounded-lg focus:ring-2 focus:ring-grape-500 focus:border-transparent"
-                          // eslint-disable-next-line jsx-a11y/no-autofocus
-                          autoFocus
-                        />
+                        <div>
+                          <input
+                            type="text"
+                            value={editForm.name}
+                            onChange={(e) =>
+                              setEditForm({ ...editForm, name: e.target.value })
+                            }
+                            className="w-full px-3 py-2 border border-[var(--input-border)] rounded-lg focus:ring-2 focus:ring-grape-500 focus:border-transparent"
+                            // eslint-disable-next-line jsx-a11y/no-autofocus
+                            autoFocus
+                          />
+                          {activeTab === 'expense' && (
+                            <label className="flex items-center gap-1.5 mt-2 text-xs text-[var(--text-secondary)] cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={editForm.is_savings}
+                                onChange={(e) =>
+                                  setEditForm({ ...editForm, is_savings: e.target.checked })
+                                }
+                                className="rounded border-[var(--input-border)] text-grape-600 focus:ring-grape-500"
+                              />
+                              저축성 지출
+                            </label>
+                          )}
+                        </div>
                       ) : (
                         <div>
                           <span className="font-medium text-[var(--text-primary)]">
                             {category.name}
                           </span>
+                          {category.is_savings && (
+                            <span className="ml-1.5 inline-flex items-center px-1.5 py-0.5 text-[10px] font-medium text-leaf-700 bg-leaf-100 rounded">
+                              저축
+                            </span>
+                          )}
                           {/* 모바일에서만 설명 표시 */}
                           <div className="md:hidden text-sm text-[var(--text-secondary)] mt-1">
                             {category.description || '-'}

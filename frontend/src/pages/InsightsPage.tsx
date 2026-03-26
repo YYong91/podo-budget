@@ -16,6 +16,7 @@ import { statsApi, insightsApi } from '../api/insights'
 import { incomeApi } from '../api/income'
 import { getMonthlyStats } from '../api/budgets'
 import { assetApi } from '../api/assets'
+import { categoryApi } from '../api/categories'
 import { useHouseholdStore } from '../stores/useHouseholdStore'
 
 // 컴포넌트
@@ -88,6 +89,9 @@ export default function InsightsPage() {
     saveSectionSettings(updated)
   }, [])
 
+  // 저축성 지출 합계
+  const [savingsTotal, setSavingsTotal] = useState<number | undefined>(undefined)
+
   // AI 분석 상태
   const [healthScore, setHealthScore] = useState<HealthScore | null>(null)
   const [structuredInsights, setStructuredInsights] = useState<StructuredInsights | null>(null)
@@ -105,8 +109,8 @@ export default function InsightsPage() {
         const dateStr = `${monthStr}-15`
         const hhId = activeHouseholdId
 
-        // 1차 병렬: 지출/수입 통계 + 비교 + 예산 + 자산
-        const [expRes, incRes, compRes, incCompRes, budgetRes, assetRes, snapRes] = await Promise.allSettled([
+        // 1차 병렬: 지출/수입 통계 + 비교 + 예산 + 자산 + 카테고리
+        const [expRes, incRes, compRes, incCompRes, budgetRes, assetRes, snapRes, catRes] = await Promise.allSettled([
           statsApi.getStats('monthly', dateStr, hhId),
           incomeApi.getStats('monthly', dateStr, hhId),
           statsApi.getComparison('monthly', dateStr, 3, hhId),
@@ -114,6 +118,7 @@ export default function InsightsPage() {
           getMonthlyStats(monthStr),
           assetApi.getSummary(hhId),
           assetApi.getSnapshots(hhId, 2),
+          categoryApi.getAll({ type: 'expense' }),
         ])
 
         if (cancelled) return
@@ -125,6 +130,7 @@ export default function InsightsPage() {
         const budget = budgetRes.status === 'fulfilled' ? budgetRes.value.data : null
         const asset = assetRes.status === 'fulfilled' ? assetRes.value.data : null
         const snaps = snapRes.status === 'fulfilled' ? snapRes.value.data : []
+        const cats = catRes.status === 'fulfilled' ? catRes.value.data : []
 
         // 핵심 데이터(지출+수입) 모두 실패하면 에러 상태
         if (!exp && !inc && expRes.status === 'rejected' && incRes.status === 'rejected') {
@@ -145,11 +151,23 @@ export default function InsightsPage() {
         )
         setPrevSnapshot(sortedSnaps.length >= 2 ? sortedSnaps[0] : null)
 
+        // 저축성 지출 합계 계산 (is_savings=true 카테고리의 지출만 집계)
+        const savingsCatNames = new Set(cats.filter(c => c.is_savings).map(c => c.name))
+        let computedSavingsTotal: number | undefined
+        if (savingsCatNames.size > 0 && exp?.by_category) {
+          computedSavingsTotal = exp.by_category
+            .filter(c => savingsCatNames.has(c.category))
+            .reduce((sum, c) => sum + c.amount, 0)
+        }
+        // 저축성 카테고리가 하나라도 있으면 새 방식, 없으면 undefined(기존 방식 유지)
+        setSavingsTotal(savingsCatNames.size > 0 ? (computedSavingsTotal ?? 0) : undefined)
+
         // 건강 점수 계산
         if (exp || inc) {
           const score = calculateHealthScore({
             incomeTotal: inc?.total ?? 0,
             expenseTotal: exp?.total ?? 0,
+            savingsTotal: savingsCatNames.size > 0 ? (computedSavingsTotal ?? 0) : undefined,
             budgetTotal: budget?.total_budget ?? undefined,
             budgetSpent: budget?.total_spent ?? undefined,
             totalLiabilities: asset?.total_liabilities ?? 0,
@@ -187,7 +205,9 @@ export default function InsightsPage() {
           percentage: c.percentage,
         })),
         savings_rate: incomeStats && incomeStats.total > 0
-          ? ((incomeStats.total - (expenseStats?.total ?? 0)) / incomeStats.total) * 100
+          ? (savingsTotal !== undefined
+              ? (savingsTotal / incomeStats.total) * 100
+              : ((incomeStats.total - (expenseStats?.total ?? 0)) / incomeStats.total) * 100)
           : 0,
         health_score: healthScore,
         previous_month_expense: comparison?.previous?.total ?? null,
@@ -300,6 +320,7 @@ export default function InsightsPage() {
             <UnifiedSummaryCards
               incomeTotal={incomeStats?.total ?? 0}
               expenseTotal={expenseStats?.total ?? 0}
+              savingsTotal={savingsTotal}
               netWorth={assetSummary?.net_worth ?? null}
               prevNetWorth={prevSnapshot?.net_worth ?? null}
               prevIncome={incomeComparison?.previous?.total ?? null}

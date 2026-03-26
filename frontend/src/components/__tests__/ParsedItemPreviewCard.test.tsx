@@ -163,7 +163,7 @@ describe('ParsedItemPreviewCard', () => {
 
     it('카테고리 변경 시 onUpdate를 호출한다', () => {
       const onUpdate = vi.fn()
-      const categories = [{ id: 1, name: '식비', type: 'expense' as const, description: null, sort_order: 1, is_system: true, created_at: '' }]
+      const categories = [{ id: 1, name: '식비', type: 'expense' as const, description: null, sort_order: 1, is_savings: false, is_system: true, created_at: '' }]
       render(
         <ParsedItemPreviewCard
           {...defaultProps}
@@ -181,7 +181,7 @@ describe('ParsedItemPreviewCard', () => {
     it('카테고리 "분류 안 됨"으로 변경 시 null을 전달한다', () => {
       const onUpdate = vi.fn()
       const itemWithCat = { ...mockItem, category_id: 1 }
-      const categories = [{ id: 1, name: '식비', type: 'expense' as const, description: null, sort_order: 1, is_system: true, created_at: '' }]
+      const categories = [{ id: 1, name: '식비', type: 'expense' as const, description: null, sort_order: 1, is_savings: false, is_system: true, created_at: '' }]
       render(
         <ParsedItemPreviewCard
           {...defaultProps}

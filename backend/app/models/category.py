@@ -6,7 +6,7 @@
 - user_id=X, household_id=None: 솔로 유저 개인 카테고리 (가구 미소속 폴백)
 """
 
-from sqlalchemy import BigInteger, Column, DateTime, ForeignKey, Index, Integer, String, UniqueConstraint
+from sqlalchemy import BigInteger, Boolean, Column, DateTime, ForeignKey, Index, Integer, String, UniqueConstraint
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
@@ -38,6 +38,7 @@ class Category(Base):  # type: ignore[misc]
     description = Column(String, nullable=True)
     type = Column(String(10), nullable=False, default="expense")  # expense | income | both
     sort_order = Column(BigInteger, nullable=False, default=0, server_default="0")  # 사용 횟수 기반 정렬 (높을수록 앞)
+    is_savings = Column(Boolean, nullable=False, default=False, server_default="0")  # 저축성 지출 여부 (적금, 투자, 보험 등)
     created_at = Column(DateTime, default=func.now(), server_default=func.now(), nullable=False)
 
     # Relationships

@@ -442,8 +442,8 @@ describe('CategoryManager', () => {
   describe('type 탭 전환', () => {
     it('수입 카테고리 탭 클릭 시 수입 카테고리를 표시한다', async () => {
       const incomeCategories = [
-        { id: 10, name: '급여', type: 'income', description: '월급', sort_order: 1, is_system: true, created_at: '2024-01-01T00:00:00Z' },
-        { id: 11, name: '부수입', type: 'income', description: null, sort_order: 2, is_system: false, created_at: '2024-01-01T00:00:00Z' },
+        { id: 10, name: '급여', type: 'income', description: '월급', sort_order: 1, is_savings: false, is_system: true, created_at: '2024-01-01T00:00:00Z' },
+        { id: 11, name: '부수입', type: 'income', description: null, sort_order: 2, is_savings: false, is_system: false, created_at: '2024-01-01T00:00:00Z' },
       ]
 
       server.use(
@@ -500,6 +500,61 @@ describe('CategoryManager', () => {
       const downButton = screen.getByLabelText(`${systemCategory.name} 아래로 이동`)
       expect(upButton).toBeDisabled()
       expect(downButton).toBeDisabled()
+    })
+  })
+
+  describe('저축성 지출 토글', () => {
+    it('추가 폼에 "저축성 지출" 체크박스가 표시된다', async () => {
+      const user = userEvent.setup()
+      renderCategoryManager()
+
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: '추가' })).toBeInTheDocument()
+      })
+
+      await user.click(screen.getByRole('button', { name: '추가' }))
+
+      await waitFor(() => {
+        expect(screen.getByLabelText('저축성 지출')).toBeInTheDocument()
+      })
+    })
+
+    it('저축성 카테고리에 저축 뱃지를 표시한다', async () => {
+      const savingsCategories = [
+        { id: 10, name: '적금', type: 'expense' as const, description: null, sort_order: 1, is_savings: true, is_system: false, created_at: '2024-01-01T00:00:00Z' },
+        { id: 11, name: '식비', type: 'expense' as const, description: null, sort_order: 2, is_savings: false, is_system: false, created_at: '2024-01-01T00:00:00Z' },
+      ]
+
+      server.use(
+        http.get('/api/categories', () => {
+          return HttpResponse.json(savingsCategories)
+        })
+      )
+
+      renderCategoryManager()
+
+      await waitFor(() => {
+        expect(screen.getByText('적금')).toBeInTheDocument()
+      })
+
+      // 저축성 카테고리에만 "저축" 뱃지 표시
+      expect(screen.getByText('저축')).toBeInTheDocument()
+    })
+
+    it('편집 모드에서 저축성 지출 체크박스가 표시된다', async () => {
+      const user = userEvent.setup()
+      renderCategoryManager()
+
+      await waitFor(() => {
+        expect(screen.getByText(mockCategories[2].name)).toBeInTheDocument()
+      })
+
+      const editButtons = screen.getAllByRole('button', { name: '수정' })
+      await user.click(editButtons[0])
+
+      await waitFor(() => {
+        expect(screen.getByLabelText('저축성 지출')).toBeInTheDocument()
+      })
     })
   })
 
