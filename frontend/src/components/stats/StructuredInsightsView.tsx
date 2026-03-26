@@ -64,7 +64,7 @@ export default function StructuredInsightsView({ insights }: StructuredInsightsV
         </div>
       </div>
 
-      {/* 면책 조항 */}
+      {/* 참고 사항 */}
       <div className="flex items-start gap-1.5 pt-2 border-t border-[var(--border-subtle)]">
         <Info className="w-3.5 h-3.5 text-[var(--text-muted)] shrink-0 mt-0.5" />
         <p className="text-[11px] text-[var(--text-muted)] leading-relaxed">

@@ -30,7 +30,7 @@ function ChangeIndicator({ current, previous }: { current: number; previous: num
   const color = pct >= 0 ? 'text-leaf-600' : 'text-red-600'
   return (
     <p className={`text-[10px] mt-0.5 ${color}`}>
-      전월 {pct >= 0 ? '+' : ''}
+      지난달 {pct >= 0 ? '+' : ''}
       {pct.toFixed(0)}%
     </p>
   )
@@ -89,7 +89,7 @@ export default function UnifiedSummaryCards({
         )}
       </div>
       <div className="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-2xl shadow-sm p-4 sm:p-5">
-        <p className="text-sm text-[var(--text-tertiary)]">순수익</p>
+        <p className="text-sm text-[var(--text-tertiary)]">남은 돈</p>
         <p data-testid="net-income-value" className={`text-xl sm:text-2xl font-bold mt-1 ${netColor}`}>
           {formatAmount(net)}
         </p>

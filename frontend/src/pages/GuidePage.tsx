@@ -25,7 +25,7 @@ const sections = [
   { id: 'recurring', icon: Repeat, label: '정기 거래' },
   { id: 'budgets', icon: PiggyBank, label: '예산 관리' },
   { id: 'categories', icon: Tags, label: '카테고리 관리' },
-  { id: 'insights', icon: BarChart3, label: '리포트 (종합 재무 리포트)' },
+  { id: 'insights', icon: BarChart3, label: '리포트 (이달의 리포트)' },
   { id: 'assets', icon: Landmark, label: '자산 관리' },
   { id: 'household', icon: Users, label: '공유 가계부' },
   { id: 'telegram', icon: Send, label: '텔레그램 봇 연동' },
@@ -194,9 +194,9 @@ export default function GuidePage() {
       </SectionCard>
 
       {/* 6. 리포트 */}
-      <SectionCard id="insights" icon={BarChart3} title="리포트 (종합 재무 리포트)">
+      <SectionCard id="insights" icon={BarChart3} title="리포트 (이달의 리포트)">
         <p>
-          사이드바의 <strong>리포트</strong>에서 월별 종합 재무 현황을 확인합니다.
+          사이드바의 <strong>리포트</strong>에서 이달의 리포트를 확인합니다.
         </p>
         <ExampleBox>
           <p>
@@ -209,13 +209,13 @@ export default function GuidePage() {
             <strong>예산 vs 실제:</strong> 카테고리별 예산 대비 지출 비교
           </p>
           <p>
-            <strong>자산 변동:</strong> 순자산 전월 대비 증감 + 유형별 변동
+            <strong>자산 변화:</strong> 순자산 지난달 대비 증감 + 종류별 변화
           </p>
           <p>
-            <strong>재정 건강 점수:</strong> 저축·지출·부채 기반 종합 등급 (A+~F)
+            <strong>가계 건강 점수:</strong> 저축·지출·부채 기반 종합 등급 (A+~F)
           </p>
           <p>
-            <strong>AI 심층 분석:</strong> 수입/지출/예산/자산을 종합 분석하여 맞춤 인사이트 제공
+            <strong>AI 상세 분석:</strong> 수입/지출/예산/자산을 분석하여 맞춤 인사이트 제공
           </p>
           <p className="text-xs text-[var(--text-tertiary)] mt-1">
             자산 정보를 연동하면 더 풍부한 분석을 받을 수 있어요.
@@ -234,13 +234,13 @@ export default function GuidePage() {
             <strong>등록:</strong> 자산 → + 버튼 → 자산 유형 선택 후 정보 입력
           </p>
           <p>
-            <strong>순자산 현황:</strong> 순자산, 전월 대비 변동, 자산/부채 요약을 한눈에 확인
+            <strong>순자산 현황:</strong> 순자산, 지난달 대비 변동, 자산/부채 요약을 한눈에 확인
           </p>
           <p>
             <strong>목표 설정:</strong> 순자산 목표 금액과 날짜를 설정하면 진행률과 달성 페이스를 추적
           </p>
           <p>
-            <strong>유형별 보기:</strong> 투자, 예적금, 부동산/기타, 부채 그룹으로 자산 목록 확인
+            <strong>종류별 보기:</strong> 투자, 예적금, 부동산/기타, 부채 그룹으로 자산 목록 확인
           </p>
         </ExampleBox>
       </SectionCard>
@@ -316,7 +316,7 @@ export default function GuidePage() {
           </p>
           <p>
             <strong>조회:</strong> <code className="bg-[var(--surface-hover)] px-1 rounded">/report</code> 이번 달 지출 요약,{' '}
-            <code className="bg-[var(--surface-hover)] px-1 rounded">/budget</code> 예산 현황
+            <code className="bg-[var(--surface-hover)] px-1 rounded">/budget</code> 예산 상황
           </p>
         </ExampleBox>
         <p className="text-[var(--text-tertiary)] text-xs">

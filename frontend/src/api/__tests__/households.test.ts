@@ -213,7 +213,7 @@ describe('householdApi', () => {
   })
 
   describe('removeMember', () => {
-    it('DELETE /api/households/:id/members/:userId를 호출하여 멤버를 추방한다', async () => {
+    it('DELETE /api/households/:id/members/:userId를 호출하여 멤버를 내보낸다', async () => {
       const response = await householdApi.removeMember(1, 2)
 
       expect(response.status).toBe(204)

@@ -162,7 +162,7 @@ describe('AssetForm', () => {
       // 기본 유형은 deposit (예적금)
       expect(screen.getByLabelText('자산명')).toBeInTheDocument()
       expect(screen.getByLabelText(/금액/)).toBeInTheDocument()
-      expect(screen.getByLabelText(/이율/)).toBeInTheDocument()
+      expect(screen.getByLabelText(/이자율/)).toBeInTheDocument()
       expect(screen.getByLabelText('만기일')).toBeInTheDocument()
     })
 

@@ -48,7 +48,7 @@ describe('InvitationsTab', () => {
   it('초대 상태를 한국어로 표시한다', () => {
     render(<InvitationsTab {...defaultProps} />)
     expect(screen.getByText('대기 중')).toBeInTheDocument()
-    expect(screen.getByText('수락됨')).toBeInTheDocument()
+    expect(screen.getByText('수락 완료')).toBeInTheDocument()
   })
 
   it('대기 중 초대에 취소 버튼을 표시한다', () => {

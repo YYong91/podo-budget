@@ -485,14 +485,14 @@ export default function AssetForm() {
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label htmlFor="asset-interest-rate" className="block text-sm font-medium text-[var(--text-secondary)] mb-2">이율 (%)</label>
+                  <label htmlFor="asset-interest-rate" className="block text-sm font-medium text-[var(--text-secondary)] mb-2">이자율 (%)</label>
                   <input
                     id="asset-interest-rate"
                     type="number"
                     step="0.01"
                     value={form.interest_rate ?? ''}
                     onChange={e => setForm(f => ({ ...f, interest_rate: e.target.value ? Number(e.target.value) : null }))}
-                    placeholder="연 이율"
+                    placeholder="연 이자율"
                     className="w-full border border-[var(--input-border)] rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
                   />
                 </div>

@@ -1,7 +1,7 @@
 /**
  * @file RecurringModal.tsx
  * @description 반복 거래 추가/수정 모달 컴포넌트
- * 추가 시: 유형, 설명, 금액, 카테고리, 빈도, 시작일, 종료일
+ * 추가 시: 유형, 설명, 금액, 카테고리, 주기, 시작일, 종료일
  * 수정 시: 설명, 금액, 카테고리, 종료일만 수정 가능
  */
 
@@ -144,7 +144,7 @@ export default function RecurringModal({
             </select>
           </div>
 
-          {/* 빈도 필드 (추가 시에만) */}
+          {/* 주기 필드 (추가 시에만) */}
           {!editingId && (
             <FrequencyFields
               frequency={formData.frequency}

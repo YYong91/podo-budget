@@ -229,7 +229,7 @@ export default function CategoryManager() {
                   설명
                 </th>
                 <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-[var(--text-tertiary)] uppercase tracking-wider hidden sm:table-cell">
-                  생성일
+                  만든 날
                 </th>
                 <th className="px-4 sm:px-6 py-3 text-right text-xs font-medium text-[var(--text-tertiary)] uppercase tracking-wider">
                   작업
@@ -439,7 +439,7 @@ export default function CategoryManager() {
               정말로 이 카테고리를 삭제하시겠습니까?
               <br />
               <span className="text-sm text-rose-600">
-                이 카테고리에 연결된 지출 내역은 미분류가 됩니다.
+                이 카테고리에 연결된 지출 내역은 '분류 안 됨' 상태가 됩니다.
               </span>
             </p>
             <div className="flex gap-3 justify-end">

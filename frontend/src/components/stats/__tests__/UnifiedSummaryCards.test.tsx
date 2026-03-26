@@ -15,9 +15,9 @@ describe('UnifiedSummaryCards', () => {
     expect(screen.getByText('₩2,400,000')).toBeInTheDocument()
   })
 
-  it('순수익을 올바르게 계산한다', () => {
+  it('남은 돈을 올바르게 계산한다', () => {
     render(<UnifiedSummaryCards incomeTotal={3200000} expenseTotal={2400000} />)
-    expect(screen.getByText('순수익')).toBeInTheDocument()
+    expect(screen.getByText('남은 돈')).toBeInTheDocument()
     expect(screen.getByText('₩800,000')).toBeInTheDocument()
   })
 
@@ -27,7 +27,7 @@ describe('UnifiedSummaryCards', () => {
     expect(screen.getByText('25.0%')).toBeInTheDocument()
   })
 
-  it('적자일 때 순수익 카드에 음수 금액을 표시한다', () => {
+  it('적자일 때 남은 돈 카드에 음수 금액을 표시한다', () => {
     render(<UnifiedSummaryCards incomeTotal={2000000} expenseTotal={2400000} />)
     expect(screen.getByTestId('net-income-value')).toHaveTextContent('-₩400,000')
   })

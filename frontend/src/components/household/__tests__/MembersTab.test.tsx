@@ -63,15 +63,15 @@ describe('MembersTab', () => {
     expect(screen.getByText('(나)')).toBeInTheDocument()
   })
 
-  it('관리 가능한 멤버에 추방 버튼을 표시한다', () => {
+  it('관리 가능한 멤버에 내보내기 버튼을 표시한다', () => {
     render(<MembersTab {...defaultProps} />)
-    expect(screen.getByText('추방')).toBeInTheDocument()
+    expect(screen.getByText('내보내기')).toBeInTheDocument()
   })
 
-  it('추방 버튼 클릭 시 onRemoveMember를 호출한다', async () => {
+  it('내보내기 버튼 클릭 시 onRemoveMember를 호출한다', async () => {
     const user = userEvent.setup()
     render(<MembersTab {...defaultProps} />)
-    await user.click(screen.getByText('추방'))
+    await user.click(screen.getByText('내보내기'))
     expect(defaultProps.onRemoveMember).toHaveBeenCalledWith(2, '김철수')
   })
 
@@ -83,7 +83,7 @@ describe('MembersTab', () => {
     expect(selects[0]).toHaveValue('member')
   })
 
-  it('관리 권한이 없으면 추방 버튼 대신 탈퇴 버튼이 표시된다', () => {
+  it('관리 권한이 없으면 내보내기 버튼 대신 탈퇴 버튼이 표시된다', () => {
     const cannotManage = () => false
     render(
       <MembersTab

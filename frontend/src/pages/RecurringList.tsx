@@ -268,7 +268,7 @@ export default function RecurringList() {
                 <tr className="border-b border-[var(--border-subtle)] bg-[var(--surface-elevated)]/50">
                   <th className="text-left px-5 py-3 text-[var(--text-tertiary)] font-medium">설명</th>
                   <th className="text-right px-5 py-3 text-[var(--text-tertiary)] font-medium">금액</th>
-                  <th className="text-left px-5 py-3 text-[var(--text-tertiary)] font-medium">빈도</th>
+                  <th className="text-left px-5 py-3 text-[var(--text-tertiary)] font-medium">주기</th>
                   <th className="text-left px-5 py-3 text-[var(--text-tertiary)] font-medium">다음 예정일</th>
                   <th className="text-center px-5 py-3 text-[var(--text-tertiary)] font-medium">상태</th>
                   <th className="text-right px-5 py-3 text-[var(--text-tertiary)] font-medium">작업</th>

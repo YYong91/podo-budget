@@ -90,7 +90,7 @@ describe('RecurringList', () => {
     expect(screen.getAllByText('급여').length).toBeGreaterThan(0)
   })
 
-  it('빈도를 한국어로 표시한다', async () => {
+  it('주기를 한국어로 표시한다', async () => {
     renderRecurringList()
     await waitFor(() => {
       expect(screen.getAllByText('매월 25일').length).toBeGreaterThan(0)

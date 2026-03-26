@@ -1,6 +1,6 @@
 /**
  * @file FrequencyFields.test.tsx
- * @description 빈도별 조건부 필드 컴포넌트 테스트
+ * @description 주기별 조건부 필드 컴포넌트 테스트
  */
 
 import { describe, it, expect, vi } from 'vitest'
@@ -19,9 +19,9 @@ const defaultProps = {
 }
 
 describe('FrequencyFields', () => {
-  it('빈도 선택 드롭다운을 표시한다', () => {
+  it('주기 선택 드롭다운을 표시한다', () => {
     render(<FrequencyFields {...defaultProps} />)
-    expect(screen.getByLabelText('반복 빈도')).toBeInTheDocument()
+    expect(screen.getByLabelText('반복 주기')).toBeInTheDocument()
   })
 
   it('monthly일 때 반복일 필드를 표시한다', () => {
@@ -53,10 +53,10 @@ describe('FrequencyFields', () => {
     expect(screen.getByLabelText('시작일')).toBeInTheDocument()
   })
 
-  it('빈도 변경 시 onChange를 호출한다', async () => {
+  it('주기 변경 시 onChange를 호출한다', async () => {
     const user = userEvent.setup()
     render(<FrequencyFields {...defaultProps} />)
-    await user.selectOptions(screen.getByLabelText('반복 빈도'), 'weekly')
+    await user.selectOptions(screen.getByLabelText('반복 주기'), 'weekly')
     expect(defaultProps.onChange).toHaveBeenCalledWith('frequency', 'weekly')
   })
 

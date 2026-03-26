@@ -147,7 +147,7 @@ export default function ParsedItemPreviewCard({
             }
             className={`w-full px-3 py-2 border border-[var(--input-border)] rounded-xl text-sm focus:ring-2 ${c.input}`}
           >
-            <option value="">미분류 ({item.category})</option>
+            <option value="">분류 안 됨 ({item.category})</option>
             {categories.map((cat) => (
               <option key={cat.id} value={cat.id}>
                 {cat.name}

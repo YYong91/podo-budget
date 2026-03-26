@@ -75,7 +75,7 @@ export default function OnboardingPage() {
           <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] p-4 space-y-3">
             <div className="flex items-center gap-2 text-sm font-medium text-[var(--text-secondary)]">
               <Mail className="w-4 h-4" />
-              <span>받은 초대 ({pendingInvitations.length}건)</span>
+              <span>받은 초대 ({pendingInvitations.length}개)</span>
             </div>
 
             {pendingInvitations.map((inv) => (
