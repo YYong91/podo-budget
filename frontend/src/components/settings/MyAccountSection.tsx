@@ -4,6 +4,7 @@
  */
 
 import { useState, useCallback } from 'react'
+import { Link } from 'react-router-dom'
 import { LogOut, Send, MessageCircle, Key, Trash2 } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { useToast } from '../../hooks/useToast'
@@ -325,6 +326,13 @@ export default function MyAccountSection() {
           </button>
         </div>
       </div>
+
+      {/* 이용약관 · 개인정보처리방침 */}
+      <p className="text-center text-xs text-[var(--text-tertiary)]">
+        <Link to="/terms" className="underline hover:text-[var(--text-secondary)]">이용약관</Link>
+        {' · '}
+        <Link to="/privacy" className="underline hover:text-[var(--text-secondary)]">개인정보처리방침</Link>
+      </p>
 
       {/* 계정 삭제 */}
       <AccountDeleteCard />
