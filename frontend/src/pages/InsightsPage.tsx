@@ -6,7 +6,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Sparkles } from 'lucide-react'
+import { Sparkles, Settings } from 'lucide-react'
 import ErrorState from '../components/ErrorState'
 import { useToast } from '../hooks/useToast'
 import EmptyState from '../components/EmptyState'
@@ -27,6 +27,11 @@ import AssetChangeSummary from '../components/stats/AssetChangeSummary'
 import MonthlyHighlights from '../components/stats/MonthlyHighlights'
 import FinancialHealthScore from '../components/stats/FinancialHealthScore'
 import StructuredInsightsView from '../components/stats/StructuredInsightsView'
+import SectionToggleModal, {
+  loadSectionSettings,
+  saveSectionSettings,
+  type SectionVisibility,
+} from '../components/stats/SectionToggleModal'
 
 // 유틸
 import { calculateHealthScore } from '../utils/healthScore'
@@ -73,6 +78,15 @@ export default function InsightsPage() {
   const [incomeComparison, setIncomeComparison] = useState<ComparisonResponse | null>(null)
   const [assetSummary, setAssetSummary] = useState<AssetSummary | null>(null)
   const [prevSnapshot, setPrevSnapshot] = useState<AssetSnapshot | null>(null)
+
+  // 섹션 표시 설정
+  const [sectionVisibility, setSectionVisibility] = useState<SectionVisibility>(loadSectionSettings)
+  const [showSectionModal, setShowSectionModal] = useState(false)
+
+  const handleSectionChange = useCallback((updated: SectionVisibility) => {
+    setSectionVisibility(updated)
+    saveSectionSettings(updated)
+  }, [])
 
   // AI 분석 상태
   const [healthScore, setHealthScore] = useState<HealthScore | null>(null)
@@ -223,8 +237,29 @@ export default function InsightsPage() {
 
   return (
     <div className="space-y-4">
-      {/* 월 네비게이션 */}
-      <PeriodNavigator label={getNavLabel(monthStr)} onPrev={handlePrev} onNext={handleNext} />
+      {/* 월 네비게이션 + 설정 아이콘 */}
+      <div className="flex items-center justify-between">
+        <div className="flex-1" />
+        <PeriodNavigator label={getNavLabel(monthStr)} onPrev={handlePrev} onNext={handleNext} />
+        <div className="flex-1 flex justify-end">
+          <button
+            onClick={() => setShowSectionModal(true)}
+            aria-label="섹션 설정"
+            className="p-2 rounded-lg hover:bg-[var(--surface-hover)] transition-colors"
+          >
+            <Settings className="w-5 h-5 text-[var(--text-secondary)]" />
+          </button>
+        </div>
+      </div>
+
+      {/* 섹션 토글 모달 */}
+      {showSectionModal && (
+        <SectionToggleModal
+          sections={sectionVisibility}
+          onChange={handleSectionChange}
+          onClose={() => setShowSectionModal(false)}
+        />
+      )}
 
       {/* 로딩 — 스켈레톤 UI */}
       {loading && (
@@ -274,7 +309,7 @@ export default function InsightsPage() {
           )}
 
           {/* 2. 이달의 주목할 점 */}
-          {expenseStats && incomeStats && (
+          {sectionVisibility.highlights && expenseStats && incomeStats && (
             <MonthlyHighlights
               incomeTotal={incomeStats.total}
               expenseTotal={expenseStats.total}
@@ -284,57 +319,65 @@ export default function InsightsPage() {
           )}
 
           {/* 3. 지출 카테고리 TOP */}
-          <CategoryTopList categories={expenseStats?.by_category ?? []} monthStr={monthStr} />
+          {sectionVisibility.categoryTop && (
+            <CategoryTopList categories={expenseStats?.by_category ?? []} monthStr={monthStr} />
+          )}
 
           {/* 4. 예산 상황 */}
-          <BudgetVsActual budgetStats={budgetStats} monthStr={monthStr} />
+          {sectionVisibility.budget && (
+            <BudgetVsActual budgetStats={budgetStats} monthStr={monthStr} />
+          )}
 
           {/* 5. 자산 변화 */}
-          <AssetChangeSummary summary={assetSummary} previousSnapshot={prevSnapshot} />
+          {sectionVisibility.assets && (
+            <AssetChangeSummary summary={assetSummary} previousSnapshot={prevSnapshot} />
+          )}
 
           {/* 6. AI 상세 분석 */}
-          <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)]/60 p-4">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-grape-600" />
-                <h2 className="text-base font-semibold text-[var(--text-primary)]">AI 상세 분석</h2>
+          {sectionVisibility.ai && (
+            <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)]/60 p-4">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-grape-600" />
+                  <h2 className="text-base font-semibold text-[var(--text-primary)]">AI 상세 분석</h2>
+                </div>
+                {!structuredInsights && (
+                  <button
+                    onClick={handleGenerateAI}
+                    disabled={aiLoading}
+                    className="px-4 py-1.5 text-sm font-medium text-white bg-grape-600 rounded-lg hover:bg-grape-700 disabled:bg-warm-400 disabled:cursor-not-allowed transition-colors"
+                  >
+                    {aiLoading ? '분석 중...' : '분석하기'}
+                  </button>
+                )}
               </div>
-              {!structuredInsights && (
-                <button
-                  onClick={handleGenerateAI}
-                  disabled={aiLoading}
-                  className="px-4 py-1.5 text-sm font-medium text-white bg-grape-600 rounded-lg hover:bg-grape-700 disabled:bg-warm-400 disabled:cursor-not-allowed transition-colors"
-                >
-                  {aiLoading ? '분석 중...' : '분석하기'}
-                </button>
+
+              {/* 건강 점수 (항상 표시) */}
+              <FinancialHealthScore score={healthScore} />
+
+              {/* AI 로딩 */}
+              {aiLoading && (
+                <div className="flex flex-col items-center gap-3 py-8">
+                  <div className="animate-spin rounded-full border-b-2 border-grape-600 h-8 w-8" />
+                  <p className="text-sm text-[var(--text-secondary)]">AI가 가계 데이터를 분석하고 있습니다...</p>
+                </div>
+              )}
+
+              {/* 구조화된 AI 인사이트 */}
+              {!aiLoading && structuredInsights && (
+                <div className="mt-4">
+                  <StructuredInsightsView insights={structuredInsights} />
+                </div>
+              )}
+
+              {/* 분석 전 안내 */}
+              {!aiLoading && !structuredInsights && (
+                <p className="text-sm text-[var(--text-tertiary)] mt-3">
+                  AI가 수입, 지출, 예산, 자산을 분석하여 맞춤 인사이트를 제공합니다.
+                </p>
               )}
             </div>
-
-            {/* 건강 점수 (항상 표시) */}
-            <FinancialHealthScore score={healthScore} />
-
-            {/* AI 로딩 */}
-            {aiLoading && (
-              <div className="flex flex-col items-center gap-3 py-8">
-                <div className="animate-spin rounded-full border-b-2 border-grape-600 h-8 w-8" />
-                <p className="text-sm text-[var(--text-secondary)]">AI가 가계 데이터를 분석하고 있습니다...</p>
-              </div>
-            )}
-
-            {/* 구조화된 AI 인사이트 */}
-            {!aiLoading && structuredInsights && (
-              <div className="mt-4">
-                <StructuredInsightsView insights={structuredInsights} />
-              </div>
-            )}
-
-            {/* 분석 전 안내 */}
-            {!aiLoading && !structuredInsights && (
-              <p className="text-sm text-[var(--text-tertiary)] mt-3">
-                AI가 수입, 지출, 예산, 자산을 분석하여 맞춤 인사이트를 제공합니다.
-              </p>
-            )}
-          </div>
+          )}
         </>
       )}
     </div>
