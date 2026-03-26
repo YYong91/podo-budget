@@ -167,7 +167,7 @@ export default function BudgetManager() {
           category_id: item.category_id,
           amount: numAmount,
           period: 'monthly',
-          start_date: new Date().toISOString(),
+          start_date: new Date().toISOString().split('T')[0],
         })
         addToast('success', '예산이 저장되었습니다')
       }

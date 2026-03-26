@@ -46,10 +46,19 @@ test.describe('Tier 1: 직접 입력', () => {
     const descInput = page.getByPlaceholder('김치찌개')
     await descInput.fill('E2E 직접입력 점심')
 
-    // 5. 저장
-    await page.getByRole('button', { name: '저장하기' }).click()
+    // 5. 저장 — POST 응답 대기 후 네비게이션 확인
+    await Promise.all([
+      page.waitForResponse(
+        (res) => res.url().includes('/api/expenses') && res.request().method() === 'POST' && res.status() < 400,
+        { timeout: 15000 },
+      ),
+      page.getByRole('button', { name: '저장하기' }).click(),
+    ])
 
-    // 6. 홈으로 이동하여 확인
+    // 6. 저장 후 리디렉션 대기 (TransactionForm은 /expenses → /?filter=expense로 이동)
+    await page.waitForURL(/\//, { timeout: 15000 })
+
+    // 7. 홈으로 이동하여 확인
     await page.goto('/')
     await page.waitForLoadState('networkidle')
 
