@@ -17,6 +17,7 @@ from app.api import (
     budget,
     categories,
     chat,
+    e2e,
     expenses,
     feedback,
     households,
@@ -254,11 +255,9 @@ app.include_router(admin.router, prefix="/api/admin", tags=["admin"])
 app.include_router(onboarding.router, prefix="/api/onboarding", tags=["onboarding"])
 app.include_router(webhooks.router, prefix="/api/webhooks", tags=["webhooks"])
 
-# E2E 테스트 전용 (DEBUG 모드에서만 활성화)
-if settings.DEBUG:
-    from app.api import e2e
-
-    app.include_router(e2e.router, prefix="/api", tags=["e2e"])
+# E2E 테스트 전용 — 라우터는 항상 등록하되, 각 엔드포인트에서 DEBUG 모드를 검사
+# (DEBUG=False면 404 반환하므로 프로덕션 보안 영향 없음, 테스트 접근성 보장)
+app.include_router(e2e.router, prefix="/api", tags=["e2e"])
 
 
 @app.get("/")

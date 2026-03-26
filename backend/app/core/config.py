@@ -6,7 +6,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 _settings_logger = logging.getLogger(__name__)
 
-LLMProviderType = Literal["openai", "anthropic", "google", "local"]
+LLMProviderType = Literal["openai", "anthropic", "google", "local", "mock"]
 
 
 class Settings(BaseSettings):
