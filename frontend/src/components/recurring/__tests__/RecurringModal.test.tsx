@@ -25,9 +25,9 @@ const emptyForm: RecurringFormData = {
 }
 
 const mockCategories: Category[] = [
-  { id: 1, name: '식비', type: 'expense', description: null, sort_order: 1, is_system: true, created_at: '2026-01-01T00:00:00Z' },
-  { id: 2, name: '급여', type: 'income', description: null, sort_order: 2, is_system: true, created_at: '2026-01-01T00:00:00Z' },
-  { id: 3, name: '기타', type: 'both', description: null, sort_order: 3, is_system: true, created_at: '2026-01-01T00:00:00Z' },
+  { id: 1, name: '식비', type: 'expense', description: null, sort_order: 1, is_savings: false, is_system: true, created_at: '2026-01-01T00:00:00Z' },
+  { id: 2, name: '급여', type: 'income', description: null, sort_order: 2, is_savings: false, is_system: true, created_at: '2026-01-01T00:00:00Z' },
+  { id: 3, name: '기타', type: 'both', description: null, sort_order: 3, is_savings: false, is_system: true, created_at: '2026-01-01T00:00:00Z' },
 ]
 
 const defaultProps = {

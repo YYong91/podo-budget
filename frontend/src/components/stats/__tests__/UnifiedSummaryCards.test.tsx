@@ -28,10 +28,22 @@ describe('UnifiedSummaryCards', () => {
     expect(screen.getByText('₩800,000')).toBeInTheDocument()
   })
 
-  it('저축률을 올바르게 계산한다', () => {
+  it('저축률을 올바르게 계산한다 (기존 방식: savingsTotal 미제공)', () => {
     renderCards()
     expect(screen.getByText('저축률')).toBeInTheDocument()
+    // (3200000 - 2400000) / 3200000 * 100 = 25.0%
     expect(screen.getByText('25.0%')).toBeInTheDocument()
+  })
+
+  it('savingsTotal 제공 시 저축성 지출 기반으로 저축률을 계산한다', () => {
+    // savingsTotal=640000 / incomeTotal=3200000 * 100 = 20.0%
+    renderCards({ savingsTotal: 640000 })
+    expect(screen.getByTestId('savings-rate-value')).toHaveTextContent('20.0%')
+  })
+
+  it('savingsTotal=0이면 저축률 0.0%를 표시한다', () => {
+    renderCards({ savingsTotal: 0 })
+    expect(screen.getByTestId('savings-rate-value')).toHaveTextContent('0.0%')
   })
 
   it('적자일 때 남은 돈 카드에 음수 금액을 표시한다', () => {

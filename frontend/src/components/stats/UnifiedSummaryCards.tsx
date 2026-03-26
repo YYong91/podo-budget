@@ -9,6 +9,8 @@ import { Link } from 'react-router-dom'
 interface UnifiedSummaryCardsProps {
   incomeTotal: number
   expenseTotal: number
+  /** 저축성 지출 합계 (적금, 투자, 보험 등). 제공 시 저축률 = savingsTotal / incomeTotal */
+  savingsTotal?: number
   netWorth?: number | null
   prevNetWorth?: number | null
   prevIncome?: number | null
@@ -43,6 +45,7 @@ function ChangeIndicator({ current, previous }: { current: number; previous: num
 export default function UnifiedSummaryCards({
   incomeTotal,
   expenseTotal,
+  savingsTotal,
   netWorth,
   prevNetWorth,
   prevIncome,
@@ -50,7 +53,10 @@ export default function UnifiedSummaryCards({
   monthStr,
 }: UnifiedSummaryCardsProps) {
   const net = incomeTotal - expenseTotal
-  const savingsRate = incomeTotal > 0 ? (net / incomeTotal) * 100 : null
+  // savingsTotal이 제공되면 저축성 지출 기반, 아니면 기존 (수입-지출)/수입 방식
+  const savingsRate = incomeTotal > 0
+    ? (savingsTotal !== undefined ? (savingsTotal / incomeTotal) * 100 : (net / incomeTotal) * 100)
+    : null
 
   const netColor = net >= 0 ? 'text-leaf-600' : 'text-red-600'
   const rateColor =
