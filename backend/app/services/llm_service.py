@@ -495,6 +495,76 @@ class GoogleProvider(LLMProvider):
         raise NotImplementedError("종합 인사이트는 아직 이 프로바이더를 지원하지 않습니다")
 
 
+class MockLLMProvider(LLMProvider):
+    """E2E 테스트용 고정 응답 LLM 프로바이더
+
+    실제 LLM API를 호출하지 않고 결정적(deterministic) 응답을 반환합니다.
+    LLM_PROVIDER=mock 으로 설정하면 활성화됩니다.
+    """
+
+    def __init__(self, model: str = ""):
+        self.model = model or "mock"
+
+    async def parse_expense(
+        self,
+        user_input: str,
+        categories: list[str] | None = None,
+        history_hints: dict[str, Any] | None = None,
+        category_mappings: dict[str, str] | None = None,
+    ) -> dict[str, Any] | list[dict[str, Any]]:
+        """텍스트에서 금액을 추출하여 고정 형식 반환 — E2E에서 안정적으로 동작"""
+        import re
+        from datetime import date
+
+        # 금액 추출: "8000원", "8,000원", "8000" 등
+        amount_match = re.search(r"([\d,]+)\s*원?", user_input)
+        amount = int(amount_match.group(1).replace(",", "")) if amount_match else 10000
+
+        # 카테고리: 제공된 목록의 첫 번째 또는 기본값
+        category = "식비"
+        if categories:
+            category = categories[0]
+
+        return {
+            "amount": amount,
+            "description": user_input.strip(),
+            "category": category,
+            "date": date.today().isoformat(),
+            "type": "expense",
+            "memo": "",
+        }
+
+    async def parse_image(self, image_bytes: bytes, media_type: str) -> dict[str, Any] | list[dict[str, Any]]:
+        """이미지 OCR 모킹 — 고정 결과 반환"""
+        from datetime import date
+
+        return {
+            "amount": 15000,
+            "description": "모킹된 영수증",
+            "category": "식비",
+            "date": date.today().isoformat(),
+            "type": "expense",
+        }
+
+    async def generate_insights(self, expenses_data: dict[str, Any]) -> str:
+        """인사이트 모킹 — 고정 텍스트 반환"""
+        return "테스트 인사이트입니다."
+
+    async def generate(self, prompt: str) -> str:
+        """범용 텍스트 생성 모킹"""
+        return '{"result": "mock response"}'
+
+    async def generate_comprehensive_insights(self, report_data: dict[str, Any]) -> dict[str, Any]:
+        """종합 인사이트 모킹 — 고정 구조 반환"""
+        return {
+            "summary": "테스트 종합 인사이트입니다.",
+            "highlights": ["지출이 안정적입니다.", "저축 목표를 달성했습니다."],
+            "recommendations": ["현재 소비 패턴을 유지하세요."],
+            "health_score": 80,
+            "health_grade": "양호",
+        }
+
+
 class LocalLLMProvider(LLMProvider):
     def __init__(self, model: str = ""):
         self.model = model or DEFAULT_MODELS["local"]
@@ -546,6 +616,7 @@ def _create_provider(provider_name: str, model: str) -> LLMProvider:
         "openai": OpenAIProvider,
         "google": GoogleProvider,
         "local": LocalLLMProvider,
+        "mock": MockLLMProvider,
     }
     cls = providers.get(provider_name)
     if not cls:

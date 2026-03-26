@@ -114,7 +114,7 @@ export const test = base.extend<AuthFixtures>({
   },
 })
 
-export { expect, API_URL, BASE_URL }
+export { expect, API_URL, BASE_URL, setupE2EUser }
 
 /**
  * API 요청용 토큰 추출 — Supabase 세션 스토리지에서 읽음
