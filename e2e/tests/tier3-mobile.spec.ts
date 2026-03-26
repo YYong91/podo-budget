@@ -55,6 +55,10 @@ test.describe('모바일 뷰포트', () => {
     await page.goto('/')
     await page.waitForLoadState('networkidle')
 
+    // 페이지 로딩 완료 대기 — 하단 탭 바 확인
+    const bottomNav = page.locator('nav[aria-label="하단 탭 메뉴"]')
+    await expect(bottomNav).toBeVisible({ timeout: 15000 })
+
     // FAB 메인 버튼 클릭 (aria-label="지출/수입 입력" when closed)
     // FloatingActionButton은 fixed position으로 항상 표시됨
     const fab = page.locator('button[aria-label="지출/수입 입력"]')

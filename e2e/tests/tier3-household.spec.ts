@@ -33,17 +33,19 @@ test.describe('가구 관리', () => {
     await page.goto('/households')
     await page.waitForLoadState('networkidle')
 
-    // 가구 목록 페이지가 로드됨 — "가구 만들기" 버튼 또는 기존 가구 카드
-    // E2E setup이 자동으로 기본 가구를 생성하므로 목록에 1개 이상 표시
-    // 버튼 텍스트: "+ 가구 만들기" (HouseholdListPage line 120)
+    // 가구 목록 페이지가 로드됨 — Suspense/lazy 로딩 대기
+    // "+ 가구 만들기" 버튼 또는 가구 관련 텍스트 확인
+    // E2E setup이 기본 가구를 생성하므로 목록에 1개 이상 표시됨
     await expect(
-      page.getByText('가구 만들기').or(page.locator('[role="button"]').first()),
+      page.getByText('가구 만들기').first().or(
+        page.getByText('가족이나 친구들과'),
+      ),
     ).toBeVisible({ timeout: 15000 })
   })
 
   test('새 가구 생성 → 목록에 표시', async ({ authedPage: page }) => {
     // API로 가구 생성
-    const household = await createHousehold(page, {
+    await createHousehold(page, {
       name: 'E2E 테스트 가구',
       description: 'E2E 테스트용 가구입니다',
     })
@@ -51,6 +53,13 @@ test.describe('가구 관리', () => {
     // 가구 목록 페이지로 이동
     await page.goto('/households')
     await page.waitForLoadState('networkidle')
+
+    // 페이지 로딩 완료 대기
+    await expect(
+      page.getByText('가구 만들기').first().or(
+        page.getByText('가족이나 친구들과'),
+      ),
+    ).toBeVisible({ timeout: 15000 })
 
     // 생성한 가구가 목록에 보여야 함
     await expect(page.getByText('E2E 테스트 가구')).toBeVisible({ timeout: 15000 })

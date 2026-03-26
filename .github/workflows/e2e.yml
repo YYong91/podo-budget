@@ -82,7 +82,7 @@ jobs:
           DATABASE_URL: sqlite+aiosqlite:///./e2e_test.db
           SECRET_KEY: test-secret-key  # pragma: allowlist secret
           JWT_SECRET: e2e-jwt-secret  # pragma: allowlist secret
-          LLM_PROVIDER: anthropic
+          LLM_PROVIDER: mock
           ANTHROPIC_API_KEY: test-key  # pragma: allowlist secret
           DEBUG: "true"
           CORS_ORIGINS: "http://localhost:5173"
