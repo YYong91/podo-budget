@@ -93,9 +93,10 @@ async def test_stock_kr_profit_loss_calculation():
         quantity=10,
         avg_buy_price=70000,
     )
+    mock_db = AsyncMock()
 
     with patch.object(price_service, "get_stock_kr_price", new=AsyncMock(return_value=80000.0)):
-        result = await price_service.get_asset_current_value(asset)
+        result = await price_service.get_asset_current_value(asset, mock_db)
 
     assert result["current_price"] == 80000.0
     assert result["current_value"] == 800000.0  # 80000 × 10
@@ -109,9 +110,10 @@ async def test_stock_kr_no_price_returns_none():
     from app.services import price_service
 
     asset = _make_asset(type="stock_kr", ticker="005930", quantity=10, avg_buy_price=70000)
+    mock_db = AsyncMock()
 
     with patch.object(price_service, "get_stock_kr_price", new=AsyncMock(return_value=None)):
-        result = await price_service.get_asset_current_value(asset)
+        result = await price_service.get_asset_current_value(asset, mock_db)
 
     assert result["current_price"] is None
     assert result["current_value"] is None
@@ -124,9 +126,10 @@ async def test_stock_kr_without_avg_buy_price_no_profit():
     from app.services import price_service
 
     asset = _make_asset(type="stock_kr", ticker="005930", quantity=5, avg_buy_price=None)
+    mock_db = AsyncMock()
 
     with patch.object(price_service, "get_stock_kr_price", new=AsyncMock(return_value=60000.0)):
-        result = await price_service.get_asset_current_value(asset)
+        result = await price_service.get_asset_current_value(asset, mock_db)
 
     assert result["current_price"] == 60000.0
     assert result["current_value"] == 300000.0  # 60000 × 5

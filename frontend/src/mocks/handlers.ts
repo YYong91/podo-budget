@@ -25,6 +25,7 @@ import {
   mockDashboardStats,
   mockStructuredInsights,
   mockIncomeComparison,
+  mockStocks,
 } from './fixtures'
 
 const BASE_URL = '/api'
@@ -458,6 +459,18 @@ export const handlers = [
       })
     }
     return HttpResponse.json(mockChatResponse)
+  }),
+
+  // ==================== 종목 검색 API ====================
+
+  /**
+   * GET /api/stocks/search - 종목 검색 (BE stocks 테이블)
+   */
+  http.get(`${BASE_URL}/stocks/search`, ({ request }) => {
+    const url = new URL(request.url)
+    const q = url.searchParams.get('q') || ''
+    const results = mockStocks.filter(s => s.name.includes(q) || s.ticker.includes(q)).slice(0, 20)
+    return HttpResponse.json(results)
   }),
 
   // ==================== 자산 API ====================

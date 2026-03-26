@@ -9,7 +9,6 @@ import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import AssetForm from '../AssetForm'
-import { _resetStocksKrCache } from '../../hooks/useTickerSearch'
 
 // useNavigate 모킹
 const mockNavigate = vi.fn()
@@ -58,6 +57,14 @@ vi.mock('../../api/accounts', () => ({
   },
 }))
 
+// stockApi 모킹
+const mockStockSearch = vi.fn()
+vi.mock('../../api/stocks', () => ({
+  stockApi: {
+    search: (...args: unknown[]) => mockStockSearch(...args),
+  },
+}))
+
 // analytics 모킹
 vi.mock('../../utils/analytics', () => ({
   trackEvent: vi.fn(),
@@ -88,7 +95,7 @@ function renderEditAssetForm(id: number) {
 describe('AssetForm', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    _resetStocksKrCache()
+    mockStockSearch.mockResolvedValue({ data: [] })
     mockAccountGetAll.mockResolvedValue({ data: [] })
     mockAssetCreate.mockResolvedValue({ data: { id: 99 } })
     mockAssetUpdate.mockResolvedValue({ data: { id: 1 } })

@@ -1868,13 +1868,11 @@ async def test_asset_goal_delete_not_found(authenticated_client, test_user, test
 
 @pytest.mark.asyncio
 async def test_asset_search(authenticated_client, test_user, test_household, db_session):
-    """종목 검색"""
+    """종목 검색 — 한국 주식은 stocks 테이블, 미국/코인은 외부 API mock"""
     with (
-        patch("app.services.price_service.search_stock_kr", new_callable=AsyncMock) as mock_kr,
         patch("app.services.price_service.search_stock_us", new_callable=AsyncMock) as mock_us,
         patch("app.services.price_service.search_crypto", new_callable=AsyncMock) as mock_crypto,
     ):
-        mock_kr.return_value = []
         mock_us.return_value = []
         mock_crypto.return_value = []
 

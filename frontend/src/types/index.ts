@@ -72,6 +72,14 @@ export interface AssetSearchResult {
   market: string
 }
 
+/** BE stocks 테이블 검색 결과 (GET /api/stocks/search) */
+export interface StockSearchResult {
+  id: number
+  ticker: string
+  name: string
+  market: string
+}
+
 export interface AssetGoal {
   id: number
   target_net_worth: number

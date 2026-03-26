@@ -12,6 +12,7 @@ from app.models.household_invitation import HouseholdInvitation
 from app.models.household_member import HouseholdMember
 from app.models.income import Income
 from app.models.recurring_transaction import RecurringTransaction
+from app.models.stock import Stock
 from app.models.user import User
 
 __all__ = [
@@ -29,5 +30,6 @@ __all__ = [
     "HouseholdMember",
     "Income",
     "RecurringTransaction",
+    "Stock",
     "User",
 ]

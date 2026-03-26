@@ -4,7 +4,7 @@
  * API 응답을 모킹하기 위한 샘플 데이터를 정의한다.
  */
 
-import type { Expense, Income, Category, MonthlyStats, InsightsResponse, StatsResponse, ComparisonResponse, RecurringTransaction, AssetSummary, AssetSnapshot, StructuredInsights } from '../types'
+import type { Expense, Income, Category, MonthlyStats, InsightsResponse, StatsResponse, ComparisonResponse, RecurringTransaction, AssetSummary, AssetSnapshot, StructuredInsights, StockSearchResult } from '../types'
 
 /**
  * 테스트용 카테고리 목록
@@ -496,6 +496,15 @@ export const mockDashboardStats = {
   total_expenses_count: 5000,
   total_income_count: 1500,
 }
+
+/**
+ * 테스트용 종목 검색 결과 (BE stocks 테이블)
+ */
+export const mockStocks: StockSearchResult[] = [
+  { id: 1, ticker: '005930', name: '삼성전자', market: 'KOSPI' },
+  { id: 2, ticker: '000660', name: 'SK하이닉스', market: 'KOSPI' },
+  { id: 3, ticker: '247540', name: '에코프로비엠', market: 'KOSDAQ' },
+]
 
 export const mockStructuredInsights: StructuredInsights = {
   findings: [
