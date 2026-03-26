@@ -340,3 +340,43 @@ async def test_category_overview_null_category_expense(
     response = await authenticated_client.get("/api/budgets/category-overview")
     assert response.status_code == 200
     assert isinstance(response.json(), list)
+
+
+@pytest.mark.asyncio
+async def test_monthly_stats_includes_mid_month_budget(authenticated_client: AsyncClient, test_user: User, test_household: Household, db_session: AsyncSession):
+    """같은 달 중간에 생성된 예산도 monthly-stats에 포함되어야 한다 (#434)"""
+    category = Category(user_id=test_user.id, name="식비", household_id=test_household.id)
+    db_session.add(category)
+    await db_session.commit()
+    await db_session.refresh(category)
+
+    # 3월 15일에 생성된 예산 (start_date = 3/15)
+    budget = Budget(
+        user_id=test_user.id,
+        household_id=test_household.id,
+        category_id=category.id,
+        amount=300000,
+        period="monthly",
+        start_date=datetime(2026, 3, 15),
+    )
+    db_session.add(budget)
+
+    # 3월에 지출 발생
+    expense = Expense(
+        user_id=test_user.id,
+        household_id=test_household.id,
+        category_id=category.id,
+        amount=80000,
+        description="김치찌개",
+        date=datetime(2026, 3, 20),
+    )
+    db_session.add(expense)
+    await db_session.commit()
+
+    response = await authenticated_client.get("/api/budgets/monthly-stats", params={"month": "2026-03"})
+    assert response.status_code == 200
+    data = response.json()
+
+    # 식비 카테고리가 포함되어야 함
+    cat_names = [c["category_name"] for c in data["categories"]]
+    assert "식비" in cat_names, f"식비 예산이 누락됨: {cat_names}"

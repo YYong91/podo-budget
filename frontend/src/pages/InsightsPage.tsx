@@ -70,6 +70,7 @@ export default function InsightsPage() {
   const [incomeStats, setIncomeStats] = useState<StatsResponse | null>(null)
   const [budgetStats, setBudgetStats] = useState<BudgetMonthlyStatsResponse | null>(null)
   const [comparison, setComparison] = useState<ComparisonResponse | null>(null)
+  const [incomeComparison, setIncomeComparison] = useState<ComparisonResponse | null>(null)
   const [assetSummary, setAssetSummary] = useState<AssetSummary | null>(null)
   const [prevSnapshot, setPrevSnapshot] = useState<AssetSnapshot | null>(null)
 
@@ -91,10 +92,11 @@ export default function InsightsPage() {
         const hhId = activeHouseholdId
 
         // 1차 병렬: 지출/수입 통계 + 비교 + 예산 + 자산
-        const [expRes, incRes, compRes, budgetRes, assetRes, snapRes] = await Promise.allSettled([
+        const [expRes, incRes, compRes, incCompRes, budgetRes, assetRes, snapRes] = await Promise.allSettled([
           statsApi.getStats('monthly', dateStr, hhId),
           incomeApi.getStats('monthly', dateStr, hhId),
           statsApi.getComparison('monthly', dateStr, 3, hhId),
+          incomeApi.getComparison('monthly', dateStr, 3, hhId),
           getMonthlyStats(monthStr),
           assetApi.getSummary(hhId),
           assetApi.getSnapshots(hhId, 2),
@@ -105,6 +107,7 @@ export default function InsightsPage() {
         const exp = expRes.status === 'fulfilled' ? expRes.value.data : null
         const inc = incRes.status === 'fulfilled' ? incRes.value.data : null
         const comp = compRes.status === 'fulfilled' ? compRes.value.data : null
+        const incComp = incCompRes.status === 'fulfilled' ? incCompRes.value.data : null
         const budget = budgetRes.status === 'fulfilled' ? budgetRes.value.data : null
         const asset = assetRes.status === 'fulfilled' ? assetRes.value.data : null
         const snaps = snapRes.status === 'fulfilled' ? snapRes.value.data : []
@@ -118,6 +121,7 @@ export default function InsightsPage() {
         setExpenseStats(exp)
         setIncomeStats(inc)
         setComparison(comp)
+        setIncomeComparison(incComp)
         setBudgetStats(budget)
         setAssetSummary(asset)
 
@@ -173,7 +177,7 @@ export default function InsightsPage() {
           : 0,
         health_score: healthScore,
         previous_month_expense: comparison?.previous?.total ?? null,
-        previous_month_income: null,
+        previous_month_income: incomeComparison?.previous?.total ?? null,
       }
 
       // 예산 데이터
@@ -212,7 +216,7 @@ export default function InsightsPage() {
     } finally {
       setAiLoading(false)
     }
-  }, [monthStr, expenseStats, incomeStats, budgetStats, assetSummary, prevSnapshot, healthScore, comparison])
+  }, [monthStr, expenseStats, incomeStats, budgetStats, assetSummary, prevSnapshot, healthScore, comparison, incomeComparison])
 
   const handlePrev = useCallback(() => setMonthStr(m => shiftMonth(m, -1)), [])
   const handleNext = useCallback(() => setMonthStr(m => shiftMonth(m, 1)), [])
@@ -263,8 +267,9 @@ export default function InsightsPage() {
               expenseTotal={expenseStats?.total ?? 0}
               netWorth={assetSummary?.net_worth ?? null}
               prevNetWorth={prevSnapshot?.net_worth ?? null}
-              prevIncome={comparison?.previous?.total ? null : null}
+              prevIncome={incomeComparison?.previous?.total ?? null}
               prevExpense={comparison?.previous?.total ?? null}
+              monthStr={monthStr}
             />
           )}
 
@@ -279,10 +284,10 @@ export default function InsightsPage() {
           )}
 
           {/* 3. 지출 카테고리 TOP */}
-          <CategoryTopList categories={expenseStats?.by_category ?? []} />
+          <CategoryTopList categories={expenseStats?.by_category ?? []} monthStr={monthStr} />
 
           {/* 4. 예산 상황 */}
-          <BudgetVsActual budgetStats={budgetStats} />
+          <BudgetVsActual budgetStats={budgetStats} monthStr={monthStr} />
 
           {/* 5. 자산 변화 */}
           <AssetChangeSummary summary={assetSummary} previousSnapshot={prevSnapshot} />

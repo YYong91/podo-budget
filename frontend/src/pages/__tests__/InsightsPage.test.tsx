@@ -90,6 +90,9 @@ describe('InsightsPage', () => {
       http.get('/api/expenses/stats/comparison', () => {
         return HttpResponse.json({ detail: 'Server Error' }, { status: 500 })
       }),
+      http.get('/api/income/stats/comparison', () => {
+        return HttpResponse.json({ detail: 'Server Error' }, { status: 500 })
+      }),
       http.get('/api/budgets/stats/monthly', () => {
         return HttpResponse.json({ detail: 'Server Error' }, { status: 500 })
       }),
@@ -119,6 +122,23 @@ describe('InsightsPage', () => {
 
     // 주목할 점이 카테고리 TOP보다 DOM에서 먼저 나온다
     expect(highlights.compareDocumentPosition(categoryTop) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
+  it('총 수입 카드에 전월 대비 변화율이 표시된다', async () => {
+    render(<MemoryRouter><InsightsPage /></MemoryRouter>)
+    await waitFor(() => {
+      expect(screen.getByText('총 수입')).toBeInTheDocument()
+    })
+    // mockIncomeComparison의 previous.total = 3500000, mockIncomeStats.total = 4000000
+    // ChangeIndicator: ((4000000 - 3500000) / 3500000) * 100 = 14%
+    await waitFor(() => {
+      const incomeCard = screen.getByText('총 수입').closest('a')
+      expect(incomeCard).toBeInTheDocument()
+      // 전월 대비 % 텍스트가 카드 내에 존재
+      const changeText = incomeCard?.querySelector('p.text-\\[10px\\]')
+      expect(changeText).toBeInTheDocument()
+      expect(changeText?.textContent).toMatch(/지난달/)
+    })
   })
 
   it('예산 상황 섹션에 편집 링크가 표시된다', async () => {

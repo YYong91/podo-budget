@@ -24,6 +24,7 @@ import {
   mockFeedbacks,
   mockDashboardStats,
   mockStructuredInsights,
+  mockIncomeComparison,
 } from './fixtures'
 
 const BASE_URL = '/api'
@@ -213,6 +214,10 @@ export const handlers = [
 
     const paginated = filtered.slice(skip, skip + limit)
     return HttpResponse.json(paginated)
+  }),
+
+  http.get(`${BASE_URL}/income/stats/comparison`, () => {
+    return HttpResponse.json(mockIncomeComparison)
   }),
 
   http.get(`${BASE_URL}/income/stats`, () => {
