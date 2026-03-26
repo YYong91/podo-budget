@@ -1,0 +1,94 @@
+# 배포 성공 시 GitHub Projects 이슈 상태 자동 업데이트
+# develop 머지 → On Dev, main 머지 → Done
+name: Project Status Update
+
+on:
+  workflow_call:
+    inputs:
+      target_status:
+        description: "설정할 상태 (on_dev | done)"
+        required: true
+        type: string
+    secrets:
+      PROJECT_TOKEN:
+        description: "GitHub Projects 접근용 PAT (project scope 필요)"
+        required: true
+
+jobs:
+  update-project-status:
+    name: 프로젝트 상태 업데이트
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: 머지된 PR의 linked issues 상태 업데이트
+        env:
+          GH_TOKEN: ${{ secrets.PROJECT_TOKEN }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+          TARGET_STATUS: ${{ inputs.target_status }}
+          # 프로젝트 필드 ID
+          PROJECT_ID: "PVT_kwHOA_DHDM4BR2r9"
+          STATUS_FIELD_ID: "PVTSSF_lAHOA_DHDM4BR2r9zg_jvIk"
+          # Status 옵션 ID
+          STATUS_ON_DEV: "56de7120"
+          STATUS_DONE: "313b659e"
+        run: |
+          set -euo pipefail
+
+          # 타겟 상태 결정
+          if [ "$TARGET_STATUS" = "done" ]; then
+            OPTION_ID="$STATUS_DONE"
+          else
+            OPTION_ID="$STATUS_ON_DEV"
+          fi
+
+          # 이 커밋과 연결된 PR 번호 찾기
+          PR_NUMS=$(gh api "repos/${REPO}/commits/${SHA}/pulls" \
+            --jq '.[].number' 2>/dev/null || echo "")
+
+          if [ -z "$PR_NUMS" ]; then
+            echo "연결된 PR 없음 — 건너뜀"
+            exit 0
+          fi
+
+          for PR_NUM in $PR_NUMS; do
+            echo "PR #${PR_NUM} 처리 중..."
+
+            # PR body에서 close/closes/fix/fixes/resolve/resolves #번호 추출
+            ISSUE_NUMS=$(gh pr view "$PR_NUM" --repo "$REPO" --json body \
+              --jq '.body' | grep -oiE '(close[sd]?|fix(e[sd])?|resolve[sd]?)\s+#[0-9]+' \
+              | grep -oE '[0-9]+' | sort -u || echo "")
+
+            if [ -z "$ISSUE_NUMS" ]; then
+              echo "  → linked issues 없음"
+              continue
+            fi
+
+            for ISSUE_NUM in $ISSUE_NUMS; do
+              echo "  → #${ISSUE_NUM} → ${TARGET_STATUS}"
+
+              # 이슈의 프로젝트 아이템 ID 조회
+              ITEM_ID=$(gh api graphql -f query='
+                { repository(owner: "'"${REPO%%/*}"'", name: "'"${REPO##*/}"'") {
+                  issue(number: '"$ISSUE_NUM"') {
+                    projectItems(first: 5) { nodes { id } }
+                  }
+                }}' --jq '.data.repository.issue.projectItems.nodes[0].id' 2>/dev/null || echo "")
+
+              if [ -z "$ITEM_ID" ] || [ "$ITEM_ID" = "null" ]; then
+                echo "    프로젝트에 없음 — 건너뜀"
+                continue
+              fi
+
+              # 상태 업데이트
+              gh api graphql -f query='
+                mutation {
+                  updateProjectV2ItemFieldValue(input: {
+                    projectId: "'"$PROJECT_ID"'"
+                    itemId: "'"$ITEM_ID"'"
+                    fieldId: "'"$STATUS_FIELD_ID"'"
+                    value: { singleSelectOptionId: "'"$OPTION_ID"'" }
+                  }) { projectV2Item { id } }
+                }' --silent && echo "    완료" || echo "    실패"
+            done
+          done

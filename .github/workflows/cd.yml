@@ -153,6 +153,17 @@ jobs:
           echo "⚠️ 스모크 테스트 실패 — 이전 릴리즈로 롤백"
           flyctl releases rollback --app podo-budget-backend --yes || echo "롤백 실패 — 수동 확인 필요"
 
+  # ── 프로젝트 상태 업데이트 (Done) ──────────────────
+  update-project-status:
+    name: 프로젝트 상태
+    needs: [deploy-backend, deploy-frontend, smoke-test]
+    if: needs.deploy-backend.result == 'success' && needs.deploy-frontend.result == 'success' && needs.smoke-test.result != 'failure'
+    uses: ./.github/workflows/project-status.yml
+    with:
+      target_status: done
+    secrets:
+      PROJECT_TOKEN: ${{ secrets.GH_PROJECT_TOKEN }}
+
   # ── 배포 결과 메시지 빌드 ──────────────────────────
   build-deploy-result-message:
     name: 결과 메시지 빌드

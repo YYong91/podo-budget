@@ -517,13 +517,13 @@ describe('HouseholdDetailPage', () => {
     expect(mockDeleteHousehold).not.toHaveBeenCalled()
   })
 
-  /* ---------- 멤버 추방: confirm 취소 ---------- */
+  /* ---------- 멤버 내보내기: confirm 취소 ---------- */
 
-  it('추방 confirm 취소 시 removeMember를 호출하지 않는다', async () => {
+  it('내보내기 confirm 취소 시 removeMember를 호출하지 않는다', async () => {
     vi.spyOn(window, 'confirm').mockReturnValue(false)
     renderPage()
 
-    await userEvent.click(screen.getByText('추방'))
+    await userEvent.click(screen.getByText('내보내기'))
 
     expect(mockRemoveMember).not.toHaveBeenCalled()
   })
@@ -723,8 +723,8 @@ describe('HouseholdDetailPage', () => {
     }
     renderPage()
 
-    // 2명의 비-owner 멤버에 대해 추방 버튼이 2개 표시
-    const removeButtons = screen.getAllByText('추방')
+    // 2명의 비-owner 멤버에 대해 내보내기 버튼이 2개 표시
+    const removeButtons = screen.getAllByText('내보내기')
     expect(removeButtons).toHaveLength(2)
   })
 })
