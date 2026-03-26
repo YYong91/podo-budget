@@ -3,7 +3,7 @@
 운영 중심 대시보드: 현황 통합 조회, 사용자 관리 로직을 담당합니다.
 """
 
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta
 
 from sqlalchemy import case, func, literal, literal_column, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -24,9 +24,20 @@ from app.schemas.admin import (
 )
 
 
+def _calc_days_inactive(now: datetime, last_activity_at: datetime | None) -> int:
+    """비활동 일수 계산 — timezone aware/naive 혼재 안전 처리"""
+    if last_activity_at is None:
+        return 9999
+    # naive끼리 비교 (DB가 timestamp without time zone)
+    naive_now = now.replace(tzinfo=None) if now.tzinfo else now
+    naive_last = last_activity_at.replace(tzinfo=None) if last_activity_at.tzinfo else last_activity_at
+    return (naive_now - naive_last).days
+
+
 async def get_dashboard_stats(db: AsyncSession) -> DashboardStatsResponse:
     """운영 대시보드 통합 현황 조회"""
-    now = datetime.now(UTC)
+    # DB 컬럼이 timestamp without time zone이므로 naive datetime 사용 (#425)
+    now = datetime.utcnow()
     today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
     inactive_threshold = now - timedelta(days=7)
 
@@ -171,7 +182,7 @@ async def get_dashboard_stats(db: AsyncSession) -> DashboardStatsResponse:
             id=r.id,
             username=r.username,
             last_activity_at=r.last_activity_at,
-            days_inactive=(now - r.last_activity_at.replace(tzinfo=UTC)).days if r.last_activity_at else 9999,
+            days_inactive=_calc_days_inactive(now, r.last_activity_at),
         )
         for r in inactive_result
     ]
