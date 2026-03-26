@@ -37,7 +37,6 @@ export default function AccountManager() {
   }
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true)
     loadAccounts()
   // eslint-disable-next-line react-hooks/exhaustive-deps
