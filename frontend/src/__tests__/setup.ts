@@ -47,6 +47,7 @@ beforeAll(() => {
 
 afterEach(() => {
   server.resetHandlers()
+  sessionStorage.clear()
 })
 
 afterAll(() => {

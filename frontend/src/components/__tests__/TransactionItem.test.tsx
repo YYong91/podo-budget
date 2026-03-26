@@ -50,9 +50,9 @@ describe('TransactionItem', () => {
     expect(screen.getByText('식비')).toBeInTheDocument()
   })
 
-  it('카테고리가 없으면 미분류를 표시한다', () => {
+  it('카테고리가 없으면 분류 안 됨을 표시한다', () => {
     renderItem({ categoryId: null })
-    expect(screen.getByText('미분류')).toBeInTheDocument()
+    expect(screen.getByText('분류 안 됨')).toBeInTheDocument()
   })
 
   it('지출은 /expenses/:id 링크를 렌더링한다', () => {

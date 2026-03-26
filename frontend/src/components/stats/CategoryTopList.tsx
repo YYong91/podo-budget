@@ -1,3 +1,5 @@
+import { useState } from 'react'
+import { ChevronDown, ChevronUp } from 'lucide-react'
 import type { CategoryStats } from '../../types'
 import { formatAmount } from '../../utils/format'
 
@@ -7,15 +9,17 @@ interface CategoryTopListProps {
 }
 
 export default function CategoryTopList({ categories, maxItems = 5 }: CategoryTopListProps) {
+  const [expanded, setExpanded] = useState(false)
   if (categories.length === 0) return null
 
-  const top = categories.slice(0, maxItems)
+  const hasMore = categories.length > maxItems
+  const visible = expanded ? categories : categories.slice(0, maxItems)
 
   return (
     <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] p-4">
       <h3 className="text-sm font-semibold text-[var(--text-secondary)] mb-3">지출 카테고리 TOP</h3>
       <div className="space-y-2.5">
-        {top.map((cat, i) => (
+        {visible.map((cat, i) => (
           <div key={cat.category}>
             <div className="flex items-center justify-between mb-1">
               <div className="flex items-center gap-2">
@@ -33,6 +37,19 @@ export default function CategoryTopList({ categories, maxItems = 5 }: CategoryTo
           </div>
         ))}
       </div>
+
+      {hasMore && (
+        <button
+          onClick={() => setExpanded(!expanded)}
+          className="flex items-center justify-center gap-1 w-full mt-3 py-1.5 text-xs text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] transition-colors"
+        >
+          {expanded ? (
+            <>접기 <ChevronUp className="w-3.5 h-3.5" /></>
+          ) : (
+            <>더보기 ({categories.length - maxItems}) <ChevronDown className="w-3.5 h-3.5" /></>
+          )}
+        </button>
+      )}
     </div>
   )
 }

@@ -73,9 +73,9 @@ export const updateMemberRole = (householdId: number, userId: number, role: Memb
   apiClient.patch(`/households/${householdId}/members/${userId}/role`, { role })
 
 /**
- * 멤버 추방 API (관리자/소유자가 다른 멤버를 추방)
+ * 멤버 내보내기 API (관리자/소유자가 다른 멤버를 내보내기)
  * @param householdId - Household ID
- * @param userId - 추방할 사용자 ID
+ * @param userId - 내보낼 사용자 ID
  */
 export const removeMember = (householdId: number, userId: number) =>
   apiClient.delete(`/households/${householdId}/members/${userId}`)

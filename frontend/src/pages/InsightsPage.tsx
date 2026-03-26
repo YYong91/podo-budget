@@ -1,7 +1,7 @@
 /**
  * @file InsightsPage.tsx
- * @description 종합 재무 리포트 페이지 (월간)
- * 종합 요약 → 지출 카테고리 TOP → 예산 현황 → 자산 변동 → 이달의 인사이트 → AI 심층 분석
+ * @description 이달의 리포트 페이지 (월간)
+ * 종합 요약 → 지출 카테고리 TOP → 예산 상황 → 자산 변화 → 이달의 인사이트 → AI 상세 분석
  */
 
 import { useEffect, useState, useCallback } from 'react'
@@ -268,16 +268,7 @@ export default function InsightsPage() {
             />
           )}
 
-          {/* 2. 지출 카테고리 TOP */}
-          <CategoryTopList categories={expenseStats?.by_category ?? []} />
-
-          {/* 3. 예산 현황 */}
-          <BudgetVsActual budgetStats={budgetStats} />
-
-          {/* 4. 자산 변동 */}
-          <AssetChangeSummary summary={assetSummary} previousSnapshot={prevSnapshot} />
-
-          {/* 5. 이달의 인사이트 */}
+          {/* 2. 이달의 주목할 점 */}
           {expenseStats && incomeStats && (
             <MonthlyHighlights
               incomeTotal={incomeStats.total}
@@ -287,12 +278,21 @@ export default function InsightsPage() {
             />
           )}
 
-          {/* 6. AI 심층 분석 */}
+          {/* 3. 지출 카테고리 TOP */}
+          <CategoryTopList categories={expenseStats?.by_category ?? []} />
+
+          {/* 4. 예산 상황 */}
+          <BudgetVsActual budgetStats={budgetStats} />
+
+          {/* 5. 자산 변화 */}
+          <AssetChangeSummary summary={assetSummary} previousSnapshot={prevSnapshot} />
+
+          {/* 6. AI 상세 분석 */}
           <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)]/60 p-4">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <Sparkles className="w-5 h-5 text-grape-600" />
-                <h2 className="text-base font-semibold text-[var(--text-primary)]">AI 심층 분석</h2>
+                <h2 className="text-base font-semibold text-[var(--text-primary)]">AI 상세 분석</h2>
               </div>
               {!structuredInsights && (
                 <button
@@ -312,7 +312,7 @@ export default function InsightsPage() {
             {aiLoading && (
               <div className="flex flex-col items-center gap-3 py-8">
                 <div className="animate-spin rounded-full border-b-2 border-grape-600 h-8 w-8" />
-                <p className="text-sm text-[var(--text-secondary)]">AI가 재무 데이터를 분석하고 있습니다...</p>
+                <p className="text-sm text-[var(--text-secondary)]">AI가 가계 데이터를 분석하고 있습니다...</p>
               </div>
             )}
 
@@ -326,7 +326,7 @@ export default function InsightsPage() {
             {/* 분석 전 안내 */}
             {!aiLoading && !structuredInsights && (
               <p className="text-sm text-[var(--text-tertiary)] mt-3">
-                AI가 수입, 지출, 예산, 자산을 종합 분석하여 맞춤 인사이트를 제공합니다.
+                AI가 수입, 지출, 예산, 자산을 분석하여 맞춤 인사이트를 제공합니다.
               </p>
             )}
           </div>

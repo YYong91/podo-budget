@@ -71,7 +71,7 @@ function TransactionItem({
               : 'bg-grape-50 text-grape-600 hover:bg-grape-100'
           }`}
         >
-          {category?.name ?? '미분류'}
+          {category?.name ?? '분류 안 됨'}
         </button>
         {isRecurring && (
           <span className="text-xs bg-[var(--border-default)] text-[var(--text-secondary)] px-1.5 py-0.5 rounded-full">정기</span>

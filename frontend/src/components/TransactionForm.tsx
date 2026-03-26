@@ -498,7 +498,7 @@ export default function TransactionForm({ type }: TransactionFormProps) {
               className={`w-full px-4 py-3 border border-[var(--input-border)] rounded-xl focus:ring-2 focus:ring-${c}-500/30 focus:border-${c}-500`}
               disabled={loading}
             >
-              <option value="">미분류</option>
+              <option value="">분류 안 됨</option>
               {formCategories.map((cat) => (
                 <option key={cat.id} value={cat.id}>
                   {cat.name}

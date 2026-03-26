@@ -1,7 +1,7 @@
 /**
  * @file RegisterRecurringModal.tsx
  * @description 지출/수입 항목에서 정기거래로 등록하는 모달
- * 기존 거래의 금액, 설명, 카테고리를 미리 채우고 빈도만 추가로 설정한다.
+ * 기존 거래의 금액, 설명, 카테고리를 미리 채우고 주기만 추가로 설정한다.
  */
 
 import { useState } from 'react'
@@ -131,9 +131,9 @@ export default function RegisterRecurringModal({
             )}
           </div>
 
-          {/* 반복 빈도 */}
+          {/* 반복 주기 */}
           <div>
-            <label htmlFor="recurring-frequency" className="block text-sm font-medium text-[var(--text-secondary)] mb-2">반복 빈도</label>
+            <label htmlFor="recurring-frequency" className="block text-sm font-medium text-[var(--text-secondary)] mb-2">반복 주기</label>
             <select
               id="recurring-frequency"
               value={formData.frequency}
@@ -149,7 +149,7 @@ export default function RegisterRecurringModal({
             </select>
           </div>
 
-          {/* 빈도별 추가 필드 */}
+          {/* 주기별 추가 필드 */}
           {(formData.frequency === 'monthly' || formData.frequency === 'yearly') && (
             <div>
               <label htmlFor="recurring-day-of-month" className="block text-sm font-medium text-[var(--text-secondary)] mb-2">반복 날짜</label>

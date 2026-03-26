@@ -1,7 +1,7 @@
 /**
  * @file HouseholdDetailPage.test.tsx
  * @description 공유 가계부 상세 페이지 테스트
- * 탭 전환, 로딩/에러 상태, 권한별 UI, 핸들러(초대, 역할 변경, 멤버 추방, 탈퇴, 수정, 삭제, 초대 취소, 링크 복사)를 검증한다.
+ * 탭 전환, 로딩/에러 상태, 권한별 UI, 핸들러(초대, 역할 변경, 멤버 내보내기, 탈퇴, 수정, 삭제, 초대 취소, 링크 복사)를 검증한다.
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
@@ -216,9 +216,9 @@ describe('HouseholdDetailPage', () => {
     expect(screen.getByText('설정')).toBeInTheDocument()
   })
 
-  it('소유자는 다른 멤버에 대해 추방 버튼을 볼 수 있다', () => {
+  it('소유자는 다른 멤버에 대해 내보내기 버튼을 볼 수 있다', () => {
     renderPage()
-    expect(screen.getByText('추방')).toBeInTheDocument()
+    expect(screen.getByText('내보내기')).toBeInTheDocument()
   })
 
   /* ---------- 관리자 권한 ---------- */
@@ -243,10 +243,10 @@ describe('HouseholdDetailPage', () => {
     expect(screen.queryByText('설정')).not.toBeInTheDocument()
   })
 
-  it('일반 멤버는 추방 버튼을 볼 수 없다', () => {
+  it('일반 멤버는 내보내기 버튼을 볼 수 없다', () => {
     storeState.currentHousehold = { ...baseMockHousehold, my_role: 'member' }
     renderPage()
-    expect(screen.queryByText('추방')).not.toBeInTheDocument()
+    expect(screen.queryByText('내보내기')).not.toBeInTheDocument()
   })
 
   /* ---------- 탭 전환 ---------- */
@@ -374,29 +374,29 @@ describe('HouseholdDetailPage', () => {
     }
   })
 
-  /* ---------- 멤버 추방 핸들러 ---------- */
+  /* ---------- 멤버 내보내기 핸들러 ---------- */
 
-  it('추방 버튼 클릭 시 confirm 후 removeMember를 호출한다', async () => {
+  it('내보내기 버튼 클릭 시 confirm 후 removeMember를 호출한다', async () => {
     mockRemoveMember.mockResolvedValueOnce(undefined)
     renderPage()
 
-    await userEvent.click(screen.getByText('추방'))
+    await userEvent.click(screen.getByText('내보내기'))
 
     await waitFor(() => {
       expect(window.confirm).toHaveBeenCalled()
       expect(mockRemoveMember).toHaveBeenCalledWith(1, 2)
     })
-    expect(addToast).toHaveBeenCalledWith('success', '멤버를 추방했습니다')
+    expect(addToast).toHaveBeenCalledWith('success', '멤버를 내보냈습니다')
   })
 
-  it('추방 실패 시 에러 토스트를 표시한다', async () => {
-    mockRemoveMember.mockRejectedValueOnce(new Error('추방 실패'))
+  it('내보내기 실패 시 에러 토스트를 표시한다', async () => {
+    mockRemoveMember.mockRejectedValueOnce(new Error('내보내기 실패'))
     renderPage()
 
-    await userEvent.click(screen.getByText('추방'))
+    await userEvent.click(screen.getByText('내보내기'))
 
     await waitFor(() => {
-      expect(addToast).toHaveBeenCalledWith('error', '멤버 추방에 실패했습니다')
+      expect(addToast).toHaveBeenCalledWith('error', '멤버 내보내기에 실패했습니다')
     })
   })
 

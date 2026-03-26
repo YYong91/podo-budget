@@ -11,7 +11,7 @@ interface HealthScoreInput {
 }
 
 /**
- * 재정 건강 점수 계산 (코드 기반, LLM 미사용)
+ * 가계 건강 점수 계산 (코드 기반, LLM 미사용)
  *
  * - savings (저축률): 수입 대비 (수입-지출) 비율
  * - spending (지출관리): 예산 준수율

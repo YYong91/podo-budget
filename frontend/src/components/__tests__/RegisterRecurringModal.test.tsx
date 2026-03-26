@@ -52,13 +52,13 @@ describe('RegisterRecurringModal', () => {
     expect(screen.getByText('수입')).toBeInTheDocument()
   })
 
-  it('반복 빈도 셀렉트를 렌더링한다', () => {
+  it('반복 주기 셀렉트를 렌더링한다', () => {
     renderModal()
-    expect(screen.getByText('반복 빈도')).toBeInTheDocument()
+    expect(screen.getByText('반복 주기')).toBeInTheDocument()
     expect(screen.getByDisplayValue('매월')).toBeInTheDocument()
   })
 
-  it('월별 빈도에서 반복 날짜 필드를 표시한다', () => {
+  it('월별 주기에서 반복 날짜 필드를 표시한다', () => {
     renderModal()
     expect(screen.getByText('반복 날짜')).toBeInTheDocument()
   })
@@ -94,27 +94,27 @@ describe('RegisterRecurringModal', () => {
     expect(screen.getByText('종료일 (선택)')).toBeInTheDocument()
   })
 
-  it('주간 빈도 선택 시 요일 필드를 표시한다', async () => {
+  it('주간 주기 선택 시 요일 필드를 표시한다', async () => {
     const user = userEvent.setup()
     renderModal()
-    await user.selectOptions(screen.getByLabelText('반복 빈도'), 'weekly')
+    await user.selectOptions(screen.getByLabelText('반복 주기'), 'weekly')
     expect(screen.getByText('요일')).toBeInTheDocument()
     expect(screen.queryByText('반복 날짜')).not.toBeInTheDocument()
   })
 
-  it('연간 빈도 선택 시 반복 날짜와 반복 월 필드를 표시한다', async () => {
+  it('연간 주기 선택 시 반복 날짜와 반복 월 필드를 표시한다', async () => {
     const user = userEvent.setup()
     renderModal()
-    await user.selectOptions(screen.getByLabelText('반복 빈도'), 'yearly')
+    await user.selectOptions(screen.getByLabelText('반복 주기'), 'yearly')
     expect(screen.getByText('반복 날짜')).toBeInTheDocument()
     expect(screen.getByText('반복 월')).toBeInTheDocument()
   })
 
-  it('사용자 지정 빈도 선택 시 반복 주기 필드를 표시한다', async () => {
+  it('사용자 지정 주기 선택 시 반복 주기 필드를 표시한다', async () => {
     const user = userEvent.setup()
     renderModal()
-    await user.selectOptions(screen.getByLabelText('반복 빈도'), 'custom')
-    expect(screen.getByText('반복 주기')).toBeInTheDocument()
+    await user.selectOptions(screen.getByLabelText('반복 주기'), 'custom')
+    expect(screen.getAllByText('반복 주기').length).toBeGreaterThanOrEqual(1)
     expect(screen.getByText('일마다')).toBeInTheDocument()
   })
 
@@ -129,30 +129,30 @@ describe('RegisterRecurringModal', () => {
     expect(screen.getByText('식비')).toBeInTheDocument()
   })
 
-  it('주간 빈도로 폼 제출이 성공한다', async () => {
+  it('주간 주기로 폼 제출이 성공한다', async () => {
     const user = userEvent.setup()
     const { props } = renderModal()
-    await user.selectOptions(screen.getByLabelText('반복 빈도'), 'weekly')
+    await user.selectOptions(screen.getByLabelText('반복 주기'), 'weekly')
     await user.click(screen.getByRole('button', { name: '반복 거래 등록' }))
     await waitFor(() => {
       expect(props.onSuccess).toHaveBeenCalledTimes(1)
     })
   })
 
-  it('연간 빈도로 폼 제출이 성공한다', async () => {
+  it('연간 주기로 폼 제출이 성공한다', async () => {
     const user = userEvent.setup()
     const { props } = renderModal()
-    await user.selectOptions(screen.getByLabelText('반복 빈도'), 'yearly')
+    await user.selectOptions(screen.getByLabelText('반복 주기'), 'yearly')
     await user.click(screen.getByRole('button', { name: '반복 거래 등록' }))
     await waitFor(() => {
       expect(props.onSuccess).toHaveBeenCalledTimes(1)
     })
   })
 
-  it('사용자 지정 빈도로 폼 제출이 성공한다', async () => {
+  it('사용자 지정 주기로 폼 제출이 성공한다', async () => {
     const user = userEvent.setup()
     const { props } = renderModal()
-    await user.selectOptions(screen.getByLabelText('반복 빈도'), 'custom')
+    await user.selectOptions(screen.getByLabelText('반복 주기'), 'custom')
     await user.click(screen.getByRole('button', { name: '반복 거래 등록' }))
     await waitFor(() => {
       expect(props.onSuccess).toHaveBeenCalledTimes(1)

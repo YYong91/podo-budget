@@ -94,6 +94,14 @@ describe('Toast', () => {
       expect(closeButton).toBeInTheDocument()
     })
 
+    it('모바일에서 메시지가 단어 단위로 줄바꿈된다', () => {
+      render(<Toast {...defaultProps} type="success" />)
+      const alert = screen.getByRole('alert')
+      // 모바일 대응: 화면 좌우 패딩 확보 + 단어 줄바꿈
+      expect(alert.className).toMatch(/mx-4/)
+      expect(alert.querySelector('p')?.className).toContain('break-words')
+    })
+
     it('닫기 버튼 클릭 시 onClose가 호출된다', () => {
       vi.useFakeTimers()
       const onClose = vi.fn()

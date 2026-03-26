@@ -45,7 +45,7 @@ export function generateHighlights({ incomeTotal, expenseTotal, budgetStats, com
     }
   }
 
-  // 4. 전월 대비 총지출 감소 (10% 이상)
+  // 4. 지난달 대비 총지출 감소 (10% 이상)
   if (comparison?.change.percentage !== null && comparison?.change.percentage !== undefined) {
     if (comparison.change.percentage <= -10) {
       const pct = Math.abs(comparison.change.percentage).toFixed(1)
