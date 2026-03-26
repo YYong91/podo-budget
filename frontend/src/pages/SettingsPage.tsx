@@ -8,7 +8,7 @@ import { useState } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
 import {
   Tags, PiggyBank, Repeat, Users, BookOpen, MessageSquarePlus,
-  Megaphone, ChevronRight, User, Sun, Moon, FileText, ScrollText,
+  Megaphone, ChevronRight, User, Sun, Moon,
   ShieldCheck, Download,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
@@ -159,20 +159,6 @@ export default function SettingsPage() {
       label: '피드백',
       description: '기능 요청/버그 신고',
       icon: MessageSquarePlus,
-    },
-    {
-      to: 'https://auth.podonest.com/privacy',
-      label: '개인정보 처리방침',
-      description: '개인정보 수집·이용 안내',
-      icon: FileText,
-      external: true,
-    },
-    {
-      to: 'https://auth.podonest.com/terms',
-      label: '서비스 이용약관',
-      description: '서비스 이용 조건',
-      icon: ScrollText,
-      external: true,
     },
     ...(user?.is_admin ? [{
       to: '/admin',
