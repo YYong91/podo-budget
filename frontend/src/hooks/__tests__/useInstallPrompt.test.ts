@@ -75,4 +75,87 @@ describe('useInstallPrompt', () => {
     const { result } = renderHook(() => useInstallPrompt())
     expect(result.current.isBannerVisible).toBe(false)
   })
+
+  it('promptInstall 호출 시 deferredPrompt.prompt()를 호출한다', async () => {
+    const mockPrompt = vi.fn().mockResolvedValue(undefined)
+    const mockEvent = new Event('beforeinstallprompt')
+    Object.assign(mockEvent, {
+      prompt: mockPrompt,
+      userChoice: Promise.resolve({ outcome: 'accepted' as const }),
+    })
+
+    const { result } = renderHook(() => useInstallPrompt())
+
+    act(() => {
+      window.dispatchEvent(mockEvent)
+    })
+
+    expect(result.current.deferredPrompt).not.toBeNull()
+
+    await act(async () => {
+      await result.current.promptInstall()
+    })
+
+    expect(mockPrompt).toHaveBeenCalled()
+    expect(result.current.isInstalled).toBe(true)
+    expect(result.current.deferredPrompt).toBeNull()
+  })
+
+  it('promptInstall 호출 시 outcome=dismissed이면 isInstalled가 false로 유지된다', async () => {
+    const mockPrompt = vi.fn().mockResolvedValue(undefined)
+    const mockEvent = new Event('beforeinstallprompt')
+    Object.assign(mockEvent, {
+      prompt: mockPrompt,
+      userChoice: Promise.resolve({ outcome: 'dismissed' as const }),
+    })
+
+    const { result } = renderHook(() => useInstallPrompt())
+
+    act(() => {
+      window.dispatchEvent(mockEvent)
+    })
+
+    await act(async () => {
+      await result.current.promptInstall()
+    })
+
+    expect(result.current.isInstalled).toBe(false)
+    expect(result.current.deferredPrompt).toBeNull()
+  })
+
+  it('deferredPrompt가 없으면 promptInstall이 아무것도 하지 않는다', async () => {
+    const { result } = renderHook(() => useInstallPrompt())
+    expect(result.current.deferredPrompt).toBeNull()
+
+    await act(async () => {
+      await result.current.promptInstall()
+    })
+
+    // 에러 없이 완료
+    expect(result.current.isInstalled).toBe(false)
+  })
+
+  it('iOS에서는 isIOS가 true다', () => {
+    Object.defineProperty(navigator, 'userAgent', {
+      writable: true,
+      value: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)',
+    })
+
+    const { result } = renderHook(() => useInstallPrompt())
+    expect(result.current.isIOS).toBe(true)
+  })
+
+  it('window.__pwaInstallPrompt가 초기값으로 사용된다', () => {
+    const mockEvent = new Event('beforeinstallprompt')
+    Object.assign(mockEvent, {
+      prompt: vi.fn().mockResolvedValue(undefined),
+      userChoice: Promise.resolve({ outcome: 'accepted' }),
+    })
+    window.__pwaInstallPrompt = mockEvent
+
+    const { result } = renderHook(() => useInstallPrompt())
+    expect(result.current.deferredPrompt).toBe(mockEvent)
+
+    window.__pwaInstallPrompt = null
+  })
 })

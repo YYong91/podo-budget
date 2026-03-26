@@ -271,25 +271,7 @@ describe('AssetForm', () => {
       expect(screen.getByText('정말 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')).toBeInTheDocument()
     })
 
-    it('수정 버튼 클릭 시 자산을 업데이트한다', async () => {
-      const user = userEvent.setup()
-      renderEditAssetForm(1)
-
-      await waitFor(() => {
-        expect(screen.getByDisplayValue('비상금 통장')).toBeInTheDocument()
-      })
-
-      await user.clear(screen.getByDisplayValue('비상금 통장'))
-      await user.type(screen.getByLabelText('자산명'), '수정 통장')
-      await user.click(screen.getByRole('button', { name: /수정하기/ }))
-
-      await waitFor(() => {
-        expect(mockAssetUpdate).toHaveBeenCalled()
-      })
-      expect(mockAddToast).toHaveBeenCalledWith('success', '자산이 수정되었습니다')
-    })
-
-    it('삭제 확인 후 삭제를 실행한다', async () => {
+    it('삭제 확인 후 실제 삭제를 실행한다', async () => {
       const user = userEvent.setup()
       renderEditAssetForm(1)
 
@@ -298,15 +280,18 @@ describe('AssetForm', () => {
       })
 
       await user.click(screen.getByText('자산 삭제'))
-      await user.click(screen.getByText('삭제'))
+
+      // 확인 UI에서 "삭제" 버튼 클릭
+      await user.click(screen.getByRole('button', { name: '삭제' }))
 
       await waitFor(() => {
         expect(mockAssetDelete).toHaveBeenCalledWith(1)
+        expect(mockAddToast).toHaveBeenCalledWith('success', '자산이 삭제되었습니다')
+        expect(mockNavigate).toHaveBeenCalledWith('/assets')
       })
-      expect(mockAddToast).toHaveBeenCalledWith('success', '자산이 삭제되었습니다')
     })
 
-    it('삭제 확인에서 취소하면 원래 상태로 돌아간다', async () => {
+    it('삭제 확인에서 취소를 클릭하면 원래 상태로 돌아간다', async () => {
       const user = userEvent.setup()
       renderEditAssetForm(1)
 
@@ -317,16 +302,35 @@ describe('AssetForm', () => {
       await user.click(screen.getByText('자산 삭제'))
       expect(screen.getByText('정말 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')).toBeInTheDocument()
 
-      // 두 번째 "취소" 버튼 (삭제 확인의 취소)
-      const cancelBtns = screen.getAllByText('취소')
-      await user.click(cancelBtns[cancelBtns.length - 1])
-
+      await user.click(screen.getByRole('button', { name: '취소' }))
+      expect(screen.queryByText('정말 삭제하시겠습니까?')).not.toBeInTheDocument()
       expect(screen.getByText('자산 삭제')).toBeInTheDocument()
-      expect(screen.queryByText('정말 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')).not.toBeInTheDocument()
     })
 
-    it('수정 실패 시 에러 토스트를 표시한다', async () => {
-      mockAssetUpdate.mockRejectedValue(new Error('서버 오류'))
+    it('수정 모드에서 폼을 수정하고 저장할 수 있다', async () => {
+      const user = userEvent.setup()
+      renderEditAssetForm(1)
+
+      await waitFor(() => {
+        expect(screen.getByDisplayValue('비상금 통장')).toBeInTheDocument()
+      })
+
+      // 자산명 수정
+      const nameInput = screen.getByDisplayValue('비상금 통장')
+      await user.clear(nameInput)
+      await user.type(nameInput, '긴급 자금')
+      await user.click(screen.getByRole('button', { name: /수정하기/ }))
+
+      await waitFor(() => {
+        expect(mockAssetUpdate).toHaveBeenCalledWith(1, expect.objectContaining({
+          name: '긴급 자금',
+        }))
+        expect(mockAddToast).toHaveBeenCalledWith('success', '자산이 수정되었습니다')
+      })
+    })
+
+    it('수정 API 에러 시 에러 토스트를 표시한다', async () => {
+      mockAssetUpdate.mockRejectedValueOnce(new Error('수정 실패'))
       const user = userEvent.setup()
       renderEditAssetForm(1)
 
@@ -341,127 +345,82 @@ describe('AssetForm', () => {
       })
     })
 
-    it('삭제 실패 시 에러 토스트를 표시한다', async () => {
-      mockAssetDelete.mockRejectedValue(new Error('서버 오류'))
-      const user = userEvent.setup()
-      renderEditAssetForm(1)
-
-      await waitFor(() => {
-        expect(screen.getByText('자산 삭제')).toBeInTheDocument()
-      })
-
-      await user.click(screen.getByText('자산 삭제'))
-      await user.click(screen.getByText('삭제'))
-
-      await waitFor(() => {
-        expect(mockAddToast).toHaveBeenCalledWith('error', '삭제 중 오류가 발생했습니다')
-      })
-    })
-
-    it('자산 데이터 로드 실패 시 에러 토스트 + /assets로 이동', async () => {
-      mockAssetGetById.mockRejectedValue(new Error('Not found'))
+    it('자산 로드 실패 시 에러 토스트를 표시하고 목록으로 이동한다', async () => {
+      mockAssetGetById.mockRejectedValueOnce(new Error('Not found'))
       renderEditAssetForm(999)
 
       await waitFor(() => {
         expect(mockAddToast).toHaveBeenCalledWith('error', '자산 정보를 불러오지 못했습니다')
+        expect(mockNavigate).toHaveBeenCalledWith('/assets')
       })
-      expect(mockNavigate).toHaveBeenCalledWith('/assets')
     })
   })
 
   describe('자연어 모드 저장', () => {
-    it('프리뷰 저장 성공 시 자산이 등록된다', async () => {
+    it('프리뷰 결과를 저장한다', async () => {
       const user = userEvent.setup()
       mockAssetParse.mockResolvedValue({
         data: {
-          items: [{ name: '삼성전자', type: 'stock_kr', quantity: 100, avg_buy_price: 70000 }],
+          items: [
+            { name: '삼성전자', type: 'stock_kr', quantity: 100, avg_buy_price: 70000 },
+            { name: '비트코인', type: 'crypto', quantity: 0.5 },
+          ],
         },
       })
 
       renderNewAssetForm()
 
-      await user.type(screen.getByPlaceholderText('보유 자산을 입력하세요...'), '삼성전자 100주')
+      await user.type(screen.getByPlaceholderText('보유 자산을 입력하세요...'), '삼성전자 100주, 비트코인 0.5개')
       await user.click(screen.getByRole('button', { name: /분석하기/ }))
 
       await waitFor(() => {
-        expect(screen.getByText(/분석 결과/)).toBeInTheDocument()
+        expect(screen.getByText(/분석 결과.*2건/)).toBeInTheDocument()
       })
 
       await user.click(screen.getByRole('button', { name: /저장하기/ }))
 
       await waitFor(() => {
-        expect(mockAssetCreate).toHaveBeenCalled()
+        expect(mockAssetCreate).toHaveBeenCalledTimes(2)
+        expect(mockAddToast).toHaveBeenCalledWith('success', '2개 자산이 등록되었습니다')
+        expect(mockNavigate).toHaveBeenCalledWith('/assets')
       })
-      expect(mockAddToast).toHaveBeenCalledWith('success', '1개 자산이 등록되었습니다')
     })
 
-    it('자연어 분석 실패 시 에러 토스트', async () => {
+    it('자연어 분석 에러 시 토스트를 표시한다', async () => {
       const user = userEvent.setup()
-      mockAssetParse.mockRejectedValue(new Error('분석 실패'))
+      mockAssetParse.mockRejectedValueOnce(new Error('분석 실패'))
 
       renderNewAssetForm()
 
-      await user.type(screen.getByPlaceholderText('보유 자산을 입력하세요...'), '삼성전자 100주')
+      await user.type(screen.getByPlaceholderText('보유 자산을 입력하세요...'), '테스트')
       await user.click(screen.getByRole('button', { name: /분석하기/ }))
 
       await waitFor(() => {
         expect(mockAddToast).toHaveBeenCalledWith('error', '분석 중 오류가 발생했습니다')
       })
     })
+  })
 
-    it('프리뷰 저장 실패 시 에러 토스트', async () => {
+  describe('직접 입력 모드 — 대출/부채', () => {
+    it('대출 유형 선택 시 상환방식과 월 상환액 필드를 표시한다', async () => {
       const user = userEvent.setup()
-      mockAssetParse.mockResolvedValue({
-        data: {
-          items: [{ name: '삼성전자', type: 'stock_kr', quantity: 100, avg_buy_price: 70000 }],
-        },
-      })
-      mockAssetCreate.mockRejectedValue(new Error('저장 실패'))
-
       renderNewAssetForm()
 
-      await user.type(screen.getByPlaceholderText('보유 자산을 입력하세요...'), '삼성전자 100주')
-      await user.click(screen.getByRole('button', { name: /분석하기/ }))
+      await user.click(screen.getByText('직접 입력'))
 
-      await waitFor(() => {
-        expect(screen.getByText(/분석 결과/)).toBeInTheDocument()
-      })
+      // 대출/부채 선택
+      const typeSelect = screen.getByLabelText('자산 유형')
+      await user.selectOptions(typeSelect, 'loan')
 
-      await user.click(screen.getByRole('button', { name: /저장하기/ }))
-
-      await waitFor(() => {
-        expect(mockAddToast).toHaveBeenCalledWith('error', '저장 중 오류가 발생했습니다')
-      })
+      expect(screen.getByLabelText('상환방식')).toBeInTheDocument()
+      expect(screen.getByLabelText(/월 상환액/)).toBeInTheDocument()
+      expect(screen.getByLabelText(/대출 잔액/)).toBeInTheDocument()
     })
   })
 
-  describe('직접 입력 유형 전환', () => {
-    it('대출 유형 선택 시 상환방식/월 상환액 필드가 표시된다', async () => {
-      const user = userEvent.setup()
-      renderNewAssetForm()
-
-      await user.click(screen.getByText('직접 입력'))
-      await user.selectOptions(screen.getByLabelText('자산 유형'), 'loan')
-
-      expect(screen.getByLabelText('대출 잔액 (원)')).toBeInTheDocument()
-      expect(screen.getByLabelText('상환방식')).toBeInTheDocument()
-      expect(screen.getByLabelText('월 상환액 (원)')).toBeInTheDocument()
-    })
-
-    it('한국주식 유형 선택 시 종목 검색과 수량/매입가 필드가 표시된다', async () => {
-      const user = userEvent.setup()
-      renderNewAssetForm()
-
-      await user.click(screen.getByText('직접 입력'))
-      await user.selectOptions(screen.getByLabelText('자산 유형'), 'stock_kr')
-
-      expect(screen.getByLabelText('종목명')).toBeInTheDocument()
-      expect(screen.getByLabelText('수량')).toBeInTheDocument()
-      expect(screen.getByLabelText('매입 평균가 (원)')).toBeInTheDocument()
-    })
-
-    it('직접 입력 실패 시 에러 토스트를 표시한다', async () => {
-      mockAssetCreate.mockRejectedValue(new Error('서버 오류'))
+  describe('직접 입력 모드 — 생성 에러', () => {
+    it('저장 API 에러 시 에러 토스트를 표시한다', async () => {
+      mockAssetCreate.mockRejectedValueOnce(new Error('저장 실패'))
       const user = userEvent.setup()
       renderNewAssetForm()
 

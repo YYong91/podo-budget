@@ -131,6 +131,107 @@ describe('IncomeDetail', () => {
       })
     })
 
+    it('편집 모드에서 금액 필드를 수정할 수 있다', async () => {
+      const user = userEvent.setup()
+      renderIncomeDetail()
+
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: '수정' })).toBeInTheDocument()
+      })
+
+      await user.click(screen.getByRole('button', { name: '수정' }))
+
+      await waitFor(() => {
+        // 금액 input이 표시됨
+        const amountInput = screen.getByLabelText('금액')
+        expect(amountInput).toBeInTheDocument()
+      })
+    })
+
+    it('편집 모드에서 날짜 필드를 수정할 수 있다', async () => {
+      const user = userEvent.setup()
+      renderIncomeDetail()
+
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: '수정' })).toBeInTheDocument()
+      })
+
+      await user.click(screen.getByRole('button', { name: '수정' }))
+
+      await waitFor(() => {
+        const dateInput = screen.getByLabelText('날짜')
+        expect(dateInput).toBeInTheDocument()
+      })
+    })
+
+    it('편집 모드에서 메모 필드를 수정할 수 있다', async () => {
+      const user = userEvent.setup()
+      renderIncomeDetail()
+
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: '수정' })).toBeInTheDocument()
+      })
+
+      await user.click(screen.getByRole('button', { name: '수정' }))
+
+      await waitFor(() => {
+        const memoInput = screen.getByLabelText('메모')
+        expect(memoInput).toBeInTheDocument()
+      })
+    })
+
+    it('편집 모드에서 통계 제외 토글을 조작할 수 있다', async () => {
+      const user = userEvent.setup()
+      renderIncomeDetail()
+
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: '수정' })).toBeInTheDocument()
+      })
+
+      await user.click(screen.getByRole('button', { name: '수정' }))
+
+      await waitFor(() => {
+        expect(screen.getByText('차트/통계에서 제외')).toBeInTheDocument()
+      })
+    })
+
+    it('편집 모드에서 카테고리 select가 표시된다', async () => {
+      const user = userEvent.setup()
+      renderIncomeDetail()
+
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: '수정' })).toBeInTheDocument()
+      })
+
+      await user.click(screen.getByRole('button', { name: '수정' }))
+
+      await waitFor(() => {
+        const categorySelect = screen.getByLabelText('카테고리')
+        expect(categorySelect).toBeInTheDocument()
+      })
+    })
+
+    it('취소 버튼을 클릭하면 뷰 모드로 돌아간다', async () => {
+      const user = userEvent.setup()
+      renderIncomeDetail()
+
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: '수정' })).toBeInTheDocument()
+      })
+
+      await user.click(screen.getByRole('button', { name: '수정' }))
+
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: '취소' })).toBeInTheDocument()
+      })
+
+      await user.click(screen.getByRole('button', { name: '취소' }))
+
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: '수정' })).toBeInTheDocument()
+      })
+    })
+
     it('빈 설명으로 저장하면 에러 메시지를 표시한다', async () => {
       const user = userEvent.setup()
       renderIncomeDetail()
