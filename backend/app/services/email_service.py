@@ -75,7 +75,7 @@ async def send_invitation_email(
         }
         # resend.Emails.send()는 동기 블로킹 I/O — 이벤트 루프 블로킹 방지
         loop = asyncio.get_event_loop()
-        await loop.run_in_executor(None, functools.partial(resend.Emails.send, email_params))
+        await loop.run_in_executor(None, functools.partial(resend.Emails.send, email_params))  # type: ignore[arg-type]
         logger.info(f"초대 이메일 발송 완료: {to_email}")
         return True
     except Exception as e:

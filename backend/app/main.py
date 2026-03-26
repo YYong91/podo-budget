@@ -1,10 +1,11 @@
 import logging
 import sys
 import uuid
+from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
 
 import sentry_sdk
-from fastapi import FastAPI, Request, status
+from fastapi import FastAPI, Request, Response, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from slowapi.errors import RateLimitExceeded
@@ -60,7 +61,7 @@ if settings.SENTRY_DSN:
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     """애플리케이션 시작 및 종료 시 실행되는 lifespan 이벤트 핸들러
 
     시작 시:
@@ -73,7 +74,7 @@ async def lifespan(app: FastAPI):
     """
     import subprocess
 
-    import app.models  # noqa: F811, F401
+    import app.models as _models  # noqa: F811, F401
 
     # JWT_SECRET 검증 (podo-auth SSO 연동)
     if settings.JWT_SECRET == "podo-jwt-secret-change-in-production":  # pragma: allowlist secret
@@ -187,7 +188,7 @@ app.add_middleware(
 
 # Request ID 미들웨어 — 모든 응답에 X-Request-ID 헤더 추가 (#244)
 @app.middleware("http")
-async def add_request_id(request: Request, call_next):
+async def add_request_id(request: Request, call_next: Callable[[Request], Awaitable[Response]]) -> Response:
     request_id = request.headers.get("X-Request-ID") or str(uuid.uuid4())[:8]
     response = await call_next(request)
     response.headers["X-Request-ID"] = request_id
@@ -196,7 +197,7 @@ async def add_request_id(request: Request, call_next):
 
 # 보안 헤더 미들웨어 — 모든 응답에 필수 보안 헤더 추가 (#235)
 @app.middleware("http")
-async def add_security_headers(request: Request, call_next):
+async def add_security_headers(request: Request, call_next: Callable[[Request], Awaitable[Response]]) -> Response:
     response = await call_next(request)
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "SAMEORIGIN"
@@ -208,16 +209,16 @@ async def add_security_headers(request: Request, call_next):
     return response
 
 
-# 전역 에러 핸들러 등록
+# 전역 에러 핸들러 등록  # type: ignore[no-untyped-def]
 register_exception_handlers(app)
 
 
 # Rate Limit 초과 시 한국어 에러 응답 핸들러
 @app.exception_handler(RateLimitExceeded)
-async def custom_rate_limit_handler(request: Request, exc: RateLimitExceeded):
+async def custom_rate_limit_handler(request: Request, exc: RateLimitExceeded) -> object:
     """Rate limit 초과 시 한국어 에러 메시지 반환
 
-    slowapi의 기본 핸들러를 오버라이드하여 사용자 친화적인 한국어 메시지를 제공합니다.
+    slowapi의 기본 핸들러를 오버라이드하여 사용자 친화적인 한국어 메시지를 제공합니다.  # type: ignore[no-untyped-def]
 
     Args:
         request: FastAPI Request 객체
@@ -261,12 +262,12 @@ app.include_router(e2e.router, prefix="/api", tags=["e2e"])
 
 
 @app.get("/")
-async def root():
+async def root() -> object:
     return {"message": "Welcome to 포도가계부 API"}
 
 
 @app.get("/health")
-async def health():
+async def health() -> object:
     """
     헬스체크 엔드포인트
     Fly.io 및 로드밸런서가 사용
@@ -275,7 +276,7 @@ async def health():
 
 
 @app.get("/health/llm")
-async def health_llm():
+async def health_llm() -> object:
     """LLM 프로바이더 헬스체크 (#254)
 
     프로바이더 인스턴스 생성 가능 여부 + 인메모리 메트릭 요약 반환.
@@ -303,7 +304,7 @@ async def health_llm():
 
 
 @app.get("/health/external")
-async def health_external():
+async def health_external() -> object:
     """외부 API 헬스체크 (#254)
 
     인메모리 메트릭 기반으로 외부 API 상태 요약 반환.
@@ -318,14 +319,14 @@ async def health_external():
         return {"status": "no_data", "metrics": {}}
 
     # 실패가 1건이라도 있으면 degraded
-    has_failure = any(m["failure"] > 0 for m in external_metrics.values())
+    has_failure = any(m["failure"] > 0 for m in external_metrics.values())  # type: ignore[operator]
     status = "degraded" if has_failure else "healthy"
 
     return {"status": status, "metrics": external_metrics}
 
 
 @app.get("/health/db")
-async def health_db():
+async def health_db() -> object:
     """
     DB 연결 체크 (상세 진단용)
     프로덕션에서는 내부 네트워크에서만 접근하도록 제한 권장

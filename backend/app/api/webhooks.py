@@ -6,6 +6,7 @@
 import hashlib
 import hmac
 import logging
+from typing import Any
 
 import httpx
 from fastapi import APIRouter, Header, HTTPException, Request, status
@@ -27,7 +28,7 @@ def _verify_sentry_signature(body: bytes, signature: str, secret: str) -> bool:
     return hmac.compare_digest(expected, hex_signature)
 
 
-def _format_sentry_alert(payload: dict) -> str:
+def _format_sentry_alert(payload: dict[str, Any]) -> str:
     """Sentry webhook payload → 텔레그램 메시지 포맷"""
     # Sentry Issue Alert 형식
     data = payload.get("data", {})
@@ -59,7 +60,7 @@ def _format_sentry_alert(payload: dict) -> str:
 async def sentry_webhook(
     request: Request,
     sentry_hook_signature: str | None = Header(None, alias="sentry-hook-signature"),
-):
+) -> object:
     """Sentry webhook 수신 → 텔레그램 알림 전송
 
     Sentry Alert Rule에서 WebHook action으로 이 URL을 설정.

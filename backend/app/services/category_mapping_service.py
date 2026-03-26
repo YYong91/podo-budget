@@ -14,7 +14,7 @@ from app.models.category import Category
 from app.models.category_mapping import CategoryMapping
 
 
-def _build_mapping_scope_filter(user_id: int | None, household_id: int | None):
+def _build_mapping_scope_filter(user_id: int | None, household_id: int | None) -> object:
     """매핑 접근 범위 필터 (가구 우선, 개인 폴백)"""
     conditions = [
         and_(CategoryMapping.user_id == user_id, CategoryMapping.household_id.is_(None)),
@@ -38,7 +38,7 @@ async def get_mapped_category(
 
     result = await db.execute(
         select(CategoryMapping)
-        .where(CategoryMapping.source_name == source_name, scope_filter)
+        .where(CategoryMapping.source_name == source_name, scope_filter)  # type: ignore[arg-type]
         .order_by(CategoryMapping.household_id.desc().nullslast())  # 가구 매핑 우선
         .limit(1)
     )
@@ -63,11 +63,11 @@ async def save_category_mapping(
     scope_filter = _build_mapping_scope_filter(user_id, household_id)
 
     # 기존 매핑 조회
-    result = await db.execute(select(CategoryMapping).where(CategoryMapping.source_name == source_name, scope_filter))
+    result = await db.execute(select(CategoryMapping).where(CategoryMapping.source_name == source_name, scope_filter))  # type: ignore[arg-type]
     existing = result.scalar_one_or_none()
 
     if existing:
-        existing.target_category_id = target_category_id
+        existing.target_category_id = target_category_id  # type: ignore[assignment]
         await db.flush()
         return existing
 
@@ -93,9 +93,9 @@ async def save_category_mapping(
     except IntegrityError:
         await db.rollback()
         # 동시 생성 → 재조회 후 업데이트
-        result = await db.execute(select(CategoryMapping).where(CategoryMapping.source_name == source_name, scope_filter))
+        result = await db.execute(select(CategoryMapping).where(CategoryMapping.source_name == source_name, scope_filter))  # type: ignore[arg-type]
         existing = result.scalar_one()
-        existing.target_category_id = target_category_id
+        existing.target_category_id = target_category_id  # type: ignore[assignment]
         await db.flush()
         return existing
 
@@ -113,6 +113,6 @@ async def get_category_mappings_for_prompt(
     scope_filter = _build_mapping_scope_filter(user_id, household_id)
 
     result = await db.execute(
-        select(CategoryMapping.source_name, Category.name).join(Category, CategoryMapping.target_category_id == Category.id).where(scope_filter)
+        select(CategoryMapping.source_name, Category.name).join(Category, CategoryMapping.target_category_id == Category.id).where(scope_filter)  # type: ignore[arg-type]
     )
     return {row[0]: row[1] for row in result.all()}

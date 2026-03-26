@@ -31,7 +31,7 @@ router = APIRouter()
 async def list_my_invitations(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-):
+) -> object:
     """내가 받은 초대 목록 조회
 
     현재 사용자의 이메일로 받은 모든 초대를 조회합니다.
@@ -100,7 +100,7 @@ async def accept_invitation(
     token: str,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-):
+) -> object:
     """초대 수락
 
     토큰으로 초대를 수락하고 자동으로 가구 멤버로 추가됩니다.
@@ -139,8 +139,8 @@ async def accept_invitation(
     # 만료 확인
     if invitation.expires_at < datetime.now(UTC).replace(tzinfo=None):
         # 만료된 초대는 상태를 expired로 변경
-        invitation.status = "expired"
-        invitation.responded_at = datetime.now(UTC).replace(tzinfo=None)
+        invitation.status = "expired"  # type: ignore[assignment]
+        invitation.responded_at = datetime.now(UTC).replace(tzinfo=None)  # type: ignore[assignment]
         await db.commit()
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="만료된 초대입니다")
 
@@ -179,7 +179,7 @@ async def accept_invitation(
 
     if former_member:
         # 기존 레코드 복원
-        former_member.left_at = None
+        former_member.left_at = None  # type: ignore[assignment]
         former_member.role = invitation.role
     else:
         # 신규 멤버 추가
@@ -191,8 +191,8 @@ async def accept_invitation(
         db.add(new_member)
 
     # 초대 상태 업데이트
-    invitation.status = "accepted"
-    invitation.responded_at = datetime.now(UTC).replace(tzinfo=None)
+    invitation.status = "accepted"  # type: ignore[assignment]
+    invitation.responded_at = datetime.now(UTC).replace(tzinfo=None)  # type: ignore[assignment]
     invitation.invitee_user_id = current_user.id  # user_id가 없었던 경우 업데이트
 
     await db.commit()
@@ -223,7 +223,7 @@ async def reject_invitation(
     token: str,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-):
+) -> object:
     """초대 거절
 
     토큰으로 초대를 거절합니다.
@@ -257,8 +257,8 @@ async def reject_invitation(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"이미 처리된 초대입니다 (상태: {invitation.status})")
 
     # 초대 거절
-    invitation.status = "rejected"
-    invitation.responded_at = datetime.now(UTC).replace(tzinfo=None)
+    invitation.status = "rejected"  # type: ignore[assignment]
+    invitation.responded_at = datetime.now(UTC).replace(tzinfo=None)  # type: ignore[assignment]
     invitation.invitee_user_id = current_user.id  # user_id가 없었던 경우 업데이트
 
     await db.commit()

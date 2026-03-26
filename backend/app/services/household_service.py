@@ -116,9 +116,9 @@ async def create_household_invitation(
 
     # 초대 이메일 발송 (실패해도 초대 자체는 성공)
     email_sent = await send_invitation_email(
-        to_email=invitation.invitee_email,
-        household_name=household.name,
-        inviter_name=inviter.username,
+        to_email=invitation.invitee_email,  # type: ignore[arg-type]
+        household_name=household.name,  # type: ignore[arg-type]
+        inviter_name=inviter.username,  # type: ignore[arg-type]
         invite_token=token,
     )
 
@@ -189,11 +189,11 @@ async def leave_household_with_transfer(
 
         # 첫 번째 멤버에게 owner 양도
         new_owner = other_members[0]
-        new_owner.role = "owner"
-        transferred_to = new_owner.user_id
+        new_owner.role = "owner"  # type: ignore[assignment]
+        transferred_to = new_owner.user_id  # type: ignore[assignment]
 
     # 현재 사용자 탈퇴 처리
-    member.left_at = datetime.now(UTC).replace(tzinfo=None)
+    member.left_at = datetime.now(UTC).replace(tzinfo=None)  # type: ignore[assignment]
     await db.commit()
 
     message = "가구에서 탈퇴했습니다"

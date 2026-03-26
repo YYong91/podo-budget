@@ -11,7 +11,7 @@ from sqlalchemy.sql import func
 from app.core.database import Base
 
 
-class User(Base):
+class User(Base):  # type: ignore[misc]
     """사용자 엔티티
 
     Attributes:
@@ -48,5 +48,5 @@ class User(Base):
     categories = relationship("Category", back_populates="user")
     budgets = relationship("Budget", back_populates="user")
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<User(id={self.id}, username={self.username}, is_active={self.is_active})>"

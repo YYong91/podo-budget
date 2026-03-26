@@ -97,7 +97,7 @@ async def get_dashboard_stats(db: AsyncSession) -> DashboardStatsResponse:
     )
 
     signup_q = (
-        select(
+        select(  # type: ignore[var-annotated]
             literal("signup").label("type"),
             User.username.label("username"),
             literal("회원가입").label("description"),
@@ -109,7 +109,7 @@ async def get_dashboard_stats(db: AsyncSession) -> DashboardStatsResponse:
     )
 
     feedback_q = (
-        select(
+        select(  # type: ignore[var-annotated]
             literal("feedback").label("type"),
             User.username.label("username"),
             Feedback.title.label("description"),
@@ -323,7 +323,7 @@ async def update_user(db: AsyncSession, user_id: int, is_active: bool | None = N
         return False
 
     if is_active is not None:
-        user.is_active = is_active
+        user.is_active = is_active  # type: ignore[assignment]
 
     await db.commit()
     return True

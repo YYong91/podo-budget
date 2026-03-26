@@ -17,6 +17,7 @@ Rate Limiting:
 
 import asyncio
 from datetime import datetime
+from typing import Any
 
 from fastapi import APIRouter, Depends, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -39,7 +40,7 @@ from app.services.llm_service import get_llm_provider
 router = APIRouter()
 
 
-async def _to_parsed_items(parsed: dict | list, household_id: int | None = None) -> list[ParsedExpenseItem]:
+async def _to_parsed_items(parsed: dict[str, Any] | list[dict[str, Any]], household_id: int | None = None) -> list[ParsedExpenseItem]:
     """LLM 파싱 결과를 ParsedExpenseItem 리스트로 변환 (외화 환율 변환 포함)"""
     items = [parsed] if isinstance(parsed, dict) else parsed
     result = []
@@ -75,7 +76,7 @@ async def _to_parsed_items(parsed: dict | list, household_id: int | None = None)
 
 
 async def _handle_preview(
-    parsed: dict | list,
+    parsed: dict[str, Any] | list[dict[str, Any]],
     household_id: int,
 ) -> ChatResponse:
     """Preview 모드: LLM 파싱 결과만 반환 (DB 저장 안 함)"""
@@ -110,7 +111,7 @@ async def _handle_preview(
 
 
 async def _save_and_respond(
-    parsed: dict | list,
+    parsed: dict[str, Any] | list[dict[str, Any]],
     message: str,
     household_id: int,
     current_user: User,
@@ -124,7 +125,7 @@ async def _save_and_respond(
 
     for item in items:
         item_type = item.get("type", "expense")
-        category = await get_or_create_category(db, item.get("category", "기타"), current_user.id, household_id)
+        category = await get_or_create_category(db, item.get("category", "기타"), current_user.id, household_id)  # type: ignore[arg-type]
 
         # 외화 환율 변환
         amount = item["amount"]
@@ -178,7 +179,7 @@ async def _save_and_respond(
 
 
 def _build_result_message(
-    items: list[dict],
+    items: list[dict[str, Any]],
     saved_amounts: list[int],
     created_expenses: list[Expense],
     created_incomes: list[Income],
@@ -208,7 +209,7 @@ async def chat(
     chat_request: ChatRequest,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-):
+) -> object:
     """채팅 인터페이스로 지출/수입 입력 및 인사이트 요청
 
     자연어로 입력된 내용을 LLM이 파싱하여 현재 로그인한 사용자의 지출 또는 수입으로 기록합니다.
@@ -228,9 +229,9 @@ async def chat(
     from app.services.category_mapping_service import get_category_mappings_for_prompt
 
     user_categories, history_hints, cat_mappings = await asyncio.gather(
-        get_user_categories(db, current_user.id, household_id),
-        get_category_hints(db, current_user.id, household_id),
-        get_category_mappings_for_prompt(db, user_id=current_user.id, household_id=household_id),
+        get_user_categories(db, current_user.id, household_id),  # type: ignore[arg-type]
+        get_category_hints(db, current_user.id, household_id),  # type: ignore[arg-type]
+        get_category_mappings_for_prompt(db, user_id=current_user.id, household_id=household_id),  # type: ignore[arg-type]
     )
 
     # LLM으로 사용자 입력 파싱

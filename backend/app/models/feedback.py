@@ -11,7 +11,7 @@ from sqlalchemy.sql import func
 from app.core.database import Base
 
 
-class Feedback(Base):
+class Feedback(Base):  # type: ignore[misc]
     """피드백 엔티티
 
     Attributes:

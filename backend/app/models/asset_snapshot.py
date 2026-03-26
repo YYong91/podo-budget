@@ -4,7 +4,7 @@ from sqlalchemy.sql import func
 from app.core.database import Base
 
 
-class AssetSnapshot(Base):
+class AssetSnapshot(Base):  # type: ignore[misc]
     __tablename__ = "asset_snapshots"
     __table_args__ = (Index("ix_asset_snapshots_household_date", "household_id", "snapshot_date"),)
 

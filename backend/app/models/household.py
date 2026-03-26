@@ -15,7 +15,7 @@ from sqlalchemy.sql import func
 from app.core.database import Base
 
 
-class Household(Base):
+class Household(Base):  # type: ignore[misc]
     """가구 엔티티
 
     여러 사용자가 지출과 예산을 공유하기 위한 논리적 단위입니다.
@@ -52,5 +52,5 @@ class Household(Base):
     expenses = relationship("Expense", back_populates="household")
     incomes = relationship("Income", back_populates="household")
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<Household(id={self.id}, name={self.name}, currency={self.currency})>"

@@ -47,7 +47,7 @@ async def create_household(
     household_data: HouseholdCreate,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-):
+) -> object:
     """가구 생성
 
     새로운 가구를 생성하고 생성자를 owner로 자동 등록합니다.
@@ -99,7 +99,7 @@ async def create_household(
 async def list_households(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-):
+) -> object:
     """내가 속한 가구 목록 조회
 
     현재 사용자가 속한 모든 활성 가구를 조회합니다.
@@ -161,7 +161,7 @@ async def get_household(
     household_id: int,
     member: HouseholdMember = Depends(get_household_member),
     db: AsyncSession = Depends(get_db),
-):
+) -> object:
     """가구 상세 정보 조회
 
     가구 정보 및 활성 멤버 목록을 조회합니다.
@@ -215,7 +215,7 @@ async def update_household(
     household_data: HouseholdUpdate,
     member: HouseholdMember = Depends(require_household_admin),
     db: AsyncSession = Depends(get_db),
-):
+) -> object:
     """가구 정보 수정
 
     가구 이름 및 설명을 수정합니다.
@@ -239,9 +239,9 @@ async def update_household(
 
     # 변경된 필드만 업데이트
     if household_data.name is not None:
-        household.name = household_data.name
+        household.name = household_data.name  # type: ignore[assignment]
     if household_data.description is not None:
-        household.description = household_data.description
+        household.description = household_data.description  # type: ignore[assignment]
 
     await db.commit()
     await db.refresh(household)
@@ -272,7 +272,7 @@ async def delete_household(
     household_id: int,
     member: HouseholdMember = Depends(require_household_owner),
     db: AsyncSession = Depends(get_db),
-):
+) -> None:
     """가구 삭제 (소프트 삭제)
 
     가구를 소프트 삭제합니다. 실제 데이터는 삭제되지 않고 deleted_at이 설정됩니다.
@@ -314,7 +314,7 @@ async def update_member_role(
     role_data: MemberRoleUpdate,
     member: HouseholdMember = Depends(require_household_owner),
     db: AsyncSession = Depends(get_db),
-):
+) -> object:
     """멤버 역할 변경
 
     가구 멤버의 역할을 변경합니다.
@@ -359,7 +359,7 @@ async def update_member_role(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="소유자의 역할은 변경할 수 없습니다")
 
     # 역할 변경
-    target_member.role = role_data.role
+    target_member.role = role_data.role  # type: ignore[assignment]
     await db.commit()
     await db.refresh(target_member)
 
@@ -383,7 +383,7 @@ async def remove_member(
     user_id: int,
     member: HouseholdMember = Depends(require_household_admin),
     db: AsyncSession = Depends(get_db),
-):
+) -> None:
     """멤버 추방
 
     가구에서 멤버를 추방합니다 (소프트 삭제).
@@ -431,7 +431,7 @@ async def remove_member(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="관리자는 다른 관리자를 추방할 수 없습니다. 소유자 권한이 필요합니다")
 
     # 소프트 삭제 (left_at 설정)
-    target_member.left_at = datetime.now(UTC).replace(tzinfo=None)
+    target_member.left_at = datetime.now(UTC).replace(tzinfo=None)  # type: ignore[assignment]
     await db.commit()
 
 
@@ -440,7 +440,7 @@ async def leave_household(
     household_id: int,
     member: HouseholdMember = Depends(get_household_member),
     db: AsyncSession = Depends(get_db),
-):
+) -> object:
     """가구 자발적 탈퇴
 
     현재 사용자가 가구에서 탈퇴합니다.
@@ -475,7 +475,7 @@ async def create_invitation(
     invitation_data: InvitationCreate,
     member: HouseholdMember = Depends(require_household_admin),
     db: AsyncSession = Depends(get_db),
-):
+) -> object:
     """가구 초대 생성
 
     이메일 주소로 새로운 사용자를 가구에 초대합니다.
@@ -528,7 +528,7 @@ async def list_invitations(
     household_id: int,
     member: HouseholdMember = Depends(require_household_admin),
     db: AsyncSession = Depends(get_db),
-):
+) -> object:
     """가구 초대 목록 조회
 
     특정 가구의 모든 초대를 조회합니다.
@@ -584,7 +584,7 @@ async def cancel_invitation(
     invitation_id: int,
     member: HouseholdMember = Depends(require_household_admin),
     db: AsyncSession = Depends(get_db),
-):
+) -> None:
     """초대 취소
 
     pending 상태의 초대를 취소합니다.

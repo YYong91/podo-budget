@@ -1,6 +1,7 @@
 """순자산 목표 비즈니스 로직"""
 
 from datetime import date, datetime, timedelta
+from typing import Any
 from zoneinfo import ZoneInfo
 
 from sqlalchemy import extract, func, select
@@ -32,8 +33,8 @@ async def upsert_goal(
     """목표 upsert: 기존 있으면 업데이트, 없으면 생성"""
     existing = await get_goal(user_id, household_id, db)
     if existing:
-        existing.target_net_worth = target_net_worth
-        existing.target_date = target_date
+        existing.target_net_worth = target_net_worth  # type: ignore[assignment]
+        existing.target_date = target_date  # type: ignore[assignment]
         await db.flush()
         await db.refresh(existing)
         return existing
@@ -62,9 +63,9 @@ async def get_goal_with_insight(
     user: User,
     household_id: int,
     db: AsyncSession,
-) -> dict | None:
+) -> dict[str, Any] | None:
     """목표 + 페이스 인사이트 계산"""
-    goal = await get_goal(user.id, household_id, db)
+    goal = await get_goal(user.id, household_id, db)  # type: ignore[arg-type]
     if not goal:
         return None
 
@@ -86,7 +87,7 @@ async def get_goal_with_insight(
     monthly_required = remaining / months_left if remaining > 0 else 0
 
     # 최근 4개월 스냅샷으로 평균 월간 순자산 증가율 계산
-    snapshots = await _get_recent_snapshots(user.id, household_id, db, months=4)
+    snapshots = await _get_recent_snapshots(user.id, household_id, db, months=4)  # type: ignore[arg-type]
     avg_monthly_growth = _calc_avg_monthly_growth(snapshots)
 
     # 예상 도달일
@@ -141,7 +142,7 @@ def _calc_avg_monthly_growth(snapshots: list[AssetSnapshot]) -> float | None:
     return (newest - oldest) / months if months > 0 else None
 
 
-async def get_monthly_savings(household_id: int, db: AsyncSession) -> dict:
+async def get_monthly_savings(household_id: int, db: AsyncSession) -> dict[str, Any]:
     """이번 달 수입 - 지출 = 순저축액 (exclude_from_stats 항목 제외, #182)"""
     today = datetime.now(ZoneInfo("Asia/Seoul")).date()
     year = today.year

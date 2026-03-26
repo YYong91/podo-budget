@@ -10,7 +10,7 @@ def register_exception_handlers(app: FastAPI) -> None:
     """FastAPI 앱에 전역 예외 핸들러 등록"""
 
     @app.exception_handler(ValueError)
-    async def value_error_handler(request: Request, exc: ValueError):
+    async def value_error_handler(request: Request, exc: ValueError) -> JSONResponse:
         # str(exc) 전달 금지 — SQLAlchemy 쿼리, 파일 경로, 모델 구조 등 내부 정보 노출 위험
         # Sentry에 전체 스택트레이스를 기록하고 사용자에게는 일반 메시지만 반환
         sentry_sdk.capture_exception(exc)
@@ -20,14 +20,14 @@ def register_exception_handlers(app: FastAPI) -> None:
         )
 
     @app.exception_handler(IntegrityError)
-    async def integrity_error_handler(request: Request, exc: IntegrityError):
+    async def integrity_error_handler(request: Request, exc: IntegrityError) -> JSONResponse:
         return JSONResponse(
             status_code=409,
             content={"error": {"code": "CONFLICT", "message": "데이터 무결성 오류가 발생했습니다"}},
         )
 
     @app.exception_handler(SQLAlchemyError)
-    async def sqlalchemy_error_handler(request: Request, exc: SQLAlchemyError):
+    async def sqlalchemy_error_handler(request: Request, exc: SQLAlchemyError) -> JSONResponse:
         # 500 에러만 Sentry에 보고 (DB 레벨 서버 오류)
         sentry_sdk.capture_exception(exc)
         return JSONResponse(
@@ -36,7 +36,7 @@ def register_exception_handlers(app: FastAPI) -> None:
         )
 
     @app.exception_handler(Exception)
-    async def general_error_handler(request: Request, exc: Exception):
+    async def general_error_handler(request: Request, exc: Exception) -> JSONResponse:
         # 500 에러만 Sentry에 보고 (예상치 못한 서버 오류)
         sentry_sdk.capture_exception(exc)
         return JSONResponse(

@@ -1,6 +1,7 @@
 """자연어 자산 입력 파싱"""
 
 import json
+from typing import Any
 
 from app.services.llm_service import get_llm_provider
 
@@ -37,7 +38,7 @@ def _sanitize_input(text: str) -> str:
     return text.replace("\r\n", "\n").replace("\r", "\n")[:2000]
 
 
-async def parse_asset_input(text: str) -> list[dict]:
+async def parse_asset_input(text: str) -> list[dict[str, Any]]:
     """자연어 → 자산 정보 파싱"""
     llm = get_llm_provider()
     safe_text = _sanitize_input(text)
@@ -55,6 +56,6 @@ async def parse_asset_input(text: str) -> list[dict]:
         items = json.loads(clean)
         if isinstance(items, dict):
             items = [items]
-        return items
+        return items  # type: ignore[no-any-return]
     except (json.JSONDecodeError, IndexError):
         return []

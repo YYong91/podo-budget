@@ -2,6 +2,7 @@
 
 import json
 from datetime import datetime
+from typing import Any
 from zoneinfo import ZoneInfo
 
 from sqlalchemy import select
@@ -13,7 +14,7 @@ from app.models.user import User
 from app.services.price_service import get_asset_current_value
 
 
-async def create_asset(db: AsyncSession, asset_data: dict, user: User, household_id: int) -> Asset:
+async def create_asset(db: AsyncSession, asset_data: dict[str, Any], user: User, household_id: int) -> Asset:
     """자산 생성 — household_id는 API 레이어에서 resolve 후 전달 (#180)"""
     asset_data.pop("household_id", None)  # schema에 포함된 경우 제거
     asset = Asset(**asset_data, created_by=user.id, household_id=household_id)
@@ -45,7 +46,7 @@ async def get_asset_by_id(db: AsyncSession, asset_id: int, user: User) -> Asset 
     return asset
 
 
-async def update_asset(db: AsyncSession, asset: Asset, update_data: dict) -> Asset:
+async def update_asset(db: AsyncSession, asset: Asset, update_data: dict[str, Any]) -> Asset:
     """자산 수정"""
     for key, value in update_data.items():
         setattr(asset, key, value)
@@ -60,11 +61,11 @@ async def delete_asset(db: AsyncSession, asset: Asset) -> None:
     await db.commit()
 
 
-async def get_assets_with_prices(db: AsyncSession, user: User, household_id: int | None = None) -> list[dict]:
+async def get_assets_with_prices(db: AsyncSession, user: User, household_id: int | None = None) -> list[dict[str, Any]]:
     """시세 포함 자산 목록"""
     import asyncio
 
-    assets = await get_assets(db, user, household_id)
+    assets = await get_assets(db, user, household_id)  # type: ignore[arg-type]
     # 시세 조회 병렬화 — 자산 수만큼 직렬 await → asyncio.gather 동시 실행 (#166)
     price_infos = await asyncio.gather(*[get_asset_current_value(asset) for asset in assets])
     results = []
@@ -93,7 +94,7 @@ async def get_assets_with_prices(db: AsyncSession, user: User, household_id: int
     return results
 
 
-async def get_asset_summary(db: AsyncSession, user: User, household_id: int | None = None) -> dict:
+async def get_asset_summary(db: AsyncSession, user: User, household_id: int | None = None) -> dict[str, Any]:
     """순자산 요약"""
     assets_with_prices = await get_assets_with_prices(db, user, household_id)
 
@@ -148,7 +149,7 @@ async def create_snapshot(db: AsyncSession, user: User, household_id: int | None
         snapshot.total_assets = summary["total_assets"]
         snapshot.total_liabilities = summary["total_liabilities"]
         snapshot.net_worth = summary["net_worth"]
-        snapshot.breakdown = json.dumps(summary["breakdown"])
+        snapshot.breakdown = json.dumps(summary["breakdown"])  # type: ignore[assignment]
     else:
         snapshot = AssetSnapshot(
             user_id=user.id,

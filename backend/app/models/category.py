@@ -13,7 +13,7 @@ from sqlalchemy.sql import func
 from app.core.database import Base
 
 
-class Category(Base):
+class Category(Base):  # type: ignore[misc]
     """카테고리 엔티티
 
     Attributes:

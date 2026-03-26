@@ -38,7 +38,7 @@ def _generate_link_code() -> tuple[str, datetime]:
 
 
 @router.get("/me", response_model=UserResponse)
-async def get_me(current_user: User = Depends(get_current_user)):
+async def get_me(current_user: User = Depends(get_current_user)) -> object:
     """현재 로그인한 사용자 정보 조회
 
     podo-auth JWT를 검증하고 로컬 Shadow User 정보를 반환합니다.
@@ -63,7 +63,7 @@ async def get_me(current_user: User = Depends(get_current_user)):
 async def generate_telegram_link_code(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-):
+) -> object:
     """텔레그램 연동용 단기 코드 발급 (15분 유효)
 
     재발급 시 이전 코드를 덮어씁니다.
@@ -82,7 +82,7 @@ async def generate_telegram_link_code(
 async def unlink_telegram(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-):
+) -> object:
     """텔레그램 연동 해제
 
     telegram_chat_id와 연동 코드를 모두 초기화합니다.
@@ -99,7 +99,7 @@ async def unlink_telegram(
 async def generate_kakao_link_code(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-):
+) -> object:
     """카카오톡 연동용 단기 코드 발급 (15분 유효)
 
     재발급 시 이전 코드를 덮어씁니다.
@@ -117,7 +117,7 @@ async def generate_kakao_link_code(
 async def unlink_kakao(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-):
+) -> object:
     """카카오톡 연동 해제
 
     kakao_user_id와 연동 코드를 모두 초기화합니다.
@@ -134,7 +134,7 @@ async def unlink_kakao(
 async def delete_account(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-):
+) -> object:
     """계정 삭제 (소프트 삭제 + 개인정보 익명화)
 
     물리 삭제 대신 is_active=False로 비활성화하고 개인정보를 익명화합니다.

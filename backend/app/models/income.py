@@ -12,7 +12,7 @@ from sqlalchemy.sql import func
 from app.core.database import Base
 
 
-class Income(Base):
+class Income(Base):  # type: ignore[misc]
     """수입 엔티티
 
     Attributes:

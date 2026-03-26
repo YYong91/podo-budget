@@ -145,7 +145,7 @@ async def get_household_member(
     if row.HouseholdMember is None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="이 가구에 접근할 권한이 없습니다")
 
-    return row.HouseholdMember
+    return row.HouseholdMember  # type: ignore[no-any-return]
 
 
 async def require_household_admin(
