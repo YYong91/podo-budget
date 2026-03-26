@@ -575,4 +575,44 @@ describe('TransactionList', () => {
       })
     })
   })
+
+  describe('검색↔월뷰 모드 전환', () => {
+    it('검색 모드 진입 후 검색 닫기로 월뷰 복귀 시 캘린더가 다시 표시된다', async () => {
+      renderPage()
+
+      // 월뷰에서 캘린더 요일 헤더 확인
+      await waitFor(() => {
+        expect(screen.getByText('일')).toBeInTheDocument()
+        expect(screen.getByText('토')).toBeInTheDocument()
+      })
+
+      // 검색 모드 진입
+      fireEvent.click(screen.getByLabelText('검색'))
+      await waitFor(() => {
+        expect(screen.getByPlaceholderText('거래 내역 검색')).toBeInTheDocument()
+        // 캘린더 요일 헤더가 숨겨짐
+        expect(screen.queryByText('토')).not.toBeInTheDocument()
+      })
+
+      // 검색 닫기 → 월뷰 복귀
+      fireEvent.click(screen.getByLabelText('검색 닫기'))
+      await waitFor(() => {
+        expect(screen.getByText('일')).toBeInTheDocument()
+        expect(screen.getByText('토')).toBeInTheDocument()
+      })
+    })
+
+    it('검색 모드에서 월 네비게이션 헤더가 표시되지 않는다', async () => {
+      renderPage('/?search=')
+
+      const now = new Date()
+      const monthLabel = `${now.getFullYear()}년 ${now.getMonth() + 1}월`
+
+      await waitFor(() => {
+        expect(screen.getByPlaceholderText('거래 내역 검색')).toBeInTheDocument()
+      })
+
+      expect(screen.queryByText(monthLabel)).not.toBeInTheDocument()
+    })
+  })
 })

@@ -494,4 +494,237 @@ describe('HouseholdDetailPage', () => {
       expect(mockNavigate).toHaveBeenCalledWith('/households')
     })
   })
+
+  it('가구 삭제 실패 시 에러 토스트를 표시한다', async () => {
+    mockDeleteHousehold.mockRejectedValueOnce(new Error('삭제 실패'))
+    renderPage()
+
+    await userEvent.click(screen.getByText('설정'))
+    await userEvent.click(screen.getByText('가구 삭제'))
+
+    await waitFor(() => {
+      expect(addToast).toHaveBeenCalledWith('error', '가구 삭제에 실패했습니다')
+    })
+  })
+
+  it('가구 삭제 confirm 취소 시 삭제를 실행하지 않는다', async () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(false)
+    renderPage()
+
+    await userEvent.click(screen.getByText('설정'))
+    await userEvent.click(screen.getByText('가구 삭제'))
+
+    expect(mockDeleteHousehold).not.toHaveBeenCalled()
+  })
+
+  /* ---------- 멤버 추방: confirm 취소 ---------- */
+
+  it('추방 confirm 취소 시 removeMember를 호출하지 않는다', async () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(false)
+    renderPage()
+
+    await userEvent.click(screen.getByText('추방'))
+
+    expect(mockRemoveMember).not.toHaveBeenCalled()
+  })
+
+  /* ---------- 역할 변경: owner만 가능 ---------- */
+
+  it('owner는 member의 역할을 admin으로 변경할 수 있다', async () => {
+    mockUpdateMemberRole.mockResolvedValueOnce(undefined)
+    renderPage()
+
+    // member(김철수)의 역할 select가 있음
+    const roleSelects = screen.getAllByRole('combobox')
+    expect(roleSelects.length).toBeGreaterThan(0)
+
+    await userEvent.selectOptions(roleSelects[0], 'admin')
+
+    await waitFor(() => {
+      expect(mockUpdateMemberRole).toHaveBeenCalledWith(1, 2, 'admin')
+      expect(addToast).toHaveBeenCalledWith('success', '역할이 변경되었습니다')
+    })
+  })
+
+  it('역할 변경 실패 시 에러 토스트를 표시한다', async () => {
+    mockUpdateMemberRole.mockRejectedValueOnce(new Error('역할 변경 실패'))
+    renderPage()
+
+    const roleSelects = screen.getAllByRole('combobox')
+    await userEvent.selectOptions(roleSelects[0], 'admin')
+
+    await waitFor(() => {
+      expect(addToast).toHaveBeenCalledWith('error', '역할 변경에 실패했습니다')
+    })
+  })
+
+  it('일반 멤버에게는 역할 변경 select가 표시되지 않는다', () => {
+    storeState.currentHousehold = { ...baseMockHousehold, my_role: 'member' }
+    renderPage()
+
+    expect(screen.queryAllByRole('combobox')).toHaveLength(0)
+  })
+
+  /* ---------- 가구 탈퇴: confirm 취소 ---------- */
+
+  it('탈퇴 confirm 취소 시 leaveHousehold를 호출하지 않는다', async () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(false)
+    renderPage()
+
+    await userEvent.click(screen.getByText('탈퇴'))
+
+    expect(mockLeaveHousehold).not.toHaveBeenCalled()
+  })
+
+  /* ---------- 초대 취소: confirm 취소 ---------- */
+
+  it('초대 취소 confirm 취소 시 cancelInvitation을 호출하지 않는다', async () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(false)
+    storeState.householdInvitations = [
+      { id: 10, invitee_email: 'new@test.com', status: 'pending', token: 'abc' },
+    ]
+    renderPage()
+
+    const invitationTab = screen.getByRole('button', { name: /초대/ })
+    await userEvent.click(invitationTab)
+
+    await userEvent.click(screen.getByText('취소'))
+
+    expect(mockCancelInvitation).not.toHaveBeenCalled()
+  })
+
+  it('초대 취소 실패 시 에러 토스트를 표시한다', async () => {
+    mockCancelInvitation.mockRejectedValueOnce(new Error('취소 실패'))
+    storeState.householdInvitations = [
+      { id: 10, invitee_email: 'new@test.com', status: 'pending', token: 'abc' },
+    ]
+    renderPage()
+
+    const invitationTab = screen.getByRole('button', { name: /초대/ })
+    await userEvent.click(invitationTab)
+
+    await userEvent.click(screen.getByText('취소'))
+
+    await waitFor(() => {
+      expect(addToast).toHaveBeenCalledWith('error', '초대 취소에 실패했습니다')
+    })
+  })
+
+  /* ---------- 초대 실패 ---------- */
+
+  it('멤버 초대 실패 시 에러 토스트를 표시한다', async () => {
+    mockInviteMember.mockRejectedValueOnce(new Error('초대 실패'))
+    storeState.householdInvitations = []
+    renderPage()
+
+    const invitationTab = screen.getByRole('button', { name: /초대/ })
+    await userEvent.click(invitationTab)
+    await userEvent.click(screen.getByText('+ 멤버 초대'))
+
+    const emailInput = screen.getByLabelText(/이메일/)
+    await userEvent.type(emailInput, 'fail@test.com')
+    const dialog = screen.getByRole('dialog')
+    const submitBtn = dialog.querySelector('button[type="submit"]') as HTMLButtonElement
+    await userEvent.click(submitBtn)
+
+    await waitFor(() => {
+      expect(addToast).toHaveBeenCalledWith('error', '멤버 초대에 실패했습니다')
+    })
+  })
+
+  /* ---------- 가구 정보 수정 (설정 탭) ---------- */
+
+  it('설정 탭에서 가구 정보를 수정할 수 있다', async () => {
+    mockUpdateHousehold.mockResolvedValueOnce(undefined)
+    renderPage()
+
+    await userEvent.click(screen.getByText('설정'))
+
+    // 수정 버튼 클릭하여 편집 모드 진입
+    await userEvent.click(screen.getByText('수정'))
+
+    // 이름 필드 수정
+    const nameInput = screen.getByLabelText('가구 이름')
+    await userEvent.clear(nameInput)
+    await userEvent.type(nameInput, '새 이름')
+
+    await userEvent.click(screen.getByText('저장'))
+
+    await waitFor(() => {
+      expect(mockUpdateHousehold).toHaveBeenCalledWith(1, expect.objectContaining({ name: '새 이름' }))
+      expect(addToast).toHaveBeenCalledWith('success', '가구 정보가 수정되었습니다')
+    })
+  })
+
+  it('가구 정보 수정 실패 시 에러 토스트를 표시한다', async () => {
+    mockUpdateHousehold.mockRejectedValueOnce(new Error('수정 실패'))
+    renderPage()
+
+    await userEvent.click(screen.getByText('설정'))
+    await userEvent.click(screen.getByText('수정'))
+
+    await userEvent.click(screen.getByText('저장'))
+
+    await waitFor(() => {
+      expect(addToast).toHaveBeenCalledWith('error', '가구 수정에 실패했습니다')
+    })
+  })
+
+  /* ---------- admin은 가구 삭제 불가 ---------- */
+
+  it('admin은 설정 탭에서 가구 삭제 버튼을 볼 수 없다', async () => {
+    storeState.currentHousehold = { ...baseMockHousehold, my_role: 'admin' }
+    renderPage()
+
+    await userEvent.click(screen.getByText('설정'))
+
+    expect(screen.queryByText('가구 삭제')).not.toBeInTheDocument()
+  })
+
+  /* ---------- ErrorState 재시도 ---------- */
+
+  it('에러 상태에서 다시 시도 버튼 클릭 시 fetchHouseholdDetail을 재호출한다', async () => {
+    storeState.error = '서버 에러'
+    storeState.currentHousehold = null
+    renderPage()
+
+    const retryBtn = screen.getByText('다시 시도')
+    await userEvent.click(retryBtn)
+
+    // 초기 호출 + 재시도 = 최소 2회
+    await waitFor(() => {
+      expect(fetchHouseholdDetail).toHaveBeenCalledTimes(2)
+    })
+  })
+
+  /* ---------- 빈 초대 목록 ---------- */
+
+  it('초대 목록이 비어있으면 빈 상태 메시지를 표시한다', async () => {
+    storeState.householdInvitations = []
+    renderPage()
+
+    const invitationTab = screen.getByRole('button', { name: /초대/ })
+    await userEvent.click(invitationTab)
+
+    expect(screen.getByText('보낸 초대가 없습니다')).toBeInTheDocument()
+  })
+
+  /* ---------- 3명 이상의 멤버 ---------- */
+
+  it('3명 이상의 멤버가 있을 때 각각 관리 가능하다', () => {
+    storeState.currentHousehold = {
+      ...baseMockHousehold,
+      my_role: 'owner',
+      members: [
+        { user_id: 1, username: '홍길동', email: 'hong@example.com', role: 'owner', joined_at: '2026-01-01T00:00:00Z' },
+        { user_id: 2, username: '김철수', email: 'kim@example.com', role: 'member', joined_at: '2026-02-01T00:00:00Z' },
+        { user_id: 3, username: '이영희', email: 'lee@example.com', role: 'admin', joined_at: '2026-03-01T00:00:00Z' },
+      ],
+    }
+    renderPage()
+
+    // 2명의 비-owner 멤버에 대해 추방 버튼이 2개 표시
+    const removeButtons = screen.getAllByText('추방')
+    expect(removeButtons).toHaveLength(2)
+  })
 })
