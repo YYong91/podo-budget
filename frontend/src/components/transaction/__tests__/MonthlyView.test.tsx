@@ -178,4 +178,156 @@ describe('MonthlyView 컴포넌트', () => {
       expect(screen.getByRole('dialog', { name: '카테고리 변경' })).toBeInTheDocument()
     })
   })
+
+  it('거래가 없으면 빈 상태 메시지를 표시한다', async () => {
+    server.use(
+      http.get('/api/expenses', () => HttpResponse.json([])),
+      http.get('/api/income', () => HttpResponse.json([])),
+    )
+    renderPage()
+
+    await waitFor(() => {
+      expect(screen.getByText('거래 내역이 없습니다')).toBeInTheDocument()
+    })
+  })
+
+  it('수입 필터 클릭 시 지출 항목이 숨겨진다', async () => {
+    setupCurrentMonthHandlers()
+    const user = userEvent.setup()
+    renderPage()
+
+    await waitFor(() => {
+      expect(screen.getByText('김치찌개')).toBeInTheDocument()
+      expect(screen.getByText('월급')).toBeInTheDocument()
+    })
+
+    // 수입 필터 클릭
+    await user.click(screen.getByText('수입'))
+
+    await waitFor(() => {
+      expect(screen.queryByText('김치찌개')).not.toBeInTheDocument()
+      expect(screen.getByText('월급')).toBeInTheDocument()
+    })
+  })
+
+  it('필터 두 번 클릭 시 전체 모드로 복귀한다', async () => {
+    setupCurrentMonthHandlers()
+    const user = userEvent.setup()
+    renderPage()
+
+    await waitFor(() => {
+      expect(screen.getByText('김치찌개')).toBeInTheDocument()
+      expect(screen.getByText('월급')).toBeInTheDocument()
+    })
+
+    // 지출 필터 클릭 (지출만 표시)
+    await user.click(screen.getByText('지출'))
+
+    await waitFor(() => {
+      expect(screen.queryByText('월급')).not.toBeInTheDocument()
+    })
+
+    // 다시 클릭 (전체로 복귀)
+    await user.click(screen.getByText('지출'))
+
+    await waitFor(() => {
+      expect(screen.getByText('김치찌개')).toBeInTheDocument()
+      expect(screen.getByText('월급')).toBeInTheDocument()
+    })
+  })
+
+  it('다음 월 버튼 클릭 시 월이 변경된다', async () => {
+    const user = userEvent.setup()
+    renderPage()
+    const now = new Date()
+    const currentLabel = `${now.getFullYear()}년 ${now.getMonth() + 1}월`
+    expect(screen.getByText(currentLabel)).toBeInTheDocument()
+
+    // 다음 월 버튼 클릭 (두 번째 네비게이션 버튼)
+    const navButtons = screen.getAllByRole('button')
+    await user.click(navButtons[1])
+
+    const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1)
+    const nextLabel = `${nextMonth.getFullYear()}년 ${nextMonth.getMonth() + 1}월`
+    await waitFor(() => {
+      expect(screen.getByText(nextLabel)).toBeInTheDocument()
+    })
+  })
+
+  it('지출 필터 적용 후 빈 상태 시 필터별 메시지를 표시한다', async () => {
+    // 수입만 있는 상태
+    const now = new Date()
+    const pad = (n: number) => String(n).padStart(2, '0')
+    const currentMonthISO = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T12:00:00Z`
+
+    server.use(
+      http.get('/api/expenses', () => HttpResponse.json([])),
+      http.get('/api/income', () =>
+        HttpResponse.json([
+          { id: 201, amount: 3000000, description: '월급', category_id: null, raw_input: null, memo: null, household_id: 1, user_id: null, date: currentMonthISO, created_at: currentMonthISO, updated_at: currentMonthISO },
+        ])
+      ),
+    )
+
+    const user = userEvent.setup()
+    renderPage()
+
+    await waitFor(() => {
+      expect(screen.getByText('월급')).toBeInTheDocument()
+    })
+
+    await user.click(screen.getByText('지출'))
+
+    await waitFor(() => {
+      expect(screen.getByText('지출 내역이 없습니다')).toBeInTheDocument()
+    })
+  })
+
+  it('웰컴 카드가 신규 사용자에게 표시된다', async () => {
+    // 웰컴 카드 dismissed 상태 초기화
+    localStorage.removeItem('podo-welcome-dismissed')
+
+    server.use(
+      http.get('/api/expenses', () => HttpResponse.json([])),
+      http.get('/api/income', () => HttpResponse.json([])),
+    )
+
+    renderPage()
+
+    await waitFor(() => {
+      expect(screen.getByText('시작 가이드')).toBeInTheDocument()
+      expect(screen.getByText('첫 거래를 입력해보세요')).toBeInTheDocument()
+    })
+
+    // cleanup
+    localStorage.removeItem('podo-welcome-dismissed')
+  })
+
+  it('웰컴 카드 닫기 버튼 클릭 시 카드가 사라진다', async () => {
+    localStorage.removeItem('podo-welcome-dismissed')
+
+    server.use(
+      http.get('/api/expenses', () => HttpResponse.json([])),
+      http.get('/api/income', () => HttpResponse.json([])),
+    )
+
+    const user = userEvent.setup()
+    renderPage()
+
+    await waitFor(() => {
+      expect(screen.getByText('시작 가이드')).toBeInTheDocument()
+    })
+
+    await user.click(screen.getByLabelText('시작 가이드 닫기'))
+
+    await waitFor(() => {
+      expect(screen.queryByText('시작 가이드')).not.toBeInTheDocument()
+    })
+
+    // localStorage에 저장 확인
+    expect(localStorage.getItem('podo-welcome-dismissed')).toBe('true')
+
+    // cleanup
+    localStorage.removeItem('podo-welcome-dismissed')
+  })
 })

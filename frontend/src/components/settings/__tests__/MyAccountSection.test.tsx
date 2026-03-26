@@ -404,4 +404,117 @@ describe('MyAccountSection 컴포넌트', () => {
       expect(mockAddToast).toHaveBeenCalledWith('error', '계정 삭제에 실패했습니다. 다시 시도해주세요.')
     })
   })
+
+  // ==================== 비밀번호 변경: 로딩 상태 ====================
+
+  it('비밀번호 변경 중 버튼에 "변경 중..." 텍스트가 표시된다', async () => {
+    // updateUser가 resolve되지 않도록 pending 상태를 유지
+    let resolveUpdate!: (v: { error: null }) => void
+    mockUpdateUser.mockReturnValue(new Promise((resolve) => { resolveUpdate = resolve }))
+
+    const user = userEvent.setup()
+    renderMyAccount()
+    await user.click(screen.getByText('비밀번호 변경'))
+
+    await user.type(screen.getByPlaceholderText('새 비밀번호 (6자 이상)'), 'newpass123')
+    await user.type(screen.getByPlaceholderText('새 비밀번호 확인'), 'newpass123')
+    await user.click(screen.getByText('변경'))
+
+    // 로딩 중 텍스트 확인
+    await waitFor(() => {
+      expect(screen.getByText('변경 중...')).toBeInTheDocument()
+    })
+
+    // cleanup: resolve to avoid act warning
+    resolveUpdate({ error: null })
+  })
+
+  // ==================== 계정 삭제: 잘못된 확인 텍스트 ====================
+
+  it('삭제 확인란에 잘못된 텍스트를 입력하면 삭제 버튼이 비활성화 상태를 유지한다', async () => {
+    const user = userEvent.setup()
+    renderMyAccount()
+    await user.click(screen.getByText('계정 삭제'))
+
+    await user.type(screen.getByPlaceholderText('삭제'), '삭제하겠습니다')
+    const deleteBtn = screen.getByText('계정 영구 삭제')
+    expect(deleteBtn).toBeDisabled()
+  })
+
+  // ==================== 이메일 미등록 ====================
+
+  it('이메일이 없으면 미등록으로 표시한다', () => {
+    authOverrides = { email: null }
+    renderMyAccount()
+    expect(screen.getByText('미등록')).toBeInTheDocument()
+  })
+
+  // ==================== 계정 삭제 후 signOut 호출 ====================
+
+  it('계정 삭제 성공 시 Supabase signOut을 호출한다', async () => {
+    server.use(
+      http.delete('*/api/auth/me', () => HttpResponse.json(null, { status: 200 }))
+    )
+
+    const user = userEvent.setup()
+    renderMyAccount()
+    await user.click(screen.getByText('계정 삭제'))
+
+    await user.type(screen.getByPlaceholderText('삭제'), '삭제')
+    await user.click(screen.getByText('계정 영구 삭제'))
+
+    await waitFor(() => {
+      expect(mockSignOut).toHaveBeenCalled()
+      expect(mockAddToast).toHaveBeenCalledWith('success', '계정이 삭제되었습니다')
+      expect(mockLogout).toHaveBeenCalled()
+    })
+  })
+
+  // ==================== 비밀번호 변경 후 필드 초기화 ====================
+
+  it('비밀번호 변경 성공 후 입력 필드가 초기화된다', async () => {
+    mockUpdateUser.mockResolvedValue({ error: null })
+
+    const user = userEvent.setup()
+    renderMyAccount()
+    await user.click(screen.getByText('비밀번호 변경'))
+
+    await user.type(screen.getByPlaceholderText('새 비밀번호 (6자 이상)'), 'newpassword123')
+    await user.type(screen.getByPlaceholderText('새 비밀번호 확인'), 'newpassword123')
+    await user.click(screen.getByText('변경'))
+
+    // 폼이 닫힌 후 다시 열면 필드가 비어있어야 한다
+    await waitFor(() => {
+      expect(screen.queryByPlaceholderText('새 비밀번호 (6자 이상)')).not.toBeInTheDocument()
+    })
+
+    // 다시 열기
+    await user.click(screen.getByText('비밀번호 변경'))
+    expect(screen.getByPlaceholderText('새 비밀번호 (6자 이상)')).toHaveValue('')
+    expect(screen.getByPlaceholderText('새 비밀번호 확인')).toHaveValue('')
+  })
+
+  // ==================== 비밀번호 변경 취소 시 에러 메시지 초기화 ====================
+
+  it('비밀번호 변경 취소 시 에러 메시지가 사라진다', async () => {
+    const user = userEvent.setup()
+    renderMyAccount()
+    await user.click(screen.getByText('비밀번호 변경'))
+
+    // 불일치로 에러 유발
+    await user.type(screen.getByPlaceholderText('새 비밀번호 (6자 이상)'), 'password123')
+    await user.type(screen.getByPlaceholderText('새 비밀번호 확인'), 'different')
+    await user.click(screen.getByText('변경'))
+
+    await waitFor(() => {
+      expect(screen.getByText('새 비밀번호가 일치하지 않습니다')).toBeInTheDocument()
+    })
+
+    // 취소
+    await user.click(screen.getByText('취소'))
+
+    // 다시 열기 — 에러 메시지 없어야 함
+    await user.click(screen.getByText('비밀번호 변경'))
+    expect(screen.queryByText('새 비밀번호가 일치하지 않습니다')).not.toBeInTheDocument()
+  })
 })
