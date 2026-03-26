@@ -10,9 +10,16 @@ import { useState, useCallback } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../utils/supabase'
 
+type LoginProvider = 'google' | 'email' | 'kakao'
+
+const LAST_LOGIN_KEY = 'podo-last-login-provider'
+
 export default function LoginPage() {
   const navigate = useNavigate()
   const [mode, setMode] = useState<'login' | 'signup' | 'reset'>('login')
+  const [lastProvider] = useState<LoginProvider | null>(
+    () => localStorage.getItem(LAST_LOGIN_KEY) as LoginProvider | null,
+  )
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [name, setName] = useState('')
@@ -55,6 +62,9 @@ export default function LoginPage() {
         if (signInError) throw signInError
       }
 
+      // 로그인/회원가입 성공 → provider 저장
+      localStorage.setItem(LAST_LOGIN_KEY, 'email')
+
       // 로그인 성공 → intended path로 이동
       const intendedPath = sessionStorage.getItem('intended_path') || '/'
       sessionStorage.removeItem('intended_path')
@@ -87,6 +97,8 @@ export default function LoginPage() {
     })
     if (oauthError) {
       setError(oauthError.message || 'Google 로그인에 실패했습니다')
+    } else {
+      localStorage.setItem(LAST_LOGIN_KEY, 'google')
     }
   }, [])
 
@@ -120,6 +132,9 @@ export default function LoginPage() {
             </svg>
             <span className="text-sm font-medium text-[var(--text-primary)]">Google로 계속하기</span>
           </button>
+          {lastProvider === 'google' && (
+            <p className="text-xs text-grape-600 text-center -mt-1">최근에 이 방법으로 로그인했어요</p>
+          )}
 
           {/* 카카오 (비즈앱 승인 후 활성화 #349) */}
           {/* <button className="w-full ...">카카오로 계속하기</button> */}
@@ -224,6 +239,9 @@ export default function LoginPage() {
           >
             {loading ? '처리 중...' : mode === 'login' ? '로그인' : mode === 'signup' ? '회원가입' : '재설정 메일 보내기'}
           </button>
+          {lastProvider === 'email' && mode === 'login' && (
+            <p className="text-xs text-grape-600 text-center -mt-2">최근에 이 방법으로 로그인했어요</p>
+          )}
         </form>
 
         {/* 비밀번호 찾기 (로그인 모드에서만) */}

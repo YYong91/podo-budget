@@ -3,7 +3,7 @@
  * @description 로그인/회원가입 페이지 테스트 — 약관 동의, 인증 플로우, 에러 처리, 모드 전환
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
@@ -54,6 +54,7 @@ describe('LoginPage', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     sessionStorage.clear()
+    localStorage.clear()
   })
 
   describe('기본 렌더링', () => {
@@ -169,7 +170,7 @@ describe('LoginPage', () => {
       await waitFor(() => {
         expect(mockSignInWithPassword).toHaveBeenCalledWith({
           email: 'test@test.com',
-          password: 'password123',
+          password: 'password123',  // pragma: allowlist secret
         })
         expect(mockNavigate).toHaveBeenCalledWith('/', { replace: true })
       })
@@ -417,6 +418,104 @@ describe('LoginPage', () => {
       renderPage()
       switchToReset()
       expect(screen.queryByText('비밀번호를 잊으셨나요?')).not.toBeInTheDocument()
+    })
+  })
+
+  describe('최근 로그인 방법 힌트', () => {
+    afterEach(() => {
+      localStorage.removeItem('podo-last-login-provider')
+    })
+
+    it('이메일 로그인 성공 시 localStorage에 provider를 저장한다', async () => {
+      const user = userEvent.setup()
+      renderPage()
+
+      await user.type(screen.getByLabelText('이메일'), 'test@test.com')
+      await user.type(screen.getByLabelText('비밀번호'), 'password123')
+      await user.click(screen.getByRole('button', { name: '로그인' }))
+
+      await waitFor(() => {
+        expect(localStorage.getItem('podo-last-login-provider')).toBe('email')
+      })
+    })
+
+    it('Google 로그인 성공 시 localStorage에 provider를 저장한다', async () => {
+      const user = userEvent.setup()
+      renderPage()
+
+      await user.click(screen.getByText('Google로 계속하기'))
+
+      await waitFor(() => {
+        expect(localStorage.getItem('podo-last-login-provider')).toBe('google')
+      })
+    })
+
+    it('Google 로그인 실패 시 provider를 저장하지 않는다', async () => {
+      mockSignInWithOAuth.mockResolvedValueOnce({
+        error: { message: 'OAuth 연동 실패' },
+      })
+      const user = userEvent.setup()
+      renderPage()
+
+      await user.click(screen.getByText('Google로 계속하기'))
+
+      await waitFor(() => {
+        expect(screen.getByText('OAuth 연동 실패')).toBeInTheDocument()
+      })
+      expect(localStorage.getItem('podo-last-login-provider')).toBeNull()
+    })
+
+    it('이메일 로그인 실패 시 provider를 저장하지 않는다', async () => {
+      mockSignInWithPassword.mockResolvedValueOnce({
+        error: new Error('Invalid login credentials'),
+      })
+      const user = userEvent.setup()
+      renderPage()
+
+      await user.type(screen.getByLabelText('이메일'), 'test@test.com')
+      await user.type(screen.getByLabelText('비밀번호'), 'wrong')
+      await user.click(screen.getByRole('button', { name: '로그인' }))
+
+      await waitFor(() => {
+        expect(screen.getByText('이메일 또는 비밀번호가 올바르지 않습니다')).toBeInTheDocument()
+      })
+      expect(localStorage.getItem('podo-last-login-provider')).toBeNull()
+    })
+
+    it('localStorage에 provider가 있으면 해당 버튼에 힌트를 표시한다', () => {
+      localStorage.setItem('podo-last-login-provider', 'google')
+      renderPage()
+
+      expect(screen.getByText('최근에 이 방법으로 로그인했어요')).toBeInTheDocument()
+    })
+
+    it('localStorage에 email provider가 있으면 이메일 로그인 버튼에 힌트를 표시한다', () => {
+      localStorage.setItem('podo-last-login-provider', 'email')
+      renderPage()
+
+      expect(screen.getByText('최근에 이 방법으로 로그인했어요')).toBeInTheDocument()
+    })
+
+    it('localStorage에 provider가 없으면 힌트를 표시하지 않는다', () => {
+      renderPage()
+
+      expect(screen.queryByText('최근에 이 방법으로 로그인했어요')).not.toBeInTheDocument()
+    })
+
+    it('회원가입 성공 시에도 email provider를 저장한다', async () => {
+      const user = userEvent.setup()
+      renderPage()
+      switchToSignup()
+
+      await user.type(screen.getByLabelText('이름'), '홍길동')
+      await user.type(screen.getByLabelText('이메일'), 'new@test.com')
+      await user.type(screen.getByLabelText('비밀번호'), 'password123')
+      fireEvent.click(screen.getByRole('checkbox', { name: /이용약관.*개인정보처리방침.*동의/ }))
+      await user.click(screen.getByRole('button', { name: '회원가입' }))
+
+      await waitFor(() => {
+        expect(localStorage.getItem('podo-last-login-provider')).toBe('email')
+      })
     })
   })
 
