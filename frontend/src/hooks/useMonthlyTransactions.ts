@@ -76,9 +76,11 @@ export function useMonthlyTransactions({ activeHouseholdId }: UseMonthlyTransact
     setParams({ month: `${d.getFullYear()}-${pad(d.getMonth() + 1)}` })
   }, [currentYear, currentMonth, setParams])
 
-  // 필터 토글
+  // 필터 토글 — 해제 시 sessionStorage도 클리어 (복원 방지)
   const toggleFilter = useCallback((type: 'expense' | 'income') => {
-    setParams({ filter: filter === type ? null : type })
+    const newFilter = filter === type ? null : type
+    if (!newFilter) sessionStorage.removeItem(FILTER_STORAGE_KEY)
+    setParams({ filter: newFilter })
   }, [filter, setParams])
 
   // 카테고리 로드
