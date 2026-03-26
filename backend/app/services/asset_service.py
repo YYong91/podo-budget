@@ -67,7 +67,7 @@ async def get_assets_with_prices(db: AsyncSession, user: User, household_id: int
 
     assets = await get_assets(db, user, household_id)  # type: ignore[arg-type]
     # 시세 조회 병렬화 — 자산 수만큼 직렬 await → asyncio.gather 동시 실행 (#166)
-    price_infos = await asyncio.gather(*[get_asset_current_value(asset) for asset in assets])
+    price_infos = await asyncio.gather(*[get_asset_current_value(asset, db) for asset in assets])
     results = []
     for asset, price_info in zip(assets, price_infos, strict=False):
         asset_dict = {

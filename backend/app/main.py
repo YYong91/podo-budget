@@ -28,6 +28,7 @@ from app.api import (
     kakao,
     onboarding,
     recurring,
+    stocks,
     telegram,
     webhooks,
 )
@@ -149,6 +150,7 @@ _OPENAPI_TAGS = [
     {"name": "kakao", "description": "카카오 봇 — 카카오 채널 자연어 지출·수입 입력"},
     {"name": "webhooks", "description": "외부 웹훅 — 텔레그램/카카오 이벤트 수신"},
     {"name": "feedback", "description": "사용자 피드백 — 앱 내 피드백 제출"},
+    {"name": "stocks", "description": "종목 검색 — 한국 주식/ETF 종목 한글명·티커 검색 (DB 기반)"},
     {"name": "admin", "description": "관리자 전용 — 사용자 목록, 피드백 관리 (admin 권한 필요)"},
 ]
 
@@ -253,6 +255,7 @@ app.include_router(recurring.router, prefix="/api/recurring", tags=["recurring"]
 app.include_router(assets.router, prefix="/api/assets", tags=["assets"])
 app.include_router(accounts.router, prefix="/api/accounts", tags=["accounts"])
 app.include_router(admin.router, prefix="/api/admin", tags=["admin"])
+app.include_router(stocks.router, prefix="/api/stocks", tags=["stocks"])
 app.include_router(onboarding.router, prefix="/api/onboarding", tags=["onboarding"])
 app.include_router(webhooks.router, prefix="/api/webhooks", tags=["webhooks"])
 
