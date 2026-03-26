@@ -16,7 +16,10 @@
         var d = t === 'dark' || (t !== 'light' && matchMedia('(prefers-color-scheme:dark)').matches)
         if (d) {
           document.documentElement.classList.add('dark')
+          document.documentElement.style.backgroundColor = '#1a1625'
           document.querySelector('meta[name="theme-color"]').content = '#1a1625'
+        } else {
+          document.documentElement.style.backgroundColor = '#fefce8'
         }
       })()
     </script>
