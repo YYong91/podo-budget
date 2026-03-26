@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import CategoryTopList from '../CategoryTopList'
 
 describe('CategoryTopList', () => {
@@ -31,5 +32,24 @@ describe('CategoryTopList', () => {
   it('비율을 퍼센트로 표시한다', () => {
     render(<CategoryTopList categories={mockCategories} />)
     expect(screen.getByText('37.5%')).toBeInTheDocument()
+  })
+
+  it('6개 이상일 때 더보기 버튼을 표시한다', () => {
+    render(<CategoryTopList categories={mockCategories} />)
+    expect(screen.getByText(/더보기/)).toBeInTheDocument()
+  })
+
+  it('더보기 클릭 시 전체 목록을 표시한다', async () => {
+    const user = userEvent.setup()
+    render(<CategoryTopList categories={mockCategories} />)
+
+    await user.click(screen.getByText(/더보기/))
+    expect(screen.getByText('기타')).toBeInTheDocument()
+    expect(screen.getByText(/접기/)).toBeInTheDocument()
+  })
+
+  it('5개 이하이면 더보기 버튼이 없다', () => {
+    render(<CategoryTopList categories={mockCategories.slice(0, 5)} />)
+    expect(screen.queryByText(/더보기/)).not.toBeInTheDocument()
   })
 })

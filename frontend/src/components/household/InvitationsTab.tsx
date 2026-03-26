@@ -21,8 +21,8 @@ interface InvitationsTabProps {
 /** 상태 텍스트 매핑 */
 const STATUS_TEXT: Record<string, string> = {
   pending: '대기 중',
-  accepted: '수락됨',
-  rejected: '거절됨',
+  accepted: '수락 완료',
+  rejected: '거절함',
   expired: '만료됨',
 }
 

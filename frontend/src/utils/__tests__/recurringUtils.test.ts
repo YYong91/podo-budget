@@ -32,7 +32,7 @@ describe('formatFrequency', () => {
     expect(formatFrequency({ frequency: 'custom', interval: 7 })).toBe('7일마다')
   })
 
-  it('알 수 없는 빈도는 그대로 반환', () => {
+  it('알 수 없는 주기는 그대로 반환', () => {
     expect(formatFrequency({ frequency: 'biweekly' })).toBe('biweekly')
   })
 })

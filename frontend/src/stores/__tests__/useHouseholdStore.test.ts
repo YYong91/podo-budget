@@ -465,7 +465,7 @@ describe('useHouseholdStore', () => {
   })
 
   describe('removeMember', () => {
-    it('멤버를 추방하고 상세 정보를 다시 조회한다', async () => {
+    it('멤버를 내보내고 상세 정보를 다시 조회한다', async () => {
       vi.mocked(householdApi.removeMember).mockResolvedValueOnce(
         undefined as unknown as Awaited<ReturnType<typeof householdApi.removeMember>>
       )
@@ -482,16 +482,16 @@ describe('useHouseholdStore', () => {
 
     it('API 오류 시 isMutating=false로 복원하고 예외를 던진다', async () => {
       vi.mocked(householdApi.removeMember).mockRejectedValueOnce(
-        new Error('추방 실패')
+        new Error('내보내기 실패')
       )
 
       await expect(
         useHouseholdStore.getState().removeMember(1, 20)
-      ).rejects.toThrow('추방 실패')
+      ).rejects.toThrow('내보내기 실패')
 
       const state = useHouseholdStore.getState()
       expect(state.isMutating).toBe(false)
-      expect(state.error).toBe('추방 실패')
+      expect(state.error).toBe('내보내기 실패')
     })
   })
 

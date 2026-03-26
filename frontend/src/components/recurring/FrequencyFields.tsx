@@ -1,13 +1,13 @@
 /**
  * @file FrequencyFields.tsx
- * @description 반복 거래 빈도별 조건부 필드 컴포넌트
+ * @description 반복 거래 주기별 조건부 필드 컴포넌트
  * frequency 값에 따라 반복일, 요일, 반복 월, 반복 주기 필드를 표시한다.
  */
 
 type Frequency = 'monthly' | 'weekly' | 'yearly' | 'custom'
 
 interface FrequencyFieldsProps {
-  /** 선택된 빈도 */
+  /** 선택된 주기 */
   frequency: Frequency
   /** 반복일 (monthly, yearly) */
   dayOfMonth: string
@@ -36,9 +36,9 @@ export default function FrequencyFields({
 }: FrequencyFieldsProps) {
   return (
     <>
-      {/* 빈도 선택 */}
+      {/* 주기 선택 */}
       <div>
-        <label htmlFor="reclist-frequency" className="block text-sm font-medium text-[var(--text-secondary)] mb-2">반복 빈도</label>
+        <label htmlFor="reclist-frequency" className="block text-sm font-medium text-[var(--text-secondary)] mb-2">반복 주기</label>
         <select
           id="reclist-frequency"
           value={frequency}

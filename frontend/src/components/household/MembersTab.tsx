@@ -1,7 +1,7 @@
 /**
  * @file MembersTab.tsx
  * @description 가구 멤버 목록 탭 컴포넌트
- * 멤버 테이블, 역할 변경, 추방/탈퇴 기능을 제공한다.
+ * 멤버 테이블, 역할 변경, 내보내기/탈퇴 기능을 제공한다.
  */
 
 import type { HouseholdDetail, HouseholdMember, MemberRole } from '../../types'
@@ -16,7 +16,7 @@ interface MembersTabProps {
   canManageMember: (member: HouseholdMember, currentUserId: number) => boolean
   /** 역할 변경 핸들러 */
   onRoleChange: (userId: number, newRole: MemberRole) => void
-  /** 멤버 추방 핸들러 */
+  /** 멤버 내보내기 핸들러 */
   onRemoveMember: (userId: number, username: string) => void
   /** 가구 탈퇴 핸들러 */
   onLeave: () => void
@@ -106,7 +106,7 @@ export default function MembersTab({
                           }
                           className="text-rose-600 hover:text-rose-700 font-medium"
                         >
-                          추방
+                          내보내기
                         </button>
                       ) : isMe && (member.role !== 'owner' || household.members.length > 1) ? (
                         <button

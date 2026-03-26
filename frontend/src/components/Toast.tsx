@@ -86,7 +86,7 @@ export default function Toast({ id, type, message, duration = 3000, onClose }: T
     <div
       className={`
         ${style.bg} ${style.border} ${style.text}
-        border rounded-xl shadow-lg p-4 mb-3
+        border rounded-xl shadow-lg p-4 mb-3 mx-4 sm:mx-0
         flex items-start gap-3
         animate-slideIn
         max-w-md w-full
@@ -99,7 +99,7 @@ export default function Toast({ id, type, message, duration = 3000, onClose }: T
       </div>
 
       {/* 메시지 */}
-      <p className="flex-1 text-sm font-medium leading-relaxed">{message}</p>
+      <p className="flex-1 text-sm font-medium leading-relaxed break-words">{message}</p>
 
       {/* 닫기 버튼 */}
       <button

@@ -139,18 +139,18 @@ export default function HouseholdDetailPage() {
   }
 
   /**
-   * 멤버 추방 핸들러
+   * 멤버 내보내기 핸들러
    */
   const handleRemoveMember = async (userId: number, username: string) => {
     if (!id) return
-    if (!confirm(`정말 ${username}님을 추방하시겠습니까?`)) return
+    if (!confirm(`정말 ${username}님을 내보내시겠습니까?`)) return
 
     try {
       await removeMember(Number(id), userId)
-      addToast('success', '멤버를 추방했습니다')
+      addToast('success', '멤버를 내보냈습니다')
     } catch (err) {
-      console.error('멤버 추방 실패:', err)
-      addToast('error', '멤버 추방에 실패했습니다')
+      console.error('멤버 내보내기 실패:', err)
+      addToast('error', '멤버 내보내기에 실패했습니다')
     }
   }
 

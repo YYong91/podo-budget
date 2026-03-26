@@ -159,7 +159,7 @@ export default function ExpenseDetail() {
 
   // 카테고리명 조회
   const categoryName =
-    categories.find((c) => c.id === expense.category_id)?.name || '미분류'
+    categories.find((c) => c.id === expense.category_id)?.name || '분류 안 됨'
 
   return (
     <div className="space-y-6">
@@ -278,7 +278,7 @@ export default function ExpenseDetail() {
               }
               className="w-full px-4 py-2 text-lg border border-[var(--input-border)] rounded-xl focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
             >
-              <option value="">미분류</option>
+              <option value="">분류 안 됨</option>
               {categories.map((cat) => (
                 <option key={cat.id} value={cat.id}>
                   {cat.name}

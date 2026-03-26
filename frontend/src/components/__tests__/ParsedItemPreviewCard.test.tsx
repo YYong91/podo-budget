@@ -178,7 +178,7 @@ describe('ParsedItemPreviewCard', () => {
       expect(onUpdate).toHaveBeenCalledWith(0, 'category_id', 1)
     })
 
-    it('카테고리 "미분류"로 변경 시 null을 전달한다', () => {
+    it('카테고리 "분류 안 됨"으로 변경 시 null을 전달한다', () => {
       const onUpdate = vi.fn()
       const itemWithCat = { ...mockItem, category_id: 1 }
       const categories = [{ id: 1, name: '식비', type: 'expense' as const, description: null, sort_order: 1, is_system: true, created_at: '' }]

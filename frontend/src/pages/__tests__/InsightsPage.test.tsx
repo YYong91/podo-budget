@@ -41,10 +41,10 @@ describe('InsightsPage', () => {
     })
   })
 
-  it('AI 심층 분석 버튼이 표시된다', async () => {
+  it('AI 상세 분석 버튼이 표시된다', async () => {
     render(<MemoryRouter><InsightsPage /></MemoryRouter>)
     await waitFor(() => {
-      expect(screen.getByText('AI 심층 분석')).toBeInTheDocument()
+      expect(screen.getByText('AI 상세 분석')).toBeInTheDocument()
     })
     expect(screen.getByText('분석하기')).toBeInTheDocument()
   })
@@ -106,5 +106,29 @@ describe('InsightsPage', () => {
       expect(screen.getByText('문제가 발생했습니다')).toBeInTheDocument()
     })
     expect(screen.getByText('다시 시도')).toBeInTheDocument()
+  })
+
+  it('주목할 점이 카테고리 TOP보다 먼저 표시된다', async () => {
+    render(<MemoryRouter><InsightsPage /></MemoryRouter>)
+    await waitFor(() => {
+      expect(screen.getByText(/이번 달 주목할 점/)).toBeInTheDocument()
+    })
+
+    const highlights = screen.getByText(/이번 달 주목할 점/)
+    const categoryTop = screen.getByText('지출 카테고리 TOP')
+
+    // 주목할 점이 카테고리 TOP보다 DOM에서 먼저 나온다
+    expect(highlights.compareDocumentPosition(categoryTop) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
+  it('예산 상황 섹션에 편집 링크가 표시된다', async () => {
+    render(<MemoryRouter><InsightsPage /></MemoryRouter>)
+    await waitFor(() => {
+      expect(screen.getByTestId('budget-vs-actual')).toBeInTheDocument()
+    })
+
+    const budgetSection = screen.getByTestId('budget-vs-actual')
+    const editLink = budgetSection.querySelector('a[href="/budgets"]')
+    expect(editLink).toBeInTheDocument()
   })
 })

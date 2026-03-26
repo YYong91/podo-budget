@@ -16,6 +16,8 @@ import type { UnifiedTransaction } from './useTransactionSearch'
 
 type FilterType = 'all' | 'expense' | 'income'
 
+const FILTER_STORAGE_KEY = 'podo-transaction-filter'
+
 interface UseMonthlyTransactionsOptions {
   activeHouseholdId: number | null
 }
@@ -34,7 +36,18 @@ export function useMonthlyTransactions({ activeHouseholdId }: UseMonthlyTransact
     return [now.getFullYear(), now.getMonth()]
   }, [monthParam])
 
-  const filter: FilterType = (searchParams.get('filter') as FilterType) || 'all'
+  // 필터: URL → sessionStorage → 'all' 순서로 복원
+  const urlFilter = searchParams.get('filter') as FilterType | null
+  const filter: FilterType = urlFilter || (sessionStorage.getItem(FILTER_STORAGE_KEY) as FilterType) || 'all'
+
+  // 필터 변경 시 sessionStorage에 백업 (상세→목록 복귀 시 복원용)
+  useEffect(() => {
+    if (filter !== 'all') {
+      sessionStorage.setItem(FILTER_STORAGE_KEY, filter)
+    } else {
+      sessionStorage.removeItem(FILTER_STORAGE_KEY)
+    }
+  }, [filter])
 
   // 데이터 상태
   const [expenses, setExpenses] = useState<Expense[]>([])

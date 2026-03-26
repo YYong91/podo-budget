@@ -21,13 +21,13 @@ describe('AssetChangeSummary', () => {
     breakdown: { stock_kr: 28000000, deposit: 49000000, real_estate: 20000000 },
   }
 
-  it('순자산과 변동액을 표시한다', () => {
+  it('순자산과 변화액을 표시한다', () => {
     render(
       <MemoryRouter>
         <AssetChangeSummary summary={mockSummary} previousSnapshot={mockPrevSnapshot} />
       </MemoryRouter>,
     )
-    expect(screen.getByText('자산 변동')).toBeInTheDocument()
+    expect(screen.getByText('자산 변화')).toBeInTheDocument()
     // 순자산 8500만원 표시
     expect(screen.getByText(/8,500만원/)).toBeInTheDocument()
   })
@@ -41,13 +41,13 @@ describe('AssetChangeSummary', () => {
     expect(screen.getByText(/자산을 등록/)).toBeInTheDocument()
   })
 
-  it('previousSnapshot이 없으면 변동률을 표시하지 않는다', () => {
+  it('previousSnapshot이 없으면 변화율을 표시하지 않는다', () => {
     render(
       <MemoryRouter>
         <AssetChangeSummary summary={mockSummary} previousSnapshot={null} />
       </MemoryRouter>,
     )
-    expect(screen.getByText('자산 변동')).toBeInTheDocument()
-    expect(screen.queryByText(/전월 대비/)).not.toBeInTheDocument()
+    expect(screen.getByText('자산 변화')).toBeInTheDocument()
+    expect(screen.queryByText(/지난달 대비/)).not.toBeInTheDocument()
   })
 })

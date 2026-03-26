@@ -350,12 +350,12 @@ describe('AssetDashboard', () => {
     })
   })
 
-  describe('전월 대비 변동', () => {
-    it('스냅샷 2개 이상이면 전월 대비 변동을 표시한다', async () => {
+  describe('지난달 대비 변동', () => {
+    it('스냅샷 2개 이상이면 지난달 대비 변동을 표시한다', async () => {
       renderAssetDashboard()
 
       await waitFor(() => {
-        expect(screen.getByText(/전월 대비/)).toBeInTheDocument()
+        expect(screen.getByText(/지난달 대비/)).toBeInTheDocument()
       })
     })
   })

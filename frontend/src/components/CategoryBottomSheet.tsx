@@ -90,7 +90,7 @@ export default function CategoryBottomSheet({
                   currentCategoryId === null ? activeClass : 'text-[var(--text-secondary)] hover:bg-[var(--surface-hover)]'
                 }`}
               >
-                미분류
+                분류 안 됨
               </button>
               {filteredCategories.map(cat => (
                 <button

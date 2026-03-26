@@ -44,7 +44,7 @@ describe('StructuredInsightsView', () => {
     expect(screen.getByText(/저축률 36%/)).toBeInTheDocument()
   })
 
-  it('면책 조항을 표시한다', () => {
+  it('참고 사항을 표시한다', () => {
     render(<StructuredInsightsView insights={mockInsights} />)
     expect(screen.getByText(/투자 자문이 아닙니다/)).toBeInTheDocument()
   })
