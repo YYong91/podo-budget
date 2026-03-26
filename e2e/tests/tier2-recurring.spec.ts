@@ -54,8 +54,8 @@ test.describe('정기 거래 관리', () => {
     await page.goto('/recurring')
     await page.waitForLoadState('networkidle')
 
-    // 추가 버튼 클릭 — 모달 열기
-    await page.getByRole('button', { name: /추가/ }).click()
+    // 추가 버튼 클릭 — 모달 열기 (헤더 "추가" 버튼 사용, EmptyState에도 버튼이 있을 수 있음)
+    await page.getByRole('button', { name: /추가/ }).first().click()
 
     // 모달이 열릴 때까지 대기
     await expect(page.getByText('반복 거래 추가')).toBeVisible({ timeout: 10000 })

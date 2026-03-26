@@ -37,7 +37,7 @@ async function createBudget(
       category_id: data.category_id,
       amount: data.amount,
       period: 'monthly',
-      start_date: new Date().toISOString(),
+      start_date: new Date().toISOString().split('T')[0],
     },
   })
   if (!res.ok()) {

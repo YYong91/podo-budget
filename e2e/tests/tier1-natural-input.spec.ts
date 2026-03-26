@@ -25,10 +25,10 @@ test.describe('Tier 1: 자연어 지출 입력', () => {
     const analyzeBtn = page.getByRole('button', { name: /분석하기/ })
     await expect(analyzeBtn).toBeVisible({ timeout: 10000 })
 
-    // 분석 요청 → 프리뷰 대기
+    // 분석 요청 → 프리뷰 대기 (chat API 응답을 명시적으로 대기)
     await Promise.all([
       page.waitForResponse(
-        (res) => res.url().includes('/api/') && res.status() < 500,
+        (res) => res.url().includes('/api/chat') && res.status() < 500,
         { timeout: 15000 },
       ),
       analyzeBtn.click(),
@@ -36,10 +36,11 @@ test.describe('Tier 1: 자연어 지출 입력', () => {
 
     // 5. 프리뷰 영역 확인 — 금액 또는 설명이 표시되어야 함
     //    MockLLMProvider는 "8000" 금액을 반환
-    await page.waitForTimeout(2000) // 프리뷰 렌더링 대기
+    //    프리뷰 렌더링 대기 — 상태 업데이트 + 리렌더링 시간 고려
+    await page.waitForTimeout(3000)
 
-    // 프리뷰 저장 버튼: "N건 저장하기"
-    const saveBtn = page.getByRole('button', { name: /저장하기/ })
+    // 프리뷰 저장 버튼: "N건 저장하기" (자연어 프리뷰 모드)
+    const saveBtn = page.getByRole('button', { name: /건 저장하기/ })
     await expect(saveBtn).toBeVisible({ timeout: 15000 })
 
     // 6. 저장 — POST 응답 대기
