@@ -39,7 +39,7 @@ describe('useGoBack', () => {
     expect(mockNavigate).toHaveBeenCalledWith('/settings')
   })
 
-  it('fallback 기본값은 /', () => {
+  it('fallback 기본값은 /home', () => {
     Object.defineProperty(window, 'history', {
       value: { length: 1 },
       writable: true,
@@ -48,6 +48,6 @@ describe('useGoBack', () => {
     const { result } = renderHook(() => useGoBack())
     act(() => result.current())
 
-    expect(mockNavigate).toHaveBeenCalledWith('/')
+    expect(mockNavigate).toHaveBeenCalledWith('/home')
   })
 })

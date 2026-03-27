@@ -38,7 +38,7 @@ vi.mock('../../../contexts/AuthContext', () => ({
   }),
 }))
 
-function renderPage(initialRoute = '/') {
+function renderPage(initialRoute = '/home') {
   return render(
     <MemoryRouter initialEntries={[initialRoute]}>
       <TransactionList />

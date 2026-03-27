@@ -43,7 +43,7 @@ function renderWithToken(token?: string) {
     <MemoryRouter initialEntries={[path]}>
       <Routes>
         <Route path="/invitations/accept" element={<AcceptInvitationPage />} />
-        <Route path="/" element={<div>홈 페이지</div>} />
+        <Route path="/home" element={<div>홈 페이지</div>} />
       </Routes>
     </MemoryRouter>
   )

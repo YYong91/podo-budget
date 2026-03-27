@@ -66,7 +66,7 @@ export default function LoginPage() {
       localStorage.setItem(LAST_LOGIN_KEY, 'email')
 
       // 로그인 성공 → intended path로 이동
-      const intendedPath = sessionStorage.getItem('intended_path') || '/'
+      const intendedPath = sessionStorage.getItem('intended_path') || '/home'
       sessionStorage.removeItem('intended_path')
       navigate(intendedPath, { replace: true })
     } catch (err) {

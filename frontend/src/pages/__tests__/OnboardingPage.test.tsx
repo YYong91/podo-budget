@@ -107,7 +107,7 @@ describe('OnboardingPage', () => {
 
       await waitFor(() => {
         expect(mockAddToast).toHaveBeenCalledWith('success', '가계부를 만들었어요')
-        expect(mockNavigate).toHaveBeenCalledWith('/', { replace: true })
+        expect(mockNavigate).toHaveBeenCalledWith('/home', { replace: true })
       })
     })
 
@@ -171,7 +171,7 @@ describe('OnboardingPage', () => {
       await waitFor(() => {
         expect(mockAcceptInvitation).toHaveBeenCalledWith('invite-token-abc')
         expect(mockAddToast).toHaveBeenCalledWith('success', '부부 가계부에 참여했어요')
-        expect(mockNavigate).toHaveBeenCalledWith('/', { replace: true })
+        expect(mockNavigate).toHaveBeenCalledWith('/home', { replace: true })
       })
     })
 
