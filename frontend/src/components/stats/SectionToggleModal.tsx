@@ -47,7 +47,7 @@ export function saveSectionSettings(settings: SectionVisibility): void {
 // 토글 가능한 섹션 목록 (종합 요약은 제외 — 항상 ON)
 const SECTION_LIST: { key: keyof SectionVisibility; label: string }[] = [
   { key: 'highlights', label: '이달의 주목할 점' },
-  { key: 'categoryTop', label: '지출 카테고리 TOP' },
+  { key: 'categoryTop', label: '지출 카테고리' },
   { key: 'budget', label: '예산 상황' },
   { key: 'cardUsage', label: '카드 실적' },
   { key: 'assets', label: '자산 변화' },

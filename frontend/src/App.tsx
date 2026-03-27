@@ -1,5 +1,5 @@
-import { lazy, Suspense } from 'react'
-import { Routes, Route, Navigate, useSearchParams } from 'react-router-dom'
+import { lazy, Suspense, useEffect, useRef } from 'react'
+import { Routes, Route, Navigate, useSearchParams, useLocation, useNavigationType } from 'react-router-dom'
 import Layout from './components/Layout'
 import ProtectedRoute from './components/ProtectedRoute'
 
@@ -48,9 +48,37 @@ function PageLoading() {
   )
 }
 
+/** 새 페이지 이동 시 스크롤 최상단, 뒤로가기 시 스크롤 복원 (#476) */
+function ScrollToTop() {
+  const { pathname } = useLocation()
+  const navType = useNavigationType()
+  const scrollPositions = useRef<Map<string, number>>(new Map())
+
+  useEffect(() => {
+    if (navType === 'POP') {
+      // 뒤로가기: 저장된 위치로 복원
+      const saved = scrollPositions.current.get(pathname)
+      if (saved != null) {
+        requestAnimationFrame(() => window.scrollTo(0, saved))
+      }
+    } else {
+      // 새 이동(PUSH/REPLACE): 최상단
+      window.scrollTo(0, 0)
+    }
+
+    // 페이지 떠날 때 현재 스크롤 위치 저장
+    return () => {
+      scrollPositions.current.set(pathname, window.scrollY)
+    }
+  }, [pathname, navType])
+
+  return null
+}
+
 function App() {
   return (
     <Suspense fallback={<PageLoading />}>
+      <ScrollToTop />
       <Routes>
         {/* podo-auth SSO 콜백 */}
         <Route path="/login" element={<LoginPage />} />

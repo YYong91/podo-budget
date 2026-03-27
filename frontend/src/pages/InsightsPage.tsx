@@ -23,6 +23,7 @@ import { useHouseholdStore } from '../stores/useHouseholdStore'
 // 컴포넌트
 import PeriodNavigator from '../components/stats/PeriodNavigator'
 import UnifiedSummaryCards from '../components/stats/UnifiedSummaryCards'
+// CategoryPieChart는 CategoryTopList에 탭으로 통합됨
 import CategoryTopList from '../components/stats/CategoryTopList'
 import BudgetVsActual from '../components/stats/BudgetVsActual'
 import CardUsageSummary from '../components/stats/CardUsageSummary'
@@ -346,27 +347,27 @@ export default function InsightsPage() {
             />
           )}
 
-          {/* 3. 지출 카테고리 TOP */}
+          {/* 3. 지출 카테고리 (리스트/그래프 탭 통합) */}
           {sectionVisibility.categoryTop && (
             <CategoryTopList categories={expenseStats?.by_category ?? []} monthStr={monthStr} />
           )}
 
-          {/* 4. 예산 상황 */}
+          {/* 5. 예산 상황 */}
           {sectionVisibility.budget && (
             <BudgetVsActual budgetStats={budgetStats} monthStr={monthStr} />
           )}
 
-          {/* 5. 카드 실적 */}
+          {/* 6. 카드 실적 */}
           {sectionVisibility.cardUsage && cardUsage.length > 0 && (
             <CardUsageSummary usage={cardUsage} />
           )}
 
-          {/* 6. 자산 변화 */}
+          {/* 7. 자산 변화 */}
           {sectionVisibility.assets && (
             <AssetChangeSummary summary={assetSummary} previousSnapshot={prevSnapshot} />
           )}
 
-          {/* 7. AI 상세 분석 */}
+          {/* 8. AI 상세 분석 */}
           {sectionVisibility.ai && (
             <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)]/60 p-4">
               <div className="flex items-center justify-between mb-4">
