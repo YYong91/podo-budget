@@ -37,13 +37,13 @@ vi.mock('../../stores/useHouseholdStore', () => ({
   ),
 }))
 
-function renderWithRouter(initialPath = '/') {
+function renderWithRouter(initialPath = '/home') {
   return render(
     <MemoryRouter initialEntries={[initialPath]}>
       <Routes>
         <Route path="/login" element={<div data-testid="login-page">로그인</div>} />
         <Route element={<ProtectedRoute />}>
-          <Route path="/" element={<div data-testid="home-page">홈</div>} />
+          <Route path="/home" element={<div data-testid="home-page">홈</div>} />
         </Route>
       </Routes>
     </MemoryRouter>
@@ -61,7 +61,7 @@ describe('ProtectedRoute', () => {
     mockAuth.isAuthenticated = false
     mockAuth.loading = false
 
-    renderWithRouter('/')
+    renderWithRouter('/home')
 
     await waitFor(() => {
       expect(screen.getByTestId('login-page')).toBeInTheDocument()
@@ -72,7 +72,7 @@ describe('ProtectedRoute', () => {
     mockAuth.isAuthenticated = true
     mockAuth.loading = false
 
-    renderWithRouter('/')
+    renderWithRouter('/home')
 
     await waitFor(() => {
       expect(screen.getByTestId('home-page')).toBeInTheDocument()
@@ -83,7 +83,7 @@ describe('ProtectedRoute', () => {
     mockAuth.isAuthenticated = false
     mockAuth.loading = true
 
-    renderWithRouter('/')
+    renderWithRouter('/home')
 
     // 로딩 스피너 (포도 로고 이미지)
     expect(screen.getByAltText('포도가계부')).toBeInTheDocument()

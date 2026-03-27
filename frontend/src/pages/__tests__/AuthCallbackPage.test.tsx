@@ -50,7 +50,7 @@ function renderCallbackPage(initialPath = '/auth/callback') {
     <MemoryRouter initialEntries={[initialPath]}>
       <Routes>
         <Route path="/auth/callback" element={<AuthCallbackPage />} />
-        <Route path="/" element={<div data-testid="home">홈</div>} />
+        <Route path="/home" element={<div data-testid="home">홈</div>} />
       </Routes>
     </MemoryRouter>
   )

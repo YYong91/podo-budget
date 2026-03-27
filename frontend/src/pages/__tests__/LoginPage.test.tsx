@@ -172,7 +172,7 @@ describe('LoginPage', () => {
           email: 'test@test.com',
           password: 'password123',  // pragma: allowlist secret
         })
-        expect(mockNavigate).toHaveBeenCalledWith('/', { replace: true })
+        expect(mockNavigate).toHaveBeenCalledWith('/home', { replace: true })
       })
     })
 
@@ -275,7 +275,7 @@ describe('LoginPage', () => {
           password: 'password123',
           options: { data: { name: '홍길동' } },
         })
-        expect(mockNavigate).toHaveBeenCalledWith('/', { replace: true })
+        expect(mockNavigate).toHaveBeenCalledWith('/home', { replace: true })
       })
     })
 

@@ -318,7 +318,7 @@ export default function InsightsPage() {
         <EmptyState
           title="이번 달 거래 내역이 없습니다"
           description="가계부에 수입이나 지출을 기록하면 리포트가 생성됩니다"
-          action={{ label: '가계부로 이동', onClick: () => navigate('/') }}
+          action={{ label: '가계부로 이동', onClick: () => navigate('/home') }}
         />
       )}
 
