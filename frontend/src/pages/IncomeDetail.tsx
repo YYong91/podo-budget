@@ -7,6 +7,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
 import { useToast } from '../hooks/useToast'
+import { TOAST } from '../constants/toastMessages'
 import { incomeApi } from '../api/income'
 import { categoryApi } from '../api/categories'
 import RegisterRecurringModal from '../components/RegisterRecurringModal'
@@ -97,13 +98,13 @@ export default function IncomeDetail() {
       })
       setIncome(updated.data)
       setIsEditing(false)
-      addToast('success', '저장되었습니다')
+      addToast('success', TOAST.SAVED)
     } catch (err: unknown) {
       const status = (err as { response?: { status?: number } })?.response?.status
       if (status === 403) {
-        addToast('error', '이 항목을 수정할 권한이 없습니다')
+        addToast('error', TOAST.NO_PERMISSION)
       } else {
-        addToast('error', '저장에 실패했습니다')
+        addToast('error', TOAST.SAVE_FAILED)
       }
     }
   }
@@ -113,14 +114,14 @@ export default function IncomeDetail() {
 
     try {
       await incomeApi.delete(income.id)
-      addToast('success', '삭제되었습니다')
+      addToast('success', TOAST.DELETED)
       navigate('/income')
     } catch (err: unknown) {
       const status = (err as { response?: { status?: number } })?.response?.status
       if (status === 403) {
-        addToast('error', '이 항목을 삭제할 권한이 없습니다')
+        addToast('error', TOAST.NO_PERMISSION)
       } else {
-        addToast('error', '삭제에 실패했습니다')
+        addToast('error', TOAST.DELETE_FAILED)
       }
     }
   }

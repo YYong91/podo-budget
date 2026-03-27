@@ -5,6 +5,7 @@ import { Search, ChevronLeft, ChevronRight, ToggleLeft, ToggleRight } from 'luci
 import { adminApi } from '../../api/admin'
 import { maskUsername } from '../../utils/format'
 import { useToast } from '../../hooks/useToast'
+import { TOAST } from '../../constants/toastMessages'
 import type { AdminUserItem, AdminUserDetail, AdminUserListResponse } from '../../types'
 
 export default function AdminUserManager() {
@@ -21,7 +22,7 @@ export default function AdminUserManager() {
       const res = await adminApi.getUserList(page, 20, search || undefined)
       setData(res.data)
     } catch {
-      addToast('error', '사용자 목록 로딩에 실패했습니다')
+      addToast('error', TOAST.USER_LOAD_FAILED)
     } finally {
       setLoading(false)
     }
@@ -40,7 +41,7 @@ export default function AdminUserManager() {
       const res = await adminApi.getUserDetail(userId)
       setSelectedUser(res.data)
     } catch {
-      addToast('error', '사용자 정보 로딩에 실패했습니다')
+      addToast('error', TOAST.USER_DETAIL_FAILED)
     }
   }
 
@@ -48,10 +49,10 @@ export default function AdminUserManager() {
     try {
       const res = await adminApi.updateUser(userId, { is_active: !currentActive })
       setSelectedUser(res.data)
-      addToast('success', res.data.is_active ? '사용자가 활성화되었습니다' : '사용자가 비활성화되었습니다')
+      addToast('success', res.data.is_active ? TOAST.USER_ACTIVATED : TOAST.USER_DEACTIVATED)
       fetchUsers()
     } catch {
-      addToast('error', '상태 변경에 실패했습니다')
+      addToast('error', TOAST.PROCESS_FAILED)
     }
   }
 

@@ -335,7 +335,7 @@ describe('HouseholdListPage', () => {
 
       await waitFor(() => {
         expect(mockCreateHousehold).toHaveBeenCalled()
-        expect(mockAddToast).toHaveBeenCalledWith('success', '가구가 생성되었습니다')
+        expect(mockAddToast).toHaveBeenCalledWith('success', '가구를 만들었어요')
         expect(mockNavigate).toHaveBeenCalledWith('/households/99')
       })
     })
@@ -359,7 +359,7 @@ describe('HouseholdListPage', () => {
       await user.click(createBtn)
 
       await waitFor(() => {
-        expect(mockAddToast).toHaveBeenCalledWith('error', '가구 생성에 실패했습니다')
+        expect(mockAddToast).toHaveBeenCalledWith('error', '가구 생성에 실패했어요')
       })
     })
   })
@@ -374,7 +374,7 @@ describe('HouseholdListPage', () => {
 
       renderHouseholdList()
 
-      expect(mockAddToast).toHaveBeenCalledWith('error', '처리에 실패했습니다')
+      expect(mockAddToast).toHaveBeenCalledWith('error', '처리에 실패했어요')
       expect(mockClearError).toHaveBeenCalled()
     })
   })

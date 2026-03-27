@@ -199,7 +199,7 @@ describe('AssetForm', () => {
       await waitFor(() => {
         expect(mockAssetCreate).toHaveBeenCalled()
       })
-      expect(mockAddToast).toHaveBeenCalledWith('success', '자산이 등록되었습니다')
+      expect(mockAddToast).toHaveBeenCalledWith('success', '자산을 저장했어요')
       expect(mockNavigate).toHaveBeenCalledWith('/assets')
     })
 
@@ -293,7 +293,7 @@ describe('AssetForm', () => {
 
       await waitFor(() => {
         expect(mockAssetDelete).toHaveBeenCalledWith(1)
-        expect(mockAddToast).toHaveBeenCalledWith('success', '자산이 삭제되었습니다')
+        expect(mockAddToast).toHaveBeenCalledWith('success', '자산을 삭제했어요')
         expect(mockNavigate).toHaveBeenCalledWith('/assets')
       })
     })
@@ -332,7 +332,7 @@ describe('AssetForm', () => {
         expect(mockAssetUpdate).toHaveBeenCalledWith(1, expect.objectContaining({
           name: '긴급 자금',
         }))
-        expect(mockAddToast).toHaveBeenCalledWith('success', '자산이 수정되었습니다')
+        expect(mockAddToast).toHaveBeenCalledWith('success', '자산을 수정했어요')
       })
     })
 
@@ -348,7 +348,7 @@ describe('AssetForm', () => {
       await user.click(screen.getByRole('button', { name: /수정하기/ }))
 
       await waitFor(() => {
-        expect(mockAddToast).toHaveBeenCalledWith('error', '수정 중 오류가 발생했습니다')
+        expect(mockAddToast).toHaveBeenCalledWith('error', '저장에 실패했어요')
       })
     })
 
@@ -357,7 +357,7 @@ describe('AssetForm', () => {
       renderEditAssetForm(999)
 
       await waitFor(() => {
-        expect(mockAddToast).toHaveBeenCalledWith('error', '자산 정보를 불러오지 못했습니다')
+        expect(mockAddToast).toHaveBeenCalledWith('error', '자산 정보를 불러오지 못했어요')
         expect(mockNavigate).toHaveBeenCalledWith('/assets')
       })
     })
@@ -388,7 +388,7 @@ describe('AssetForm', () => {
 
       await waitFor(() => {
         expect(mockAssetCreate).toHaveBeenCalledTimes(2)
-        expect(mockAddToast).toHaveBeenCalledWith('success', '2개 자산이 등록되었습니다')
+        expect(mockAddToast).toHaveBeenCalledWith('success', '자산을 저장했어요')
         expect(mockNavigate).toHaveBeenCalledWith('/assets')
       })
     })
@@ -403,7 +403,7 @@ describe('AssetForm', () => {
       await user.click(screen.getByRole('button', { name: /분석하기/ }))
 
       await waitFor(() => {
-        expect(mockAddToast).toHaveBeenCalledWith('error', '분석 중 오류가 발생했습니다')
+        expect(mockAddToast).toHaveBeenCalledWith('error', '분석에 실패했어요')
       })
     })
   })
@@ -436,7 +436,7 @@ describe('AssetForm', () => {
       await user.click(screen.getByRole('button', { name: '저장하기' }))
 
       await waitFor(() => {
-        expect(mockAddToast).toHaveBeenCalledWith('error', '저장 중 오류가 발생했습니다')
+        expect(mockAddToast).toHaveBeenCalledWith('error', '저장에 실패했어요')
       })
     })
   })

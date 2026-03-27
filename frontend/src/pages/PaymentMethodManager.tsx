@@ -8,6 +8,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowLeft, CreditCard, Plus, Trash2, Pencil, ChevronUp, ChevronDown } from 'lucide-react'
 import { useToast } from '../hooks/useToast'
+import { TOAST } from '../constants/toastMessages'
 import { useHouseholdStore } from '../stores/useHouseholdStore'
 import { paymentMethodApi } from '../api/paymentMethods'
 import { formatAmount } from '../utils/format'
@@ -72,7 +73,7 @@ export default function PaymentMethodManager() {
       usageRes.data.forEach((u) => map.set(u.id, u))
       setUsageMap(map)
     } catch {
-      addToast('error', '결제수단을 불러오지 못했습니다')
+      addToast('error', TOAST.LOAD_FAILED)
     } finally {
       setLoading(false)
     }
@@ -91,14 +92,14 @@ export default function PaymentMethodManager() {
       try {
         await paymentMethodApi.update(currentDefault.id, { is_default: false })
       } catch {
-        addToast('error', '주 결제수단 변경에 실패했습니다')
+        addToast('error', TOAST.PAYMENT_CHANGE_FAILED)
         return
       }
     }
 
     // "없음" 선택
     if (!newDefaultId) {
-      addToast('info', '주 결제수단을 해제했어요')
+      addToast('info', TOAST.PAYMENT_DEFAULT_UNSET)
       await fetchData()
       return
     }
@@ -109,10 +110,10 @@ export default function PaymentMethodManager() {
 
     try {
       await paymentMethodApi.update(target.id, { is_default: true })
-      addToast('success', `${target.name}을 주 결제수단으로 설정했어요 ✅`)
+      addToast('success', TOAST.PAYMENT_DEFAULT_SET(target.name))
       await fetchData()
     } catch {
-      addToast('error', '주 결제수단 변경에 실패했습니다')
+      addToast('error', TOAST.PAYMENT_CHANGE_FAILED)
     }
   }, [methods, fetchData, addToast])
 
@@ -130,7 +131,7 @@ export default function PaymentMethodManager() {
         monthly_target: formTarget ? Number(formTarget) : null,
         is_default: false,
       })
-      addToast('success', `"${formName.trim()}" 결제수단이 추가되었습니다`)
+      addToast('success', TOAST.PAYMENT_ADDED)
       setShowForm(false)
       setFormName('')
       setFormType('credit_card')
@@ -138,7 +139,7 @@ export default function PaymentMethodManager() {
       setShowDetailSettings(false)
       await fetchData()
     } catch {
-      addToast('error', '결제수단 추가에 실패했습니다')
+      addToast('error', TOAST.SAVE_FAILED)
     } finally {
       setSaving(false)
     }
@@ -148,10 +149,10 @@ export default function PaymentMethodManager() {
   const handleDelete = useCallback(async (method: PaymentMethod) => {
     try {
       await paymentMethodApi.delete(method.id)
-      addToast('success', `"${method.name}" 결제수단이 삭제되었습니다`)
+      addToast('success', TOAST.PAYMENT_DELETED)
       await fetchData()
     } catch {
-      addToast('error', '결제수단 삭제에 실패했습니다')
+      addToast('error', TOAST.DELETE_FAILED)
     }
   }, [fetchData, addToast])
 
@@ -167,7 +168,7 @@ export default function PaymentMethodManager() {
     try {
       await paymentMethodApi.reorder(newMethods.map((m) => m.id))
     } catch {
-      addToast('error', '순서 변경에 실패했습니다')
+      addToast('error', TOAST.ORDER_CHANGE_FAILED)
       await fetchData()
     }
   }, [methods, fetchData, addToast])
@@ -190,11 +191,11 @@ export default function PaymentMethodManager() {
         type: editType,
         monthly_target: editTarget ? Number(editTarget) : null,
       })
-      addToast('success', `"${editName.trim()}" 결제수단이 수정되었습니다`)
+      addToast('success', TOAST.PAYMENT_UPDATED)
       setEditingMethod(null)
       await fetchData()
     } catch {
-      addToast('error', '결제수단 수정에 실패했습니다')
+      addToast('error', TOAST.SAVE_FAILED)
     } finally {
       setEditSaving(false)
     }

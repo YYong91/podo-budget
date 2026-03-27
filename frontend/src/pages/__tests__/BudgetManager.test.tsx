@@ -289,7 +289,7 @@ describe('BudgetManager', () => {
       await waitFor(() => {
         expect(postCalled).toBe(true)
       })
-      expect(mockAddToast).toHaveBeenCalledWith('success', '예산이 저장되었습니다')
+      expect(mockAddToast).toHaveBeenCalledWith('success', '예산을 저장했어요')
     })
 
     it('기존 예산 수정 시 PUT API를 호출한다', async () => {
@@ -330,7 +330,7 @@ describe('BudgetManager', () => {
       await waitFor(() => {
         expect(putCalled).toBe(true)
       })
-      expect(mockAddToast).toHaveBeenCalledWith('success', '예산이 저장되었습니다')
+      expect(mockAddToast).toHaveBeenCalledWith('success', '예산을 저장했어요')
     })
 
     it('입력을 비우고 저장하면 기존 예산을 삭제한다', async () => {
@@ -360,7 +360,7 @@ describe('BudgetManager', () => {
       await waitFor(() => {
         expect(deleteCalled).toBe(true)
       })
-      expect(mockAddToast).toHaveBeenCalledWith('success', '예산이 삭제되었습니다')
+      expect(mockAddToast).toHaveBeenCalledWith('success', '예산을 삭제했어요')
     })
   })
 

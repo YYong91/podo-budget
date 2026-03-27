@@ -270,7 +270,7 @@ describe('InvitationListPage', () => {
       await user.click(screen.getByRole('button', { name: '수락' }))
 
       await waitFor(() => {
-        expect(mockAddToast).toHaveBeenCalledWith('success', '테스트 가구 가구에 가입했습니다')
+        expect(mockAddToast).toHaveBeenCalledWith('success', '테스트 가구에 참여했어요')
       })
     })
   })

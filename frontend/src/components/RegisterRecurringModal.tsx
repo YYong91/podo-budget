@@ -7,6 +7,7 @@
 import { useState } from 'react'
 import { X } from 'lucide-react'
 import { useToast } from '../hooks/useToast'
+import { TOAST } from '../constants/toastMessages'
 import { recurringApi } from '../api/recurring'
 import { useHouseholdStore } from '../stores/useHouseholdStore'
 import type { Category, RecurringTransactionCreate } from '../types'
@@ -85,10 +86,10 @@ export default function RegisterRecurringModal({
         payload.interval = Number(formData.interval)
       }
       await recurringApi.create(payload)
-      addToast('success', '반복 거래로 등록되었습니다')
+      addToast('success', TOAST.RECURRING_ADDED)
       onSuccess()
     } catch {
-      addToast('error', '등록에 실패했습니다')
+      addToast('error', TOAST.SAVE_FAILED)
     } finally {
       setSubmitting(false)
     }

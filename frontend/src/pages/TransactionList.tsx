@@ -10,6 +10,7 @@ import { expenseApi } from '../api/expenses'
 import { incomeApi } from '../api/income'
 import { useHouseholdStore } from '../stores/useHouseholdStore'
 import { useToast } from '../hooks/useToast'
+import { TOAST } from '../constants/toastMessages'
 import CategoryBottomSheet from '../components/CategoryBottomSheet'
 import PullToRefresh from '../components/PullToRefresh'
 import ErrorState from '../components/ErrorState'
@@ -135,7 +136,7 @@ export default function TransactionList() {
       }
       setSheetOpen(false)
     } catch {
-      addToast('error', '카테고리 변경에 실패했습니다')
+      addToast('error', TOAST.CATEGORY_CHANGE_FAILED)
     } finally {
       setSheetSaving(false)
     }

@@ -49,6 +49,14 @@
     to { transform: translateX(0); opacity: 1; }
   }
 
+  /* 토스트 전용: 하단에서 위로 등장 */
+  --animate-toastIn: toastIn 0.3s ease-out;
+
+  @keyframes toastIn {
+    from { transform: translateY(16px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+
   @keyframes grape-pop {
     0% { transform: scale(0); opacity: 0; }
     60% { transform: scale(1.2); }

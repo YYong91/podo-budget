@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { MessageSquare, Bug, Lightbulb } from 'lucide-react'
 import { feedbackApi } from '../../api/feedback'
 import { useToast } from '../../hooks/useToast'
+import { TOAST } from '../../constants/toastMessages'
 import type { Feedback, FeedbackSource, FeedbackStatus, FeedbackType } from '../../types'
 
 const STATUS_META: Record<string, { label: string; color: string }> = {
@@ -36,7 +37,7 @@ export default function AdminFeedbackDashboard() {
       const res = await feedbackApi.getAll()
       setFeedbacks(res.data)
     } catch {
-      addToast('error', '피드백 로딩에 실패했습니다')
+      addToast('error', TOAST.FEEDBACK_LOAD_FAILED)
     } finally {
       setLoading(false)
     }
@@ -48,9 +49,9 @@ export default function AdminFeedbackDashboard() {
     try {
       const res = await feedbackApi.updateStatus(id, newStatus)
       setFeedbacks(prev => prev.map(f => f.id === id ? res.data : f))
-      addToast('success', '상태가 변경되었습니다')
+      addToast('success', TOAST.FEEDBACK_STATUS_CHANGED)
     } catch {
-      addToast('error', '상태 변경에 실패했습니다')
+      addToast('error', TOAST.FEEDBACK_STATUS_FAILED)
     }
   }
 

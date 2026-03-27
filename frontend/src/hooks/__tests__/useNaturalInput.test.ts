@@ -207,7 +207,7 @@ describe('useNaturalInput', () => {
         await result.current.handlePreview({ preventDefault: vi.fn() } as unknown as React.FormEvent)
       })
 
-      expect(mockAddToast).toHaveBeenCalledWith('error', '파싱에 실패했습니다')
+      expect(mockAddToast).toHaveBeenCalledWith('error', '분석에 실패했어요')
     })
   })
 
@@ -409,7 +409,7 @@ describe('useNaturalInput', () => {
       })
 
       expect(createCalled).toBe(true)
-      expect(mockAddToast).toHaveBeenCalledWith('success', '거래가 저장되었습니다')
+      expect(mockAddToast).toHaveBeenCalledWith('success', '저장했어요')
       expect(result.current.previewItems).toBeNull()
       expect(result.current.naturalInput).toBe('')
     })
@@ -483,7 +483,7 @@ describe('useNaturalInput', () => {
         await result.current.handleConfirmSave()
       })
 
-      expect(mockAddToast).toHaveBeenCalledWith('error', '저장에 실패했습니다')
+      expect(mockAddToast).toHaveBeenCalledWith('error', '저장에 실패했어요')
     })
   })
 
@@ -529,7 +529,7 @@ describe('useNaturalInput', () => {
       })
 
       expect(incomeCreateCalled).toBe(true)
-      expect(mockAddToast).toHaveBeenCalledWith('success', '수입이 저장되었습니다')
+      expect(mockAddToast).toHaveBeenCalledWith('success', '저장했어요')
     })
   })
 
@@ -582,7 +582,7 @@ describe('useNaturalInput', () => {
       expect(result.current.previewItems![0].category_id).toBe(99)
       expect(result.current.showNewCategoryFor).toBeNull()
       expect(result.current.newCategoryName).toBe('')
-      expect(mockAddToast).toHaveBeenCalledWith('success', '"외식" 카테고리가 추가되었습니다')
+      expect(mockAddToast).toHaveBeenCalledWith('success', '카테고리를 추가했어요')
     })
 
     it('빈 이름이면 아무 일도 하지 않는다', async () => {

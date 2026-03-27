@@ -216,7 +216,7 @@ describe('ExpenseDetail', () => {
       await user.click(saveButton)
 
       await waitFor(() => {
-        expect(mockAddToast).toHaveBeenCalledWith('success', '저장되었습니다')
+        expect(mockAddToast).toHaveBeenCalledWith('success', '저장했어요')
       })
     })
 
@@ -311,7 +311,7 @@ describe('ExpenseDetail', () => {
       await user.click(modalDeleteButton)
 
       await waitFor(() => {
-        expect(mockAddToast).toHaveBeenCalledWith('success', '삭제되었습니다')
+        expect(mockAddToast).toHaveBeenCalledWith('success', '삭제했어요')
         expect(screen.getByText('지출 목록 페이지')).toBeInTheDocument()
       })
     })
@@ -382,7 +382,7 @@ describe('ExpenseDetail', () => {
       await user.click(submitBtn)
 
       await waitFor(() => {
-        expect(mockAddToast).toHaveBeenCalledWith('success', '반복 거래로 등록되었습니다')
+        expect(mockAddToast).toHaveBeenCalledWith('success', '정기 거래를 등록했어요')
       })
     })
   })
@@ -428,7 +428,7 @@ describe('ExpenseDetail', () => {
       await user.click(saveButton)
 
       await waitFor(() => {
-        expect(mockAddToast).toHaveBeenCalledWith('error', '이 항목을 수정할 권한이 없습니다')
+        expect(mockAddToast).toHaveBeenCalledWith('error', '권한이 없어요')
       })
     })
   })

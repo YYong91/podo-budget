@@ -17,6 +17,7 @@ import { formatAmount } from '../../utils/format'
 import { formatDateHeader } from '../../utils/calendar'
 import { recurringApi } from '../../api/recurring'
 import { useToast } from '../../hooks/useToast'
+import { TOAST } from '../../constants/toastMessages'
 import type { useMonthlyTransactions } from '../../hooks/useMonthlyTransactions'
 
 interface MonthlyViewProps {
@@ -125,11 +126,11 @@ export default function MonthlyView({
         onExecute={async (id) => {
           try {
             await recurringApi.execute(id)
-            addToast('success', '거래가 등록되었습니다')
+            addToast('success', TOAST.RECURRING_EXECUTED)
             monthly.setPendingRecurring((prev) => prev.filter((r) => r.id !== id))
             monthly.fetchData()
           } catch {
-            addToast('error', '반복 거래 등록에 실패했습니다')
+            addToast('error', TOAST.RECURRING_EXECUTE_FAILED)
           }
         }}
         onSkip={async (id) => {
@@ -138,7 +139,7 @@ export default function MonthlyView({
             addToast('success', `다음 예정일: ${res.data.next_due_date}`)
             monthly.setPendingRecurring((prev) => prev.filter((r) => r.id !== id))
           } catch {
-            addToast('error', '건너뛰기에 실패했습니다')
+            addToast('error', TOAST.RECURRING_SKIP_FAILED)
           }
         }}
       />

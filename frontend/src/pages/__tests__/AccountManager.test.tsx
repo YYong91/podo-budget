@@ -162,7 +162,7 @@ describe('AccountManager', () => {
       await waitFor(() => {
         expect(mockCreate).toHaveBeenCalledWith({ name: '새 증권 계좌', type: 'brokerage' })
       })
-      expect(mockAddToast).toHaveBeenCalledWith('success', '계좌가 등록되었습니다')
+      expect(mockAddToast).toHaveBeenCalledWith('success', '계좌를 등록했어요')
     })
 
     it('취소 버튼 클릭 시 폼을 닫는다', async () => {
@@ -197,7 +197,7 @@ describe('AccountManager', () => {
         await waitFor(() => {
           expect(mockDelete).toHaveBeenCalledWith(1)
         })
-        expect(mockAddToast).toHaveBeenCalledWith('success', '계좌가 삭제되었습니다')
+        expect(mockAddToast).toHaveBeenCalledWith('success', '계좌를 삭제했어요')
       }
     })
   })

@@ -168,7 +168,7 @@ describe('CategoryManager', () => {
       await user.click(saveButton)
 
       await waitFor(() => {
-        expect(mockAddToast).toHaveBeenCalledWith('success', '카테고리가 추가되었습니다')
+        expect(mockAddToast).toHaveBeenCalledWith('success', '카테고리를 추가했어요')
       })
     })
 
@@ -264,7 +264,7 @@ describe('CategoryManager', () => {
       await user.click(saveButton)
 
       await waitFor(() => {
-        expect(mockAddToast).toHaveBeenCalledWith('success', '카테고리가 수정되었습니다')
+        expect(mockAddToast).toHaveBeenCalledWith('success', '카테고리를 수정했어요')
       })
     })
 
@@ -355,7 +355,7 @@ describe('CategoryManager', () => {
       await user.click(modalDeleteButton)
 
       await waitFor(() => {
-        expect(mockAddToast).toHaveBeenCalledWith('success', '카테고리가 삭제되었습니다')
+        expect(mockAddToast).toHaveBeenCalledWith('success', '카테고리를 삭제했어요')
       })
     })
   })
@@ -402,7 +402,7 @@ describe('CategoryManager', () => {
 
       await waitFor(() => {
         expect(screen.getByText('문제가 발생했습니다')).toBeInTheDocument()
-        expect(mockAddToast).toHaveBeenCalledWith('error', '카테고리 목록 로딩에 실패했습니다')
+        expect(mockAddToast).toHaveBeenCalledWith('error', '불러오지 못했어요')
       })
     })
   })
@@ -434,7 +434,7 @@ describe('CategoryManager', () => {
       await user.click(modalDeleteButton)
 
       await waitFor(() => {
-        expect(mockAddToast).toHaveBeenCalledWith('error', '카테고리 삭제에 실패했습니다')
+        expect(mockAddToast).toHaveBeenCalledWith('error', '삭제에 실패했어요')
       })
     })
   })
@@ -583,7 +583,7 @@ describe('CategoryManager', () => {
       await user.click(screen.getByRole('button', { name: '저장' }))
 
       await waitFor(() => {
-        expect(mockAddToast).toHaveBeenCalledWith('error', '카테고리 추가에 실패했습니다')
+        expect(mockAddToast).toHaveBeenCalledWith('error', '저장에 실패했어요')
       })
     })
   })
@@ -618,7 +618,7 @@ describe('CategoryManager', () => {
       await user.click(screen.getByRole('button', { name: '저장' }))
 
       await waitFor(() => {
-        expect(mockAddToast).toHaveBeenCalledWith('error', '카테고리 수정에 실패했습니다')
+        expect(mockAddToast).toHaveBeenCalledWith('error', '저장에 실패했어요')
       })
     })
   })

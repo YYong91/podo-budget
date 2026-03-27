@@ -9,6 +9,7 @@ import { useNavigate } from 'react-router-dom'
 import { Sparkles, Settings } from 'lucide-react'
 import ErrorState from '../components/ErrorState'
 import { useToast } from '../hooks/useToast'
+import { TOAST } from '../constants/toastMessages'
 import EmptyState from '../components/EmptyState'
 
 // API
@@ -197,7 +198,7 @@ export default function InsightsPage() {
   // AI 분석 생성
   const handleGenerateAI = useCallback(async () => {
     if (!expenseStats && !incomeStats) {
-      addToast('error', '분석할 데이터가 없습니다')
+      addToast('error', TOAST.AI_NO_DATA)
       return
     }
 
@@ -252,9 +253,9 @@ export default function InsightsPage() {
       const result = await insightsApi.generateComprehensive(requestData)
       setStructuredInsights(result.insights)
       trackEvent('ai_analysis_requested')
-      addToast('success', 'AI 분석이 완료되었습니다')
+      addToast('success', TOAST.AI_ANALYSIS_COMPLETE)
     } catch {
-      addToast('error', 'AI 분석 생성에 실패했습니다')
+      addToast('error', TOAST.AI_ANALYSIS_FAILED)
     } finally {
       setAiLoading(false)
     }
