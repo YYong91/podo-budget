@@ -14,15 +14,29 @@ describe('CategoryTopList', () => {
     { category: '기타', amount: 100000, count: 5, percentage: 3.1 },
   ]
 
-  it('상위 5개 카테고리를 표시한다', () => {
+  /** 리스트 뷰 탭으로 전환하는 헬퍼 */
+  async function switchToListView() {
+    const user = userEvent.setup()
+    await user.click(screen.getByRole('button', { name: '리스트 보기' }))
+    return user
+  }
+
+  it('기본 뷰는 그래프 모드이다', () => {
     render(<MemoryRouter><CategoryTopList categories={mockCategories} /></MemoryRouter>)
+    // 그래프 모드에서는 범례에 카테고리가 표시됨
+    expect(screen.getByText('식비')).toBeInTheDocument()
+    // 리스트 모드의 더보기 버튼은 없어야 함
+    expect(screen.queryByText(/더보기/)).not.toBeInTheDocument()
+  })
+
+  it('리스트 뷰에서 상위 5개 카테고리를 표시한다', async () => {
+    render(<MemoryRouter><CategoryTopList categories={mockCategories} /></MemoryRouter>)
+    await switchToListView()
     expect(screen.getByText('식비')).toBeInTheDocument()
     expect(screen.getByText('주거')).toBeInTheDocument()
     expect(screen.getByText('교통')).toBeInTheDocument()
     expect(screen.getByText('쇼핑')).toBeInTheDocument()
     expect(screen.getByText('통신')).toBeInTheDocument()
-    // 6번째는 표시 안 됨
-    expect(screen.queryByText('기타')).not.toBeInTheDocument()
   })
 
   it('빈 배열이면 null을 반환한다', () => {
@@ -30,32 +44,36 @@ describe('CategoryTopList', () => {
     expect(container.firstChild).toBeNull()
   })
 
-  it('비율을 퍼센트로 표시한다', () => {
+  it('리스트 뷰에서 비율을 퍼센트로 표시한다', async () => {
     render(<MemoryRouter><CategoryTopList categories={mockCategories} /></MemoryRouter>)
+    await switchToListView()
     expect(screen.getByText('37.5%')).toBeInTheDocument()
   })
 
-  it('6개 이상일 때 더보기 버튼을 표시한다', () => {
+  it('리스트 뷰에서 6개 이상일 때 더보기 버튼을 표시한다', async () => {
     render(<MemoryRouter><CategoryTopList categories={mockCategories} /></MemoryRouter>)
+    await switchToListView()
     expect(screen.getByText(/더보기/)).toBeInTheDocument()
   })
 
-  it('더보기 클릭 시 전체 목록을 표시한다', async () => {
-    const user = userEvent.setup()
+  it('리스트 뷰에서 더보기 클릭 시 전체 목록을 표시한다', async () => {
     render(<MemoryRouter><CategoryTopList categories={mockCategories} /></MemoryRouter>)
+    const user = await switchToListView()
 
     await user.click(screen.getByText(/더보기/))
     expect(screen.getByText('기타')).toBeInTheDocument()
     expect(screen.getByText(/접기/)).toBeInTheDocument()
   })
 
-  it('5개 이하이면 더보기 버튼이 없다', () => {
+  it('리스트 뷰에서 5개 이하이면 더보기 버튼이 없다', async () => {
     render(<MemoryRouter><CategoryTopList categories={mockCategories.slice(0, 5)} /></MemoryRouter>)
+    await switchToListView()
     expect(screen.queryByText(/더보기/)).not.toBeInTheDocument()
   })
 
-  it('카테고리 클릭 시 해당 카테고리 필터 목록으로 이동한다', () => {
+  it('리스트 뷰에서 카테고리 클릭 시 해당 카테고리 필터 목록으로 이동한다', async () => {
     render(<MemoryRouter><CategoryTopList categories={mockCategories} monthStr="2026-03" /></MemoryRouter>)
+    await switchToListView()
     const link = screen.getByText('식비').closest('a')
     expect(link).toHaveAttribute('href', '/?month=2026-03&category=식비')
   })

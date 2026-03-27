@@ -29,7 +29,7 @@ type InputMode = 'natural' | 'form' | 'ocr'
 const TYPE_CONFIG = {
   expense: {
     color: 'grape',
-    listRoute: '/expenses',
+    listRoute: '/',
     naturalLabel: '말하듯이 지출 입력하기',
     naturalPlaceholder: '예: 오늘 점심에 김치찌개 8000원 먹었어\n어제 스타벅스에서 아메리카노 4500원',
     naturalHint: '날짜, 내용, 금액을 편하게 입력하면 AI가 자동으로 분석합니다. 결과를 확인한 뒤 저장됩니다.',
@@ -42,7 +42,7 @@ const TYPE_CONFIG = {
   },
   income: {
     color: 'leaf',
-    listRoute: '/income',
+    listRoute: '/',
     naturalLabel: '말하듯이 수입 입력하기',
     naturalPlaceholder: '예: 이번 달 월급 350만원 들어왔어\n부업으로 50만원 받았어',
     naturalHint: '수입 내용을 편하게 입력하면 AI가 자동으로 분석합니다. 결과를 확인한 뒤 저장됩니다.',
@@ -391,6 +391,7 @@ export default function TransactionForm({ type }: TransactionFormProps) {
               onSetShowNewCategory={ni.setShowNewCategoryFor}
               onSetNewCategoryName={ni.setNewCategoryName}
               onCreateCategory={ni.handleCreateCategory}
+              paymentMethods={paymentMethods}
             />
           ))}
 
@@ -444,6 +445,7 @@ export default function TransactionForm({ type }: TransactionFormProps) {
               onSetShowNewCategory={ni.setShowNewCategoryFor}
               onSetNewCategoryName={ni.setNewCategoryName}
               onCreateCategory={ni.handleCreateCategory}
+              paymentMethods={paymentMethods}
             />
           ))}
 

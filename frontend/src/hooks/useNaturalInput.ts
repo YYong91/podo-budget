@@ -29,14 +29,14 @@ export interface EditableItem extends ParsedExpenseItem {
 const CONFIG = {
   expense: {
     categoryFilter: { type: 'expense' as const },
-    listRoute: '/expenses',
+    listRoute: '/',
     eventPrefix: 'expense',
     successMessage: TOAST.SAVED,
     noParseMessage: '지출 정보를 인식하지 못했습니다',
   },
   income: {
     categoryFilter: undefined, // 전체 불러온 뒤 income/both 필터
-    listRoute: '/income',
+    listRoute: '/',
     eventPrefix: 'income',
     successMessage: TOAST.SAVED,
     noParseMessage: '수입 정보를 인식하지 못했습니다',

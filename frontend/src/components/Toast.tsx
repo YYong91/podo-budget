@@ -58,6 +58,7 @@ export default function Toast({ id, type, message, duration = 3000, onClose }: T
     <div
       className={`
         bg-[#1a1625]/90 backdrop-blur-sm
+        border border-transparent dark:border-white/20
         rounded-full px-5 py-3
         flex items-center gap-2
         animate-toastIn

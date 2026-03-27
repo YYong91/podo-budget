@@ -50,11 +50,11 @@ describe('TransactionForm', () => {
   })
 
   describe('type="expense" 기본 렌더링', () => {
-    it('뒤로가기 링크가 /expenses로 설정된다', async () => {
+    it('뒤로가기 링크가 /로 설정된다', async () => {
       renderForm('expense')
       await waitFor(() => {
         const backLink = screen.getByRole('link')
-        expect(backLink).toHaveAttribute('href', '/expenses')
+        expect(backLink).toHaveAttribute('href', '/')
       })
     })
 
@@ -91,11 +91,11 @@ describe('TransactionForm', () => {
       )
     })
 
-    it('뒤로가기 링크가 /income으로 설정된다', async () => {
+    it('뒤로가기 링크가 /로 설정된다', async () => {
       renderForm('income')
       await waitFor(() => {
         const backLink = screen.getByRole('link')
-        expect(backLink).toHaveAttribute('href', '/income')
+        expect(backLink).toHaveAttribute('href', '/')
       })
     })
 
@@ -603,16 +603,16 @@ describe('TransactionForm', () => {
   })
 
   describe('취소 버튼 라우팅', () => {
-    it('expense: 취소 클릭 시 /expenses로 이동', async () => {
+    it('expense: 취소 클릭 시 /로 이동', async () => {
       const user = userEvent.setup()
       renderForm('expense')
       await user.click(screen.getByText('직접 입력'))
       await waitFor(() => expect(screen.getByText('취소')).toBeInTheDocument())
       await user.click(screen.getByText('취소'))
-      expect(mockNavigate).toHaveBeenCalledWith('/expenses')
+      expect(mockNavigate).toHaveBeenCalledWith('/')
     })
 
-    it('income: 취소 클릭 시 /income으로 이동', async () => {
+    it('income: 취소 클릭 시 /로 이동', async () => {
       server.use(
         http.get('/api/categories', () => {
           return HttpResponse.json(mockIncomeCategoriesAll)
@@ -623,7 +623,7 @@ describe('TransactionForm', () => {
       await user.click(screen.getByText('직접 입력'))
       await waitFor(() => expect(screen.getByText('취소')).toBeInTheDocument())
       await user.click(screen.getByText('취소'))
-      expect(mockNavigate).toHaveBeenCalledWith('/income')
+      expect(mockNavigate).toHaveBeenCalledWith('/')
     })
   })
 })
