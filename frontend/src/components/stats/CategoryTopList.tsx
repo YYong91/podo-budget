@@ -40,7 +40,7 @@ function ChartTooltip({ active, payload }: { active?: boolean; payload?: Array<{
 
 export default function CategoryTopList({ categories, maxItems = 5, monthStr }: CategoryTopListProps) {
   const [expanded, setExpanded] = useState(false)
-  const [viewMode, setViewMode] = useState<ViewMode>('list')
+  const [viewMode, setViewMode] = useState<ViewMode>('chart')
 
   if (categories.length === 0) return null
 

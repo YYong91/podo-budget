@@ -54,11 +54,11 @@ describe('ExpenseForm', () => {
   })
 
   describe('기본 렌더링', () => {
-    it('목록으로 돌아가는 링크가 /expenses로 이동한다', async () => {
+    it('목록으로 돌아가는 링크가 /로 이동한다', async () => {
       renderExpenseForm()
       await waitFor(() => {
         const backLink = screen.getByRole('link')
-        expect(backLink).toHaveAttribute('href', '/expenses')
+        expect(backLink).toHaveAttribute('href', '/')
       })
     })
 
@@ -215,7 +215,7 @@ describe('ExpenseForm', () => {
       })
     })
 
-    it('취소 버튼 클릭 시 /expenses로 이동한다', async () => {
+    it('취소 버튼 클릭 시 /로 이동한다', async () => {
       const user = userEvent.setup()
       renderExpenseForm()
 
@@ -223,7 +223,7 @@ describe('ExpenseForm', () => {
       await waitFor(() => expect(screen.getByText('취소')).toBeInTheDocument())
 
       await user.click(screen.getByText('취소'))
-      expect(mockNavigate).toHaveBeenCalledWith('/expenses')
+      expect(mockNavigate).toHaveBeenCalledWith('/')
     })
   })
 

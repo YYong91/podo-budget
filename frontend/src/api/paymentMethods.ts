@@ -45,5 +45,5 @@ export const paymentMethodApi = {
 
   /** 결제수단 순서 변경 */
   reorder: (ids: number[]) =>
-    apiClient.put('/payment-methods/reorder', { ids }),
+    apiClient.post('/payment-methods/reorder', { payment_method_ids: ids }),
 }

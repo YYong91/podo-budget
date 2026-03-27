@@ -63,11 +63,11 @@ describe('IncomeForm', () => {
       })
     })
 
-    it('뒤로가기 링크가 /income으로 이동한다', async () => {
+    it('뒤로가기 링크가 /로 이동한다', async () => {
       renderIncomeForm()
       await waitFor(() => {
         const backLink = screen.getByRole('link')
-        expect(backLink).toHaveAttribute('href', '/income')
+        expect(backLink).toHaveAttribute('href', '/')
       })
     })
   })
@@ -163,7 +163,7 @@ describe('IncomeForm', () => {
       })
     })
 
-    it('취소 버튼 클릭 시 /income으로 이동한다', async () => {
+    it('취소 버튼 클릭 시 /로 이동한다', async () => {
       const user = userEvent.setup()
       renderIncomeForm()
 
@@ -171,7 +171,7 @@ describe('IncomeForm', () => {
       await waitFor(() => expect(screen.getByText('취소')).toBeInTheDocument())
 
       await user.click(screen.getByText('취소'))
-      expect(mockNavigate).toHaveBeenCalledWith('/income')
+      expect(mockNavigate).toHaveBeenCalledWith('/')
     })
 
     it('API 에러 시 에러 토스트를 표시한다', async () => {
