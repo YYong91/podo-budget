@@ -8,8 +8,8 @@ import { useState } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
 import {
   Tags, PiggyBank, Repeat, Users, BookOpen, MessageSquarePlus,
-  Megaphone, ChevronRight, User, Sun, Moon, FileText, ScrollText,
-  ShieldCheck, Download,
+  Megaphone, ChevronRight, User, Sun, Moon,
+  ShieldCheck, Download, CreditCard,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
@@ -113,6 +113,12 @@ export default function SettingsPage() {
       icon: PiggyBank,
     },
     {
+      to: '/payment-methods',
+      label: '결제수단',
+      description: '카드/현금 태깅 + 실적 추적',
+      icon: CreditCard,
+    },
+    {
       to: '/recurring',
       label: '반복 거래',
       description: '정기 지출/수입 관리',
@@ -159,20 +165,6 @@ export default function SettingsPage() {
       label: '피드백',
       description: '기능 요청/버그 신고',
       icon: MessageSquarePlus,
-    },
-    {
-      to: 'https://auth.podonest.com/privacy',
-      label: '개인정보 처리방침',
-      description: '개인정보 수집·이용 안내',
-      icon: FileText,
-      external: true,
-    },
-    {
-      to: 'https://auth.podonest.com/terms',
-      label: '서비스 이용약관',
-      description: '서비스 이용 조건',
-      icon: ScrollText,
-      external: true,
     },
     ...(user?.is_admin ? [{
       to: '/admin',

@@ -85,7 +85,7 @@ async def get_or_create_bot_user(db: AsyncSession, platform: str, platform_user_
 
             # PR #105 이후: 레거시 {platform}_unknown 데이터를 실제 유저로 이관
             if platform_user_id != "unknown":
-                await _migrate_unknown_bot_data(db, platform, user, household.id)
+                await _migrate_unknown_bot_data(db, platform, user, household.id)  # type: ignore[arg-type]
 
     return user
 
@@ -117,8 +117,8 @@ async def link_telegram_account_by_code(db: AsyncSession, code: str, telegram_ch
     if expires_at is not None and expires_at.tzinfo is None:
         expires_at = expires_at.replace(tzinfo=UTC)
     if expires_at is None or expires_at < now:
-        user.telegram_link_code = None
-        user.telegram_link_code_expires_at = None
+        user.telegram_link_code = None  # type: ignore[assignment]
+        user.telegram_link_code_expires_at = None  # type: ignore[assignment]
         await db.commit()
         return False, "⏰ 코드가 만료되었습니다. 웹에서 새 코드를 발급해주세요."
 
@@ -262,8 +262,8 @@ async def link_kakao_account_by_code(db: AsyncSession, code: str, kakao_user_id:
     if expires_at is not None and expires_at.tzinfo is None:
         expires_at = expires_at.replace(tzinfo=UTC)
     if expires_at is None or expires_at < now:
-        user.kakao_link_code = None
-        user.kakao_link_code_expires_at = None
+        user.kakao_link_code = None  # type: ignore[assignment]
+        user.kakao_link_code_expires_at = None  # type: ignore[assignment]
         await db.commit()
         return False, "⏰ 코드가 만료되었습니다. 웹에서 새 코드를 발급해주세요."
 

@@ -54,11 +54,11 @@ describe('ExpenseForm', () => {
   })
 
   describe('기본 렌더링', () => {
-    it('목록으로 돌아가는 링크가 /expenses로 이동한다', async () => {
+    it('목록으로 돌아가는 링크가 /로 이동한다', async () => {
       renderExpenseForm()
       await waitFor(() => {
         const backLink = screen.getByRole('link')
-        expect(backLink).toHaveAttribute('href', '/expenses')
+        expect(backLink).toHaveAttribute('href', '/')
       })
     })
 
@@ -134,7 +134,7 @@ describe('ExpenseForm', () => {
       fireEvent.submit(submitBtn.closest('form')!)
 
       await waitFor(() => {
-        expect(mockAddToast).toHaveBeenCalledWith('success', expect.stringContaining('저장되었습니다'))
+        expect(mockAddToast).toHaveBeenCalledWith('success', '저장했어요')
       })
     })
 
@@ -215,7 +215,7 @@ describe('ExpenseForm', () => {
       })
     })
 
-    it('취소 버튼 클릭 시 /expenses로 이동한다', async () => {
+    it('취소 버튼 클릭 시 /로 이동한다', async () => {
       const user = userEvent.setup()
       renderExpenseForm()
 
@@ -223,7 +223,7 @@ describe('ExpenseForm', () => {
       await waitFor(() => expect(screen.getByText('취소')).toBeInTheDocument())
 
       await user.click(screen.getByText('취소'))
-      expect(mockNavigate).toHaveBeenCalledWith('/expenses')
+      expect(mockNavigate).toHaveBeenCalledWith('/')
     })
   })
 
@@ -344,7 +344,7 @@ describe('ExpenseForm', () => {
         // 핵심 검증: date 필드에 반드시 T가 포함되어야 함
         // T가 없으면 백엔드에서 422 에러 발생 (Pydantic v2 datetime 파싱 실패)
         expect(capturedExpenseBody!['date']).toContain('T')
-        expect(mockAddToast).toHaveBeenCalledWith('success', expect.stringContaining('거래가 저장되었습니다'))
+        expect(mockAddToast).toHaveBeenCalledWith('success', '저장했어요')
       })
     })
 

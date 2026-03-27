@@ -1,7 +1,7 @@
 /* 수입 API */
 
 import apiClient from './client'
-import type { Income, StatsResponse } from '../types'
+import type { Income, StatsResponse, ComparisonResponse } from '../types'
 
 interface GetIncomesParams {
   skip?: number
@@ -38,6 +38,16 @@ export const incomeApi = {
       params: {
         period,
         ...(date && { date }),
+        ...(householdId != null && { household_id: householdId }),
+      },
+    }),
+
+  getComparison: (period: string, date?: string, months?: number, householdId?: number) =>
+    apiClient.get<ComparisonResponse>('/income/stats/comparison', {
+      params: {
+        period,
+        ...(date && { date }),
+        ...(months && { months }),
         ...(householdId != null && { household_id: householdId }),
       },
     }),

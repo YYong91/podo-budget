@@ -6,17 +6,21 @@ import { getLocalDateString } from '../utils/format'
  * ExpenseForm과 IncomeForm에서 wrapper로 사용한다.
  */
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { ArrowLeft, Camera } from 'lucide-react'
 import { useToast } from '../hooks/useToast'
+import { TOAST } from '../constants/toastMessages'
 import { expenseApi } from '../api/expenses'
 import { incomeApi } from '../api/income'
 import { categoryApi } from '../api/categories'
 import { useHouseholdStore } from '../stores/useHouseholdStore'
+import { paymentMethodApi } from '../api/paymentMethods'
+import type { PaymentMethod } from '../types'
 import { useNaturalInput } from '../hooks/useNaturalInput'
 import ParsedItemPreviewCard from './ParsedItemPreviewCard'
 import { trackEvent } from '../utils/analytics'
+import { FILTER_STORAGE_KEY } from '../hooks/useMonthlyTransactions'
 
 type TransactionType = 'expense' | 'income'
 type InputMode = 'natural' | 'form' | 'ocr'
@@ -25,26 +29,26 @@ type InputMode = 'natural' | 'form' | 'ocr'
 const TYPE_CONFIG = {
   expense: {
     color: 'grape',
-    listRoute: '/expenses',
+    listRoute: '/',
     naturalLabel: '말하듯이 지출 입력하기',
     naturalPlaceholder: '예: 오늘 점심에 김치찌개 8000원 먹었어\n어제 스타벅스에서 아메리카노 4500원',
     naturalHint: '날짜, 내용, 금액을 편하게 입력하면 AI가 자동으로 분석합니다. 결과를 확인한 뒤 저장됩니다.',
     formPlaceholder: { amount: '10000', description: '김치찌개' },
     previewLabel: '지출',
-    savedMessage: '지출이 저장되었습니다',
+    savedMessage: TOAST.SAVED,
     statsExcludeHint: '저축, 퇴직금 등 비정형 거래를 차트/통계에서 제외합니다',
     eventName: 'expense_saved',
     hasOcr: true,
   },
   income: {
     color: 'leaf',
-    listRoute: '/income',
+    listRoute: '/',
     naturalLabel: '말하듯이 수입 입력하기',
     naturalPlaceholder: '예: 이번 달 월급 350만원 들어왔어\n부업으로 50만원 받았어',
     naturalHint: '수입 내용을 편하게 입력하면 AI가 자동으로 분석합니다. 결과를 확인한 뒤 저장됩니다.',
     formPlaceholder: { amount: '3500000', description: '월급' },
     previewLabel: '수입',
-    savedMessage: '수입이 저장되었습니다',
+    savedMessage: TOAST.SAVED,
     statsExcludeHint: '퇴직금, 일시금 등 비정형 수입을 차트/통계에서 제외합니다',
     eventName: 'income_saved',
     hasOcr: false,
@@ -76,14 +80,43 @@ export default function TransactionForm({ type }: TransactionFormProps) {
   const [showNewCategoryForForm, setShowNewCategoryForForm] = useState(false)
   const [newCategoryNameForForm, setNewCategoryNameForForm] = useState('')
   const [creatingCategoryForForm, setCreatingCategoryForForm] = useState(false)
+  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([])
   const [formData, setFormData] = useState({
     amount: '',
     description: '',
     category_id: '',
+    payment_method_id: '',
     date: getLocalDateString(),
     memo: '',
     exclude_from_stats: false,
   })
+
+  // 결제수단 목록 로드 (지출 모드 전용)
+  useEffect(() => {
+    if (type !== 'expense' || !activeHouseholdId) return
+    paymentMethodApi.getAll(activeHouseholdId).then((res) => {
+      setPaymentMethods(res.data.filter((m) => m.is_active))
+    }).catch(() => {
+      // 결제수단 로드 실패 시 무시 — 선택 필드이므로 동작에 지장 없음
+    })
+  }, [type, activeHouseholdId])
+
+  // 프리뷰 아이템에 주 결제수단 자동 채우기 (자연어/OCR 입력 시)
+  useEffect(() => {
+    if (!ni.previewItems || type !== 'expense' || paymentMethods.length === 0) return
+    const defaultPm = paymentMethods.find(pm => pm.is_default)
+    if (!defaultPm) return
+
+    const needsUpdate = ni.previewItems.some(item => !item.payment_method_id && !item.payment_method)
+    if (!needsUpdate) return
+
+    for (let i = 0; i < ni.previewItems.length; i++) {
+      const item = ni.previewItems[i]
+      if (!item.payment_method_id && !item.payment_method) {
+        ni.updatePreviewItem(i, 'payment_method_id', defaultPm.id)
+      }
+    }
+  }, [ni.previewItems, paymentMethods, type]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const formCategories = ni.categories
 
@@ -101,9 +134,9 @@ export default function TransactionForm({ type }: TransactionFormProps) {
       setFormData((prev) => ({ ...prev, category_id: String(newCat.id) }))
       setShowNewCategoryForForm(false)
       setNewCategoryNameForForm('')
-      addToast('success', `"${name}" 카테고리가 추가되었습니다`)
+      addToast('success', TOAST.CATEGORY_ADDED)
     } catch {
-      addToast('error', '카테고리 생성에 실패했습니다')
+      addToast('error', TOAST.SAVE_FAILED)
     } finally {
       setCreatingCategoryForForm(false)
     }
@@ -129,7 +162,7 @@ export default function TransactionForm({ type }: TransactionFormProps) {
         setOcrPreview(null)
       }
     } catch {
-      addToast('error', 'OCR 처리에 실패했습니다')
+      addToast('error', TOAST.PARSE_FAILED)
       setOcrPreview(null)
     } finally {
       setFormLoading(false)
@@ -165,6 +198,9 @@ export default function TransactionForm({ type }: TransactionFormProps) {
         amount,
         description: formData.description.trim(),
         category_id: formData.category_id ? Number(formData.category_id) : null,
+        ...(type === 'expense' && formData.payment_method_id
+          ? { payment_method_id: Number(formData.payment_method_id) }
+          : {}),
         date: formData.date.includes('T') ? formData.date : `${formData.date}T00:00:00`,
         household_id: activeHouseholdId,
         memo: formData.memo.trim() || undefined,
@@ -172,9 +208,10 @@ export default function TransactionForm({ type }: TransactionFormProps) {
       })
       trackEvent(cfg.eventName, { mode: 'form' })
       addToast('success', cfg.savedMessage)
+      sessionStorage.removeItem(FILTER_STORAGE_KEY)
       setTimeout(() => navigate(cfg.listRoute), 500)
     } catch {
-      addToast('error', `${cfg.previewLabel} 저장에 실패했습니다`)
+      addToast('error', TOAST.SAVE_FAILED)
     } finally {
       setFormLoading(false)
     }
@@ -371,6 +408,7 @@ export default function TransactionForm({ type }: TransactionFormProps) {
               onSetShowNewCategory={ni.setShowNewCategoryFor}
               onSetNewCategoryName={ni.setNewCategoryName}
               onCreateCategory={ni.handleCreateCategory}
+              paymentMethods={paymentMethods}
             />
           ))}
 
@@ -424,6 +462,7 @@ export default function TransactionForm({ type }: TransactionFormProps) {
               onSetShowNewCategory={ni.setShowNewCategoryFor}
               onSetNewCategoryName={ni.setNewCategoryName}
               onCreateCategory={ni.handleCreateCategory}
+              paymentMethods={paymentMethods}
             />
           ))}
 
@@ -494,11 +533,20 @@ export default function TransactionForm({ type }: TransactionFormProps) {
             <select
               id={`${idPrefix}-category`}
               value={formData.category_id}
-              onChange={(e) => setFormData({ ...formData, category_id: e.target.value })}
+              onChange={(e) => {
+                const catId = e.target.value
+                const selectedCat = formCategories.find((cat) => String(cat.id) === catId)
+                const isSavings = selectedCat ? (selectedCat.exclude_auto_payment || selectedCat.is_savings) : false
+                if (isSavings) {
+                  setFormData({ ...formData, category_id: catId, payment_method_id: '' })
+                } else {
+                  setFormData({ ...formData, category_id: catId })
+                }
+              }}
               className={`w-full px-4 py-3 border border-[var(--input-border)] rounded-xl focus:ring-2 focus:ring-${c}-500/30 focus:border-${c}-500`}
               disabled={loading}
             >
-              <option value="">미분류</option>
+              <option value="">분류 안 됨</option>
               {formCategories.map((cat) => (
                 <option key={cat.id} value={cat.id}>
                   {cat.name}
@@ -543,6 +591,38 @@ export default function TransactionForm({ type }: TransactionFormProps) {
               </button>
             )}
           </div>
+
+          {/* 결제수단 (지출 모드 전용, 선택) */}
+          {type === 'expense' && (() => {
+            const selectedCat = formCategories.find((cat) => String(cat.id) === formData.category_id)
+            const isSavingsCategory = selectedCat ? (selectedCat.exclude_auto_payment || selectedCat.is_savings) : false
+            return (
+              <div>
+                <label htmlFor={`${idPrefix}-payment-method`} className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
+                  결제수단
+                </label>
+                <select
+                  id={`${idPrefix}-payment-method`}
+                  value={formData.payment_method_id}
+                  onChange={(e) => setFormData({ ...formData, payment_method_id: e.target.value })}
+                  className={`w-full px-4 py-3 border border-[var(--input-border)] rounded-xl focus:ring-2 focus:ring-${c}-500/30 focus:border-${c}-500`}
+                  disabled={loading}
+                >
+                  <option value="">선택 안 함</option>
+                  {paymentMethods.map((pm) => (
+                    <option key={pm.id} value={pm.id}>
+                      {pm.name}
+                    </option>
+                  ))}
+                </select>
+                {isSavingsCategory && (
+                  <p className="mt-1.5 text-xs text-[var(--text-muted)]" data-testid="savings-payment-hint">
+                    저축성 지출은 결제수단이 자동 적용되지 않아요
+                  </p>
+                )}
+              </div>
+            )
+          })()}
 
           {/* 날짜 (기본 오늘) */}
           <div>

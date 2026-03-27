@@ -5,6 +5,7 @@ API 레이어는 HTTP 처리에 집중하고, 비즈니스 로직은 여기에�
 """
 
 from datetime import UTC, datetime, timedelta
+from typing import Any
 
 from sqlalchemy import and_, extract, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -53,7 +54,7 @@ async def get_budget_alerts(db: AsyncSession, household_id: int, *, month: str |
     categories_map = {c.id: c for c in cat_result.scalars().all()}
 
     # period_start/period_end별로 예산 그룹화
-    budgets_by_period: dict[tuple[datetime, datetime], list] = {}
+    budgets_by_period: dict[tuple[datetime, datetime], list[dict[str, Any]]] = {}
     for budget in active_budgets:
         if month:
             # month 지정 시: 해당 월 전체 기간으로 고정
@@ -75,7 +76,7 @@ async def get_budget_alerts(db: AsyncSession, household_id: int, *, month: str |
     expense_scope = Expense.household_id == household_id
     spent_map: dict[int, float] = {}
     for (period_start, period_end), period_budgets in budgets_by_period.items():
-        period_cat_ids = [b.category_id for b in period_budgets]
+        period_cat_ids = [b.category_id for b in period_budgets]  # type: ignore[attr-defined]
         expense_result = await db.execute(
             select(Expense.category_id, func.sum(Expense.amount).label("total"))
             .where(
@@ -97,7 +98,7 @@ async def get_budget_alerts(db: AsyncSession, household_id: int, *, month: str |
         if not category:
             continue
 
-        spent_amount = spent_map.get(budget.category_id, 0.0)
+        spent_amount = spent_map.get(budget.category_id, 0.0)  # type: ignore[call-overload]
         budget_amount = float(budget.amount)
         usage_percentage = (spent_amount / budget_amount * 100) if budget_amount > 0 else 0
         remaining_amount = budget_amount - spent_amount
@@ -183,7 +184,7 @@ async def get_category_overview(
     budget_map: dict[int, Budget] = {}
     for budget in budgets:
         if budget.category_id not in budget_map:
-            budget_map[budget.category_id] = budget
+            budget_map[budget.category_id] = budget  # type: ignore[index]
 
     # 최근 3개월 카테고리별 월별 지출 집계
     spending_result = await db.execute(
@@ -224,10 +225,10 @@ async def get_category_overview(
         CategoryBudgetOverview(
             category_id=cat.id,
             category_name=cat.name,
-            monthly_spending=spending_map.get(cat.id, []),
-            current_budget_id=budget_map[cat.id].id if cat.id in budget_map else None,
-            current_budget_amount=float(budget_map[cat.id].amount) if cat.id in budget_map else None,
-            alert_threshold=float(budget_map[cat.id].alert_threshold) if cat.id in budget_map else None,
+            monthly_spending=spending_map.get(cat.id, []),  # type: ignore[call-overload]
+            current_budget_id=budget_map[cat.id].id if cat.id in budget_map else None,  # type: ignore[index]
+            current_budget_amount=float(budget_map[cat.id].amount) if cat.id in budget_map else None,  # type: ignore[index]
+            alert_threshold=float(budget_map[cat.id].alert_threshold) if cat.id in budget_map else None,  # type: ignore[index]
         )
         for cat in categories
     ]

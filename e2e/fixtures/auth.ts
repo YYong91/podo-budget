@@ -110,11 +110,36 @@ export const test = base.extend<AuthFixtures>({
       )
     }
 
+    // Household 스토어 초기화 대기 — activeHouseholdId가 설정되어야
+    // 대부분의 페이지가 정상 동작함 (RecurringList, BudgetManager 등)
+    try {
+      await page.waitForFunction(
+        () => {
+          // Zustand persist store는 localStorage에 'podo-household' 키로 저장됨
+          const raw = localStorage.getItem('podo-household')
+          if (!raw) return false
+          try {
+            const parsed = JSON.parse(raw)
+            return parsed?.state?.activeHouseholdId != null
+          } catch {
+            return false
+          }
+        },
+        { timeout: 15000 },
+      )
+    } catch {
+      // 온보딩 페이지이면 household가 없을 수 있음 — 무시
+      const url = page.url()
+      if (!url.includes('onboarding')) {
+        console.warn('activeHouseholdId 대기 타임아웃 (계속 진행)')
+      }
+    }
+
     await use(page)
   },
 })
 
-export { expect, API_URL, BASE_URL }
+export { expect, API_URL, BASE_URL, setupE2EUser }
 
 /**
  * API 요청용 토큰 추출 — Supabase 세션 스토리지에서 읽음

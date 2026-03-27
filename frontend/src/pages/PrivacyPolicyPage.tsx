@@ -4,9 +4,13 @@
  * 사용자의 개인정보 수집, 이용, 보관, 제3자 제공, 파기에 대한 내용을 안내한다.
  */
 
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
+import { useAuth } from '../contexts/AuthContext'
 
 export default function PrivacyPolicyPage() {
+  const { user } = useAuth()
+  const navigate = useNavigate()
+  const isAuthenticated = !!user
   return (
     <div className="min-h-screen bg-[var(--surface)]">
       {/* 헤더 */}
@@ -141,12 +145,21 @@ export default function PrivacyPolicyPage() {
 
           {/* 하단 버튼 */}
           <div className="mt-8 pt-6 border-t border-[var(--border-default)] flex justify-center">
-            <Link
-              to="/login"
-              className="px-6 py-2.5 text-sm font-medium text-grape-600 border border-grape-600 rounded-lg hover:bg-grape-50 transition-colors"
-            >
-              ← 로그인으로 돌아가기
-            </Link>
+            {isAuthenticated ? (
+              <button
+                onClick={() => navigate(-1)}
+                className="px-6 py-2.5 text-sm font-medium text-grape-600 border border-grape-600 rounded-lg hover:bg-grape-50 transition-colors"
+              >
+                ← 뒤로가기
+              </button>
+            ) : (
+              <Link
+                to="/login"
+                className="px-6 py-2.5 text-sm font-medium text-grape-600 border border-grape-600 rounded-lg hover:bg-grape-50 transition-colors"
+              >
+                ← 로그인으로 돌아가기
+              </Link>
+            )}
           </div>
         </div>
       </main>

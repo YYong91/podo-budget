@@ -21,7 +21,7 @@ from sqlalchemy.sql import func
 from app.core.database import Base
 
 
-class HouseholdMember(Base):
+class HouseholdMember(Base):  # type: ignore[misc]
     """가구 멤버 엔티티
 
     가구와 사용자를 연결하고 역할 정보를 저장합니다.
@@ -63,5 +63,5 @@ class HouseholdMember(Base):
     household = relationship("Household", back_populates="members")
     user = relationship("User", foreign_keys=[user_id])
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<HouseholdMember(id={self.id}, household_id={self.household_id}, user_id={self.user_id}, role={self.role})>"

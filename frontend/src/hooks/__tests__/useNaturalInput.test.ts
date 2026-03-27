@@ -39,10 +39,10 @@ import type { Category } from '../../types'
 // ── 테스트용 데이터 ──
 
 const mockCategories: Category[] = [
-  { id: 1, name: '식비', type: 'expense', description: null, sort_order: 1, is_system: true, created_at: '2024-01-01T00:00:00Z' },
-  { id: 2, name: '교통', type: 'expense', description: null, sort_order: 2, is_system: true, created_at: '2024-01-01T00:00:00Z' },
-  { id: 3, name: '급여', type: 'income', description: null, sort_order: 3, is_system: true, created_at: '2024-01-01T00:00:00Z' },
-  { id: 4, name: '부업', type: 'both', description: null, sort_order: 4, is_system: false, created_at: '2024-01-01T00:00:00Z' },
+  { id: 1, name: '식비', type: 'expense', description: null, sort_order: 1, is_savings: false, is_system: true, exclude_auto_payment: false, created_at: '2024-01-01T00:00:00Z' },
+  { id: 2, name: '교통', type: 'expense', description: null, sort_order: 2, is_savings: false, is_system: true, exclude_auto_payment: false, created_at: '2024-01-01T00:00:00Z' },
+  { id: 3, name: '급여', type: 'income', description: null, sort_order: 3, is_savings: false, is_system: true, exclude_auto_payment: false, created_at: '2024-01-01T00:00:00Z' },
+  { id: 4, name: '부업', type: 'both', description: null, sort_order: 4, is_savings: false, is_system: false, exclude_auto_payment: false, created_at: '2024-01-01T00:00:00Z' },
 ]
 
 function setupCategoryHandler(categories: Category[] = mockCategories) {
@@ -207,7 +207,7 @@ describe('useNaturalInput', () => {
         await result.current.handlePreview({ preventDefault: vi.fn() } as unknown as React.FormEvent)
       })
 
-      expect(mockAddToast).toHaveBeenCalledWith('error', '파싱에 실패했습니다')
+      expect(mockAddToast).toHaveBeenCalledWith('error', '분석에 실패했어요')
     })
   })
 
@@ -409,7 +409,7 @@ describe('useNaturalInput', () => {
       })
 
       expect(createCalled).toBe(true)
-      expect(mockAddToast).toHaveBeenCalledWith('success', '거래가 저장되었습니다')
+      expect(mockAddToast).toHaveBeenCalledWith('success', '저장했어요')
       expect(result.current.previewItems).toBeNull()
       expect(result.current.naturalInput).toBe('')
     })
@@ -483,7 +483,7 @@ describe('useNaturalInput', () => {
         await result.current.handleConfirmSave()
       })
 
-      expect(mockAddToast).toHaveBeenCalledWith('error', '저장에 실패했습니다')
+      expect(mockAddToast).toHaveBeenCalledWith('error', '저장에 실패했어요')
     })
   })
 
@@ -529,7 +529,7 @@ describe('useNaturalInput', () => {
       })
 
       expect(incomeCreateCalled).toBe(true)
-      expect(mockAddToast).toHaveBeenCalledWith('success', '수입이 저장되었습니다')
+      expect(mockAddToast).toHaveBeenCalledWith('success', '저장했어요')
     })
   })
 
@@ -547,7 +547,9 @@ describe('useNaturalInput', () => {
         type: 'expense',
         description: null,
         sort_order: 99,
+        is_savings: false,
         is_system: false,
+        exclude_auto_payment: false,
         created_at: '2026-03-25T00:00:00Z',
       }
 
@@ -580,7 +582,7 @@ describe('useNaturalInput', () => {
       expect(result.current.previewItems![0].category_id).toBe(99)
       expect(result.current.showNewCategoryFor).toBeNull()
       expect(result.current.newCategoryName).toBe('')
-      expect(mockAddToast).toHaveBeenCalledWith('success', '"외식" 카테고리가 추가되었습니다')
+      expect(mockAddToast).toHaveBeenCalledWith('success', '카테고리를 추가했어요')
     })
 
     it('빈 이름이면 아무 일도 하지 않는다', async () => {

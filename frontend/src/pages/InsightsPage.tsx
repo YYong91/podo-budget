@@ -1,14 +1,15 @@
 /**
  * @file InsightsPage.tsx
- * @description 종합 재무 리포트 페이지 (월간)
- * 종합 요약 → 지출 카테고리 TOP → 예산 현황 → 자산 변동 → 이달의 인사이트 → AI 심층 분석
+ * @description 이달의 리포트 페이지 (월간)
+ * 종합 요약 → 지출 카테고리 TOP → 예산 상황 → 자산 변화 → 이달의 인사이트 → AI 상세 분석
  */
 
 import { useEffect, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Sparkles } from 'lucide-react'
+import { Sparkles, Settings } from 'lucide-react'
 import ErrorState from '../components/ErrorState'
 import { useToast } from '../hooks/useToast'
+import { TOAST } from '../constants/toastMessages'
 import EmptyState from '../components/EmptyState'
 
 // API
@@ -16,17 +17,26 @@ import { statsApi, insightsApi } from '../api/insights'
 import { incomeApi } from '../api/income'
 import { getMonthlyStats } from '../api/budgets'
 import { assetApi } from '../api/assets'
+import { categoryApi } from '../api/categories'
+import { paymentMethodApi } from '../api/paymentMethods'
 import { useHouseholdStore } from '../stores/useHouseholdStore'
 
 // 컴포넌트
 import PeriodNavigator from '../components/stats/PeriodNavigator'
 import UnifiedSummaryCards from '../components/stats/UnifiedSummaryCards'
+// CategoryPieChart는 CategoryTopList에 탭으로 통합됨
 import CategoryTopList from '../components/stats/CategoryTopList'
 import BudgetVsActual from '../components/stats/BudgetVsActual'
+import CardUsageSummary from '../components/stats/CardUsageSummary'
 import AssetChangeSummary from '../components/stats/AssetChangeSummary'
 import MonthlyHighlights from '../components/stats/MonthlyHighlights'
 import FinancialHealthScore from '../components/stats/FinancialHealthScore'
 import StructuredInsightsView from '../components/stats/StructuredInsightsView'
+import SectionToggleModal, {
+  loadSectionSettings,
+  saveSectionSettings,
+  type SectionVisibility,
+} from '../components/stats/SectionToggleModal'
 
 // 유틸
 import { calculateHealthScore } from '../utils/healthScore'
@@ -36,6 +46,7 @@ import { trackEvent } from '../utils/analytics'
 import type {
   StatsResponse, ComparisonResponse, BudgetMonthlyStatsResponse,
   AssetSummary, AssetSnapshot, StructuredInsights, HealthScore,
+  PaymentMethodUsage,
 } from '../types'
 
 // ── 날짜 유틸 ──
@@ -70,8 +81,22 @@ export default function InsightsPage() {
   const [incomeStats, setIncomeStats] = useState<StatsResponse | null>(null)
   const [budgetStats, setBudgetStats] = useState<BudgetMonthlyStatsResponse | null>(null)
   const [comparison, setComparison] = useState<ComparisonResponse | null>(null)
+  const [incomeComparison, setIncomeComparison] = useState<ComparisonResponse | null>(null)
   const [assetSummary, setAssetSummary] = useState<AssetSummary | null>(null)
   const [prevSnapshot, setPrevSnapshot] = useState<AssetSnapshot | null>(null)
+  const [cardUsage, setCardUsage] = useState<PaymentMethodUsage[]>([])
+
+  // 섹션 표시 설정
+  const [sectionVisibility, setSectionVisibility] = useState<SectionVisibility>(loadSectionSettings)
+  const [showSectionModal, setShowSectionModal] = useState(false)
+
+  const handleSectionChange = useCallback((updated: SectionVisibility) => {
+    setSectionVisibility(updated)
+    saveSectionSettings(updated)
+  }, [])
+
+  // 저축성 지출 합계
+  const [savingsTotal, setSavingsTotal] = useState<number | undefined>(undefined)
 
   // AI 분석 상태
   const [healthScore, setHealthScore] = useState<HealthScore | null>(null)
@@ -90,14 +115,17 @@ export default function InsightsPage() {
         const dateStr = `${monthStr}-15`
         const hhId = activeHouseholdId
 
-        // 1차 병렬: 지출/수입 통계 + 비교 + 예산 + 자산
-        const [expRes, incRes, compRes, budgetRes, assetRes, snapRes] = await Promise.allSettled([
+        // 1차 병렬: 지출/수입 통계 + 비교 + 예산 + 자산 + 카테고리 + 카드 실적
+        const [expRes, incRes, compRes, incCompRes, budgetRes, assetRes, snapRes, catRes, cardRes] = await Promise.allSettled([
           statsApi.getStats('monthly', dateStr, hhId),
           incomeApi.getStats('monthly', dateStr, hhId),
           statsApi.getComparison('monthly', dateStr, 3, hhId),
+          incomeApi.getComparison('monthly', dateStr, 3, hhId),
           getMonthlyStats(monthStr),
           assetApi.getSummary(hhId),
           assetApi.getSnapshots(hhId, 2),
+          categoryApi.getAll({ type: 'expense' }),
+          paymentMethodApi.getMonthlyUsage(monthStr, hhId),
         ])
 
         if (cancelled) return
@@ -105,9 +133,12 @@ export default function InsightsPage() {
         const exp = expRes.status === 'fulfilled' ? expRes.value.data : null
         const inc = incRes.status === 'fulfilled' ? incRes.value.data : null
         const comp = compRes.status === 'fulfilled' ? compRes.value.data : null
+        const incComp = incCompRes.status === 'fulfilled' ? incCompRes.value.data : null
         const budget = budgetRes.status === 'fulfilled' ? budgetRes.value.data : null
         const asset = assetRes.status === 'fulfilled' ? assetRes.value.data : null
         const snaps = snapRes.status === 'fulfilled' ? snapRes.value.data : []
+        const cats = catRes.status === 'fulfilled' ? catRes.value.data : []
+        const cards = cardRes.status === 'fulfilled' ? cardRes.value.data : []
 
         // 핵심 데이터(지출+수입) 모두 실패하면 에러 상태
         if (!exp && !inc && expRes.status === 'rejected' && incRes.status === 'rejected') {
@@ -118,8 +149,10 @@ export default function InsightsPage() {
         setExpenseStats(exp)
         setIncomeStats(inc)
         setComparison(comp)
+        setIncomeComparison(incComp)
         setBudgetStats(budget)
         setAssetSummary(asset)
+        setCardUsage(cards)
 
         // 이전 스냅샷 (가장 오래된 것)
         const sortedSnaps = (snaps ?? []).sort((a: AssetSnapshot, b: AssetSnapshot) =>
@@ -127,11 +160,23 @@ export default function InsightsPage() {
         )
         setPrevSnapshot(sortedSnaps.length >= 2 ? sortedSnaps[0] : null)
 
+        // 저축성 지출 합계 계산 (is_savings=true 카테고리의 지출만 집계)
+        const savingsCatNames = new Set(cats.filter(c => c.is_savings).map(c => c.name))
+        let computedSavingsTotal: number | undefined
+        if (savingsCatNames.size > 0 && exp?.by_category) {
+          computedSavingsTotal = exp.by_category
+            .filter(c => savingsCatNames.has(c.category))
+            .reduce((sum, c) => sum + c.amount, 0)
+        }
+        // 저축성 카테고리가 하나라도 있으면 새 방식, 없으면 undefined(기존 방식 유지)
+        setSavingsTotal(savingsCatNames.size > 0 ? (computedSavingsTotal ?? 0) : undefined)
+
         // 건강 점수 계산
         if (exp || inc) {
           const score = calculateHealthScore({
             incomeTotal: inc?.total ?? 0,
             expenseTotal: exp?.total ?? 0,
+            savingsTotal: savingsCatNames.size > 0 ? (computedSavingsTotal ?? 0) : undefined,
             budgetTotal: budget?.total_budget ?? undefined,
             budgetSpent: budget?.total_spent ?? undefined,
             totalLiabilities: asset?.total_liabilities ?? 0,
@@ -153,7 +198,7 @@ export default function InsightsPage() {
   // AI 분석 생성
   const handleGenerateAI = useCallback(async () => {
     if (!expenseStats && !incomeStats) {
-      addToast('error', '분석할 데이터가 없습니다')
+      addToast('error', TOAST.AI_NO_DATA)
       return
     }
 
@@ -169,11 +214,13 @@ export default function InsightsPage() {
           percentage: c.percentage,
         })),
         savings_rate: incomeStats && incomeStats.total > 0
-          ? ((incomeStats.total - (expenseStats?.total ?? 0)) / incomeStats.total) * 100
+          ? (savingsTotal !== undefined
+              ? (savingsTotal / incomeStats.total) * 100
+              : ((incomeStats.total - (expenseStats?.total ?? 0)) / incomeStats.total) * 100)
           : 0,
         health_score: healthScore,
         previous_month_expense: comparison?.previous?.total ?? null,
-        previous_month_income: null,
+        previous_month_income: incomeComparison?.previous?.total ?? null,
       }
 
       // 예산 데이터
@@ -206,21 +253,42 @@ export default function InsightsPage() {
       const result = await insightsApi.generateComprehensive(requestData)
       setStructuredInsights(result.insights)
       trackEvent('ai_analysis_requested')
-      addToast('success', 'AI 분석이 완료되었습니다')
+      addToast('success', TOAST.AI_ANALYSIS_COMPLETE)
     } catch {
-      addToast('error', 'AI 분석 생성에 실패했습니다')
+      addToast('error', TOAST.AI_ANALYSIS_FAILED)
     } finally {
       setAiLoading(false)
     }
-  }, [monthStr, expenseStats, incomeStats, budgetStats, assetSummary, prevSnapshot, healthScore, comparison])
+  }, [monthStr, expenseStats, incomeStats, budgetStats, assetSummary, prevSnapshot, healthScore, comparison, incomeComparison])
 
   const handlePrev = useCallback(() => setMonthStr(m => shiftMonth(m, -1)), [])
   const handleNext = useCallback(() => setMonthStr(m => shiftMonth(m, 1)), [])
 
   return (
     <div className="space-y-4">
-      {/* 월 네비게이션 */}
-      <PeriodNavigator label={getNavLabel(monthStr)} onPrev={handlePrev} onNext={handleNext} />
+      {/* 월 네비게이션 + 설정 아이콘 */}
+      <div className="flex items-center justify-between">
+        <div className="flex-1" />
+        <PeriodNavigator label={getNavLabel(monthStr)} onPrev={handlePrev} onNext={handleNext} />
+        <div className="flex-1 flex justify-end">
+          <button
+            onClick={() => setShowSectionModal(true)}
+            aria-label="섹션 설정"
+            className="p-2 rounded-lg hover:bg-[var(--surface-hover)] transition-colors"
+          >
+            <Settings className="w-5 h-5 text-[var(--text-secondary)]" />
+          </button>
+        </div>
+      </div>
+
+      {/* 섹션 토글 모달 */}
+      {showSectionModal && (
+        <SectionToggleModal
+          sections={sectionVisibility}
+          onChange={handleSectionChange}
+          onClose={() => setShowSectionModal(false)}
+        />
+      )}
 
       {/* 로딩 — 스켈레톤 UI */}
       {loading && (
@@ -261,24 +329,17 @@ export default function InsightsPage() {
             <UnifiedSummaryCards
               incomeTotal={incomeStats?.total ?? 0}
               expenseTotal={expenseStats?.total ?? 0}
+              savingsTotal={savingsTotal}
               netWorth={assetSummary?.net_worth ?? null}
               prevNetWorth={prevSnapshot?.net_worth ?? null}
-              prevIncome={comparison?.previous?.total ? null : null}
+              prevIncome={incomeComparison?.previous?.total ?? null}
               prevExpense={comparison?.previous?.total ?? null}
+              monthStr={monthStr}
             />
           )}
 
-          {/* 2. 지출 카테고리 TOP */}
-          <CategoryTopList categories={expenseStats?.by_category ?? []} />
-
-          {/* 3. 예산 현황 */}
-          <BudgetVsActual budgetStats={budgetStats} />
-
-          {/* 4. 자산 변동 */}
-          <AssetChangeSummary summary={assetSummary} previousSnapshot={prevSnapshot} />
-
-          {/* 5. 이달의 인사이트 */}
-          {expenseStats && incomeStats && (
+          {/* 2. 이달의 주목할 점 */}
+          {sectionVisibility.highlights && expenseStats && incomeStats && (
             <MonthlyHighlights
               incomeTotal={incomeStats.total}
               expenseTotal={expenseStats.total}
@@ -287,49 +348,71 @@ export default function InsightsPage() {
             />
           )}
 
-          {/* 6. AI 심층 분석 */}
-          <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)]/60 p-4">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-grape-600" />
-                <h2 className="text-base font-semibold text-[var(--text-primary)]">AI 심층 분석</h2>
+          {/* 3. 지출 카테고리 (리스트/그래프 탭 통합) */}
+          {sectionVisibility.categoryTop && (
+            <CategoryTopList categories={expenseStats?.by_category ?? []} monthStr={monthStr} />
+          )}
+
+          {/* 5. 예산 상황 */}
+          {sectionVisibility.budget && (
+            <BudgetVsActual budgetStats={budgetStats} monthStr={monthStr} />
+          )}
+
+          {/* 6. 카드 실적 */}
+          {sectionVisibility.cardUsage && cardUsage.length > 0 && (
+            <CardUsageSummary usage={cardUsage} />
+          )}
+
+          {/* 7. 자산 변화 */}
+          {sectionVisibility.assets && (
+            <AssetChangeSummary summary={assetSummary} previousSnapshot={prevSnapshot} />
+          )}
+
+          {/* 8. AI 상세 분석 */}
+          {sectionVisibility.ai && (
+            <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)]/60 p-4">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-grape-600" />
+                  <h2 className="text-base font-semibold text-[var(--text-primary)]">AI 상세 분석</h2>
+                </div>
+                {!structuredInsights && (
+                  <button
+                    onClick={handleGenerateAI}
+                    disabled={aiLoading}
+                    className="px-4 py-1.5 text-sm font-medium text-white bg-grape-600 rounded-lg hover:bg-grape-700 disabled:bg-warm-400 disabled:cursor-not-allowed transition-colors"
+                  >
+                    {aiLoading ? '분석 중...' : '분석하기'}
+                  </button>
+                )}
               </div>
-              {!structuredInsights && (
-                <button
-                  onClick={handleGenerateAI}
-                  disabled={aiLoading}
-                  className="px-4 py-1.5 text-sm font-medium text-white bg-grape-600 rounded-lg hover:bg-grape-700 disabled:bg-warm-400 disabled:cursor-not-allowed transition-colors"
-                >
-                  {aiLoading ? '분석 중...' : '분석하기'}
-                </button>
+
+              {/* 건강 점수 (항상 표시) */}
+              <FinancialHealthScore score={healthScore} />
+
+              {/* AI 로딩 */}
+              {aiLoading && (
+                <div className="flex flex-col items-center gap-3 py-8">
+                  <div className="animate-spin rounded-full border-b-2 border-grape-600 h-8 w-8" />
+                  <p className="text-sm text-[var(--text-secondary)]">AI가 가계 데이터를 분석하고 있습니다...</p>
+                </div>
+              )}
+
+              {/* 구조화된 AI 인사이트 */}
+              {!aiLoading && structuredInsights && (
+                <div className="mt-4">
+                  <StructuredInsightsView insights={structuredInsights} />
+                </div>
+              )}
+
+              {/* 분석 전 안내 */}
+              {!aiLoading && !structuredInsights && (
+                <p className="text-sm text-[var(--text-tertiary)] mt-3">
+                  AI가 수입, 지출, 예산, 자산을 분석하여 맞춤 인사이트를 제공합니다.
+                </p>
               )}
             </div>
-
-            {/* 건강 점수 (항상 표시) */}
-            <FinancialHealthScore score={healthScore} />
-
-            {/* AI 로딩 */}
-            {aiLoading && (
-              <div className="flex flex-col items-center gap-3 py-8">
-                <div className="animate-spin rounded-full border-b-2 border-grape-600 h-8 w-8" />
-                <p className="text-sm text-[var(--text-secondary)]">AI가 재무 데이터를 분석하고 있습니다...</p>
-              </div>
-            )}
-
-            {/* 구조화된 AI 인사이트 */}
-            {!aiLoading && structuredInsights && (
-              <div className="mt-4">
-                <StructuredInsightsView insights={structuredInsights} />
-              </div>
-            )}
-
-            {/* 분석 전 안내 */}
-            {!aiLoading && !structuredInsights && (
-              <p className="text-sm text-[var(--text-tertiary)] mt-3">
-                AI가 수입, 지출, 예산, 자산을 종합 분석하여 맞춤 인사이트를 제공합니다.
-              </p>
-            )}
-          </div>
+          )}
         </>
       )}
     </div>

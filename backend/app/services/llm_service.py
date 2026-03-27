@@ -52,6 +52,7 @@ class LLMProvider(ABC):
         categories: list[str] | None = None,
         history_hints: dict[str, Any] | None = None,
         category_mappings: dict[str, str] | None = None,
+        payment_methods: list[str] | None = None,
     ) -> dict[str, Any] | list[dict[str, Any]]:
         """사용자 입력을 파싱하여 지출 정보 추출
 
@@ -106,12 +107,13 @@ class AnthropicProvider(LLMProvider):
         categories: list[str] | None = None,
         history_hints: dict[str, Any] | None = None,
         category_mappings: dict[str, str] | None = None,
+        payment_methods: list[str] | None = None,
     ) -> dict[str, Any] | list[dict[str, Any]]:
         """Claude API로 자연어 지출 입력을 구조화된 데이터로 변환
 
         단일 지출 또는 여러 지출을 파싱합니다.
         여러 지출인 경우 리스트로 반환합니다.
-        categories, history_hints, category_mappings가 있으면 프롬프트에 주입하여 정확도를 높입니다.
+        categories, history_hints, category_mappings, payment_methods가 있으면 프롬프트에 주입하여 정확도를 높입니다.
         """
         from app.services.prompts import get_expense_parser_prompt
 
@@ -122,7 +124,9 @@ class AnthropicProvider(LLMProvider):
                     response = await self.client.messages.create(
                         model=self.model,
                         max_tokens=8192,  # Haiku 최대값 — 월간 40건+ 파싱 대응
-                        system=get_expense_parser_prompt(categories=categories, history_hints=history_hints, category_mappings=category_mappings),
+                        system=get_expense_parser_prompt(
+                            categories=categories, history_hints=history_hints, category_mappings=category_mappings, payment_methods=payment_methods
+                        ),
                         messages=[{"role": "user", "content": user_input}],
                         timeout=25.0,  # LLM 응답 타임아웃 (#172)
                     )
@@ -133,7 +137,7 @@ class AnthropicProvider(LLMProvider):
                         raise ValueError("max_tokens_exceeded")
 
                     # 텍스트 응답에서 JSON 추출 (```json 블록 처리)
-                    text = _extract_json_text(response.content[0].text)
+                    text = _extract_json_text(response.content[0].text)  # type: ignore[union-attr]
                     parsed = json.loads(text)
 
                     # 단일 지출 (dict)인 경우
@@ -190,7 +194,7 @@ class AnthropicProvider(LLMProvider):
                         {
                             "role": "user",
                             "content": [
-                                {
+                                {  # type: ignore[list-item]
                                     "type": "image",
                                     "source": {
                                         "type": "base64",
@@ -207,7 +211,7 @@ class AnthropicProvider(LLMProvider):
                     ],
                 )
 
-                text = _extract_json_text(response.content[0].text)
+                text = _extract_json_text(response.content[0].text)  # type: ignore[union-attr]
                 parsed = json.loads(text)
 
                 if isinstance(parsed, dict):
@@ -256,7 +260,7 @@ class AnthropicProvider(LLMProvider):
                 if response.stop_reason == "max_tokens":
                     logger.warning("인사이트 생성: max_tokens 초과로 응답이 잘렸습니다.")
 
-                return response.content[0].text
+                return response.content[0].text  # type: ignore[union-attr]
 
         except Exception as e:
             logger.error(f"인사이트 생성 실패: {e}")
@@ -271,7 +275,7 @@ class AnthropicProvider(LLMProvider):
                     max_tokens=2048,
                     messages=[{"role": "user", "content": prompt}],
                 )
-                return response.content[0].text
+                return response.content[0].text  # type: ignore[union-attr]
         except Exception as e:
             logger.error(f"Claude generate 실패: {e}")
             return ""
@@ -284,7 +288,7 @@ class AnthropicProvider(LLMProvider):
         )
 
         async with track_llm_call("anthropic"):
-            response = await self.client.messages.create(
+            response = await self.client.messages.create(  # type: ignore[call-overload]
                 model=self.model,
                 max_tokens=2000,
                 system=COMPREHENSIVE_INSIGHTS_SYSTEM_PROMPT,
@@ -307,7 +311,7 @@ class AnthropicProvider(LLMProvider):
             # tool_use 블록에서 구조화된 JSON 추출
             for block in response.content:
                 if block.type == "tool_use":
-                    return block.input
+                    return block.input  # type: ignore[no-any-return]
 
             raise ValueError("LLM이 구조화된 응답을 반환하지 않았습니다")
 
@@ -325,12 +329,13 @@ class OpenAIProvider(LLMProvider):
         categories: list[str] | None = None,
         history_hints: dict[str, Any] | None = None,
         category_mappings: dict[str, str] | None = None,
+        payment_methods: list[str] | None = None,
     ) -> dict[str, Any] | list[dict[str, Any]]:
         """OpenAI API로 자연어 지출 입력을 구조화된 데이터로 변환
 
         단일 지출 또는 여러 지출을 파싱합니다.
         여러 지출인 경우 리스트로 반환합니다.
-        categories, history_hints, category_mappings가 있으면 프롬프트에 주입하여 정확도를 높입니다.
+        categories, history_hints, category_mappings, payment_methods가 있으면 프롬프트에 주입하여 정확도를 높입니다.
         """
         from app.services.prompts import get_expense_parser_prompt
 
@@ -344,7 +349,9 @@ class OpenAIProvider(LLMProvider):
                         messages=[
                             {
                                 "role": "system",
-                                "content": get_expense_parser_prompt(categories=categories, history_hints=history_hints, category_mappings=category_mappings),
+                                "content": get_expense_parser_prompt(
+                                    categories=categories, history_hints=history_hints, category_mappings=category_mappings, payment_methods=payment_methods
+                                ),
                             },
                             {"role": "user", "content": user_input},
                         ],
@@ -419,7 +426,7 @@ class OpenAIProvider(LLMProvider):
                 if response.choices[0].finish_reason == "length":
                     logger.warning("인사이트 생성: max_tokens 초과로 응답이 잘렸습니다.")
 
-                return response.choices[0].message.content
+                return response.choices[0].message.content  # type: ignore[no-any-return]
 
         except Exception as e:
             logger.error(f"인사이트 생성 실패: {e}")
@@ -434,7 +441,7 @@ class OpenAIProvider(LLMProvider):
                     max_tokens=2048,
                     messages=[{"role": "user", "content": prompt}],
                 )
-                return response.choices[0].message.content
+                return response.choices[0].message.content  # type: ignore[no-any-return]
         except Exception as e:
             logger.error(f"OpenAI generate 실패: {e}")
             return ""
@@ -466,7 +473,7 @@ class OpenAIProvider(LLMProvider):
                     },
                 },
             )
-            return json.loads(response.choices[0].message.content)
+            return json.loads(response.choices[0].message.content)  # type: ignore[no-any-return]
 
 
 class GoogleProvider(LLMProvider):
@@ -479,6 +486,8 @@ class GoogleProvider(LLMProvider):
         user_input: str,
         categories: list[str] | None = None,
         history_hints: dict[str, Any] | None = None,
+        category_mappings: dict[str, str] | None = None,
+        payment_methods: list[str] | None = None,
     ) -> dict[str, Any] | list[dict[str, Any]]:
         raise NotImplementedError("Google Gemini 프로바이더는 아직 구현되지 않았습니다")
 
@@ -495,11 +504,82 @@ class GoogleProvider(LLMProvider):
         raise NotImplementedError("종합 인사이트는 아직 이 프로바이더를 지원하지 않습니다")
 
 
+class MockLLMProvider(LLMProvider):
+    """E2E 테스트용 고정 응답 LLM 프로바이더
+
+    실제 LLM API를 호출하지 않고 결정적(deterministic) 응답을 반환합니다.
+    LLM_PROVIDER=mock 으로 설정하면 활성화됩니다.
+    """
+
+    def __init__(self, model: str = ""):
+        self.model = model or "mock"
+
+    async def parse_expense(
+        self,
+        user_input: str,
+        categories: list[str] | None = None,
+        history_hints: dict[str, Any] | None = None,
+        category_mappings: dict[str, str] | None = None,
+        payment_methods: list[str] | None = None,
+    ) -> dict[str, Any] | list[dict[str, Any]]:
+        """텍스트에서 금액을 추출하여 고정 형식 반환 — E2E에서 안정적으로 동작"""
+        import re
+        from datetime import date
+
+        # 금액 추출: "8000원", "8,000원", "8000" 등
+        amount_match = re.search(r"([\d,]+)\s*원?", user_input)
+        amount = int(amount_match.group(1).replace(",", "")) if amount_match else 10000
+
+        # 카테고리: 제공된 목록의 첫 번째 또는 기본값
+        category = "식비"
+        if categories:
+            category = categories[0]
+
+        return {
+            "amount": amount,
+            "description": user_input.strip(),
+            "category": category,
+            "date": date.today().isoformat(),
+            "type": "expense",
+            "memo": "",
+        }
+
+    async def parse_image(self, image_bytes: bytes, media_type: str) -> dict[str, Any] | list[dict[str, Any]]:
+        """이미지 OCR 모킹 — 고정 결과 반환"""
+        from datetime import date
+
+        return {
+            "amount": 15000,
+            "description": "모킹된 영수증",
+            "category": "식비",
+            "date": date.today().isoformat(),
+            "type": "expense",
+        }
+
+    async def generate_insights(self, expenses_data: dict[str, Any]) -> str:
+        """인사이트 모킹 — 고정 텍스트 반환"""
+        return "테스트 인사이트입니다."
+
+    async def generate(self, prompt: str) -> str:
+        """범용 텍스트 생성 모킹"""
+        return '{"result": "mock response"}'
+
+    async def generate_comprehensive_insights(self, report_data: dict[str, Any]) -> dict[str, Any]:
+        """종합 인사이트 모킹 — 고정 구조 반환"""
+        return {
+            "summary": "테스트 종합 인사이트입니다.",
+            "highlights": ["지출이 안정적입니다.", "저축 목표를 달성했습니다."],
+            "recommendations": ["현재 소비 패턴을 유지하세요."],
+            "health_score": 80,
+            "health_grade": "양호",
+        }
+
+
 class LocalLLMProvider(LLMProvider):
     def __init__(self, model: str = ""):
         self.model = model or DEFAULT_MODELS["local"]
 
-    async def parse_expense(
+    async def parse_expense(  # type: ignore[override]
         self,
         user_input: str,
         categories: list[str] | None = None,
@@ -546,11 +626,12 @@ def _create_provider(provider_name: str, model: str) -> LLMProvider:
         "openai": OpenAIProvider,
         "google": GoogleProvider,
         "local": LocalLLMProvider,
+        "mock": MockLLMProvider,
     }
     cls = providers.get(provider_name)
     if not cls:
         raise ValueError(f"Unknown LLM provider: {provider_name}")
-    return cls(model=model)
+    return cls(model=model)  # type: ignore[abstract]
 
 
 # 앱 레벨 프로바이더 캐시: (feature, provider_name, model) → LLMProvider 인스턴스 (#251)

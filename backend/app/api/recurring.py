@@ -54,7 +54,7 @@ async def _get_source_record(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="원본 거래를 찾을 수 없습니다",
         )
-    return record
+    return record  # type: ignore[return-value]
 
 
 @router.post("", response_model=RecurringTransactionResponse, status_code=status.HTTP_201_CREATED)
@@ -62,7 +62,7 @@ async def create_recurring(
     data: RecurringTransactionCreate,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-):
+) -> object:
     """정기 거래 생성"""
     household_id = data.household_id
     if household_id is None:
@@ -130,7 +130,7 @@ async def get_recurring_list(
     household_id: int | None = None,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-):
+) -> object:
     """정기 거래 목록 조회"""
     if household_id is None:
         household_id = await get_user_active_household_id(current_user, db)
@@ -150,7 +150,7 @@ async def get_pending_recurring(
     household_id: int | None = None,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-):
+) -> object:
     """처리 대기 중인 정기 거래 조회 (next_due_date <= today)"""
     today = datetime.now(ZoneInfo("Asia/Seoul")).date()
 
@@ -173,7 +173,7 @@ async def get_recurring(
     recurring_id: int,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-):
+) -> object:
     """정기 거래 상세 조회"""
     recurring = await _get_user_recurring(recurring_id, current_user, db)
     return recurring
@@ -185,7 +185,7 @@ async def update_recurring(
     data: RecurringTransactionUpdate,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-):
+) -> object:
     """정기 거래 수정"""
     recurring = await _get_user_recurring(recurring_id, current_user, db)
 
@@ -203,7 +203,7 @@ async def delete_recurring(
     recurring_id: int,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-):
+) -> None:
     """정기 거래 삭제"""
     recurring = await _get_user_recurring(recurring_id, current_user, db)
     await db.delete(recurring)
@@ -215,7 +215,7 @@ async def execute_recurring_transaction(
     recurring_id: int,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-):
+) -> object:
     """정기 거래 실행 → Expense 또는 Income 생성"""
     # 권한 확인 (가구 멤버십 포함)
     await _get_user_recurring(recurring_id, current_user, db)
@@ -245,7 +245,7 @@ async def skip_recurring_transaction(
     recurring_id: int,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-):
+) -> object:
     """정기 거래 건너뛰기 → next_due_date만 갱신"""
     recurring = await _get_user_recurring(recurring_id, current_user, db)
 
@@ -278,7 +278,7 @@ async def _get_user_recurring(
     # 접근 권한 확인: 가구 멤버인지 검증
     if recurring.household_id is not None:
         try:
-            await get_household_member(recurring.household_id, current_user, db)
+            await get_household_member(recurring.household_id, current_user, db)  # type: ignore[arg-type]
         except HTTPException:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,

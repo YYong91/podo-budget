@@ -106,7 +106,7 @@ describe('OnboardingPage', () => {
       await user.click(screen.getByRole('button', { name: '새 가계부 만들기' }))
 
       await waitFor(() => {
-        expect(mockAddToast).toHaveBeenCalledWith('success', '가계부가 생성되었습니다')
+        expect(mockAddToast).toHaveBeenCalledWith('success', '가계부를 만들었어요')
         expect(mockNavigate).toHaveBeenCalledWith('/', { replace: true })
       })
     })
@@ -119,7 +119,7 @@ describe('OnboardingPage', () => {
       await user.type(input, '엔터 테스트{Enter}')
 
       await waitFor(() => {
-        expect(mockAddToast).toHaveBeenCalledWith('success', '가계부가 생성되었습니다')
+        expect(mockAddToast).toHaveBeenCalledWith('success', '가계부를 만들었어요')
       })
     })
 
@@ -133,7 +133,7 @@ describe('OnboardingPage', () => {
       await user.click(screen.getByRole('button', { name: '새 가계부 만들기' }))
 
       await waitFor(() => {
-        expect(mockAddToast).toHaveBeenCalledWith('error', '가계부 생성에 실패했습니다')
+        expect(mockAddToast).toHaveBeenCalledWith('error', '가계부 생성에 실패했어요')
       })
     })
   })
@@ -170,7 +170,7 @@ describe('OnboardingPage', () => {
 
       await waitFor(() => {
         expect(mockAcceptInvitation).toHaveBeenCalledWith('invite-token-abc')
-        expect(mockAddToast).toHaveBeenCalledWith('success', '부부 가계부에 참여했습니다')
+        expect(mockAddToast).toHaveBeenCalledWith('success', '부부 가계부에 참여했어요')
         expect(mockNavigate).toHaveBeenCalledWith('/', { replace: true })
       })
     })
@@ -185,7 +185,7 @@ describe('OnboardingPage', () => {
       await user.click(screen.getByRole('button', { name: '참여' }))
 
       await waitFor(() => {
-        expect(mockAddToast).toHaveBeenCalledWith('error', '초대 수락에 실패했습니다')
+        expect(mockAddToast).toHaveBeenCalledWith('error', '초대 수락에 실패했어요')
       })
     })
   })

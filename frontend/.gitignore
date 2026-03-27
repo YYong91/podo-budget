@@ -22,3 +22,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+coverage/
+
+# 스키마 동기화 검증용 생성 파일 (CI에서 매번 재생성)
+openapi.json
+src/types/generated-api.ts

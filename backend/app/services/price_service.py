@@ -1,6 +1,6 @@
 """자산 시세 조회 서비스
 
-한국 주식/ETF: 한국투자증권 Open API (1차), 네이버 금융 (fallback)
+한국 주식/ETF: Yahoo Finance (stocks 테이블에서 market lookup → .KS/.KQ 변환)
 미국 주식/ETF: Yahoo Finance
 코인: 업비트 공개 API
 환율: exchange_rate 서비스 위임 (USD/KRW 전용, #195)
@@ -9,11 +9,14 @@
 import asyncio
 import logging
 import time
+from typing import Any
 
 import httpx
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.config import settings
 from app.core.metrics import record_external_api_call
+from app.models.stock import Stock
 from app.services.exchange_rate import get_exchange_rate
 
 logger = logging.getLogger(__name__)
@@ -35,57 +38,51 @@ def _lock_for(key: str) -> asyncio.Lock:
     return _price_locks[key]
 
 
-# 한투 API 토큰 캐시
-_kis_token: str | None = None
-_kis_token_expires: float = 0  # unix timestamp
-KIS_BASE_URL = "https://openapi.koreainvestment.com:9443"
+# ── Yahoo Finance 공통 ───────────────────────────────────────
 
 
-# ── 한투 API 인증 ──────────────────────────────────────────────
+async def _get_yahoo_price(yahoo_ticker: str) -> float | None:
+    """Yahoo Finance에서 시세 조회 (한국/미국 공통)
 
-
-async def _get_kis_token() -> str | None:
-    """한투 API OAuth 토큰 발급/캐싱 (24시간 유효, 1시간 전 갱신)"""
-    global _kis_token, _kis_token_expires
-
-    if _kis_token and time.monotonic() < _kis_token_expires - 3600:
-        return _kis_token
-
-    if not settings.KIS_APPKEY or not settings.KIS_APPSECRET:
-        return None
-
+    Args:
+        yahoo_ticker: Yahoo Finance 티커 (예: "005930.KS", "AAPL")
+    """
+    t0 = time.monotonic()
     try:
         async with httpx.AsyncClient(timeout=10) as client:
-            resp = await client.post(
-                f"{KIS_BASE_URL}/oauth2/tokenP",
-                json={
-                    "grant_type": "client_credentials",
-                    "appkey": settings.KIS_APPKEY,
-                    "appsecret": settings.KIS_APPSECRET,
-                },
+            resp = await client.get(
+                f"https://query1.finance.yahoo.com/v8/finance/chart/{yahoo_ticker}",
+                params={"interval": "1d", "range": "1d"},
+                headers={"User-Agent": "Mozilla/5.0"},
             )
+            latency = (time.monotonic() - t0) * 1000
             if resp.status_code == 200:
                 data = resp.json()
-                _kis_token = data["access_token"]
-                # token_token_expired: "YYYY-MM-DD HH:MM:SS" 형식이지만
-                # 안전하게 현재 + 23시간으로 설정
-                _kis_token_expires = time.monotonic() + 23 * 3600
-                logger.info("한투 API 토큰 발급 성공")
-                return _kis_token
+                meta = data["chart"]["result"][0]["meta"]
+                price = float(meta["regularMarketPrice"])
+                if price > 0:
+                    record_external_api_call(service="yahoo", success=True, latency_ms=latency)
+                    return price
+            record_external_api_call(service="yahoo", success=False, latency_ms=latency)
     except Exception:
-        logger.warning("한투 API 토큰 발급 실패")
+        latency = (time.monotonic() - t0) * 1000
+        record_external_api_call(service="yahoo", success=False, latency_ms=latency)
     return None
 
 
 # ── 한국 주식 시세 ─────────────────────────────────────────────
 
 
-async def get_stock_kr_price(ticker: str) -> float | None:
-    """한국 주식/ETF 현재가 조회 (한투 API 우선, 네이버 fallback)"""
+async def get_stock_kr_price(ticker: str, db: AsyncSession) -> float | None:
+    """한국 주식/ETF 현재가 조회 (Yahoo Finance 단일 소스)
+
+    stocks 테이블에서 market lookup → .KS(코스피)/.KQ(코스닥) 변환.
+    미등록 종목은 .KS 시도 후 .KQ fallback.
+    """
     key = f"kr:{ticker}"
     cached = _get_cached(key)
     if cached is not _CACHE_MISS:
-        return cached  # type: ignore[return-value]  # None(실패 캐시) 또는 float
+        return cached  # type: ignore[return-value]
 
     async with _lock_for(key):
         # 락 획득 후 재확인 — 대기 중에 다른 코루틴이 이미 채웠을 수 있음
@@ -93,78 +90,22 @@ async def get_stock_kr_price(ticker: str) -> float | None:
         if cached is not _CACHE_MISS:
             return cached  # type: ignore[return-value]
 
-        # 1차: 한투 API
-        price = await _get_stock_kr_price_kis(ticker)
-        if not price:
-            # 2차: 네이버 금융 fallback
-            price = await _get_stock_kr_price_naver(ticker)
-        # 성공·실패 모두 캐시 (실패 시 None → NEGATIVE_CACHE_TTL 30초 적용, #159)
+        # stocks 테이블에서 market 확인
+        result = await db.execute(select(Stock).where(Stock.ticker == ticker, Stock.is_active == True))  # noqa: E712
+        stock = result.scalar_one_or_none()
+
+        if stock:
+            # DB에 등록된 종목 — market 기반으로 서픽스 결정
+            suffix = ".KS" if stock.market == "KOSPI" else ".KQ"
+            price = await _get_yahoo_price(f"{ticker}{suffix}")
+        else:
+            # 미등록 종목 — .KS 시도 후 .KQ fallback
+            price = await _get_yahoo_price(f"{ticker}.KS")
+            if price is None:
+                price = await _get_yahoo_price(f"{ticker}.KQ")
+
         _set_cached(key, price)
         return price
-
-
-async def _get_stock_kr_price_kis(ticker: str) -> float | None:
-    """한투 API 한국 주식 현재가 조회"""
-
-    token = await _get_kis_token()
-    if not token:
-        return None
-
-    t0 = time.monotonic()
-    try:
-        async with httpx.AsyncClient(timeout=10) as client:
-            resp = await client.get(
-                f"{KIS_BASE_URL}/uapi/domestic-stock/v1/quotations/inquire-price",
-                headers={
-                    "content-type": "application/json; charset=utf-8",
-                    "authorization": f"Bearer {token}",
-                    "appkey": settings.KIS_APPKEY,
-                    "appsecret": settings.KIS_APPSECRET,
-                    "tr_id": "FHKST01010100",
-                },
-                params={
-                    "FID_COND_MRKT_DIV_CODE": "J",
-                    "FID_INPUT_ISCD": ticker,
-                },
-            )
-            latency = (time.monotonic() - t0) * 1000
-            if resp.status_code == 200:
-                data = resp.json()
-                output = data.get("output", {})
-                price = float(output.get("stck_prpr", 0))
-                if price > 0:
-                    record_external_api_call(service="kis", success=True, latency_ms=latency)
-                    return price
-            record_external_api_call(service="kis", success=False, latency_ms=latency)
-    except Exception:
-        latency = (time.monotonic() - t0) * 1000
-        record_external_api_call(service="kis", success=False, latency_ms=latency)
-        logger.warning("한투 API 시세 조회 실패: %s", ticker)
-    return None
-
-
-async def _get_stock_kr_price_naver(ticker: str) -> float | None:
-    """네이버 금융 한국 주식 현재가 조회 (fallback)"""
-
-    t0 = time.monotonic()
-    try:
-        async with httpx.AsyncClient(timeout=10) as client:
-            resp = await client.get(
-                f"https://m.stock.naver.com/api/stock/{ticker}/basic",
-                headers={"User-Agent": "Mozilla/5.0"},
-            )
-            latency = (time.monotonic() - t0) * 1000
-            if resp.status_code == 200:
-                data = resp.json()
-                price = float(data.get("currentPrice", 0))
-                if price > 0:
-                    record_external_api_call(service="naver", success=True, latency_ms=latency)
-                    return price
-            record_external_api_call(service="naver", success=False, latency_ms=latency)
-    except Exception:
-        latency = (time.monotonic() - t0) * 1000
-        record_external_api_call(service="naver", success=False, latency_ms=latency)
-    return None
 
 
 # ── 미국 주식 시세 ─────────────────────────────────────────────
@@ -179,36 +120,21 @@ async def get_stock_us_price(ticker: str) -> tuple[float | None, float | None]:
     if cached_usd is not _CACHE_MISS:
         if cached_usd is None:
             return None, None  # 실패 캐시 hit
-        return cached_usd, cached_usd * usd_krw if usd_krw else None
+        return cached_usd, cached_usd * usd_krw if usd_krw else None  # type: ignore[return-value,operator]
 
     async with _lock_for(key):
         cached_usd = _get_cached(key)
         if cached_usd is not _CACHE_MISS:
             if cached_usd is None:
                 return None, None
-            return cached_usd, cached_usd * usd_krw if usd_krw else None
+            return cached_usd, cached_usd * usd_krw if usd_krw else None  # type: ignore[return-value,operator]
 
-        t0 = time.monotonic()
-        try:
-            async with httpx.AsyncClient(timeout=10) as client:
-                resp = await client.get(
-                    f"https://query1.finance.yahoo.com/v8/finance/chart/{ticker}",
-                    params={"interval": "1d", "range": "1d"},
-                    headers={"User-Agent": "Mozilla/5.0"},
-                )
-                latency = (time.monotonic() - t0) * 1000
-                if resp.status_code == 200:
-                    data = resp.json()
-                    meta = data["chart"]["result"][0]["meta"]
-                    price_usd = float(meta["regularMarketPrice"])
-                    _set_cached(key, price_usd)
-                    record_external_api_call(service="yahoo", success=True, latency_ms=latency)
-                    krw_price = price_usd * usd_krw if usd_krw else None
-                    return price_usd, krw_price
-                record_external_api_call(service="yahoo", success=False, latency_ms=latency)
-        except Exception:
-            latency = (time.monotonic() - t0) * 1000
-            record_external_api_call(service="yahoo", success=False, latency_ms=latency)
+        price_usd = await _get_yahoo_price(ticker)
+        if price_usd is not None:
+            _set_cached(key, price_usd)
+            krw_price = price_usd * usd_krw if usd_krw else None
+            return price_usd, krw_price
+
         _set_cached(key, None)  # 실패 캐시 (#159)
     return None, None
 
@@ -268,43 +194,58 @@ def _calc_profit(current_value: float, quantity: float, avg_buy_price: float | N
     return profit_loss, profit_loss_pct
 
 
-async def get_asset_current_value(asset) -> dict:
+async def get_asset_current_value(asset, db: AsyncSession | None = None) -> dict[str, Any]:  # type: ignore[no-untyped-def]
     """자산의 현재 평가액 계산
+
+    Args:
+        asset: Asset 모델 인스턴스
+        db: AsyncSession (한국 주식 market lookup에 필요)
 
     Returns: {current_price, current_value, profit_loss, profit_loss_pct}
     """
     result = {"current_price": None, "current_value": None, "profit_loss": None, "profit_loss_pct": None}
 
     if asset.type == "stock_kr" and asset.ticker and asset.quantity:
-        price = await get_stock_kr_price(asset.ticker)
+        if db is not None:
+            price = await get_stock_kr_price(asset.ticker, db)
+        else:
+            # db 없는 경우 fallback — .KS 기본 시도 (캐시/singleflight/KOSDAQ 미적용)
+            logger.warning("get_asset_current_value: db=None, 한국 주식 market lookup 불가 — .KS fallback")
+            price = await _get_yahoo_price(f"{asset.ticker}.KS")
         if price:
-            result["current_price"] = price
-            result["current_value"] = float(asset.quantity) * price
-            result["profit_loss"], result["profit_loss_pct"] = _calc_profit(
-                result["current_value"], float(asset.quantity), float(asset.avg_buy_price) if asset.avg_buy_price else None
+            result["current_price"] = price  # type: ignore[assignment]
+            result["current_value"] = float(asset.quantity) * price  # type: ignore[assignment]
+            result["profit_loss"], result["profit_loss_pct"] = _calc_profit(  # type: ignore[assignment]
+                result["current_value"],  # type: ignore[arg-type]
+                float(asset.quantity),
+                float(asset.avg_buy_price) if asset.avg_buy_price else None,
             )
 
     elif asset.type == "stock_us" and asset.ticker and asset.quantity:
         _price_usd, price_krw = await get_stock_us_price(asset.ticker)
         if price_krw:
-            result["current_price"] = price_krw
-            result["current_value"] = float(asset.quantity) * price_krw
-            result["profit_loss"], result["profit_loss_pct"] = _calc_profit(
-                result["current_value"], float(asset.quantity), float(asset.avg_buy_price) if asset.avg_buy_price else None
+            result["current_price"] = price_krw  # type: ignore[assignment]
+            result["current_value"] = float(asset.quantity) * price_krw  # type: ignore[assignment]
+            result["profit_loss"], result["profit_loss_pct"] = _calc_profit(  # type: ignore[assignment]
+                result["current_value"],  # type: ignore[arg-type]
+                float(asset.quantity),
+                float(asset.avg_buy_price) if asset.avg_buy_price else None,
             )
 
     elif asset.type == "crypto" and asset.ticker and asset.quantity:
         price = await get_crypto_price(asset.ticker)
         if price:
-            result["current_price"] = price
-            result["current_value"] = float(asset.quantity) * price
-            result["profit_loss"], result["profit_loss_pct"] = _calc_profit(
-                result["current_value"], float(asset.quantity), float(asset.avg_buy_price) if asset.avg_buy_price else None
+            result["current_price"] = price  # type: ignore[assignment]
+            result["current_value"] = float(asset.quantity) * price  # type: ignore[assignment]
+            result["profit_loss"], result["profit_loss_pct"] = _calc_profit(  # type: ignore[assignment]
+                result["current_value"],  # type: ignore[arg-type]
+                float(asset.quantity),
+                float(asset.avg_buy_price) if asset.avg_buy_price else None,
             )
 
     elif asset.type in ("deposit", "real_estate", "other", "loan"):
         value = float(asset.manual_value) if asset.manual_value else 0
-        result["current_value"] = value
+        result["current_value"] = value  # type: ignore[assignment]
 
     return result
 
@@ -312,61 +253,7 @@ async def get_asset_current_value(asset) -> dict:
 # ── 종목 검색 ──────────────────────────────────────────────────
 
 
-async def search_stock_kr(query: str) -> list[dict]:
-    """한국 종목 검색 (프론트 정적 JSON으로 이전, 백엔드는 fallback용 유지)"""
-    # 1차: 네이버 금융
-    results = await _search_stock_kr_naver(query)
-    if results:
-        return results
-    # 2차: Yahoo Finance fallback
-    return await _search_stock_kr_yahoo(query)
-
-
-async def _search_stock_kr_naver(query: str) -> list[dict]:
-    """네이버 금융 한국 종목 검색"""
-    try:
-        async with httpx.AsyncClient(timeout=10) as client:
-            resp = await client.get(
-                "https://m.stock.naver.com/api/search/all",
-                params={"query": query},
-                headers={"User-Agent": "Mozilla/5.0"},
-            )
-            if resp.status_code == 200:
-                data = resp.json()
-                results = []
-                for item in data.get("result", {}).get("d", [])[:10]:
-                    results.append({"ticker": item.get("cd", ""), "name": item.get("nm", ""), "market": "KR"})
-                return results
-    except Exception:
-        pass
-    return []
-
-
-async def _search_stock_kr_yahoo(query: str) -> list[dict]:
-    """Yahoo Finance 한국 종목 검색 fallback (.KS/.KQ 필터)"""
-    try:
-        async with httpx.AsyncClient(timeout=10) as client:
-            resp = await client.get(
-                "https://query1.finance.yahoo.com/v1/finance/search",
-                params={"q": query, "quotesCount": 20},
-                headers={"User-Agent": "Mozilla/5.0"},
-            )
-            if resp.status_code == 200:
-                data = resp.json()
-                results = []
-                for item in data.get("quotes", []):
-                    symbol = item.get("symbol", "")
-                    if symbol.endswith(".KS") or symbol.endswith(".KQ"):
-                        ticker = symbol.rsplit(".", 1)[0]
-                        name = item.get("shortname") or item.get("longname") or ticker
-                        results.append({"ticker": ticker, "name": name, "market": "KR"})
-                return results[:10]
-    except Exception:
-        pass
-    return []
-
-
-async def search_stock_us(query: str) -> list[dict]:
+async def search_stock_us(query: str) -> list[dict[str, Any]]:
     """미국 종목 검색"""
     try:
         async with httpx.AsyncClient(timeout=10) as client:
@@ -387,7 +274,7 @@ async def search_stock_us(query: str) -> list[dict]:
     return []
 
 
-async def search_crypto(query: str) -> list[dict]:
+async def search_crypto(query: str) -> list[dict[str, Any]]:
     """코인 검색 (업비트 마켓)"""
     try:
         async with httpx.AsyncClient(timeout=10) as client:

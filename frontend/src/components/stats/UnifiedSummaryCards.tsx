@@ -1,15 +1,21 @@
 /**
  * @file UnifiedSummaryCards.tsx
- * @description 종합 리포트 핵심 지표 카드 — (순자산) + 총수입/총지출/순수익/저축률
+ * @description 이달의 리포트 핵심 지표 카드 — (순자산) + 총수입/총지출/남은 돈/저축률
+ * 각 카드 클릭 시 관련 상세 페이지로 이동
  */
+
+import { Link } from 'react-router-dom'
 
 interface UnifiedSummaryCardsProps {
   incomeTotal: number
   expenseTotal: number
+  /** 저축성 지출 합계 (적금, 투자, 보험 등). 제공 시 저축률 = savingsTotal / incomeTotal */
+  savingsTotal?: number
   netWorth?: number | null
   prevNetWorth?: number | null
   prevIncome?: number | null
   prevExpense?: number | null
+  monthStr?: string
 }
 
 function formatAmount(amount: number): string {
@@ -30,7 +36,7 @@ function ChangeIndicator({ current, previous }: { current: number; previous: num
   const color = pct >= 0 ? 'text-leaf-600' : 'text-red-600'
   return (
     <p className={`text-[10px] mt-0.5 ${color}`}>
-      전월 {pct >= 0 ? '+' : ''}
+      지난달 {pct >= 0 ? '+' : ''}
       {pct.toFixed(0)}%
     </p>
   )
@@ -39,13 +45,18 @@ function ChangeIndicator({ current, previous }: { current: number; previous: num
 export default function UnifiedSummaryCards({
   incomeTotal,
   expenseTotal,
+  savingsTotal,
   netWorth,
   prevNetWorth,
   prevIncome,
   prevExpense,
+  monthStr,
 }: UnifiedSummaryCardsProps) {
   const net = incomeTotal - expenseTotal
-  const savingsRate = incomeTotal > 0 ? (net / incomeTotal) * 100 : null
+  // savingsTotal이 제공되면 저축성 지출 기반, 아니면 기존 (수입-지출)/수입 방식
+  const savingsRate = incomeTotal > 0
+    ? (savingsTotal !== undefined ? (savingsTotal / incomeTotal) * 100 : (net / incomeTotal) * 100)
+    : null
 
   const netColor = net >= 0 ? 'text-leaf-600' : 'text-red-600'
   const rateColor =
@@ -57,20 +68,23 @@ export default function UnifiedSummaryCards({
           ? 'text-amber-600'
           : 'text-red-600'
 
+  const cardBase = "rounded-2xl shadow-sm p-4 sm:p-5 block hover:ring-2 hover:ring-grape-200 transition-shadow"
+
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-      {/* 순자산 카드 (자산 데이터가 있을 때만) */}
+      {/* 순자산 카드 → 자산 페이지 */}
       {netWorth != null && (
-        <div className="col-span-2 lg:col-span-4 bg-gradient-to-br from-warm-50 to-warm-100 border border-[var(--border-default)] rounded-2xl shadow-sm p-4 sm:p-5 text-center">
+        <Link to="/assets" className={`col-span-2 lg:col-span-4 bg-gradient-to-br from-warm-50 to-warm-100 border border-[var(--border-default)] ${cardBase} text-center`}>
           <p className="text-sm text-[var(--text-tertiary)] mb-0.5">순자산</p>
           <p className="text-xl sm:text-2xl font-bold text-[var(--text-primary)]">{formatLargeAmount(netWorth)}</p>
           {prevNetWorth != null && prevNetWorth !== 0 && (
             <ChangeIndicator current={netWorth} previous={prevNetWorth} />
           )}
-        </div>
+        </Link>
       )}
 
-      <div className="bg-gradient-to-br from-leaf-50 to-leaf-100 border border-leaf-200/60 rounded-2xl shadow-sm p-4 sm:p-5">
+      {/* 총 수입 → 수입 필터 목록 */}
+      <Link to={monthStr ? `/?month=${monthStr}&filter=income` : '/?filter=income'} className={`bg-gradient-to-br from-leaf-50 to-leaf-100 border border-leaf-200/60 ${cardBase}`}>
         <p className="text-sm text-leaf-600/70">총 수입</p>
         <p className="text-xl sm:text-2xl font-bold tracking-tight text-[var(--text-primary)] mt-1">
           {formatAmount(incomeTotal)}
@@ -78,8 +92,10 @@ export default function UnifiedSummaryCards({
         {prevIncome != null && prevIncome > 0 && (
           <ChangeIndicator current={incomeTotal} previous={prevIncome} />
         )}
-      </div>
-      <div className="bg-gradient-to-br from-grape-50 to-grape-100 border border-grape-200/60 rounded-2xl shadow-sm p-4 sm:p-5">
+      </Link>
+
+      {/* 총 지출 → 지출 필터 목록 */}
+      <Link to={monthStr ? `/?month=${monthStr}&filter=expense` : '/?filter=expense'} className={`bg-gradient-to-br from-grape-50 to-grape-100 border border-grape-200/60 ${cardBase}`}>
         <p className="text-sm text-grape-600/70">총 지출</p>
         <p className="text-xl sm:text-2xl font-bold tracking-tight text-[var(--text-primary)] mt-1">
           {formatAmount(expenseTotal)}
@@ -87,14 +103,18 @@ export default function UnifiedSummaryCards({
         {prevExpense != null && prevExpense > 0 && (
           <ChangeIndicator current={expenseTotal} previous={prevExpense} />
         )}
-      </div>
-      <div className="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-2xl shadow-sm p-4 sm:p-5">
-        <p className="text-sm text-[var(--text-tertiary)]">순수익</p>
+      </Link>
+
+      {/* 남은 돈 (네비게이션 없음) */}
+      <div className={`bg-[var(--surface-card)] border border-[var(--border-default)] rounded-2xl shadow-sm p-4 sm:p-5`}>
+        <p className="text-sm text-[var(--text-tertiary)]">남은 돈</p>
         <p data-testid="net-income-value" className={`text-xl sm:text-2xl font-bold mt-1 ${netColor}`}>
           {formatAmount(net)}
         </p>
       </div>
-      <div className="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-2xl shadow-sm p-4 sm:p-5">
+
+      {/* 저축률 (네비게이션 없음) */}
+      <div className={`bg-[var(--surface-card)] border border-[var(--border-default)] rounded-2xl shadow-sm p-4 sm:p-5`}>
         <p className="text-sm text-[var(--text-tertiary)]">저축률</p>
         <p data-testid="savings-rate-value" className={`text-xl sm:text-2xl font-bold mt-1 ${rateColor}`}>
           {savingsRate !== null ? `${savingsRate.toFixed(1)}%` : '-'}

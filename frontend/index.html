@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <link rel="icon" href="/favicon-book-64.png" type="image/png" />
     <link rel="apple-touch-icon" href="/apple-touch-icon-180x180.png" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <meta name="description" content="포도알처럼 하나씩, 알찬 가계부" />
     <meta name="theme-color" content="#7c3aed" />
     <meta name="referrer" content="same-origin" />
@@ -16,7 +16,10 @@
         var d = t === 'dark' || (t !== 'light' && matchMedia('(prefers-color-scheme:dark)').matches)
         if (d) {
           document.documentElement.classList.add('dark')
+          document.documentElement.style.backgroundColor = '#1a1625'
           document.querySelector('meta[name="theme-color"]').content = '#1a1625'
+        } else {
+          document.documentElement.style.backgroundColor = '#fefce8'
         }
       })()
     </script>

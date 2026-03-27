@@ -35,9 +35,9 @@ describe('CategoryBottomSheet', () => {
       expect(screen.queryByText('카테고리 변경')).not.toBeInTheDocument()
     })
 
-    it('"미분류" 항목을 항상 표시한다', () => {
+    it('"분류 안 됨" 항목을 항상 표시한다', () => {
       renderSheet()
-      expect(screen.getByText('미분류')).toBeInTheDocument()
+      expect(screen.getByText('분류 안 됨')).toBeInTheDocument()
     })
   })
 
@@ -74,12 +74,12 @@ describe('CategoryBottomSheet', () => {
       expect(onSelect).toHaveBeenCalledWith(1)
     })
 
-    it('"미분류" 클릭 시 onSelect가 null로 호출된다', async () => {
+    it('"분류 안 됨" 클릭 시 onSelect가 null로 호출된다', async () => {
       const onSelect = vi.fn()
       const user = userEvent.setup()
       renderSheet({ onSelect })
 
-      await user.click(screen.getByText('미분류'))
+      await user.click(screen.getByText('분류 안 됨'))
       expect(onSelect).toHaveBeenCalledWith(null)
     })
 

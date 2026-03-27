@@ -4,7 +4,7 @@
  * API 응답을 모킹하기 위한 샘플 데이터를 정의한다.
  */
 
-import type { Expense, Income, Category, MonthlyStats, InsightsResponse, StatsResponse, ComparisonResponse, RecurringTransaction, AssetSummary, AssetSnapshot, StructuredInsights } from '../types'
+import type { Expense, Income, Category, MonthlyStats, InsightsResponse, StatsResponse, ComparisonResponse, RecurringTransaction, AssetSummary, AssetSnapshot, StructuredInsights, StockSearchResult, PaymentMethod, PaymentMethodUsage } from '../types'
 
 /**
  * 테스트용 카테고리 목록
@@ -16,7 +16,9 @@ export const mockCategories: Category[] = [
     type: 'expense',
     description: '음식 및 식사',
     sort_order: 3,
+    is_savings: false,
     is_system: true,
+    exclude_auto_payment: false,
     created_at: '2024-01-01T00:00:00Z',
   },
   {
@@ -25,7 +27,9 @@ export const mockCategories: Category[] = [
     type: 'expense',
     description: '대중교통 및 택시',
     sort_order: 2,
+    is_savings: false,
     is_system: true,
+    exclude_auto_payment: false,
     created_at: '2024-01-01T00:00:00Z',
   },
   {
@@ -34,7 +38,9 @@ export const mockCategories: Category[] = [
     type: 'both',
     description: null,
     sort_order: 1,
+    is_savings: false,
     is_system: false,
+    exclude_auto_payment: false,
     created_at: '2024-01-01T00:00:00Z',
   },
 ]
@@ -48,6 +54,7 @@ export const mockExpenses: Expense[] = [
     amount: 8000,
     description: '김치찌개',
     category_id: 1,
+    payment_method_id: null,
     raw_input: '오늘 점심에 김치찌개 8000원 먹었어',
     memo: null,
     household_id: 1,
@@ -63,6 +70,7 @@ export const mockExpenses: Expense[] = [
     amount: 3500,
     description: '버스',
     category_id: 2,
+    payment_method_id: null,
     raw_input: '버스 3500원',
     memo: null,
     household_id: 1,
@@ -78,6 +86,7 @@ export const mockExpenses: Expense[] = [
     amount: 50000,
     description: '옷',
     category_id: 3,
+    payment_method_id: null,
     raw_input: null,
     memo: null,
     household_id: 1,
@@ -148,6 +157,24 @@ export const mockComparison: ComparisonResponse = {
 }
 
 /**
+ * 테스트용 수입 기간 비교
+ */
+export const mockIncomeComparison: ComparisonResponse = {
+  current: { label: '2024년 1월', total: 4000000 },
+  previous: { label: '2023년 12월', total: 3500000 },
+  change: { amount: 500000, percentage: 14.3 },
+  trend: [
+    { label: '2023년 11월', total: 3200000 },
+    { label: '2023년 12월', total: 3500000 },
+    { label: '2024년 1월', total: 4000000 },
+  ],
+  by_category_comparison: [
+    { category: '급여', current: 3500000, previous: 3000000, change_amount: 500000, change_percentage: 16.7 },
+    { category: '부수입', current: 500000, previous: 500000, change_amount: 0, change_percentage: 0 },
+  ],
+}
+
+/**
  * 테스트용 수입 카테고리 (type=income 또는 type=both인 카테고리 포함)
  */
 export const mockIncomeCategoriesAll: Category[] = [
@@ -158,7 +185,9 @@ export const mockIncomeCategoriesAll: Category[] = [
     type: 'income',
     description: '월급 및 급여',
     sort_order: 0,
+    is_savings: false,
     is_system: true,
+    exclude_auto_payment: false,
     created_at: '2024-01-01T00:00:00Z',
   },
   {
@@ -167,10 +196,27 @@ export const mockIncomeCategoriesAll: Category[] = [
     type: 'income',
     description: '프리랜스 등 부수입',
     sort_order: 0,
+    is_savings: false,
     is_system: false,
+    exclude_auto_payment: false,
     created_at: '2024-01-01T00:00:00Z',
   },
 ]
+
+/**
+ * 테스트용 저축성 카테고리 (exclude_auto_payment=true)
+ */
+export const mockSavingsCategory: Category = {
+  id: 10,
+  name: '저축/투자',
+  type: 'expense',
+  description: '적금, 투자 등',
+  sort_order: 0,
+  is_savings: true,
+  is_system: true,
+  exclude_auto_payment: true,
+  created_at: '2024-01-01T00:00:00Z',
+}
 
 /**
  * 테스트용 수입 목록
@@ -415,6 +461,7 @@ export const mockChatResponse = {
       amount: 8000,
       description: '김치찌개',
       category_id: 1,
+      payment_method_id: null,
       raw_input: '오늘 점심에 김치찌개 8000원 먹었어',
       memo: null,
       household_id: 1,
@@ -474,6 +521,15 @@ export const mockDashboardStats = {
   total_income_count: 1500,
 }
 
+/**
+ * 테스트용 종목 검색 결과 (BE stocks 테이블)
+ */
+export const mockStocks: StockSearchResult[] = [
+  { id: 1, ticker: '005930', name: '삼성전자', market: 'KOSPI' },
+  { id: 2, ticker: '000660', name: 'SK하이닉스', market: 'KOSPI' },
+  { id: 3, ticker: '247540', name: '에코프로비엠', market: 'KOSDAQ' },
+]
+
 export const mockStructuredInsights: StructuredInsights = {
   findings: [
     {
@@ -498,3 +554,72 @@ export const mockStructuredInsights: StructuredInsights = {
   ],
   encouragement: '저축률 36%는 매우 우수합니다! 이 습관을 유지하세요',
 }
+
+/**
+ * 테스트용 결제수단 목록
+ */
+export const mockPaymentMethods: PaymentMethod[] = [
+  {
+    id: 1,
+    household_id: 1,
+    created_by: 1,
+    name: '삼성카드',
+    type: 'credit_card',
+    monthly_target: 300000,
+    is_default: true,
+    is_active: true,
+    display_order: 0,
+    created_at: '2026-01-01T00:00:00Z',
+    updated_at: '2026-01-01T00:00:00Z',
+  },
+  {
+    id: 2,
+    household_id: 1,
+    created_by: 1,
+    name: '현금',
+    type: 'cash',
+    monthly_target: null,
+    is_default: false,
+    is_active: true,
+    display_order: 1,
+    created_at: '2026-01-01T00:00:00Z',
+    updated_at: '2026-01-01T00:00:00Z',
+  },
+  {
+    id: 3,
+    household_id: 1,
+    created_by: 1,
+    name: '국민카드',
+    type: 'credit_card',
+    monthly_target: 500000,
+    is_default: false,
+    is_active: true,
+    display_order: 2,
+    created_at: '2026-01-01T00:00:00Z',
+    updated_at: '2026-01-01T00:00:00Z',
+  },
+]
+
+/**
+ * 테스트용 결제수단별 월 사용액
+ */
+export const mockPaymentMethodUsage: PaymentMethodUsage[] = [
+  {
+    id: 1,
+    name: '삼성카드',
+    type: 'credit_card',
+    monthly_target: 300000,
+    spent_amount: 220000,
+    usage_percentage: 73.3,
+    remaining: 80000,
+  },
+  {
+    id: 3,
+    name: '국민카드',
+    type: 'credit_card',
+    monthly_target: 500000,
+    spent_amount: 150000,
+    usage_percentage: 30.0,
+    remaining: 350000,
+  },
+]

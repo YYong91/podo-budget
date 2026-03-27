@@ -61,233 +61,44 @@ def test_cache_expired_entry_deleted():
     assert "test:del" not in price_service._price_cache
 
 
-# ── 한투 API 토큰 ────────────────────────────────────────────
+# ── Yahoo Finance 공통 ─────────────────────────────────────────
 
 
 @pytest.mark.asyncio
-async def test_get_kis_token_no_credentials():
-    """KIS_APPKEY/APPSECRET이 없으면 None 반환"""
-    from app.services.price_service import _get_kis_token
-
-    with patch("app.services.price_service.settings") as mock_settings:
-        mock_settings.KIS_APPKEY = ""
-        mock_settings.KIS_APPSECRET = ""
-        # 기존 토큰 캐시 무효화
-        import app.services.price_service as ps
-
-        ps._kis_token = None
-        ps._kis_token_expires = 0
-
-        result = await _get_kis_token()
-        assert result is None
-
-
-@pytest.mark.asyncio
-async def test_get_kis_token_cached():
-    """토큰이 캐시되어 있고 유효하면 재발급하지 않음"""
-    import app.services.price_service as ps
-
-    ps._kis_token = "cached-token"
-    ps._kis_token_expires = time.monotonic() + 10000  # 유효
-
-    result = await ps._get_kis_token()
-    assert result == "cached-token"
-
-    # 정리
-    ps._kis_token = None
-    ps._kis_token_expires = 0
-
-
-@pytest.mark.asyncio
-async def test_get_kis_token_success():
-    """한투 API 토큰 발급 성공"""
-    import app.services.price_service as ps
-
-    ps._kis_token = None
-    ps._kis_token_expires = 0
+async def test_get_yahoo_price_success():
+    """Yahoo Finance 시세 조회 성공"""
+    from app.services.price_service import _get_yahoo_price
 
     mock_resp = MagicMock()
     mock_resp.status_code = 200
-    mock_resp.json.return_value = {"access_token": "new-token"}
-
-    mock_client = AsyncMock()
-    mock_client.post.return_value = mock_resp
-    mock_client.__aenter__ = AsyncMock(return_value=mock_client)
-    mock_client.__aexit__ = AsyncMock(return_value=None)
-
-    with patch("app.services.price_service.settings") as mock_settings:
-        mock_settings.KIS_APPKEY = "test-key"
-        mock_settings.KIS_APPSECRET = "test-secret"  # pragma: allowlist secret
-
-        with patch("httpx.AsyncClient", return_value=mock_client):
-            result = await ps._get_kis_token()
-            assert result == "new-token"
-
-    # 정리
-    ps._kis_token = None
-    ps._kis_token_expires = 0
-
-
-@pytest.mark.asyncio
-async def test_get_kis_token_api_failure():
-    """한투 API 토큰 발급 실패 → None"""
-    import app.services.price_service as ps
-
-    ps._kis_token = None
-    ps._kis_token_expires = 0
-
-    mock_client = AsyncMock()
-    mock_client.post.side_effect = Exception("network error")
-    mock_client.__aenter__ = AsyncMock(return_value=mock_client)
-    mock_client.__aexit__ = AsyncMock(return_value=None)
-
-    with patch("app.services.price_service.settings") as mock_settings:
-        mock_settings.KIS_APPKEY = "test-key"
-        mock_settings.KIS_APPSECRET = "test-secret"  # pragma: allowlist secret
-
-        with patch("httpx.AsyncClient", return_value=mock_client):
-            result = await ps._get_kis_token()
-            assert result is None
-
-
-# ── 한국 주식 (KIS + 네이버 fallback) ─────────────────────────
-
-
-@pytest.mark.asyncio
-async def test_get_stock_kr_price_kis_success():
-    """한투 API로 한국 주식 시세 조회 성공"""
-    from app.services import price_service
-
-    mock_resp = MagicMock()
-    mock_resp.status_code = 200
-    mock_resp.json.return_value = {"output": {"stck_prpr": "80000"}}
+    mock_resp.json.return_value = {"chart": {"result": [{"meta": {"regularMarketPrice": 80000}}]}}
 
     mock_client = AsyncMock()
     mock_client.get.return_value = mock_resp
     mock_client.__aenter__ = AsyncMock(return_value=mock_client)
     mock_client.__aexit__ = AsyncMock(return_value=None)
 
-    with (
-        patch.object(price_service, "_get_kis_token", new=AsyncMock(return_value="token")),
-        patch("httpx.AsyncClient", return_value=mock_client),
-        patch("app.services.price_service.settings") as mock_settings,
-    ):
-        mock_settings.KIS_APPKEY = "key"
-        mock_settings.KIS_APPSECRET = "secret"  # pragma: allowlist secret
-
-        result = await price_service._get_stock_kr_price_kis("005930")
+    with patch("httpx.AsyncClient", return_value=mock_client):
+        result = await _get_yahoo_price("005930.KS")
         assert result == 80000.0
 
 
 @pytest.mark.asyncio
-async def test_get_stock_kr_price_kis_zero_price():
-    """한투 API에서 가격이 0이면 None 반환"""
-    from app.services import price_service
-
-    mock_resp = MagicMock()
-    mock_resp.status_code = 200
-    mock_resp.json.return_value = {"output": {"stck_prpr": "0"}}
-
-    mock_client = AsyncMock()
-    mock_client.get.return_value = mock_resp
-    mock_client.__aenter__ = AsyncMock(return_value=mock_client)
-    mock_client.__aexit__ = AsyncMock(return_value=None)
-
-    with (
-        patch.object(price_service, "_get_kis_token", new=AsyncMock(return_value="token")),
-        patch("httpx.AsyncClient", return_value=mock_client),
-        patch("app.services.price_service.settings") as mock_settings,
-    ):
-        mock_settings.KIS_APPKEY = "key"
-        mock_settings.KIS_APPSECRET = "secret"  # pragma: allowlist secret
-
-        result = await price_service._get_stock_kr_price_kis("005930")
-        assert result is None
-
-
-@pytest.mark.asyncio
-async def test_get_stock_kr_price_kis_no_token():
-    """한투 토큰이 없으면 None 반환"""
-    from app.services import price_service
-
-    with patch.object(price_service, "_get_kis_token", new=AsyncMock(return_value=None)):
-        result = await price_service._get_stock_kr_price_kis("005930")
-        assert result is None
-
-
-@pytest.mark.asyncio
-async def test_get_stock_kr_price_kis_exception():
-    """한투 API 호출 중 예외 → None"""
-    from app.services import price_service
+async def test_get_yahoo_price_exception():
+    """Yahoo Finance API 예외 → None"""
+    from app.services.price_service import _get_yahoo_price
 
     mock_client = AsyncMock()
     mock_client.get.side_effect = Exception("timeout")
     mock_client.__aenter__ = AsyncMock(return_value=mock_client)
     mock_client.__aexit__ = AsyncMock(return_value=None)
 
-    with (
-        patch.object(price_service, "_get_kis_token", new=AsyncMock(return_value="token")),
-        patch("httpx.AsyncClient", return_value=mock_client),
-        patch("app.services.price_service.settings") as mock_settings,
-    ):
-        mock_settings.KIS_APPKEY = "key"
-        mock_settings.KIS_APPSECRET = "secret"  # pragma: allowlist secret
-
-        result = await price_service._get_stock_kr_price_kis("005930")
+    with patch("httpx.AsyncClient", return_value=mock_client):
+        result = await _get_yahoo_price("005930.KS")
         assert result is None
 
 
-@pytest.mark.asyncio
-async def test_get_stock_kr_price_naver_success():
-    """네이버 금융 fallback 시세 조회 성공"""
-    from app.services import price_service
-
-    mock_resp = MagicMock()
-    mock_resp.status_code = 200
-    mock_resp.json.return_value = {"currentPrice": 75000}
-
-    mock_client = AsyncMock()
-    mock_client.get.return_value = mock_resp
-    mock_client.__aenter__ = AsyncMock(return_value=mock_client)
-    mock_client.__aexit__ = AsyncMock(return_value=None)
-
-    with patch("httpx.AsyncClient", return_value=mock_client):
-        result = await price_service._get_stock_kr_price_naver("005930")
-        assert result == 75000.0
-
-
-@pytest.mark.asyncio
-async def test_get_stock_kr_price_naver_zero_price():
-    """네이버 금융에서 가격이 0이면 None"""
-    from app.services import price_service
-
-    mock_resp = MagicMock()
-    mock_resp.status_code = 200
-    mock_resp.json.return_value = {"currentPrice": 0}
-
-    mock_client = AsyncMock()
-    mock_client.get.return_value = mock_resp
-    mock_client.__aenter__ = AsyncMock(return_value=mock_client)
-    mock_client.__aexit__ = AsyncMock(return_value=None)
-
-    with patch("httpx.AsyncClient", return_value=mock_client):
-        result = await price_service._get_stock_kr_price_naver("005930")
-        assert result is None
-
-
-@pytest.mark.asyncio
-async def test_get_stock_kr_price_naver_exception():
-    """네이버 금융 예외 → None"""
-    from app.services import price_service
-
-    mock_client = AsyncMock()
-    mock_client.get.side_effect = Exception("network error")
-    mock_client.__aenter__ = AsyncMock(return_value=mock_client)
-    mock_client.__aexit__ = AsyncMock(return_value=None)
-
-    with patch("httpx.AsyncClient", return_value=mock_client):
-        result = await price_service._get_stock_kr_price_naver("005930")
-        assert result is None
+# ── 한국 주식 (Yahoo Finance 단일 소스) ──────────────────────
 
 
 @pytest.mark.asyncio
@@ -297,33 +108,42 @@ async def test_get_stock_kr_price_with_cache_hit():
 
     price_service._price_cache["kr:005930"] = (80000.0, time.monotonic())
 
-    result = await price_service.get_stock_kr_price("005930")
+    mock_db = AsyncMock()
+    result = await price_service.get_stock_kr_price("005930", mock_db)
     assert result == 80000.0
 
 
 @pytest.mark.asyncio
-async def test_get_stock_kr_price_kis_fallback_to_naver():
-    """한투 API 실패 시 네이버 fallback"""
+async def test_get_stock_kr_price_yahoo_success():
+    """Yahoo Finance로 한국 주식 시세 조회 성공"""
     from app.services import price_service
 
-    with (
-        patch.object(price_service, "_get_stock_kr_price_kis", new=AsyncMock(return_value=None)),
-        patch.object(price_service, "_get_stock_kr_price_naver", new=AsyncMock(return_value=70000.0)),
-    ):
-        result = await price_service.get_stock_kr_price("005930")
-        assert result == 70000.0
+    mock_db = AsyncMock()
+    mock_result = MagicMock()
+    mock_stock = MagicMock()
+    mock_stock.market = "KOSPI"
+    mock_result.scalar_one_or_none.return_value = mock_stock
+    mock_db.execute = AsyncMock(return_value=mock_result)
+
+    with patch.object(price_service, "_get_yahoo_price", new=AsyncMock(return_value=80000.0)):
+        result = await price_service.get_stock_kr_price("005930", mock_db)
+        assert result == 80000.0
 
 
 @pytest.mark.asyncio
-async def test_get_stock_kr_price_both_fail():
-    """한투+네이버 모두 실패 → None (실패 캐시 저장)"""
+async def test_get_stock_kr_price_yahoo_fail():
+    """Yahoo Finance 실패 → None (실패 캐시 저장)"""
     from app.services import price_service
 
-    with (
-        patch.object(price_service, "_get_stock_kr_price_kis", new=AsyncMock(return_value=None)),
-        patch.object(price_service, "_get_stock_kr_price_naver", new=AsyncMock(return_value=None)),
-    ):
-        result = await price_service.get_stock_kr_price("005930")
+    mock_db = AsyncMock()
+    mock_result = MagicMock()
+    mock_stock = MagicMock()
+    mock_stock.market = "KOSPI"
+    mock_result.scalar_one_or_none.return_value = mock_stock
+    mock_db.execute = AsyncMock(return_value=mock_result)
+
+    with patch.object(price_service, "_get_yahoo_price", new=AsyncMock(return_value=None)):
+        result = await price_service.get_stock_kr_price("005930", mock_db)
         assert result is None
         # 실패 캐시 확인
         assert "kr:005930" in price_service._price_cache
@@ -338,17 +158,8 @@ async def test_get_stock_us_price_success():
     """Yahoo Finance 미국 주식 시세 조회 성공"""
     from app.services import price_service
 
-    mock_resp = MagicMock()
-    mock_resp.status_code = 200
-    mock_resp.json.return_value = {"chart": {"result": [{"meta": {"regularMarketPrice": 180.5}}]}}
-
-    mock_client = AsyncMock()
-    mock_client.get.return_value = mock_resp
-    mock_client.__aenter__ = AsyncMock(return_value=mock_client)
-    mock_client.__aexit__ = AsyncMock(return_value=None)
-
     with (
-        patch("httpx.AsyncClient", return_value=mock_client),
+        patch.object(price_service, "_get_yahoo_price", new=AsyncMock(return_value=180.5)),
         patch.object(price_service, "get_exchange_rate", new=AsyncMock(return_value=1350.0)),
     ):
         usd, krw = await price_service.get_stock_us_price("AAPL")
@@ -361,17 +172,8 @@ async def test_get_stock_us_price_no_exchange_rate():
     """환율 조회 실패 시 KRW는 None"""
     from app.services import price_service
 
-    mock_resp = MagicMock()
-    mock_resp.status_code = 200
-    mock_resp.json.return_value = {"chart": {"result": [{"meta": {"regularMarketPrice": 180.5}}]}}
-
-    mock_client = AsyncMock()
-    mock_client.get.return_value = mock_resp
-    mock_client.__aenter__ = AsyncMock(return_value=mock_client)
-    mock_client.__aexit__ = AsyncMock(return_value=None)
-
     with (
-        patch("httpx.AsyncClient", return_value=mock_client),
+        patch.object(price_service, "_get_yahoo_price", new=AsyncMock(return_value=180.5)),
         patch.object(price_service, "get_exchange_rate", new=AsyncMock(return_value=None)),
     ):
         usd, krw = await price_service.get_stock_us_price("AAPL")
@@ -384,13 +186,8 @@ async def test_get_stock_us_price_api_failure():
     """Yahoo Finance API 실패 → (None, None)"""
     from app.services import price_service
 
-    mock_client = AsyncMock()
-    mock_client.get.side_effect = Exception("timeout")
-    mock_client.__aenter__ = AsyncMock(return_value=mock_client)
-    mock_client.__aexit__ = AsyncMock(return_value=None)
-
     with (
-        patch("httpx.AsyncClient", return_value=mock_client),
+        patch.object(price_service, "_get_yahoo_price", new=AsyncMock(return_value=None)),
         patch.object(price_service, "get_exchange_rate", new=AsyncMock(return_value=1350.0)),
     ):
         usd, krw = await price_service.get_stock_us_price("AAPL")
@@ -579,74 +376,6 @@ def test_calc_profit_loss():
 
 
 # ── 종목 검색 ─────────────────────────────────────────────────
-
-
-@pytest.mark.asyncio
-async def test_search_stock_kr_naver_success():
-    """네이버 종목 검색 성공"""
-    from app.services import price_service
-
-    mock_resp = MagicMock()
-    mock_resp.status_code = 200
-    mock_resp.json.return_value = {
-        "result": {
-            "d": [
-                {"cd": "005930", "nm": "삼성전자"},
-                {"cd": "000660", "nm": "SK하이닉스"},
-            ]
-        }
-    }
-
-    mock_client = AsyncMock()
-    mock_client.get.return_value = mock_resp
-    mock_client.__aenter__ = AsyncMock(return_value=mock_client)
-    mock_client.__aexit__ = AsyncMock(return_value=None)
-
-    with patch("httpx.AsyncClient", return_value=mock_client):
-        results = await price_service._search_stock_kr_naver("삼성")
-        assert len(results) == 2
-        assert results[0]["ticker"] == "005930"
-        assert results[0]["market"] == "KR"
-
-
-@pytest.mark.asyncio
-async def test_search_stock_kr_naver_exception():
-    """네이버 종목 검색 예외 → 빈 리스트"""
-    from app.services import price_service
-
-    mock_client = AsyncMock()
-    mock_client.get.side_effect = Exception("error")
-    mock_client.__aenter__ = AsyncMock(return_value=mock_client)
-    mock_client.__aexit__ = AsyncMock(return_value=None)
-
-    with patch("httpx.AsyncClient", return_value=mock_client):
-        results = await price_service._search_stock_kr_naver("삼성")
-        assert results == []
-
-
-@pytest.mark.asyncio
-async def test_search_stock_kr_yahoo_filters_kr():
-    """Yahoo 종목 검색은 .KS/.KQ만 필터"""
-    from app.services import price_service
-
-    mock_resp = MagicMock()
-    mock_resp.status_code = 200
-    mock_resp.json.return_value = {
-        "quotes": [
-            {"symbol": "005930.KS", "shortname": "Samsung"},
-            {"symbol": "AAPL", "shortname": "Apple"},  # 미국 — 제외
-        ]
-    }
-
-    mock_client = AsyncMock()
-    mock_client.get.return_value = mock_resp
-    mock_client.__aenter__ = AsyncMock(return_value=mock_client)
-    mock_client.__aexit__ = AsyncMock(return_value=None)
-
-    with patch("httpx.AsyncClient", return_value=mock_client):
-        results = await price_service._search_stock_kr_yahoo("삼성")
-        assert len(results) == 1
-        assert results[0]["ticker"] == "005930"
 
 
 @pytest.mark.asyncio

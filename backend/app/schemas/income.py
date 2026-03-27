@@ -33,7 +33,7 @@ class IncomeUpdate(BaseModel):
 
 class IncomeResponse(IncomeBase):
     # 응답 시 float으로 직렬화 (JSON 호환성) — 입력은 IncomeBase의 Decimal로 정밀도 보장 (#146)
-    amount: float
+    amount: float  # type: ignore[assignment]
     id: int
     raw_input: str | None = None
     memo: str | None = None

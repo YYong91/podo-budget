@@ -11,6 +11,7 @@ import { useGoBack } from '../hooks/useGoBack'
 import { ArrowLeft, Users, Calendar } from 'lucide-react'
 import { useHouseholdStore } from '../stores/useHouseholdStore'
 import { useToast } from '../hooks/useToast'
+import { TOAST } from '../constants/toastMessages'
 import CreateHouseholdModal from '../components/CreateHouseholdModal'
 import EmptyState from '../components/EmptyState'
 import ErrorState from '../components/ErrorState'
@@ -38,7 +39,7 @@ export default function HouseholdListPage() {
   useEffect(() => {
     fetchHouseholds().catch((err) => {
       console.error('가구 목록 조회 실패:', err)
-      addToast('error', '가구 목록 로딩에 실패했습니다')
+      addToast('error', TOAST.LOAD_FAILED)
     })
   }, [fetchHouseholds, addToast])
 
@@ -47,7 +48,7 @@ export default function HouseholdListPage() {
    */
   useEffect(() => {
     if (error) {
-      addToast('error', '처리에 실패했습니다')
+      addToast('error', TOAST.PROCESS_FAILED)
       clearError()
     }
   }, [error, addToast, clearError])
@@ -59,14 +60,14 @@ export default function HouseholdListPage() {
     setIsCreating(true)
     try {
       const newHousehold = await createHousehold(data)
-      addToast('success', '가구가 생성되었습니다')
+      addToast('success', TOAST.HOUSEHOLD_CREATED)
       trackEvent('household_created')
       setShowCreateModal(false)
       // 생성 후 상세 페이지로 이동
       navigate(`/households/${newHousehold.id}`)
     } catch (err) {
       console.error('가구 생성 실패:', err)
-      addToast('error', '가구 생성에 실패했습니다')
+      addToast('error', TOAST.HOUSEHOLD_CREATE_FAILED)
     } finally {
       setIsCreating(false)
     }

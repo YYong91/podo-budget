@@ -5,7 +5,7 @@ from sqlalchemy.sql import func
 from app.core.database import Base
 
 
-class Account(Base):
+class Account(Base):  # type: ignore[misc]
     """계좌/증권계좌/거래소 계정"""
 
     __tablename__ = "accounts"

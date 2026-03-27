@@ -35,14 +35,14 @@ security = HTTPBearer(auto_error=False)
 _auth_id_cache: TTLCache[str, int] = TTLCache(maxsize=1024, ttl=60)
 
 # JWKS 공개키 캐시 (TTL 1시간 — 키 로테이션 대응)
-_jwks_cache: dict | None = None
+_jwks_cache: dict[str, object] | None = None
 _jwks_cache_url: str = ""
 _jwks_cache_time: float = 0.0
 _JWKS_TTL_SECONDS = 3600  # 1시간
 _jwks_lock = asyncio.Lock()
 
 
-async def _get_jwks_key(token: str) -> dict:
+async def _get_jwks_key(token: str) -> dict[str, object]:
     """Supabase JWKS에서 JWT kid에 매칭되는 공개키를 가져온다. TTL 1시간 캐시."""
     global _jwks_cache, _jwks_cache_url, _jwks_cache_time
 
@@ -50,9 +50,11 @@ async def _get_jwks_key(token: str) -> dict:
     now = monotonic()
 
     # 캐시 히트 (TTL 이내 + kid 매칭)
+    keys: list[dict[str, object]]
     if _jwks_cache and _jwks_cache_url == jwks_url and (now - _jwks_cache_time) < _JWKS_TTL_SECONDS:
         header = pyjwt.get_unverified_header(token)
-        for key in _jwks_cache.get("keys", []):
+        keys = _jwks_cache.get("keys", [])  # type: ignore[assignment]
+        for key in keys:
             if key.get("kid") == header.get("kid"):
                 return key
 
@@ -61,7 +63,8 @@ async def _get_jwks_key(token: str) -> dict:
         # 락 획득 후 다시 확인 (다른 코루틴이 이미 fetch했을 수 있음)
         if _jwks_cache and _jwks_cache_url == jwks_url and (now - _jwks_cache_time) < _JWKS_TTL_SECONDS:
             header = pyjwt.get_unverified_header(token)
-            for key in _jwks_cache.get("keys", []):
+            keys = _jwks_cache.get("keys", [])  # type: ignore[assignment]
+            for key in keys:
                 if key.get("kid") == header.get("kid"):
                     return key
 
@@ -76,14 +79,15 @@ async def _get_jwks_key(token: str) -> dict:
             _jwks_cache_time = monotonic()
 
     header = pyjwt.get_unverified_header(token)
-    for key in _jwks_cache.get("keys", []):
+    keys = _jwks_cache.get("keys", [])  # type: ignore[assignment]
+    for key in keys:
         if key.get("kid") == header.get("kid"):
             return key
 
     raise ValueError(f"JWKS에서 kid={header.get('kid')} 키를 찾을 수 없음")
 
 
-async def _decode_token(token: str) -> dict:
+async def _decode_token(token: str) -> dict[str, object]:
     """JWT 토큰을 디코드한다. Supabase JWKS ES256 공개키로 검증.
 
     DEBUG 모드에서는 E2E 테스트용 HS256 JWT도 허용한다.
@@ -97,12 +101,12 @@ async def _decode_token(token: str) -> dict:
                 # E2E 토큰을 Supabase 형식으로 맞춤
                 payload.setdefault("role", "authenticated")
                 payload.setdefault("email", payload.get("email", ""))
-                return payload
+                return payload  # type: ignore[no-any-return]
         except JWTError:
             pass  # HS256 실패 시 Supabase JWKS로 진행
 
     jwk_key = await _get_jwks_key(token)
-    return pyjwt.decode(
+    return pyjwt.decode(  # type: ignore[no-any-return]
         token,
         jwk_key,
         algorithms=["ES256"],
@@ -130,12 +134,12 @@ async def get_current_user(
         # JWT 디코드 (ES256 JWKS 검증)
         payload = await _decode_token(token)
 
-        auth_user_id: str = payload.get("sub", "")
-        email: str = payload.get("email", "")
+        auth_user_id: str = payload.get("sub", "")  # type: ignore[assignment]
+        email: str = payload.get("email", "")  # type: ignore[assignment]
 
         # 이름: user_metadata.name 또는 user_metadata.full_name
         user_metadata = payload.get("user_metadata", {}) or {}
-        name: str = user_metadata.get("name", "") or user_metadata.get("full_name", "")
+        name: str = user_metadata.get("name", "") or user_metadata.get("full_name", "")  # type: ignore[attr-defined]
 
         # Supabase 토큰만 허용 (role=authenticated)
         if not auth_user_id or not email or payload.get("role") != "authenticated":
@@ -161,7 +165,7 @@ async def get_current_user(
     if user:
         if not user.is_active:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="비활성화된 계정입니다")
-        _auth_id_cache[auth_user_id] = user.id
+        _auth_id_cache[auth_user_id] = user.id  # type: ignore[assignment]
         return user
 
     # 2단계: email로 기존 유저 매칭
@@ -175,12 +179,12 @@ async def get_current_user(
             email,
             auth_user_id,
         )
-        user.auth_user_id = auth_user_id
+        user.auth_user_id = auth_user_id  # type: ignore[assignment]
         await db.commit()
         await db.refresh(user)
         if not user.is_active:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="비활성화된 계정입니다")
-        _auth_id_cache[auth_user_id] = user.id
+        _auth_id_cache[auth_user_id] = user.id  # type: ignore[assignment]
         return user
 
     # 3단계: 새 유저 자동 생성
@@ -196,13 +200,13 @@ async def get_current_user(
     try:
         await db.commit()
         await db.refresh(new_user)
-        _auth_id_cache[auth_user_id] = new_user.id
+        _auth_id_cache[auth_user_id] = new_user.id  # type: ignore[assignment]
         return new_user
     except IntegrityError:
         await db.rollback()
         result = await db.execute(select(User).where(User.auth_user_id == auth_user_id))
         user = result.scalar_one_or_none()
         if user:
-            _auth_id_cache[auth_user_id] = user.id
+            _auth_id_cache[auth_user_id] = user.id  # type: ignore[assignment]
             return user
         raise credentials_exception from None

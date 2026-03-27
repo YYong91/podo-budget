@@ -9,6 +9,7 @@ import { generateTelegramLinkCode, unlinkTelegram } from '../api/telegram'
 import { generateKakaoLinkCode, unlinkKakao } from '../api/kakao'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from './useToast'
+import { TOAST } from '../constants/toastMessages'
 import { trackEvent } from '../utils/analytics'
 
 type Platform = 'telegram' | 'kakao'
@@ -54,7 +55,7 @@ export function useBotLinking(platform: Platform) {
       setLinkCode(data)
       trackEvent(config.trackEventName)
     } catch {
-      addToast('error', '코드 발급에 실패했습니다')
+      addToast('error', TOAST.PROCESS_FAILED)
     } finally {
       setLoadingCode(false)
     }
@@ -65,11 +66,11 @@ export function useBotLinking(platform: Platform) {
     setLoadingUnlink(true)
     try {
       await config.unlinkApi()
-      addToast('success', `${config.displayName} 연동이 해제되었습니다`)
+      addToast('success', TOAST.BOT_UNLINKED(config.displayName))
       await refreshUser()
       setLinkCode(null)
     } catch {
-      addToast('error', '연동 해제에 실패했습니다')
+      addToast('error', TOAST.PROCESS_FAILED)
     } finally {
       setLoadingUnlink(false)
     }
@@ -79,9 +80,9 @@ export function useBotLinking(platform: Platform) {
     if (!linkCode) return
     try {
       await navigator.clipboard.writeText(config.copyFormat(linkCode.code))
-      addToast('success', '복사되었습니다')
+      addToast('success', TOAST.LINK_CODE_COPIED)
     } catch {
-      addToast('error', '자동 복사에 실패했습니다')
+      addToast('error', TOAST.PROCESS_FAILED)
     }
   }, [linkCode, config, addToast])
 

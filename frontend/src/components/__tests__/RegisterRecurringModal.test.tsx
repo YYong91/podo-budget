@@ -52,13 +52,13 @@ describe('RegisterRecurringModal', () => {
     expect(screen.getByText('수입')).toBeInTheDocument()
   })
 
-  it('반복 빈도 셀렉트를 렌더링한다', () => {
+  it('반복 주기 셀렉트를 렌더링한다', () => {
     renderModal()
-    expect(screen.getByText('반복 빈도')).toBeInTheDocument()
+    expect(screen.getByText('반복 주기')).toBeInTheDocument()
     expect(screen.getByDisplayValue('매월')).toBeInTheDocument()
   })
 
-  it('월별 빈도에서 반복 날짜 필드를 표시한다', () => {
+  it('월별 주기에서 반복 날짜 필드를 표시한다', () => {
     renderModal()
     expect(screen.getByText('반복 날짜')).toBeInTheDocument()
   })
@@ -92,5 +92,76 @@ describe('RegisterRecurringModal', () => {
     renderModal()
     expect(screen.getByText('시작일')).toBeInTheDocument()
     expect(screen.getByText('종료일 (선택)')).toBeInTheDocument()
+  })
+
+  it('주간 주기 선택 시 요일 필드를 표시한다', async () => {
+    const user = userEvent.setup()
+    renderModal()
+    await user.selectOptions(screen.getByLabelText('반복 주기'), 'weekly')
+    expect(screen.getByText('요일')).toBeInTheDocument()
+    expect(screen.queryByText('반복 날짜')).not.toBeInTheDocument()
+  })
+
+  it('연간 주기 선택 시 반복 날짜와 반복 월 필드를 표시한다', async () => {
+    const user = userEvent.setup()
+    renderModal()
+    await user.selectOptions(screen.getByLabelText('반복 주기'), 'yearly')
+    expect(screen.getByText('반복 날짜')).toBeInTheDocument()
+    expect(screen.getByText('반복 월')).toBeInTheDocument()
+  })
+
+  it('사용자 지정 주기 선택 시 반복 주기 필드를 표시한다', async () => {
+    const user = userEvent.setup()
+    renderModal()
+    await user.selectOptions(screen.getByLabelText('반복 주기'), 'custom')
+    expect(screen.getAllByText('반복 주기').length).toBeGreaterThanOrEqual(1)
+    expect(screen.getByText('일마다')).toBeInTheDocument()
+  })
+
+  it('category_id가 없으면 카테고리 행을 표시하지 않는다', () => {
+    renderModal({ category_id: null })
+    expect(screen.queryByText('카테고리')).not.toBeInTheDocument()
+  })
+
+  it('카테고리가 있으면 카테고리 이름을 표시한다', () => {
+    renderModal({ category_id: 1, categories: mockCategories })
+    expect(screen.getByText('카테고리')).toBeInTheDocument()
+    expect(screen.getByText('식비')).toBeInTheDocument()
+  })
+
+  it('주간 주기로 폼 제출이 성공한다', async () => {
+    const user = userEvent.setup()
+    const { props } = renderModal()
+    await user.selectOptions(screen.getByLabelText('반복 주기'), 'weekly')
+    await user.click(screen.getByRole('button', { name: '반복 거래 등록' }))
+    await waitFor(() => {
+      expect(props.onSuccess).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  it('연간 주기로 폼 제출이 성공한다', async () => {
+    const user = userEvent.setup()
+    const { props } = renderModal()
+    await user.selectOptions(screen.getByLabelText('반복 주기'), 'yearly')
+    await user.click(screen.getByRole('button', { name: '반복 거래 등록' }))
+    await waitFor(() => {
+      expect(props.onSuccess).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  it('사용자 지정 주기로 폼 제출이 성공한다', async () => {
+    const user = userEvent.setup()
+    const { props } = renderModal()
+    await user.selectOptions(screen.getByLabelText('반복 주기'), 'custom')
+    await user.click(screen.getByRole('button', { name: '반복 거래 등록' }))
+    await waitFor(() => {
+      expect(props.onSuccess).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  it('initialDate에서 반복 날짜를 추출한다', () => {
+    renderModal({ initialDate: '2026-03-25' })
+    // 25일이 반복 날짜로 설정됨
+    expect(screen.getByDisplayValue('25')).toBeInTheDocument()
   })
 })

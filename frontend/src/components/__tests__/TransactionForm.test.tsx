@@ -11,7 +11,7 @@ import { MemoryRouter } from 'react-router-dom'
 import TransactionForm from '../TransactionForm'
 import { server } from '../../mocks/server'
 import { http, HttpResponse } from 'msw'
-import { mockIncomeCategoriesAll } from '../../mocks/fixtures'
+import { mockIncomeCategoriesAll, mockSavingsCategory, mockCategories } from '../../mocks/fixtures'
 
 /** navigate 모킹 */
 const mockNavigate = vi.fn()
@@ -50,11 +50,11 @@ describe('TransactionForm', () => {
   })
 
   describe('type="expense" 기본 렌더링', () => {
-    it('뒤로가기 링크가 /expenses로 설정된다', async () => {
+    it('뒤로가기 링크가 /로 설정된다', async () => {
       renderForm('expense')
       await waitFor(() => {
         const backLink = screen.getByRole('link')
-        expect(backLink).toHaveAttribute('href', '/expenses')
+        expect(backLink).toHaveAttribute('href', '/')
       })
     })
 
@@ -91,11 +91,11 @@ describe('TransactionForm', () => {
       )
     })
 
-    it('뒤로가기 링크가 /income으로 설정된다', async () => {
+    it('뒤로가기 링크가 /로 설정된다', async () => {
       renderForm('income')
       await waitFor(() => {
         const backLink = screen.getByRole('link')
-        expect(backLink).toHaveAttribute('href', '/income')
+        expect(backLink).toHaveAttribute('href', '/')
       })
     })
 
@@ -242,17 +242,377 @@ describe('TransactionForm', () => {
     })
   })
 
+  describe('폼 입력 성공 제출', () => {
+    it('expense: 올바른 폼 데이터로 제출 시 성공 토스트 + 네비게이션', async () => {
+      server.use(
+        http.post('/api/expenses', () => {
+          return HttpResponse.json({ id: 99, amount: 10000, description: '테스트' }, { status: 201 })
+        })
+      )
+
+      const user = userEvent.setup()
+      renderForm('expense')
+      await user.click(screen.getByText('직접 입력'))
+      await waitFor(() => expect(screen.getByPlaceholderText('김치찌개')).toBeInTheDocument())
+
+      await user.type(screen.getByPlaceholderText('10000'), '10000')
+      await user.type(screen.getByPlaceholderText('김치찌개'), '테스트 지출')
+      await user.click(screen.getByText('저장하기'))
+
+      await waitFor(() => {
+        expect(mockAddToast).toHaveBeenCalledWith('success', '저장했어요')
+      })
+    })
+
+    it('income: 올바른 폼 데이터로 제출 시 성공 토스트', async () => {
+      server.use(
+        http.get('/api/categories', () => {
+          return HttpResponse.json(mockIncomeCategoriesAll)
+        }),
+        http.post('/api/income', () => {
+          return HttpResponse.json({ id: 99, amount: 3500000, description: '월급' }, { status: 201 })
+        })
+      )
+
+      const user = userEvent.setup()
+      renderForm('income')
+      await user.click(screen.getByText('직접 입력'))
+      await waitFor(() => expect(screen.getByPlaceholderText('월급')).toBeInTheDocument())
+
+      await user.type(screen.getByPlaceholderText('3500000'), '3500000')
+      await user.type(screen.getByPlaceholderText('월급'), '2월 월급')
+      await user.click(screen.getByText('저장하기'))
+
+      await waitFor(() => {
+        expect(mockAddToast).toHaveBeenCalledWith('success', '저장했어요')
+      })
+    })
+
+    it('expense: 폼 제출 실패 시 에러 토스트', async () => {
+      server.use(
+        http.post('/api/expenses', () => {
+          return HttpResponse.json({ detail: '실패' }, { status: 500 })
+        })
+      )
+
+      const user = userEvent.setup()
+      renderForm('expense')
+      await user.click(screen.getByText('직접 입력'))
+      await waitFor(() => expect(screen.getByPlaceholderText('김치찌개')).toBeInTheDocument())
+
+      await user.type(screen.getByPlaceholderText('10000'), '10000')
+      await user.type(screen.getByPlaceholderText('김치찌개'), '테스트')
+      await user.click(screen.getByText('저장하기'))
+
+      await waitFor(() => {
+        expect(mockAddToast).toHaveBeenCalledWith('error', '저장에 실패했어요')
+      })
+    })
+
+    it('expense: 날짜 비어있으면 에러 토스트', async () => {
+      const user = userEvent.setup()
+      renderForm('expense')
+      await user.click(screen.getByText('직접 입력'))
+      await waitFor(() => expect(screen.getByPlaceholderText('김치찌개')).toBeInTheDocument())
+
+      await user.type(screen.getByPlaceholderText('10000'), '10000')
+      await user.type(screen.getByPlaceholderText('김치찌개'), '테스트')
+      // 날짜 필드를 비우기
+      const dateInput = screen.getByLabelText(/날짜/)
+      await user.clear(dateInput)
+      await user.click(screen.getByText('저장하기'))
+
+      expect(mockAddToast).toHaveBeenCalledWith('error', '날짜를 선택해주세요')
+    })
+  })
+
+  describe('폼 카테고리 생성', () => {
+    it('+ 새 카테고리 클릭 시 카테고리 생성 입력 필드가 표시된다', async () => {
+      const user = userEvent.setup()
+      renderForm('expense')
+      await user.click(screen.getByText('직접 입력'))
+      await waitFor(() => expect(screen.getByText('+ 새 카테고리')).toBeInTheDocument())
+
+      await user.click(screen.getByText('+ 새 카테고리'))
+      expect(screen.getByPlaceholderText('새 카테고리 이름')).toBeInTheDocument()
+    })
+
+    it('카테고리 생성 취소 버튼 클릭 시 입력 필드가 사라진다', async () => {
+      const user = userEvent.setup()
+      renderForm('expense')
+      await user.click(screen.getByText('직접 입력'))
+      await waitFor(() => expect(screen.getByText('+ 새 카테고리')).toBeInTheDocument())
+
+      await user.click(screen.getByText('+ 새 카테고리'))
+      expect(screen.getByPlaceholderText('새 카테고리 이름')).toBeInTheDocument()
+      // 카테고리 입력 필드 옆의 취소 버튼을 찾음 — 같은 div 안에 위치
+      const categoryInput = screen.getByPlaceholderText('새 카테고리 이름')
+      const categoryRow = categoryInput.closest('.flex')!
+      const cancelBtn = categoryRow.querySelector('button:last-child') as HTMLButtonElement
+      await user.click(cancelBtn)
+      expect(screen.queryByPlaceholderText('새 카테고리 이름')).not.toBeInTheDocument()
+    })
+
+    it('카테고리 생성 성공 시 토스트가 표시된다', async () => {
+      server.use(
+        http.post('/api/categories', () => {
+          return HttpResponse.json({ id: 100, name: '테스트 카테고리' }, { status: 201 })
+        })
+      )
+
+      const user = userEvent.setup()
+      renderForm('expense')
+      await user.click(screen.getByText('직접 입력'))
+      await waitFor(() => expect(screen.getByText('+ 새 카테고리')).toBeInTheDocument())
+
+      await user.click(screen.getByText('+ 새 카테고리'))
+      await user.type(screen.getByPlaceholderText('새 카테고리 이름'), '테스트 카테고리')
+      await user.click(screen.getByText('추가'))
+
+      await waitFor(() => {
+        expect(mockAddToast).toHaveBeenCalledWith('success', '카테고리를 추가했어요')
+      })
+    })
+
+    it('카테고리 생성 실패 시 에러 토스트', async () => {
+      server.use(
+        http.post('/api/categories', () => {
+          return HttpResponse.json({ detail: '실패' }, { status: 500 })
+        })
+      )
+
+      const user = userEvent.setup()
+      renderForm('expense')
+      await user.click(screen.getByText('직접 입력'))
+      await waitFor(() => expect(screen.getByText('+ 새 카테고리')).toBeInTheDocument())
+
+      await user.click(screen.getByText('+ 새 카테고리'))
+      await user.type(screen.getByPlaceholderText('새 카테고리 이름'), '실패 테스트')
+      await user.click(screen.getByText('추가'))
+
+      await waitFor(() => {
+        expect(mockAddToast).toHaveBeenCalledWith('error', '저장에 실패했어요')
+      })
+    })
+  })
+
+  describe('OCR 모드 파일 업로드', () => {
+    it('OCR 파일 업로드 성공 시 프리뷰 카드가 표시된다', async () => {
+      server.use(
+        http.post('/api/expenses/ocr', () => {
+          return HttpResponse.json({
+            parsed_expenses: [
+              { amount: 4500, description: '아메리카노', category: '식비', date: '2026-03-19', memo: '', type: 'expense' },
+            ],
+          })
+        })
+      )
+
+      const user = userEvent.setup()
+      renderForm('expense')
+      await user.click(screen.getByText('이미지'))
+
+      await waitFor(() => {
+        expect(screen.getByText('결제 화면 이미지 인식')).toBeInTheDocument()
+      })
+
+      // 파일 input에 파일 업로드 시뮬레이션
+      const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement
+      const file = new File(['test'], 'receipt.jpg', { type: 'image/jpeg' })
+      await user.upload(fileInput, file)
+
+      await waitFor(() => {
+        expect(screen.getByText(/1건의 지출을 인식했습니다/)).toBeInTheDocument()
+      })
+    })
+
+    it('OCR 파일 업로드 실패 시 에러 토스트', async () => {
+      server.use(
+        http.post('/api/expenses/ocr', () => {
+          return HttpResponse.json({ detail: '실패' }, { status: 500 })
+        })
+      )
+
+      const user = userEvent.setup()
+      renderForm('expense')
+      await user.click(screen.getByText('이미지'))
+
+      const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement
+      const file = new File(['test'], 'receipt.jpg', { type: 'image/jpeg' })
+      await user.upload(fileInput, file)
+
+      await waitFor(() => {
+        expect(mockAddToast).toHaveBeenCalledWith('error', '분석에 실패했어요')
+      })
+    })
+
+    it('OCR 결과가 빈 배열이면 안내 메시지가 표시된다', async () => {
+      server.use(
+        http.post('/api/expenses/ocr', () => {
+          return HttpResponse.json({
+            parsed_expenses: [],
+            message: '결제 정보를 인식하지 못했습니다',
+          })
+        })
+      )
+
+      const user = userEvent.setup()
+      renderForm('expense')
+      await user.click(screen.getByText('이미지'))
+
+      const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement
+      const file = new File(['test'], 'receipt.jpg', { type: 'image/jpeg' })
+      await user.upload(fileInput, file)
+
+      await waitFor(() => {
+        expect(mockAddToast).toHaveBeenCalledWith('info', expect.any(String))
+      })
+    })
+  })
+
+  describe('모드 전환', () => {
+    it('자연어→폼→OCR 모드 전환이 동작한다', async () => {
+      const user = userEvent.setup()
+      renderForm('expense')
+
+      // 기본: 자연어 모드
+      expect(screen.getByText('말하듯이 지출 입력하기')).toBeInTheDocument()
+
+      // 폼 모드
+      await user.click(screen.getByText('직접 입력'))
+      await waitFor(() => expect(screen.getByPlaceholderText('김치찌개')).toBeInTheDocument())
+
+      // OCR 모드
+      await user.click(screen.getByText('이미지'))
+      await waitFor(() => expect(screen.getByText('결제 화면 이미지 인식')).toBeInTheDocument())
+
+      // 다시 자연어
+      await user.click(screen.getByText('간편 입력'))
+      await waitFor(() => expect(screen.getByText('말하듯이 지출 입력하기')).toBeInTheDocument())
+    })
+  })
+
+  describe('결제수단 드롭다운', () => {
+    it('지출 모드에서 결제수단 드롭다운이 표시된다', async () => {
+      const user = userEvent.setup()
+      renderForm('expense')
+      await user.click(screen.getByText('직접 입력'))
+
+      await waitFor(() => {
+        expect(screen.getByLabelText('결제수단')).toBeInTheDocument()
+      })
+
+      // 목 데이터의 결제수단이 옵션에 표시되는지 확인
+      const select = screen.getByLabelText('결제수단')
+      const options = within(select).getAllByRole('option')
+      const optionTexts = options.map((o) => o.textContent)
+      expect(optionTexts).toContain('선택 안 함')
+      expect(optionTexts).toContain('삼성카드')
+      expect(optionTexts).toContain('현금')
+      expect(optionTexts).toContain('국민카드')
+    })
+
+    it('수입 모드에서는 결제수단 드롭다운이 표시되지 않는다', async () => {
+      server.use(
+        http.get('/api/categories', () => {
+          return HttpResponse.json(mockIncomeCategoriesAll)
+        })
+      )
+      const user = userEvent.setup()
+      renderForm('income')
+      await user.click(screen.getByText('직접 입력'))
+
+      await waitFor(() => {
+        expect(screen.getByPlaceholderText('월급')).toBeInTheDocument()
+      })
+      expect(screen.queryByLabelText('결제수단')).not.toBeInTheDocument()
+    })
+  })
+
+  describe('저축성 카테고리 결제수단 skip', () => {
+    it('저축성 카테고리 선택 시 결제수단이 "선택 안 함"으로 리셋된다', async () => {
+      const categoriesWithSavings = [...mockCategories, mockSavingsCategory]
+      server.use(
+        http.get('/api/categories', () => {
+          return HttpResponse.json(categoriesWithSavings)
+        })
+      )
+
+      const user = userEvent.setup()
+      renderForm('expense')
+      await user.click(screen.getByText('직접 입력'))
+
+      // 결제수단을 선택
+      await waitFor(() => {
+        expect(screen.getByLabelText('결제수단')).toBeInTheDocument()
+      })
+      const paymentSelect = screen.getByLabelText('결제수단')
+      await user.selectOptions(paymentSelect, '1') // 삼성카드
+
+      // 카테고리를 저축성으로 변경
+      const categorySelect = screen.getByLabelText('카테고리')
+      await user.selectOptions(categorySelect, String(mockSavingsCategory.id))
+
+      // 결제수단이 "선택 안 함"(빈 문자열)으로 리셋되어야 함
+      await waitFor(() => {
+        expect((paymentSelect as HTMLSelectElement).value).toBe('')
+      })
+    })
+
+    it('저축성 카테고리 선택 시 안내 텍스트가 표시된다', async () => {
+      const categoriesWithSavings = [...mockCategories, mockSavingsCategory]
+      server.use(
+        http.get('/api/categories', () => {
+          return HttpResponse.json(categoriesWithSavings)
+        })
+      )
+
+      const user = userEvent.setup()
+      renderForm('expense')
+      await user.click(screen.getByText('직접 입력'))
+
+      await waitFor(() => {
+        expect(screen.getByLabelText('카테고리')).toBeInTheDocument()
+      })
+
+      // 저축성 카테고리 선택
+      const categorySelect = screen.getByLabelText('카테고리')
+      await user.selectOptions(categorySelect, String(mockSavingsCategory.id))
+
+      await waitFor(() => {
+        expect(screen.getByTestId('savings-payment-hint')).toBeInTheDocument()
+        expect(screen.getByText('저축성 지출은 결제수단이 자동 적용되지 않아요')).toBeInTheDocument()
+      })
+    })
+
+    it('일반 카테고리에서는 저축성 안내가 표시되지 않는다', async () => {
+      const user = userEvent.setup()
+      renderForm('expense')
+      await user.click(screen.getByText('직접 입력'))
+
+      await waitFor(() => {
+        expect(screen.getByLabelText('카테고리')).toBeInTheDocument()
+      })
+
+      // 식비 카테고리 선택 (일반)
+      const categorySelect = screen.getByLabelText('카테고리')
+      await user.selectOptions(categorySelect, '1')
+
+      expect(screen.queryByTestId('savings-payment-hint')).not.toBeInTheDocument()
+    })
+  })
+
   describe('취소 버튼 라우팅', () => {
-    it('expense: 취소 클릭 시 /expenses로 이동', async () => {
+    it('expense: 취소 클릭 시 /로 이동', async () => {
       const user = userEvent.setup()
       renderForm('expense')
       await user.click(screen.getByText('직접 입력'))
       await waitFor(() => expect(screen.getByText('취소')).toBeInTheDocument())
       await user.click(screen.getByText('취소'))
-      expect(mockNavigate).toHaveBeenCalledWith('/expenses')
+      expect(mockNavigate).toHaveBeenCalledWith('/')
     })
 
-    it('income: 취소 클릭 시 /income으로 이동', async () => {
+    it('income: 취소 클릭 시 /로 이동', async () => {
       server.use(
         http.get('/api/categories', () => {
           return HttpResponse.json(mockIncomeCategoriesAll)
@@ -263,7 +623,7 @@ describe('TransactionForm', () => {
       await user.click(screen.getByText('직접 입력'))
       await waitFor(() => expect(screen.getByText('취소')).toBeInTheDocument())
       await user.click(screen.getByText('취소'))
-      expect(mockNavigate).toHaveBeenCalledWith('/income')
+      expect(mockNavigate).toHaveBeenCalledWith('/')
     })
   })
 })

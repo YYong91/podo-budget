@@ -63,7 +63,7 @@ interface HouseholdActions {
   // 멤버 관리
   /** 멤버 역할 변경 */
   updateMemberRole: (householdId: number, userId: number, role: MemberRole) => Promise<void>
-  /** 멤버 추방 */
+  /** 멤버 내보내기 */
   removeMember: (householdId: number, userId: number) => Promise<void>
   /** Household 탈퇴 */
   leaveHousehold: (householdId: number) => Promise<void>
@@ -252,7 +252,7 @@ export const useHouseholdStore = create<HouseholdStore>()(
   },
 
   /**
-   * 멤버 추방
+   * 멤버 내보내기
    */
   removeMember: async (householdId: number, userId: number) => {
     set({ isMutating: true, error: null })
@@ -262,7 +262,7 @@ export const useHouseholdStore = create<HouseholdStore>()(
       await get().fetchHouseholdDetail(householdId)
       set({ isMutating: false })
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : '멤버 추방 중 오류가 발생했습니다'
+      const errorMessage = error instanceof Error ? error.message : '멤버 내보내기 중 오류가 발생했습니다'
       set({ error: errorMessage, isMutating: false })
       throw error
     }

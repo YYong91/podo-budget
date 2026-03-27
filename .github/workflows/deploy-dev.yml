@@ -149,6 +149,17 @@ jobs:
             echo "result=pass" >> "$GITHUB_OUTPUT"
           fi
 
+  # ── 프로젝트 상태 업데이트 (On Dev) ────────────────
+  update-project-status:
+    name: 프로젝트 상태
+    needs: [deploy-backend, deploy-frontend]
+    if: needs.deploy-backend.result == 'success' && needs.deploy-frontend.result == 'success'
+    uses: ./.github/workflows/project-status.yml
+    with:
+      target_status: on_dev
+    secrets:
+      PROJECT_TOKEN: ${{ secrets.GH_PROJECT_TOKEN }}
+
   # ── 배포 결과 알림 ─────────────────────────────────
   notify-deploy-result:
     name: 배포 결과 알림

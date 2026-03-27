@@ -13,6 +13,7 @@ class ExpenseBase(DateTimeCoerceMixin):
     amount: Decimal = Field(..., gt=0, description="지출 금액 (0보다 커야 함)")
     description: str = Field(..., max_length=500, description="지출 설명 (최대 500자)")
     category_id: int | None = None
+    payment_method_id: int | None = None
     date: datetime
 
 
@@ -27,6 +28,7 @@ class ExpenseUpdate(BaseModel):
     amount: Decimal | None = Field(None, gt=0, description="지출 금액 (0보다 커야 함)")
     description: str | None = Field(None, max_length=500, description="지출 설명 (최대 500자)")
     category_id: int | None = None
+    payment_method_id: int | None = None
     date: datetime | None = None
     memo: str | None = None
     exclude_from_stats: bool | None = None
@@ -34,7 +36,7 @@ class ExpenseUpdate(BaseModel):
 
 class ExpenseResponse(ExpenseBase):
     # 응답 시 float으로 직렬화 (JSON 호환성) — 입력은 ExpenseBase의 Decimal로 정밀도 보장 (#146)
-    amount: float
+    amount: float  # type: ignore[assignment]
     id: int
     raw_input: str | None = None
     memo: str | None = None
@@ -42,6 +44,7 @@ class ExpenseResponse(ExpenseBase):
     user_id: int | None = None
     exclude_from_stats: bool = False
     recurring_transaction_id: int | None = None
+    payment_method_id: int | None = None
     created_at: datetime
     updated_at: datetime
 

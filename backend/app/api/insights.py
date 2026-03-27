@@ -37,7 +37,7 @@ async def generate_insights(
     household_id: int | None = Query(None, description="가구 ID (없으면 활성 가구)"),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-):
+) -> object:
     """Claude AI로 월별 지출 인사이트 생성
 
     가구의 지출 데이터를 집계하여 Claude에게 분석을 요청합니다.
@@ -73,7 +73,7 @@ async def generate_insights(
     total_result = await db.execute(
         select(func.coalesce(func.sum(Expense.amount), 0)).where(scope_filter, excl_filter, Expense.date >= start, Expense.date < end)
     )
-    total = float(total_result.scalar())
+    total = float(total_result.scalar())  # type: ignore[arg-type]
 
     # 카테고리별 합계
     cat_result = await db.execute(
@@ -129,7 +129,7 @@ async def generate_comprehensive_insights(
     request: Request,
     body: ComprehensiveInsightsRequest,
     current_user: User = Depends(get_current_user),
-):
+) -> object:
     """종합 재무 인사이트 생성
 
     프론트엔드가 사전 계산한 재무 데이터를 받아 LLM에게 구조화된 분석을 요청합니다.

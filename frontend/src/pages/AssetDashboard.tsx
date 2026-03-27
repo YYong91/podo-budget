@@ -184,7 +184,7 @@ export default function AssetDashboard() {
   const totalAssets = summary?.total_assets ?? 0
   const totalLiabilities = summary?.total_liabilities ?? 0
 
-  /* 전월 대비 변동 */
+  /* 지난달 대비 변동 */
   const prevMonthNW = snapshots.length >= 2 ? snapshots[snapshots.length - 2].net_worth : null
   const prevMonthDiff = prevMonthNW != null ? netWorth - prevMonthNW : null
 
@@ -225,10 +225,10 @@ export default function AssetDashboard() {
         <p className={`text-3xl font-bold tracking-tight ${netWorth >= 0 ? 'text-grape-600' : 'text-rose-600'}`}>
           {formatAmount(netWorth)}
         </p>
-        {/* 전월 대비 변동 */}
+        {/* 지난달 대비 변동 */}
         {prevMonthDiff != null && (
           <p className={`text-sm mt-1 font-medium ${prevMonthDiff >= 0 ? 'text-leaf-600' : 'text-rose-600'}`}>
-            전월 대비 {prevMonthDiff >= 0 ? '+' : ''}{formatAmount(prevMonthDiff)}
+            지난달 대비 {prevMonthDiff >= 0 ? '+' : ''}{formatAmount(prevMonthDiff)}
           </p>
         )}
         {/* 자산/부채 요약 */}

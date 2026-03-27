@@ -38,7 +38,7 @@ describe('GuidePage', () => {
       expect(screen.getAllByText('정기 거래').length).toBeGreaterThanOrEqual(2)
       expect(screen.getAllByText('예산 관리').length).toBeGreaterThanOrEqual(2)
       expect(screen.getAllByText('카테고리 관리').length).toBeGreaterThanOrEqual(2)
-      expect(screen.getAllByText('리포트 (종합 재무 리포트)').length).toBeGreaterThanOrEqual(2)
+      expect(screen.getAllByText('리포트 (이달의 리포트)').length).toBeGreaterThanOrEqual(2)
       expect(screen.getAllByText('자산 관리').length).toBeGreaterThanOrEqual(2)
       // 공유 가계부 — 목차에서는 "공유 가계부", 섹션에서는 "공유 가계부 (가구/초대)"
       expect(screen.getByText('공유 가계부')).toBeInTheDocument()

@@ -18,6 +18,16 @@ export interface Changelog {
 
 export const changelogs: Changelog[] = [
   {
+    version: '0.12.0',
+    date: '2026-03-27',
+    title: '결제수단 UX 개선',
+    items: [
+      { tag: '개선', text: '결제수단 UX 개선 — 주 결제수단, 편집 모드, 순서 변경' },
+      { tag: '개선', text: '봇 응답에 결제수단 표시 + 변경 버튼' },
+      { tag: '개선', text: '가구 생성 시 현금/계좌이체 기본 등록' },
+    ],
+  },
+  {
     version: '0.9.2',
     date: '2026-03-24',
     title: '검색 + 온보딩 + UX 개선',
@@ -81,7 +91,7 @@ export const changelogs: Changelog[] = [
       { tag: '개선', text: '앱을 열면 바로 가계부(거래 내역)가 표시됩니다' },
       { tag: '개선', text: '네비게이션이 4탭으로 간결해졌습니다' },
       { tag: '개선', text: '자산 탭이 순자산 중심 UI로 새롭게 바뀌었습니다' },
-      { tag: '신규', text: '종합 재무 리포트 — 재정 건강 점수, AI 심층 분석, 자산 변동 요약' },
+      { tag: '신규', text: '이달의 리포트 — 가계 건강 점수, AI 상세 분석, 자산 변화 요약' },
     ],
   },
   {

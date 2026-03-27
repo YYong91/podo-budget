@@ -10,6 +10,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { useGoBack } from '../hooks/useGoBack'
 import { ArrowLeft, BarChart3, AlertTriangle, Wallet } from 'lucide-react'
 import { useToast } from '../hooks/useToast'
+import { TOAST } from '../constants/toastMessages'
 import budgetApi from '../api/budgets'
 import EmptyState from '../components/EmptyState'
 import ErrorState from '../components/ErrorState'
@@ -130,10 +131,10 @@ export default function BudgetManager() {
       const amount = localTotalBudget && num > 0 ? num : null
       const res = await budgetApi.updateTotalBudget(amount)
       setTotalBudget(res.data.total_monthly_budget)
-      addToast('success', '월 총 예산이 저장되었습니다')
+      addToast('success', TOAST.BUDGET_SAVED)
     } catch (err) {
       console.error('Failed to save total budget:', err)
-      addToast('error', '월 총 예산 저장에 실패했습니다')
+      addToast('error', TOAST.SAVE_FAILED)
     } finally {
       setSavingTotal(false)
     }
@@ -155,26 +156,26 @@ export default function BudgetManager() {
         // 빈 값이면 기존 예산 삭제
         if (item.current_budget_id) {
           await budgetApi.deleteBudget(item.current_budget_id)
-          addToast('success', '예산이 삭제되었습니다')
+          addToast('success', TOAST.BUDGET_DELETED)
         }
       } else if (item.current_budget_id) {
         // 기존 예산 수정
         await budgetApi.updateBudget(item.current_budget_id, { amount: numAmount })
-        addToast('success', '예산이 저장되었습니다')
+        addToast('success', TOAST.BUDGET_SAVED)
       } else {
         // 새 예산 생성 — 월간, 오늘부터, 알림 80% 기본값
         await budgetApi.createBudget({
           category_id: item.category_id,
           amount: numAmount,
           period: 'monthly',
-          start_date: new Date().toISOString(),
+          start_date: new Date().toISOString().split('T')[0],
         })
-        addToast('success', '예산이 저장되었습니다')
+        addToast('success', TOAST.BUDGET_SAVED)
       }
       await loadData()
     } catch (err) {
       console.error('Failed to save budget:', err)
-      addToast('error', '예산 저장에 실패했습니다')
+      addToast('error', TOAST.SAVE_FAILED)
     } finally {
       setSavingIds((prev) => {
         const next = new Set(prev)
@@ -273,12 +274,12 @@ export default function BudgetManager() {
         )}
       </div>
 
-      {/* 예산 현황 카드 */}
+      {/* 예산 상황 카드 */}
       {alerts.length > 0 && (
         <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)]/60 p-5">
           <div className="flex items-center gap-2 mb-4">
             <BarChart3 className="w-5 h-5 text-grape-600" />
-            <h2 className="text-lg font-semibold text-[var(--text-primary)]">예산 현황</h2>
+            <h2 className="text-lg font-semibold text-[var(--text-primary)]">예산 상황</h2>
           </div>
           <div className="space-y-3">
             {alerts.map((alert) => (

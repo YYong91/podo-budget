@@ -10,6 +10,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
 import { useHouseholdStore } from '../stores/useHouseholdStore'
 import { useToast } from '../hooks/useToast'
+import { TOAST } from '../constants/toastMessages'
 import { useAuth } from '../contexts/AuthContext'
 import { useHouseholdRole } from '../hooks/useHouseholdRole'
 import InviteMemberModal from '../components/InviteMemberModal'
@@ -65,7 +66,7 @@ export default function HouseholdDetailPage() {
     if (id) {
       fetchHouseholdDetail(Number(id)).catch((err) => {
         console.error('가구 상세 조회 실패:', err)
-        addToast('error', '가구 정보 로딩에 실패했습니다')
+        addToast('error', TOAST.LOAD_FAILED)
       })
     }
 
@@ -89,7 +90,7 @@ export default function HouseholdDetailPage() {
    */
   useEffect(() => {
     if (error) {
-      addToast('error', '처리에 실패했습니다')
+      addToast('error', TOAST.PROCESS_FAILED)
       clearError()
     }
   }, [error, addToast, clearError])
@@ -107,9 +108,9 @@ export default function HouseholdDetailPage() {
         // 이메일 미발송 — 링크 복사 안내
         const link = `${window.location.origin}/invitations/accept?token=${result.token}`
         await navigator.clipboard.writeText(link)
-        addToast('warning', '이메일 발송에 실패하여 링크가 복사되었습니다')
+        addToast('warning', TOAST.INVITE_LINK_COPIED)
       } else {
-        addToast('success', '초대를 전송했습니다')
+        addToast('success', TOAST.INVITE_SENT)
       }
       trackEvent('member_invited')
       setShowInviteModal(false)
@@ -117,7 +118,7 @@ export default function HouseholdDetailPage() {
       await fetchHouseholdInvitations(Number(id)).catch(() => {})
     } catch (err) {
       console.error('멤버 초대 실패:', err)
-      addToast('error', '멤버 초대에 실패했습니다')
+      addToast('error', TOAST.PROCESS_FAILED)
     } finally {
       setIsInviting(false)
     }
@@ -131,26 +132,26 @@ export default function HouseholdDetailPage() {
 
     try {
       await updateMemberRole(Number(id), userId, newRole)
-      addToast('success', '역할이 변경되었습니다')
+      addToast('success', TOAST.ROLE_CHANGED)
     } catch (err) {
       console.error('역할 변경 실패:', err)
-      addToast('error', '역할 변경에 실패했습니다')
+      addToast('error', TOAST.PROCESS_FAILED)
     }
   }
 
   /**
-   * 멤버 추방 핸들러
+   * 멤버 내보내기 핸들러
    */
   const handleRemoveMember = async (userId: number, username: string) => {
     if (!id) return
-    if (!confirm(`정말 ${username}님을 추방하시겠습니까?`)) return
+    if (!confirm(`정말 ${username}님을 내보내시겠습니까?`)) return
 
     try {
       await removeMember(Number(id), userId)
-      addToast('success', '멤버를 추방했습니다')
+      addToast('success', TOAST.MEMBER_REMOVED)
     } catch (err) {
-      console.error('멤버 추방 실패:', err)
-      addToast('error', '멤버 추방에 실패했습니다')
+      console.error('멤버 내보내기 실패:', err)
+      addToast('error', TOAST.PROCESS_FAILED)
     }
   }
 
@@ -163,11 +164,11 @@ export default function HouseholdDetailPage() {
 
     try {
       await leaveHousehold(Number(id))
-      addToast('success', '가구에서 탈퇴했습니다')
+      addToast('success', TOAST.HOUSEHOLD_LEFT)
       navigate('/households')
     } catch (err) {
       console.error('가구 탈퇴 실패:', err)
-      addToast('error', '가구 탈퇴에 실패했습니다')
+      addToast('error', TOAST.PROCESS_FAILED)
     }
   }
 
@@ -179,10 +180,10 @@ export default function HouseholdDetailPage() {
 
     try {
       await updateHousehold(Number(id), formData)
-      addToast('success', '가구 정보가 수정되었습니다')
+      addToast('success', TOAST.HOUSEHOLD_UPDATED)
     } catch (err) {
       console.error('가구 수정 실패:', err)
-      addToast('error', '가구 수정에 실패했습니다')
+      addToast('error', TOAST.SAVE_FAILED)
     }
   }
 
@@ -195,11 +196,11 @@ export default function HouseholdDetailPage() {
 
     try {
       await deleteHousehold(Number(id))
-      addToast('success', '가구가 삭제되었습니다')
+      addToast('success', TOAST.HOUSEHOLD_DELETED)
       navigate('/households')
     } catch (err) {
       console.error('가구 삭제 실패:', err)
-      addToast('error', '가구 삭제에 실패했습니다')
+      addToast('error', TOAST.DELETE_FAILED)
     }
   }
 
@@ -213,9 +214,9 @@ export default function HouseholdDetailPage() {
 
     try {
       await cancelInvitation(Number(id), invitationId)
-      addToast('success', '초대를 취소했습니다')
+      addToast('success', TOAST.INVITE_CANCELLED)
     } catch {
-      addToast('error', '초대 취소에 실패했습니다')
+      addToast('error', TOAST.PROCESS_FAILED)
     }
   }
 
@@ -225,7 +226,7 @@ export default function HouseholdDetailPage() {
   const handleCopyInviteLink = async (token: string) => {
     const link = `${window.location.origin}/invitations/accept?token=${token}`
     await navigator.clipboard.writeText(link)
-    addToast('success', '초대 링크가 복사되었습니다')
+    addToast('success', TOAST.INVITE_LINK_COPIED)
   }
 
   /**

@@ -24,7 +24,7 @@ from sqlalchemy.sql import func
 from app.core.database import Base
 
 
-class HouseholdInvitation(Base):
+class HouseholdInvitation(Base):  # type: ignore[misc]
     """가구 초대 엔티티
 
     가구에 새로운 멤버를 초대하기 위한 토큰 기반 초대 시스템입니다.
@@ -72,5 +72,5 @@ class HouseholdInvitation(Base):
     inviter = relationship("User", foreign_keys=[inviter_id])
     invitee = relationship("User", foreign_keys=[invitee_user_id])
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<HouseholdInvitation(id={self.id}, email={self.invitee_email}, status={self.status})>"

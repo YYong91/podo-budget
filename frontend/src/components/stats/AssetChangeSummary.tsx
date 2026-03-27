@@ -60,7 +60,7 @@ export default function AssetChangeSummary({ summary, previousSnapshot }: AssetC
 
   return (
     <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] p-4">
-      <h3 className="text-sm font-semibold text-[var(--text-secondary)] mb-3">자산 변동</h3>
+      <h3 className="text-sm font-semibold text-[var(--text-secondary)] mb-3">자산 변화</h3>
 
       {/* 순자산 */}
       <div className="flex items-baseline justify-between mb-3">
@@ -72,7 +72,7 @@ export default function AssetChangeSummary({ summary, previousSnapshot }: AssetC
           <div className={`flex items-center gap-1 ${change >= 0 ? 'text-leaf-600' : 'text-red-600'}`}>
             {change >= 0 ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
             <span className="text-sm font-medium">
-              전월 대비 {change >= 0 ? '+' : ''}
+              지난달 대비 {change >= 0 ? '+' : ''}
               {formatLargeAmount(change)}
             </span>
             {changeRate !== null && (

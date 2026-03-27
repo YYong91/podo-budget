@@ -1,21 +1,27 @@
 /**
  * @file LoginPage.test.tsx
- * @description 로그인/회원가입 페이지 테스트 — 약관 동의 플로우 (#409)
+ * @description 로그인/회원가입 페이지 테스트 — 약관 동의, 인증 플로우, 에러 처리, 모드 전환
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import LoginPage from '../LoginPage'
 
 // Supabase 모킹
+const mockSignUp = vi.fn().mockResolvedValue({ error: null })
+const mockSignInWithPassword = vi.fn().mockResolvedValue({ error: null })
+const mockSignInWithOAuth = vi.fn().mockResolvedValue({ error: null })
+const mockResetPasswordForEmail = vi.fn().mockResolvedValue({ error: null })
+
 vi.mock('../../utils/supabase', () => ({
   supabase: {
     auth: {
-      signUp: vi.fn().mockResolvedValue({ error: null }),
-      signInWithPassword: vi.fn().mockResolvedValue({ error: null }),
-      signInWithOAuth: vi.fn().mockResolvedValue({ error: null }),
-      resetPasswordForEmail: vi.fn().mockResolvedValue({ error: null }),
+      signUp: (...args: unknown[]) => mockSignUp(...args),
+      signInWithPassword: (...args: unknown[]) => mockSignInWithPassword(...args),
+      signInWithOAuth: (...args: unknown[]) => mockSignInWithOAuth(...args),
+      resetPasswordForEmail: (...args: unknown[]) => mockResetPasswordForEmail(...args),
       onAuthStateChange: vi.fn().mockReturnValue({ data: { subscription: { unsubscribe: vi.fn() } } }),
     },
   },
@@ -40,9 +46,15 @@ function switchToSignup() {
   fireEvent.click(screen.getByRole('button', { name: '회원가입' }))
 }
 
+function switchToReset() {
+  fireEvent.click(screen.getByRole('button', { name: '비밀번호를 잊으셨나요?' }))
+}
+
 describe('LoginPage', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    sessionStorage.clear()
+    localStorage.clear()
   })
 
   describe('기본 렌더링', () => {
@@ -61,6 +73,21 @@ describe('LoginPage', () => {
       renderPage()
       expect(screen.getByLabelText('이메일')).toBeInTheDocument()
       expect(screen.getByLabelText('비밀번호')).toBeInTheDocument()
+    })
+
+    it('로그인 버튼을 표시한다', () => {
+      renderPage()
+      expect(screen.getByRole('button', { name: '로그인' })).toBeInTheDocument()
+    })
+
+    it('비밀번호 찾기 버튼을 표시한다', () => {
+      renderPage()
+      expect(screen.getByRole('button', { name: '비밀번호를 잊으셨나요?' })).toBeInTheDocument()
+    })
+
+    it('회원가입 전환 버튼을 표시한다', () => {
+      renderPage()
+      expect(screen.getByText('계정이 없으신가요?')).toBeInTheDocument()
     })
   })
 
@@ -114,18 +141,406 @@ describe('LoginPage', () => {
 
     it('모드 전환 시 약관 동의가 초기화된다', () => {
       renderPage()
-      // 회원가입 모드로 전환
       switchToSignup()
-      // 체크박스 체크
       const checkbox = screen.getByRole('checkbox', { name: /이용약관.*개인정보처리방침.*동의/ })
       fireEvent.click(checkbox)
       expect(checkbox).toBeChecked()
-      // 로그인 모드로 전환 후 다시 회원가입
       fireEvent.click(screen.getByRole('button', { name: '로그인' }))
       switchToSignup()
-      // 체크박스가 초기화되어야 함
       const resetCheckbox = screen.getByRole('checkbox', { name: /이용약관.*개인정보처리방침.*동의/ })
       expect(resetCheckbox).not.toBeChecked()
+    })
+
+    it('회원가입 모드에서 이름 필드를 표시한다', () => {
+      renderPage()
+      switchToSignup()
+      expect(screen.getByLabelText('이름')).toBeInTheDocument()
+    })
+  })
+
+  describe('이메일 로그인', () => {
+    it('로그인 성공 시 홈으로 이동한다', async () => {
+      const user = userEvent.setup()
+      renderPage()
+
+      await user.type(screen.getByLabelText('이메일'), 'test@test.com')
+      await user.type(screen.getByLabelText('비밀번호'), 'password123')
+      await user.click(screen.getByRole('button', { name: '로그인' }))
+
+      await waitFor(() => {
+        expect(mockSignInWithPassword).toHaveBeenCalledWith({
+          email: 'test@test.com',
+          password: 'password123',  // pragma: allowlist secret
+        })
+        expect(mockNavigate).toHaveBeenCalledWith('/', { replace: true })
+      })
+    })
+
+    it('로그인 성공 시 intended_path로 이동한다', async () => {
+      sessionStorage.setItem('intended_path', '/settings')
+      const user = userEvent.setup()
+      renderPage()
+
+      await user.type(screen.getByLabelText('이메일'), 'test@test.com')
+      await user.type(screen.getByLabelText('비밀번호'), 'password123')
+      await user.click(screen.getByRole('button', { name: '로그인' }))
+
+      await waitFor(() => {
+        expect(mockNavigate).toHaveBeenCalledWith('/settings', { replace: true })
+      })
+      // intended_path가 sessionStorage에서 제거됨
+      expect(sessionStorage.getItem('intended_path')).toBeNull()
+    })
+
+    it('잘못된 자격증명 에러 메시지를 표시한다', async () => {
+      mockSignInWithPassword.mockResolvedValueOnce({
+        error: new Error('Invalid login credentials'),
+      })
+      const user = userEvent.setup()
+      renderPage()
+
+      await user.type(screen.getByLabelText('이메일'), 'test@test.com')
+      await user.type(screen.getByLabelText('비밀번호'), 'wrong')
+      await user.click(screen.getByRole('button', { name: '로그인' }))
+
+      await waitFor(() => {
+        expect(screen.getByText('이메일 또는 비밀번호가 올바르지 않습니다')).toBeInTheDocument()
+      })
+    })
+
+    it('rate limit 에러를 처리한다', async () => {
+      mockSignInWithPassword.mockResolvedValueOnce({
+        error: new Error('rate limit exceeded'),
+      })
+      const user = userEvent.setup()
+      renderPage()
+
+      await user.type(screen.getByLabelText('이메일'), 'test@test.com')
+      await user.type(screen.getByLabelText('비밀번호'), 'password')
+      await user.click(screen.getByRole('button', { name: '로그인' }))
+
+      await waitFor(() => {
+        expect(screen.getByText('요청이 너무 많습니다. 잠시 후 다시 시도해주세요.')).toBeInTheDocument()
+      })
+    })
+
+    it('알 수 없는 에러 메시지를 표시한다', async () => {
+      mockSignInWithPassword.mockResolvedValueOnce({
+        error: new Error('Some unknown error'),
+      })
+      const user = userEvent.setup()
+      renderPage()
+
+      await user.type(screen.getByLabelText('이메일'), 'test@test.com')
+      await user.type(screen.getByLabelText('비밀번호'), 'password')
+      await user.click(screen.getByRole('button', { name: '로그인' }))
+
+      await waitFor(() => {
+        expect(screen.getByText('Some unknown error')).toBeInTheDocument()
+      })
+    })
+
+    it('로딩 중 버튼 텍스트가 변경된다', async () => {
+      // signIn이 resolve되지 않는 상태 유지
+      mockSignInWithPassword.mockReturnValueOnce(new Promise(() => {}))
+      const user = userEvent.setup()
+      renderPage()
+
+      await user.type(screen.getByLabelText('이메일'), 'test@test.com')
+      await user.type(screen.getByLabelText('비밀번호'), 'password')
+      await user.click(screen.getByRole('button', { name: '로그인' }))
+
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: '처리 중...' })).toBeInTheDocument()
+        expect(screen.getByRole('button', { name: '처리 중...' })).toBeDisabled()
+      })
+    })
+  })
+
+  describe('이메일 회원가입', () => {
+    it('회원가입 성공 시 navigate를 호출한다', async () => {
+      const user = userEvent.setup()
+      renderPage()
+      switchToSignup()
+
+      await user.type(screen.getByLabelText('이름'), '홍길동')
+      await user.type(screen.getByLabelText('이메일'), 'new@test.com')
+      await user.type(screen.getByLabelText('비밀번호'), 'password123')
+      fireEvent.click(screen.getByRole('checkbox', { name: /이용약관.*개인정보처리방침.*동의/ }))
+      await user.click(screen.getByRole('button', { name: '회원가입' }))
+
+      await waitFor(() => {
+        expect(mockSignUp).toHaveBeenCalledWith({
+          email: 'new@test.com',
+          password: 'password123',
+          options: { data: { name: '홍길동' } },
+        })
+        expect(mockNavigate).toHaveBeenCalledWith('/', { replace: true })
+      })
+    })
+
+    it('이미 가입된 이메일 에러를 표시한다', async () => {
+      mockSignUp.mockResolvedValueOnce({
+        error: new Error('User already registered'),
+      })
+      const user = userEvent.setup()
+      renderPage()
+      switchToSignup()
+
+      await user.type(screen.getByLabelText('이름'), '홍길동')
+      await user.type(screen.getByLabelText('이메일'), 'exists@test.com')
+      await user.type(screen.getByLabelText('비밀번호'), 'password123')
+      fireEvent.click(screen.getByRole('checkbox', { name: /이용약관.*개인정보처리방침.*동의/ }))
+      await user.click(screen.getByRole('button', { name: '회원가입' }))
+
+      await waitFor(() => {
+        expect(screen.getByText('이미 가입된 이메일입니다')).toBeInTheDocument()
+      })
+    })
+
+    it('짧은 비밀번호 에러를 표시한다', async () => {
+      mockSignUp.mockResolvedValueOnce({
+        error: new Error('Password should be at least 6 characters'),
+      })
+      const user = userEvent.setup()
+      renderPage()
+      switchToSignup()
+
+      await user.type(screen.getByLabelText('이름'), '홍길동')
+      await user.type(screen.getByLabelText('이메일'), 'new@test.com')
+      await user.type(screen.getByLabelText('비밀번호'), '12345')
+      fireEvent.click(screen.getByRole('checkbox', { name: /이용약관.*개인정보처리방침.*동의/ }))
+      await user.click(screen.getByRole('button', { name: '회원가입' }))
+
+      await waitFor(() => {
+        expect(screen.getByText('비밀번호는 6자 이상이어야 합니다')).toBeInTheDocument()
+      })
+    })
+  })
+
+  describe('Google OAuth 로그인', () => {
+    it('Google 로그인 버튼 클릭 시 OAuth를 호출한다', async () => {
+      const user = userEvent.setup()
+      renderPage()
+
+      await user.click(screen.getByText('Google로 계속하기'))
+
+      expect(mockSignInWithOAuth).toHaveBeenCalledWith({
+        provider: 'google',
+        options: {
+          redirectTo: expect.stringContaining('/auth/callback'),
+        },
+      })
+    })
+
+    it('Google 로그인 에러 시 에러 메시지를 표시한다', async () => {
+      mockSignInWithOAuth.mockResolvedValueOnce({
+        error: { message: 'OAuth 연동 실패' },
+      })
+      const user = userEvent.setup()
+      renderPage()
+
+      await user.click(screen.getByText('Google로 계속하기'))
+
+      await waitFor(() => {
+        expect(screen.getByText('OAuth 연동 실패')).toBeInTheDocument()
+      })
+    })
+
+    it('Google 로그인 에러 메시지 없을 때 기본 메시지를 표시한다', async () => {
+      mockSignInWithOAuth.mockResolvedValueOnce({
+        error: { message: '' },
+      })
+      const user = userEvent.setup()
+      renderPage()
+
+      await user.click(screen.getByText('Google로 계속하기'))
+
+      await waitFor(() => {
+        expect(screen.getByText('Google 로그인에 실패했습니다')).toBeInTheDocument()
+      })
+    })
+  })
+
+  describe('비밀번호 재설정 모드', () => {
+    it('비밀번호 찾기 클릭 시 reset 모드로 전환한다', () => {
+      renderPage()
+      switchToReset()
+
+      // 비밀번호 필드가 숨겨진다
+      expect(screen.queryByLabelText('비밀번호')).not.toBeInTheDocument()
+      // 재설정 버튼이 표시된다
+      expect(screen.getByRole('button', { name: '재설정 메일 보내기' })).toBeInTheDocument()
+    })
+
+    it('재설정 성공 시 성공 메시지를 표시한다', async () => {
+      const user = userEvent.setup()
+      renderPage()
+      switchToReset()
+
+      await user.type(screen.getByLabelText('이메일'), 'test@test.com')
+      await user.click(screen.getByRole('button', { name: '재설정 메일 보내기' }))
+
+      await waitFor(() => {
+        expect(mockResetPasswordForEmail).toHaveBeenCalledWith('test@test.com', {
+          redirectTo: expect.stringContaining('/auth/callback'),
+        })
+        expect(screen.getByText('비밀번호 재설정 메일을 발송했습니다. 이메일을 확인해주세요.')).toBeInTheDocument()
+      })
+    })
+
+    it('재설정 에러 시 에러 메시지를 표시한다', async () => {
+      mockResetPasswordForEmail.mockResolvedValueOnce({
+        error: new Error('Reset failed'),
+      })
+      const user = userEvent.setup()
+      renderPage()
+      switchToReset()
+
+      await user.type(screen.getByLabelText('이메일'), 'test@test.com')
+      await user.click(screen.getByRole('button', { name: '재설정 메일 보내기' }))
+
+      await waitFor(() => {
+        expect(screen.getByText('Reset failed')).toBeInTheDocument()
+      })
+    })
+
+    it('reset 모드에서 로그인 모드로 전환할 수 있다', () => {
+      renderPage()
+      switchToReset()
+      expect(screen.queryByLabelText('비밀번호')).not.toBeInTheDocument()
+
+      fireEvent.click(screen.getByRole('button', { name: '로그인' }))
+      expect(screen.getByLabelText('비밀번호')).toBeInTheDocument()
+    })
+
+    it('reset 모드에서 비밀번호 찾기 버튼이 표시되지 않는다', () => {
+      renderPage()
+      switchToReset()
+      expect(screen.queryByText('비밀번호를 잊으셨나요?')).not.toBeInTheDocument()
+    })
+  })
+
+  describe('최근 로그인 방법 힌트', () => {
+    afterEach(() => {
+      localStorage.removeItem('podo-last-login-provider')
+    })
+
+    it('이메일 로그인 성공 시 localStorage에 provider를 저장한다', async () => {
+      const user = userEvent.setup()
+      renderPage()
+
+      await user.type(screen.getByLabelText('이메일'), 'test@test.com')
+      await user.type(screen.getByLabelText('비밀번호'), 'password123')
+      await user.click(screen.getByRole('button', { name: '로그인' }))
+
+      await waitFor(() => {
+        expect(localStorage.getItem('podo-last-login-provider')).toBe('email')
+      })
+    })
+
+    it('Google 로그인 성공 시 localStorage에 provider를 저장한다', async () => {
+      const user = userEvent.setup()
+      renderPage()
+
+      await user.click(screen.getByText('Google로 계속하기'))
+
+      await waitFor(() => {
+        expect(localStorage.getItem('podo-last-login-provider')).toBe('google')
+      })
+    })
+
+    it('Google 로그인 실패 시 provider를 저장하지 않는다', async () => {
+      mockSignInWithOAuth.mockResolvedValueOnce({
+        error: { message: 'OAuth 연동 실패' },
+      })
+      const user = userEvent.setup()
+      renderPage()
+
+      await user.click(screen.getByText('Google로 계속하기'))
+
+      await waitFor(() => {
+        expect(screen.getByText('OAuth 연동 실패')).toBeInTheDocument()
+      })
+      expect(localStorage.getItem('podo-last-login-provider')).toBeNull()
+    })
+
+    it('이메일 로그인 실패 시 provider를 저장하지 않는다', async () => {
+      mockSignInWithPassword.mockResolvedValueOnce({
+        error: new Error('Invalid login credentials'),
+      })
+      const user = userEvent.setup()
+      renderPage()
+
+      await user.type(screen.getByLabelText('이메일'), 'test@test.com')
+      await user.type(screen.getByLabelText('비밀번호'), 'wrong')
+      await user.click(screen.getByRole('button', { name: '로그인' }))
+
+      await waitFor(() => {
+        expect(screen.getByText('이메일 또는 비밀번호가 올바르지 않습니다')).toBeInTheDocument()
+      })
+      expect(localStorage.getItem('podo-last-login-provider')).toBeNull()
+    })
+
+    it('localStorage에 provider가 있으면 해당 버튼에 힌트를 표시한다', () => {
+      localStorage.setItem('podo-last-login-provider', 'google')
+      renderPage()
+
+      expect(screen.getByText('최근에 이 방법으로 로그인했어요')).toBeInTheDocument()
+    })
+
+    it('localStorage에 email provider가 있으면 이메일 로그인 버튼에 힌트를 표시한다', () => {
+      localStorage.setItem('podo-last-login-provider', 'email')
+      renderPage()
+
+      expect(screen.getByText('최근에 이 방법으로 로그인했어요')).toBeInTheDocument()
+    })
+
+    it('localStorage에 provider가 없으면 힌트를 표시하지 않는다', () => {
+      renderPage()
+
+      expect(screen.queryByText('최근에 이 방법으로 로그인했어요')).not.toBeInTheDocument()
+    })
+
+    it('회원가입 성공 시에도 email provider를 저장한다', async () => {
+      const user = userEvent.setup()
+      renderPage()
+      switchToSignup()
+
+      await user.type(screen.getByLabelText('이름'), '홍길동')
+      await user.type(screen.getByLabelText('이메일'), 'new@test.com')
+      await user.type(screen.getByLabelText('비밀번호'), 'password123')
+      fireEvent.click(screen.getByRole('checkbox', { name: /이용약관.*개인정보처리방침.*동의/ }))
+      await user.click(screen.getByRole('button', { name: '회원가입' }))
+
+      await waitFor(() => {
+        expect(localStorage.getItem('podo-last-login-provider')).toBe('email')
+      })
+    })
+  })
+
+  describe('모드 전환', () => {
+    it('회원가입 → 로그인 전환 시 에러/성공 메시지가 초기화된다', async () => {
+      mockSignUp.mockResolvedValueOnce({
+        error: new Error('User already registered'),
+      })
+      const user = userEvent.setup()
+      renderPage()
+      switchToSignup()
+
+      await user.type(screen.getByLabelText('이름'), '홍길동')
+      await user.type(screen.getByLabelText('이메일'), 'test@test.com')
+      await user.type(screen.getByLabelText('비밀번호'), 'password')
+      fireEvent.click(screen.getByRole('checkbox', { name: /이용약관.*개인정보처리방침.*동의/ }))
+      await user.click(screen.getByRole('button', { name: '회원가입' }))
+
+      await waitFor(() => {
+        expect(screen.getByText('이미 가입된 이메일입니다')).toBeInTheDocument()
+      })
+
+      // 로그인 모드로 전환 → 에러 메시지 초기화
+      fireEvent.click(screen.getByRole('button', { name: '로그인' }))
+      expect(screen.queryByText('이미 가입된 이메일입니다')).not.toBeInTheDocument()
     })
   })
 })

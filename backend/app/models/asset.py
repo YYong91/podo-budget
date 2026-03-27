@@ -5,7 +5,7 @@ from sqlalchemy.sql import func
 from app.core.database import Base
 
 
-class Asset(Base):
+class Asset(Base):  # type: ignore[misc]
     __tablename__ = "assets"
     __table_args__ = (
         Index("ix_assets_household_id", "household_id"),

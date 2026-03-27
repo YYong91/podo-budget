@@ -41,12 +41,12 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-def _budget_scope_filter(household_id: int):
+def _budget_scope_filter(household_id: int) -> object:
     """예산 조회 범위 필터 — 가구 기반"""
     return Budget.household_id == household_id
 
 
-def _expense_scope_filter(household_id: int):
+def _expense_scope_filter(household_id: int) -> object:
     """지출 조회 범위 필터 — 가구 기반"""
     return Expense.household_id == household_id
 
@@ -56,7 +56,7 @@ async def get_budgets(
     household_id: int | None = Query(None, description="가구 ID (없으면 개인 예산)"),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-):
+) -> object:
     """전체 예산 목록 조회
 
     household_id가 있으면 가구 공유 예산, 없으면 개인 예산을 반환합니다.
@@ -66,7 +66,7 @@ async def get_budgets(
     await get_household_member(household_id, current_user, db)
 
     scope_filter = _budget_scope_filter(household_id)
-    result = await db.execute(select(Budget).where(scope_filter).order_by(Budget.created_at.desc()))
+    result = await db.execute(select(Budget).where(scope_filter).order_by(Budget.created_at.desc()))  # type: ignore[arg-type]
     return result.scalars().all()
 
 
@@ -75,7 +75,7 @@ async def create_budget(
     budget_data: BudgetCreate,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-):
+) -> object:
     """예산 생성
 
     household_id가 지정되면 가구 공유 예산으로, 없으면 활성 가구를 자동 감지합니다.
@@ -117,7 +117,7 @@ async def create_budget(
 @router.get("/total-budget", response_model=TotalBudgetResponse)
 async def get_total_budget(
     current_user: User = Depends(get_current_user),
-):
+) -> object:
     """월 총 예산 조회 (개인 설정)"""
     return TotalBudgetResponse(
         total_monthly_budget=float(current_user.total_monthly_budget) if current_user.total_monthly_budget is not None else None,
@@ -129,9 +129,9 @@ async def update_total_budget(
     data: TotalBudgetUpdate,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-):
+) -> object:
     """월 총 예산 수정 (개인 설정)"""
-    current_user.total_monthly_budget = data.amount
+    current_user.total_monthly_budget = data.amount  # type: ignore[assignment]
     await db.commit()
     await db.refresh(current_user)
     return TotalBudgetResponse(
@@ -150,7 +150,7 @@ async def bulk_save_budgets(
     household_id: int | None = Query(None, description="가구 ID (없으면 활성 가구 자동 감지)"),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-):
+) -> object:
     """월별 예산 벌크 저장
 
     해당 월의 전체 예산을 한번에 갱신합니다.
@@ -184,9 +184,9 @@ async def bulk_save_budgets(
     for item in data.budgets:
         if item.category_id in existing_budgets:
             # 기존 예산 업데이트
-            budget = existing_budgets[item.category_id]
-            budget.amount = item.amount
-            budget.alert_threshold = data.alert_threshold
+            budget = existing_budgets[item.category_id]  # type: ignore[index]
+            budget.amount = item.amount  # type: ignore[assignment]
+            budget.alert_threshold = data.alert_threshold  # type: ignore[assignment]
             updated += 1
         else:
             # 새 예산 생성
@@ -227,7 +227,7 @@ async def get_budget_alerts(
     month: str | None = Query(None, description="YYYY-MM 형식 (없으면 현재 월)", pattern=r"^\d{4}-\d{2}$"),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-):
+) -> object:
     """예산 초과/경고 알림 조회 (로직은 budget_service에서 처리, #176)"""
     if household_id is None:
         household_id = await get_user_active_household_id(current_user, db)
@@ -240,12 +240,12 @@ async def get_category_overview(
     household_id: int | None = Query(None, description="가구 ID (없으면 개인 예산)"),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-):
+) -> object:
     """카테고리별 예산 개요 조회 — 인라인 예산 편집 화면용 (로직은 budget_service에서 처리, #176)"""
     if household_id is None:
         household_id = await get_user_active_household_id(current_user, db)
     await get_household_member(household_id, current_user, db)
-    return await budget_service.get_category_overview(db, household_id, current_user.id)
+    return await budget_service.get_category_overview(db, household_id, current_user.id)  # type: ignore[arg-type]
 
 
 @router.get("/monthly-stats", response_model=BudgetMonthlyStatsResponse)
@@ -254,7 +254,7 @@ async def get_monthly_stats(
     household_id: int | None = Query(None, description="가구 ID (없으면 개인 예산)"),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-):
+) -> object:
     """월별 예산 대비 실제 지출 통계 조회
 
     household_id가 있으면 가구 공유 예산 통계, 없으면 개인 예산 통계를 반환합니다.
@@ -275,9 +275,9 @@ async def get_monthly_stats(
     budgets_result = await db.execute(
         select(Budget)
         .where(
-            budget_scope,
+            budget_scope,  # type: ignore[arg-type]
             Budget.period == "monthly",
-            Budget.start_date <= start,
+            Budget.start_date < end,  # 해당 월 안에 시작된 예산 포함 (#434)
             or_(Budget.end_date.is_(None), Budget.end_date >= start),
         )
         .order_by(Budget.created_at.desc())
@@ -288,7 +288,7 @@ async def get_monthly_stats(
     budget_map: dict[int, Budget] = {}
     for budget in budgets:
         if budget.category_id not in budget_map:
-            budget_map[budget.category_id] = budget
+            budget_map[budget.category_id] = budget  # type: ignore[index]
 
     if not budget_map:
         return BudgetMonthlyStatsResponse(
@@ -307,7 +307,7 @@ async def get_monthly_stats(
     spending_result = await db.execute(
         select(Expense.category_id, func.sum(Expense.amount).label("total"))
         .where(
-            expense_scope,
+            expense_scope,  # type: ignore[arg-type]
             Expense.date >= start,
             Expense.date < end,
             Expense.exclude_from_stats == False,  # noqa: E712
@@ -322,7 +322,7 @@ async def get_monthly_stats(
     total_spent_sum = 0.0
 
     for cat_id, budget in budget_map.items():
-        cat = category_map.get(cat_id)
+        cat = category_map.get(cat_id)  # type: ignore[call-overload]
         if not cat:
             continue
         budget_amount = float(budget.amount)
@@ -362,7 +362,7 @@ async def update_budget(
     budget_data: BudgetUpdate,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-):
+) -> object:
     """예산 수정
 
     가구 예산이면 가구 멤버 권한 확인, 개인 예산이면 소유자 확인 후 수정합니다.
@@ -376,7 +376,7 @@ async def update_budget(
     # 접근 권한 확인: 가구 멤버인지 검증
     if budget.household_id is not None:
         try:
-            await get_household_member(budget.household_id, current_user, db)
+            await get_household_member(budget.household_id, current_user, db)  # type: ignore[arg-type]
         except HTTPException:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="예산을 찾을 수 없습니다") from None
     else:
@@ -393,7 +393,7 @@ async def update_budget(
             return None
         return val.date() if isinstance(val, datetime) else val
 
-    if budget.end_date and _as_date(budget.end_date) < _as_date(budget.start_date):
+    if budget.end_date and _as_date(budget.end_date) < _as_date(budget.start_date):  # type: ignore[operator,arg-type]
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="종료일은 시작일 이후여야 합니다")
 
     await db.commit()
@@ -406,7 +406,7 @@ async def delete_budget(
     budget_id: int,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-):
+) -> None:
     """예산 삭제
 
     가구 예산이면 가구 멤버 권한 확인, 개인 예산이면 소유자 확인 후 삭제합니다.
@@ -420,7 +420,7 @@ async def delete_budget(
     # 접근 권한 확인: 가구 멤버인지 검증
     if budget.household_id is not None:
         try:
-            await get_household_member(budget.household_id, current_user, db)
+            await get_household_member(budget.household_id, current_user, db)  # type: ignore[arg-type]
         except HTTPException:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="예산을 찾을 수 없습니다") from None
     else:

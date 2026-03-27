@@ -25,9 +25,9 @@ const emptyForm: RecurringFormData = {
 }
 
 const mockCategories: Category[] = [
-  { id: 1, name: '식비', type: 'expense', description: null, sort_order: 1, is_system: true, created_at: '2026-01-01T00:00:00Z' },
-  { id: 2, name: '급여', type: 'income', description: null, sort_order: 2, is_system: true, created_at: '2026-01-01T00:00:00Z' },
-  { id: 3, name: '기타', type: 'both', description: null, sort_order: 3, is_system: true, created_at: '2026-01-01T00:00:00Z' },
+  { id: 1, name: '식비', type: 'expense', description: null, sort_order: 1, is_savings: false, is_system: true, exclude_auto_payment: false, created_at: '2026-01-01T00:00:00Z' },
+  { id: 2, name: '급여', type: 'income', description: null, sort_order: 2, is_savings: false, is_system: true, exclude_auto_payment: false, created_at: '2026-01-01T00:00:00Z' },
+  { id: 3, name: '기타', type: 'both', description: null, sort_order: 3, is_savings: false, is_system: true, exclude_auto_payment: false, created_at: '2026-01-01T00:00:00Z' },
 ]
 
 const defaultProps = {
@@ -64,16 +64,16 @@ describe('RecurringModal', () => {
     expect(screen.queryByText('유형')).not.toBeInTheDocument()
   })
 
-  it('추가 모드에서 빈도 필드를 표시한다', () => {
+  it('추가 모드에서 주기 필드를 표시한다', () => {
     render(<RecurringModal {...defaultProps} />)
-    expect(screen.getByLabelText('반복 빈도')).toBeInTheDocument()
+    expect(screen.getByLabelText('반복 주기')).toBeInTheDocument()
     expect(screen.getByLabelText('반복일')).toBeInTheDocument()
     expect(screen.getByLabelText('시작일')).toBeInTheDocument()
   })
 
-  it('수정 모드에서 빈도 필드를 숨긴다', () => {
+  it('수정 모드에서 주기 필드를 숨긴다', () => {
     render(<RecurringModal {...defaultProps} editingId={1} />)
-    expect(screen.queryByLabelText('반복 빈도')).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('반복 주기')).not.toBeInTheDocument()
     expect(screen.queryByLabelText('시작일')).not.toBeInTheDocument()
   })
 
@@ -87,43 +87,43 @@ describe('RecurringModal', () => {
     expect(screen.getByText('수정하기')).toBeInTheDocument()
   })
 
-  // ==================== 빈도별 필드 전환 ====================
+  // ==================== 주기별 필드 전환 ====================
 
-  it('monthly 빈도일 때 반복일 필드를 표시한다', () => {
+  it('monthly 주기일 때 반복일 필드를 표시한다', () => {
     render(<RecurringModal {...defaultProps} formData={{ ...emptyForm, frequency: 'monthly' }} />)
     expect(screen.getByLabelText('반복일')).toBeInTheDocument()
     expect(screen.queryByLabelText('요일')).not.toBeInTheDocument()
     expect(screen.queryByLabelText('반복 주기 (일)')).not.toBeInTheDocument()
   })
 
-  it('weekly 빈도일 때 요일 필드를 표시한다', () => {
+  it('weekly 주기일 때 요일 필드를 표시한다', () => {
     render(<RecurringModal {...defaultProps} formData={{ ...emptyForm, frequency: 'weekly' }} />)
     expect(screen.getByLabelText('요일')).toBeInTheDocument()
     expect(screen.queryByLabelText('반복일')).not.toBeInTheDocument()
   })
 
-  it('yearly 빈도일 때 반복일과 반복 월 필드를 표시한다', () => {
+  it('yearly 주기일 때 반복일과 반복 월 필드를 표시한다', () => {
     render(<RecurringModal {...defaultProps} formData={{ ...emptyForm, frequency: 'yearly' }} />)
     expect(screen.getByLabelText('반복일')).toBeInTheDocument()
     expect(screen.getByLabelText('반복 월')).toBeInTheDocument()
     expect(screen.queryByLabelText('요일')).not.toBeInTheDocument()
   })
 
-  it('custom 빈도일 때 반복 주기 필드를 표시한다', () => {
+  it('custom 주기일 때 반복 주기 필드를 표시한다', () => {
     render(<RecurringModal {...defaultProps} formData={{ ...emptyForm, frequency: 'custom' }} />)
     expect(screen.getByLabelText('반복 주기 (일)')).toBeInTheDocument()
     expect(screen.queryByLabelText('반복일')).not.toBeInTheDocument()
     expect(screen.queryByLabelText('요일')).not.toBeInTheDocument()
   })
 
-  // ==================== 빈도 변경 시 onFormChange 호출 ====================
+  // ==================== 주기 변경 시 onFormChange 호출 ====================
 
-  it('빈도 선택을 변경하면 onFormChange를 호출한다', async () => {
+  it('주기 선택을 변경하면 onFormChange를 호출한다', async () => {
     const onFormChange = vi.fn()
     const user = userEvent.setup()
     render(<RecurringModal {...defaultProps} onFormChange={onFormChange} />)
 
-    await user.selectOptions(screen.getByLabelText('반복 빈도'), 'weekly')
+    await user.selectOptions(screen.getByLabelText('반복 주기'), 'weekly')
     expect(onFormChange).toHaveBeenCalled()
   })
 

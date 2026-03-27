@@ -28,6 +28,7 @@ from app.models.category import Category
 from app.models.expense import Expense
 from app.models.feedback import Feedback
 from app.models.income import Income
+from app.models.payment_method import PaymentMethod
 from app.services.bot_messages import (
     format_budget_status,
     format_budget_status_full,
@@ -43,6 +44,7 @@ from app.services.bot_messages import (
     format_report_message_full,
     format_server_error,
     format_timeout_message,
+    get_payment_method_icon,
 )
 from app.services.bot_strike_service import increment_strike, reset_strike
 from app.services.bot_user_service import get_or_create_bot_user, link_kakao_account_by_code
@@ -78,6 +80,8 @@ COMMAND_ALIASES: dict[str, tuple[str, bool]] = {
     "예산 전체": ("/budget_full", False),
     "피드백": ("/feedback", True),
     "건의": ("/feedback", True),
+    "결제수단변경": ("/change_payment", False),
+    "결제수단": ("/change_payment", False),
 }
 
 
@@ -110,7 +114,7 @@ def normalize_command(utterance: str) -> str:
     return f"{command} {rest}" if rest else command
 
 
-def make_callback_pending_response(text: str) -> dict:
+def make_callback_pending_response(text: str) -> dict[str, Any]:
     """카카오 콜백 대기 응답 — useCallback: true로 즉시 반환
 
     카카오 오픈빌더 콜백 API 규격에 따라 useCallback과 data를 포함합니다.
@@ -123,7 +127,7 @@ def make_callback_pending_response(text: str) -> dict:
     }
 
 
-async def _send_callback_response(callback_url: str, response: dict) -> None:
+async def _send_callback_response(callback_url: str, response: dict[str, Any]) -> None:
     """콜백 URL로 최종 결과 전송
 
     카카오 오픈빌더가 제공한 callbackUrl(1분 유효, 1회용)로 POST 요청을 보냅니다.
@@ -159,9 +163,9 @@ async def _process_expense_callback(
 
             llm = get_llm_provider("parse")
             household_id_for_hints = active_household_id
-            user_categories = await get_user_categories(db, bot_user.id, household_id_for_hints)
-            history_hints = await get_category_hints(db, bot_user.id, household_id_for_hints)
-            cat_mappings = await get_category_mappings_for_prompt(db, user_id=bot_user.id, household_id=household_id_for_hints)
+            user_categories = await get_user_categories(db, bot_user.id, household_id_for_hints)  # type: ignore[arg-type]
+            history_hints = await get_category_hints(db, bot_user.id, household_id_for_hints)  # type: ignore[arg-type]
+            cat_mappings = await get_category_mappings_for_prompt(db, user_id=bot_user.id, household_id=household_id_for_hints)  # type: ignore[arg-type]
 
             # LLM 파싱 (타임아웃 없음 — 콜백이므로 최대 1분)
             parsed = await llm.parse_expense(utterance, categories=user_categories, history_hints=history_hints, category_mappings=cat_mappings)
@@ -185,7 +189,7 @@ async def _process_expense_callback(
             await _send_callback_response(callback_url, error_response)
 
 
-def make_simple_text_response(text: str, quick_replies: list[dict] | None = None) -> dict:
+def make_simple_text_response(text: str, quick_replies: list[dict[str, Any]] | None = None) -> dict[str, Any]:
     """카카오 i 오픈빌더 simpleText 응답 생성
 
     Args:
@@ -203,7 +207,7 @@ def make_simple_text_response(text: str, quick_replies: list[dict] | None = None
     return response
 
 
-def make_quick_reply(label: str, message_text: str) -> dict:
+def make_quick_reply(label: str, message_text: str) -> dict[str, Any]:
     """빠른 답장 버튼 아이템 생성
 
     Args:
@@ -221,7 +225,7 @@ def make_quick_reply(label: str, message_text: str) -> dict:
 # ---------------------------------------------------------------------------
 
 
-async def _handle_help_command(utterance: str, bot_user: Any, db: AsyncSession, active_household_id: int | None) -> dict:
+async def _handle_help_command(utterance: str, bot_user: Any, db: AsyncSession, active_household_id: int | None) -> dict[str, Any]:
     """``/help`` 명령어 처리"""
     return make_simple_text_response(
         format_help_message(platform="kakao"),
@@ -232,17 +236,17 @@ async def _handle_help_command(utterance: str, bot_user: Any, db: AsyncSession, 
     )
 
 
-async def _handle_report_command(utterance: str, bot_user: Any, db: AsyncSession, active_household_id: int | None) -> dict:
+async def _handle_report_command(utterance: str, bot_user: Any, db: AsyncSession, active_household_id: int | None) -> dict[str, Any]:
     """``/report`` 명령어 처리"""
     return await handle_report_command(db, household_id=active_household_id)
 
 
-async def _handle_budget_command(utterance: str, bot_user: Any, db: AsyncSession, active_household_id: int | None) -> dict:
+async def _handle_budget_command(utterance: str, bot_user: Any, db: AsyncSession, active_household_id: int | None) -> dict[str, Any]:
     """``/budget`` 명령어 처리"""
     return await handle_budget_command(db, household_id=active_household_id)
 
 
-async def _handle_link_command(utterance: str, bot_user: Any, db: AsyncSession, active_household_id: int | None, *, kakao_user_id: str = "") -> dict:
+async def _handle_link_command(utterance: str, bot_user: Any, db: AsyncSession, active_household_id: int | None, *, kakao_user_id: str = "") -> dict[str, Any]:
     """``/link`` 명령어 처리 (웹 계정 연동)"""
     parts = utterance.split()
     if len(parts) != 2:
@@ -252,27 +256,27 @@ async def _handle_link_command(utterance: str, bot_user: Any, db: AsyncSession, 
     return make_simple_text_response(message)
 
 
-async def _handle_undo_command(utterance: str, bot_user: Any, db: AsyncSession, active_household_id: int | None) -> dict:
+async def _handle_undo_command(utterance: str, bot_user: Any, db: AsyncSession, active_household_id: int | None) -> dict[str, Any]:
     """``/undo`` 명령어 처리 (마지막 지출 삭제)"""
     return await handle_undo_command(db, bot_user)
 
 
-async def _handle_change_command(utterance: str, bot_user: Any, db: AsyncSession, active_household_id: int | None) -> dict:
+async def _handle_change_command(utterance: str, bot_user: Any, db: AsyncSession, active_household_id: int | None) -> dict[str, Any]:
     """``/change`` 명령어 처리 (마지막 지출 카테고리 변경)"""
     return await handle_change_command(db, bot_user, utterance, active_household_id)
 
 
-async def _handle_report_full_command(utterance: str, bot_user: Any, db: AsyncSession, active_household_id: int | None) -> dict:
+async def _handle_report_full_command(utterance: str, bot_user: Any, db: AsyncSession, active_household_id: int | None) -> dict[str, Any]:
     """``/report_full`` 명령어 처리 (전체 카테고리 리포트)"""
     return await handle_report_full_command(db, household_id=active_household_id)
 
 
-async def _handle_budget_full_command(utterance: str, bot_user: Any, db: AsyncSession, active_household_id: int | None) -> dict:
+async def _handle_budget_full_command(utterance: str, bot_user: Any, db: AsyncSession, active_household_id: int | None) -> dict[str, Any]:
     """``/budget_full`` 명령어 처리 (전체 예산 현황)"""
     return await handle_budget_full_command(db, household_id=active_household_id)
 
 
-async def _handle_feedback_command(utterance: str, bot_user: Any, db: AsyncSession, active_household_id: int | None) -> dict:
+async def _handle_feedback_command(utterance: str, bot_user: Any, db: AsyncSession, active_household_id: int | None) -> dict[str, Any]:
     """``/feedback`` 명령어 처리"""
     content = utterance.replace("/feedback", "").strip()
     if not content:
@@ -319,10 +323,127 @@ async def _handle_feedback_command(utterance: str, bot_user: Any, db: AsyncSessi
     )
 
 
+async def _handle_change_payment_command(utterance: str, bot_user: Any, db: AsyncSession, active_household_id: int | None) -> dict[str, Any]:
+    """``/change_payment`` 명령어 처리 — 마지막 지출의 결제수단 변경
+
+    카카오는 stateless이므로 마지막 지출을 대상으로 합니다.
+    상위 3개 결제수단 + "선택 안 함" quickReply를 표시합니다.
+    """
+    # 마지막 지출 조회
+    result = await db.execute(select(Expense).where(Expense.user_id == bot_user.id).order_by(Expense.id.desc()).limit(1))
+    expense = result.scalar_one_or_none()
+
+    if not expense:
+        return make_simple_text_response("변경할 지출이 없어요.")
+
+    # 저축성 카테고리면 결제수단 변경 불가
+    if expense.category_id:
+        cat_result = await db.execute(select(Category).where(Category.id == expense.category_id))
+        category = cat_result.scalar_one_or_none()
+        if category and (category.exclude_auto_payment or category.is_savings):
+            return make_simple_text_response("저축성 지출은 결제수단을 설정할 수 없어요.")
+
+    # 사용자의 결제수단 목록 (display_order 순, 현재 제외, 상위 3개)
+    pm_query = (
+        select(PaymentMethod)
+        .where(
+            PaymentMethod.household_id == (expense.household_id or active_household_id),
+            PaymentMethod.is_active == True,  # noqa: E712
+        )
+        .order_by(PaymentMethod.display_order.asc(), PaymentMethod.id.asc())
+    )
+    pm_result = await db.execute(pm_query)
+    all_pms = list(pm_result.scalars().all())
+
+    # 현재 결제수단 제외 후 상위 3개
+    current_pm_id = expense.payment_method_id
+    candidates = [pm for pm in all_pms if pm.id != current_pm_id][:3]
+
+    if not candidates and not current_pm_id:
+        return make_simple_text_response(
+            "등록된 결제수단이 없어요.\n웹에서 결제수단을 먼저 등록해주세요.",
+        )
+
+    # 현재 결제수단 이름 조회
+    current_pm_name = None
+    if current_pm_id:
+        for pm in all_pms:
+            if pm.id == current_pm_id:
+                current_pm_name = pm.name
+                break
+
+    # quickReply 생성: 결제수단 + "선택 안 함"
+    quick_replies = []
+    for pm in candidates:
+        icon = get_payment_method_icon(pm.type)  # type: ignore[arg-type]
+        quick_replies.append(make_quick_reply(f"{icon} {pm.name}", f"/set_payment {pm.id}"))
+    quick_replies.append(make_quick_reply("🚫 선택 안 함", "/set_payment none"))
+
+    current_label = f" (현재: {current_pm_name})" if current_pm_name else ""
+    msg = f"💳 마지막 지출: {expense.amount:,.0f}원 - {expense.description}{current_label}\n\n결제수단을 선택해주세요."
+
+    return make_simple_text_response(msg, quick_replies=quick_replies)
+
+
+async def _handle_set_payment_command(utterance: str, bot_user: Any, db: AsyncSession, active_household_id: int | None) -> dict[str, Any]:
+    """``/set_payment`` 명령어 처리 — 마지막 지출의 결제수단 실제 변경"""
+    parts = utterance.split(maxsplit=1)
+    if len(parts) != 2:
+        return make_simple_text_response("결제수단 ID가 필요합니다.")
+
+    pm_arg = parts[1].strip()
+
+    # 마지막 지출 조회
+    result = await db.execute(select(Expense).where(Expense.user_id == bot_user.id).order_by(Expense.id.desc()).limit(1))
+    expense = result.scalar_one_or_none()
+    if not expense:
+        return make_simple_text_response("변경할 지출이 없어요.")
+
+    if pm_arg == "none":
+        expense.payment_method_id = None  # type: ignore[assignment]
+        await db.commit()
+        return make_simple_text_response(
+            f"✅ {expense.description} {expense.amount:,.0f}원의 결제수단을 해제했어요.",
+            quick_replies=[
+                make_quick_reply("📊 이번달 보기", "리포트"),
+                make_quick_reply("❓ 도움말", "도움말"),
+            ],
+        )
+
+    # 결제수단 ID로 조회
+    try:
+        pm_id = int(pm_arg)
+    except ValueError:
+        return make_simple_text_response("잘못된 결제수단입니다.")
+
+    pm_result = await db.execute(
+        select(PaymentMethod).where(
+            PaymentMethod.id == pm_id,
+            PaymentMethod.household_id == expense.household_id,
+            PaymentMethod.is_active == True,  # noqa: E712
+        )
+    )
+    pm = pm_result.scalar_one_or_none()
+    if not pm:
+        return make_simple_text_response("결제수단을 찾을 수 없어요.")
+
+    expense.payment_method_id = pm.id
+    await db.commit()
+
+    icon = get_payment_method_icon(pm.type)  # type: ignore[arg-type]
+    return make_simple_text_response(
+        f"✅ {expense.description} {expense.amount:,.0f}원 → {icon} {pm.name}으로 변경했어요.",
+        quick_replies=[
+            make_quick_reply("📊 이번달 보기", "리포트"),
+            make_quick_reply("❓ 도움말", "도움말"),
+        ],
+    )
+
+
 # 슬래시 명령어 디스패치 테이블
 # 키: 명령어 prefix, 값: 핸들러 함수
 # 핸들러 시그니처: (utterance, bot_user, db, active_household_id) -> dict
-_COMMAND_HANDLERS: dict[
+_COMMAND_HANDLERS: dict[  # type: ignore[type-arg]
     str,
     Callable[[str, Any, AsyncSession, int | None], Awaitable[dict]],
 ] = {
@@ -334,6 +455,8 @@ _COMMAND_HANDLERS: dict[
     "/undo": _handle_undo_command,
     "/change": _handle_change_command,
     "/feedback": _handle_feedback_command,
+    "/change_payment": _handle_change_payment_command,
+    "/set_payment": _handle_set_payment_command,
 }
 
 
@@ -345,7 +468,7 @@ async def _handle_expense_input(
     *,
     callback_url: str | None = None,
     kakao_user_id: str = "",
-) -> dict:
+) -> dict[str, Any]:
     """자연어 지출 입력 → LLM 파싱 → DB 저장
 
     콜백 모드(KAKAO_CALLBACK_ENABLED + callbackUrl 존재):
@@ -402,7 +525,7 @@ async def _handle_expense_input(
         return make_simple_text_response(format_server_error(), quick_replies=[make_quick_reply("❓ 도움말", "도움말")])
 
 
-async def _handle_single_expense(db: AsyncSession, bot_user: Any, parsed: dict, utterance: str, household_id: int | None) -> dict:
+async def _handle_single_expense(db: AsyncSession, bot_user: Any, parsed: dict[str, Any], utterance: str, household_id: int | None) -> dict[str, Any]:
     """단일 파싱 결과 처리: 에러 / 카테고리 매핑 / 수입·지출 분기 저장"""
     strike_user_id = str(bot_user.id)
 
@@ -446,7 +569,7 @@ async def _handle_single_expense(db: AsyncSession, bot_user: Any, parsed: dict, 
         return make_simple_text_response(
             format_income_saved(
                 amount=parsed["amount"],
-                category=category.name,
+                category=category.name,  # type: ignore[arg-type]
                 description=parsed.get("description", utterance),
                 date=record_date.date().isoformat(),
             ),
@@ -456,27 +579,52 @@ async def _handle_single_expense(db: AsyncSession, bot_user: Any, parsed: dict, 
             ],
         )
 
-    # 지출 (기본)
+    # 지출 (기본) — 기본 결제수단 자동 적용 (저축성 카테고리 제외)
+    is_savings_category = getattr(category, "exclude_auto_payment", False) or getattr(category, "is_savings", False)
+    pm_name: str | None = None
+    pm_type: str | None = None
+
+    if not is_savings_category and household_id:
+        from app.api.payment_methods import get_default_payment_method_id
+
+        default_pm_id = await get_default_payment_method_id(db, household_id, bot_user.id)
+        if default_pm_id:
+            record_kwargs["payment_method_id"] = default_pm_id
+            # 결제수단 이름/타입 조회 (응답 메시지용)
+            pm_result = await db.execute(select(PaymentMethod).where(PaymentMethod.id == default_pm_id))
+            pm = pm_result.scalar_one_or_none()
+            if pm:
+                pm_name = pm.name  # type: ignore[assignment]
+                pm_type = pm.type  # type: ignore[assignment]
+
     record = Expense(**record_kwargs)
     db.add(record)
     await db.commit()
     await db.refresh(record)
+
+    quick_replies = [
+        make_quick_reply("↩️ 방금 거 취소", "취소"),
+        make_quick_reply("🔄 카테고리 변경", "변경"),
+    ]
+    # 저축성 카테고리가 아닐 때만 결제수단 변경 버튼 표시
+    if not is_savings_category:
+        quick_replies.append(make_quick_reply("💳 결제수단 변경", "결제수단변경"))
+    quick_replies.append(make_quick_reply("📊 이번달 지출 보기", "리포트"))
+
     return make_simple_text_response(
         format_expense_saved(
             amount=parsed["amount"],
-            category=category.name,
+            category=category.name,  # type: ignore[arg-type]
             description=parsed.get("description", utterance),
             date=record_date.date().isoformat(),
+            payment_method_name=pm_name,
+            payment_method_type=pm_type,
         ),
-        quick_replies=[
-            make_quick_reply("↩️ 방금 거 취소", "취소"),
-            make_quick_reply("🔄 카테고리 변경", "변경"),
-            make_quick_reply("📊 이번달 지출 보기", "리포트"),
-        ],
+        quick_replies=quick_replies,
     )
 
 
-async def _handle_multiple_expenses(db: AsyncSession, bot_user: Any, parsed: list, utterance: str, household_id: int | None) -> dict:
+async def _handle_multiple_expenses(db: AsyncSession, bot_user: Any, parsed: list[dict[str, Any]], utterance: str, household_id: int | None) -> dict[str, Any]:
     """여러 건 처리 — 수입/지출 혼합 지원"""
     created_expenses = []
     created_incomes = []
@@ -539,7 +687,7 @@ async def _handle_multiple_expenses(db: AsyncSession, bot_user: Any, parsed: lis
 
 
 @router.post("/webhook")
-async def kakao_webhook(request: Request, db: AsyncSession = Depends(get_db)):
+async def kakao_webhook(request: Request, db: AsyncSession = Depends(get_db)) -> object:
     """카카오톡 채널 봇 Webhook 엔드포인트
 
     카카오 i 오픈빌더에서 사용자 메시지를 이 URL로 POST합니다.
@@ -608,7 +756,7 @@ async def kakao_webhook(request: Request, db: AsyncSession = Depends(get_db)):
         return make_simple_text_response(format_server_error())
 
 
-async def handle_undo_command(db: AsyncSession, bot_user: Any) -> dict:
+async def handle_undo_command(db: AsyncSession, bot_user: Any) -> dict[str, Any]:
     """마지막 거래(지출 또는 수입) 삭제
 
     Expense와 Income 중 created_at이 더 최근인 것을 삭제합니다.
@@ -637,7 +785,7 @@ async def handle_undo_command(db: AsyncSession, bot_user: Any) -> dict:
     elif last_income:
         target = last_income
     else:
-        target = last_expense
+        target = last_expense  # type: ignore[assignment]
 
     amount = target.amount
     description = target.description
@@ -645,7 +793,7 @@ async def handle_undo_command(db: AsyncSession, bot_user: Any) -> dict:
     await db.commit()
 
     return make_simple_text_response(
-        format_delete_confirm(amount=amount, description=description),
+        format_delete_confirm(amount=amount, description=description),  # type: ignore[arg-type]
         quick_replies=[
             make_quick_reply("📊 이번달 보기", "리포트"),
             make_quick_reply("❓ 도움말", "도움말"),
@@ -676,7 +824,7 @@ async def _get_accessible_categories(
     return list(result.scalars().all())
 
 
-async def handle_change_command(db: AsyncSession, bot_user: Any, utterance: str, active_household_id: int | None) -> dict:
+async def handle_change_command(db: AsyncSession, bot_user: Any, utterance: str, active_household_id: int | None) -> dict[str, Any]:
     """마지막 지출의 카테고리 변경
 
     - /change → 카테고리 목록을 quickReply로 표시
@@ -707,10 +855,11 @@ async def handle_change_command(db: AsyncSession, bot_user: Any, utterance: str,
 
     # /change만 입력 → 카테고리 목록 표시
     if len(parts) == 1:
-        categories = await _get_accessible_categories(db, bot_user.id, expense.household_id)
+        categories = await _get_accessible_categories(db, bot_user.id, expense.household_id)  # type: ignore[arg-type]
 
         # 현재 카테고리를 제외한 목록으로 quickReply 생성
-        quick_replies = [make_quick_reply(cat.name, f"변경 {cat.name}") for cat in categories if cat.name != current_cat_name][:10]  # quickReply 최대 10개 제한
+        # quickReply 최대 10개 제한
+        quick_replies = [make_quick_reply(cat.name, f"변경 {cat.name}") for cat in categories if cat.name != current_cat_name][:10]  # type: ignore[arg-type]
 
         msg = f"📂 마지막 지출: {expense.amount:,.0f}원 - {current_cat_name}\n\n"
         if quick_replies:
@@ -725,7 +874,7 @@ async def handle_change_command(db: AsyncSession, bot_user: Any, utterance: str,
 
     # /change 카테고리명 → 카테고리 변경 실행
     new_cat_name = parts[1].strip()
-    new_category = await get_or_create_category(db, new_cat_name, user_id=bot_user.id, household_id=expense.household_id)
+    new_category = await get_or_create_category(db, new_cat_name, user_id=bot_user.id, household_id=expense.household_id)  # type: ignore[arg-type]
 
     # 매핑 저장: 같은 LLM 응답이 오면 다음부터 자동 적용
     from app.services.category_mapping_service import save_category_mapping
@@ -733,10 +882,10 @@ async def handle_change_command(db: AsyncSession, bot_user: Any, utterance: str,
     if current_cat_name != new_cat_name:
         await save_category_mapping(
             db,
-            source_name=current_cat_name,
-            target_category_id=new_category.id,
+            source_name=current_cat_name,  # type: ignore[arg-type]
+            target_category_id=new_category.id,  # type: ignore[arg-type]
             user_id=bot_user.id if expense.household_id is None else None,
-            household_id=expense.household_id,
+            household_id=expense.household_id,  # type: ignore[arg-type]
         )
 
     expense.category_id = new_category.id
@@ -751,7 +900,7 @@ async def handle_change_command(db: AsyncSession, bot_user: Any, utterance: str,
     )
 
 
-async def handle_report_command(db: AsyncSession, household_id: int | None) -> dict:
+async def handle_report_command(db: AsyncSession, household_id: int | None) -> dict[str, Any]:
     """이번 달 지출 요약 리포트 생성
 
     카테고리별 지출 합계와 건수를 집계하여 카카오 응답 형식으로 반환합니다.
@@ -802,7 +951,7 @@ async def handle_report_command(db: AsyncSession, household_id: int | None) -> d
         return make_simple_text_response(format_server_error())
 
 
-async def handle_budget_command(db: AsyncSession, household_id: int | None) -> dict:
+async def handle_budget_command(db: AsyncSession, household_id: int | None) -> dict[str, Any]:
     """예산 현황 생성
 
     설정된 예산과 현재 지출을 비교하여 카카오 응답 형식으로 반환합니다.
@@ -881,7 +1030,7 @@ async def handle_budget_command(db: AsyncSession, household_id: int | None) -> d
         return make_simple_text_response(format_server_error())
 
 
-async def handle_report_full_command(db: AsyncSession, household_id: int | None) -> dict:
+async def handle_report_full_command(db: AsyncSession, household_id: int | None) -> dict[str, Any]:
     """전체 카테고리 지출 리포트 (접기 없이 모든 카테고리 표시)
 
     Args:
@@ -930,7 +1079,7 @@ async def handle_report_full_command(db: AsyncSession, household_id: int | None)
         return make_simple_text_response(format_server_error())
 
 
-async def handle_budget_full_command(db: AsyncSession, household_id: int | None) -> dict:
+async def handle_budget_full_command(db: AsyncSession, household_id: int | None) -> dict[str, Any]:
     """전체 예산 현황 (접기 없이 모든 예산 항목 표시)
 
     Args:

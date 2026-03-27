@@ -7,6 +7,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useGoBack } from '../hooks/useGoBack'
 import { ArrowLeft, Bug, Lightbulb, MessageSquarePlus, Send } from 'lucide-react'
 import { useToast } from '../hooks/useToast'
+import { TOAST } from '../constants/toastMessages'
 import { feedbackApi } from '../api/feedback'
 import EmptyState from '../components/EmptyState'
 import ErrorState from '../components/ErrorState'
@@ -73,13 +74,13 @@ export default function FeedbackPage() {
     setSubmitting(true)
     try {
       await feedbackApi.create({ type, title: title.trim(), content: content.trim() })
-      addToast('success', '피드백이 제출되었습니다')
+      addToast('success', TOAST.FEEDBACK_SENT)
       trackEvent('feedback_submitted')
       setTitle('')
       setContent('')
       await loadData()
     } catch {
-      addToast('error', '제출에 실패했습니다')
+      addToast('error', TOAST.FEEDBACK_SUBMIT_FAILED)
     } finally {
       setSubmitting(false)
     }
@@ -90,7 +91,7 @@ export default function FeedbackPage() {
       await feedbackApi.updateStatus(id, status)
       await loadData()
     } catch {
-      addToast('error', '상태 변경에 실패했습니다')
+      addToast('error', TOAST.FEEDBACK_STATUS_FAILED)
     }
   }
 

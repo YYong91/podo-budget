@@ -3,6 +3,8 @@ import type { HealthScore } from '../types'
 interface HealthScoreInput {
   incomeTotal: number
   expenseTotal: number
+  /** 저축성 지출 합계 (적금, 투자, 보험 등). 제공 시 저축률 = savingsTotal / incomeTotal */
+  savingsTotal?: number
   budgetTotal?: number
   budgetSpent?: number
   totalLiabilities?: number
@@ -11,7 +13,7 @@ interface HealthScoreInput {
 }
 
 /**
- * 재정 건강 점수 계산 (코드 기반, LLM 미사용)
+ * 가계 건강 점수 계산 (코드 기반, LLM 미사용)
  *
  * - savings (저축률): 수입 대비 (수입-지출) 비율
  * - spending (지출관리): 예산 준수율
@@ -35,9 +37,12 @@ export function calculateHealthScore(input: HealthScoreInput): HealthScore {
   } = input
 
   // 1. 저축률 점수 (0~100)
+  // savingsTotal이 제공되면 저축성 지출 기반, 아니면 기존 (수입-지출)/수입 방식
   let savings = 0
   if (incomeTotal > 0) {
-    const savingsRate = ((incomeTotal - expenseTotal) / incomeTotal) * 100
+    const savingsRate = input.savingsTotal !== undefined
+      ? (input.savingsTotal / incomeTotal) * 100
+      : ((incomeTotal - expenseTotal) / incomeTotal) * 100
     if (savingsRate >= 50) savings = 100
     else if (savingsRate >= 0) savings = Math.round(30 + (savingsRate / 50) * 70)
     else savings = 0

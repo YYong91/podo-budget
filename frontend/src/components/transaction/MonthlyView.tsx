@@ -11,11 +11,13 @@ import TransactionItem from '../TransactionItem'
 import PendingRecurring from '../PendingRecurring'
 import EmptyState from '../EmptyState'
 import WelcomeCard from '../WelcomeCard'
+import BotNudgeCard from '../BotNudgeCard'
 import { Search } from 'lucide-react'
 import { formatAmount } from '../../utils/format'
 import { formatDateHeader } from '../../utils/calendar'
 import { recurringApi } from '../../api/recurring'
 import { useToast } from '../../hooks/useToast'
+import { TOAST } from '../../constants/toastMessages'
 import type { useMonthlyTransactions } from '../../hooks/useMonthlyTransactions'
 
 interface MonthlyViewProps {
@@ -27,6 +29,9 @@ interface MonthlyViewProps {
   totalTransactionCount: number
   isBotLinked: boolean
   onWelcomeDismiss: () => void
+  /** 봇 넛지 카드 */
+  botNudgeDismissed: boolean
+  onBotNudgeDismiss: () => void
 }
 
 export default function MonthlyView({
@@ -37,6 +42,8 @@ export default function MonthlyView({
   totalTransactionCount,
   isBotLinked,
   onWelcomeDismiss,
+  botNudgeDismissed,
+  onBotNudgeDismiss,
 }: MonthlyViewProps) {
   const { addToast } = useToast()
 
@@ -107,17 +114,23 @@ export default function MonthlyView({
         />
       )}
 
+      {/* 봇 연동 넛지 카드 — 웰컴 카드 완료 후, 봇 미연동 + 지출 1건 이상 */}
+      {welcomeDismissed && !botNudgeDismissed && !isBotLinked && !monthly.loading
+        && monthly.expenses.length > 0 && (
+        <BotNudgeCard onDismiss={onBotNudgeDismiss} />
+      )}
+
       {/* 반복 거래 알림 */}
       <PendingRecurring
         items={monthly.pendingRecurring}
         onExecute={async (id) => {
           try {
             await recurringApi.execute(id)
-            addToast('success', '거래가 등록되었습니다')
+            addToast('success', TOAST.RECURRING_EXECUTED)
             monthly.setPendingRecurring((prev) => prev.filter((r) => r.id !== id))
             monthly.fetchData()
           } catch {
-            addToast('error', '반복 거래 등록에 실패했습니다')
+            addToast('error', TOAST.RECURRING_EXECUTE_FAILED)
           }
         }}
         onSkip={async (id) => {
@@ -126,7 +139,7 @@ export default function MonthlyView({
             addToast('success', `다음 예정일: ${res.data.next_due_date}`)
             monthly.setPendingRecurring((prev) => prev.filter((r) => r.id !== id))
           } catch {
-            addToast('error', '건너뛰기에 실패했습니다')
+            addToast('error', TOAST.RECURRING_SKIP_FAILED)
           }
         }}
       />

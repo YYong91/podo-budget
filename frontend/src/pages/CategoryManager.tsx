@@ -8,6 +8,7 @@ import { useEffect, useState } from 'react'
 import { useGoBack } from '../hooks/useGoBack'
 import { ArrowLeft, Lock, Plus } from 'lucide-react'
 import { useToast } from '../hooks/useToast'
+import { TOAST } from '../constants/toastMessages'
 import { categoryApi } from '../api/categories'
 import EmptyState from '../components/EmptyState'
 import ErrorState from '../components/ErrorState'
@@ -25,11 +26,12 @@ export default function CategoryManager() {
   // 추가 폼 상태
   const [newName, setNewName] = useState('')
   const [newDescription, setNewDescription] = useState('')
+  const [newIsSavings, setNewIsSavings] = useState(false)
   const [isAdding, setIsAdding] = useState(false)
 
   // 편집 모드 (카테고리 ID)
   const [editingId, setEditingId] = useState<number | null>(null)
-  const [editForm, setEditForm] = useState({ name: '', description: '' })
+  const [editForm, setEditForm] = useState({ name: '', description: '', is_savings: false })
 
   // 삭제 확인 모달
   const [deleteTarget, setDeleteTarget] = useState<number | null>(null)
@@ -52,7 +54,7 @@ export default function CategoryManager() {
       setCategories(res.data)
     } catch {
       setError(true)
-      addToast('error', '카테고리 목록 로딩에 실패했습니다')
+      addToast('error', TOAST.LOAD_FAILED)
     } finally {
       setLoading(false)
     }
@@ -71,14 +73,16 @@ export default function CategoryManager() {
       await categoryApi.create({
         name: newName.trim(),
         description: newDescription.trim() || undefined,
+        is_savings: newIsSavings,
       })
-      addToast('success', '카테고리가 추가되었습니다')
+      addToast('success', TOAST.CATEGORY_ADDED)
       setNewName('')
       setNewDescription('')
+      setNewIsSavings(false)
       setIsAdding(false)
       fetchCategories()
     } catch {
-      addToast('error', '카테고리 추가에 실패했습니다')
+      addToast('error', TOAST.SAVE_FAILED)
     }
   }
 
@@ -90,6 +94,7 @@ export default function CategoryManager() {
     setEditForm({
       name: category.name,
       description: category.description || '',
+      is_savings: category.is_savings,
     })
   }
 
@@ -106,12 +111,13 @@ export default function CategoryManager() {
       await categoryApi.update(id, {
         name: editForm.name.trim(),
         description: editForm.description.trim() || undefined,
+        is_savings: editForm.is_savings,
       })
-      addToast('success', '카테고리가 수정되었습니다')
+      addToast('success', TOAST.CATEGORY_UPDATED)
       setEditingId(null)
       fetchCategories()
     } catch {
-      addToast('error', '카테고리 수정에 실패했습니다')
+      addToast('error', TOAST.SAVE_FAILED)
     }
   }
 
@@ -121,11 +127,11 @@ export default function CategoryManager() {
   const handleDelete = async (id: number) => {
     try {
       await categoryApi.delete(id)
-      addToast('success', '카테고리가 삭제되었습니다')
+      addToast('success', TOAST.CATEGORY_DELETED)
       setDeleteTarget(null)
       fetchCategories()
     } catch {
-      addToast('error', '카테고리 삭제에 실패했습니다')
+      addToast('error', TOAST.DELETE_FAILED)
     }
   }
 
@@ -150,7 +156,7 @@ export default function CategoryManager() {
     } catch {
       // 실패 시 원래 목록 복원
       fetchCategories()
-      addToast('error', '순서 변경에 실패했습니다')
+      addToast('error', TOAST.ORDER_CHANGE_FAILED)
     } finally {
       setReordering(false)
     }
@@ -229,7 +235,7 @@ export default function CategoryManager() {
                   설명
                 </th>
                 <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-[var(--text-tertiary)] uppercase tracking-wider hidden sm:table-cell">
-                  생성일
+                  만든 날
                 </th>
                 <th className="px-4 sm:px-6 py-3 text-right text-xs font-medium text-[var(--text-tertiary)] uppercase tracking-wider">
                   작업
@@ -251,6 +257,17 @@ export default function CategoryManager() {
                     // eslint-disable-next-line jsx-a11y/no-autofocus
                     autoFocus
                   />
+                  {activeTab === 'expense' && (
+                    <label className="flex items-center gap-1.5 mt-2 text-xs text-[var(--text-secondary)] cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={newIsSavings}
+                        onChange={(e) => setNewIsSavings(e.target.checked)}
+                        className="rounded border-[var(--input-border)] text-grape-600 focus:ring-grape-500"
+                      />
+                      저축성 지출
+                    </label>
+                  )}
                 </td>
                 <td className="px-4 sm:px-6 py-4 hidden md:table-cell">
                   <input
@@ -275,6 +292,7 @@ export default function CategoryManager() {
                         setIsAdding(false)
                         setNewName('')
                         setNewDescription('')
+                        setNewIsSavings(false)
                       }}
                       className="px-3 py-1.5 text-sm font-medium text-[var(--text-secondary)] bg-[var(--surface-hover)] rounded-lg hover:bg-[var(--surface-hover)] transition-colors"
                     >
@@ -320,21 +338,41 @@ export default function CategoryManager() {
                     </td>
                     <td className="px-4 sm:px-6 py-4">
                       {isEditing ? (
-                        <input
-                          type="text"
-                          value={editForm.name}
-                          onChange={(e) =>
-                            setEditForm({ ...editForm, name: e.target.value })
-                          }
-                          className="w-full px-3 py-2 border border-[var(--input-border)] rounded-lg focus:ring-2 focus:ring-grape-500 focus:border-transparent"
-                          // eslint-disable-next-line jsx-a11y/no-autofocus
-                          autoFocus
-                        />
+                        <div>
+                          <input
+                            type="text"
+                            value={editForm.name}
+                            onChange={(e) =>
+                              setEditForm({ ...editForm, name: e.target.value })
+                            }
+                            className="w-full px-3 py-2 border border-[var(--input-border)] rounded-lg focus:ring-2 focus:ring-grape-500 focus:border-transparent"
+                            // eslint-disable-next-line jsx-a11y/no-autofocus
+                            autoFocus
+                          />
+                          {activeTab === 'expense' && (
+                            <label className="flex items-center gap-1.5 mt-2 text-xs text-[var(--text-secondary)] cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={editForm.is_savings}
+                                onChange={(e) =>
+                                  setEditForm({ ...editForm, is_savings: e.target.checked })
+                                }
+                                className="rounded border-[var(--input-border)] text-grape-600 focus:ring-grape-500"
+                              />
+                              저축성 지출
+                            </label>
+                          )}
+                        </div>
                       ) : (
                         <div>
                           <span className="font-medium text-[var(--text-primary)]">
                             {category.name}
                           </span>
+                          {category.is_savings && (
+                            <span className="ml-1.5 inline-flex items-center px-1.5 py-0.5 text-[10px] font-medium text-leaf-700 bg-leaf-100 rounded">
+                              저축
+                            </span>
+                          )}
                           {/* 모바일에서만 설명 표시 */}
                           <div className="md:hidden text-sm text-[var(--text-secondary)] mt-1">
                             {category.description || '-'}
@@ -439,7 +477,7 @@ export default function CategoryManager() {
               정말로 이 카테고리를 삭제하시겠습니까?
               <br />
               <span className="text-sm text-rose-600">
-                이 카테고리에 연결된 지출 내역은 미분류가 됩니다.
+                이 카테고리에 연결된 지출 내역은 '분류 안 됨' 상태가 됩니다.
               </span>
             </p>
             <div className="flex gap-3 justify-end">

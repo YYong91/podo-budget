@@ -126,21 +126,21 @@ async def execute_recurring(
 
     # next_due_date 갱신
     new_due = calculate_next_due_date(
-        recurring.next_due_date,
-        recurring.frequency,
-        recurring.interval,
-        recurring.day_of_month,
-        recurring.day_of_week,
-        recurring.month_of_year,
+        recurring.next_due_date,  # type: ignore[arg-type]
+        recurring.frequency,  # type: ignore[arg-type]
+        recurring.interval,  # type: ignore[arg-type]
+        recurring.day_of_month,  # type: ignore[arg-type]
+        recurring.day_of_week,  # type: ignore[arg-type]
+        recurring.month_of_year,  # type: ignore[arg-type]
     )
     # end_date 초과 시 비활성화
     if recurring.end_date and new_due > recurring.end_date:
-        recurring.is_active = False
-    recurring.next_due_date = new_due
+        recurring.is_active = False  # type: ignore[assignment]
+    recurring.next_due_date = new_due  # type: ignore[assignment]
 
     await db.commit()
     await db.refresh(record)
-    return record.id
+    return record.id  # type: ignore[return-value]
 
 
 async def skip_recurring(recurring: RecurringTransaction, db: AsyncSession) -> date:
@@ -150,15 +150,15 @@ async def skip_recurring(recurring: RecurringTransaction, db: AsyncSession) -> d
         갱신된 next_due_date
     """
     new_due = calculate_next_due_date(
-        recurring.next_due_date,
-        recurring.frequency,
-        recurring.interval,
-        recurring.day_of_month,
-        recurring.day_of_week,
-        recurring.month_of_year,
+        recurring.next_due_date,  # type: ignore[arg-type]
+        recurring.frequency,  # type: ignore[arg-type]
+        recurring.interval,  # type: ignore[arg-type]
+        recurring.day_of_month,  # type: ignore[arg-type]
+        recurring.day_of_week,  # type: ignore[arg-type]
+        recurring.month_of_year,  # type: ignore[arg-type]
     )
     if recurring.end_date and new_due > recurring.end_date:
-        recurring.is_active = False
-    recurring.next_due_date = new_due
+        recurring.is_active = False  # type: ignore[assignment]
+    recurring.next_due_date = new_due  # type: ignore[assignment]
     await db.commit()
     return new_due

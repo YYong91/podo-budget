@@ -87,7 +87,7 @@ describe('SettingsPage', () => {
       expect(screen.getByText('카테고리')).toBeInTheDocument()
     })
 
-    it('11개 메뉴 항목을 표시한다', () => {
+    it('9개 메뉴 항목을 표시한다 (약관/개인정보는 독립 메뉴에서 제거됨)', () => {
       renderSettingsPage()
       expect(screen.getByText('카테고리')).toBeInTheDocument()
       expect(screen.getByText('예산 관리')).toBeInTheDocument()
@@ -98,8 +98,9 @@ describe('SettingsPage', () => {
       expect(screen.getByText('새소식')).toBeInTheDocument()
       expect(screen.getByText('사용 가이드')).toBeInTheDocument()
       expect(screen.getByText('피드백')).toBeInTheDocument()
-      expect(screen.getByText('개인정보 처리방침')).toBeInTheDocument()
-      expect(screen.getByText('서비스 이용약관')).toBeInTheDocument()
+      // 개인정보/약관은 더보기 메뉴에서 독립 항목으로 존재하지 않아야 한다
+      expect(screen.queryByText('개인정보 처리방침')).not.toBeInTheDocument()
+      expect(screen.queryByText('서비스 이용약관')).not.toBeInTheDocument()
     })
 
     it('메뉴 설명을 표시한다', () => {
@@ -109,14 +110,10 @@ describe('SettingsPage', () => {
       expect(screen.getByText('지출/수입 분류 카테고리 관리')).toBeInTheDocument()
     })
 
-    it('개인정보/약관 링크가 외부 링크로 렌더링된다', () => {
+    it('더보기 메뉴에 외부 auth.podonest.com 링크가 없어야 한다', () => {
       renderSettingsPage()
-      const privacyLink = screen.getByText('개인정보 처리방침').closest('a')
-      const termsLink = screen.getByText('서비스 이용약관').closest('a')
-      expect(privacyLink).toHaveAttribute('href', 'https://auth.podonest.com/privacy')
-      expect(privacyLink).toHaveAttribute('target', '_blank')
-      expect(termsLink).toHaveAttribute('href', 'https://auth.podonest.com/terms')
-      expect(termsLink).toHaveAttribute('target', '_blank')
+      const allLinks = document.querySelectorAll('a[href*="auth.podonest.com"]')
+      expect(allLinks.length).toBe(0)
     })
   })
 
@@ -155,6 +152,21 @@ describe('SettingsPage', () => {
       renderSettingsPage('/settings/my-account')
       expect(screen.getByText('계정 삭제')).toBeInTheDocument()
     })
+
+    it('이용약관 · 개인정보처리방침 링크가 내부 경로를 가리킨다', () => {
+      renderSettingsPage('/settings/my-account')
+      const termsLink = screen.getByRole('link', { name: '이용약관' })
+      const privacyLink = screen.getByRole('link', { name: '개인정보처리방침' })
+      expect(termsLink).toHaveAttribute('href', '/terms')
+      expect(privacyLink).toHaveAttribute('href', '/privacy')
+    })
+
+    it('이용약관 · 개인정보처리방침 링크가 계정 삭제 위에 위치한다', () => {
+      renderSettingsPage('/settings/my-account')
+      // 링크가 존재하는지 확인
+      expect(screen.getByText('이용약관')).toBeInTheDocument()
+      expect(screen.getByText('개인정보처리방침')).toBeInTheDocument()
+    })
   })
 
   describe('새소식 서브 페이지', () => {
@@ -176,6 +188,20 @@ describe('SettingsPage', () => {
       renderSettingsPage('/settings/changelog')
       const firstTag = changelogs[0].items[0].tag
       expect(screen.getAllByText(firstTag).length).toBeGreaterThan(0)
+    })
+  })
+
+  describe('화면 모드 서브 페이지', () => {
+    it('화면 모드 옵션을 표시한다', () => {
+      renderSettingsPage('/settings/appearance')
+      expect(screen.getByText('시스템 설정')).toBeInTheDocument()
+      expect(screen.getByText('라이트 모드')).toBeInTheDocument()
+      expect(screen.getByText('다크 모드')).toBeInTheDocument()
+    })
+
+    it('화면 모드 제목을 표시한다', () => {
+      renderSettingsPage('/settings/appearance')
+      expect(screen.getByText('화면 모드')).toBeInTheDocument()
     })
   })
 
@@ -213,6 +239,43 @@ describe('SettingsPage', () => {
       expect(codeBtns.length).toBeGreaterThanOrEqual(1)
       // 연동 해제 버튼은 없어야 한다 (is_linked=false 상태이므로)
       expect(screen.queryByRole('button', { name: '연동 해제' })).not.toBeInTheDocument()
+    })
+  })
+
+  describe('화면 모드 서브 페이지', () => {
+    it('화면 모드 설정을 표시한다', () => {
+      renderSettingsPage('/settings/appearance')
+      expect(screen.getByText('화면 모드')).toBeInTheDocument()
+    })
+  })
+
+  describe('섹션 라우팅', () => {
+    it('잘못된 섹션 접근 시 null을 반환한다 (navigate로 리디렉션)', () => {
+      const { container } = renderSettingsPage('/settings/invalid-section')
+      // navigate({ replace: true })가 호출되고 null 반환 → 빈 DOM
+      expect(container.textContent).toBe('')
+    })
+
+    it('이전 URL(account-info) 접근 시 null을 반환한다 (navigate로 리디렉션)', () => {
+      const { container } = renderSettingsPage('/settings/account-info')
+      expect(container.textContent).toBe('')
+    })
+
+    it('이전 URL(telegram) 접근 시 null을 반환한다 (navigate로 리디렉션)', () => {
+      const { container } = renderSettingsPage('/settings/telegram')
+      expect(container.textContent).toBe('')
+    })
+
+    it('이전 URL(management) 접근 시 null을 반환한다 (navigate로 리디렉션)', () => {
+      const { container } = renderSettingsPage('/settings/management')
+      expect(container.textContent).toBe('')
+    })
+  })
+
+  describe('PWA 설치 버튼', () => {
+    it('설정 메인에서 앱으로 설치 버튼이 표시된다', () => {
+      renderSettingsPage()
+      expect(screen.getByText('앱으로 설치')).toBeInTheDocument()
     })
   })
 })

@@ -10,6 +10,7 @@ import { expenseApi } from '../api/expenses'
 import { incomeApi } from '../api/income'
 import { useHouseholdStore } from '../stores/useHouseholdStore'
 import { useToast } from '../hooks/useToast'
+import { TOAST } from '../constants/toastMessages'
 import CategoryBottomSheet from '../components/CategoryBottomSheet'
 import PullToRefresh from '../components/PullToRefresh'
 import ErrorState from '../components/ErrorState'
@@ -37,6 +38,12 @@ export default function TransactionList() {
   )
   const [totalTransactionCount, setTotalTransactionCount] = useState(0)
 
+  // 봇 넛지 카드 상태
+  const isBotLinked = !!user?.is_telegram_linked || !!user?.is_kakao_linked
+  const [botNudgeDismissed, setBotNudgeDismissed] = useState(() =>
+    localStorage.getItem('podo-bot-nudge-dismissed') === 'true'
+  )
+
   // 전체 기간 거래 건수 조회 (웰컴 카드 단계 판정용)
   useEffect(() => {
     if (welcomeDismissed || !activeHouseholdId) return
@@ -51,6 +58,11 @@ export default function TransactionList() {
   const handleWelcomeDismiss = useCallback(() => {
     setWelcomeDismissed(true)
     localStorage.setItem('podo-welcome-dismissed', 'true')
+  }, [])
+
+  const handleBotNudgeDismiss = useCallback(() => {
+    setBotNudgeDismissed(true)
+    localStorage.setItem('podo-bot-nudge-dismissed', 'true')
   }, [])
 
   // 웰컴 카드 단계 갱신 — 거래 추가 후 돌아왔을 때 반영
@@ -124,7 +136,7 @@ export default function TransactionList() {
       }
       setSheetOpen(false)
     } catch {
-      addToast('error', '카테고리 변경에 실패했습니다')
+      addToast('error', TOAST.CATEGORY_CHANGE_FAILED)
     } finally {
       setSheetSaving(false)
     }
@@ -169,8 +181,10 @@ export default function TransactionList() {
           onEnterSearchMode={search.enterSearchMode}
           welcomeDismissed={welcomeDismissed}
           totalTransactionCount={totalTransactionCount}
-          isBotLinked={!!user?.is_telegram_linked || !!user?.is_kakao_linked}
+          isBotLinked={isBotLinked}
           onWelcomeDismiss={handleWelcomeDismiss}
+          botNudgeDismissed={botNudgeDismissed}
+          onBotNudgeDismiss={handleBotNudgeDismiss}
         />
       )}
 

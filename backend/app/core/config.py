@@ -6,7 +6,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 _settings_logger = logging.getLogger(__name__)
 
-LLMProviderType = Literal["openai", "anthropic", "google", "local"]
+LLMProviderType = Literal["openai", "anthropic", "google", "local", "mock"]
 
 
 class Settings(BaseSettings):
@@ -45,10 +45,6 @@ class Settings(BaseSettings):
     # Telegram Bot
     TELEGRAM_BOT_TOKEN: str = ""
     TELEGRAM_WEBHOOK_SECRET: str = ""  # setWebhook의 secret_token과 일치해야 함
-
-    # 한국투자증권 Open API (시세 조회)
-    KIS_APPKEY: str = ""
-    KIS_APPSECRET: str = ""
 
     # KakaoTalk Bot
     KAKAO_BOT_API_KEY: str = ""

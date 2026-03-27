@@ -16,6 +16,9 @@ on:
       frontend_result:
         description: "프론트엔드 테스트 결과"
         value: ${{ jobs.test-frontend.result }}
+      schema_sync_result:
+        description: "스키마 동기화 검증 결과"
+        value: ${{ jobs.schema-sync.result }}
 
 jobs:
   test-backend:
@@ -46,10 +49,14 @@ jobs:
       - name: 포맷 검증
         run: uv run ruff format --check backend/  # 포맷 미준수 코드 CI 차단 (#177)
 
+      - name: 타입 체크 (mypy --strict)
+        run: uv run mypy backend/app/  # strict 모드 — pyproject.toml [tool.mypy] 참조 (#453)
+
       - name: 의존성 취약점 스캔
         # CVE-2024-23342(ecdsa): python-jose의 transitive dep, 최신 버전(0.19.1)에도 수정 없음 — ignore (#237)
         # CVE-2026-4539(pygments): dev dep, fix 버전 미출시 — ignore
-        run: uv run pip-audit --ignore-vuln CVE-2024-23342 --ignore-vuln CVE-2026-4539
+        # CVE-2026-25645(requests): 2.33.0에서 수정, 하지만 httpx transitive dep으로 직접 업그레이드 불가 — ignore
+        run: uv run pip-audit --ignore-vuln CVE-2024-23342 --ignore-vuln CVE-2026-4539 --ignore-vuln CVE-2026-25645
 
       - name: 타입 체크 (pyright)
         run: |
@@ -172,3 +179,43 @@ jobs:
         if: inputs.frontend_build_check
         continue-on-error: true
         run: cd frontend && node scripts/bundle-size.mjs
+
+  schema-sync:
+    name: 스키마 동기화
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: uv 설치
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: "0.5.20"
+          enable-cache: true
+
+      - name: Python 설정
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: BE 의존성 설치
+        run: uv sync --all-extras
+
+      - name: Node.js 설정
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: FE 의존성 설치
+        run: cd frontend && npm ci
+
+      - name: FE↔BE 스키마 동기화 검증
+        env:
+          DATABASE_URL: sqlite+aiosqlite:///./test.db
+          SECRET_KEY: test-secret-key  # pragma: allowlist secret
+          LLM_PROVIDER: anthropic
+          ANTHROPIC_API_KEY: test-key  # pragma: allowlist secret
+        run: ./scripts/check-schema-sync.sh

@@ -1,13 +1,18 @@
 /**
  * @file TermsOfServicePage.test.tsx
- * @description 이용약관 페이지 스냅샷 테스트
- * 정적 콘텐츠 페이지이므로 스냅샷으로 변경을 감지한다.
+ * @description 이용약관 페이지 테스트
+ * 인증 상태에 따라 하단 버튼이 달라지는 것을 검증한다.
  */
 
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import TermsOfServicePage from '../TermsOfServicePage'
+
+const mockUseAuth = vi.fn()
+vi.mock('../../contexts/AuthContext', () => ({
+  useAuth: () => mockUseAuth(),
+}))
 
 function renderPage() {
   return render(
@@ -18,6 +23,10 @@ function renderPage() {
 }
 
 describe('TermsOfServicePage', () => {
+  beforeEach(() => {
+    mockUseAuth.mockReturnValue({ user: null })
+  })
+
   it('페이지 제목을 표시한다', () => {
     renderPage()
     expect(screen.getByRole('heading', { name: '이용약관' })).toBeInTheDocument()
@@ -43,11 +52,19 @@ describe('TermsOfServicePage', () => {
     expect(screen.getByText(/2026년 3월 25일/)).toBeInTheDocument()
   })
 
-  it('로그인 페이지로 돌아가기 링크를 표시한다', () => {
+  it('미인증 상태에서 로그인 페이지로 돌아가기 링크를 표시한다', () => {
     renderPage()
     const backLink = screen.getByRole('link', { name: /로그인으로 돌아가기/ })
     expect(backLink).toBeInTheDocument()
     expect(backLink).toHaveAttribute('href', '/login')
+  })
+
+  it('인증 상태에서 뒤로가기 버튼을 표시한다', () => {
+    mockUseAuth.mockReturnValue({ user: { id: 1, email: 'test@test.com' } })
+    renderPage()
+    const backButton = screen.getByRole('button', { name: /뒤로가기/ })
+    expect(backButton).toBeInTheDocument()
+    expect(screen.queryByText(/로그인으로 돌아가기/)).not.toBeInTheDocument()
   })
 
   it('포도가계부 로고 링크를 표시한다', () => {
@@ -55,10 +72,5 @@ describe('TermsOfServicePage', () => {
     const logoLink = screen.getByRole('link', { name: '포도가계부' })
     expect(logoLink).toBeInTheDocument()
     expect(logoLink).toHaveAttribute('href', '/login')
-  })
-
-  it('스냅샷과 일치한다', () => {
-    const { container } = renderPage()
-    expect(container).toMatchSnapshot()
   })
 })

@@ -48,7 +48,7 @@ async def create_feedback(
     data: FeedbackCreate,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-):
+) -> object:
     """피드백 제출 — 인증된 유저 누구나"""
     feedback = Feedback(
         user_id=current_user.id,
@@ -64,7 +64,7 @@ async def create_feedback(
     # 관리자 알림 (비동기 — 응답 지연 없이)
     task = asyncio.create_task(
         notify_admin_feedback(
-            username=current_user.username or "unknown",
+            username=current_user.username or "unknown",  # type: ignore[arg-type]
             feedback_type=data.type,
             title=data.title,
             content=data.content,
@@ -74,18 +74,18 @@ async def create_feedback(
     _background_tasks.add(task)
     task.add_done_callback(_background_tasks.discard)
 
-    return _to_response(feedback, username=current_user.username)
+    return _to_response(feedback, username=current_user.username)  # type: ignore[arg-type]
 
 
 @router.get("/mine", response_model=list[FeedbackResponse])
 async def get_my_feedbacks(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-):
+) -> object:
     """내가 보낸 피드백 목록"""
     result = await db.execute(select(Feedback).where(Feedback.user_id == current_user.id).order_by(Feedback.created_at.desc()))
     feedbacks = result.scalars().all()
-    return [_to_response(f, username=current_user.username) for f in feedbacks]
+    return [_to_response(f, username=current_user.username) for f in feedbacks]  # type: ignore[arg-type]
 
 
 @router.get("", response_model=list[FeedbackResponse])
@@ -94,7 +94,7 @@ async def get_all_feedbacks(
     limit: int = Query(50, ge=1, le=200),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-):
+) -> object:
     """전체 피드백 조회 — 관리자(ADMIN_USER_ID)만"""
     if current_user.id != settings.ADMIN_USER_ID:
         raise HTTPException(
@@ -114,7 +114,7 @@ async def update_feedback_status(
     data: FeedbackStatusUpdate,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-):
+) -> object:
     """피드백 상태 변경 — 관리자만"""
     if current_user.id != settings.ADMIN_USER_ID:
         raise HTTPException(
@@ -128,7 +128,7 @@ async def update_feedback_status(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="피드백을 찾을 수 없습니다",
         )
-    feedback.status = data.status
+    feedback.status = data.status  # type: ignore[assignment]
     await db.commit()
     await db.refresh(feedback)
 

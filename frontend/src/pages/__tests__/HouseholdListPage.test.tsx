@@ -5,10 +5,17 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import userEvent from '@testing-library/user-event'
 import HouseholdListPage from '../HouseholdListPage'
+
+// useNavigate 모킹
+const mockNavigate = vi.fn()
+vi.mock('react-router-dom', async () => ({
+  ...(await vi.importActual('react-router-dom')),
+  useNavigate: () => mockNavigate,
+}))
 
 // useToast 모킹
 const mockAddToast = vi.fn()
@@ -269,6 +276,106 @@ describe('HouseholdListPage', () => {
       renderHouseholdList()
 
       expect(mockFetchHouseholds).toHaveBeenCalled()
+    })
+  })
+
+  describe('가구 카드 클릭', () => {
+    it('가구 카드 클릭 시 상세 페이지로 이동한다', async () => {
+      const user = userEvent.setup()
+      storeState = {
+        households: mockHouseholds,
+        isLoading: false,
+        error: null,
+      }
+
+      renderHouseholdList()
+
+      await user.click(screen.getByText('우리 가족'))
+
+      expect(mockNavigate).toHaveBeenCalledWith('/households/1')
+    })
+
+    it('가구 카드에서 Enter 키 입력 시 상세 페이지로 이동한다', () => {
+      storeState = {
+        households: mockHouseholds,
+        isLoading: false,
+        error: null,
+      }
+
+      renderHouseholdList()
+
+      const card = screen.getByText('우리 가족').closest('[role="button"]')!
+      card.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
+
+      expect(mockNavigate).toHaveBeenCalledWith('/households/1')
+    })
+  })
+
+  describe('가구 생성', () => {
+    it('가구 생성 성공 시 상세 페이지로 이동한다', async () => {
+      mockCreateHousehold.mockResolvedValueOnce({ id: 99, name: '새 가구' })
+      const user = userEvent.setup()
+      storeState = {
+        households: mockHouseholds,
+        isLoading: false,
+        error: null,
+      }
+
+      renderHouseholdList()
+
+      await user.click(screen.getByRole('button', { name: '+ 가구 만들기' }))
+
+      // 모달에서 가구 이름 입력
+      const nameInput = screen.getByLabelText(/가구 이름/)
+      await user.type(nameInput, '새 가구')
+
+      // 만들기 버튼 클릭
+      const createBtn = screen.getByRole('button', { name: '생성' })
+      await user.click(createBtn)
+
+      await waitFor(() => {
+        expect(mockCreateHousehold).toHaveBeenCalled()
+        expect(mockAddToast).toHaveBeenCalledWith('success', '가구를 만들었어요')
+        expect(mockNavigate).toHaveBeenCalledWith('/households/99')
+      })
+    })
+
+    it('가구 생성 실패 시 에러 토스트를 표시한다', async () => {
+      mockCreateHousehold.mockRejectedValueOnce(new Error('생성 실패'))
+      const user = userEvent.setup()
+      storeState = {
+        households: mockHouseholds,
+        isLoading: false,
+        error: null,
+      }
+
+      renderHouseholdList()
+
+      await user.click(screen.getByRole('button', { name: '+ 가구 만들기' }))
+
+      const nameInput = screen.getByLabelText(/가구 이름/)
+      await user.type(nameInput, '실패 가구')
+      const createBtn = screen.getByRole('button', { name: '생성' })
+      await user.click(createBtn)
+
+      await waitFor(() => {
+        expect(mockAddToast).toHaveBeenCalledWith('error', '가구 생성에 실패했어요')
+      })
+    })
+  })
+
+  describe('에러 자동 토스트', () => {
+    it('에러 발생 시 자동으로 토스트를 표시하고 clearError를 호출한다', () => {
+      storeState = {
+        households: mockHouseholds,
+        isLoading: false,
+        error: '서버 에러',
+      }
+
+      renderHouseholdList()
+
+      expect(mockAddToast).toHaveBeenCalledWith('error', '처리에 실패했어요')
+      expect(mockClearError).toHaveBeenCalled()
     })
   })
 })

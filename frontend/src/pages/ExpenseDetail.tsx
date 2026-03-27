@@ -8,6 +8,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
 import { useToast } from '../hooks/useToast'
+import { TOAST } from '../constants/toastMessages'
 import { expenseApi } from '../api/expenses'
 import { categoryApi } from '../api/categories'
 import RegisterRecurringModal from '../components/RegisterRecurringModal'
@@ -107,13 +108,13 @@ export default function ExpenseDetail() {
       })
       setExpense(updated.data)
       setIsEditing(false)
-      addToast('success', '저장되었습니다')
+      addToast('success', TOAST.SAVED)
     } catch (err: unknown) {
       const status = (err as { response?: { status?: number } })?.response?.status
       if (status === 403) {
-        addToast('error', '이 항목을 수정할 권한이 없습니다')
+        addToast('error', TOAST.NO_PERMISSION)
       } else {
-        addToast('error', '저장에 실패했습니다')
+        addToast('error', TOAST.SAVE_FAILED)
       }
     }
   }
@@ -126,14 +127,14 @@ export default function ExpenseDetail() {
 
     try {
       await expenseApi.delete(expense.id)
-      addToast('success', '삭제되었습니다')
+      addToast('success', TOAST.DELETED)
       navigate('/expenses')
     } catch (err: unknown) {
       const status = (err as { response?: { status?: number } })?.response?.status
       if (status === 403) {
-        addToast('error', '이 항목을 삭제할 권한이 없습니다')
+        addToast('error', TOAST.NO_PERMISSION)
       } else {
-        addToast('error', '삭제에 실패했습니다')
+        addToast('error', TOAST.DELETE_FAILED)
       }
     }
   }
@@ -159,7 +160,7 @@ export default function ExpenseDetail() {
 
   // 카테고리명 조회
   const categoryName =
-    categories.find((c) => c.id === expense.category_id)?.name || '미분류'
+    categories.find((c) => c.id === expense.category_id)?.name || '분류 안 됨'
 
   return (
     <div className="space-y-6">
@@ -278,7 +279,7 @@ export default function ExpenseDetail() {
               }
               className="w-full px-4 py-2 text-lg border border-[var(--input-border)] rounded-xl focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
             >
-              <option value="">미분류</option>
+              <option value="">분류 안 됨</option>
               {categories.map((cat) => (
                 <option key={cat.id} value={cat.id}>
                   {cat.name}

@@ -9,6 +9,7 @@
 """
 
 from datetime import date, datetime, timedelta
+from typing import Any
 from zoneinfo import ZoneInfo
 
 # 한국어 요일 매핑
@@ -38,13 +39,41 @@ def format_korean_date(d: date | datetime | str) -> str:
     return f"{d.month}월 {d.day}일 ({weekday})"
 
 
-def format_expense_saved(amount: float, category: str, description: str, date: str) -> str:
+def get_payment_method_icon(pm_type: str | None) -> str:
+    """결제수단 유형별 아이콘 반환
+
+    Args:
+        pm_type: 결제수단 유형 (credit_card, debit_card, cash, transfer)
+
+    Returns:
+        해당 유형의 이모지 아이콘
+    """
+    icons = {
+        "credit_card": "💳",
+        "debit_card": "💳",
+        "cash": "💵",
+        "transfer": "🏦",
+    }
+    return icons.get(pm_type or "", "💳")
+
+
+def format_expense_saved(
+    amount: float,
+    category: str,
+    description: str,
+    date: str,
+    payment_method_name: str | None = None,
+    payment_method_type: str | None = None,
+) -> str:
     """지출 저장 성공 메시지
 
-    Before: "✅ 지출이 기록되었어요!\n\n💰 8,000원\n📂 식비\n📅 2026-03-20\n📝 김치찌개"
-    After:  "🍇 김치찌개 8,000원 기록했어요\n\n3월 20일 (금) · 식비"
+    Before: "🍇 김치찌개 8,000원 기록했어요\n\n3월 20일 (금) · 식비"
+    After:  "🍇 김치찌개 8,000원 기록했어요\n\n3월 20일 (금) · 📂 식비 | 💳 삼성카드"
     """
     korean_date = format_korean_date(date)
+    if payment_method_name:
+        icon = get_payment_method_icon(payment_method_type)
+        return f"🍇 {description} {amount:,.0f}원 기록했어요\n\n{korean_date} · 📂 {category} | {icon} {payment_method_name}"
     return f"🍇 {description} {amount:,.0f}원 기록했어요\n\n{korean_date} · {category}"
 
 
@@ -61,7 +90,7 @@ def format_mixed_saved(
     expense_count: int,
     income_count: int,
     total_amount: float,
-    items: list[dict] | None = None,
+    items: list[dict[str, Any]] | None = None,
 ) -> str:
     """수입/지출 혼합 저장 메시지
 
@@ -106,7 +135,7 @@ def format_parse_error(strike: int | str = 1) -> str:
         return "제가 아직 이해하기 어려운 표현인 것 같아요 😊\n\n아래 버튼으로 도움말을 확인해보세요"
 
 
-def format_unknown_input(**kwargs) -> str:
+def format_unknown_input(**kwargs) -> str:  # type: ignore[no-untyped-def]
     """파싱 실패 — 알 수 없는 표현 (하위 호환용)
 
     format_parse_error(strike=2)와 동일
@@ -164,7 +193,7 @@ def format_kakao_link_usage_message() -> str:
     return "🔗 웹 계정 연동 방법\n\n1. 포도가계부 웹 → 설정 → 카카오톡 연동\n2. 코드를 발급받아 아래처럼 입력\n\n연동 ABC123\n\n⏰ 코드는 15분 후 만료돼요"
 
 
-def format_delete_confirm(amount: float, description: str, **kwargs) -> str:
+def format_delete_confirm(amount: float, description: str, **kwargs) -> str:  # type: ignore[no-untyped-def]
     """삭제 완료 메시지
 
     **kwargs로 기존 category 파라미터 하위 호환
@@ -182,10 +211,10 @@ def format_timeout_message() -> str:
     return "⏳ AI가 분석 중이에요\n같은 내용을 다시 보내주시면 빠르게 처리해드릴게요"
 
 
-def format_report_message(report_data: list[dict]) -> str:
+def format_report_message(report_data: list[dict[str, Any]]) -> str:
     """이번 달 지출 리포트 — TOP 3 + 접기 (500자 이내)
 
-    Args:
+    Args:  # type: ignore[no-untyped-def]
         report_data: [{"category": "식비", "total": 150000, "count": 12}, ...]
     """
     now = datetime.now()
@@ -213,7 +242,7 @@ def format_report_message(report_data: list[dict]) -> str:
     return "\n".join(lines)
 
 
-def format_report_message_full(report_data: list[dict]) -> str:
+def format_report_message_full(report_data: list[dict[str, Any]]) -> str:
     """전체 지출 리포트 — 모든 카테고리 표시 (접기 없음)
 
     Args:
@@ -236,7 +265,7 @@ def format_report_message_full(report_data: list[dict]) -> str:
     return "\n".join(lines)
 
 
-def format_budget_status(budget_data: list[dict]) -> str:
+def format_budget_status(budget_data: list[dict[str, Any]]) -> str:
     """예산 현황 — 초과/주의 우선 + 안전 접기 (500자 이내)
 
     Args:
@@ -288,7 +317,7 @@ def format_budget_status(budget_data: list[dict]) -> str:
     return "\n".join(lines)
 
 
-def format_budget_status_full(budget_data: list[dict]) -> str:
+def format_budget_status_full(budget_data: list[dict[str, Any]]) -> str:
     """전체 예산 현황 — 모든 항목 표시 (접기 없음)
 
     Args:

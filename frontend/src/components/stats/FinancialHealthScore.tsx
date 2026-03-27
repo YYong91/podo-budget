@@ -29,7 +29,7 @@ export default function FinancialHealthScore({ score }: FinancialHealthScoreProp
 
   return (
     <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] p-4">
-      <h3 className="text-sm font-semibold text-[var(--text-secondary)] mb-3">재정 건강 점수</h3>
+      <h3 className="text-sm font-semibold text-[var(--text-secondary)] mb-3">가계 건강 점수</h3>
 
       {/* 종합 점수 + 등급 */}
       <div className="flex items-center gap-4 mb-4">

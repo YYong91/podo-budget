@@ -11,7 +11,7 @@ interface HouseholdRoleResult {
   isOwner: boolean
   /** 관리자(owner 포함)인지 여부 */
   isAdmin: boolean
-  /** 해당 멤버를 관리(역할 변경, 추방)할 수 있는지 여부 */
+  /** 해당 멤버를 관리(역할 변경, 내보내기)할 수 있는지 여부 */
   canManageMember: (member: HouseholdMember, currentUserId: number) => boolean
 }
 

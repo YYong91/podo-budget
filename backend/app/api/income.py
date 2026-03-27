@@ -10,10 +10,11 @@
 """
 
 import logging
+from calendar import monthrange
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import func, select
+from sqlalchemy import extract, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import get_household_member, get_user_active_household_id
@@ -22,7 +23,17 @@ from app.core.database import get_db
 from app.models.category import Category
 from app.models.income import Income
 from app.models.user import User
-from app.schemas.expense import CategoryStats, SearchSummary, StatsPeriod, StatsResponse, TrendPoint
+from app.schemas.expense import (
+    CategoryChange,
+    CategoryStats,
+    ChangeInfo,
+    ComparisonResponse,
+    PeriodTotal,
+    SearchSummary,
+    StatsPeriod,
+    StatsResponse,
+    TrendPoint,
+)
 from app.schemas.income import IncomeCreate, IncomeResponse, IncomeUpdate
 from app.utils.date_utils import get_month_range, get_week_label, get_week_range, get_year_range
 
@@ -36,7 +47,7 @@ def _escape_like(value: str) -> str:
     return value.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
 
 
-def _apply_income_filters(
+def _apply_income_filters(  # type: ignore[no-untyped-def]
     stmt,
     *,
     query: str | None,
@@ -44,7 +55,7 @@ def _apply_income_filters(
     end_date: str | None,
     category_id: int | None,
     member_user_id: int | None,
-):
+) -> object:
     """수입 공통 필터 적용"""
     if member_user_id is not None:
         stmt = stmt.where(Income.user_id == member_user_id)
@@ -68,7 +79,7 @@ async def create_income(
     income: IncomeCreate,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-):
+) -> object:
     """수입 생성"""
     household_id = income.household_id
     if household_id is None:
@@ -97,7 +108,7 @@ async def get_incomes(
     query: str | None = Query(None, description="설명(description) 텍스트 검색"),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-):
+) -> object:
     """수입 목록 조회 (필터링, 페이지네이션)"""
     # household_id 미지정 시 활성 가구 자동 감지
     if household_id is None:
@@ -105,7 +116,7 @@ async def get_incomes(
 
     await get_household_member(household_id, current_user, db)
     stmt = select(Income).where(Income.household_id == household_id)
-    stmt = _apply_income_filters(
+    stmt = _apply_income_filters(  # type: ignore[assignment]
         stmt,
         query=query,
         start_date=start_date,
@@ -119,7 +130,7 @@ async def get_incomes(
     return result.scalars().all()
 
 
-def _build_income_scope_filter(household_id: int):
+def _build_income_scope_filter(household_id: int) -> object:
     """가구 스코프 필터 생성"""
     return Income.household_id == household_id
 
@@ -131,7 +142,7 @@ async def get_income_stats(
     household_id: int | None = None,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-):
+) -> object:
     """수입 기간별 통계 (주간/월간/연간)"""
     from datetime import date as date_type
 
@@ -159,7 +170,7 @@ async def get_income_stats(
     base_where = [scope_filter, stats_filter, Income.date >= start_dt, Income.date <= end_dt]
 
     # 총합/건수
-    total_result = await db.execute(select(func.coalesce(func.sum(Income.amount), 0), func.count(Income.id)).where(*base_where))
+    total_result = await db.execute(select(func.coalesce(func.sum(Income.amount), 0), func.count(Income.id)).where(*base_where))  # type: ignore[arg-type]
     row = total_result.one()
     total = float(row[0])
     count = int(row[1])
@@ -168,7 +179,7 @@ async def get_income_stats(
     cat_result = await db.execute(
         select(Category.name, func.sum(Income.amount).label("amount"), func.count(Income.id).label("cnt"))
         .join(Category, Income.category_id == Category.id, isouter=True)
-        .where(*base_where)
+        .where(*base_where)  # type: ignore[arg-type]
         .group_by(Category.name)
         .order_by(func.sum(Income.amount).desc())
     )
@@ -190,14 +201,14 @@ async def get_income_stats(
         # 월별 12포인트 — 단일 GROUP BY 쿼리 (12번 직렬 → 1번, #164)
         month_col = func.extract("month", Income.date).label("month")
         monthly_result = await db.execute(
-            select(month_col, func.coalesce(func.sum(Income.amount), 0).label("amount")).where(*base_where).group_by(month_col).order_by(month_col)
+            select(month_col, func.coalesce(func.sum(Income.amount), 0).label("amount")).where(*base_where).group_by(month_col).order_by(month_col)  # type: ignore[arg-type]
         )
         monthly_map = {int(r.month): float(r.amount) for r in monthly_result.all()}
         for m in range(1, 13):
             trend.append(TrendPoint(label=f"{m}월", amount=monthly_map.get(m, 0.0)))
     else:
         day_col = func.date(Income.date).label("day")
-        daily_result = await db.execute(select(day_col, func.sum(Income.amount).label("amount")).where(*base_where).group_by(day_col).order_by(day_col))
+        daily_result = await db.execute(select(day_col, func.sum(Income.amount).label("amount")).where(*base_where).group_by(day_col).order_by(day_col))  # type: ignore[arg-type]
         for r in daily_result.all():
             if r.day is not None:
                 day_str = str(r.day)[:10]
@@ -225,14 +236,14 @@ async def get_incomes_search_summary(
     member_user_id: int | None = Query(None, description="가구 내 특정 멤버"),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-):
+) -> object:
     """수입 검색 결과 합계 (건수 + 총액)"""
     if household_id is None:
         household_id = await get_user_active_household_id(current_user, db)
     await get_household_member(household_id, current_user, db)
 
     stmt = select(func.count(), func.coalesce(func.sum(Income.amount), 0)).where(Income.household_id == household_id)
-    stmt = _apply_income_filters(
+    stmt = _apply_income_filters(  # type: ignore[assignment]
         stmt,
         query=query,
         start_date=start_date,
@@ -246,12 +257,168 @@ async def get_incomes_search_summary(
     return SearchSummary(total_count=count, total_amount=float(total))
 
 
+@router.get("/stats/comparison", response_model=ComparisonResponse)
+async def get_income_stats_comparison(
+    period: str = Query(
+        ...,
+        description="비교 기간: monthly 또는 yearly",
+        pattern=r"^(monthly|yearly)$",
+    ),
+    date: str | None = Query(None, description="기준 날짜 YYYY-MM-DD (기본: 오늘)", alias="date"),
+    months: int = Query(3, ge=2, le=12, description="비교할 개월 수"),
+    household_id: int | None = None,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> object:
+    """수입 기간 비교 (전월 대비 + N개월 트렌드)"""
+    from datetime import date as date_type
+
+    ref_date = date_type.fromisoformat(date) if date else date_type.today()
+
+    # household_id 미지정 시 활성 가구 자동 감지
+    if household_id is None:
+        household_id = await get_user_active_household_id(current_user, db)
+    await get_household_member(household_id, current_user, db)
+    scope_filter = _build_income_scope_filter(household_id)
+
+    excl_filter = Income.exclude_from_stats == False  # noqa: E712
+
+    async def _month_total(year: int, month: int, end_day: int | None = None) -> float:
+        m_start = datetime(year, month, 1)
+        _, m_last = monthrange(year, month)
+        actual_end = min(end_day, m_last) if end_day is not None else m_last
+        m_end = datetime(year, month, actual_end, 23, 59, 59)
+        r = await db.execute(
+            select(func.coalesce(func.sum(Income.amount), 0)).where(scope_filter, excl_filter, Income.date >= m_start, Income.date <= m_end)  # type: ignore[arg-type]
+        )
+        return float(r.scalar())  # type: ignore[arg-type]
+
+    async def _month_by_category(year: int, month: int, end_day: int | None = None) -> dict[str, float]:
+        m_start = datetime(year, month, 1)
+        _, m_last = monthrange(year, month)
+        actual_end = min(end_day, m_last) if end_day is not None else m_last
+        m_end = datetime(year, month, actual_end, 23, 59, 59)
+        r = await db.execute(
+            select(Category.name, func.sum(Income.amount).label("amount"))
+            .join(Category, Income.category_id == Category.id, isouter=True)
+            .where(scope_filter, excl_filter, Income.date >= m_start, Income.date <= m_end)  # type: ignore[arg-type]
+            .group_by(Category.name)
+        )
+        return {row.name or "미분류": float(row.amount) for row in r.all()}
+
+    if period == "monthly":
+        cur_y, cur_m = ref_date.year, ref_date.month
+        prev_m = cur_m - 1 if cur_m > 1 else 12
+        prev_y = cur_y if cur_m > 1 else cur_y - 1
+
+        # 진행 중인 달이면 오늘까지만 비교 (전기 대비 동일 경과일 기준)
+        today = date_type.today()
+        is_current_month = cur_y == today.year and cur_m == today.month
+        end_day = today.day if is_current_month else None
+
+        current_total = await _month_total(cur_y, cur_m, end_day)
+        previous_total = await _month_total(prev_y, prev_m, end_day)
+
+        if is_current_month:
+            _, prev_last = monthrange(prev_y, prev_m)
+            prev_end_day = min(today.day, prev_last)
+            current_label = f"{cur_y}년 {cur_m}월 ({today.day}일까지)"
+            previous_label = f"{prev_y}년 {prev_m}월 ({prev_end_day}일까지)"
+        else:
+            current_label = f"{cur_y}년 {cur_m}월"
+            previous_label = f"{prev_y}년 {prev_m}월"
+
+        # N개월 트렌드 (현재 월 포함 과거 N개월) — 단일 GROUP BY 쿼리
+        trend_data: list[PeriodTotal] = []
+        y, m = cur_y, cur_m
+        for _ in range(months - 1):
+            m -= 1
+            if m < 1:
+                m = 12
+                y -= 1
+        start_y, start_m = y, m
+        _, end_last = monthrange(cur_y, cur_m)
+        trend_start = datetime(start_y, start_m, 1)
+        trend_end = datetime(cur_y, cur_m, end_last, 23, 59, 59)
+
+        yr_col = func.extract("year", Income.date).label("year")
+        mo_col = func.extract("month", Income.date).label("month")
+        trend_result = await db.execute(
+            select(yr_col, mo_col, func.coalesce(func.sum(Income.amount), 0).label("amount"))
+            .where(scope_filter, excl_filter, Income.date >= trend_start, Income.date <= trend_end)  # type: ignore[arg-type]
+            .group_by(yr_col, mo_col)
+            .order_by(yr_col, mo_col)
+        )
+        trend_map = {(int(r.year), int(r.month)): float(r.amount) for r in trend_result.all()}
+        for _ in range(months):
+            trend_data.append(PeriodTotal(label=f"{y}년 {m}월", total=trend_map.get((y, m), 0.0)))
+            m += 1
+            if m > 12:
+                m = 1
+                y += 1
+
+        # 카테고리별 비교 (동일 end_day 적용)
+        cur_cats = await _month_by_category(cur_y, cur_m, end_day)
+        prev_cats = await _month_by_category(prev_y, prev_m, end_day)
+        all_cats = set(cur_cats.keys()) | set(prev_cats.keys())
+        by_cat_comparison = []
+        for cat in sorted(all_cats):
+            c = cur_cats.get(cat, 0)
+            p = prev_cats.get(cat, 0)
+            change_pct = round((c - p) / p * 100, 1) if p > 0 else None
+            by_cat_comparison.append(
+                CategoryChange(
+                    category=cat,
+                    current=c,
+                    previous=p,
+                    change_amount=round(c - p, 2),
+                    change_percentage=change_pct,
+                )
+            )
+    else:  # yearly
+        cur_y = ref_date.year
+        prev_y = cur_y - 1
+
+        # 필요한 연도 목록 수집 (current, previous, trend)
+        trend_years = [cur_y - y_offset for y_offset in range(months - 1, -1, -1)]
+        years_needed = list({cur_y, prev_y, *trend_years})
+
+        # 연도별 합계를 단일 쿼리로 조회
+        year_totals_result = await db.execute(
+            select(extract("year", Income.date).label("year"), func.coalesce(func.sum(Income.amount), 0).label("total"))
+            .where(scope_filter, excl_filter, extract("year", Income.date).in_(years_needed))  # type: ignore[arg-type]
+            .group_by(extract("year", Income.date))
+        )
+        year_totals: dict[int, float] = {int(row.year): float(row.total) for row in year_totals_result.all()}
+
+        current_total = year_totals.get(cur_y, 0.0)
+        previous_total = year_totals.get(prev_y, 0.0)
+        current_label = f"{cur_y}년"
+        previous_label = f"{prev_y}년"
+
+        trend_data = [PeriodTotal(label=f"{y}년", total=year_totals.get(y, 0.0)) for y in trend_years]
+
+        by_cat_comparison = []
+
+    # 변화량 계산
+    change_amount = round(current_total - previous_total, 2)
+    change_pct = round(change_amount / previous_total * 100, 1) if previous_total > 0 else None
+
+    return ComparisonResponse(
+        current=PeriodTotal(label=current_label, total=current_total),
+        previous=PeriodTotal(label=previous_label, total=previous_total),
+        change=ChangeInfo(amount=change_amount, percentage=change_pct),
+        trend=trend_data,
+        by_category_comparison=by_cat_comparison,
+    )
+
+
 @router.get("/{income_id}", response_model=IncomeResponse)
 async def get_income(
     income_id: int,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-):
+) -> object:
     """단일 수입 조회"""
     result = await db.execute(select(Income).where(Income.id == income_id))
     income = result.scalar_one_or_none()
@@ -261,7 +428,7 @@ async def get_income(
     # 접근 권한 확인: 가구 멤버인지 검증
     if income.household_id is not None:
         try:
-            await get_household_member(income.household_id, current_user, db)
+            await get_household_member(income.household_id, current_user, db)  # type: ignore[arg-type]
         except HTTPException:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="수입을 찾을 수 없습니다") from None
     else:
@@ -278,7 +445,7 @@ async def update_income(
     income_update: IncomeUpdate,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-):
+) -> object:
     """수입 수정 — 본인 또는 admin/owner"""
     result = await db.execute(select(Income).where(Income.id == income_id))
     income = result.scalar_one_or_none()
@@ -292,7 +459,7 @@ async def update_income(
     else:
         # 가구 멤버 검증 (비멤버는 존재 여부 노출 방지를 위해 404)
         try:
-            member = await get_household_member(income.household_id, current_user, db)
+            member = await get_household_member(income.household_id, current_user, db)  # type: ignore[arg-type]
         except HTTPException:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="수입을 찾을 수 없습니다") from None
 
@@ -317,7 +484,7 @@ async def delete_income(
     income_id: int,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-):
+) -> None:
     """수입 삭제 — 본인 또는 admin/owner"""
     result = await db.execute(select(Income).where(Income.id == income_id))
     income = result.scalar_one_or_none()
@@ -331,7 +498,7 @@ async def delete_income(
     else:
         # 가구 멤버 검증 (비멤버는 존재 여부 노출 방지를 위해 404)
         try:
-            member = await get_household_member(income.household_id, current_user, db)
+            member = await get_household_member(income.household_id, current_user, db)  # type: ignore[arg-type]
         except HTTPException:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="수입을 찾을 수 없습니다") from None
 

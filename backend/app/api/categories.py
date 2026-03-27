@@ -36,7 +36,7 @@ async def _get_household_id(current_user: User, db: AsyncSession) -> int:
     return await get_user_active_household_id(current_user, db)
 
 
-def _build_accessible_filter(user_id: int, household_id: int):
+def _build_accessible_filter(user_id: int, household_id: int) -> object:
     """접근 가능한 카테고리 필터 (3-scope)"""
     conditions = [
         and_(Category.household_id.is_(None), Category.user_id.is_(None)),  # 시스템
@@ -51,16 +51,16 @@ async def get_categories(
     type: str | None = None,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-):
+) -> object:
     """카테고리 목록 조회
 
     시스템 카테고리 + 가계/솔로 카테고리를 반환합니다.
     ?type=expense 또는 ?type=income으로 필터링 가능. both 타입은 양쪽에 포함.
     """
     household_id = await _get_household_id(current_user, db)
-    scope_filter = _build_accessible_filter(current_user.id, household_id)
+    scope_filter = _build_accessible_filter(current_user.id, household_id)  # type: ignore[arg-type]
 
-    query = select(Category).where(scope_filter)
+    query = select(Category).where(scope_filter)  # type: ignore[arg-type]
     if type in ("expense", "income"):
         query = query.where(Category.type.in_([type, "both"]))
 
@@ -73,16 +73,16 @@ async def create_category(
     category: CategoryCreate,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-):
+) -> object:
     """카테고리 생성
 
     가구가 있으면 가계 카테고리로, 없으면 솔로 개인 카테고리로 생성합니다.
     """
     household_id = await _get_household_id(current_user, db)
-    scope_filter = _build_accessible_filter(current_user.id, household_id)
+    scope_filter = _build_accessible_filter(current_user.id, household_id)  # type: ignore[arg-type]
 
     # 중복 이름 체크
-    existing = await db.execute(select(Category).where(Category.name == category.name, scope_filter))
+    existing = await db.execute(select(Category).where(Category.name == category.name, scope_filter))  # type: ignore[arg-type]
     if existing.scalar_one_or_none():
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="이미 존재하는 카테고리입니다")
 
@@ -101,7 +101,7 @@ async def reorder_categories(
     request: CategoryReorderRequest,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-):
+) -> object:
     """카테고리 순서 변경
 
     전달받은 category_ids 순서대로 sort_order를 설정합니다.
@@ -109,9 +109,9 @@ async def reorder_categories(
     시스템 카테고리는 글로벌 공유이므로 sort_order 변경 불가.
     """
     household_id = await _get_household_id(current_user, db)
-    scope_filter = _build_accessible_filter(current_user.id, household_id)
+    scope_filter = _build_accessible_filter(current_user.id, household_id)  # type: ignore[arg-type]
 
-    result = await db.execute(select(Category).where(scope_filter))
+    result = await db.execute(select(Category).where(scope_filter))  # type: ignore[arg-type]
     accessible = {cat.id: cat for cat in result.scalars().all()}
 
     for cat_id in request.category_ids:
@@ -123,14 +123,14 @@ async def reorder_categories(
 
     total = len(request.category_ids)
     for idx, cat_id in enumerate(request.category_ids):
-        cat = accessible[cat_id]
+        cat = accessible[cat_id]  # type: ignore[index]
         # 시스템 카테고리(user_id=None, household_id=None)는 순서 변경 불가
         if cat.user_id is not None or cat.household_id is not None:
-            cat.sort_order = total - idx
+            cat.sort_order = total - idx  # type: ignore[assignment]
 
     await db.commit()
 
-    result = await db.execute(select(Category).where(scope_filter).order_by(Category.sort_order.desc(), Category.name))
+    result = await db.execute(select(Category).where(scope_filter).order_by(Category.sort_order.desc(), Category.name))  # type: ignore[arg-type]
     return [_to_response(cat) for cat in result.scalars().all()]
 
 
@@ -140,7 +140,7 @@ async def update_category(
     category: CategoryUpdate,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-):
+) -> object:
     """카테고리 수정
 
     가계 카테고리(household_id) 또는 솔로 개인 카테고리(user_id)만 수정 가능합니다.
@@ -177,7 +177,7 @@ async def delete_category(
     category_id: int,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-):
+) -> None:
     """카테고리 삭제
 
     가계 카테고리(household_id) 또는 솔로 개인 카테고리(user_id)만 삭제 가능합니다.

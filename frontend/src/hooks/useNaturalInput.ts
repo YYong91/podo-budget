@@ -8,6 +8,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useToast } from './useToast'
+import { TOAST } from '../constants/toastMessages'
 import { expenseApi } from '../api/expenses'
 import { incomeApi } from '../api/income'
 import { categoryApi } from '../api/categories'
@@ -15,28 +16,30 @@ import { chatApi } from '../api/chat'
 import { useHouseholdStore } from '../stores/useHouseholdStore'
 import type { Category, ParsedExpenseItem } from '../types'
 import { trackEvent } from '../utils/analytics'
+import { FILTER_STORAGE_KEY } from './useMonthlyTransactions'
 
 type TransactionType = 'expense' | 'income'
 
 /** 프리뷰 카드에서 편집 가능한 항목 */
 export interface EditableItem extends ParsedExpenseItem {
   category_id: number | null
+  payment_method_id?: number | null
 }
 
 /** type별로 다른 설정을 분리 */
 const CONFIG = {
   expense: {
     categoryFilter: { type: 'expense' as const },
-    listRoute: '/expenses',
+    listRoute: '/',
     eventPrefix: 'expense',
-    successMessage: '거래가 저장되었습니다',
+    successMessage: TOAST.SAVED,
     noParseMessage: '지출 정보를 인식하지 못했습니다',
   },
   income: {
     categoryFilter: undefined, // 전체 불러온 뒤 income/both 필터
-    listRoute: '/income',
+    listRoute: '/',
     eventPrefix: 'income',
-    successMessage: '수입이 저장되었습니다',
+    successMessage: TOAST.SAVED,
     noParseMessage: '수입 정보를 인식하지 못했습니다',
   },
 } as const
@@ -67,7 +70,7 @@ export function useNaturalInput(type: TransactionType) {
       .getAll(config.categoryFilter)
       .then((res) => setCategories(res.data))
       .catch(() => {
-        addToast('warning', '카테고리 목록을 불러오지 못했습니다')
+        addToast('warning', TOAST.LOAD_FAILED)
       })
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -130,7 +133,7 @@ export function useNaturalInput(type: TransactionType) {
         }
       }
     } catch {
-      addToast('error', '파싱에 실패했습니다')
+      addToast('error', TOAST.PARSE_FAILED)
     } finally {
       setLoading(false)
     }
@@ -174,9 +177,10 @@ export function useNaturalInput(type: TransactionType) {
       addToast('success', config.successMessage)
       setPreviewItems(null)
       setNaturalInput('')
+      sessionStorage.removeItem(FILTER_STORAGE_KEY)
       setTimeout(() => navigate(config.listRoute), 500)
     } catch {
-      addToast('error', '저장에 실패했습니다')
+      addToast('error', TOAST.SAVE_FAILED)
     } finally {
       setLoading(false)
     }
@@ -223,9 +227,9 @@ export function useNaturalInput(type: TransactionType) {
       })
       setShowNewCategoryFor(null)
       setNewCategoryName('')
-      addToast('success', `"${name}" 카테고리가 추가되었습니다`)
+      addToast('success', TOAST.CATEGORY_ADDED)
     } catch {
-      addToast('error', '카테고리 생성에 실패했습니다')
+      addToast('error', TOAST.SAVE_FAILED)
     } finally {
       setCreatingCategory(false)
     }

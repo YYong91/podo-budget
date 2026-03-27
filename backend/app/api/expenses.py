@@ -18,9 +18,11 @@ from sqlalchemy import extract, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import get_household_member, get_user_active_household_id
+from app.api.payment_methods import get_default_payment_method_id
 from app.core.auth import get_current_user
 from app.core.database import get_db
 from app.core.rate_limit import limiter
+from app.models.category import Category
 from app.models.expense import Expense
 from app.models.user import User
 from app.schemas.chat import ChatResponse, ParsedExpenseItem
@@ -52,7 +54,7 @@ def _escape_like(value: str) -> str:
     return value.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
 
 
-def _apply_expense_filters(
+def _apply_expense_filters(  # type: ignore[no-untyped-def]
     stmt,
     *,
     query: str | None,
@@ -60,7 +62,7 @@ def _apply_expense_filters(
     end_date: str | None,
     category_id: int | None,
     member_user_id: int | None,
-):
+) -> object:
     """지출 공통 필터 적용"""
     if member_user_id is not None:
         stmt = stmt.where(Expense.user_id == member_user_id)
@@ -84,7 +86,7 @@ async def create_expense(
     expense: ExpenseCreate,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-):
+) -> object:
     """지출 직접 생성
 
     인증된 사용자의 지출을 생성합니다.
@@ -99,6 +101,19 @@ async def create_expense(
     await get_household_member(household_id, current_user, db)
 
     expense_data = expense.model_dump(exclude={"household_id"})
+
+    # 기본 결제수단 자동 적용 — 명시적 지정이 없으면 사용자 기본값 폴백
+    # exclude_auto_payment=true 카테고리(저축/투자, 세금 등)는 기본 결제수단 자동 적용 제외
+    if expense_data.get("payment_method_id") is None:
+        should_auto_apply = True
+        if expense_data.get("category_id"):
+            cat_result = await db.execute(select(Category.exclude_auto_payment).where(Category.id == expense_data["category_id"]))
+            exclude = cat_result.scalar_one_or_none()
+            if exclude:
+                should_auto_apply = False
+        if should_auto_apply:
+            expense_data["payment_method_id"] = await get_default_payment_method_id(db, household_id, current_user.id)  # type: ignore[arg-type]
+
     db_expense = Expense(**expense_data, user_id=current_user.id, household_id=household_id)
     db.add(db_expense)
     await db.commit()
@@ -119,7 +134,7 @@ async def get_expenses(
     query: str | None = Query(None, description="설명(description) 텍스트 검색"),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-):
+) -> object:
     """지출 목록 조회 (필터링, 페이지네이션)
 
     household_id가 있으면 해당 가구 전체 멤버의 지출을 조회합니다.
@@ -132,7 +147,7 @@ async def get_expenses(
     # 가구 멤버 검증 후 가구 전체 멤버의 지출 조회
     await get_household_member(household_id, current_user, db)
     stmt = select(Expense).where(Expense.household_id == household_id)
-    stmt = _apply_expense_filters(
+    stmt = _apply_expense_filters(  # type: ignore[assignment]
         stmt,
         query=query,
         start_date=start_date,
@@ -146,7 +161,7 @@ async def get_expenses(
     return result.scalars().all()
 
 
-def _build_scope_filter(household_id: int):
+def _build_scope_filter(household_id: int) -> object:
     """가구 스코프 필터 생성"""
     return Expense.household_id == household_id
 
@@ -161,11 +176,9 @@ async def get_stats(
     household_id: int | None = None,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-):
+) -> object:
     """기간별 통계 조회 (주간/월간/연간)"""
     from datetime import date as date_type
-
-    from app.models.category import Category
 
     # 기준 날짜 파싱
     ref_date = date_type.fromisoformat(date) if date else date_type.today()
@@ -198,7 +211,7 @@ async def get_stats(
         select(
             func.coalesce(func.sum(Expense.amount), 0),
             func.count(Expense.id),
-        ).where(*base_where)
+        ).where(*base_where)  # type: ignore[arg-type]
     )
     row = total_result.one()
     total = float(row[0])
@@ -212,7 +225,7 @@ async def get_stats(
             func.count(Expense.id).label("cnt"),
         )
         .join(Category, Expense.category_id == Category.id, isouter=True)
-        .where(*base_where)
+        .where(*base_where)  # type: ignore[arg-type]
         .group_by(Category.name)
         .order_by(func.sum(Expense.amount).desc())
     )
@@ -234,7 +247,7 @@ async def get_stats(
         # 월별 12포인트 — 단일 GROUP BY 쿼리 (12번 직렬 → 1번, #164)
         month_col = func.extract("month", Expense.date).label("month")
         monthly_result = await db.execute(
-            select(month_col, func.coalesce(func.sum(Expense.amount), 0).label("amount")).where(*base_where).group_by(month_col).order_by(month_col)
+            select(month_col, func.coalesce(func.sum(Expense.amount), 0).label("amount")).where(*base_where).group_by(month_col).order_by(month_col)  # type: ignore[arg-type]
         )
         monthly_map = {int(r.month): float(r.amount) for r in monthly_result.all()}
         for m in range(1, 13):
@@ -242,7 +255,7 @@ async def get_stats(
     else:
         # 일별
         day_col = func.date(Expense.date).label("day")
-        daily_result = await db.execute(select(day_col, func.sum(Expense.amount).label("amount")).where(*base_where).group_by(day_col).order_by(day_col))
+        daily_result = await db.execute(select(day_col, func.sum(Expense.amount).label("amount")).where(*base_where).group_by(day_col).order_by(day_col))  # type: ignore[arg-type]
         for r in daily_result.all():
             if r.day is not None:
                 day_str = str(r.day)[:10]
@@ -277,11 +290,9 @@ async def get_stats_comparison(
     household_id: int | None = None,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-):
+) -> object:
     """기간 비교 (전월 대비 + N개월 트렌드)"""
     from datetime import date as date_type
-
-    from app.models.category import Category
 
     ref_date = date_type.fromisoformat(date) if date else date_type.today()
 
@@ -299,9 +310,9 @@ async def get_stats_comparison(
         actual_end = min(end_day, m_last) if end_day is not None else m_last
         m_end = datetime(year, month, actual_end, 23, 59, 59)
         r = await db.execute(
-            select(func.coalesce(func.sum(Expense.amount), 0)).where(scope_filter, excl_filter, Expense.date >= m_start, Expense.date <= m_end)
+            select(func.coalesce(func.sum(Expense.amount), 0)).where(scope_filter, excl_filter, Expense.date >= m_start, Expense.date <= m_end)  # type: ignore[arg-type]
         )
-        return float(r.scalar())
+        return float(r.scalar())  # type: ignore[arg-type]
 
     async def _month_by_category(year: int, month: int, end_day: int | None = None) -> dict[str, float]:
         m_start = datetime(year, month, 1)
@@ -311,7 +322,7 @@ async def get_stats_comparison(
         r = await db.execute(
             select(Category.name, func.sum(Expense.amount).label("amount"))
             .join(Category, Expense.category_id == Category.id, isouter=True)
-            .where(scope_filter, excl_filter, Expense.date >= m_start, Expense.date <= m_end)
+            .where(scope_filter, excl_filter, Expense.date >= m_start, Expense.date <= m_end)  # type: ignore[arg-type]
             .group_by(Category.name)
         )
         return {row.name or "미분류": float(row.amount) for row in r.all()}
@@ -355,7 +366,7 @@ async def get_stats_comparison(
         mo_col = func.extract("month", Expense.date).label("month")
         trend_result = await db.execute(
             select(yr_col, mo_col, func.coalesce(func.sum(Expense.amount), 0).label("amount"))
-            .where(scope_filter, excl_filter, Expense.date >= trend_start, Expense.date <= trend_end)
+            .where(scope_filter, excl_filter, Expense.date >= trend_start, Expense.date <= trend_end)  # type: ignore[arg-type]
             .group_by(yr_col, mo_col)
             .order_by(yr_col, mo_col)
         )
@@ -396,7 +407,7 @@ async def get_stats_comparison(
         # 연도별 합계를 단일 쿼리로 조회 (기존 24-60회 → 1회)
         year_totals_result = await db.execute(
             select(extract("year", Expense.date).label("year"), func.coalesce(func.sum(Expense.amount), 0).label("total"))
-            .where(scope_filter, excl_filter, extract("year", Expense.date).in_(years_needed))
+            .where(scope_filter, excl_filter, extract("year", Expense.date).in_(years_needed))  # type: ignore[arg-type]
             .group_by(extract("year", Expense.date))
         )
         year_totals: dict[int, float] = {int(row.year): float(row.total) for row in year_totals_result.all()}
@@ -429,12 +440,11 @@ async def get_monthly_stats(
     household_id: int | None = None,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-):
+) -> object:
     """월별 지출 통계 (총합, 카테고리별 합계)
 
     household_id가 있으면 가구 전체 멤버의 월별 통계를 집계합니다.
     """
-    from app.models.category import Category
 
     year, mon = map(int, month.split("-"))
     start = datetime(year, mon, 1)
@@ -476,7 +486,7 @@ async def get_monthly_stats(
 
     return {
         "month": month,
-        "total": float(total),
+        "total": float(total),  # type: ignore[arg-type]
         "by_category": by_category,
         "daily_trend": daily_trend,
     }
@@ -490,7 +500,7 @@ async def parse_expense_image(
     household_id: int | None = Query(None),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-):
+) -> object:
     """결제 스크린샷/영수증 이미지 OCR로 지출 파싱 (프리뷰 전용)
 
     이미지를 Claude Vision API로 분석하여 지출 정보를 추출합니다.
@@ -594,14 +604,14 @@ async def get_expenses_search_summary(
     member_user_id: int | None = Query(None, description="가구 내 특정 멤버"),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-):
+) -> object:
     """검색 결과 합계 (건수 + 총액)"""
     if household_id is None:
         household_id = await get_user_active_household_id(current_user, db)
     await get_household_member(household_id, current_user, db)
 
     stmt = select(func.count(), func.coalesce(func.sum(Expense.amount), 0)).where(Expense.household_id == household_id)
-    stmt = _apply_expense_filters(
+    stmt = _apply_expense_filters(  # type: ignore[assignment]
         stmt,
         query=query,
         start_date=start_date,
@@ -620,7 +630,7 @@ async def get_expense(
     expense_id: int,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-):
+) -> object:
     """특정 지출 조회
 
     지출의 household_id가 있으면 가구 멤버인지 확인합니다.
@@ -634,7 +644,7 @@ async def get_expense(
     # 접근 권한 확인: 가구 멤버인지 검증
     if expense.household_id is not None:
         try:
-            await get_household_member(expense.household_id, current_user, db)
+            await get_household_member(expense.household_id, current_user, db)  # type: ignore[arg-type]
         except HTTPException:
             # 가구 멤버가 아닌 경우 404 반환 (존재 여부 노출 방지)
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="지출을 찾을 수 없습니다") from None
@@ -652,7 +662,7 @@ async def update_expense(
     expense_update: ExpenseUpdate,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-):
+) -> object:
     """지출 수정
 
     본인 거래는 무조건 수정 가능.
@@ -670,7 +680,7 @@ async def update_expense(
     else:
         # 가구 멤버 검증 (비멤버는 존재 여부 노출 방지를 위해 404)
         try:
-            member = await get_household_member(expense.household_id, current_user, db)
+            member = await get_household_member(expense.household_id, current_user, db)  # type: ignore[arg-type]
         except HTTPException:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="지출을 찾을 수 없습니다") from None
 
@@ -695,7 +705,7 @@ async def delete_expense(
     expense_id: int,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-):
+) -> None:
     """지출 삭제
 
     본인 거래는 무조건 삭제 가능.
@@ -713,7 +723,7 @@ async def delete_expense(
     else:
         # 가구 멤버 검증 (비멤버는 존재 여부 노출 방지를 위해 404)
         try:
-            member = await get_household_member(expense.household_id, current_user, db)
+            member = await get_household_member(expense.household_id, current_user, db)  # type: ignore[arg-type]
         except HTTPException:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="지출을 찾을 수 없습니다") from None
 
