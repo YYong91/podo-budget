@@ -23,6 +23,7 @@ type TransactionType = 'expense' | 'income'
 /** 프리뷰 카드에서 편집 가능한 항목 */
 export interface EditableItem extends ParsedExpenseItem {
   category_id: number | null
+  payment_method_id?: number | null
 }
 
 /** type별로 다른 설정을 분리 */
