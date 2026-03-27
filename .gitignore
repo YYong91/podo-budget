@@ -88,3 +88,4 @@ backend/scripts/reset_and_import.py
 # Radon 스캔 히스토리 (로컬 전용)
 .radon/
 frontend/coverage/
+.claude/worktrees/
