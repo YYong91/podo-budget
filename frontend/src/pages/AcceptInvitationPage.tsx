@@ -10,6 +10,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useHouseholdStore } from '../stores/useHouseholdStore'
 import { useToast } from '../hooks/useToast'
+import { TOAST } from '../constants/toastMessages'
 
 export default function AcceptInvitationPage() {
   const navigate = useNavigate()
@@ -40,12 +41,12 @@ export default function AcceptInvitationPage() {
 
     try {
       const result = await acceptInvitation(token)
-      addToast('success', `${result.household_name} 가구에 가입했습니다`)
+      addToast('success', TOAST.HOUSEHOLD_JOINED(result.household_name))
       navigate('/', { replace: true })
     } catch (err) {
       console.error('초대 수락 실패:', err)
       setError('초대 수락에 실패했습니다. 초대가 만료되었거나 이미 처리되었을 수 있습니다.')
-      addToast('error', '초대 수락에 실패했습니다')
+      addToast('error', TOAST.INVITE_ACCEPT_FAILED)
     } finally {
       setIsProcessing(false)
       setAction(null)
@@ -66,12 +67,12 @@ export default function AcceptInvitationPage() {
 
     try {
       await rejectInvitation(token)
-      addToast('success', '초대를 거절했습니다')
+      addToast('success', TOAST.INVITE_REJECTED)
       navigate('/', { replace: true })
     } catch (err) {
       console.error('초대 거절 실패:', err)
       setError('초대 거절에 실패했습니다')
-      addToast('error', '초대 거절에 실패했습니다')
+      addToast('error', TOAST.INVITE_REJECT_FAILED)
     } finally {
       setIsProcessing(false)
       setAction(null)

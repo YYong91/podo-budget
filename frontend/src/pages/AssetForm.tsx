@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useParams, Link } from 'react-router-dom'
 import { ArrowLeft, Search, Trash2 } from 'lucide-react'
 import { useToast } from '../hooks/useToast'
+import { TOAST } from '../constants/toastMessages'
 import { useTickerSearch } from '../hooks/useTickerSearch'
 import { assetApi } from '../api/assets'
 import { accountApi } from '../api/accounts'
@@ -102,7 +103,7 @@ export default function AssetForm() {
         else if (['stock_kr', 'stock_us', 'crypto'].includes(asset.type)) setSearchQuery(asset.name)
       })
       .catch(() => {
-        addToast('error', '자산 정보를 불러오지 못했습니다')
+        addToast('error', TOAST.ASSET_LOAD_FAILED)
         navigate('/assets')
       })
       .finally(() => setInitialLoading(false))
@@ -124,7 +125,7 @@ export default function AssetForm() {
       const res = await assetApi.parse(naturalInput)
       setPreviewItems(res.data.items)
     } catch {
-      addToast('error', '분석 중 오류가 발생했습니다')
+      addToast('error', TOAST.ASSET_PARSE_FAILED)
     } finally {
       setLoading(false)
     }
@@ -138,11 +139,11 @@ export default function AssetForm() {
       for (const item of previewItems) {
         await assetApi.create(item)
       }
-      addToast('success', `${previewItems.length}개 자산이 등록되었습니다`)
+      addToast('success', TOAST.ASSET_SAVED)
       trackEvent('asset_added')
       navigate('/assets')
     } catch {
-      addToast('error', '저장 중 오류가 발생했습니다')
+      addToast('error', TOAST.SAVE_FAILED)
     } finally {
       setLoading(false)
     }
@@ -159,15 +160,15 @@ export default function AssetForm() {
     try {
       if (isEdit) {
         await assetApi.update(Number(id), form)
-        addToast('success', '자산이 수정되었습니다')
+        addToast('success', TOAST.ASSET_UPDATED)
       } else {
         await assetApi.create(form)
-        addToast('success', '자산이 등록되었습니다')
+        addToast('success', TOAST.ASSET_SAVED)
         trackEvent('asset_added')
       }
       navigate('/assets')
     } catch {
-      addToast('error', isEdit ? '수정 중 오류가 발생했습니다' : '저장 중 오류가 발생했습니다')
+      addToast('error', TOAST.SAVE_FAILED)
     } finally {
       setLoading(false)
     }
@@ -178,10 +179,10 @@ export default function AssetForm() {
     setLoading(true)
     try {
       await assetApi.delete(Number(id))
-      addToast('success', '자산이 삭제되었습니다')
+      addToast('success', TOAST.ASSET_DELETED)
       navigate('/assets')
     } catch {
-      addToast('error', '삭제 중 오류가 발생했습니다')
+      addToast('error', TOAST.DELETE_FAILED)
     } finally {
       setLoading(false)
     }

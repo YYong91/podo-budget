@@ -10,6 +10,7 @@ import { useState, useRef, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { ArrowLeft, Camera } from 'lucide-react'
 import { useToast } from '../hooks/useToast'
+import { TOAST } from '../constants/toastMessages'
 import { expenseApi } from '../api/expenses'
 import { incomeApi } from '../api/income'
 import { categoryApi } from '../api/categories'
@@ -34,7 +35,7 @@ const TYPE_CONFIG = {
     naturalHint: '날짜, 내용, 금액을 편하게 입력하면 AI가 자동으로 분석합니다. 결과를 확인한 뒤 저장됩니다.',
     formPlaceholder: { amount: '10000', description: '김치찌개' },
     previewLabel: '지출',
-    savedMessage: '지출이 저장되었습니다',
+    savedMessage: TOAST.SAVED,
     statsExcludeHint: '저축, 퇴직금 등 비정형 거래를 차트/통계에서 제외합니다',
     eventName: 'expense_saved',
     hasOcr: true,
@@ -47,7 +48,7 @@ const TYPE_CONFIG = {
     naturalHint: '수입 내용을 편하게 입력하면 AI가 자동으로 분석합니다. 결과를 확인한 뒤 저장됩니다.',
     formPlaceholder: { amount: '3500000', description: '월급' },
     previewLabel: '수입',
-    savedMessage: '수입이 저장되었습니다',
+    savedMessage: TOAST.SAVED,
     statsExcludeHint: '퇴직금, 일시금 등 비정형 수입을 차트/통계에서 제외합니다',
     eventName: 'income_saved',
     hasOcr: false,
@@ -116,9 +117,9 @@ export default function TransactionForm({ type }: TransactionFormProps) {
       setFormData((prev) => ({ ...prev, category_id: String(newCat.id) }))
       setShowNewCategoryForForm(false)
       setNewCategoryNameForForm('')
-      addToast('success', `"${name}" 카테고리가 추가되었습니다`)
+      addToast('success', TOAST.CATEGORY_ADDED)
     } catch {
-      addToast('error', '카테고리 생성에 실패했습니다')
+      addToast('error', TOAST.SAVE_FAILED)
     } finally {
       setCreatingCategoryForForm(false)
     }
@@ -144,7 +145,7 @@ export default function TransactionForm({ type }: TransactionFormProps) {
         setOcrPreview(null)
       }
     } catch {
-      addToast('error', 'OCR 처리에 실패했습니다')
+      addToast('error', TOAST.PARSE_FAILED)
       setOcrPreview(null)
     } finally {
       setFormLoading(false)
@@ -193,7 +194,7 @@ export default function TransactionForm({ type }: TransactionFormProps) {
       sessionStorage.removeItem(FILTER_STORAGE_KEY)
       setTimeout(() => navigate(cfg.listRoute), 500)
     } catch {
-      addToast('error', `${cfg.previewLabel} 저장에 실패했습니다`)
+      addToast('error', TOAST.SAVE_FAILED)
     } finally {
       setFormLoading(false)
     }

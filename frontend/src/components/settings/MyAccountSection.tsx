@@ -8,6 +8,7 @@ import { Link } from 'react-router-dom'
 import { LogOut, Send, MessageCircle, Key, Trash2 } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { useToast } from '../../hooks/useToast'
+import { TOAST } from '../../constants/toastMessages'
 import { useBotLinking } from '../../hooks/useBotLinking'
 import { supabase } from '../../utils/supabase'
 import apiClient from '../../api/client'
@@ -285,9 +286,9 @@ export default function MyAccountSection() {
                     try {
                       await navigator.clipboard.writeText(`연동 ${kakao.linkCode!.code}`)
                       window.open(KAKAO_CHANNEL_CHAT_URL, '_blank')
-                      addToast('success', '연동 코드가 복사되었습니다')
+                      addToast('success', TOAST.LINK_CODE_COPIED)
                     } catch {
-                      addToast('error', '복사에 실패했습니다')
+                      addToast('error', TOAST.COPY_FAILED)
                     }
                   }}
                   className="block w-full text-center bg-[#FEE500] text-[#191919] rounded-xl py-3 font-medium hover:bg-[#FDD835] transition-colors"
@@ -363,7 +364,7 @@ function PasswordChangeCard() {
       const { error: updateError } = await supabase.auth.updateUser({ password: newPassword })
       if (updateError) throw updateError
 
-      addToast('success', '비밀번호가 변경되었습니다')
+      addToast('success', TOAST.PASSWORD_CHANGED)
       setOpen(false)
       setNewPassword('')
       setConfirmPassword('')
@@ -448,13 +449,13 @@ function AccountDeleteCard() {
       // 백엔드에 계정 삭제 요청 (소프트 삭제 + 익명화)
       await apiClient.delete('/api/auth/me')
     } catch {
-      addToast('error', '계정 삭제에 실패했습니다. 다시 시도해주세요.')
+      addToast('error', TOAST.DELETE_FAILED)
       setStep('idle')
       return
     }
     // 백엔드 삭제 성공 후에는 무조건 로그아웃 (Supabase signOut 실패해도 진행)
     try { await supabase.auth.signOut() } catch { /* 무시 */ }
-    addToast('success', '계정이 삭제되었습니다')
+    addToast('success', TOAST.ACCOUNT_DELETED)
     logout()
   }, [logout, addToast])
 

@@ -8,6 +8,7 @@ import { useEffect, useState } from 'react'
 import { useGoBack } from '../hooks/useGoBack'
 import { ArrowLeft, Lock, Plus } from 'lucide-react'
 import { useToast } from '../hooks/useToast'
+import { TOAST } from '../constants/toastMessages'
 import { categoryApi } from '../api/categories'
 import EmptyState from '../components/EmptyState'
 import ErrorState from '../components/ErrorState'
@@ -53,7 +54,7 @@ export default function CategoryManager() {
       setCategories(res.data)
     } catch {
       setError(true)
-      addToast('error', '카테고리 목록 로딩에 실패했습니다')
+      addToast('error', TOAST.LOAD_FAILED)
     } finally {
       setLoading(false)
     }
@@ -74,14 +75,14 @@ export default function CategoryManager() {
         description: newDescription.trim() || undefined,
         is_savings: newIsSavings,
       })
-      addToast('success', '카테고리가 추가되었습니다')
+      addToast('success', TOAST.CATEGORY_ADDED)
       setNewName('')
       setNewDescription('')
       setNewIsSavings(false)
       setIsAdding(false)
       fetchCategories()
     } catch {
-      addToast('error', '카테고리 추가에 실패했습니다')
+      addToast('error', TOAST.SAVE_FAILED)
     }
   }
 
@@ -112,11 +113,11 @@ export default function CategoryManager() {
         description: editForm.description.trim() || undefined,
         is_savings: editForm.is_savings,
       })
-      addToast('success', '카테고리가 수정되었습니다')
+      addToast('success', TOAST.CATEGORY_UPDATED)
       setEditingId(null)
       fetchCategories()
     } catch {
-      addToast('error', '카테고리 수정에 실패했습니다')
+      addToast('error', TOAST.SAVE_FAILED)
     }
   }
 
@@ -126,11 +127,11 @@ export default function CategoryManager() {
   const handleDelete = async (id: number) => {
     try {
       await categoryApi.delete(id)
-      addToast('success', '카테고리가 삭제되었습니다')
+      addToast('success', TOAST.CATEGORY_DELETED)
       setDeleteTarget(null)
       fetchCategories()
     } catch {
-      addToast('error', '카테고리 삭제에 실패했습니다')
+      addToast('error', TOAST.DELETE_FAILED)
     }
   }
 
@@ -155,7 +156,7 @@ export default function CategoryManager() {
     } catch {
       // 실패 시 원래 목록 복원
       fetchCategories()
-      addToast('error', '순서 변경에 실패했습니다')
+      addToast('error', TOAST.ORDER_CHANGE_FAILED)
     } finally {
       setReordering(false)
     }

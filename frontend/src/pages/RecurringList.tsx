@@ -8,6 +8,7 @@ import { useState, useEffect } from 'react'
 import { useGoBack } from '../hooks/useGoBack'
 import { ArrowLeft, Plus, Pencil, Trash2, Pause, Play, Zap } from 'lucide-react'
 import { useToast } from '../hooks/useToast'
+import { TOAST } from '../constants/toastMessages'
 import { recurringApi } from '../api/recurring'
 import { categoryApi } from '../api/categories'
 import { useHouseholdStore } from '../stores/useHouseholdStore'
@@ -129,7 +130,7 @@ export default function RecurringList() {
           category_id: formData.category_id ? Number(formData.category_id) : null,
           end_date: formData.end_date || null,
         })
-        addToast('success', '반복 거래가 수정되었습니다')
+        addToast('success', TOAST.RECURRING_UPDATED)
       } else {
         const payload: RecurringTransactionCreate = {
           type: formData.type,
@@ -154,13 +155,13 @@ export default function RecurringList() {
           payload.interval = Number(formData.interval)
         }
         await recurringApi.create(payload)
-        addToast('success', '반복 거래가 추가되었습니다')
+        addToast('success', TOAST.RECURRING_ADDED)
         trackEvent('recurring_added')
       }
       setShowModal(false)
       loadData()
     } catch {
-      addToast('error', '저장에 실패했습니다')
+      addToast('error', TOAST.SAVE_FAILED)
     } finally {
       setSubmitting(false)
     }
@@ -171,10 +172,10 @@ export default function RecurringList() {
     if (!confirm('정말 삭제하시겠습니까?')) return
     try {
       await recurringApi.delete(id)
-      addToast('success', '반복 거래가 삭제되었습니다')
+      addToast('success', TOAST.RECURRING_DELETED)
       loadData()
     } catch {
-      addToast('error', '삭제에 실패했습니다')
+      addToast('error', TOAST.DELETE_FAILED)
     }
   }
 
@@ -182,10 +183,10 @@ export default function RecurringList() {
   const handleExecute = async (r: RecurringTransaction) => {
     try {
       await recurringApi.execute(r.id)
-      addToast('success', `${r.description} 등록되었습니다`)
+      addToast('success', TOAST.RECURRING_EXECUTED)
       loadData()
     } catch {
-      addToast('error', '등록에 실패했습니다')
+      addToast('error', TOAST.RECURRING_EXECUTE_FAILED)
     }
   }
 
@@ -193,10 +194,10 @@ export default function RecurringList() {
   const toggleActive = async (r: RecurringTransaction) => {
     try {
       await recurringApi.update(r.id, { is_active: !r.is_active })
-      addToast('success', r.is_active ? '중지되었습니다' : '다시 시작되었습니다')
+      addToast('success', TOAST.STATUS_CHANGED)
       loadData()
     } catch {
-      addToast('error', '변경에 실패했습니다')
+      addToast('error', TOAST.RECURRING_TOGGLE_FAILED)
     }
   }
 

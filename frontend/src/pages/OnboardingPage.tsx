@@ -9,6 +9,7 @@ import { Mail } from 'lucide-react'
 import { onboardingApi } from '../api/onboarding'
 import { useHouseholdStore } from '../stores/useHouseholdStore'
 import { useToast } from '../hooks/useToast'
+import { TOAST } from '../constants/toastMessages'
 import { trackEvent } from '../utils/analytics'
 
 export default function OnboardingPage() {
@@ -28,11 +29,11 @@ export default function OnboardingPage() {
     try {
       await onboardingApi.createHousehold(name.trim() || undefined)
       await fetchHouseholds()
-      addToast('success', '가계부가 생성되었습니다')
+      addToast('success', TOAST.ONBOARDING_CREATED)
       trackEvent('onboarding_complete', { method: 'create' })
       navigate('/', { replace: true })
     } catch {
-      addToast('error', '가계부 생성에 실패했습니다')
+      addToast('error', TOAST.ONBOARDING_FAILED)
     } finally {
       setLoading(false)
     }
@@ -43,11 +44,11 @@ export default function OnboardingPage() {
     setAcceptingToken(token)
     try {
       await acceptInvitation(token)
-      addToast('success', `${householdName || '가계부'}에 참여했습니다`)
+      addToast('success', TOAST.HOUSEHOLD_JOINED(householdName || '가계부'))
       trackEvent('onboarding_complete', { method: 'accept_invitation' })
       navigate('/', { replace: true })
     } catch {
-      addToast('error', '초대 수락에 실패했습니다')
+      addToast('error', TOAST.INVITE_ACCEPT_FAILED)
       // 실패 시 초대 목록 새로고침 (만료 등)
       await fetchMyInvitations().catch(() => {})
     } finally {

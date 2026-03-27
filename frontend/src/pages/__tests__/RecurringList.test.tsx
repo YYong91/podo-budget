@@ -216,7 +216,7 @@ describe('RecurringList', () => {
     await user.click(executeBtns[0])
 
     await waitFor(() => {
-      expect(mockAddToast).toHaveBeenCalledWith('success', '넷플릭스 등록되었습니다')
+      expect(mockAddToast).toHaveBeenCalledWith('success', '정기 거래를 실행했어요')
     })
   })
 
@@ -242,7 +242,7 @@ describe('RecurringList', () => {
     await user.click(pauseBtns[0])
 
     await waitFor(() => {
-      expect(mockAddToast).toHaveBeenCalledWith('success', '중지되었습니다')
+      expect(mockAddToast).toHaveBeenCalledWith('success', '상태를 변경했어요')
     })
   })
 
@@ -266,7 +266,7 @@ describe('RecurringList', () => {
     await user.click(playBtns[0])
 
     await waitFor(() => {
-      expect(mockAddToast).toHaveBeenCalledWith('success', '다시 시작되었습니다')
+      expect(mockAddToast).toHaveBeenCalledWith('success', '상태를 변경했어요')
     })
   })
 
@@ -290,7 +290,7 @@ describe('RecurringList', () => {
     await user.click(deleteBtns[0])
 
     await waitFor(() => {
-      expect(mockAddToast).toHaveBeenCalledWith('success', '반복 거래가 삭제되었습니다')
+      expect(mockAddToast).toHaveBeenCalledWith('success', '정기 거래를 삭제했어요')
     })
   })
 
@@ -312,7 +312,7 @@ describe('RecurringList', () => {
     await user.click(deleteBtns[0])
 
     // 삭제 토스트가 호출되지 않아야 함
-    expect(mockAddToast).not.toHaveBeenCalledWith('success', '반복 거래가 삭제되었습니다')
+    expect(mockAddToast).not.toHaveBeenCalledWith('success', '정기 거래를 삭제했어요')
   })
 
   // ==================== 수정 ====================
@@ -410,7 +410,7 @@ describe('RecurringList', () => {
     await user.click(executeBtns[0])
 
     await waitFor(() => {
-      expect(mockAddToast).toHaveBeenCalledWith('error', '등록에 실패했습니다')
+      expect(mockAddToast).toHaveBeenCalledWith('error', '반복 거래 등록에 실패했어요')
     })
   })
 
@@ -434,7 +434,7 @@ describe('RecurringList', () => {
     await user.click(pauseBtns[0])
 
     await waitFor(() => {
-      expect(mockAddToast).toHaveBeenCalledWith('error', '변경에 실패했습니다')
+      expect(mockAddToast).toHaveBeenCalledWith('error', '변경에 실패했어요')
     })
   })
 
@@ -468,7 +468,7 @@ describe('RecurringList', () => {
     await user.click(screen.getByText('추가하기'))
 
     await waitFor(() => {
-      expect(mockAddToast).toHaveBeenCalledWith('success', '반복 거래가 추가되었습니다')
+      expect(mockAddToast).toHaveBeenCalledWith('success', '정기 거래를 등록했어요')
     })
   })
 
@@ -497,7 +497,7 @@ describe('RecurringList', () => {
     await user.click(screen.getByText('수정하기'))
 
     await waitFor(() => {
-      expect(mockAddToast).toHaveBeenCalledWith('success', '반복 거래가 수정되었습니다')
+      expect(mockAddToast).toHaveBeenCalledWith('success', '정기 거래를 수정했어요')
     })
   })
 
@@ -521,7 +521,7 @@ describe('RecurringList', () => {
     await user.click(deleteBtns[0])
 
     await waitFor(() => {
-      expect(mockAddToast).toHaveBeenCalledWith('error', '삭제에 실패했습니다')
+      expect(mockAddToast).toHaveBeenCalledWith('error', '삭제에 실패했어요')
     })
   })
 
@@ -547,7 +547,7 @@ describe('RecurringList', () => {
     await user.click(screen.getByText('추가하기'))
 
     await waitFor(() => {
-      expect(mockAddToast).toHaveBeenCalledWith('error', '저장에 실패했습니다')
+      expect(mockAddToast).toHaveBeenCalledWith('error', '저장에 실패했어요')
     })
   })
 })

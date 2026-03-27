@@ -159,7 +159,7 @@ describe('IncomeForm', () => {
       fireEvent.submit(submitBtn.closest('form')!)
 
       await waitFor(() => {
-        expect(mockAddToast).toHaveBeenCalledWith('success', '수입이 저장되었습니다')
+        expect(mockAddToast).toHaveBeenCalledWith('success', '저장했어요')
       })
     })
 
@@ -361,7 +361,7 @@ describe('IncomeForm', () => {
       await user.click(screen.getByText(/1건 저장하기/))
 
       await waitFor(() => {
-        expect(mockAddToast).toHaveBeenCalledWith('success', '수입이 저장되었습니다')
+        expect(mockAddToast).toHaveBeenCalledWith('success', '저장했어요')
       })
     })
   })

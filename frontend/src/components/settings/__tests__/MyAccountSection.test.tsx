@@ -255,7 +255,7 @@ describe('MyAccountSection 컴포넌트', () => {
       expect(mockUpdateUser).toHaveBeenCalledWith({ password: 'newpassword123' })
     })
     await waitFor(() => {
-      expect(mockAddToast).toHaveBeenCalledWith('success', '비밀번호가 변경되었습니다')
+      expect(mockAddToast).toHaveBeenCalledWith('success', '비밀번호를 변경했어요')
     })
     // 폼이 닫힌다
     await waitFor(() => {
@@ -401,7 +401,7 @@ describe('MyAccountSection 컴포넌트', () => {
     await user.click(screen.getByText('계정 영구 삭제'))
 
     await waitFor(() => {
-      expect(mockAddToast).toHaveBeenCalledWith('error', '계정 삭제에 실패했습니다. 다시 시도해주세요.')
+      expect(mockAddToast).toHaveBeenCalledWith('error', '삭제에 실패했어요')
     })
   })
 
@@ -465,7 +465,7 @@ describe('MyAccountSection 컴포넌트', () => {
 
     await waitFor(() => {
       expect(mockSignOut).toHaveBeenCalled()
-      expect(mockAddToast).toHaveBeenCalledWith('success', '계정이 삭제되었습니다')
+      expect(mockAddToast).toHaveBeenCalledWith('success', '계정이 삭제되었어요')
       expect(mockLogout).toHaveBeenCalled()
     })
   })

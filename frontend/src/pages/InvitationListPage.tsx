@@ -11,6 +11,7 @@ import { useNavigate } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
 import { useHouseholdStore } from '../stores/useHouseholdStore'
 import { useToast } from '../hooks/useToast'
+import { TOAST } from '../constants/toastMessages'
 import EmptyState from '../components/EmptyState'
 import ErrorState from '../components/ErrorState'
 import LoadingSpinner from '../components/LoadingSpinner'
@@ -105,7 +106,7 @@ export default function InvitationListPage() {
   useEffect(() => {
     fetchMyInvitations().catch((err) => {
       console.error('초대 목록 조회 실패:', err)
-      addToast('error', '초대 목록 로딩에 실패했습니다')
+      addToast('error', TOAST.INVITE_LOAD_FAILED)
     })
   }, [fetchMyInvitations, addToast])
 
@@ -114,7 +115,7 @@ export default function InvitationListPage() {
    */
   useEffect(() => {
     if (error) {
-      addToast('error', '처리에 실패했습니다')
+      addToast('error', TOAST.PROCESS_FAILED)
       clearError()
     }
   }, [error, addToast, clearError])
@@ -126,12 +127,12 @@ export default function InvitationListPage() {
     setProcessingToken(token)
     try {
       const result = await acceptInvitation(token)
-      addToast('success', `${result.household_name} 가구에 가입했습니다`)
+      addToast('success', TOAST.HOUSEHOLD_JOINED(result.household_name))
       // 가구 상세 페이지로 이동
       navigate(`/households/${result.household_id}`)
     } catch (err) {
       console.error('초대 수락 실패:', err)
-      addToast('error', '초대 수락에 실패했습니다')
+      addToast('error', TOAST.INVITE_ACCEPT_FAILED)
     } finally {
       setProcessingToken(null)
     }
@@ -146,10 +147,10 @@ export default function InvitationListPage() {
     setProcessingToken(token)
     try {
       await rejectInvitation(token)
-      addToast('success', '초대를 거절했습니다')
+      addToast('success', TOAST.INVITE_REJECTED)
     } catch (err) {
       console.error('초대 거절 실패:', err)
-      addToast('error', '초대 거절에 실패했습니다')
+      addToast('error', TOAST.INVITE_REJECT_FAILED)
     } finally {
       setProcessingToken(null)
     }

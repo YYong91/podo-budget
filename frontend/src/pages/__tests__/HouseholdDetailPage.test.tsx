@@ -195,7 +195,7 @@ describe('HouseholdDetailPage', () => {
     storeState.error = '서버 에러'
     renderPage()
     expect(screen.getByText('홍길동')).toBeInTheDocument()
-    expect(addToast).toHaveBeenCalledWith('error', '처리에 실패했습니다')
+    expect(addToast).toHaveBeenCalledWith('error', '처리에 실패했어요')
     expect(clearError).toHaveBeenCalled()
   })
 
@@ -354,7 +354,7 @@ describe('HouseholdDetailPage', () => {
     await userEvent.click(submitBtn)
 
     await waitFor(() => {
-      expect(addToast).toHaveBeenCalledWith('warning', '이메일 발송에 실패하여 링크가 복사되었습니다')
+      expect(addToast).toHaveBeenCalledWith('warning', '초대 링크를 복사했어요')
     })
   })
 
@@ -386,7 +386,7 @@ describe('HouseholdDetailPage', () => {
       expect(window.confirm).toHaveBeenCalled()
       expect(mockRemoveMember).toHaveBeenCalledWith(1, 2)
     })
-    expect(addToast).toHaveBeenCalledWith('success', '멤버를 내보냈습니다')
+    expect(addToast).toHaveBeenCalledWith('success', '멤버를 내보냈어요')
   })
 
   it('내보내기 실패 시 에러 토스트를 표시한다', async () => {
@@ -396,7 +396,7 @@ describe('HouseholdDetailPage', () => {
     await userEvent.click(screen.getByText('내보내기'))
 
     await waitFor(() => {
-      expect(addToast).toHaveBeenCalledWith('error', '멤버 내보내기에 실패했습니다')
+      expect(addToast).toHaveBeenCalledWith('error', '처리에 실패했어요')
     })
   })
 
@@ -440,7 +440,7 @@ describe('HouseholdDetailPage', () => {
       expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
         expect.stringContaining('/invitations/accept?token=abc123'),
       )
-      expect(addToast).toHaveBeenCalledWith('success', '초대 링크가 복사되었습니다')
+      expect(addToast).toHaveBeenCalledWith('success', '초대 링크를 복사했어요')
     })
   })
 
@@ -460,7 +460,7 @@ describe('HouseholdDetailPage', () => {
 
     await waitFor(() => {
       expect(mockLeaveHousehold).toHaveBeenCalledWith(1)
-      expect(addToast).toHaveBeenCalledWith('success', '가구에서 탈퇴했습니다')
+      expect(addToast).toHaveBeenCalledWith('success', '가구를 나갔어요')
       expect(mockNavigate).toHaveBeenCalledWith('/households')
     })
   })
@@ -472,7 +472,7 @@ describe('HouseholdDetailPage', () => {
     await userEvent.click(screen.getByText('탈퇴'))
 
     await waitFor(() => {
-      expect(addToast).toHaveBeenCalledWith('error', '가구 탈퇴에 실패했습니다')
+      expect(addToast).toHaveBeenCalledWith('error', '처리에 실패했어요')
     })
   })
 
@@ -490,7 +490,7 @@ describe('HouseholdDetailPage', () => {
 
     await waitFor(() => {
       expect(mockDeleteHousehold).toHaveBeenCalledWith(1)
-      expect(addToast).toHaveBeenCalledWith('success', '가구가 삭제되었습니다')
+      expect(addToast).toHaveBeenCalledWith('success', '가구를 삭제했어요')
       expect(mockNavigate).toHaveBeenCalledWith('/households')
     })
   })
@@ -503,7 +503,7 @@ describe('HouseholdDetailPage', () => {
     await userEvent.click(screen.getByText('가구 삭제'))
 
     await waitFor(() => {
-      expect(addToast).toHaveBeenCalledWith('error', '가구 삭제에 실패했습니다')
+      expect(addToast).toHaveBeenCalledWith('error', '삭제에 실패했어요')
     })
   })
 
@@ -542,7 +542,7 @@ describe('HouseholdDetailPage', () => {
 
     await waitFor(() => {
       expect(mockUpdateMemberRole).toHaveBeenCalledWith(1, 2, 'admin')
-      expect(addToast).toHaveBeenCalledWith('success', '역할이 변경되었습니다')
+      expect(addToast).toHaveBeenCalledWith('success', '역할을 변경했어요')
     })
   })
 
@@ -554,7 +554,7 @@ describe('HouseholdDetailPage', () => {
     await userEvent.selectOptions(roleSelects[0], 'admin')
 
     await waitFor(() => {
-      expect(addToast).toHaveBeenCalledWith('error', '역할 변경에 실패했습니다')
+      expect(addToast).toHaveBeenCalledWith('error', '처리에 실패했어요')
     })
   })
 
@@ -606,7 +606,7 @@ describe('HouseholdDetailPage', () => {
     await userEvent.click(screen.getByText('취소'))
 
     await waitFor(() => {
-      expect(addToast).toHaveBeenCalledWith('error', '초대 취소에 실패했습니다')
+      expect(addToast).toHaveBeenCalledWith('error', '처리에 실패했어요')
     })
   })
 
@@ -628,7 +628,7 @@ describe('HouseholdDetailPage', () => {
     await userEvent.click(submitBtn)
 
     await waitFor(() => {
-      expect(addToast).toHaveBeenCalledWith('error', '멤버 초대에 실패했습니다')
+      expect(addToast).toHaveBeenCalledWith('error', '처리에 실패했어요')
     })
   })
 
@@ -652,7 +652,7 @@ describe('HouseholdDetailPage', () => {
 
     await waitFor(() => {
       expect(mockUpdateHousehold).toHaveBeenCalledWith(1, expect.objectContaining({ name: '새 이름' }))
-      expect(addToast).toHaveBeenCalledWith('success', '가구 정보가 수정되었습니다')
+      expect(addToast).toHaveBeenCalledWith('success', '가구 정보를 수정했어요')
     })
   })
 
@@ -666,7 +666,7 @@ describe('HouseholdDetailPage', () => {
     await userEvent.click(screen.getByText('저장'))
 
     await waitFor(() => {
-      expect(addToast).toHaveBeenCalledWith('error', '가구 수정에 실패했습니다')
+      expect(addToast).toHaveBeenCalledWith('error', '저장에 실패했어요')
     })
   })
 

@@ -1,11 +1,11 @@
 /**
  * @file Toast.test.tsx
  * @description Toast 컴포넌트 테스트
- * 토스트 렌더링, 자동 닫기, 수동 닫기 동작을 테스트한다.
+ * pill shape 디자인, 타입별 아이콘 색상, 자동 닫기 동작을 테스트한다.
  */
 
 import { describe, it, expect, vi } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import Toast from '../Toast'
 
 describe('Toast', () => {
@@ -39,15 +39,55 @@ describe('Toast', () => {
       expect(screen.getByRole('alert')).toBeInTheDocument()
       expect(screen.getByText('테스트 메시지')).toBeInTheDocument()
     })
+  })
 
-    it('각 토스트 타입은 서로 다른 스타일을 가진다', () => {
-      const { rerender } = render(<Toast {...defaultProps} type="success" />)
-      const successClass = screen.getByRole('alert').className
+  describe('pill shape 디자인', () => {
+    it('rounded-full 클래스가 적용된다', () => {
+      render(<Toast {...defaultProps} type="success" />)
+      const alert = screen.getByRole('alert')
+      expect(alert.className).toContain('rounded-full')
+    })
 
-      rerender(<Toast {...defaultProps} type="error" />)
-      const errorClass = screen.getByRole('alert').className
+    it('다크 포도색 배경이 적용된다', () => {
+      render(<Toast {...defaultProps} type="success" />)
+      const alert = screen.getByRole('alert')
+      expect(alert.className).toContain('bg-[#1a1625]')
+    })
 
-      expect(successClass).not.toBe(errorClass)
+    it('메시지가 truncate로 1줄 강제된다', () => {
+      render(<Toast {...defaultProps} type="success" />)
+      const message = screen.getByText('테스트 메시지')
+      expect(message.className).toContain('truncate')
+    })
+  })
+
+  describe('타입별 아이콘 색상', () => {
+    it('성공 토스트는 leaf-400 아이콘 색상을 가진다', () => {
+      render(<Toast {...defaultProps} type="success" />)
+      const alert = screen.getByRole('alert')
+      const iconSpan = alert.querySelector('span')
+      expect(iconSpan?.className).toContain('text-leaf-400')
+    })
+
+    it('에러 토스트는 red-400 아이콘 색상을 가진다', () => {
+      render(<Toast {...defaultProps} type="error" />)
+      const alert = screen.getByRole('alert')
+      const iconSpan = alert.querySelector('span')
+      expect(iconSpan?.className).toContain('text-red-400')
+    })
+
+    it('경고 토스트는 amber-400 아이콘 색상을 가진다', () => {
+      render(<Toast {...defaultProps} type="warning" />)
+      const alert = screen.getByRole('alert')
+      const iconSpan = alert.querySelector('span')
+      expect(iconSpan?.className).toContain('text-amber-400')
+    })
+
+    it('정보 토스트는 grape-300 아이콘 색상을 가진다', () => {
+      render(<Toast {...defaultProps} type="info" />)
+      const alert = screen.getByRole('alert')
+      const iconSpan = alert.querySelector('span')
+      expect(iconSpan?.className).toContain('text-grape-300')
     })
   })
 
@@ -58,11 +98,9 @@ describe('Toast', () => {
 
       render(<Toast {...defaultProps} type="success" duration={2000} onClose={onClose} />)
 
-      // 2초 전에는 호출되지 않음
       vi.advanceTimersByTime(1999)
       expect(onClose).not.toHaveBeenCalled()
 
-      // 2초 후 호출됨
       vi.advanceTimersByTime(1)
       expect(onClose).toHaveBeenCalledTimes(1)
       expect(onClose).toHaveBeenCalledWith('test-toast-1')
@@ -81,37 +119,6 @@ describe('Toast', () => {
 
       vi.advanceTimersByTime(1)
       expect(onClose).toHaveBeenCalledTimes(1)
-
-      vi.useRealTimers()
-    })
-  })
-
-  describe('닫기 버튼', () => {
-    it('닫기 버튼이 표시된다', () => {
-      render(<Toast {...defaultProps} type="success" />)
-
-      const closeButton = screen.getByRole('button', { name: '닫기' })
-      expect(closeButton).toBeInTheDocument()
-    })
-
-    it('모바일에서 메시지가 단어 단위로 줄바꿈된다', () => {
-      render(<Toast {...defaultProps} type="success" />)
-      const alert = screen.getByRole('alert')
-      // 모바일 대응: 화면 좌우 패딩 확보 + 단어 줄바꿈
-      expect(alert.className).toMatch(/mx-4/)
-      expect(alert.querySelector('p')?.className).toContain('break-words')
-    })
-
-    it('닫기 버튼 클릭 시 onClose가 호출된다', () => {
-      vi.useFakeTimers()
-      const onClose = vi.fn()
-
-      render(<Toast {...defaultProps} type="error" onClose={onClose} />)
-
-      const closeButton = screen.getByRole('button', { name: '닫기' })
-      fireEvent.click(closeButton)
-
-      expect(onClose).toHaveBeenCalledWith('test-toast-1')
 
       vi.useRealTimers()
     })

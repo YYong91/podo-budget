@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Plus, Wallet, Trash2, ArrowLeft } from 'lucide-react'
 import { useToast } from '../hooks/useToast'
+import { TOAST } from '../constants/toastMessages'
 import { accountApi } from '../api/accounts'
 import { useHouseholdStore } from '../stores/useHouseholdStore'
 import EmptyState from '../components/EmptyState'
@@ -51,12 +52,12 @@ export default function AccountManager() {
     setSaving(true)
     try {
       await accountApi.create(form)
-      addToast('success', '계좌가 등록되었습니다')
+      addToast('success', TOAST.BANK_ACCOUNT_SAVED)
       setForm({ name: '', type: 'brokerage' })
       setShowForm(false)
       loadAccounts()
     } catch {
-      addToast('error', '저장 중 오류가 발생했습니다')
+      addToast('error', TOAST.SAVE_FAILED)
     } finally {
       setSaving(false)
     }
@@ -66,9 +67,9 @@ export default function AccountManager() {
     try {
       await accountApi.delete(id)
       setAccounts(prev => prev.filter(a => a.id !== id))
-      addToast('success', '계좌가 삭제되었습니다')
+      addToast('success', TOAST.BANK_ACCOUNT_DELETED)
     } catch {
-      addToast('error', '삭제 중 오류가 발생했습니다')
+      addToast('error', TOAST.DELETE_FAILED)
     }
   }
 

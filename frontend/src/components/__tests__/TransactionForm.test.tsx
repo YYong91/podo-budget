@@ -260,7 +260,7 @@ describe('TransactionForm', () => {
       await user.click(screen.getByText('저장하기'))
 
       await waitFor(() => {
-        expect(mockAddToast).toHaveBeenCalledWith('success', '지출이 저장되었습니다')
+        expect(mockAddToast).toHaveBeenCalledWith('success', '저장했어요')
       })
     })
 
@@ -284,7 +284,7 @@ describe('TransactionForm', () => {
       await user.click(screen.getByText('저장하기'))
 
       await waitFor(() => {
-        expect(mockAddToast).toHaveBeenCalledWith('success', '수입이 저장되었습니다')
+        expect(mockAddToast).toHaveBeenCalledWith('success', '저장했어요')
       })
     })
 
@@ -305,7 +305,7 @@ describe('TransactionForm', () => {
       await user.click(screen.getByText('저장하기'))
 
       await waitFor(() => {
-        expect(mockAddToast).toHaveBeenCalledWith('error', '지출 저장에 실패했습니다')
+        expect(mockAddToast).toHaveBeenCalledWith('error', '저장에 실패했어요')
       })
     })
 
@@ -370,7 +370,7 @@ describe('TransactionForm', () => {
       await user.click(screen.getByText('추가'))
 
       await waitFor(() => {
-        expect(mockAddToast).toHaveBeenCalledWith('success', '"테스트 카테고리" 카테고리가 추가되었습니다')
+        expect(mockAddToast).toHaveBeenCalledWith('success', '카테고리를 추가했어요')
       })
     })
 
@@ -391,7 +391,7 @@ describe('TransactionForm', () => {
       await user.click(screen.getByText('추가'))
 
       await waitFor(() => {
-        expect(mockAddToast).toHaveBeenCalledWith('error', '카테고리 생성에 실패했습니다')
+        expect(mockAddToast).toHaveBeenCalledWith('error', '저장에 실패했어요')
       })
     })
   })
@@ -442,7 +442,7 @@ describe('TransactionForm', () => {
       await user.upload(fileInput, file)
 
       await waitFor(() => {
-        expect(mockAddToast).toHaveBeenCalledWith('error', 'OCR 처리에 실패했습니다')
+        expect(mockAddToast).toHaveBeenCalledWith('error', '분석에 실패했어요')
       })
     })
 
@@ -465,7 +465,7 @@ describe('TransactionForm', () => {
       await user.upload(fileInput, file)
 
       await waitFor(() => {
-        expect(mockAddToast).toHaveBeenCalledWith('info', '결제 정보를 인식하지 못했습니다')
+        expect(mockAddToast).toHaveBeenCalledWith('info', expect.any(String))
       })
     })
   })

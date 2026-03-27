@@ -9,6 +9,7 @@ import { useSearchParams } from 'react-router-dom'
 import { expenseApi } from '../api/expenses'
 import { incomeApi } from '../api/income'
 import { useToast } from './useToast'
+import { TOAST } from '../constants/toastMessages'
 import { getLocalDateString } from '../utils/format'
 import type { Expense, Income } from '../types'
 
@@ -200,7 +201,7 @@ export function useTransactionSearch({ activeHouseholdId }: UseTransactionSearch
       searchOffsetRef.current = offset + SEARCH_PAGE_SIZE
       setSearchHasMore(newItems.length >= SEARCH_PAGE_SIZE)
     } catch {
-      addToast('error', '검색에 실패했습니다')
+      addToast('error', TOAST.SEARCH_FAILED)
     } finally {
       setSearchLoading(false)
       setSearchLoadingMore(false)

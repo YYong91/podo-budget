@@ -8,6 +8,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { RefreshCw, ShieldCheck } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../hooks/useToast'
+import { TOAST } from '../constants/toastMessages'
 import { adminApi } from '../api/admin'
 
 import LoadingSpinner from '../components/LoadingSpinner'
@@ -34,7 +35,7 @@ export default function AdminPage() {
       const res = await adminApi.getDashboardStats()
       setDashboard(res.data)
     } catch {
-      addToast('error', '데이터 로딩에 실패했습니다')
+      addToast('error', TOAST.LOAD_FAILED)
     } finally {
       setLoading(false)
       setRefreshing(false)

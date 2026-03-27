@@ -80,7 +80,7 @@ describe('useBotLinking', () => {
       await act(() => result.current.generateCode())
 
       expect(result.current.linkCode).toBeNull()
-      expect(mockAddToast).toHaveBeenCalledWith('error', '코드 발급에 실패했습니다')
+      expect(mockAddToast).toHaveBeenCalledWith('error', '처리에 실패했어요')
     })
 
     it('unlink 성공 시 refreshUser 호출 + linkCode null 초기화', async () => {
@@ -99,7 +99,7 @@ describe('useBotLinking', () => {
 
       expect(mockRefreshUser).toHaveBeenCalled()
       expect(result.current.linkCode).toBeNull()
-      expect(mockAddToast).toHaveBeenCalledWith('success', '텔레그램 연동이 해제되었습니다')
+      expect(mockAddToast).toHaveBeenCalledWith('success', '텔레그램 연동을 해제했어요')
     })
 
     it('unlink 시 confirm 취소하면 API 호출하지 않는다', async () => {
@@ -119,7 +119,7 @@ describe('useBotLinking', () => {
       await act(() => result.current.copyCode())
 
       expect(mockWriteText).toHaveBeenCalledWith('/link TG999')
-      expect(mockAddToast).toHaveBeenCalledWith('success', '복사되었습니다')
+      expect(mockAddToast).toHaveBeenCalledWith('success', '연동 코드를 복사했어요')
     })
 
     it('linkCode 없으면 copyCode는 아무것도 하지 않는다', async () => {
@@ -148,7 +148,7 @@ describe('useBotLinking', () => {
       const { result } = renderHook(() => useBotLinking('kakao'))
       await act(() => result.current.unlink())
 
-      expect(mockAddToast).toHaveBeenCalledWith('success', '카카오톡 연동이 해제되었습니다')
+      expect(mockAddToast).toHaveBeenCalledWith('success', '카카오톡 연동을 해제했어요')
     })
 
     it('copyCode는 "연동 {code}" 형식으로 클립보드 복사', async () => {

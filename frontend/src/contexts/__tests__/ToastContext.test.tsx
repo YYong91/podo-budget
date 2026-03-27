@@ -77,7 +77,7 @@ describe('ToastContext', () => {
       })
     })
 
-    it('여러 토스트를 동시에 추가할 수 있다', async () => {
+    it('새 토스트 추가 시 기존 토스트를 교체한다 (1개만 표시)', async () => {
       const user = userEvent.setup()
       renderWithToastProvider()
 
@@ -85,7 +85,8 @@ describe('ToastContext', () => {
       await user.click(screen.getByRole('button', { name: '에러 추가' }))
 
       await waitFor(() => {
-        expect(screen.getByText('성공 메시지')).toBeInTheDocument()
+        // 마지막에 추가된 에러 토스트만 표시
+        expect(screen.queryByText('성공 메시지')).not.toBeInTheDocument()
         expect(screen.getByText('에러 메시지')).toBeInTheDocument()
       })
     })

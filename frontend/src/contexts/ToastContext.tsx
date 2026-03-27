@@ -1,8 +1,8 @@
 /**
  * @file ToastContext.tsx
  * @description 전역 토스트 알림 상태 관리
- * React Context를 사용하여 애플리케이션 전역에서
- * 토스트 알림을 추가/제거할 수 있는 기능을 제공한다.
+ * 항상 1개의 토스트만 표시하며, 새 토스트 추가 시 기존 토스트를 교체한다.
+ * addToast/removeToast 인터페이스는 하위 호환을 위해 유지한다.
  */
 
 import { createContext, useContext, useState, useCallback, useMemo } from 'react'
@@ -20,9 +20,10 @@ interface ToastItem {
 interface ToastContextType {
   /**
    * 새로운 토스트 알림을 추가한다
+   * 기존 토스트가 있으면 교체한다 (항상 1개만 표시).
    * @param type - 토스트 타입 (success, error, warning, info)
    * @param message - 표시할 메시지
-   * @param duration - 자동 사라질 시간 (밀리초, 기본 3000ms)
+   * @param duration - 자동 사라질 시간 (밀리초). 미지정 시 타입별 기본값 적용
    */
   addToast: (type: ToastType, message: string, duration?: number) => void
   /**
@@ -32,6 +33,14 @@ interface ToastContextType {
   removeToast: (id: string) => void
 }
 
+/** 타입별 기본 duration (ms) */
+const DEFAULT_DURATIONS: Record<ToastType, number> = {
+  success: 3000,
+  error: 5000,
+  warning: 4000,
+  info: 3000,
+}
+
 const ToastContext = createContext<ToastContextType | undefined>(undefined)
 
 /**
@@ -39,41 +48,40 @@ const ToastContext = createContext<ToastContextType | undefined>(undefined)
  * 애플리케이션 최상위에서 감싸서 사용한다
  */
 export function ToastProvider({ children }: { children: ReactNode }) {
-  const [toasts, setToasts] = useState<ToastItem[]>([])
+  const [toast, setToast] = useState<ToastItem | null>(null)
 
-  // useCallback으로 참조 안정화 — toasts 변경 시 Context value 재생성 → 구독 컴포넌트 리렌더 방지 (#167)
-  const addToast = useCallback((type: ToastType, message: string, duration = 3000) => {
+  const addToast = useCallback((type: ToastType, message: string, duration?: number) => {
     const id = `toast-${Date.now()}-${Math.random()}`
-    setToasts((prev) => [...prev, { id, type, message, duration }])
+    const resolvedDuration = duration ?? DEFAULT_DURATIONS[type]
+    setToast({ id, type, message, duration: resolvedDuration })
   }, [])
 
-  // useCallback으로 참조 안정화: Toast의 useEffect deps에 onClose가 포함되어
-  // removeToast가 재생성될 때마다 타이머가 리셋되는 stale closure 방지
   const removeToast = useCallback((id: string) => {
-    setToasts((prev) => prev.filter((toast) => toast.id !== id))
+    setToast((prev) => (prev?.id === id ? null : prev))
   }, [])
 
-  // useMemo로 value 객체 안정화 — addToast/removeToast가 변경될 때만 재생성 (#167)
   const contextValue = useMemo(() => ({ addToast, removeToast }), [addToast, removeToast])
 
   return (
     <ToastContext.Provider value={contextValue}>
       {children}
-      {/* 토스트 컨테이너: 화면 하단 중앙에 고정 — aria-live로 스크린 리더에 알림 전달 */}
-      <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 pointer-events-none" role="status" aria-live="polite">
-        <div className="pointer-events-auto">
-          {toasts.map((toast) => (
-            <Toast
-              key={toast.id}
-              id={toast.id}
-              type={toast.type}
-              message={toast.message}
-              duration={toast.duration}
-              onClose={removeToast}
-            />
-          ))}
+      {/* 토스트 컨테이너: 하단 네비(56px) + 16px 간격 = 72px */}
+      {toast && (
+        <div
+          className="fixed bottom-[72px] left-1/2 -translate-x-1/2 z-50 max-w-[calc(100vw-32px)] pointer-events-none"
+          role="status"
+          aria-live="polite"
+        >
+          <Toast
+            key={toast.id}
+            id={toast.id}
+            type={toast.type}
+            message={toast.message}
+            duration={toast.duration}
+            onClose={removeToast}
+          />
         </div>
-      </div>
+      )}
     </ToastContext.Provider>
   )
 }
