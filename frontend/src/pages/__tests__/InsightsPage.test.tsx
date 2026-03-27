@@ -38,10 +38,10 @@ describe('InsightsPage', () => {
     })
   })
 
-  it('지출 카테고리 TOP이 표시된다', async () => {
+  it('지출 카테고리가 표시된다', async () => {
     render(<MemoryRouter><InsightsPage /></MemoryRouter>)
     await waitFor(() => {
-      expect(screen.getByText('지출 카테고리 TOP')).toBeInTheDocument()
+      expect(screen.getByText('지출 카테고리')).toBeInTheDocument()
     })
   })
 
@@ -122,7 +122,7 @@ describe('InsightsPage', () => {
     })
 
     const highlights = screen.getByText(/이번 달 주목할 점/)
-    const categoryTop = screen.getByText('지출 카테고리 TOP')
+    const categoryTop = screen.getByText('지출 카테고리')
 
     // 주목할 점이 카테고리 TOP보다 DOM에서 먼저 나온다
     expect(highlights.compareDocumentPosition(categoryTop) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
@@ -181,7 +181,7 @@ describe('InsightsPage', () => {
     const modal = screen.getByText('섹션 표시 설정').closest('div.relative')!
     expect(modal).toHaveTextContent('종합 요약 카드')
     expect(modal).toHaveTextContent('이달의 주목할 점')
-    expect(modal).toHaveTextContent('지출 카테고리 TOP')
+    expect(modal).toHaveTextContent('지출 카테고리')
     expect(modal).toHaveTextContent('예산 상황')
     expect(modal).toHaveTextContent('자산 변화')
     expect(modal).toHaveTextContent('AI 상세 분석')
@@ -191,15 +191,15 @@ describe('InsightsPage', () => {
     const user = userEvent.setup()
     render(<MemoryRouter><InsightsPage /></MemoryRouter>)
     await waitFor(() => {
-      expect(screen.getByText('지출 카테고리 TOP')).toBeInTheDocument()
+      expect(screen.getByText('지출 카테고리')).toBeInTheDocument()
     })
 
     // 설정 모달 열기
     await user.click(screen.getByLabelText('섹션 설정'))
     expect(screen.getByText('섹션 표시 설정')).toBeInTheDocument()
 
-    // '지출 카테고리 TOP' 토글 끄기
-    const categoryToggle = screen.getByRole('checkbox', { name: '지출 카테고리 TOP' })
+    // '지출 카테고리' 토글 끄기
+    const categoryToggle = screen.getByRole('checkbox', { name: '지출 카테고리' })
     await user.click(categoryToggle)
 
     // 모달 닫기
@@ -207,7 +207,7 @@ describe('InsightsPage', () => {
 
     // 해당 섹션이 더 이상 표시되지 않는다
     await waitFor(() => {
-      expect(screen.queryByText('지출 카테고리 TOP')).not.toBeInTheDocument()
+      expect(screen.queryByText('지출 카테고리')).not.toBeInTheDocument()
     })
   })
 
@@ -254,6 +254,6 @@ describe('InsightsPage', () => {
     // 주목할 점 섹션이 숨겨져 있다
     expect(screen.queryByText(/이번 달 주목할 점/)).not.toBeInTheDocument()
     // 다른 섹션은 정상 표시
-    expect(screen.getByText('지출 카테고리 TOP')).toBeInTheDocument()
+    expect(screen.getByText('지출 카테고리')).toBeInTheDocument()
   })
 })

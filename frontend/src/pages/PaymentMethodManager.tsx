@@ -101,13 +101,18 @@ export default function PaymentMethodManager() {
   }, [formName, formType, formTarget, formDefault, fetchData, addToast])
 
   /** 기본 결제수단 설정 */
-  const handleSetDefault = useCallback(async (method: PaymentMethod) => {
+  const handleToggleDefault = useCallback(async (method: PaymentMethod) => {
     try {
-      await paymentMethodApi.update(method.id, { is_default: true })
-      addToast('success', `이제부터 결제수단을 따로 말하지 않으면 ${method.name}(으)로 자동 저장됩니다`)
+      const newDefault = !method.is_default
+      await paymentMethodApi.update(method.id, { is_default: newDefault })
+      if (newDefault) {
+        addToast('success', `이제부터 결제수단을 따로 말하지 않으면 ${method.name}(으)로 자동 저장됩니다`)
+      } else {
+        addToast('info', `${method.name} 기본 결제수단이 해제되었습니다`)
+      }
       await fetchData()
     } catch {
-      addToast('error', '기본 결제수단 설정에 실패했습니다')
+      addToast('error', '기본 결제수단 변경에 실패했습니다')
     }
   }, [fetchData, addToast])
 
@@ -265,15 +270,15 @@ export default function PaymentMethodManager() {
                     )}
                   </div>
                   <div className="flex items-center gap-1">
-                    {!method.is_default && (
-                      <button
-                        onClick={() => handleSetDefault(method)}
-                        aria-label="기본으로 설정"
-                        className="p-1.5 rounded-lg hover:bg-[var(--surface-hover)] transition-colors text-[var(--text-muted)] hover:text-grape-600"
-                      >
-                        <Star className="w-4 h-4" />
-                      </button>
-                    )}
+                    <button
+                      onClick={() => handleToggleDefault(method)}
+                      aria-label={method.is_default ? '기본 해제' : '기본으로 설정'}
+                      className={`p-1.5 rounded-lg hover:bg-[var(--surface-hover)] transition-colors ${
+                        method.is_default ? 'text-grape-600' : 'text-[var(--text-muted)] hover:text-grape-600'
+                      }`}
+                    >
+                      <Star className="w-4 h-4" fill={method.is_default ? 'currentColor' : 'none'} />
+                    </button>
                     <button
                       onClick={() => handleDelete(method)}
                       aria-label="삭제"
@@ -291,18 +296,18 @@ export default function PaymentMethodManager() {
                       <span className="text-xs text-[var(--text-secondary)]">
                         {formatAmount(usage.spent_amount)} / {formatAmount(method.monthly_target)}
                       </span>
-                      <span className="text-xs text-[var(--text-muted)]">
-                        잔여 {formatAmount(usage.remaining ?? 0)}
+                      <span className={`text-xs ${(usage.usage_percentage ?? 0) >= 100 ? 'text-leaf-600 font-medium' : 'text-[var(--text-muted)]'}`}>
+                        {(usage.usage_percentage ?? 0) >= 100 ? '✅ 실적 달성' : `잔여 ${formatAmount(usage.remaining ?? 0)}`}
                       </span>
                     </div>
                     <div className="w-full bg-[var(--border-default)] rounded-full h-1.5 overflow-hidden">
                       <div
                         className={`h-1.5 rounded-full transition-all ${
-                          (usage.usage_percentage ?? 0) > 100
-                            ? 'bg-red-500'
+                          (usage.usage_percentage ?? 0) >= 100
+                            ? 'bg-leaf-500'
                             : (usage.usage_percentage ?? 0) >= 80
-                              ? 'bg-amber-500'
-                              : 'bg-grape-500'
+                              ? 'bg-grape-500'
+                              : 'bg-grape-400'
                         }`}
                         style={{ width: `${Math.min(usage.usage_percentage ?? 0, 100)}%` }}
                       />

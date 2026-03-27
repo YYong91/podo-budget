@@ -6,7 +6,7 @@ import { getLocalDateString } from '../utils/format'
  * ExpenseForm과 IncomeForm에서 wrapper로 사용한다.
  */
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { ArrowLeft, Camera } from 'lucide-react'
 import { useToast } from '../hooks/useToast'
@@ -14,9 +14,12 @@ import { expenseApi } from '../api/expenses'
 import { incomeApi } from '../api/income'
 import { categoryApi } from '../api/categories'
 import { useHouseholdStore } from '../stores/useHouseholdStore'
+import { paymentMethodApi } from '../api/paymentMethods'
+import type { PaymentMethod } from '../types'
 import { useNaturalInput } from '../hooks/useNaturalInput'
 import ParsedItemPreviewCard from './ParsedItemPreviewCard'
 import { trackEvent } from '../utils/analytics'
+import { FILTER_STORAGE_KEY } from '../hooks/useMonthlyTransactions'
 
 type TransactionType = 'expense' | 'income'
 type InputMode = 'natural' | 'form' | 'ocr'
@@ -76,14 +79,26 @@ export default function TransactionForm({ type }: TransactionFormProps) {
   const [showNewCategoryForForm, setShowNewCategoryForForm] = useState(false)
   const [newCategoryNameForForm, setNewCategoryNameForForm] = useState('')
   const [creatingCategoryForForm, setCreatingCategoryForForm] = useState(false)
+  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([])
   const [formData, setFormData] = useState({
     amount: '',
     description: '',
     category_id: '',
+    payment_method_id: '',
     date: getLocalDateString(),
     memo: '',
     exclude_from_stats: false,
   })
+
+  // 결제수단 목록 로드 (지출 모드 전용)
+  useEffect(() => {
+    if (type !== 'expense' || !activeHouseholdId) return
+    paymentMethodApi.getAll(activeHouseholdId).then((res) => {
+      setPaymentMethods(res.data.filter((m) => m.is_active))
+    }).catch(() => {
+      // 결제수단 로드 실패 시 무시 — 선택 필드이므로 동작에 지장 없음
+    })
+  }, [type, activeHouseholdId])
 
   const formCategories = ni.categories
 
@@ -165,6 +180,9 @@ export default function TransactionForm({ type }: TransactionFormProps) {
         amount,
         description: formData.description.trim(),
         category_id: formData.category_id ? Number(formData.category_id) : null,
+        ...(type === 'expense' && formData.payment_method_id
+          ? { payment_method_id: Number(formData.payment_method_id) }
+          : {}),
         date: formData.date.includes('T') ? formData.date : `${formData.date}T00:00:00`,
         household_id: activeHouseholdId,
         memo: formData.memo.trim() || undefined,
@@ -172,6 +190,7 @@ export default function TransactionForm({ type }: TransactionFormProps) {
       })
       trackEvent(cfg.eventName, { mode: 'form' })
       addToast('success', cfg.savedMessage)
+      sessionStorage.removeItem(FILTER_STORAGE_KEY)
       setTimeout(() => navigate(cfg.listRoute), 500)
     } catch {
       addToast('error', `${cfg.previewLabel} 저장에 실패했습니다`)
@@ -543,6 +562,29 @@ export default function TransactionForm({ type }: TransactionFormProps) {
               </button>
             )}
           </div>
+
+          {/* 결제수단 (지출 모드 전용, 선택) */}
+          {type === 'expense' && (
+            <div>
+              <label htmlFor={`${idPrefix}-payment-method`} className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
+                결제수단
+              </label>
+              <select
+                id={`${idPrefix}-payment-method`}
+                value={formData.payment_method_id}
+                onChange={(e) => setFormData({ ...formData, payment_method_id: e.target.value })}
+                className={`w-full px-4 py-3 border border-[var(--input-border)] rounded-xl focus:ring-2 focus:ring-${c}-500/30 focus:border-${c}-500`}
+                disabled={loading}
+              >
+                <option value="">선택 안 함</option>
+                {paymentMethods.map((pm) => (
+                  <option key={pm.id} value={pm.id}>
+                    {pm.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           {/* 날짜 (기본 오늘) */}
           <div>

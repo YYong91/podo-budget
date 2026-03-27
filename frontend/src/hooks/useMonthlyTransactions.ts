@@ -16,7 +16,7 @@ import type { UnifiedTransaction } from './useTransactionSearch'
 
 type FilterType = 'all' | 'expense' | 'income'
 
-const FILTER_STORAGE_KEY = 'podo-transaction-filter'
+export const FILTER_STORAGE_KEY = 'podo-transaction-filter'
 
 interface UseMonthlyTransactionsOptions {
   activeHouseholdId: number | null

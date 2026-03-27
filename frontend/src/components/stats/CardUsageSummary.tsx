@@ -41,7 +41,7 @@ export default function CardUsageSummary({ usage }: CardUsageSummaryProps) {
               <div className="flex justify-between items-center mb-1">
                 <span className="text-sm font-medium text-[var(--text-primary)]">{item.name}</span>
                 <div className="text-right">
-                  <span className={`text-sm font-semibold ${pct > 100 ? 'text-red-600' : 'text-[var(--text-primary)]'}`}>
+                  <span className={`text-sm font-semibold ${pct >= 100 ? 'text-leaf-600' : 'text-[var(--text-primary)]'}`}>
                     {formatAmount(item.spent_amount)}
                   </span>
                   <span className="text-xs text-[var(--text-muted)]"> / {formatAmount(item.monthly_target!)}</span>
@@ -50,7 +50,7 @@ export default function CardUsageSummary({ usage }: CardUsageSummaryProps) {
               <div className="w-full bg-[var(--border-default)] rounded-full h-1.5 overflow-hidden">
                 <div
                   className={`h-1.5 rounded-full transition-all ${
-                    pct > 100 ? 'bg-red-500' : pct >= 80 ? 'bg-amber-500' : 'bg-grape-500'
+                    pct >= 100 ? 'bg-leaf-500' : pct >= 80 ? 'bg-grape-500' : 'bg-grape-400'
                   }`}
                   style={{ width: `${Math.min(pct, 100)}%` }}
                 />
@@ -60,8 +60,8 @@ export default function CardUsageSummary({ usage }: CardUsageSummaryProps) {
                   {pct.toFixed(1)}%
                 </span>
                 {item.remaining != null && (
-                  <span className="text-xs text-[var(--text-muted)]">
-                    잔여 {formatAmount(item.remaining)}
+                  <span className={`text-xs ${pct >= 100 ? 'text-leaf-600 font-medium' : 'text-[var(--text-muted)]'}`}>
+                    {pct >= 100 ? '✅ 실적 달성' : `잔여 ${formatAmount(item.remaining)}`}
                   </span>
                 )}
               </div>

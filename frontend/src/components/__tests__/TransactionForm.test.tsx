@@ -492,6 +492,43 @@ describe('TransactionForm', () => {
     })
   })
 
+  describe('결제수단 드롭다운', () => {
+    it('지출 모드에서 결제수단 드롭다운이 표시된다', async () => {
+      const user = userEvent.setup()
+      renderForm('expense')
+      await user.click(screen.getByText('직접 입력'))
+
+      await waitFor(() => {
+        expect(screen.getByLabelText('결제수단')).toBeInTheDocument()
+      })
+
+      // 목 데이터의 결제수단이 옵션에 표시되는지 확인
+      const select = screen.getByLabelText('결제수단')
+      const options = within(select).getAllByRole('option')
+      const optionTexts = options.map((o) => o.textContent)
+      expect(optionTexts).toContain('선택 안 함')
+      expect(optionTexts).toContain('삼성카드')
+      expect(optionTexts).toContain('현금')
+      expect(optionTexts).toContain('국민카드')
+    })
+
+    it('수입 모드에서는 결제수단 드롭다운이 표시되지 않는다', async () => {
+      server.use(
+        http.get('/api/categories', () => {
+          return HttpResponse.json(mockIncomeCategoriesAll)
+        })
+      )
+      const user = userEvent.setup()
+      renderForm('income')
+      await user.click(screen.getByText('직접 입력'))
+
+      await waitFor(() => {
+        expect(screen.getByPlaceholderText('월급')).toBeInTheDocument()
+      })
+      expect(screen.queryByLabelText('결제수단')).not.toBeInTheDocument()
+    })
+  })
+
   describe('취소 버튼 라우팅', () => {
     it('expense: 취소 클릭 시 /expenses로 이동', async () => {
       const user = userEvent.setup()
