@@ -42,4 +42,8 @@ export const paymentMethodApi = {
     apiClient.get<PaymentMethodUsage[]>('/payment-methods/stats/monthly', {
       params: { month, household_id: householdId },
     }),
+
+  /** 결제수단 순서 변경 */
+  reorder: (ids: number[]) =>
+    apiClient.put('/payment-methods/reorder', { ids }),
 }

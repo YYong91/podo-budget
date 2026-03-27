@@ -159,11 +159,12 @@ async def _save_and_respond(
         saved_amounts.append(amount)
 
         # 결제수단 매칭: LLM 파싱 → 이름 매칭 → 기본값 폴백
+        # exclude_auto_payment=true 카테고리(저축/투자, 세금 등)는 기본 결제수단 자동 적용 제외
         pm_name = item.get("payment_method")
         pm_id = None
         if pm_name and payment_method_map:
             pm_id = payment_method_map.get(pm_name)
-        if pm_id is None and item_type != "income":
+        if pm_id is None and item_type != "income" and not getattr(category, "exclude_auto_payment", False):
             pm_id = default_payment_method_id
 
         record_kwargs: dict[str, Any] = {

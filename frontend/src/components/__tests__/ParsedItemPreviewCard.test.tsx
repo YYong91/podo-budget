@@ -163,7 +163,7 @@ describe('ParsedItemPreviewCard', () => {
 
     it('카테고리 변경 시 onUpdate를 호출한다', () => {
       const onUpdate = vi.fn()
-      const categories = [{ id: 1, name: '식비', type: 'expense' as const, description: null, sort_order: 1, is_savings: false, is_system: true, created_at: '' }]
+      const categories = [{ id: 1, name: '식비', type: 'expense' as const, description: null, sort_order: 1, is_savings: false, is_system: true, exclude_auto_payment: false, created_at: '' }]
       render(
         <ParsedItemPreviewCard
           {...defaultProps}
@@ -181,7 +181,7 @@ describe('ParsedItemPreviewCard', () => {
     it('카테고리 "분류 안 됨"으로 변경 시 null을 전달한다', () => {
       const onUpdate = vi.fn()
       const itemWithCat = { ...mockItem, category_id: 1 }
-      const categories = [{ id: 1, name: '식비', type: 'expense' as const, description: null, sort_order: 1, is_savings: false, is_system: true, created_at: '' }]
+      const categories = [{ id: 1, name: '식비', type: 'expense' as const, description: null, sort_order: 1, is_savings: false, is_system: true, exclude_auto_payment: false, created_at: '' }]
       render(
         <ParsedItemPreviewCard
           {...defaultProps}
@@ -340,8 +340,8 @@ describe('ParsedItemPreviewCard', () => {
 
   describe('결제수단 선택', () => {
     const paymentMethods = [
-      { id: 1, household_id: 1, created_by: 1, name: '삼성카드', type: 'credit_card' as const, monthly_target: null, is_default: true, is_active: true, created_at: '', updated_at: '' },
-      { id: 2, household_id: 1, created_by: 1, name: '현금', type: 'cash' as const, monthly_target: null, is_default: false, is_active: true, created_at: '', updated_at: '' },
+      { id: 1, household_id: 1, created_by: 1, name: '삼성카드', type: 'credit_card' as const, monthly_target: null, is_default: true, is_active: true, display_order: 0, created_at: '', updated_at: '' },
+      { id: 2, household_id: 1, created_by: 1, name: '현금', type: 'cash' as const, monthly_target: null, is_default: false, is_active: true, display_order: 1, created_at: '', updated_at: '' },
     ]
 
     it('결제수단 드롭다운을 표시한다', () => {

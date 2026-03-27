@@ -28,6 +28,7 @@ from app.models.category import Category
 from app.models.expense import Expense
 from app.models.feedback import Feedback
 from app.models.income import Income
+from app.models.payment_method import PaymentMethod
 from app.services.bot_messages import (
     format_budget_status,
     format_budget_status_full,
@@ -43,6 +44,7 @@ from app.services.bot_messages import (
     format_report_message_full,
     format_server_error,
     format_timeout_message,
+    get_payment_method_icon,
 )
 from app.services.bot_strike_service import increment_strike, reset_strike
 from app.services.bot_user_service import get_or_create_bot_user, link_kakao_account_by_code
@@ -78,6 +80,8 @@ COMMAND_ALIASES: dict[str, tuple[str, bool]] = {
     "예산 전체": ("/budget_full", False),
     "피드백": ("/feedback", True),
     "건의": ("/feedback", True),
+    "결제수단변경": ("/change_payment", False),
+    "결제수단": ("/change_payment", False),
 }
 
 
@@ -319,6 +323,123 @@ async def _handle_feedback_command(utterance: str, bot_user: Any, db: AsyncSessi
     )
 
 
+async def _handle_change_payment_command(utterance: str, bot_user: Any, db: AsyncSession, active_household_id: int | None) -> dict[str, Any]:
+    """``/change_payment`` 명령어 처리 — 마지막 지출의 결제수단 변경
+
+    카카오는 stateless이므로 마지막 지출을 대상으로 합니다.
+    상위 3개 결제수단 + "선택 안 함" quickReply를 표시합니다.
+    """
+    # 마지막 지출 조회
+    result = await db.execute(select(Expense).where(Expense.user_id == bot_user.id).order_by(Expense.id.desc()).limit(1))
+    expense = result.scalar_one_or_none()
+
+    if not expense:
+        return make_simple_text_response("변경할 지출이 없어요.")
+
+    # 저축성 카테고리면 결제수단 변경 불가
+    if expense.category_id:
+        cat_result = await db.execute(select(Category).where(Category.id == expense.category_id))
+        category = cat_result.scalar_one_or_none()
+        if category and (category.exclude_auto_payment or category.is_savings):
+            return make_simple_text_response("저축성 지출은 결제수단을 설정할 수 없어요.")
+
+    # 사용자의 결제수단 목록 (display_order 순, 현재 제외, 상위 3개)
+    pm_query = (
+        select(PaymentMethod)
+        .where(
+            PaymentMethod.household_id == (expense.household_id or active_household_id),
+            PaymentMethod.is_active == True,  # noqa: E712
+        )
+        .order_by(PaymentMethod.display_order.asc(), PaymentMethod.id.asc())
+    )
+    pm_result = await db.execute(pm_query)
+    all_pms = list(pm_result.scalars().all())
+
+    # 현재 결제수단 제외 후 상위 3개
+    current_pm_id = expense.payment_method_id
+    candidates = [pm for pm in all_pms if pm.id != current_pm_id][:3]
+
+    if not candidates and not current_pm_id:
+        return make_simple_text_response(
+            "등록된 결제수단이 없어요.\n웹에서 결제수단을 먼저 등록해주세요.",
+        )
+
+    # 현재 결제수단 이름 조회
+    current_pm_name = None
+    if current_pm_id:
+        for pm in all_pms:
+            if pm.id == current_pm_id:
+                current_pm_name = pm.name
+                break
+
+    # quickReply 생성: 결제수단 + "선택 안 함"
+    quick_replies = []
+    for pm in candidates:
+        icon = get_payment_method_icon(pm.type)  # type: ignore[arg-type]
+        quick_replies.append(make_quick_reply(f"{icon} {pm.name}", f"/set_payment {pm.id}"))
+    quick_replies.append(make_quick_reply("🚫 선택 안 함", "/set_payment none"))
+
+    current_label = f" (현재: {current_pm_name})" if current_pm_name else ""
+    msg = f"💳 마지막 지출: {expense.amount:,.0f}원 - {expense.description}{current_label}\n\n결제수단을 선택해주세요."
+
+    return make_simple_text_response(msg, quick_replies=quick_replies)
+
+
+async def _handle_set_payment_command(utterance: str, bot_user: Any, db: AsyncSession, active_household_id: int | None) -> dict[str, Any]:
+    """``/set_payment`` 명령어 처리 — 마지막 지출의 결제수단 실제 변경"""
+    parts = utterance.split(maxsplit=1)
+    if len(parts) != 2:
+        return make_simple_text_response("결제수단 ID가 필요합니다.")
+
+    pm_arg = parts[1].strip()
+
+    # 마지막 지출 조회
+    result = await db.execute(select(Expense).where(Expense.user_id == bot_user.id).order_by(Expense.id.desc()).limit(1))
+    expense = result.scalar_one_or_none()
+    if not expense:
+        return make_simple_text_response("변경할 지출이 없어요.")
+
+    if pm_arg == "none":
+        expense.payment_method_id = None  # type: ignore[assignment]
+        await db.commit()
+        return make_simple_text_response(
+            f"✅ {expense.description} {expense.amount:,.0f}원의 결제수단을 해제했어요.",
+            quick_replies=[
+                make_quick_reply("📊 이번달 보기", "리포트"),
+                make_quick_reply("❓ 도움말", "도움말"),
+            ],
+        )
+
+    # 결제수단 ID로 조회
+    try:
+        pm_id = int(pm_arg)
+    except ValueError:
+        return make_simple_text_response("잘못된 결제수단입니다.")
+
+    pm_result = await db.execute(
+        select(PaymentMethod).where(
+            PaymentMethod.id == pm_id,
+            PaymentMethod.household_id == expense.household_id,
+            PaymentMethod.is_active == True,  # noqa: E712
+        )
+    )
+    pm = pm_result.scalar_one_or_none()
+    if not pm:
+        return make_simple_text_response("결제수단을 찾을 수 없어요.")
+
+    expense.payment_method_id = pm.id
+    await db.commit()
+
+    icon = get_payment_method_icon(pm.type)  # type: ignore[arg-type]
+    return make_simple_text_response(
+        f"✅ {expense.description} {expense.amount:,.0f}원 → {icon} {pm.name}으로 변경했어요.",
+        quick_replies=[
+            make_quick_reply("📊 이번달 보기", "리포트"),
+            make_quick_reply("❓ 도움말", "도움말"),
+        ],
+    )
+
+
 # 슬래시 명령어 디스패치 테이블
 # 키: 명령어 prefix, 값: 핸들러 함수
 # 핸들러 시그니처: (utterance, bot_user, db, active_household_id) -> dict
@@ -334,6 +455,8 @@ _COMMAND_HANDLERS: dict[  # type: ignore[type-arg]
     "/undo": _handle_undo_command,
     "/change": _handle_change_command,
     "/feedback": _handle_feedback_command,
+    "/change_payment": _handle_change_payment_command,
+    "/set_payment": _handle_set_payment_command,
 }
 
 
@@ -456,23 +579,48 @@ async def _handle_single_expense(db: AsyncSession, bot_user: Any, parsed: dict[s
             ],
         )
 
-    # 지출 (기본)
+    # 지출 (기본) — 기본 결제수단 자동 적용 (저축성 카테고리 제외)
+    is_savings_category = getattr(category, "exclude_auto_payment", False) or getattr(category, "is_savings", False)
+    pm_name: str | None = None
+    pm_type: str | None = None
+
+    if not is_savings_category and household_id:
+        from app.api.payment_methods import get_default_payment_method_id
+
+        default_pm_id = await get_default_payment_method_id(db, household_id, bot_user.id)
+        if default_pm_id:
+            record_kwargs["payment_method_id"] = default_pm_id
+            # 결제수단 이름/타입 조회 (응답 메시지용)
+            pm_result = await db.execute(select(PaymentMethod).where(PaymentMethod.id == default_pm_id))
+            pm = pm_result.scalar_one_or_none()
+            if pm:
+                pm_name = pm.name  # type: ignore[assignment]
+                pm_type = pm.type  # type: ignore[assignment]
+
     record = Expense(**record_kwargs)
     db.add(record)
     await db.commit()
     await db.refresh(record)
+
+    quick_replies = [
+        make_quick_reply("↩️ 방금 거 취소", "취소"),
+        make_quick_reply("🔄 카테고리 변경", "변경"),
+    ]
+    # 저축성 카테고리가 아닐 때만 결제수단 변경 버튼 표시
+    if not is_savings_category:
+        quick_replies.append(make_quick_reply("💳 결제수단 변경", "결제수단변경"))
+    quick_replies.append(make_quick_reply("📊 이번달 지출 보기", "리포트"))
+
     return make_simple_text_response(
         format_expense_saved(
             amount=parsed["amount"],
             category=category.name,  # type: ignore[arg-type]
             description=parsed.get("description", utterance),
             date=record_date.date().isoformat(),
+            payment_method_name=pm_name,
+            payment_method_type=pm_type,
         ),
-        quick_replies=[
-            make_quick_reply("↩️ 방금 거 취소", "취소"),
-            make_quick_reply("🔄 카테고리 변경", "변경"),
-            make_quick_reply("📊 이번달 지출 보기", "리포트"),
-        ],
+        quick_replies=quick_replies,
     )
 
 

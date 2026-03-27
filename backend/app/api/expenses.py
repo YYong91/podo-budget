@@ -22,6 +22,7 @@ from app.api.payment_methods import get_default_payment_method_id
 from app.core.auth import get_current_user
 from app.core.database import get_db
 from app.core.rate_limit import limiter
+from app.models.category import Category
 from app.models.expense import Expense
 from app.models.user import User
 from app.schemas.chat import ChatResponse, ParsedExpenseItem
@@ -102,8 +103,16 @@ async def create_expense(
     expense_data = expense.model_dump(exclude={"household_id"})
 
     # 기본 결제수단 자동 적용 — 명시적 지정이 없으면 사용자 기본값 폴백
+    # exclude_auto_payment=true 카테고리(저축/투자, 세금 등)는 기본 결제수단 자동 적용 제외
     if expense_data.get("payment_method_id") is None:
-        expense_data["payment_method_id"] = await get_default_payment_method_id(db, household_id, current_user.id)  # type: ignore[arg-type]
+        should_auto_apply = True
+        if expense_data.get("category_id"):
+            cat_result = await db.execute(select(Category.exclude_auto_payment).where(Category.id == expense_data["category_id"]))
+            exclude = cat_result.scalar_one_or_none()
+            if exclude:
+                should_auto_apply = False
+        if should_auto_apply:
+            expense_data["payment_method_id"] = await get_default_payment_method_id(db, household_id, current_user.id)  # type: ignore[arg-type]
 
     db_expense = Expense(**expense_data, user_id=current_user.id, household_id=household_id)
     db.add(db_expense)
@@ -170,8 +179,6 @@ async def get_stats(
 ) -> object:
     """기간별 통계 조회 (주간/월간/연간)"""
     from datetime import date as date_type
-
-    from app.models.category import Category
 
     # 기준 날짜 파싱
     ref_date = date_type.fromisoformat(date) if date else date_type.today()
@@ -286,8 +293,6 @@ async def get_stats_comparison(
 ) -> object:
     """기간 비교 (전월 대비 + N개월 트렌드)"""
     from datetime import date as date_type
-
-    from app.models.category import Category
 
     ref_date = date_type.fromisoformat(date) if date else date_type.today()
 
@@ -440,7 +445,6 @@ async def get_monthly_stats(
 
     household_id가 있으면 가구 전체 멤버의 월별 통계를 집계합니다.
     """
-    from app.models.category import Category
 
     year, mon = map(int, month.split("-"))
     start = datetime(year, mon, 1)

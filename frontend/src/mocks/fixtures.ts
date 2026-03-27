@@ -18,6 +18,7 @@ export const mockCategories: Category[] = [
     sort_order: 3,
     is_savings: false,
     is_system: true,
+    exclude_auto_payment: false,
     created_at: '2024-01-01T00:00:00Z',
   },
   {
@@ -28,6 +29,7 @@ export const mockCategories: Category[] = [
     sort_order: 2,
     is_savings: false,
     is_system: true,
+    exclude_auto_payment: false,
     created_at: '2024-01-01T00:00:00Z',
   },
   {
@@ -38,6 +40,7 @@ export const mockCategories: Category[] = [
     sort_order: 1,
     is_savings: false,
     is_system: false,
+    exclude_auto_payment: false,
     created_at: '2024-01-01T00:00:00Z',
   },
 ]
@@ -184,6 +187,7 @@ export const mockIncomeCategoriesAll: Category[] = [
     sort_order: 0,
     is_savings: false,
     is_system: true,
+    exclude_auto_payment: false,
     created_at: '2024-01-01T00:00:00Z',
   },
   {
@@ -194,9 +198,25 @@ export const mockIncomeCategoriesAll: Category[] = [
     sort_order: 0,
     is_savings: false,
     is_system: false,
+    exclude_auto_payment: false,
     created_at: '2024-01-01T00:00:00Z',
   },
 ]
+
+/**
+ * 테스트용 저축성 카테고리 (exclude_auto_payment=true)
+ */
+export const mockSavingsCategory: Category = {
+  id: 10,
+  name: '저축/투자',
+  type: 'expense',
+  description: '적금, 투자 등',
+  sort_order: 0,
+  is_savings: true,
+  is_system: true,
+  exclude_auto_payment: true,
+  created_at: '2024-01-01T00:00:00Z',
+}
 
 /**
  * 테스트용 수입 목록
@@ -548,6 +568,7 @@ export const mockPaymentMethods: PaymentMethod[] = [
     monthly_target: 300000,
     is_default: true,
     is_active: true,
+    display_order: 0,
     created_at: '2026-01-01T00:00:00Z',
     updated_at: '2026-01-01T00:00:00Z',
   },
@@ -560,6 +581,7 @@ export const mockPaymentMethods: PaymentMethod[] = [
     monthly_target: null,
     is_default: false,
     is_active: true,
+    display_order: 1,
     created_at: '2026-01-01T00:00:00Z',
     updated_at: '2026-01-01T00:00:00Z',
   },
@@ -572,6 +594,7 @@ export const mockPaymentMethods: PaymentMethod[] = [
     monthly_target: 500000,
     is_default: false,
     is_active: true,
+    display_order: 2,
     created_at: '2026-01-01T00:00:00Z',
     updated_at: '2026-01-01T00:00:00Z',
   },

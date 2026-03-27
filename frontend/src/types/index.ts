@@ -144,6 +144,7 @@ export interface Category {
   sort_order: number
   is_savings: boolean
   is_system: boolean
+  exclude_auto_payment: boolean
   created_at: string
 }
 
@@ -539,6 +540,7 @@ export interface PaymentMethod {
   monthly_target: number | null
   is_default: boolean
   is_active: boolean
+  display_order: number
   created_at: string
   updated_at: string
 }

@@ -19,6 +19,7 @@ class PaymentMethodCreate(BaseModel):
     type: PaymentType
     monthly_target: Decimal | None = None
     is_default: bool = False
+    display_order: int = 0
     household_id: int | None = None
 
 
@@ -30,6 +31,13 @@ class PaymentMethodUpdate(BaseModel):
     monthly_target: Decimal | None = None
     is_default: bool | None = None
     is_active: bool | None = None
+    display_order: int | None = None
+
+
+class PaymentMethodReorderRequest(BaseModel):
+    """결제수단 순서 변경 요청 — 순서대로 정렬된 결제수단 ID 목록"""
+
+    payment_method_ids: list[int]
 
 
 class PaymentMethodResponse(BaseModel):
@@ -43,6 +51,7 @@ class PaymentMethodResponse(BaseModel):
     monthly_target: float | None
     is_default: bool
     is_active: bool
+    display_order: int
     created_at: datetime
     updated_at: datetime
 

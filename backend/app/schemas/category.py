@@ -13,6 +13,7 @@ class CategoryBase(BaseModel):
 class CategoryCreate(CategoryBase):
     type: str = "expense"
     is_savings: bool = False
+    exclude_auto_payment: bool = False
 
 
 class CategoryUpdate(BaseModel):
@@ -20,6 +21,7 @@ class CategoryUpdate(BaseModel):
     description: str | None = Field(None, max_length=500, description="카테고리 설명 (최대 500자)")
     type: str | None = None
     is_savings: bool | None = None
+    exclude_auto_payment: bool | None = None
 
 
 class CategoryReorderRequest(BaseModel):
@@ -33,6 +35,7 @@ class CategoryResponse(CategoryBase):
     type: str = "expense"
     sort_order: int = 0
     is_savings: bool = False
+    exclude_auto_payment: bool = False
     is_system: bool = False
     created_at: datetime
 

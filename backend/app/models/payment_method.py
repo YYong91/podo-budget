@@ -40,5 +40,6 @@ class PaymentMethod(Base):  # type: ignore[misc]
     billing_day = Column(Integer, nullable=True)  # 결제일 (v2용, 현재 미사용)
     is_default = Column(Boolean, nullable=False, default=False)
     is_active = Column(Boolean, nullable=False, default=True)
+    display_order = Column(Integer, nullable=False, default=0, server_default="0")  # 목록 표시 순서 (낮을수록 앞)
     created_at = Column(DateTime, nullable=False, server_default=func.now())
     updated_at = Column(DateTime, nullable=False, server_default=func.now(), onupdate=func.now())

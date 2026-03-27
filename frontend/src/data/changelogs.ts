@@ -18,6 +18,16 @@ export interface Changelog {
 
 export const changelogs: Changelog[] = [
   {
+    version: '0.12.0',
+    date: '2026-03-27',
+    title: '결제수단 UX 개선',
+    items: [
+      { tag: '개선', text: '결제수단 UX 개선 — 주 결제수단, 편집 모드, 순서 변경' },
+      { tag: '개선', text: '봇 응답에 결제수단 표시 + 변경 버튼' },
+      { tag: '개선', text: '가구 생성 시 현금/계좌이체 기본 등록' },
+    ],
+  },
+  {
     version: '0.9.2',
     date: '2026-03-24',
     title: '검색 + 온보딩 + UX 개선',
