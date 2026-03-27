@@ -156,9 +156,13 @@ describe('HouseholdDetailPage', () => {
     })
   })
 
-  it('자기 자신은 (나) 표시가 된다', () => {
+  /* ---------- 관리자 권한 ---------- */
+
+  it('관리자에게 초대/설정 탭을 표시한다', () => {
+    storeState.currentHousehold = { ...baseMockHousehold, my_role: 'admin' }
     renderPage()
-    expect(screen.getByText('(나)')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /초대/ })).toBeInTheDocument()
+    expect(screen.getByText('설정')).toBeInTheDocument()
   })
 
   it('설명이 없으면 설명 영역을 표시하지 않는다', () => {
