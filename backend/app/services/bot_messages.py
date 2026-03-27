@@ -39,13 +39,41 @@ def format_korean_date(d: date | datetime | str) -> str:
     return f"{d.month}월 {d.day}일 ({weekday})"
 
 
-def format_expense_saved(amount: float, category: str, description: str, date: str) -> str:
+def get_payment_method_icon(pm_type: str | None) -> str:
+    """결제수단 유형별 아이콘 반환
+
+    Args:
+        pm_type: 결제수단 유형 (credit_card, debit_card, cash, transfer)
+
+    Returns:
+        해당 유형의 이모지 아이콘
+    """
+    icons = {
+        "credit_card": "💳",
+        "debit_card": "💳",
+        "cash": "💵",
+        "transfer": "🏦",
+    }
+    return icons.get(pm_type or "", "💳")
+
+
+def format_expense_saved(
+    amount: float,
+    category: str,
+    description: str,
+    date: str,
+    payment_method_name: str | None = None,
+    payment_method_type: str | None = None,
+) -> str:
     """지출 저장 성공 메시지
 
-    Before: "✅ 지출이 기록되었어요!\n\n💰 8,000원\n📂 식비\n📅 2026-03-20\n📝 김치찌개"
-    After:  "🍇 김치찌개 8,000원 기록했어요\n\n3월 20일 (금) · 식비"
+    Before: "🍇 김치찌개 8,000원 기록했어요\n\n3월 20일 (금) · 식비"
+    After:  "🍇 김치찌개 8,000원 기록했어요\n\n3월 20일 (금) · 📂 식비 | 💳 삼성카드"
     """
     korean_date = format_korean_date(date)
+    if payment_method_name:
+        icon = get_payment_method_icon(payment_method_type)
+        return f"🍇 {description} {amount:,.0f}원 기록했어요\n\n{korean_date} · 📂 {category} | {icon} {payment_method_name}"
     return f"🍇 {description} {amount:,.0f}원 기록했어요\n\n{korean_date} · {category}"
 
 

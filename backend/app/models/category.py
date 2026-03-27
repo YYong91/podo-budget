@@ -39,6 +39,7 @@ class Category(Base):  # type: ignore[misc]
     type = Column(String(10), nullable=False, default="expense")  # expense | income | both
     sort_order = Column(BigInteger, nullable=False, default=0, server_default="0")  # 사용 횟수 기반 정렬 (높을수록 앞)
     is_savings = Column(Boolean, nullable=False, default=False, server_default="0")  # 저축성 지출 여부 (적금, 투자, 보험 등)
+    exclude_auto_payment = Column(Boolean, nullable=False, default=False, server_default="0")  # 기본 결제수단 자동 적용 제외 (저축/투자, 세금 등)
     created_at = Column(DateTime, default=func.now(), server_default=func.now(), nullable=False)
 
     # Relationships

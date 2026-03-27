@@ -11,6 +11,7 @@ import TransactionItem from '../TransactionItem'
 import PendingRecurring from '../PendingRecurring'
 import EmptyState from '../EmptyState'
 import WelcomeCard from '../WelcomeCard'
+import BotNudgeCard from '../BotNudgeCard'
 import { Search } from 'lucide-react'
 import { formatAmount } from '../../utils/format'
 import { formatDateHeader } from '../../utils/calendar'
@@ -27,6 +28,9 @@ interface MonthlyViewProps {
   totalTransactionCount: number
   isBotLinked: boolean
   onWelcomeDismiss: () => void
+  /** 봇 넛지 카드 */
+  botNudgeDismissed: boolean
+  onBotNudgeDismiss: () => void
 }
 
 export default function MonthlyView({
@@ -37,6 +41,8 @@ export default function MonthlyView({
   totalTransactionCount,
   isBotLinked,
   onWelcomeDismiss,
+  botNudgeDismissed,
+  onBotNudgeDismiss,
 }: MonthlyViewProps) {
   const { addToast } = useToast()
 
@@ -105,6 +111,12 @@ export default function MonthlyView({
           isBotLinked={isBotLinked}
           onDismiss={onWelcomeDismiss}
         />
+      )}
+
+      {/* 봇 연동 넛지 카드 — 웰컴 카드 완료 후, 봇 미연동 + 지출 1건 이상 */}
+      {welcomeDismissed && !botNudgeDismissed && !isBotLinked && !monthly.loading
+        && monthly.expenses.length > 0 && (
+        <BotNudgeCard onDismiss={onBotNudgeDismiss} />
       )}
 
       {/* 반복 거래 알림 */}

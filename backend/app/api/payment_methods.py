@@ -21,6 +21,7 @@ from app.models.payment_method import PaymentMethod
 from app.models.user import User
 from app.schemas.payment_method import (
     PaymentMethodCreate,
+    PaymentMethodReorderRequest,
     PaymentMethodResponse,
     PaymentMethodUpdate,
     PaymentMethodUsage,
@@ -92,6 +93,7 @@ async def create_payment_method(
         type=payload.type,
         monthly_target=payload.monthly_target,
         is_default=payload.is_default,
+        display_order=payload.display_order,
     )
     db.add(pm)
     await db.commit()
@@ -117,9 +119,53 @@ async def list_payment_methods(
             PaymentMethod.household_id == household_id,
             PaymentMethod.is_active == True,  # noqa: E712
         )
-        .order_by(PaymentMethod.is_default.desc(), PaymentMethod.created_at)
+        .order_by(PaymentMethod.display_order, PaymentMethod.created_at)
     )
     return result.scalars().all()
+
+
+@router.post("/reorder", response_model=list[PaymentMethodResponse])
+async def reorder_payment_methods(
+    payload: PaymentMethodReorderRequest,
+    household_id: int | None = None,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> object:
+    """결제수단 순서 변경 — ID 목록 순서대로 display_order 재할당"""
+    if household_id is None:
+        household_id = await get_user_active_household_id(current_user, db)
+    await get_household_member(household_id, current_user, db)
+
+    # 요청된 ID들이 실제 해당 가구의 활성 결제수단인지 검증
+    result = await db.execute(
+        select(PaymentMethod).where(
+            PaymentMethod.id.in_(payload.payment_method_ids),
+            PaymentMethod.household_id == household_id,
+            PaymentMethod.is_active == True,  # noqa: E712
+        )
+    )
+    found_pms: dict[int, PaymentMethod] = {int(pm.id): pm for pm in result.scalars().all()}
+
+    # 중복 ID 검증
+    if len(set(payload.payment_method_ids)) != len(payload.payment_method_ids):
+        raise HTTPException(status_code=400, detail="중복된 결제수단 ID가 있습니다")
+
+    if len(found_pms) != len(payload.payment_method_ids):
+        raise HTTPException(
+            status_code=400,
+            detail="일부 결제수단을 찾을 수 없습니다",
+        )
+
+    # display_order 재할당
+    for idx, pm_id in enumerate(payload.payment_method_ids):
+        found_pms[pm_id].display_order = idx  # type: ignore[assignment]
+
+    await db.commit()
+    for pm in found_pms.values():
+        await db.refresh(pm)
+
+    # 정렬된 목록 반환
+    return sorted(found_pms.values(), key=lambda p: int(p.display_order))
 
 
 @router.put("/{payment_method_id}", response_model=PaymentMethodResponse)

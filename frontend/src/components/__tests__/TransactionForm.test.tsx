@@ -11,7 +11,7 @@ import { MemoryRouter } from 'react-router-dom'
 import TransactionForm from '../TransactionForm'
 import { server } from '../../mocks/server'
 import { http, HttpResponse } from 'msw'
-import { mockIncomeCategoriesAll } from '../../mocks/fixtures'
+import { mockIncomeCategoriesAll, mockSavingsCategory, mockCategories } from '../../mocks/fixtures'
 
 /** navigate 모킹 */
 const mockNavigate = vi.fn()
@@ -526,6 +526,79 @@ describe('TransactionForm', () => {
         expect(screen.getByPlaceholderText('월급')).toBeInTheDocument()
       })
       expect(screen.queryByLabelText('결제수단')).not.toBeInTheDocument()
+    })
+  })
+
+  describe('저축성 카테고리 결제수단 skip', () => {
+    it('저축성 카테고리 선택 시 결제수단이 "선택 안 함"으로 리셋된다', async () => {
+      const categoriesWithSavings = [...mockCategories, mockSavingsCategory]
+      server.use(
+        http.get('/api/categories', () => {
+          return HttpResponse.json(categoriesWithSavings)
+        })
+      )
+
+      const user = userEvent.setup()
+      renderForm('expense')
+      await user.click(screen.getByText('직접 입력'))
+
+      // 결제수단을 선택
+      await waitFor(() => {
+        expect(screen.getByLabelText('결제수단')).toBeInTheDocument()
+      })
+      const paymentSelect = screen.getByLabelText('결제수단')
+      await user.selectOptions(paymentSelect, '1') // 삼성카드
+
+      // 카테고리를 저축성으로 변경
+      const categorySelect = screen.getByLabelText('카테고리')
+      await user.selectOptions(categorySelect, String(mockSavingsCategory.id))
+
+      // 결제수단이 "선택 안 함"(빈 문자열)으로 리셋되어야 함
+      await waitFor(() => {
+        expect((paymentSelect as HTMLSelectElement).value).toBe('')
+      })
+    })
+
+    it('저축성 카테고리 선택 시 안내 텍스트가 표시된다', async () => {
+      const categoriesWithSavings = [...mockCategories, mockSavingsCategory]
+      server.use(
+        http.get('/api/categories', () => {
+          return HttpResponse.json(categoriesWithSavings)
+        })
+      )
+
+      const user = userEvent.setup()
+      renderForm('expense')
+      await user.click(screen.getByText('직접 입력'))
+
+      await waitFor(() => {
+        expect(screen.getByLabelText('카테고리')).toBeInTheDocument()
+      })
+
+      // 저축성 카테고리 선택
+      const categorySelect = screen.getByLabelText('카테고리')
+      await user.selectOptions(categorySelect, String(mockSavingsCategory.id))
+
+      await waitFor(() => {
+        expect(screen.getByTestId('savings-payment-hint')).toBeInTheDocument()
+        expect(screen.getByText('저축성 지출은 결제수단이 자동 적용되지 않아요')).toBeInTheDocument()
+      })
+    })
+
+    it('일반 카테고리에서는 저축성 안내가 표시되지 않는다', async () => {
+      const user = userEvent.setup()
+      renderForm('expense')
+      await user.click(screen.getByText('직접 입력'))
+
+      await waitFor(() => {
+        expect(screen.getByLabelText('카테고리')).toBeInTheDocument()
+      })
+
+      // 식비 카테고리 선택 (일반)
+      const categorySelect = screen.getByLabelText('카테고리')
+      await user.selectOptions(categorySelect, '1')
+
+      expect(screen.queryByTestId('savings-payment-hint')).not.toBeInTheDocument()
     })
   })
 

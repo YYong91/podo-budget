@@ -513,7 +513,16 @@ export default function TransactionForm({ type }: TransactionFormProps) {
             <select
               id={`${idPrefix}-category`}
               value={formData.category_id}
-              onChange={(e) => setFormData({ ...formData, category_id: e.target.value })}
+              onChange={(e) => {
+                const catId = e.target.value
+                const selectedCat = formCategories.find((cat) => String(cat.id) === catId)
+                const isSavings = selectedCat ? (selectedCat.exclude_auto_payment || selectedCat.is_savings) : false
+                if (isSavings) {
+                  setFormData({ ...formData, category_id: catId, payment_method_id: '' })
+                } else {
+                  setFormData({ ...formData, category_id: catId })
+                }
+              }}
               className={`w-full px-4 py-3 border border-[var(--input-border)] rounded-xl focus:ring-2 focus:ring-${c}-500/30 focus:border-${c}-500`}
               disabled={loading}
             >
@@ -564,27 +573,36 @@ export default function TransactionForm({ type }: TransactionFormProps) {
           </div>
 
           {/* 결제수단 (지출 모드 전용, 선택) */}
-          {type === 'expense' && (
-            <div>
-              <label htmlFor={`${idPrefix}-payment-method`} className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
-                결제수단
-              </label>
-              <select
-                id={`${idPrefix}-payment-method`}
-                value={formData.payment_method_id}
-                onChange={(e) => setFormData({ ...formData, payment_method_id: e.target.value })}
-                className={`w-full px-4 py-3 border border-[var(--input-border)] rounded-xl focus:ring-2 focus:ring-${c}-500/30 focus:border-${c}-500`}
-                disabled={loading}
-              >
-                <option value="">선택 안 함</option>
-                {paymentMethods.map((pm) => (
-                  <option key={pm.id} value={pm.id}>
-                    {pm.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
+          {type === 'expense' && (() => {
+            const selectedCat = formCategories.find((cat) => String(cat.id) === formData.category_id)
+            const isSavingsCategory = selectedCat ? (selectedCat.exclude_auto_payment || selectedCat.is_savings) : false
+            return (
+              <div>
+                <label htmlFor={`${idPrefix}-payment-method`} className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
+                  결제수단
+                </label>
+                <select
+                  id={`${idPrefix}-payment-method`}
+                  value={formData.payment_method_id}
+                  onChange={(e) => setFormData({ ...formData, payment_method_id: e.target.value })}
+                  className={`w-full px-4 py-3 border border-[var(--input-border)] rounded-xl focus:ring-2 focus:ring-${c}-500/30 focus:border-${c}-500`}
+                  disabled={loading}
+                >
+                  <option value="">선택 안 함</option>
+                  {paymentMethods.map((pm) => (
+                    <option key={pm.id} value={pm.id}>
+                      {pm.name}
+                    </option>
+                  ))}
+                </select>
+                {isSavingsCategory && (
+                  <p className="mt-1.5 text-xs text-[var(--text-muted)]" data-testid="savings-payment-hint">
+                    저축성 지출은 결제수단이 자동 적용되지 않아요
+                  </p>
+                )}
+              </div>
+            )
+          })()}
 
           {/* 날짜 (기본 오늘) */}
           <div>

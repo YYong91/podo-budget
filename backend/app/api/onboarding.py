@@ -14,6 +14,7 @@ from app.core.auth import get_current_user
 from app.core.database import get_db
 from app.models.household import Household
 from app.models.household_member import HouseholdMember
+from app.models.payment_method import PaymentMethod
 from app.models.user import User
 from app.schemas.onboarding import CreateDefaultHousehold, OnboardingStatus
 
@@ -82,6 +83,28 @@ async def create_default_household(
         joined_at=datetime.now(UTC).replace(tzinfo=None),
     )
     db.add(member)
+
+    # 기본 결제수단 자동 생성 (현금 + 계좌이체)
+    default_pms = [
+        PaymentMethod(
+            household_id=household.id,
+            created_by=current_user.id,
+            name="현금",
+            type="cash",
+            is_default=False,
+            display_order=0,
+        ),
+        PaymentMethod(
+            household_id=household.id,
+            created_by=current_user.id,
+            name="계좌이체",
+            type="transfer",
+            is_default=False,
+            display_order=1,
+        ),
+    ]
+    db.add_all(default_pms)
+
     await db.commit()
     await db.refresh(household)
 

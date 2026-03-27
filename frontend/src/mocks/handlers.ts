@@ -598,6 +598,18 @@ export const handlers = [
   }),
 
   /**
+   * PUT /api/payment-methods/reorder - 결제수단 순서 변경
+   */
+  http.put(`${BASE_URL}/payment-methods/reorder`, async ({ request }) => {
+    const body = (await request.json()) as { ids: number[] }
+    const reordered = body.ids.map((id, index) => {
+      const method = mockPaymentMethods.find((m) => m.id === id)
+      return method ? { ...method, display_order: index } : null
+    }).filter(Boolean)
+    return HttpResponse.json(reordered)
+  }),
+
+  /**
    * PUT /api/payment-methods/:id - 결제수단 수정
    */
   http.put(`${BASE_URL}/payment-methods/:id`, async ({ params, request }) => {

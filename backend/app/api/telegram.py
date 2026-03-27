@@ -33,6 +33,7 @@ from app.models.category import Category
 from app.models.expense import Expense
 from app.models.feedback import Feedback
 from app.models.income import Income
+from app.models.payment_method import PaymentMethod
 from app.schemas.bot import BotResponse
 from app.services.bot_messages import (
     format_budget_status,
@@ -49,6 +50,7 @@ from app.services.bot_messages import (
     format_report_message_full,
     format_server_error,
     format_welcome_message,
+    get_payment_method_icon,
 )
 from app.services.bot_strike_service import increment_strike, reset_strike
 from app.services.bot_user_service import get_or_create_bot_user, link_telegram_account_by_code
@@ -206,47 +208,62 @@ async def _save_and_respond_single(
             reply_markup=inline_keyboard,
         )
 
-    # 지출 (기본)
+    # 지출 (기본) — 기본 결제수단 자동 적용 (저축성 카테고리 제외)
+    is_savings_category = getattr(category, "exclude_auto_payment", False) or getattr(category, "is_savings", False)
+    pm_name: str | None = None
+    pm_type: str | None = None
+
+    if not is_savings_category and household_id:
+        from app.api.payment_methods import get_default_payment_method_id
+
+        default_pm_id = await get_default_payment_method_id(db, household_id, bot_user.id)
+        if default_pm_id:
+            record_kwargs["payment_method_id"] = default_pm_id
+            pm_result = await db.execute(select(PaymentMethod).where(PaymentMethod.id == default_pm_id))
+            pm = pm_result.scalar_one_or_none()
+            if pm:
+                pm_name = pm.name  # type: ignore[assignment]
+                pm_type = pm.type  # type: ignore[assignment]
+
     record = Expense(**record_kwargs)
     db.add(record)
     await db.commit()
     await db.refresh(record)
     reset_strike("telegram", str(chat_id))
-    inline_keyboard = {
-        "inline_keyboard": [
-            [
-                {"text": "🔄 카테고리 변경", "callback_data": f"change_category:{record.id}"},
-                {"text": "🗑️ 삭제", "callback_data": f"delete_expense:{record.id}"},
-            ],
-            [
-                {"text": "💰 수입으로 변경", "callback_data": f"convert_to_income:{record.id}"},
-            ],
-        ]
-    }
+    inline_keyboard = _build_expense_saved_keyboard(record.id, is_savings=is_savings_category)  # type: ignore[arg-type]
     return BotResponse(
         text=format_expense_saved(
             amount=parsed["amount"],
             category=category.name,  # type: ignore[arg-type]
             description=parsed.get("description", user_text),
             date=record_date.isoformat(),
+            payment_method_name=pm_name,
+            payment_method_type=pm_type,
         ),
         reply_markup=inline_keyboard,
     )
 
 
-def _build_expense_saved_keyboard(expense_id: int) -> dict[str, Any]:
-    """지출 저장 후 수정/삭제/변환 인라인 키보드 생성"""
-    return {
-        "inline_keyboard": [
-            [
-                {"text": "🔄 카테고리 변경", "callback_data": f"change_category:{expense_id}"},
-                {"text": "🗑️ 삭제", "callback_data": f"delete_expense:{expense_id}"},
-            ],
-            [
-                {"text": "💰 수입으로 변경", "callback_data": f"convert_to_income:{expense_id}"},
-            ],
-        ]
-    }
+def _build_expense_saved_keyboard(expense_id: int, *, is_savings: bool = False) -> dict[str, Any]:
+    """지출 저장 후 수정/삭제/변환 인라인 키보드 생성
+
+    Args:
+        expense_id: 지출 ID
+        is_savings: 저축성 카테고리 여부 (True면 결제수단 변경 버튼 미표시)
+    """
+    rows: list[list[dict[str, str]]] = [
+        [
+            {"text": "🔄 카테고리 변경", "callback_data": f"change_category:{expense_id}"},
+            {"text": "🗑️ 삭제", "callback_data": f"delete_expense:{expense_id}"},
+        ],
+    ]
+    bottom_row: list[dict[str, str]] = [
+        {"text": "💰 수입으로 변경", "callback_data": f"convert_to_income:{expense_id}"},
+    ]
+    if not is_savings:
+        bottom_row.append({"text": "💳 결제수단", "callback_data": f"change_payment:{expense_id}"})
+    rows.append(bottom_row)
+    return {"inline_keyboard": rows}
 
 
 # ---------------------------------------------------------------------------
@@ -873,6 +890,86 @@ async def _handle_convert_to_expense(db: AsyncSession, chat_id: int, callback_id
     )
 
 
+async def _handle_change_payment(db: AsyncSession, chat_id: int, callback_id: str, expense: Expense, bot_user: Any, parts: list[str]) -> BotResponse:
+    """결제수단 변경 버튼 목록 표시 (현재 제외 상위 3개 + none)"""
+    # 저축성 카테고리 체크
+    if expense.category_id:
+        cat_result = await db.execute(select(Category).where(Category.id == expense.category_id))
+        category = cat_result.scalar_one_or_none()
+        if category and (category.exclude_auto_payment or category.is_savings):
+            return BotResponse(text="", callback_answer="저축성 지출은 결제수단을 설정할 수 없어요.")
+
+    # 사용자의 결제수단 목록 (display_order 순)
+    pm_query = (
+        select(PaymentMethod)
+        .where(
+            PaymentMethod.household_id == expense.household_id,
+            PaymentMethod.is_active == True,  # noqa: E712
+        )
+        .order_by(PaymentMethod.display_order.asc(), PaymentMethod.id.asc())
+    )
+    pm_result = await db.execute(pm_query)
+    all_pms = list(pm_result.scalars().all())
+
+    # 현재 결제수단 제외 후 상위 3개
+    current_pm_id = expense.payment_method_id
+    candidates = [pm for pm in all_pms if pm.id != current_pm_id][:3]
+
+    if not candidates and not current_pm_id:
+        return BotResponse(text="", callback_answer="등록된 결제수단이 없어요.")
+
+    # 인라인 키보드: 결제수단 + "선택 안 함"
+    buttons: list[list[dict[str, str]]] = []
+    for pm in candidates:
+        icon = get_payment_method_icon(pm.type)  # type: ignore[arg-type]
+        buttons.append([{"text": f"{icon} {pm.name}", "callback_data": f"set_payment:{expense.id}:{pm.id}"}])
+    buttons.append([{"text": "🚫 선택 안 함", "callback_data": f"set_payment:{expense.id}:none"}])
+
+    return BotResponse(
+        text=f"💳 {expense.amount:,.0f}원 지출의 결제수단을 선택해주세요:",
+        reply_markup={"inline_keyboard": buttons},
+        callback_answer="결제수단을 선택해주세요.",
+    )
+
+
+async def _handle_set_payment(db: AsyncSession, chat_id: int, callback_id: str, expense: Expense, bot_user: Any, parts: list[str]) -> BotResponse:
+    """결제수단 실제 변경 (callback_data: set_payment:expense_id:pm_id_or_none)"""
+    pm_arg = parts[2]
+
+    if pm_arg == "none":
+        expense.payment_method_id = None  # type: ignore[assignment]
+        await db.commit()
+        return BotResponse(
+            text=f"✅ {expense.description} {expense.amount:,.0f}원의 결제수단을 해제했어요.",
+            callback_answer="결제수단 해제!",
+        )
+
+    try:
+        pm_id = int(pm_arg)
+    except ValueError:
+        return BotResponse(text="", callback_answer="잘못된 결제수단입니다.")
+
+    pm_result = await db.execute(
+        select(PaymentMethod).where(
+            PaymentMethod.id == pm_id,
+            PaymentMethod.household_id == expense.household_id,
+            PaymentMethod.is_active == True,  # noqa: E712
+        )
+    )
+    pm = pm_result.scalar_one_or_none()
+    if not pm:
+        return BotResponse(text="", callback_answer="결제수단을 찾을 수 없어요.")
+
+    expense.payment_method_id = pm.id
+    await db.commit()
+
+    icon = get_payment_method_icon(pm.type)  # type: ignore[arg-type]
+    return BotResponse(
+        text=f"✅ {expense.description} {expense.amount:,.0f}원 → {icon} {pm.name}",
+        callback_answer=f"{pm.name}으로 변경!",
+    )
+
+
 # 콜백 액션 디스패치 테이블
 # 키: action prefix, 값: (핸들러 함수, 최소 parts 수)
 _CALLBACK_HANDLERS: dict[
@@ -890,6 +987,8 @@ _CALLBACK_HANDLERS: dict[
     "change_category": (_handle_change_category, 2),
     "set_category": (_handle_set_category, 3),
     "convert_to_income": (_handle_convert_to_income, 2),
+    "change_payment": (_handle_change_payment, 2),
+    "set_payment": (_handle_set_payment, 3),
 }
 
 # Income 관련 콜백 액션 — Income 모델에서 조회해야 하는 액션들
