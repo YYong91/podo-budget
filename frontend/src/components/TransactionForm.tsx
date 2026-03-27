@@ -101,6 +101,23 @@ export default function TransactionForm({ type }: TransactionFormProps) {
     })
   }, [type, activeHouseholdId])
 
+  // 프리뷰 아이템에 주 결제수단 자동 채우기 (자연어/OCR 입력 시)
+  useEffect(() => {
+    if (!ni.previewItems || type !== 'expense' || paymentMethods.length === 0) return
+    const defaultPm = paymentMethods.find(pm => pm.is_default)
+    if (!defaultPm) return
+
+    const needsUpdate = ni.previewItems.some(item => !item.payment_method_id && !item.payment_method)
+    if (!needsUpdate) return
+
+    for (let i = 0; i < ni.previewItems.length; i++) {
+      const item = ni.previewItems[i]
+      if (!item.payment_method_id && !item.payment_method) {
+        ni.updatePreviewItem(i, 'payment_method_id', defaultPm.id)
+      }
+    }
+  }, [ni.previewItems, paymentMethods, type]) // eslint-disable-line react-hooks/exhaustive-deps
+
   const formCategories = ni.categories
 
   // API 선택
