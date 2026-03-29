@@ -102,21 +102,30 @@ export default function TransactionForm({ type }: TransactionFormProps) {
   }, [type, activeHouseholdId])
 
   // 프리뷰 아이템에 주 결제수단 자동 채우기 (자연어/OCR 입력 시)
+  // 저축성 지출(is_savings) 또는 결제수단 제외(exclude_auto_payment) 카테고리는 건너뜀
   useEffect(() => {
     if (!ni.previewItems || type !== 'expense' || paymentMethods.length === 0) return
     const defaultPm = paymentMethods.find(pm => pm.is_default)
     if (!defaultPm) return
 
-    const needsUpdate = ni.previewItems.some(item => !item.payment_method_id && !item.payment_method)
+    const isSavingsCategory = (categoryId: number | null) => {
+      if (!categoryId) return false
+      const cat = ni.categories.find(c => c.id === categoryId)
+      return cat ? (cat.is_savings || cat.exclude_auto_payment) : false
+    }
+
+    const needsUpdate = ni.previewItems.some(item =>
+      !item.payment_method_id && !item.payment_method && !isSavingsCategory(item.category_id)
+    )
     if (!needsUpdate) return
 
     for (let i = 0; i < ni.previewItems.length; i++) {
       const item = ni.previewItems[i]
-      if (!item.payment_method_id && !item.payment_method) {
+      if (!item.payment_method_id && !item.payment_method && !isSavingsCategory(item.category_id)) {
         ni.updatePreviewItem(i, 'payment_method_id', defaultPm.id)
       }
     }
-  }, [ni.previewItems, paymentMethods, type]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [ni.previewItems, paymentMethods, type, ni.categories]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const formCategories = ni.categories
 
