@@ -59,6 +59,7 @@ export default function FrequencyFields({
           <input
             id="reclist-day-of-month"
             type="number"
+            inputMode="numeric"
             value={dayOfMonth}
             onChange={(e) => onChange('day_of_month', e.target.value)}
             min="1"
@@ -109,6 +110,7 @@ export default function FrequencyFields({
           <input
             id="reclist-interval"
             type="number"
+            inputMode="numeric"
             value={interval}
             onChange={(e) => onChange('interval', e.target.value)}
             min="1"

@@ -158,6 +158,7 @@ export default function RegisterRecurringModal({
                 <input
                   id="recurring-day-of-month"
                   type="number"
+                  inputMode="numeric"
                   value={formData.day_of_month}
                   onChange={(e) => setFormData({ ...formData, day_of_month: e.target.value })}
                   min="1"
@@ -208,6 +209,7 @@ export default function RegisterRecurringModal({
                 <input
                   id="recurring-interval"
                   type="number"
+                  inputMode="numeric"
                   value={formData.interval}
                   onChange={(e) => setFormData({ ...formData, interval: e.target.value })}
                   min="1"
