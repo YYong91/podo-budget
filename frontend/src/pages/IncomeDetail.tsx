@@ -211,6 +211,7 @@ export default function IncomeDetail() {
             <input
               id="income-edit-amount"
               type="number"
+              inputMode="numeric"
               value={editForm.amount}
               onChange={(e) => setEditForm({ ...editForm, amount: Number(e.target.value) })}
               className="w-full px-4 py-2 text-xl sm:text-2xl font-bold text-[var(--text-primary)] border border-[var(--input-border)] rounded-xl focus:ring-2 focus:ring-leaf-500/30 focus:border-leaf-500"

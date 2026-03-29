@@ -370,6 +370,7 @@ export default function PaymentMethodManager() {
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)] text-sm">₩</span>
                     <input
                       type="number"
+                      inputMode="numeric"
                       value={editTarget}
                       onChange={(e) => setEditTarget(e.target.value)}
                       placeholder="월 실적 목표 (선택)"
@@ -490,6 +491,7 @@ export default function PaymentMethodManager() {
                   <input
                     id="pm-target"
                     type="number"
+                    inputMode="numeric"
                     value={formTarget}
                     onChange={(e) => setFormTarget(e.target.value)}
                     placeholder="0"

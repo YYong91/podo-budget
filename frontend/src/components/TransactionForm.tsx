@@ -498,6 +498,7 @@ export default function TransactionForm({ type }: TransactionFormProps) {
               <input
                 id={`${idPrefix}-amount`}
                 type="number"
+                inputMode="numeric"
                 value={formData.amount}
                 onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
                 placeholder={cfg.formPlaceholder.amount}

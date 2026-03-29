@@ -111,6 +111,7 @@ export default function ParsedItemPreviewCard({
             <input
               id={`preview-amount-${index}`}
               type="number"
+              inputMode="numeric"
               value={item.amount}
               onChange={(e) => onUpdate(index, 'amount', Number(e.target.value))}
               className={`w-full pl-7 pr-3 py-2 border border-[var(--input-border)] rounded-xl text-sm focus:ring-2 ${c.input}`}
