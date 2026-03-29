@@ -37,6 +37,7 @@ from app.models.expense import Expense
 from app.models.household import Household
 from app.models.household_member import HouseholdMember
 from app.models.income import Income
+from app.models.payment_method import PaymentMethod
 from app.schemas.bot import BotResponse
 
 
@@ -986,3 +987,125 @@ async def test_handle_expense_input_none_return(db_session):
 
     # str 반환 → dict도 list도 아니므로 None
     assert response is None
+
+
+# ---------------------------------------------------------------------------
+# _handle_change_payment / _handle_set_payment (#507)
+# ---------------------------------------------------------------------------
+
+
+async def _create_payment_method(
+    db_session, household_id: int, user_id: int, name: str = "삼성카드", pm_type: str = "credit_card", *, is_active: bool = True, display_order: int = 0
+) -> PaymentMethod:
+    """결제수단 생성 헬퍼"""
+    pm = PaymentMethod(
+        household_id=household_id,
+        created_by=user_id,
+        name=name,
+        type=pm_type,
+        is_active=is_active,
+        display_order=display_order,
+    )
+    db_session.add(pm)
+    await db_session.flush()
+    return pm
+
+
+@pytest.mark.asyncio
+async def test_handle_change_payment_shows_payment_options(db_session):
+    """change_payment 콜백 → 결제수단 선택 키보드 (카테고리 아님) (#507)"""
+    from app.api.telegram import _handle_change_payment
+
+    bot_user, household = await _setup_bot_user(db_session, chat_id=90050)
+    cat = await _create_category(db_session, "식비", household.id)
+    await _create_payment_method(db_session, household.id, bot_user.id, "삼성카드", display_order=0)
+    await _create_payment_method(db_session, household.id, bot_user.id, "현금", "cash", display_order=1)
+    expense = await _create_expense(db_session, bot_user.id, household.id, cat.id)
+
+    parts = ["change_payment", str(expense.id)]
+    response = await _handle_change_payment(db_session, 90050, "cb_test", expense, bot_user, parts)
+
+    assert isinstance(response, BotResponse)
+    # 핵심: 결제수단 메시지여야 하고, 카테고리 메시지가 아니어야 함
+    assert "결제수단" in response.text
+    assert "카테고리" not in response.text
+    assert response.reply_markup is not None
+    buttons = [btn for row in response.reply_markup["inline_keyboard"] for btn in row]
+    # set_payment 콜백이어야 함 (set_category가 아님)
+    assert all("set_payment" in btn["callback_data"] for btn in buttons)
+    assert not any("set_category" in btn["callback_data"] for btn in buttons)
+
+
+@pytest.mark.asyncio
+async def test_handle_change_payment_no_payment_methods(db_session):
+    """change_payment 콜백 — 결제수단 미등록 시 안내 메시지"""
+    from app.api.telegram import _handle_change_payment
+
+    bot_user, household = await _setup_bot_user(db_session, chat_id=90051)
+    cat = await _create_category(db_session, "식비", household.id)
+    expense = await _create_expense(db_session, bot_user.id, household.id, cat.id)
+
+    parts = ["change_payment", str(expense.id)]
+    response = await _handle_change_payment(db_session, 90051, "cb_test", expense, bot_user, parts)
+
+    assert isinstance(response, BotResponse)
+    assert response.callback_answer == "등록된 결제수단이 없어요."
+    assert response.text == ""
+
+
+@pytest.mark.asyncio
+async def test_handle_change_payment_savings_category(db_session):
+    """change_payment 콜백 — 저축성 카테고리면 결제수단 변경 불가"""
+    from app.api.telegram import _handle_change_payment
+
+    bot_user, household = await _setup_bot_user(db_session, chat_id=90052)
+    cat = await _create_category(db_session, "저축", household.id)
+    cat.is_savings = True
+    await db_session.flush()
+    expense = await _create_expense(db_session, bot_user.id, household.id, cat.id)
+
+    parts = ["change_payment", str(expense.id)]
+    response = await _handle_change_payment(db_session, 90052, "cb_test", expense, bot_user, parts)
+
+    assert isinstance(response, BotResponse)
+    assert "저축성" in response.callback_answer
+
+
+@pytest.mark.asyncio
+async def test_handle_set_payment(db_session):
+    """set_payment 콜백 → 결제수단 실제 변경"""
+    from app.api.telegram import _handle_set_payment
+
+    bot_user, household = await _setup_bot_user(db_session, chat_id=90053)
+    cat = await _create_category(db_session, "식비", household.id)
+    pm = await _create_payment_method(db_session, household.id, bot_user.id, "국민카드")
+    expense = await _create_expense(db_session, bot_user.id, household.id, cat.id)
+
+    parts = ["set_payment", str(expense.id), str(pm.id)]
+    response = await _handle_set_payment(db_session, 90053, "cb_test", expense, bot_user, parts)
+
+    assert isinstance(response, BotResponse)
+    assert "국민카드" in response.text
+    await db_session.refresh(expense)
+    assert expense.payment_method_id == pm.id
+
+
+@pytest.mark.asyncio
+async def test_handle_set_payment_none(db_session):
+    """set_payment 콜백 → '선택 안 함' (결제수단 해제)"""
+    from app.api.telegram import _handle_set_payment
+
+    bot_user, household = await _setup_bot_user(db_session, chat_id=90054)
+    cat = await _create_category(db_session, "식비", household.id)
+    pm = await _create_payment_method(db_session, household.id, bot_user.id, "카카오뱅크", "debit_card")
+    expense = await _create_expense(db_session, bot_user.id, household.id, cat.id)
+    expense.payment_method_id = pm.id
+    await db_session.commit()
+
+    parts = ["set_payment", str(expense.id), "none"]
+    response = await _handle_set_payment(db_session, 90054, "cb_test", expense, bot_user, parts)
+
+    assert isinstance(response, BotResponse)
+    assert "해제" in response.text
+    await db_session.refresh(expense)
+    assert expense.payment_method_id is None

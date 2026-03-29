@@ -674,6 +674,7 @@ async def _handle_confirm_cat(db: AsyncSession, chat_id: int, callback_id: str, 
 
     await db.commit()
 
+    is_savings = bool(selected_category.exclude_auto_payment or selected_category.is_savings)
     return BotResponse(
         text=format_expense_saved(
             amount=float(expense.amount),
@@ -681,7 +682,7 @@ async def _handle_confirm_cat(db: AsyncSession, chat_id: int, callback_id: str, 
             description=expense.description,  # type: ignore[arg-type]
             date=expense.date.isoformat(),
         ),
-        reply_markup=_build_expense_saved_keyboard(expense.id),  # type: ignore[arg-type]
+        reply_markup=_build_expense_saved_keyboard(expense.id, is_savings=is_savings),  # type: ignore[arg-type]
         callback_answer=f"'{selected_category.name}'으로 저장!",
     )
 
@@ -693,6 +694,7 @@ async def _handle_new_cat(db: AsyncSession, chat_id: int, callback_id: str, expe
     expense.category_id = new_category.id
     await db.commit()
 
+    is_savings = bool(new_category.exclude_auto_payment or new_category.is_savings)
     return BotResponse(
         text=format_expense_saved(
             amount=float(expense.amount),
@@ -700,7 +702,7 @@ async def _handle_new_cat(db: AsyncSession, chat_id: int, callback_id: str, expe
             description=expense.description,  # type: ignore[arg-type]
             date=expense.date.isoformat(),
         ),
-        reply_markup=_build_expense_saved_keyboard(expense.id),  # type: ignore[arg-type]
+        reply_markup=_build_expense_saved_keyboard(expense.id, is_savings=is_savings),  # type: ignore[arg-type]
         callback_answer=f"'{new_category_name}' 카테고리 생성!",
     )
 

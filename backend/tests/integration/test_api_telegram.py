@@ -19,6 +19,7 @@ from app.models.category import Category
 from app.models.expense import Expense
 from app.models.household import Household
 from app.models.household_member import HouseholdMember
+from app.models.payment_method import PaymentMethod
 from app.models.user import User
 
 
@@ -1807,3 +1808,53 @@ async def test_feedback_without_content_shows_guide(client, db_session, mock_tel
     reply_markup = call_args.kwargs.get("reply_markup")
     assert reply_markup is not None
     assert "inline_keyboard" in reply_markup
+
+
+# ---------------------------------------------------------------------------
+# change_payment: 결제수단 변경 콜백 (#507)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_callback_change_payment_shows_payment_not_category(client, db_session, mock_telegram_send, mock_llm_parse_expense):
+    """change_payment 콜백 → 결제수단 선택 메시지 (카테고리 선택이 아님) (#507)"""
+    bot_user, household = await setup_bot_user_with_household(db_session, chat_id=70707)
+
+    # 결제수단 등록
+    pm = PaymentMethod(household_id=household.id, created_by=bot_user.id, name="삼성카드", type="credit_card")
+    db_session.add(pm)
+    await db_session.commit()
+
+    # 지출 생성 (webhook 통해)
+    payload = {"message": {"chat": {"id": 70707}, "text": "점심 8000원"}}
+    await client.post("/api/telegram/webhook", json=payload)
+
+    result = await db_session.execute(select(Expense))
+    expense = result.scalars().first()
+    assert expense is not None
+
+    # change_payment 콜백 전송
+    mock_telegram_send.reset_mock()
+    with patch("app.api.telegram.answer_callback_query", new_callable=AsyncMock):
+        callback_payload = {
+            "callback_query": {
+                "id": "cb_payment",
+                "message": {"chat": {"id": 70707}},
+                "data": f"change_payment:{expense.id}",
+            }
+        }
+        response = await client.post("/api/telegram/webhook", json=callback_payload)
+        assert response.status_code == 200
+
+    # 결제수단 선택 메시지가 전송되어야 함 (카테고리 메시지가 아님)
+    mock_telegram_send.assert_called_once()
+    call_args = mock_telegram_send.call_args
+    sent_text = call_args[0][1]
+    assert "결제수단" in sent_text, f"결제수단 메시지가 아닌 다른 메시지 전송됨: {sent_text}"
+    assert "카테고리" not in sent_text, f"카테고리 메시지가 표시됨 (버그 #507): {sent_text}"
+
+    # 인라인 키보드의 콜백 데이터가 set_payment이어야 함
+    reply_markup = call_args.kwargs.get("reply_markup") or call_args[1].get("reply_markup")
+    assert reply_markup is not None
+    buttons = [btn for row in reply_markup["inline_keyboard"] for btn in row]
+    assert all("set_payment" in btn["callback_data"] for btn in buttons)
