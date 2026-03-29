@@ -4,8 +4,8 @@
 users 테이블에서 households 테이블로 이동합니다.
 기존 사용자의 총예산 값은 소속 가구로 복사됩니다.
 
-Revision ID: y8z9a0b1c2d3
-Revises: x7y8z9a0b1c2
+Revision ID: z9a0b1c2d3e4
+Revises: y8z9a0b1c2d3
 Create Date: 2026-03-29
 """
 
@@ -14,8 +14,8 @@ import sqlalchemy as sa
 from alembic import op
 
 # revision identifiers, used by Alembic.
-revision = "y8z9a0b1c2d3"  # pragma: allowlist secret
-down_revision = "x7y8z9a0b1c2"  # pragma: allowlist secret
+revision = "z9a0b1c2d3e4"  # pragma: allowlist secret
+down_revision = "y8z9a0b1c2d3"  # pragma: allowlist secret
 branch_labels = None
 depends_on = None
 
