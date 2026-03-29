@@ -491,15 +491,20 @@ async def test_budget_bulk_save(db_session, test_user, test_household):
 
 @pytest.mark.asyncio
 async def test_budget_total_budget(db_session, test_user, test_household):
-    """총 예산 조회/수정"""
+    """총 예산 조회/수정 — 가구 공유 (#501)"""
     from app.api.budget import get_total_budget, update_total_budget
     from app.schemas.budget import TotalBudgetUpdate
 
-    result = await get_total_budget(current_user=test_user)
+    result = await get_total_budget(
+        household_id=test_household.id,
+        current_user=test_user,
+        db=db_session,
+    )
     assert result is not None
 
     result = await update_total_budget(
         data=TotalBudgetUpdate(amount=2000000),
+        household_id=test_household.id,
         current_user=test_user,
         db=db_session,
     )
