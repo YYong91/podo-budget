@@ -3,7 +3,7 @@
  *
  * 4탭 네비게이션(가계부/자산/돌아보기/더보기)과 404 페이지를 검증한다.
  * Layout.tsx의 navItems 기반:
- *   - '/' → 가계부 (Receipt)
+ *   - '/home' → 가계부 (Receipt)
  *   - '/assets' → 자산 (Landmark)
  *   - '/insights' → 돌아보기 (TrendingUp)
  *   - '/settings' → 더보기 (Settings)
@@ -13,7 +13,7 @@ import { test, expect } from '../fixtures/auth'
 
 test.describe('네비게이션', () => {
   test('사이드바 4탭 메뉴로 각 페이지 이동', async ({ authedPage: page }) => {
-    await page.goto('/')
+    await page.goto('/home')
     await page.waitForLoadState('networkidle')
 
     // 사이드바/하단탭에 4개 네비게이션 항목이 있어야 함
@@ -33,7 +33,7 @@ test.describe('네비게이션', () => {
 
     // 가계부 탭으로 복귀
     await page.getByRole('link', { name: '가계부' }).first().click()
-    await expect(page).toHaveURL('/')
+    await expect(page).toHaveURL('/home')
   })
 
   test('404 페이지 표시', async ({ authedPage: page }) => {
@@ -48,7 +48,7 @@ test.describe('네비게이션', () => {
   test('모바일 뷰포트에서 하단 탭 바 표시', async ({ authedPage: page }) => {
     // 모바일 뷰포트 설정
     await page.setViewportSize({ width: 375, height: 812 })
-    await page.goto('/')
+    await page.goto('/home')
     await page.waitForLoadState('networkidle')
 
     // 모바일에서는 하단 탭 바(aria-label="하단 탭 메뉴")가 표시됨

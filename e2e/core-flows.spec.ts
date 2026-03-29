@@ -11,7 +11,7 @@ import { test, expect, API_URL } from './fixtures/auth'
 
 test.describe('인증 플로우', () => {
   test('미인증 상태에서 SSO 리디렉션 또는 빈 화면', async ({ page }) => {
-    await page.goto('/')
+    await page.goto('/home')
     // SSO 미인증 시 auth.podonest.com으로 리디렉션되거나 빈 화면
     await page.waitForTimeout(3000)
     await expect(page).not.toHaveURL(/\/expenses/)

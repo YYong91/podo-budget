@@ -55,7 +55,7 @@ test.describe('Tier 1: 자연어 지출 입력', () => {
     // 7. 저장 후 자동으로 /expenses(→ /?filter=expense)로 이동하거나 홈으로 이동
     //    navigate 호출이 500ms 지연이므로 대기
     await page.waitForTimeout(1500)
-    await page.goto('/')
+    await page.goto('/home')
     await page.waitForLoadState('networkidle')
 
     // 생성된 지출이 목록에 표시되어야 함

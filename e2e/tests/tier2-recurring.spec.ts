@@ -142,7 +142,7 @@ test.describe.skip('정기 거래 관리', () => {
     await expect(page.getByText(/등록되었습니다/).first()).toBeVisible({ timeout: 10000 })
 
     // 가계부 홈으로 이동하여 거래가 생성되었는지 확인
-    await page.goto('/')
+    await page.goto('/home')
     await page.waitForLoadState('networkidle')
 
     await expect(page.getByText('E2E 실행테스트').first()).toBeVisible({ timeout: 15000 })
