@@ -533,12 +533,13 @@ export type PaymentMethodType = 'credit_card' | 'debit_card' | 'cash' | 'transfe
 
 export interface PaymentMethod {
   id: number
-  household_id: number
-  created_by: number
+  household_id: number | null
+  created_by: number | null
   name: string
   type: PaymentMethodType
   monthly_target: number | null
   is_default: boolean
+  is_system: boolean
   is_active: boolean
   display_order: number
   created_at: string

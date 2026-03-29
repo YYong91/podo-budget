@@ -10,7 +10,7 @@ from calendar import monthrange
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import func, select, update
+from sqlalchemy import and_, func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import get_household_member, get_user_active_household_id
@@ -108,7 +108,7 @@ async def list_payment_methods(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> object:
-    """활성 결제수단 목록 조회"""
+    """활성 결제수단 목록 조회 (시스템 기본 결제수단 포함)"""
     if household_id is None:
         household_id = await get_user_active_household_id(current_user, db)
     await get_household_member(household_id, current_user, db)
@@ -116,10 +116,17 @@ async def list_payment_methods(
     result = await db.execute(
         select(PaymentMethod)
         .where(
-            PaymentMethod.household_id == household_id,
-            PaymentMethod.is_active == True,  # noqa: E712
+            or_(
+                # 가구 소속 결제수단
+                and_(
+                    PaymentMethod.household_id == household_id,
+                    PaymentMethod.is_active == True,  # noqa: E712
+                ),
+                # 시스템 기본 결제수단
+                PaymentMethod.is_system == True,  # noqa: E712
+            ),
         )
-        .order_by(PaymentMethod.display_order, PaymentMethod.created_at)
+        .order_by(PaymentMethod.is_system.desc(), PaymentMethod.display_order, PaymentMethod.created_at)
     )
     return result.scalars().all()
 
@@ -181,6 +188,10 @@ async def update_payment_method(
     if not pm:
         raise HTTPException(status_code=404, detail="결제수단을 찾을 수 없습니다")
 
+    # 시스템 결제수단은 수정 불가
+    if pm.is_system:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="시스템 결제수단은 수정할 수 없습니다")
+
     # 가구 멤버 검증
     await get_household_member(pm.household_id, current_user, db)  # type: ignore[arg-type]
 
@@ -213,6 +224,10 @@ async def delete_payment_method(
     pm = result.scalar_one_or_none()
     if not pm:
         raise HTTPException(status_code=404, detail="결제수단을 찾을 수 없습니다")
+
+    # 시스템 결제수단은 삭제 불가
+    if pm.is_system:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="시스템 결제수단은 삭제할 수 없습니다")
 
     await get_household_member(pm.household_id, current_user, db)  # type: ignore[arg-type]
 
@@ -253,8 +268,13 @@ async def get_monthly_usage(
             (Expense.payment_method_id == PaymentMethod.id) & (Expense.date >= start) & (Expense.date <= end),
         )
         .where(
-            PaymentMethod.household_id == household_id,
-            PaymentMethod.is_active == True,  # noqa: E712
+            or_(
+                and_(
+                    PaymentMethod.household_id == household_id,
+                    PaymentMethod.is_active == True,  # noqa: E712
+                ),
+                PaymentMethod.is_system == True,  # noqa: E712
+            ),
         )
         .group_by(PaymentMethod.id)
         .order_by(PaymentMethod.name)

@@ -590,7 +590,9 @@ export const handlers = [
       type: body.type ?? 'credit_card',
       monthly_target: body.monthly_target ?? null,
       is_default: body.is_default ?? false,
+      is_system: false,
       is_active: true,
+      display_order: 0,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     }

@@ -44,10 +44,12 @@ describe('PaymentMethodManager', () => {
     it('결제수단 목록을 표시한다', async () => {
       renderPage()
       await waitFor(() => {
-        expect(screen.getByTestId('payment-method-1')).toBeInTheDocument()
+        // 시스템 결제수단 (현금, 계좌이체) + 사용자 결제수단 (삼성카드, 국민카드)
+        expect(screen.getByTestId('payment-method-100')).toBeInTheDocument()
       })
+      expect(screen.getByTestId('payment-method-101')).toBeInTheDocument()
+      expect(screen.getByTestId('payment-method-1')).toBeInTheDocument()
       expect(screen.getByTestId('payment-method-2')).toBeInTheDocument()
-      expect(screen.getByTestId('payment-method-3')).toBeInTheDocument()
     })
 
     it('monthly_target이 있는 결제수단에 실적 프로그레스 바를 표시한다', async () => {
@@ -105,8 +107,8 @@ describe('PaymentMethodManager', () => {
       })
 
       const dropdown = screen.getByLabelText('주 결제수단')
-      // 국민카드(id=3)로 변경
-      await user.selectOptions(dropdown, '3')
+      // 국민카드(id=2)로 변경
+      await user.selectOptions(dropdown, '2')
 
       await waitFor(() => {
         expect(mockAddToast).toHaveBeenCalledWith(
@@ -202,8 +204,8 @@ describe('PaymentMethodManager', () => {
         expect(screen.getByText('완료')).toBeInTheDocument()
       })
 
-      const cashItem = screen.getByTestId('payment-method-2')
-      const deleteBtn = within(cashItem).getByRole('button', { name: '삭제' })
+      const userItem = screen.getByTestId('payment-method-2')
+      const deleteBtn = within(userItem).getByRole('button', { name: '삭제' })
       await user.click(deleteBtn)
 
       await waitFor(() => {
