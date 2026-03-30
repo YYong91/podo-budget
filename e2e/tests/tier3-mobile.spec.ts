@@ -14,7 +14,7 @@ test.describe('모바일 뷰포트', () => {
   })
 
   test('하단 탭 네비게이션 표시 확인', async ({ authedPage: page }) => {
-    await page.goto('/home')
+    await page.goto('/')
     await page.waitForLoadState('networkidle')
 
     // 모바일에서는 하단 탭 바(aria-label="하단 탭 메뉴")가 표시됨
@@ -28,7 +28,7 @@ test.describe('모바일 뷰포트', () => {
   })
 
   test('홈 → 돌아보기 → 자산 → 더보기 탭 이동', async ({ authedPage: page }) => {
-    await page.goto('/home')
+    await page.goto('/')
     await page.waitForLoadState('networkidle')
 
     const bottomNav = page.locator('nav[aria-label="하단 탭 메뉴"]')
@@ -48,12 +48,12 @@ test.describe('모바일 뷰포트', () => {
 
     // 가계부(홈) 탭으로 복귀
     await bottomNav.getByText('가계부').click()
-    await expect(page).toHaveURL('/home')
+    await expect(page).toHaveURL('/')
   })
 
   // TODO: 로컬 Playwright UI 모드에서 디버깅 필요 (#463)
   test.skip('FAB 클릭 → 지출 입력 페이지 이동', async ({ authedPage: page }) => {
-    await page.goto('/home')
+    await page.goto('/')
     await page.waitForLoadState('networkidle')
 
     // 페이지 로딩 완료 대기 — 하단 탭 바 확인

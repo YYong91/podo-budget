@@ -61,7 +61,7 @@ test.describe('검색 기능', () => {
   })
 
   test('검색 아이콘 클릭 → 검색 모드 진입', async ({ authedPage: page }) => {
-    await page.goto('/home')
+    await page.goto('/')
     await page.waitForLoadState('networkidle')
 
     // 월뷰에서 검색 버튼 클릭 (aria-label="검색")
@@ -73,7 +73,7 @@ test.describe('검색 기능', () => {
   })
 
   test('검색어 입력 → 결과 확인', async ({ authedPage: page }) => {
-    await page.goto('/home')
+    await page.goto('/')
     await page.waitForLoadState('networkidle')
 
     // 검색 모드 진입
@@ -91,7 +91,7 @@ test.describe('검색 기능', () => {
   })
 
   test('지출/수입 필터 전환 → 결과 변화', async ({ authedPage: page }) => {
-    await page.goto('/home')
+    await page.goto('/')
     await page.waitForLoadState('networkidle')
 
     // 검색 모드 진입
@@ -117,7 +117,7 @@ test.describe('검색 기능', () => {
   })
 
   test('검색 모드 해제 → 월뷰 복귀', async ({ authedPage: page }) => {
-    await page.goto('/home')
+    await page.goto('/')
     await page.waitForLoadState('networkidle')
 
     // 검색 모드 진입
