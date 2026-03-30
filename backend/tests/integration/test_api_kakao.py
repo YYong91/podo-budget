@@ -760,6 +760,50 @@ async def test_kakao_webhook_expense_has_change_quick_reply(client, db_session, 
 
 
 # ──────────────────────────────────────────────
+# 결제수단 변경 디스패치 테스트 (#507)
+# /change_payment이 /change(카테고리 변경)에 잡히지 않는지 검증
+# ──────────────────────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_kakao_webhook_change_payment_not_dispatched_as_change(client, db_session, mock_llm_parse_expense):
+    """'결제수단변경' 입력 시 카테고리 변경이 아닌 결제수단 변경으로 동작해야 함"""
+    # 먼저 지출 입력
+    payload = make_kakao_request("점심 8000원")
+    response = await client.post("/api/kakao/webhook", json=payload)
+    assert response.status_code == 200
+
+    # 결제수단변경 입력 → /change_payment으로 디스패치되어야 함
+    payload = make_kakao_request("결제수단변경")
+    response = await client.post("/api/kakao/webhook", json=payload)
+    assert response.status_code == 200
+
+    data = response.json()
+    text = data["template"]["outputs"][0]["simpleText"]["text"]
+    # 결제수단 관련 응답이어야 함 (카테고리가 아님)
+    assert "카테고리" not in text, f"결제수단 변경인데 카테고리 변경으로 디스패치됨: {text}"
+    assert "결제수단" in text or "등록" in text or "지출" in text
+
+
+@pytest.mark.asyncio
+async def test_kakao_webhook_slash_change_payment_dispatches_correctly(client, db_session, mock_llm_parse_expense):
+    """/change_payment 슬래시 명령어가 카테고리 변경이 아닌 결제수단 변경으로 동작"""
+    # 먼저 지출 입력
+    payload = make_kakao_request("점심 8000원")
+    response = await client.post("/api/kakao/webhook", json=payload)
+    assert response.status_code == 200
+
+    # /change_payment 직접 입력
+    payload = make_kakao_request("/change_payment")
+    response = await client.post("/api/kakao/webhook", json=payload)
+    assert response.status_code == 200
+
+    data = response.json()
+    text = data["template"]["outputs"][0]["simpleText"]["text"]
+    assert "카테고리" not in text, f"/change_payment인데 카테고리 변경으로 디스패치됨: {text}"
+
+
+# ──────────────────────────────────────────────
 # 한글 명령어 테스트
 # ──────────────────────────────────────────────
 

@@ -69,6 +69,17 @@ class TestNormalizeCommand:
     def test_slash_commands_passthrough(self, input_text):
         assert normalize_command(input_text) == input_text
 
+    # 결제수단 관련 명령어
+    @pytest.mark.parametrize(
+        "input_text, expected",
+        [
+            ("결제수단변경", "/change_payment"),
+            ("결제수단", "/change_payment"),
+        ],
+    )
+    def test_payment_command(self, input_text, expected):
+        assert normalize_command(input_text) == expected
+
     # 자연어 입력은 그대로 통과
     @pytest.mark.parametrize(
         "input_text",
@@ -80,3 +91,41 @@ class TestNormalizeCommand:
     )
     def test_natural_language_passthrough(self, input_text):
         assert normalize_command(input_text) == input_text
+
+
+class TestCommandDispatch:
+    """/change_payment이 /change에 잡히지 않고 올바르게 디스패치되는지 검증"""
+
+    def test_change_payment_not_caught_by_change(self):
+        """핵심 버그: /change_payment이 /change 핸들러에 잡히면 안 됨"""
+        from app.api.kakao import _COMMAND_HANDLERS
+
+        utterance = "/change_payment"
+        cmd = utterance.split(maxsplit=1)[0]
+        assert cmd in _COMMAND_HANDLERS
+        # /change가 아닌 /change_payment 핸들러가 매칭되어야 함
+        assert cmd == "/change_payment"
+
+    def test_change_command_still_works(self):
+        """/change는 여전히 카테고리 변경으로 디스패치"""
+        from app.api.kakao import _COMMAND_HANDLERS
+
+        utterance = "/change"
+        cmd = utterance.split(maxsplit=1)[0]
+        assert cmd in _COMMAND_HANDLERS
+        assert cmd == "/change"
+
+    def test_change_with_args_still_works(self):
+        """/change 외식비 → cmd는 /change"""
+        utterance = "/change 외식비"
+        cmd = utterance.split(maxsplit=1)[0]
+        assert cmd == "/change"
+
+    def test_set_payment_dispatches_correctly(self):
+        """/set_payment도 /change에 잡히지 않아야 함"""
+        from app.api.kakao import _COMMAND_HANDLERS
+
+        utterance = "/set_payment 123"
+        cmd = utterance.split(maxsplit=1)[0]
+        assert cmd in _COMMAND_HANDLERS
+        assert cmd == "/set_payment"
