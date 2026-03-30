@@ -23,6 +23,8 @@ import MonthlyView from '../components/transaction/MonthlyView'
 
 export default function TransactionList() {
   const activeHouseholdId = useHouseholdStore((s) => s.activeHouseholdId)
+  const currentHousehold = useHouseholdStore((s) => s.currentHousehold)
+  const fetchHouseholdDetail = useHouseholdStore((s) => s.fetchHouseholdDetail)
   const { addToast } = useToast()
   const { user } = useAuth()
 
@@ -31,6 +33,24 @@ export default function TransactionList() {
 
   // 검색 훅
   const search = useTransactionSearch({ activeHouseholdId })
+
+  // currentHousehold 로딩 — memberMap 구성에 필요
+  useEffect(() => {
+    if (activeHouseholdId && currentHousehold?.id !== activeHouseholdId) {
+      fetchHouseholdDetail(activeHouseholdId)
+    }
+  }, [activeHouseholdId, currentHousehold?.id, fetchHouseholdDetail])
+
+  // memberMap — 멀티멤버 가구에서만 유효 (단독 가구는 null)
+  const memberMap = useMemo(() => {
+    const members = currentHousehold?.members
+    if (!members || members.length <= 1) return null
+    const map = new Map<number, string>()
+    for (const m of members) {
+      map.set(m.user_id, m.username)
+    }
+    return map
+  }, [currentHousehold?.members])
 
   // 웰컴 카드 상태
   const [welcomeDismissed, setWelcomeDismissed] = useState(() =>
@@ -173,6 +193,7 @@ export default function TransactionList() {
             search.setSearchFilter('category', null)
           }}
           searchCategoryActive={!!search.searchCategoryId}
+          memberMap={memberMap}
         />
       ) : (
         <MonthlyView
@@ -185,6 +206,7 @@ export default function TransactionList() {
           onWelcomeDismiss={handleWelcomeDismiss}
           botNudgeDismissed={botNudgeDismissed}
           onBotNudgeDismiss={handleBotNudgeDismiss}
+          memberMap={memberMap}
         />
       )}
 
