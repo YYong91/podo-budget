@@ -11,7 +11,7 @@ export default function NotFoundPage() {
           페이지를 찾을 수 없습니다
         </p>
         <Link
-          to="/home"
+          to="/"
           className="inline-flex items-center gap-2 bg-grape-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-grape-700 active:scale-[0.98] transition-all"
         >
           <Home className="w-5 h-5" />

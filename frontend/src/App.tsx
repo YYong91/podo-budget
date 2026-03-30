@@ -27,17 +27,16 @@ const AssetForm = lazy(() => import('./pages/AssetForm'))
 const AccountManager = lazy(() => import('./pages/AccountManager'))
 const PaymentMethodManager = lazy(() => import('./pages/PaymentMethodManager'))
 const TransactionList = lazy(() => import('./pages/TransactionList'))
-const LandingPage = lazy(() => import('./pages/LandingPage'))
 const GuidePage = lazy(() => import('./pages/GuidePage'))
 const FeedbackPage = lazy(() => import('./pages/FeedbackPage'))
 const AdminPage = lazy(() => import('./pages/AdminPage'))
 const OnboardingPage = lazy(() => import('./pages/OnboardingPage'))
 
-/* /transactions → /home 쿼리 보존 리다이렉트 */
+/* /transactions → / 쿼리 보존 리다이렉트 */
 function TransactionsRedirect() {
   const [searchParams] = useSearchParams()
   const query = searchParams.toString()
-  return <Navigate to={query ? `/home?${query}` : '/home'} replace />
+  return <Navigate to={query ? `/?${query}` : '/'} replace />
 }
 
 /* 로딩 스피너 */
@@ -81,8 +80,6 @@ function App() {
     <Suspense fallback={<PageLoading />}>
       <ScrollToTop />
       <Routes>
-        {/* 퍼블릭 랜딩 페이지 — 로그인 상태면 /home으로 자동 리디렉션 (#495) */}
-        <Route path="/" element={<LandingPage />} />
         {/* podo-auth SSO 콜백 */}
         <Route path="/login" element={<LoginPage />} />
         <Route path="/auth/callback" element={<AuthCallbackPage />} />
@@ -93,12 +90,12 @@ function App() {
           <Route path="onboarding" element={<OnboardingPage />} />
           <Route path="/invitations/accept" element={<AcceptInvitationPage />} />
           <Route element={<Layout />}>
-            <Route path="/home" element={<TransactionList />} />
+            <Route path="/" element={<TransactionList />} />
             <Route path="/transactions" element={<TransactionsRedirect />} />
-            <Route path="/expenses" element={<Navigate to="/home?filter=expense" replace />} />
+            <Route path="/expenses" element={<Navigate to="/?filter=expense" replace />} />
             <Route path="/expenses/new" element={<ExpenseForm />} />
             <Route path="/expenses/:id" element={<ExpenseDetail />} />
-            <Route path="/income" element={<Navigate to="/home?filter=income" replace />} />
+            <Route path="/income" element={<Navigate to="/?filter=income" replace />} />
             <Route path="/income/new" element={<IncomeForm />} />
             <Route path="/income/:id" element={<IncomeDetail />} />
             <Route path="/categories" element={<CategoryManager />} />

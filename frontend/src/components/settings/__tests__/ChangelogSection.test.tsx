@@ -77,8 +77,7 @@ describe('ChangelogSection 컴포넌트', () => {
   it('날짜를 표시한다', () => {
     renderChangelog()
     changelogs.forEach((log) => {
-      const elements = screen.getAllByText(log.date)
-      expect(elements.length).toBeGreaterThan(0)
+      expect(screen.getByText(log.date)).toBeInTheDocument()
     })
   })
 })

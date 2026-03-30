@@ -16,7 +16,7 @@ import { trackPageView } from '../utils/analytics'
 
 
 const navItems: { path: string; label: string; icon: LucideIcon }[] = [
-  { path: '/home', label: '가계부', icon: Receipt },
+  { path: '/', label: '가계부', icon: Receipt },
   { path: '/assets', label: '자산', icon: Landmark },
   { path: '/insights', label: '돌아보기', icon: TrendingUp },
   { path: '/settings', label: '더보기', icon: SettingsIcon },
@@ -51,7 +51,7 @@ export default function Layout() {
   const activeHousehold = households.find(h => h.id === activeHouseholdId)
 
   const isActive = (path: string) =>
-    path === '/home' ? location.pathname === '/home' : location.pathname.startsWith(path)
+    path === '/' ? location.pathname === '/' : location.pathname.startsWith(path)
 
   const isDev = import.meta.env.VITE_SENTRY_ENVIRONMENT === 'development'
 
@@ -110,7 +110,7 @@ export default function Layout() {
         <aside className="hidden md:flex md:sticky md:top-0 md:h-screen w-60 bg-[var(--surface)] border-r border-[var(--border-default)] p-4 flex-col">
           {/* 앱 타이틀 */}
           <div className="mb-4">
-            <Link to="/home" className="text-2xl font-bold text-grape-600 flex items-center gap-2"><img src="/favicon-book-192.png" alt="" className="w-8 h-8" />포도가계부</Link>
+            <Link to="/" className="text-2xl font-bold text-grape-600 flex items-center gap-2"><img src="/favicon-book-192.png" alt="" className="w-8 h-8" />포도가계부</Link>
           </div>
 
           {/* 가구 선택 드롭다운 */}

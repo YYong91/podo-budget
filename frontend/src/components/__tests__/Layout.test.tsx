@@ -46,7 +46,7 @@ vi.mock('../../stores/useHouseholdStore', () => ({
 /**
  * Layout 컴포넌트를 MemoryRouter로 감싸서 렌더링하는 헬퍼 함수
  */
-function renderLayout(initialPath = '/home') {
+function renderLayout(initialPath = '/') {
   return render(
     <MemoryRouter initialEntries={[initialPath]}>
       <Layout />
@@ -84,7 +84,7 @@ describe('Layout', () => {
     })
 
     it('현재 경로에 해당하는 네비게이션 항목에 aria-current를 설정한다', () => {
-      renderLayout('/home')
+      renderLayout('/')
       const transactionLinks = screen.getAllByRole('link', { name: '가계부' })
       transactionLinks.forEach(link => {
         expect(link).toHaveAttribute('aria-current', 'page')
@@ -92,7 +92,7 @@ describe('Layout', () => {
     })
 
     it('다른 경로의 네비게이션 항목에는 aria-current가 없다', () => {
-      renderLayout('/home')
+      renderLayout('/')
       const reportLinks = screen.getAllByRole('link', { name: /돌아보기/i })
       reportLinks.forEach(link => {
         expect(link).not.toHaveAttribute('aria-current')

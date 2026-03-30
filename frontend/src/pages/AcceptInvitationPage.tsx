@@ -42,7 +42,7 @@ export default function AcceptInvitationPage() {
     try {
       const result = await acceptInvitation(token)
       addToast('success', TOAST.HOUSEHOLD_JOINED(result.household_name))
-      navigate('/home', { replace: true })
+      navigate('/', { replace: true })
     } catch (err) {
       console.error('초대 수락 실패:', err)
       setError('초대 수락에 실패했습니다. 초대가 만료되었거나 이미 처리되었을 수 있습니다.')
@@ -68,7 +68,7 @@ export default function AcceptInvitationPage() {
     try {
       await rejectInvitation(token)
       addToast('success', TOAST.INVITE_REJECTED)
-      navigate('/home', { replace: true })
+      navigate('/', { replace: true })
     } catch (err) {
       console.error('초대 거절 실패:', err)
       setError('초대 거절에 실패했습니다')
@@ -88,7 +88,7 @@ export default function AcceptInvitationPage() {
           <h1 className="text-xl font-bold text-[var(--text-primary)]">유효하지 않은 초대 링크입니다</h1>
           <p className="text-sm text-[var(--text-tertiary)]">초대 링크가 올바르지 않습니다. 초대를 보낸 사람에게 다시 요청해주세요.</p>
           <button
-            onClick={() => navigate('/home')}
+            onClick={() => navigate('/')}
             className="px-4 py-2 text-sm font-medium text-white bg-grape-600 rounded-lg hover:bg-grape-700"
           >
             홈으로
@@ -107,7 +107,7 @@ export default function AcceptInvitationPage() {
           <h1 className="text-xl font-bold text-[var(--text-primary)]">초대 처리에 실패했습니다</h1>
           <p className="text-sm text-[var(--text-tertiary)]">{error}</p>
           <button
-            onClick={() => navigate('/home')}
+            onClick={() => navigate('/')}
             className="px-4 py-2 text-sm font-medium text-white bg-grape-600 rounded-lg hover:bg-grape-700"
           >
             홈으로
@@ -165,7 +165,7 @@ export default function AcceptInvitationPage() {
           </button>
 
           <button
-            onClick={() => navigate('/home')}
+            onClick={() => navigate('/')}
             disabled={isProcessing}
             className="w-full px-4 py-3 text-sm font-medium text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
