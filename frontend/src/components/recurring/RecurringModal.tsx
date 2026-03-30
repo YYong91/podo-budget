@@ -120,6 +120,7 @@ export default function RecurringModal({
             <input
               id="reclist-amount"
               type="number"
+              inputMode="numeric"
               value={formData.amount}
               onChange={(e) => updateField('amount', e.target.value)}
               placeholder="0"

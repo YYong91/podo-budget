@@ -11,10 +11,12 @@ import { useToast } from '../hooks/useToast'
 import { TOAST } from '../constants/toastMessages'
 import { expenseApi } from '../api/expenses'
 import { categoryApi } from '../api/categories'
+import { paymentMethodApi } from '../api/paymentMethods'
+import { useHouseholdStore } from '../stores/useHouseholdStore'
 import RegisterRecurringModal from '../components/RegisterRecurringModal'
 import ErrorState from '../components/ErrorState'
 import LoadingSpinner from '../components/LoadingSpinner'
-import type { Expense, Category } from '../types'
+import type { Expense, Category, PaymentMethod } from '../types'
 import { formatAmount } from '../utils/format'
 
 /**
@@ -28,9 +30,11 @@ export default function ExpenseDetail() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { addToast } = useToast()
+  const activeHouseholdId = useHouseholdStore((s) => s.activeHouseholdId)
 
   const [expense, setExpense] = useState<Expense | null>(null)
   const [categories, setCategories] = useState<Category[]>([])
+  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
@@ -42,6 +46,7 @@ export default function ExpenseDetail() {
     amount: 0,
     description: '',
     category_id: null as number | null,
+    payment_method_id: null as number | null,
     date: '',
     memo: '',
     exclude_from_stats: false,
@@ -53,18 +58,34 @@ export default function ExpenseDetail() {
     setError(false)
 
     try {
-      const [expenseRes, categoriesRes] = await Promise.all([
+      const promises: [
+        ReturnType<typeof expenseApi.getById>,
+        ReturnType<typeof categoryApi.getAll>,
+      ] = [
         expenseApi.getById(Number(id)),
         categoryApi.getAll(),
-      ])
+      ]
+      const [expenseRes, categoriesRes] = await Promise.all(promises)
       setExpense(expenseRes.data)
       setCategories(categoriesRes.data)
+
+      // 결제수단 목록 로드 (household_id가 있을 때만)
+      const hhId = expenseRes.data.household_id ?? activeHouseholdId
+      if (hhId) {
+        try {
+          const pmRes = await paymentMethodApi.getAll(hhId)
+          setPaymentMethods(pmRes.data.filter((m) => m.is_active))
+        } catch {
+          // 결제수단 로드 실패 시 무시 — 선택 필드이므로 동작에 지장 없음
+        }
+      }
 
       // 편집 폼 초기화
       setEditForm({
         amount: expenseRes.data.amount,
         description: expenseRes.data.description,
         category_id: expenseRes.data.category_id,
+        payment_method_id: expenseRes.data.payment_method_id,
         date: expenseRes.data.date.slice(0, 10), // YYYY-MM-DD
         memo: expenseRes.data.memo ?? '',
         exclude_from_stats: expenseRes.data.exclude_from_stats ?? false,
@@ -74,7 +95,7 @@ export default function ExpenseDetail() {
     } finally {
       setLoading(false)
     }
-  }, [id])
+  }, [id, activeHouseholdId])
 
   useEffect(() => {
     fetchData()
@@ -101,6 +122,7 @@ export default function ExpenseDetail() {
         amount: editForm.amount,
         description: editForm.description.trim(),
         category_id: editForm.category_id,
+        payment_method_id: editForm.payment_method_id,
         // date input은 YYYY-MM-DD 형식이므로 datetime으로 변환
         date: editForm.date.includes('T') ? editForm.date : `${editForm.date}T00:00:00`,
         memo: editForm.memo.trim() || undefined,
@@ -227,6 +249,7 @@ export default function ExpenseDetail() {
             <input
               id="expense-edit-amount"
               type="number"
+              inputMode="numeric"
               value={editForm.amount}
               onChange={(e) =>
                 setEditForm({ ...editForm, amount: Number(e.target.value) })
@@ -290,6 +313,39 @@ export default function ExpenseDetail() {
             <p className="text-lg text-[var(--text-primary)]">{categoryName}</p>
           )}
         </div>
+
+        {/* 결제수단 */}
+        {(paymentMethods.length > 0 || expense.payment_method_id) && (
+          <div>
+            <label htmlFor="expense-edit-payment-method" className="block text-sm font-medium text-[var(--text-tertiary)] mb-2">
+              결제수단
+            </label>
+            {isEditing ? (
+              <select
+                id="expense-edit-payment-method"
+                value={editForm.payment_method_id ?? ''}
+                onChange={(e) =>
+                  setEditForm({
+                    ...editForm,
+                    payment_method_id: e.target.value ? Number(e.target.value) : null,
+                  })
+                }
+                className="w-full px-4 py-2 text-lg border border-[var(--input-border)] rounded-xl focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
+              >
+                <option value="">선택 안 함</option>
+                {paymentMethods.map((pm) => (
+                  <option key={pm.id} value={pm.id}>
+                    {pm.name}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <p className="text-lg text-[var(--text-primary)]">
+                {paymentMethods.find((pm) => pm.id === expense.payment_method_id)?.name || '-'}
+              </p>
+            )}
+          </div>
+        )}
 
         {/* 날짜 */}
         <div>

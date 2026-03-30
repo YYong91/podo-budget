@@ -232,6 +232,7 @@ export default function BudgetManager() {
         <div className="flex items-center gap-2">
           <input
             type="number"
+            inputMode="numeric"
             min="0"
             step="10000"
             value={localTotalBudget}
@@ -387,6 +388,7 @@ export default function BudgetManager() {
                     <div className="flex items-center gap-1.5 shrink-0">
                       <input
                         type="number"
+                        inputMode="numeric"
                         min="0"
                         step="1000"
                         value={localAmounts[item.category_id] ?? ''}

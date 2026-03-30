@@ -735,10 +735,10 @@ async def kakao_webhook(request: Request, db: AsyncSession = Depends(get_db)) ->
         if utterance.startswith("/link"):
             return await _handle_link_command(utterance, bot_user, db, active_household_id, kakao_user_id=kakao_user_id)
 
-        # 슬래시 명령어 디스패치
-        for prefix, handler in _COMMAND_HANDLERS.items():
-            if utterance.startswith(prefix):
-                return await handler(utterance, bot_user, db, active_household_id)
+        # 슬래시 명령어 디스패치 (첫 단어 exact match — /change와 /change_payment 충돌 방지)
+        cmd = utterance.split(maxsplit=1)[0]
+        if cmd in _COMMAND_HANDLERS:
+            return await _COMMAND_HANDLERS[cmd](utterance, bot_user, db, active_household_id)
 
         # 자연어 지출 입력 처리 (콜백 URL이 있으면 전달)
         callback_url = user_request.get("callbackUrl")

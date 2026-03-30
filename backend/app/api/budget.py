@@ -20,6 +20,7 @@ from app.core.database import get_db
 from app.models.budget import Budget
 from app.models.category import Category
 from app.models.expense import Expense
+from app.models.household import Household
 from app.models.user import User
 from app.schemas.budget import (
     BudgetAlert,
@@ -116,26 +117,41 @@ async def create_budget(
 
 @router.get("/total-budget", response_model=TotalBudgetResponse)
 async def get_total_budget(
+    household_id: int | None = Query(None, description="가구 ID (없으면 활성 가구 자동 감지)"),
     current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ) -> object:
-    """월 총 예산 조회 (개인 설정)"""
+    """월 총 예산 조회 (가구 공유 설정)"""
+    if household_id is None:
+        household_id = await get_user_active_household_id(current_user, db)
+    await get_household_member(household_id, current_user, db)
+
+    result = await db.execute(select(Household).where(Household.id == household_id))
+    household = result.scalar_one()
     return TotalBudgetResponse(
-        total_monthly_budget=float(current_user.total_monthly_budget) if current_user.total_monthly_budget is not None else None,
+        total_monthly_budget=float(household.total_monthly_budget) if household.total_monthly_budget is not None else None,
     )
 
 
 @router.put("/total-budget", response_model=TotalBudgetResponse)
 async def update_total_budget(
     data: TotalBudgetUpdate,
+    household_id: int | None = Query(None, description="가구 ID (없으면 활성 가구 자동 감지)"),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> object:
-    """월 총 예산 수정 (개인 설정)"""
-    current_user.total_monthly_budget = data.amount  # type: ignore[assignment]
+    """월 총 예산 수정 (가구 공유 설정)"""
+    if household_id is None:
+        household_id = await get_user_active_household_id(current_user, db)
+    await get_household_member(household_id, current_user, db)
+
+    result = await db.execute(select(Household).where(Household.id == household_id))
+    household = result.scalar_one()
+    household.total_monthly_budget = data.amount  # type: ignore[assignment]
     await db.commit()
-    await db.refresh(current_user)
+    await db.refresh(household)
     return TotalBudgetResponse(
-        total_monthly_budget=float(current_user.total_monthly_budget) if current_user.total_monthly_budget is not None else None,
+        total_monthly_budget=float(household.total_monthly_budget) if household.total_monthly_budget is not None else None,
     )
 
 
@@ -267,6 +283,10 @@ async def get_monthly_stats(
     budget_scope = _budget_scope_filter(household_id)
     expense_scope = _expense_scope_filter(household_id)
 
+    # 가구의 총 예산 조회 (#501 — 가구 멤버 간 공유)
+    household_result = await db.execute(select(Household).where(Household.id == household_id))
+    household = household_result.scalar_one()
+
     year, mon = map(int, month.split("-"))
     start = datetime(year, mon, 1)
     end = datetime(year + 1, 1, 1) if mon == 12 else datetime(year, mon + 1, 1)
@@ -293,7 +313,7 @@ async def get_monthly_stats(
     if not budget_map:
         return BudgetMonthlyStatsResponse(
             month=month,
-            total_budget=float(current_user.total_monthly_budget) if current_user.total_monthly_budget else None,
+            total_budget=float(household.total_monthly_budget) if household.total_monthly_budget else None,
             total_spent=0.0,
             categories=[],
         )
@@ -346,7 +366,7 @@ async def get_monthly_stats(
 
     categories.sort(key=lambda x: -x.usage_percentage)
 
-    total_budget = float(current_user.total_monthly_budget) if current_user.total_monthly_budget else total_budget_sum or None
+    total_budget = float(household.total_monthly_budget) if household.total_monthly_budget else total_budget_sum or None
 
     return BudgetMonthlyStatsResponse(
         month=month,

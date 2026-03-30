@@ -340,8 +340,8 @@ describe('ParsedItemPreviewCard', () => {
 
   describe('결제수단 선택', () => {
     const paymentMethods = [
-      { id: 1, household_id: 1, created_by: 1, name: '삼성카드', type: 'credit_card' as const, monthly_target: null, is_default: true, is_active: true, display_order: 0, created_at: '', updated_at: '' },
-      { id: 2, household_id: 1, created_by: 1, name: '현금', type: 'cash' as const, monthly_target: null, is_default: false, is_active: true, display_order: 1, created_at: '', updated_at: '' },
+      { id: 1, household_id: 1, created_by: 1, name: '삼성카드', type: 'credit_card' as const, monthly_target: null, is_default: true, is_system: false, is_active: true, display_order: 0, created_at: '', updated_at: '' },
+      { id: 2, household_id: 1, created_by: 1, name: '현금', type: 'cash' as const, monthly_target: null, is_default: false, is_system: false, is_active: true, display_order: 1, created_at: '', updated_at: '' },
     ]
 
     it('결제수단 드롭다운을 표시한다', () => {

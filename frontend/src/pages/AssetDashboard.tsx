@@ -451,6 +451,7 @@ export default function AssetDashboard() {
                 <input
                   id="goal-amount"
                   type="number"
+                  inputMode="numeric"
                   value={goalAmount}
                   onChange={e => setGoalAmount(e.target.value)}
                   placeholder="예: 100000000"

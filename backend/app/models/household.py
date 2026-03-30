@@ -8,7 +8,7 @@ DDD 관점:
 - 도메인 불변식: 가구는 반드시 한 명 이상의 owner를 가져야 합니다.
 """
 
-from sqlalchemy import Column, DateTime, Integer, String
+from sqlalchemy import Column, DateTime, Integer, Numeric, String
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
@@ -41,6 +41,7 @@ class Household(Base):  # type: ignore[misc]
     name = Column(String(50), nullable=False)
     description = Column(String(200), nullable=True)
     currency = Column(String(3), default="KRW", nullable=False)
+    total_monthly_budget = Column(Numeric(12, 2), nullable=True)  # 월 총 예산 (가구 공유)
     created_at = Column(DateTime, default=func.now(), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now(), server_default=func.now(), nullable=False)
     deleted_at = Column(DateTime, nullable=True)  # 소프트 삭제 지원

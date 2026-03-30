@@ -156,17 +156,18 @@ export default function PaymentMethodManager() {
     }
   }, [fetchData, addToast])
 
-  /** 순서 변경 (위/아래) */
+  /** 순서 변경 (위/아래) — 사용자 결제수단만 대상 */
   const handleReorder = useCallback(async (index: number, direction: 'up' | 'down') => {
-    const newMethods = [...methods]
+    const userMethods = methods.filter((m) => !m.is_system)
+    const systemMethods = methods.filter((m) => m.is_system)
     const swapIndex = direction === 'up' ? index - 1 : index + 1
-    if (swapIndex < 0 || swapIndex >= newMethods.length) return
+    if (swapIndex < 0 || swapIndex >= userMethods.length) return
 
-    ;[newMethods[index], newMethods[swapIndex]] = [newMethods[swapIndex], newMethods[index]]
-    setMethods(newMethods)
+    ;[userMethods[index], userMethods[swapIndex]] = [userMethods[swapIndex], userMethods[index]]
+    setMethods([...systemMethods, ...userMethods])
 
     try {
-      await paymentMethodApi.reorder(newMethods.map((m) => m.id))
+      await paymentMethodApi.reorder(userMethods.map((m) => m.id))
     } catch {
       addToast('error', TOAST.ORDER_CHANGE_FAILED)
       await fetchData()
@@ -296,6 +297,9 @@ export default function PaymentMethodManager() {
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-semibold text-[var(--text-primary)]">{method.name}</span>
                         <span className="text-xs text-[var(--text-muted)]">{TYPE_LABELS[method.type]}</span>
+                        {method.is_system && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-warm-100 text-[var(--text-muted)]">기본</span>
+                        )}
                       </div>
                     </div>
 
@@ -341,7 +345,7 @@ export default function PaymentMethodManager() {
       {/* 편집 모드 */}
       {!loading && methods.length > 0 && editMode && (
         <div className="space-y-3">
-          {methods.map((method, index) => (
+          {methods.filter((m) => !m.is_system).map((method, index) => (
             <div
               key={method.id}
               data-testid={`payment-method-${method.id}`}
@@ -370,6 +374,7 @@ export default function PaymentMethodManager() {
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)] text-sm">₩</span>
                     <input
                       type="number"
+                      inputMode="numeric"
                       value={editTarget}
                       onChange={(e) => setEditTarget(e.target.value)}
                       placeholder="월 실적 목표 (선택)"
@@ -408,7 +413,7 @@ export default function PaymentMethodManager() {
                       </button>
                       <button
                         onClick={() => handleReorder(index, 'down')}
-                        disabled={index === methods.length - 1}
+                        disabled={index === methods.filter((m) => !m.is_system).length - 1}
                         aria-label="아래로"
                         className="p-0.5 rounded hover:bg-[var(--surface-hover)] transition-colors disabled:opacity-30"
                       >
@@ -490,6 +495,7 @@ export default function PaymentMethodManager() {
                   <input
                     id="pm-target"
                     type="number"
+                    inputMode="numeric"
                     value={formTarget}
                     onChange={(e) => setFormTarget(e.target.value)}
                     placeholder="0"

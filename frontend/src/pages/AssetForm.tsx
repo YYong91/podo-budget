@@ -444,6 +444,7 @@ export default function AssetForm() {
                   <input
                     id="asset-quantity"
                     type="number"
+                    inputMode="decimal"
                     step="any"
                     value={form.quantity ?? ''}
                     onChange={e => setForm(f => ({ ...f, quantity: e.target.value ? Number(e.target.value) : null }))}
@@ -456,6 +457,7 @@ export default function AssetForm() {
                   <input
                     id="asset-avg-buy-price"
                     type="number"
+                    inputMode="numeric"
                     step="any"
                     value={form.avg_buy_price ?? ''}
                     onChange={e => setForm(f => ({ ...f, avg_buy_price: e.target.value ? Number(e.target.value) : null }))}
@@ -477,6 +479,7 @@ export default function AssetForm() {
                 <input
                   id="asset-manual-value"
                   type="number"
+                  inputMode="numeric"
                   step="any"
                   value={form.manual_value ?? ''}
                   onChange={e => setForm(f => ({ ...f, manual_value: e.target.value ? Number(e.target.value) : null }))}
@@ -490,6 +493,7 @@ export default function AssetForm() {
                   <input
                     id="asset-interest-rate"
                     type="number"
+                    inputMode="decimal"
                     step="0.01"
                     value={form.interest_rate ?? ''}
                     onChange={e => setForm(f => ({ ...f, interest_rate: e.target.value ? Number(e.target.value) : null }))}
@@ -529,6 +533,7 @@ export default function AssetForm() {
                     <input
                       id="asset-monthly-payment"
                       type="number"
+                      inputMode="numeric"
                       step="any"
                       value={form.monthly_payment ?? ''}
                       onChange={e => setForm(f => ({ ...f, monthly_payment: e.target.value ? Number(e.target.value) : null }))}

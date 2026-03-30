@@ -18,6 +18,14 @@ export interface Changelog {
 
 export const changelogs: Changelog[] = [
   {
+    version: '0.13.1',
+    date: '2026-03-29',
+    title: '기본 결제수단 제공',
+    items: [
+      { tag: '신규', text: '현금, 계좌이체를 시스템 기본 결제수단으로 제공 — 신규 사용자도 바로 사용 가능' },
+    ],
+  },
+  {
     version: '0.12.0',
     date: '2026-03-27',
     title: '결제수단 UX 개선',

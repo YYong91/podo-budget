@@ -128,7 +128,7 @@ async def test_monthly_stats_total_budget_fallback(
     db_session: AsyncSession,
 ):
     """total_monthly_budget 미설정 시 카테고리 예산 합산으로 fallback"""
-    # test_user.total_monthly_budget은 기본 None
+    # test_household.total_monthly_budget은 기본 None
     cat1 = Category(user_id=test_user.id, name="식비")
     cat2 = Category(user_id=test_user.id, name="교통비")
     db_session.add_all([cat1, cat2])
@@ -153,15 +153,15 @@ async def test_monthly_stats_total_budget_fallback(
 
 
 @pytest.mark.asyncio
-async def test_monthly_stats_total_budget_from_user(
+async def test_monthly_stats_total_budget_from_household(
     authenticated_client: AsyncClient,
     test_user: User,
     test_household: Household,
     db_session: AsyncSession,
 ):
-    """total_monthly_budget 설정 시 해당 값 반환"""
-    # 사용자에 총 예산 설정
-    test_user.total_monthly_budget = 1000000
+    """total_monthly_budget 설정 시 해당 값 반환 (가구 공유)"""
+    # 가구에 총 예산 설정 (#501)
+    test_household.total_monthly_budget = 1000000
     await db_session.commit()
 
     cat = Category(user_id=test_user.id, name="식비")
@@ -393,8 +393,8 @@ async def test_alerts_default_current_month(
 
 
 @pytest.mark.asyncio
-async def test_get_total_budget_default(authenticated_client: AsyncClient, test_user: User):
-    """total-budget 기본값 조회 (None)"""
+async def test_get_total_budget_default(authenticated_client: AsyncClient, test_user: User, test_household: Household):
+    """total-budget 기본값 조회 (None) — 가구 공유"""
     response = await authenticated_client.get("/api/budgets/total-budget")
     assert response.status_code == 200
     data = response.json()
@@ -405,9 +405,10 @@ async def test_get_total_budget_default(authenticated_client: AsyncClient, test_
 async def test_update_total_budget(
     authenticated_client: AsyncClient,
     test_user: User,
+    test_household: Household,
     db_session: AsyncSession,
 ):
-    """total-budget 수정"""
+    """total-budget 수정 — 가구에 저장"""
     response = await authenticated_client.put(
         "/api/budgets/total-budget",
         json={"amount": 2000000},
@@ -416,7 +417,7 @@ async def test_update_total_budget(
     data = response.json()
     assert data["total_monthly_budget"] == 2000000.0
 
-    # 다시 조회
+    # 다시 조회 — 같은 가구의 다른 멤버도 볼 수 있어야 함
     response2 = await authenticated_client.get("/api/budgets/total-budget")
     assert response2.json()["total_monthly_budget"] == 2000000.0
 
@@ -425,6 +426,7 @@ async def test_update_total_budget(
 async def test_update_total_budget_null(
     authenticated_client: AsyncClient,
     test_user: User,
+    test_household: Household,
     db_session: AsyncSession,
 ):
     """total-budget null로 초기화"""

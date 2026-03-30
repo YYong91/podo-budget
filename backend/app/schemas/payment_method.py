@@ -44,12 +44,13 @@ class PaymentMethodResponse(BaseModel):
     """결제수단 응답"""
 
     id: int
-    household_id: int
-    created_by: int
+    household_id: int | None
+    created_by: int | None
     name: str
     type: str
     monthly_target: float | None
     is_default: bool
+    is_system: bool = False
     is_active: bool
     display_order: int
     created_at: datetime
