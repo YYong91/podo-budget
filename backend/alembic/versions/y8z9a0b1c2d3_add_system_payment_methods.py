@@ -30,7 +30,7 @@ SYSTEM_PAYMENT_METHODS = [
 def upgrade() -> None:
     # 1. is_system 컬럼 추가
     with op.batch_alter_table("payment_methods") as batch_op:
-        batch_op.add_column(sa.Column("is_system", sa.Boolean(), nullable=False, server_default="0"))
+        batch_op.add_column(sa.Column("is_system", sa.Boolean(), nullable=False, server_default=sa.text("false")))
         # household_id, created_by를 nullable로 변경 (시스템 결제수단은 NULL)
         batch_op.alter_column("household_id", existing_type=sa.Integer(), nullable=True)
         batch_op.alter_column("created_by", existing_type=sa.Integer(), nullable=True)
@@ -39,14 +39,14 @@ def upgrade() -> None:
     conn = op.get_bind()
     for pm in SYSTEM_PAYMENT_METHODS:
         existing = conn.execute(
-            sa.text("SELECT id FROM payment_methods WHERE name = :name AND is_system = 1"),
+            sa.text("SELECT id FROM payment_methods WHERE name = :name AND is_system = true"),
             {"name": pm["name"]},
         ).fetchone()
         if existing is None:
             conn.execute(
                 sa.text(
                     "INSERT INTO payment_methods (household_id, created_by, name, type, is_default, is_system, is_active, display_order, created_at, updated_at) "
-                    "VALUES (NULL, NULL, :name, :type, 0, 1, 1, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)"
+                    "VALUES (NULL, NULL, :name, :type, false, true, true, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)"
                 ),
                 {"name": pm["name"], "type": pm["type"]},
             )
@@ -57,7 +57,7 @@ def downgrade() -> None:
     # 시스템 결제수단 삭제
     for pm in SYSTEM_PAYMENT_METHODS:
         conn.execute(
-            sa.text("DELETE FROM payment_methods WHERE name = :name AND is_system = 1"),
+            sa.text("DELETE FROM payment_methods WHERE name = :name AND is_system = true"),
             {"name": pm["name"]},
         )
 
