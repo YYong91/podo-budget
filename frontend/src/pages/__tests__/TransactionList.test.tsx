@@ -26,8 +26,12 @@ vi.mock('../../hooks/useToast', () => ({
 }))
 
 vi.mock('../../stores/useHouseholdStore', () => ({
-  useHouseholdStore: (selector: (s: { activeHouseholdId: number }) => unknown) =>
-    selector({ activeHouseholdId: 1 }),
+  useHouseholdStore: (selector: (s: Record<string, unknown>) => unknown) =>
+    selector({
+      activeHouseholdId: 1,
+      currentHousehold: null,
+      fetchHouseholdDetail: vi.fn(),
+    }),
 }))
 
 vi.mock('../../contexts/AuthContext', () => ({

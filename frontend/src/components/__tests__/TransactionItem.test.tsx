@@ -91,3 +91,20 @@ describe('TransactionItem', () => {
     expect(link.className).toContain('opacity-50')
   })
 })
+
+describe('TransactionItem 기록자 표시', () => {
+  it('recordedBy가 있으면 username을 표시한다', () => {
+    renderItem({ recordedBy: 'seungyong' })
+    expect(screen.getByText('seungyong')).toBeInTheDocument()
+  })
+
+  it('recordedBy가 없으면 username을 표시하지 않는다', () => {
+    renderItem()
+    expect(screen.queryByText('seungyong')).not.toBeInTheDocument()
+  })
+
+  it('recordedBy가 undefined이면 username을 표시하지 않는다', () => {
+    renderItem({ recordedBy: undefined })
+    expect(screen.queryByText('seungyong')).not.toBeInTheDocument()
+  })
+})
