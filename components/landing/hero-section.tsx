@@ -22,13 +22,15 @@ export function HeroSection() {
             isInView ? "animate-fade-in-up" : "opacity-0"
           }`}
         >
-          <h1 className="text-balance text-3xl font-bold leading-tight text-foreground md:text-5xl">
-            포도알처럼 하나씩,
-            <br />
-            알찬 가계부
+          <h1 className="text-3xl font-bold leading-tight text-foreground sm:text-4xl md:text-5xl">
+            <span className="block">포도알처럼 하나씩,</span>
+            <span className="block">알찬 가계부</span>
           </h1>
           <p className="mt-4 max-w-md text-base leading-relaxed text-muted-foreground md:mt-6 md:text-lg">
-            말로 기록하면 AI가 알아서 분류하는 우리 집 가계부
+            <span className="block sm:inline">말로 기록하면</span>{" "}
+            <span className="block sm:inline">AI가 알아서 분류하는</span>
+            <br className="hidden sm:block" />
+            우리 집 가계부
           </p>
           <button className="mt-8 rounded-xl bg-primary px-8 py-4 text-lg font-semibold text-primary-foreground shadow-lg shadow-primary/25 transition-all hover:bg-primary/90 hover:shadow-xl hover:shadow-primary/30">
             지금 시작하기
