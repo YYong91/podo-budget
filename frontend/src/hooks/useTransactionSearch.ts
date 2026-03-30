@@ -25,6 +25,7 @@ export interface UnifiedTransaction {
   description: string
   amount: number
   category_id: number | null
+  user_id: number | null
   exclude_from_stats?: boolean
   raw_input?: string | null
   recurring_transaction_id?: number | null
