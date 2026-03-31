@@ -17,20 +17,6 @@ export function CTAFooter() {
         <div className="pointer-events-none absolute inset-0">
           <div className="absolute -right-20 -top-20 h-80 w-80 rounded-full bg-white/10 blur-3xl" />
           <div className="absolute -bottom-20 -left-20 h-80 w-80 rounded-full bg-white/5 blur-3xl" />
-          {/* Grape decoration */}
-          <div className="absolute right-10 top-1/2 -translate-y-1/2 opacity-10">
-            <svg viewBox="0 0 100 120" className="h-60 w-60" fill="white">
-              <circle cx="50" cy="20" r="15" />
-              <circle cx="30" cy="40" r="15" />
-              <circle cx="70" cy="40" r="15" />
-              <circle cx="20" cy="65" r="15" />
-              <circle cx="50" cy="60" r="15" />
-              <circle cx="80" cy="65" r="15" />
-              <circle cx="35" cy="85" r="15" />
-              <circle cx="65" cy="85" r="15" />
-              <circle cx="50" cy="105" r="12" />
-            </svg>
-          </div>
         </div>
 
         <div
