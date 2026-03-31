@@ -24,7 +24,7 @@ export function Header() {
           {/* Logo */}
           <div className="flex items-center gap-2">
             <img
-              src="/maskable-icon-512x512.png"
+              src="/logo-transparent-192.png"
               alt="포도가계부 로고"
               width={40}
               height={40}

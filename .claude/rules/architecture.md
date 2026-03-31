@@ -32,11 +32,10 @@ api/ → schemas/ → services/ → models/ → database
 - 가구 접근 권한은 `get_household_member()`로 검증
 - user_id는 "누가 입력했는지" 기록용으로 유지
 
-## 인증 (podo-auth SSO)
-- 자체 로그인 없음 — podo-auth SSO 전용 (Shadow User 패턴)
-- 토큰: 쿠키(podo_access_token) > localStorage > in-memory (Safari 호환)
-- 프론트: `isAuthenticated` 동기 판단 → 미인증 시 auth.podonest.com으로 리디렉션
-- 백엔드: `get_current_user` 디펜던시로 JWT 검증
+## 인증 (Supabase Auth)
+- Supabase Auth 기반 Google OAuth
+- 프론트: Supabase 클라이언트로 인증 상태 관리 → 미인증 시 `/login`으로 리디렉션
+- 백엔드: Supabase JWT 검증
 
 ## LLM 통합
 - LLMProvider 추상 클래스를 통해서만 접근

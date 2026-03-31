@@ -31,9 +31,7 @@ export function MessengerSection() {
             <span className="block sm:inline">한 줄이면 끝.</span>
           </p>
           <p className="mt-4 text-base leading-relaxed text-warm-500 md:text-lg">
-            AI가 카테고리, 날짜, 결제수단까지
-            <br className="hidden sm:block" />
-            알아서 분류해드려요.
+            카테고리, 날짜, 결제수단까지 알아서 분류해드려요.
           </p>
 
           {/* Messenger Icons */}
