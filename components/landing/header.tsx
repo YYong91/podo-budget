@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import Image from "next/image"
 
 export function Header() {
   const [scrolled, setScrolled] = useState(false)
@@ -25,21 +26,13 @@ export function Header() {
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
           <div className="flex items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary">
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                className="h-5 w-5 text-primary-foreground"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
-                <circle cx="12" cy="8" r="3" fill="currentColor" />
-                <circle cx="7" cy="14" r="3" fill="currentColor" />
-                <circle cx="17" cy="14" r="3" fill="currentColor" />
-                <circle cx="12" cy="18" r="2" fill="currentColor" />
-                <path d="M12 2v3" strokeLinecap="round" />
-              </svg>
-            </div>
+            <Image
+              src="/logo.png"
+              alt="포도가계부 로고"
+              width={40}
+              height={40}
+              className="h-10 w-10"
+            />
             <span className="text-lg font-bold text-primary">포도가계부</span>
           </div>
 

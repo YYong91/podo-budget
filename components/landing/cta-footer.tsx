@@ -1,6 +1,7 @@
 "use client"
 
 import { useInView } from "@/hooks/use-in-view"
+import Image from "next/image"
 
 export function CTAFooter() {
   const { ref, isInView } = useInView()
@@ -105,17 +106,13 @@ export function CTAFooter() {
           <div className="flex flex-col items-center gap-8">
             {/* Logo */}
             <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary">
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  className="h-4 w-4 text-primary-foreground"
-                >
-                  <circle cx="12" cy="8" r="3" fill="currentColor" />
-                  <circle cx="7" cy="14" r="3" fill="currentColor" />
-                  <circle cx="17" cy="14" r="3" fill="currentColor" />
-                </svg>
-              </div>
+              <Image
+                src="/logo.png"
+                alt="포도가계부 로고"
+                width={36}
+                height={36}
+                className="h-9 w-9"
+              />
               <span className="text-lg font-bold text-background">포도가계부</span>
             </div>
 
