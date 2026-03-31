@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react"
+import { Link } from "react-router-dom"
 
 export function Header() {
   const [scrolled, setScrolled] = useState(false)
@@ -34,9 +35,12 @@ export function Header() {
           </div>
 
           {/* Login Button */}
-          <button className="rounded-xl border-2 border-grape-500 px-4 py-2 text-sm font-medium text-grape-500 transition-colors hover:bg-grape-500 hover:text-white">
+          <Link
+            to="/login"
+            className="rounded-xl border-2 border-grape-500 px-4 py-2 text-sm font-medium text-grape-500 transition-colors hover:bg-grape-500 hover:text-white"
+          >
             로그인
-          </button>
+          </Link>
         </div>
       </div>
     </header>
