@@ -2,14 +2,14 @@ import { useInView } from '../../hooks/useInView'
 
 const members = [
   { name: "엄마", initials: "엄", color: "bg-grape-100 text-grape-700", border: "border-grape-200" },
-  { name: "아빠", initials: "아", color: "bg-leaf-100 text-[#15803d]", border: "border-leaf-200" },
-  { name: "나",   initials: "나", color: "bg-[#fef9c3] text-[#a16207]", border: "border-[#fef08a]" },
+  { name: "아빠", initials: "아", color: "bg-leaf-100 text-leaf-700", border: "border-leaf-200" },
+  { name: "나",   initials: "나", color: "bg-yellow-100 text-yellow-700", border: "border-yellow-200" },
 ]
 
 const transactions = [
   { member: "엄마", color: "bg-grape-100 text-grape-700", text: "김치찌개 8,000원", time: "방금 전",   rotate: "-rotate-2", pos: "left-0 -top-6" },
-  { member: "아빠", color: "bg-leaf-100 text-[#15803d]", text: "지하철 50,000원",  time: "3분 전",   rotate: "rotate-2",  pos: "right-0 top-4" },
-  { member: "나",   color: "bg-[#fef9c3] text-[#a16207]", text: "문구류 12,000원",  time: "10분 전",  rotate: "-rotate-1", pos: "left-4 bottom-0" },
+  { member: "아빠", color: "bg-leaf-100 text-leaf-700", text: "지하철 50,000원",  time: "3분 전",   rotate: "rotate-2",  pos: "right-0 top-4" },
+  { member: "나",   color: "bg-yellow-100 text-yellow-700", text: "문구류 12,000원",  time: "10분 전",  rotate: "-rotate-1", pos: "left-4 bottom-0" },
 ]
 
 export function SharedSection() {

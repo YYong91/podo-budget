@@ -19,8 +19,8 @@ const features = [
     description: "넷플릭스, 통신비, 보험료까지. 매달 나가는 고정 지출을 잊지 않고 관리해요.",
     highlight: "자동 기록",
     iconBg: "bg-leaf-100",
-    iconColor: "text-green-700",
-    highlightBg: "bg-leaf-100 text-green-700",
+    iconColor: "text-leaf-700",
+    highlightBg: "bg-leaf-100 text-leaf-700",
     icon: (
       <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
@@ -58,8 +58,8 @@ const features = [
     description: "기본 카테고리가 안 맞으신다면? 나만의 분류 체계로 커스텀하세요.",
     highlight: "자유롭게",
     iconBg: "bg-green-50",
-    iconColor: "text-green-700",
-    highlightBg: "bg-green-50 text-green-700",
+    iconColor: "text-leaf-700",
+    highlightBg: "bg-green-50 text-leaf-700",
     icon: (
       <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3z" />
@@ -98,7 +98,7 @@ export function FeaturesSection() {
         <div className="grid w-full grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {features.map((feature, i) => (
             <div
-              key={i}
+              key={feature.title}
               className={`group relative overflow-hidden rounded-2xl border border-warm-300 bg-white p-6 shadow-sm transition-all duration-[400ms] [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-1 hover:border-grape-400 hover:shadow-lg ${
                 isInView ? "animate-fade-in-up" : "opacity-0"
               }`}

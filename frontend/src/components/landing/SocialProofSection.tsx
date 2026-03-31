@@ -141,7 +141,7 @@ export function SocialProofSection() {
           <p className="mb-3 text-xs font-bold uppercase tracking-widest text-grape-400">
             왜 포도인가요
           </p>
-          <h2 className="text-balance text-3xl font-bold text-stone-800 sm:text-4xl">
+          <h2 className="text-balance text-3xl font-bold text-warm-800 sm:text-4xl">
             기록이 습관이 되는<br className="sm:hidden" /> 가장 쉬운 방법
           </h2>
         </div>
@@ -168,9 +168,9 @@ export function SocialProofSection() {
                   </span>
                   <span className="text-lg font-bold text-grape-500 sm:text-xl">{stat.unit}</span>
                 </div>
-                <p className="mt-0.5 text-sm font-semibold text-stone-700">{stat.suffix}</p>
+                <p className="mt-0.5 text-sm font-semibold text-warm-700">{stat.suffix}</p>
               </div>
-              <p className="hidden whitespace-pre-line text-xs leading-relaxed text-stone-400 sm:block">
+              <p className="hidden whitespace-pre-line text-xs leading-relaxed text-warm-400 sm:block">
                 {stat.desc}
               </p>
             </div>
@@ -213,7 +213,7 @@ export function SocialProofSection() {
               </div>
 
               {/* 인용문 */}
-              <p className="flex-1 text-[15px] leading-relaxed text-stone-600">
+              <p className="flex-1 text-[15px] leading-relaxed text-warm-600">
                 &ldquo;{s.quote}&rdquo;
               </p>
 
@@ -222,7 +222,7 @@ export function SocialProofSection() {
                 <div className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold ${s.avatarBg}`}>
                   {s.initial}
                 </div>
-                <span className="text-xs text-stone-400">포도 사용자</span>
+                <span className="text-xs text-warm-400">포도 사용자</span>
               </div>
             </div>
           ))}

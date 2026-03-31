@@ -19,7 +19,7 @@ const sideStats = [
     label: "저번 달 대비",
     value: "-12%",
     sub: "잘하고 있어요!",
-    subColor: "text-green-700",
+    subColor: "text-leaf-700",
     bg: "bg-leaf-100",
     border: "border-leaf-200",
   },

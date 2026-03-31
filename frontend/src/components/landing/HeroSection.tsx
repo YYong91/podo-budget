@@ -33,7 +33,7 @@ function TypingDots() {
       {[0, 1, 2].map((i) => (
         <span
           key={i}
-          className="block h-1.5 w-1.5 rounded-full bg-purple-400"
+          className="block h-1.5 w-1.5 rounded-full bg-grape-400"
           style={{
             animation: `typing-bounce 1.2s ease-in-out ${i * 0.2}s infinite`,
           }}
@@ -45,12 +45,12 @@ function TypingDots() {
 
 function ParsedCard() {
   return (
-    <div className="rounded-xl border border-purple-100 bg-white p-3 shadow-sm text-xs">
+    <div className="rounded-xl border border-grape-100 bg-white p-3 shadow-sm text-xs">
       <div className="mb-2 flex items-center gap-1.5">
-        <span className="flex h-4 w-4 items-center justify-center rounded-full bg-purple-100 text-[10px]">
+        <span className="flex h-4 w-4 items-center justify-center rounded-full bg-grape-100 text-[10px]">
           ✓
         </span>
-        <span className="font-semibold text-purple-700">파싱 완료</span>
+        <span className="font-semibold text-grape-700">파싱 완료</span>
       </div>
       <div className="space-y-1.5">
         {[
@@ -88,7 +88,7 @@ function ChatPhone({ visible }: { visible: boolean }) {
   return (
     <div className="relative h-[540px] w-[268px] overflow-hidden rounded-[3rem] border-[7px] border-stone-900/10 bg-white shadow-2xl md:h-[600px] md:w-[290px]">
       {/* Status bar */}
-      <div className="flex items-center justify-between bg-purple-600 px-5 pb-2 pt-3 text-[10px] text-white/90">
+      <div className="flex items-center justify-between bg-grape-600 px-5 pb-2 pt-3 text-[10px] text-white/90">
         <span className="font-semibold">9:41</span>
         <div className="flex gap-1">
           <svg viewBox="0 0 24 24" className="h-3 w-3 fill-current"><path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3a4.237 4.237 0 0 0-6 0zm-4-4l2 2a7.074 7.074 0 0 1 10 0l2-2C15.14 9.14 8.87 9.14 5 13z"/></svg>
@@ -98,7 +98,7 @@ function ChatPhone({ visible }: { visible: boolean }) {
 
       {/* Chat header */}
       <div className="flex items-center gap-2 border-b border-stone-100 bg-white px-4 py-2.5 shadow-sm">
-        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-purple-100 text-base">
+        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-grape-100 text-base">
           🍇
         </div>
         <div>
@@ -122,7 +122,7 @@ function ChatPhone({ visible }: { visible: boolean }) {
           <div
             className="animate-bubble-in flex justify-end"
           >
-            <div className="max-w-[75%] rounded-2xl rounded-br-sm bg-purple-600 px-3 py-2 text-xs text-white shadow-sm">
+            <div className="max-w-[75%] rounded-2xl rounded-br-sm bg-grape-600 px-3 py-2 text-xs text-white shadow-sm">
               점심 김치찌개 8000원
             </div>
           </div>
@@ -161,7 +161,7 @@ function ChatPhone({ visible }: { visible: boolean }) {
         <div className="flex flex-1 items-center rounded-full bg-stone-100 px-3 py-1.5 text-[11px] text-stone-400">
           메시지 입력...
         </div>
-        <div className="flex h-7 w-7 items-center justify-center rounded-full bg-purple-600">
+        <div className="flex h-7 w-7 items-center justify-center rounded-full bg-grape-600">
           <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 fill-white">
             <path d="M2 21l21-9L2 3v7l15 2-15 2z" />
           </svg>
@@ -179,8 +179,7 @@ export function HeroSection() {
 
   return (
     <section
-      className="relative min-h-screen overflow-hidden pt-16"
-      style={{ backgroundColor: "#fefce8" }}
+      className="relative min-h-screen overflow-hidden bg-cream pt-16"
     >
       {/* Grape glow orb */}
       <div
@@ -209,7 +208,7 @@ export function HeroSection() {
           }`}
         >
           {/* Badge */}
-          <div className="mb-4 inline-flex items-center gap-1.5 rounded-full border border-grape-200 bg-purple-50 px-3.5 py-1 text-xs font-medium text-grape-700">
+          <div className="mb-4 inline-flex items-center gap-1.5 rounded-full border border-grape-200 bg-grape-50 px-3.5 py-1 text-xs font-medium text-grape-700">
             <span className="h-1.5 w-1.5 rounded-full bg-grape-500 inline-block" />
             AI 가계부의 새로운 기준
           </div>
@@ -245,7 +244,7 @@ export function HeroSection() {
 
           {/* CTA Button */}
           <button
-            className="mt-8 font-bold text-white text-base shadow-lg transition-all duration-200 hover:-translate-y-0.5 hover:shadow-purple-300/60 hover:shadow-xl active:scale-95"
+            className="mt-8 font-bold text-white text-base shadow-lg transition-all duration-200 hover:-translate-y-0.5 hover:shadow-grape-300/60 hover:shadow-xl active:scale-95"
             style={{
               borderRadius: 32,
               background:
