@@ -68,6 +68,39 @@
     60% { transform: translateY(-5px); }
     100% { transform: translateY(0); opacity: 1; }
   }
+
+  /* 랜딩페이지 애니메이션 */
+  --animate-fade-in-up: fade-in-up 0.6s ease-out both;
+  --animate-float-glow: float-glow 8s ease-in-out infinite;
+  --animate-bubble-in: bubble-in 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+  --animate-cta-pulse: cta-pulse 2s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+
+  @keyframes fade-in-up {
+    from { opacity: 0; transform: translateY(24px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes float-glow {
+    0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.5; }
+    50%      { transform: translate(-50%, -52%) scale(1.06); opacity: 0.7; }
+  }
+
+  @keyframes bubble-in {
+    from { opacity: 0; transform: translateY(10px) scale(0.95); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  @keyframes cta-pulse {
+    0%   { box-shadow: 0 0 0 0 oklch(0.55 0.27 295 / 0.5); }
+    60%  { box-shadow: 0 0 0 12px oklch(0.55 0.27 295 / 0); }
+    100% { box-shadow: 0 0 0 0 oklch(0.55 0.27 295 / 0); }
+  }
+}
+
+/* 히어로 채팅 타이핑 점 애니메이션 */
+@keyframes typing-bounce {
+  0%, 60%, 100% { transform: translateY(0); }
+  30% { transform: translateY(-4px); }
 }
 
 /* ─── 시멘틱 테마 변수 (라이트 모드 기본값) ─── */
