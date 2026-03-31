@@ -4,6 +4,7 @@ import { MessengerSection } from "@/components/landing/messenger-section"
 import { SharedSection } from "@/components/landing/shared-section"
 import { InsightsSection } from "@/components/landing/insights-section"
 import { FeaturesSection } from "@/components/landing/features-section"
+import { SocialProofSection } from "@/components/landing/social-proof-section"
 import { CTAFooter } from "@/components/landing/cta-footer"
 
 export default function LandingPage() {
@@ -15,6 +16,7 @@ export default function LandingPage() {
       <SharedSection />
       <InsightsSection />
       <FeaturesSection />
+      <SocialProofSection />
       <CTAFooter />
     </main>
   )
