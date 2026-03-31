@@ -13,7 +13,6 @@ function useCountUp(target: number, duration = 2000, started = false) {
     const tick = (now: number) => {
       const elapsed = now - startTime
       const progress = Math.min(elapsed / duration, 1)
-      // easeOut cubic
       const eased = 1 - Math.pow(1 - progress, 3)
       setValue(Math.floor(eased * target))
       if (progress < 1) requestAnimationFrame(tick)
@@ -26,37 +25,76 @@ function useCountUp(target: number, duration = 2000, started = false) {
 }
 
 const stats = [
-  { value: 1200, suffix: "+ 가구", label: "포도와 함께하는" },
-  { value: 25000, suffix: "+ 건", label: "누적 거래 기록" },
-  { value: 30, suffix: "초", label: "평균 기록 소요 시간" },
+  {
+    value: 30,
+    unit: "초",
+    suffix: "만에 입력",
+    desc: "길게 쓸 필요 없이\n한 줄이면 충분해요",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-6 w-6">
+        <circle cx="12" cy="12" r="9" />
+        <polyline points="12 6 12 12 15.5 14" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    ),
+  },
+  {
+    value: 100,
+    unit: "%",
+    suffix: "자동 카테고리",
+    desc: "식비·교통·쇼핑\nAI가 알아서 분류해요",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-6 w-6">
+        <path d="M12 2L2 7l10 5 10-5-10-5z" strokeLinejoin="round" />
+        <path d="M2 17l10 5 10-5" strokeLinejoin="round" />
+        <path d="M2 12l10 5 10-5" strokeLinejoin="round" />
+      </svg>
+    ),
+  },
+  {
+    value: 1,
+    unit: "번",
+    suffix: "매월 AI 리포트",
+    desc: "월말마다 자동으로\n소비 패턴을 분석해요",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-6 w-6">
+        <path d="M3 3v18h18" strokeLinecap="round" />
+        <path d="M7 16l4-5 4 3 4-6" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    ),
+  },
 ]
 
-const reviews = [
+const scenarios = [
   {
-    name: "김지수",
-    role: "30대 직장인",
-    comment: "카카오톡에 그냥 보내면 다 기록돼요. 이게 진짜 되나 싶었는데 신기했어요.",
-    stars: 5,
-    avatar: "지",
-    avatarBg: "bg-violet-100 text-violet-600",
+    tag: "맞벌이 부부",
+    tagColor: "bg-violet-100 text-violet-700",
+    quote: "매달 가계부 정리에 30분 쓰던 시간이 사라졌어요.",
+    initial: "김",
+    avatarBg: "bg-violet-200 text-violet-700",
   },
   {
-    name: "박민준",
-    role: "신혼부부",
-    comment: "남편이랑 같이 쓰는데 서로 얼마 썼는지 바로 보여서 싸울 일이 없어졌어요.",
-    stars: 5,
-    avatar: "민",
-    avatarBg: "bg-emerald-100 text-emerald-600",
+    tag: "자취 3년차",
+    tagColor: "bg-emerald-100 text-emerald-700",
+    quote: "카톡으로 보내면 끝이라 까먹을 일이 없어요.",
+    initial: "이",
+    avatarBg: "bg-emerald-200 text-emerald-700",
   },
   {
-    name: "이서연",
-    role: "대학원생",
-    comment: "월말에 '이번달 어디다 썼지?'가 사라졌어요. 30초도 안 걸려요.",
-    stars: 5,
-    avatar: "서",
-    avatarBg: "bg-amber-100 text-amber-600",
+    tag: "육아맘",
+    tagColor: "bg-amber-100 text-amber-700",
+    quote: "남편이랑 같이 쓰니까 누가 뭘 썼는지 한눈에.",
+    initial: "박",
+    avatarBg: "bg-amber-200 text-amber-700",
   },
 ]
+
+function StarIcon() {
+  return (
+    <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4 text-amber-400">
+      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+    </svg>
+  )
+}
 
 export function SocialProofSection() {
   const sectionRef = useRef<HTMLDivElement>(null)
@@ -72,105 +110,115 @@ export function SocialProofSection() {
           observer.disconnect()
         }
       },
-      { threshold: 0.25 }
+      { threshold: 0.2 }
     )
     observer.observe(el)
     return () => observer.disconnect()
   }, [])
 
-  const count0 = useCountUp(stats[0].value, 2000, inView)
+  const count0 = useCountUp(stats[0].value, 1800, inView)
   const count1 = useCountUp(stats[1].value, 2000, inView)
-  const count2 = useCountUp(stats[2].value, 1600, inView)
-
+  const count2 = useCountUp(stats[2].value, 1400, inView)
   const counts = [count0, count1, count2]
 
   return (
-    <section
-      ref={sectionRef}
-      className="w-full bg-violet-50 py-24"
-    >
+    <section ref={sectionRef} className="w-full bg-violet-50 py-24">
       <div className="mx-auto max-w-5xl px-6">
 
-        {/* Heading */}
+        {/* Section label */}
         <div
-          className="mb-16 text-center"
+          className="mb-14 text-center"
           style={{
             opacity: inView ? 1 : 0,
-            transform: inView ? "translateY(0)" : "translateY(24px)",
+            transform: inView ? "translateY(0)" : "translateY(20px)",
             transition: "opacity 0.6s ease-out, transform 0.6s ease-out",
           }}
         >
-          <p className="mb-3 text-sm font-semibold uppercase tracking-widest text-violet-500">
-            실제 사용자 이야기
+          <p className="mb-3 text-xs font-bold uppercase tracking-widest text-violet-400">
+            왜 포도인가요
           </p>
-          <h2 className="text-3xl font-bold text-stone-800 sm:text-4xl">
-            이미 많은 가구가<br className="sm:hidden" /> 포도로 기록하고 있어요
+          <h2 className="text-balance text-3xl font-bold text-stone-800 sm:text-4xl">
+            기록이 습관이 되는<br className="sm:hidden" /> 가장 쉬운 방법
           </h2>
         </div>
 
-        {/* Stats */}
-        <div className="mb-20 grid grid-cols-3 gap-4 sm:gap-8">
+        {/* Stats row */}
+        <div className="mb-20 grid grid-cols-3 gap-3 sm:gap-6">
           {stats.map((stat, i) => (
             <div
               key={i}
-              className="flex flex-col items-center gap-1 text-center"
+              className="flex flex-col items-center gap-3 rounded-3xl bg-white p-5 text-center shadow-sm sm:p-8"
               style={{
                 opacity: inView ? 1 : 0,
-                transform: inView ? "translateY(0)" : "translateY(20px)",
+                transform: inView ? "translateY(0)" : "translateY(24px)",
                 transition: `opacity 0.6s ease-out ${i * 0.1}s, transform 0.6s ease-out ${i * 0.1}s`,
               }}
             >
-              <span className="text-3xl font-extrabold tabular-nums text-violet-600 sm:text-5xl">
-                {counts[i].toLocaleString("ko-KR")}
-                <span className="text-2xl sm:text-3xl">{stat.suffix}</span>
-              </span>
-              <span className="text-sm text-stone-500 sm:text-base">{stat.label}</span>
+              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-violet-100 text-violet-600">
+                {stat.icon}
+              </div>
+              <div>
+                <div className="flex items-baseline justify-center gap-0.5">
+                  <span className="text-3xl font-extrabold tabular-nums text-violet-600 sm:text-4xl">
+                    {counts[i]}
+                  </span>
+                  <span className="text-lg font-bold text-violet-500 sm:text-xl">{stat.unit}</span>
+                </div>
+                <p className="mt-0.5 text-sm font-semibold text-stone-700">{stat.suffix}</p>
+              </div>
+              <p className="hidden whitespace-pre-line text-xs leading-relaxed text-stone-400 sm:block">
+                {stat.desc}
+              </p>
             </div>
           ))}
         </div>
 
         {/* Divider */}
-        <div className="mb-14 flex items-center gap-4">
-          <div className="h-px flex-1 bg-violet-100" />
-          <span className="text-xs font-medium text-violet-400">사용자 후기</span>
-          <div className="h-px flex-1 bg-violet-100" />
+        <div
+          className="mb-12 flex items-center gap-4"
+          style={{
+            opacity: inView ? 1 : 0,
+            transition: "opacity 0.6s ease-out 0.4s",
+          }}
+        >
+          <div className="h-px flex-1 bg-violet-200" />
+          <span className="text-xs font-semibold tracking-wider text-violet-400">실제 사용 이야기</span>
+          <div className="h-px flex-1 bg-violet-200" />
         </div>
 
-        {/* Review cards */}
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
-          {reviews.map((review, i) => (
+        {/* Scenario cards */}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          {scenarios.map((s, i) => (
             <div
               key={i}
-              className="flex flex-col gap-4 rounded-3xl bg-white p-6 shadow-sm"
+              className="flex flex-col gap-5 rounded-3xl bg-white p-6 shadow-sm"
               style={{
                 opacity: inView ? 1 : 0,
                 transform: inView ? "translateY(0)" : "translateY(28px)",
-                transition: `opacity 0.6s ease-out ${0.3 + i * 0.12}s, transform 0.6s ease-out ${0.3 + i * 0.12}s`,
+                transition: `opacity 0.6s ease-out ${0.45 + i * 0.12}s, transform 0.6s ease-out ${0.45 + i * 0.12}s`,
               }}
             >
-              {/* Stars */}
-              <div className="flex gap-0.5">
-                {Array.from({ length: review.stars }).map((_, s) => (
-                  <svg key={s} viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4 text-amber-400">
-                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                  </svg>
-                ))}
+              {/* Tag + stars */}
+              <div className="flex items-center justify-between">
+                <span className={`rounded-full px-3 py-1 text-xs font-bold ${s.tagColor}`}>
+                  {s.tag}
+                </span>
+                <div className="flex gap-0.5">
+                  {Array.from({ length: 5 }).map((_, j) => <StarIcon key={j} />)}
+                </div>
               </div>
 
-              {/* Comment */}
+              {/* Quote */}
               <p className="flex-1 text-[15px] leading-relaxed text-stone-600">
-                &ldquo;{review.comment}&rdquo;
+                &ldquo;{s.quote}&rdquo;
               </p>
 
-              {/* Author */}
-              <div className="flex items-center gap-3">
-                <div className={`flex h-9 w-9 items-center justify-center rounded-full text-sm font-bold ${review.avatarBg}`}>
-                  {review.avatar}
+              {/* Avatar */}
+              <div className="flex items-center gap-2.5">
+                <div className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold ${s.avatarBg}`}>
+                  {s.initial}
                 </div>
-                <div>
-                  <p className="text-sm font-semibold text-stone-800">{review.name}</p>
-                  <p className="text-xs text-stone-400">{review.role}</p>
-                </div>
+                <span className="text-xs text-stone-400">포도 사용자</span>
               </div>
             </div>
           ))}
