@@ -76,7 +76,8 @@ export function InsightsSection() {
                   <img
                     src={slide.src}
                     alt={slide.alt}
-                    className="h-full w-full object-cover object-top"
+                    className="w-full object-cover"
+                    style={{ objectPosition: "top", marginTop: "-44px", height: "calc(100% + 44px)" }}
                   />
                 </div>
               ))}
@@ -103,7 +104,7 @@ export function InsightsSection() {
           {/* 뱃지 */}
           <div className="mt-5">
             <span className="rounded-full border border-grape-200 bg-grape-100 px-4 py-2 text-sm font-medium text-grape-500">
-              매월 자동 생성
+              언제든 현황 확인
             </span>
           </div>
         </div>

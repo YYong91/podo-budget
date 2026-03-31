@@ -30,7 +30,7 @@ function useCountUp(target: number, duration = 2000, started = false) {
 
 const stats = [
   {
-    value: 30,
+    value: 5,
     unit: "초",
     suffix: "만에 입력",
     desc: "길게 쓸 필요 없이\n한 줄이면 충분해요",
@@ -55,14 +55,13 @@ const stats = [
     ),
   },
   {
-    value: 1,
-    unit: "번",
-    suffix: "매월 AI 리포트",
-    desc: "월말마다 자동으로\n소비 패턴을 분석해요",
+    value: 2,
+    unit: "개",
+    suffix: "메신저 지원",
+    desc: "카카오톡·텔레그램\n쓰던 앱 그대로 기록",
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-6 w-6">
-        <path d="M3 3v18h18" strokeLinecap="round" />
-        <path d="M7 16l4-5 4 3 4-6" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" strokeLinejoin="round" />
       </svg>
     ),
   },

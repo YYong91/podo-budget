@@ -3,8 +3,7 @@ import toast from 'react-hot-toast'
 import { useInView } from '../../hooks/useInView'
 
 const 준비중 = () =>
-  toast('조금만 기다려주세요, 열심히 만들고 있어요! 🍇', {
-    icon: '🔧',
+  toast('조금만 기다려주세요, 열심히 만들고 있어요!', {
     duration: 3000,
     style: { fontWeight: 500 },
   })
