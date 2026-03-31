@@ -113,7 +113,7 @@ export function MessengerSection() {
                       <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                       </svg>
-                      <span className="text-sm font-medium">저장되었습니다</span>
+                      <span className="text-sm font-medium">기록됐어요</span>
                     </div>
                   </div>
                 </div>
@@ -152,7 +152,7 @@ export function MessengerSection() {
                       <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                       </svg>
-                      <span className="text-sm font-medium">저장되었습니다</span>
+                      <span className="text-sm font-medium">기록됐어요</span>
                     </div>
                   </div>
                 </div>

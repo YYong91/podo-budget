@@ -47,8 +47,8 @@ export function InsightsSection() {
             <span className="block">한눈에 돌아보기</span>
           </h2>
           <p className="mx-auto mt-4 max-w-sm text-base leading-relaxed text-warm-500">
-            AI가 분석한 소비 패턴으로
-            <br />더 나은 습관을 만들어가세요.
+            이번 달 어디에 얼마 썼는지,
+            <br />어떤 걸 줄일 수 있는지 보여줘요.
           </p>
         </div>
 

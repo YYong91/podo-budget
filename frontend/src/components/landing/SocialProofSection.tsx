@@ -139,7 +139,7 @@ export function SocialProofSection() {
           }}
         >
           <p className="mb-3 text-xs font-bold uppercase tracking-widest text-grape-400">
-            왜 포도인가요
+            이런 분들이 쓰고 있어요
           </p>
           <h2 className="text-balance text-3xl font-bold text-warm-800 sm:text-4xl">
             기록이 습관이 되는<br className="sm:hidden" /> 가장 쉬운 방법

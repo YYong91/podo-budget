@@ -3,7 +3,7 @@ import { useInView } from '../../hooks/useInView'
 const features = [
   {
     title: "예산 관리",
-    description: "카테고리별 예산을 세우고, 초과 시 알림을 받아보세요. 계획적인 소비 습관이 만들어져요.",
+    description: "이번 달 얼마까지 쓸 건지 정해두면, 초과할 때 알려줘요.",
     highlight: "초과 알림",
     iconBg: "bg-grape-100",
     iconColor: "text-grape-700",
@@ -29,7 +29,7 @@ const features = [
   },
   {
     title: "결제수단별 현황",
-    description: "카드, 현금, 계좌이체. 어디서 얼마나 썼는지 한눈에 파악하세요.",
+    description: "카드, 현금, 계좌이체. 어디서 얼마나 썼는지 한눈에 볼 수 있어요.",
     highlight: "통합 관리",
     iconBg: "bg-orange-50",
     iconColor: "text-orange-700",
@@ -55,7 +55,7 @@ const features = [
   },
   {
     title: "맞춤 카테고리",
-    description: "기본 카테고리가 안 맞으신다면? 나만의 분류 체계로 커스텀하세요.",
+    description: "기본 카테고리가 안 맞으신다면? 내 방식대로 만들어보세요.",
     highlight: "자유롭게",
     iconBg: "bg-green-50",
     iconColor: "text-leaf-700",
@@ -90,7 +90,7 @@ export function FeaturesSection() {
             <span className="block">더 편리하게</span>
           </h2>
           <p className="mx-auto mt-4 max-w-sm text-warm-500">
-            일상의 모든 소비를 체계적으로 관리할 수 있도록
+            가계부, 이제 손쉽게
           </p>
         </div>
 

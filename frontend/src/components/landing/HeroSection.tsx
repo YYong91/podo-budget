@@ -237,7 +237,6 @@ export function HeroSection() {
           >
             지금 무료로 시작하기 →
           </Link>
-          <p className="mt-3 text-xs text-stone-400">신용카드 불필요 · 30초면 충분해요</p>
         </div>
 
         <div

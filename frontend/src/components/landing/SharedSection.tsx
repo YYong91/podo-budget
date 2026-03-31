@@ -33,9 +33,9 @@ export function SharedSection() {
             <span className="block">하나의 가계부</span>
           </h2>
           <p className="mx-auto mt-5 max-w-md text-base leading-relaxed text-warm-500">
-            가구를 만들고 가족을 초대하세요.
+            가족을 초대하고 함께 써요.
             <br />
-            누가 얼마를 썼는지 한눈에 파악할 수 있어요.
+            누가 어떻게 썼는지 한눈에 볼 수 있어요.
           </p>
         </div>
 

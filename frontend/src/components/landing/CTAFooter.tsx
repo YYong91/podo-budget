@@ -71,27 +71,6 @@ export function CTAFooter() {
             </button>
           </div>
 
-          {/* 신뢰 지표 */}
-          <div className="mt-10 flex flex-wrap items-center justify-center gap-6 text-sm text-white/70">
-            <div className="flex items-center gap-2">
-              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-              </svg>
-              <span>신용카드 불필요</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-              </svg>
-              <span>30초 만에 시작</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-              </svg>
-              <span>언제든 해지 가능</span>
-            </div>
-          </div>
         </div>
       </section>
 
