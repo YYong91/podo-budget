@@ -35,7 +35,7 @@ async function createExpense(
 
 test.describe('가계부 홈 (TransactionList)', () => {
   test('빈 상태 → EmptyState 표시', async ({ authedPage: page }) => {
-    await page.goto('/')
+    await page.goto('/home')
     await page.waitForLoadState('networkidle')
 
     // TransactionList의 빈 상태: "거래 내역이 없습니다"
@@ -50,7 +50,7 @@ test.describe('가계부 홈 (TransactionList)', () => {
       description: 'E2E 대시보드 테스트',
     })
 
-    await page.goto('/')
+    await page.goto('/home')
     await page.waitForLoadState('networkidle')
 
     // 생성한 지출 항목이 목록에 표시되어야 함
@@ -60,7 +60,7 @@ test.describe('가계부 홈 (TransactionList)', () => {
   })
 
   test('지출/수입 필터 버튼 동작', async ({ authedPage: page }) => {
-    await page.goto('/')
+    await page.goto('/home')
     await page.waitForLoadState('networkidle')
 
     // 요약 영역에 "지출"/"수입" 텍스트가 있어야 함

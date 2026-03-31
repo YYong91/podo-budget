@@ -59,7 +59,7 @@ test.describe('Tier 1: 직접 입력', () => {
     await page.waitForURL(/\//, { timeout: 15000 })
 
     // 7. 홈으로 이동하여 확인
-    await page.goto('/')
+    await page.goto('/home')
     await page.waitForLoadState('networkidle')
 
     await expect(page.getByText('E2E 직접입력 점심')).toBeVisible({ timeout: 15000 })
@@ -74,7 +74,7 @@ test.describe('Tier 1: 직접 입력', () => {
     })
 
     // 홈에서 수입 탭/필터로 확인
-    await page.goto('/')
+    await page.goto('/home')
     await page.waitForLoadState('networkidle')
 
     // "수입" 필터/탭 클릭

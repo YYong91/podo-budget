@@ -20,6 +20,8 @@ interface TransactionItemProps {
   recurringTransactionId?: number | null
   /** 안정적 콜백 — TransactionList에서 useMemo로 생성된 핸들러 전달 (#240) */
   onCategoryClick: () => void
+  /** 기록자 username — 가구원 2명 이상일 때만 전달 (#522) */
+  recordedBy?: string
 }
 
 function TransactionItem({
@@ -32,6 +34,7 @@ function TransactionItem({
   excludeFromStats,
   recurringTransactionId,
   onCategoryClick,
+  recordedBy,
 }: TransactionItemProps) {
   // O(1) 조회 — 이전 O(n) find 대비 300건×20카테고리=6,000비교 → 300번 해시 조회 (#180)
   const category = categoryId != null ? categoryMap.get(categoryId) : null
@@ -78,6 +81,9 @@ function TransactionItem({
         )}
         {excludeFromStats && (
           <span className="text-xs bg-[var(--surface-hover)] text-[var(--text-tertiary)] px-1.5 py-0.5 rounded-full">통계제외</span>
+        )}
+        {recordedBy && (
+          <span className="text-xs text-[var(--text-tertiary)]">{recordedBy}</span>
         )}
       </div>
     </Link>

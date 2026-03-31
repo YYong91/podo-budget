@@ -32,6 +32,8 @@ interface MonthlyViewProps {
   /** 봇 넛지 카드 */
   botNudgeDismissed: boolean
   onBotNudgeDismiss: () => void
+  /** 멀티멤버 가구의 user_id → username 매핑 (단독 가구는 null) */
+  memberMap: Map<number, string> | null
 }
 
 export default function MonthlyView({
@@ -44,6 +46,7 @@ export default function MonthlyView({
   onWelcomeDismiss,
   botNudgeDismissed,
   onBotNudgeDismiss,
+  memberMap,
 }: MonthlyViewProps) {
   const { addToast } = useToast()
 
@@ -192,6 +195,7 @@ export default function MonthlyView({
                     excludeFromStats={tx.exclude_from_stats}
                     recurringTransactionId={tx.recurring_transaction_id}
                     onCategoryClick={categoryClickHandlers.get(`${tx.type}-${tx.id}`)!}
+                    recordedBy={memberMap && tx.user_id != null ? memberMap.get(tx.user_id) : undefined}
                   />
                 ))}
               </div>

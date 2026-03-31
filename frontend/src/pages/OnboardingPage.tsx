@@ -31,7 +31,7 @@ export default function OnboardingPage() {
       await fetchHouseholds()
       addToast('success', TOAST.ONBOARDING_CREATED)
       trackEvent('onboarding_complete', { method: 'create' })
-      navigate('/', { replace: true })
+      navigate('/home', { replace: true })
     } catch {
       addToast('error', TOAST.ONBOARDING_FAILED)
     } finally {
@@ -46,7 +46,7 @@ export default function OnboardingPage() {
       await acceptInvitation(token)
       addToast('success', TOAST.HOUSEHOLD_JOINED(householdName || '가계부'))
       trackEvent('onboarding_complete', { method: 'accept_invitation' })
-      navigate('/', { replace: true })
+      navigate('/home', { replace: true })
     } catch {
       addToast('error', TOAST.INVITE_ACCEPT_FAILED)
       // 실패 시 초대 목록 새로고침 (만료 등)

@@ -46,7 +46,7 @@ export default function AuthCallbackPage() {
   useEffect(() => {
     if (isAuthenticated && !isRecovery) {
       trackEvent('login')
-      const intendedPath = sessionStorage.getItem('intended_path') || '/'
+      const intendedPath = sessionStorage.getItem('intended_path') || '/home'
       sessionStorage.removeItem('intended_path')
       navigate(intendedPath, { replace: true })
     }
@@ -67,7 +67,7 @@ export default function AuthCallbackPage() {
       if (updateError) throw updateError
 
       addToast('success', TOAST.PASSWORD_CHANGED)
-      navigate('/', { replace: true })
+      navigate('/home', { replace: true })
     } catch (err) {
       const message = (err as Error).message
       if (message.includes('should be at least')) {

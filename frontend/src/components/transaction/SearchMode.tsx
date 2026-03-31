@@ -22,6 +22,8 @@ interface SearchModeProps {
   onOpenFilterCategorySheet: () => void
   onClearFilterCategory: () => void
   searchCategoryActive: boolean
+  /** 멀티멤버 가구의 user_id → username 매핑 (단독 가구는 null) */
+  memberMap: Map<number, string> | null
 }
 
 export default function SearchMode({
@@ -31,6 +33,7 @@ export default function SearchMode({
   onOpenFilterCategorySheet,
   onClearFilterCategory,
   searchCategoryActive,
+  memberMap,
 }: SearchModeProps) {
   // 카테고리 필터 칩 라벨
   const categoryChipLabel = useMemo(() => {
@@ -261,6 +264,7 @@ export default function SearchMode({
                         excludeFromStats={tx.exclude_from_stats}
                         recurringTransactionId={tx.recurring_transaction_id}
                         onCategoryClick={categoryClickHandlers.get(`${tx.type}-${tx.id}`) ?? (() => {})}
+                        recordedBy={memberMap && tx.user_id != null ? memberMap.get(tx.user_id) : undefined}
                       />
                     ))}
                   </div>

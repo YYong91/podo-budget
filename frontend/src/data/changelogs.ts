@@ -26,6 +26,14 @@ export const changelogs: Changelog[] = [
     ],
   },
   {
+    version: '0.13.0',
+    date: '2026-03-27',
+    title: '퍼블릭 랜딩 페이지',
+    items: [
+      { tag: '신규', text: '앱 소개 랜딩 페이지 추가 — 비로그인 사용자에게 기능 안내' },
+    ],
+  },
+  {
     version: '0.12.0',
     date: '2026-03-27',
     title: '결제수단 UX 개선',
