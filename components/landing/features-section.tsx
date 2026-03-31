@@ -101,7 +101,7 @@ export function FeaturesSection() {
           {features.map((feature, i) => (
             <div
               key={i}
-              className={`group relative overflow-hidden rounded-2xl border border-border bg-card p-6 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-primary/30 hover:shadow-lg ${
+              className={`group relative overflow-hidden rounded-2xl border border-border bg-card p-6 shadow-sm transition-all duration-[400ms] [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-1 hover:border-[#c084fc] hover:shadow-lg ${
                 isInView ? "animate-fade-in-up" : "opacity-0"
               }`}
               style={{ animationDelay: `${0.08 * (i + 1)}s` }}

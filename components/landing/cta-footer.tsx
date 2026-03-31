@@ -41,7 +41,7 @@ export function CTAFooter() {
 
           {/* CTA Buttons */}
           <div className="mt-8 flex flex-col items-center gap-4 sm:flex-row">
-            <button className="group flex items-center gap-2 rounded-xl bg-card px-8 py-4 text-lg font-semibold text-primary shadow-lg transition-all hover:bg-card/90 hover:shadow-xl">
+            <button className="animate-cta-pulse group flex items-center gap-2 rounded-xl bg-card px-8 py-4 text-lg font-semibold text-primary shadow-lg transition-all duration-[400ms] [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-0.5 hover:bg-card/90 hover:shadow-xl">
               <span>지금 시작하기</span>
               <svg 
                 className="h-5 w-5 transition-transform group-hover:translate-x-1" 

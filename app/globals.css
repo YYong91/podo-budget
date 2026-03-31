@@ -71,5 +71,15 @@ html {
 }
 
 .animate-bubble-in {
-  animation: bubble-in 0.35s ease-out both;
+  animation: bubble-in 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes cta-pulse {
+  0%   { box-shadow: 0 0 0 0 hsla(270, 82%, 55%, 0.5); }
+  60%  { box-shadow: 0 0 0 12px hsla(270, 82%, 55%, 0); }
+  100% { box-shadow: 0 0 0 0 hsla(270, 82%, 55%, 0); }
+}
+
+.animate-cta-pulse {
+  animation: cta-pulse 2s cubic-bezier(0.16, 1, 0.3, 1) infinite;
 }

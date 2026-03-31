@@ -85,14 +85,20 @@ export function MessengerSection() {
             {/* Chat Messages */}
             <div className="space-y-4">
               {/* User message 1 */}
-              <div className="flex justify-end">
+              <div
+                className={`flex justify-end ${isInView ? "animate-bubble-in" : "opacity-0"}`}
+                style={{ animationDelay: "0.3s" }}
+              >
                 <div className="max-w-[80%] rounded-2xl rounded-tr-sm bg-primary/20 px-4 py-2.5">
                   <p className="text-sm text-foreground">점심 김치찌개 8000원</p>
                 </div>
               </div>
 
               {/* Bot response 1 */}
-              <div className="flex justify-start">
+              <div
+                className={`flex justify-start ${isInView ? "animate-bubble-in" : "opacity-0"}`}
+                style={{ animationDelay: "0.55s" }}
+              >
                 <div className="max-w-[85%] rounded-2xl rounded-tl-sm border border-border bg-card px-4 py-3 shadow-sm">
                   <div className="space-y-1.5 text-sm">
                     <div className="flex items-center justify-between">
@@ -118,14 +124,20 @@ export function MessengerSection() {
               </div>
 
               {/* User message 2 */}
-              <div className="flex justify-end">
+              <div
+                className={`flex justify-end ${isInView ? "animate-bubble-in" : "opacity-0"}`}
+                style={{ animationDelay: "0.8s" }}
+              >
                 <div className="max-w-[80%] rounded-2xl rounded-tr-sm bg-primary/20 px-4 py-2.5">
                   <p className="text-sm text-foreground">어제 택시 15000원 카드로</p>
                 </div>
               </div>
 
               {/* Bot response 2 */}
-              <div className="flex justify-start">
+              <div
+                className={`flex justify-start ${isInView ? "animate-bubble-in" : "opacity-0"}`}
+                style={{ animationDelay: "1.05s" }}
+              >
                 <div className="max-w-[85%] rounded-2xl rounded-tl-sm border border-border bg-card px-4 py-3 shadow-sm">
                   <div className="space-y-1.5 text-sm">
                     <div className="flex items-center justify-between">
