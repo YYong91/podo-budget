@@ -1,15 +1,15 @@
 import { useEffect, useState } from "react"
 import { useInView } from '../../hooks/useInView'
 
-const CHAT_SEQUENCE = [
-  { id: 1, type: "user" as const,   delay: 600 },
-  { id: 2, type: "typing" as const, delay: 1100 },
-  { id: 3, type: "ai" as const,     delay: 1900 },
-]
+// 채팅 → before → after(하이라이트)
+type Phase = 'chat' | 'before' | 'after'
 
-const SHOW_LIST_DELAY = 3200  // 채팅 완료 후 거래목록 전환
-const RESET_DELAY    = 7000  // 거래목록 → 채팅으로 복귀
-const LOOP_DELAY     = 7600  // 루프 재시작
+const CHAT_OFFSET = 0     // 채팅 시퀀스 시작 (즉시)
+const TO_BEFORE   = 3400  // 채팅 완료 후 before로 전환
+const TO_AFTER    = 5200  // before 잠깐 보여주다가 after로
+const HIGHLIGHT   = 5900  // after 전환 후 하이라이트 등장
+const RESET       = 9000  // 루프 리셋
+const LOOP        = 9600  // 루프 재시작
 
 function TypingDots() {
   return (
@@ -25,39 +25,65 @@ function TypingDots() {
   )
 }
 
+function getX(screen: Phase, phase: Phase): string {
+  // 순서: chat(0) → before(1) → after(2)
+  // 각 화면의 "기본 인덱스"
+  const order: Phase[] = ['chat', 'before', 'after']
+  const screenIdx = order.indexOf(screen)
+  const phaseIdx  = order.indexOf(phase)
+  const diff = screenIdx - phaseIdx
+  if (diff === 0) return '0%'
+  return diff > 0 ? '100%' : '-100%'
+}
+
 function ChatPhone({ visible }: { visible: boolean }) {
   const [loopKey, setLoopKey] = useState(0)
-  const [step, setStep] = useState(0)
-  const [showList, setShowList] = useState(false)
+  const [phase, setPhase] = useState<Phase>('chat')
+  const [chatStep, setChatStep] = useState(0)
+  const [showHighlight, setShowHighlight] = useState(false)
 
   useEffect(() => {
     if (!visible) return
 
     const timers: ReturnType<typeof setTimeout>[] = []
 
-    CHAT_SEQUENCE.forEach((msg) => {
-      timers.push(setTimeout(() => setStep((s) => Math.max(s, msg.id)), msg.delay))
-    })
+    // 채팅 시퀀스
+    timers.push(setTimeout(() => setChatStep(1), CHAT_OFFSET + 600))
+    timers.push(setTimeout(() => setChatStep(2), CHAT_OFFSET + 1100))
+    timers.push(setTimeout(() => setChatStep(3), CHAT_OFFSET + 1900))
 
-    timers.push(setTimeout(() => setShowList(true), SHOW_LIST_DELAY))
+    // chat → before
+    timers.push(setTimeout(() => setPhase('before'), TO_BEFORE))
+
+    // before → after
+    timers.push(setTimeout(() => setPhase('after'), TO_AFTER))
+
+    // after 하이라이트 등장
+    timers.push(setTimeout(() => setShowHighlight(true), HIGHLIGHT))
+
+    // 루프 리셋
     timers.push(setTimeout(() => {
-      setStep(0)
-      setShowList(false)
-    }, RESET_DELAY))
-    timers.push(setTimeout(() => setLoopKey((k) => k + 1), LOOP_DELAY))
+      setPhase('chat')
+      setChatStep(0)
+      setShowHighlight(false)
+    }, RESET))
+
+    timers.push(setTimeout(() => setLoopKey((k) => k + 1), LOOP))
 
     return () => timers.forEach(clearTimeout)
   }, [visible, loopKey])
 
-  // iOS 앱 전환 스타일
-  const chatStyle = {
-    transform: showList ? "translateY(-30%) scale(0.9)" : "translateY(0) scale(1)",
-    opacity: showList ? 0 : 1,
-    transition: "transform 0.55s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.45s ease",
-  }
-  const listStyle = {
-    transform: showList ? "translateY(0)" : "translateY(100%)",
-    transition: "transform 0.55s cubic-bezier(0.4, 0, 0.2, 1)",
+  const slideStyle = (screen: Phase) => ({
+    transform: `translateX(${getX(screen, phase)})`,
+    transition: 'transform 0.55s cubic-bezier(0.4, 0, 0.2, 1)',
+  })
+
+  const screenshotStyle: React.CSSProperties = {
+    objectFit: 'cover',
+    objectPosition: 'top',
+    marginTop: '-44px',
+    height: 'calc(100% + 44px)',
+    width: '100%',
   }
 
   return (
@@ -66,8 +92,7 @@ function ChatPhone({ visible }: { visible: boolean }) {
       <div className="absolute left-1/2 top-[5px] z-20 h-4 w-20 -translate-x-1/2 rounded-full bg-stone-900/10" />
 
       {/* ── 채팅 화면 ── */}
-      <div className="absolute inset-0 flex flex-col" style={chatStyle}>
-        {/* Status bar */}
+      <div className="absolute inset-0 flex flex-col" style={slideStyle('chat')}>
         <div className="flex items-center justify-between bg-grape-600 px-5 pb-2 pt-3 text-[10px] text-white/90">
           <span className="font-semibold">9:41</span>
           <div className="flex gap-1">
@@ -79,8 +104,6 @@ function ChatPhone({ visible }: { visible: boolean }) {
             </svg>
           </div>
         </div>
-
-        {/* Chat header */}
         <div className="flex items-center gap-2 border-b border-stone-100 bg-white px-4 py-2.5 shadow-sm">
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-grape-100 text-base">🍇</div>
           <div>
@@ -88,33 +111,27 @@ function ChatPhone({ visible }: { visible: boolean }) {
             <p className="text-[10px] text-emerald-500">온라인</p>
           </div>
         </div>
-
-        {/* Chat messages */}
         <div className="flex flex-1 flex-col gap-2.5 overflow-hidden px-3 py-3">
           <div className="flex items-center gap-2">
             <div className="h-px flex-1 bg-stone-100" />
             <span className="text-[10px] text-stone-400">오늘</span>
             <div className="h-px flex-1 bg-stone-100" />
           </div>
-
-          {step >= 1 && (
+          {chatStep >= 1 && (
             <div className="animate-bubble-in flex justify-end">
               <div className="max-w-[75%] rounded-2xl rounded-br-sm bg-grape-600 px-3 py-2 text-xs text-white shadow-sm">
                 점심 김치찌개 8000원
               </div>
             </div>
           )}
-
-          {step >= 2 && step < 3 && (
+          {chatStep >= 2 && chatStep < 3 && (
             <div className="animate-bubble-in flex justify-start">
               <div className="rounded-2xl rounded-bl-sm bg-stone-100 px-3 py-2">
                 <TypingDots />
               </div>
             </div>
           )}
-
-          {/* 실제 봇 메시지 형식 */}
-          {step >= 3 && (
+          {chatStep >= 3 && (
             <div className="animate-bubble-in flex justify-start">
               <div className="max-w-[80%] rounded-2xl rounded-bl-sm bg-stone-100 px-3 py-2 text-xs leading-relaxed text-stone-700 shadow-sm">
                 🍇 김치찌개 8,000원 기록했어요
@@ -124,8 +141,6 @@ function ChatPhone({ visible }: { visible: boolean }) {
             </div>
           )}
         </div>
-
-        {/* Input bar */}
         <div className="flex items-center gap-2 border-t border-stone-100 bg-white px-3 py-2.5">
           <div className="flex flex-1 items-center rounded-full bg-stone-100 px-3 py-1.5 text-[11px] text-stone-400">
             메시지 입력...
@@ -138,14 +153,26 @@ function ChatPhone({ visible }: { visible: boolean }) {
         </div>
       </div>
 
-      {/* ── 거래목록 화면 (스크린샷) ── */}
-      <div className="absolute inset-0 overflow-hidden" style={listStyle}>
-        <img
-          src="/screenshot-transactions.jpg"
-          alt="거래 목록"
-          className="h-full w-full object-cover"
-          style={{ objectPosition: "top", marginTop: "-44px", height: "calc(100% + 44px)" }}
-        />
+      {/* ── before 화면 ── */}
+      <div className="absolute inset-0 overflow-hidden" style={slideStyle('before')}>
+        <img src="/screenshot-before.jpg" alt="입력 전 거래 목록" style={screenshotStyle} />
+      </div>
+
+      {/* ── after 화면 ── */}
+      <div className="absolute inset-0 overflow-hidden" style={slideStyle('after')}>
+        <img src="/screenshot-after.jpg" alt="김치찌개 추가된 거래 목록" style={screenshotStyle} />
+
+        {/* 김치찌개 항목 하이라이트 */}
+        {showHighlight && (
+          <div
+            className="animate-fade-in-up absolute left-3 right-3 rounded-xl border border-grape-400/50 bg-grape-500/15"
+            style={{
+              top: '60%',
+              height: '52px',
+              boxShadow: '0 0 16px 2px rgba(168,85,247,0.25)',
+            }}
+          />
+        )}
       </div>
     </div>
   )
@@ -156,7 +183,6 @@ export function HeroSection() {
 
   return (
     <section className="relative min-h-screen overflow-hidden bg-cream pt-16">
-      {/* Grape glow orb */}
       <div
         className="animate-float-glow pointer-events-none absolute"
         style={{
@@ -168,12 +194,10 @@ export function HeroSection() {
           transform: "translate(-50%, -50%)",
         }}
       />
-
       <div
         ref={ref}
         className="relative mx-auto flex min-h-[calc(100vh-4rem)] max-w-7xl flex-col items-center justify-center gap-10 px-4 py-16 sm:px-6 md:flex-row md:gap-16 lg:px-8"
       >
-        {/* Text Content */}
         <div
           className={`flex flex-1 flex-col items-center text-center md:items-start md:text-left ${
             isInView ? "animate-fade-in-up" : "opacity-0"
@@ -183,7 +207,6 @@ export function HeroSection() {
             <span className="inline-block h-1.5 w-1.5 rounded-full bg-grape-500" />
             AI 가계부의 새로운 기준
           </div>
-
           <h1
             className="text-pretty text-4xl font-extrabold leading-tight sm:text-5xl md:text-[3.5rem]"
             style={{
@@ -199,13 +222,11 @@ export function HeroSection() {
               가계부
             </span>
           </h1>
-
           <p className="mt-5 max-w-sm text-base leading-relaxed text-stone-500 sm:text-lg">
             <span className="block">말로 기록하면</span>
             <span className="block font-semibold text-stone-700">AI가 알아서 분류하는</span>
             <span className="block">우리 집 가계부</span>
           </p>
-
           <button
             className="mt-8 font-bold text-white text-base shadow-lg transition-all duration-200 hover:-translate-y-0.5 hover:shadow-grape-300/60 hover:shadow-xl active:scale-95"
             style={{
@@ -220,7 +241,6 @@ export function HeroSection() {
           <p className="mt-3 text-xs text-stone-400">신용카드 불필요 · 30초면 충분해요</p>
         </div>
 
-        {/* Phone Mockup */}
         <div
           className={`flex flex-1 items-center justify-center ${
             isInView ? "animate-fade-in-up" : "opacity-0"

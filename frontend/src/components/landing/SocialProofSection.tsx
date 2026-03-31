@@ -55,13 +55,14 @@ const stats = [
     ),
   },
   {
-    value: 2,
-    unit: "개",
-    suffix: "메신저 지원",
-    desc: "카카오톡·텔레그램\n쓰던 앱 그대로 기록",
+    value: 0,
+    unit: "원",
+    suffix: "완전 무료",
+    desc: "모든 기능을\n무료로 사용하세요",
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-6 w-6">
-        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" strokeLinejoin="round" />
+        <path d="M12 2a10 10 0 1 0 0 20A10 10 0 0 0 12 2z" strokeLinejoin="round" />
+        <path d="M12 6v2m0 8v2M8 12h8" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
     ),
   },
