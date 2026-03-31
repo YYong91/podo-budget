@@ -1,15 +1,13 @@
 import { useEffect, useState } from "react"
 import { useInView } from '../../hooks/useInView'
 
-// 채팅 → before → after(하이라이트)
 type Phase = 'chat' | 'before' | 'after'
 
-const CHAT_OFFSET = 0     // 채팅 시퀀스 시작 (즉시)
 const TO_BEFORE   = 3400  // 채팅 완료 후 before로 전환
-const TO_AFTER    = 5200  // before 잠깐 보여주다가 after로
-const HIGHLIGHT   = 5900  // after 전환 후 하이라이트 등장
-const RESET       = 9000  // 루프 리셋
-const LOOP        = 9600  // 루프 재시작
+const TO_AFTER    = 5400  // before → after fade
+const SHOW_CARD   = 5900  // after 전환 후 카드 팝업
+const RESET       = 9200
+const LOOP        = 9800
 
 function TypingDots() {
   return (
@@ -25,22 +23,11 @@ function TypingDots() {
   )
 }
 
-function getX(screen: Phase, phase: Phase): string {
-  // 순서: chat(0) → before(1) → after(2)
-  // 각 화면의 "기본 인덱스"
-  const order: Phase[] = ['chat', 'before', 'after']
-  const screenIdx = order.indexOf(screen)
-  const phaseIdx  = order.indexOf(phase)
-  const diff = screenIdx - phaseIdx
-  if (diff === 0) return '0%'
-  return diff > 0 ? '100%' : '-100%'
-}
-
 function ChatPhone({ visible }: { visible: boolean }) {
   const [loopKey, setLoopKey] = useState(0)
   const [phase, setPhase] = useState<Phase>('chat')
   const [chatStep, setChatStep] = useState(0)
-  const [showHighlight, setShowHighlight] = useState(false)
+  const [showCard, setShowCard] = useState(false)
 
   useEffect(() => {
     if (!visible) return
@@ -48,42 +35,50 @@ function ChatPhone({ visible }: { visible: boolean }) {
     const timers: ReturnType<typeof setTimeout>[] = []
 
     // 채팅 시퀀스
-    timers.push(setTimeout(() => setChatStep(1), CHAT_OFFSET + 600))
-    timers.push(setTimeout(() => setChatStep(2), CHAT_OFFSET + 1100))
-    timers.push(setTimeout(() => setChatStep(3), CHAT_OFFSET + 1900))
+    timers.push(setTimeout(() => setChatStep(1), 600))
+    timers.push(setTimeout(() => setChatStep(2), 1100))
+    timers.push(setTimeout(() => setChatStep(3), 1900))
 
-    // chat → before
+    // chat → before (좌우 슬라이드)
     timers.push(setTimeout(() => setPhase('before'), TO_BEFORE))
 
-    // before → after
+    // before → after (fade)
     timers.push(setTimeout(() => setPhase('after'), TO_AFTER))
 
-    // after 하이라이트 등장
-    timers.push(setTimeout(() => setShowHighlight(true), HIGHLIGHT))
+    // 거래 카드 팝업
+    timers.push(setTimeout(() => setShowCard(true), SHOW_CARD))
 
     // 루프 리셋
     timers.push(setTimeout(() => {
       setPhase('chat')
       setChatStep(0)
-      setShowHighlight(false)
+      setShowCard(false)
     }, RESET))
-
     timers.push(setTimeout(() => setLoopKey((k) => k + 1), LOOP))
 
     return () => timers.forEach(clearTimeout)
   }, [visible, loopKey])
 
-  const slideStyle = (screen: Phase) => ({
-    transform: `translateX(${getX(screen, phase)})`,
-    transition: 'transform 0.55s cubic-bezier(0.4, 0, 0.2, 1)',
-  })
+  // chat ↔ before 는 좌우 슬라이드
+  const chatX  = phase === 'chat'   ? '0%'    : '-100%'
+  const beforeX = phase === 'before' ? '0%'
+                : phase === 'chat'   ? '100%'  : '0%'
+
+  const slideTransition = 'transform 0.55s cubic-bezier(0.4, 0, 0.2, 1)'
+
+  // before → after 는 opacity fade
+  const afterOpacity = phase === 'after' ? 1 : 0
 
   const screenshotStyle: React.CSSProperties = {
+    position: 'absolute',
+    top: '-44px',
+    bottom: '-34px',
+    left: 0,
+    right: 0,
     objectFit: 'cover',
     objectPosition: 'top',
-    marginTop: '-44px',
-    height: 'calc(100% + 44px)',
     width: '100%',
+    height: 'calc(100% + 78px)',
   }
 
   return (
@@ -91,8 +86,11 @@ function ChatPhone({ visible }: { visible: boolean }) {
       {/* Notch */}
       <div className="absolute left-1/2 top-[5px] z-20 h-4 w-20 -translate-x-1/2 rounded-full bg-stone-900/10" />
 
-      {/* ── 채팅 화면 ── */}
-      <div className="absolute inset-0 flex flex-col" style={slideStyle('chat')}>
+      {/* ── 채팅 화면 (좌우 슬라이드) ── */}
+      <div
+        className="absolute inset-0 flex flex-col"
+        style={{ transform: `translateX(${chatX})`, transition: slideTransition }}
+      >
         <div className="flex items-center justify-between bg-grape-600 px-5 pb-2 pt-3 text-[10px] text-white/90">
           <span className="font-semibold">9:41</span>
           <div className="flex gap-1">
@@ -153,25 +151,43 @@ function ChatPhone({ visible }: { visible: boolean }) {
         </div>
       </div>
 
-      {/* ── before 화면 ── */}
-      <div className="absolute inset-0 overflow-hidden" style={slideStyle('before')}>
-        <img src="/screenshot-before.jpg" alt="입력 전 거래 목록" style={screenshotStyle} />
-      </div>
+      {/* ── before + after 화면 (같은 자리에 겹침, fade 전환) ── */}
+      <div
+        className="absolute inset-0 overflow-hidden"
+        style={{ transform: `translateX(${beforeX})`, transition: slideTransition }}
+      >
+        {/* before */}
+        <img
+          src="/screenshot-before.jpg"
+          alt="입력 전 거래 목록"
+          style={{ ...screenshotStyle, opacity: afterOpacity === 1 ? 0 : 1, transition: 'opacity 0.4s ease' }}
+        />
+        {/* after */}
+        <img
+          src="/screenshot-after.jpg"
+          alt="김치찌개 추가된 거래 목록"
+          style={{ ...screenshotStyle, opacity: afterOpacity, transition: 'opacity 0.4s ease' }}
+        />
 
-      {/* ── after 화면 ── */}
-      <div className="absolute inset-0 overflow-hidden" style={slideStyle('after')}>
-        <img src="/screenshot-after.jpg" alt="김치찌개 추가된 거래 목록" style={screenshotStyle} />
-
-        {/* 김치찌개 항목 하이라이트 */}
-        {showHighlight && (
+        {/* 거래 카드 팝업 */}
+        {showCard && (
           <div
-            className="animate-fade-in-up absolute left-3 right-3 rounded-xl border border-grape-400/50 bg-grape-500/15"
-            style={{
-              top: '60%',
-              height: '52px',
-              boxShadow: '0 0 16px 2px rgba(168,85,247,0.25)',
-            }}
-          />
+            className="animate-bubble-in absolute bottom-20 left-4 right-4 z-10 rounded-2xl border border-grape-100 bg-white px-4 py-3 shadow-xl"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-grape-100 text-sm">🍇</span>
+                <div>
+                  <p className="text-xs font-bold text-stone-800">김치찌개</p>
+                  <p className="text-[10px] text-stone-400">식비 · 방금</p>
+                </div>
+              </div>
+              <div className="text-right">
+                <p className="text-sm font-bold text-rose-500">-8,000원</p>
+                <p className="text-[10px] font-medium text-leaf-600">✓ 추가됐어요</p>
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </div>
