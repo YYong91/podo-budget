@@ -77,7 +77,7 @@ export function InsightsSection() {
                     src={slide.src}
                     alt={slide.alt}
                     className="w-full object-cover"
-                    style={{ objectPosition: "top", marginTop: "-44px", height: "calc(100% + 44px)" }}
+                    style={{ objectPosition: "top", height: "calc(100% + 20px)" }}
                   />
                 </div>
               ))}

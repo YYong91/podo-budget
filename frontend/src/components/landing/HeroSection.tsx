@@ -1,13 +1,12 @@
 import { useEffect, useState } from "react"
 import { useInView } from '../../hooks/useInView'
 
-type Phase = 'chat' | 'before' | 'after'
+type Phase = 'chat' | 'after'
 
-const TO_BEFORE   = 3400  // 채팅 완료 후 before로 전환
-const TO_AFTER    = 5400  // before → after fade
-const SHOW_CARD   = 5900  // after 전환 후 카드 팝업
-const RESET       = 9200
-const LOOP        = 9800
+const TO_AFTER  = 3400  // 채팅 완료 후 after로 전환
+const SHOW_CARD = 3900  // after 전환 후 카드 팝업
+const RESET     = 7500
+const LOOP      = 8100
 
 function TypingDots() {
   return (
@@ -39,10 +38,7 @@ function ChatPhone({ visible }: { visible: boolean }) {
     timers.push(setTimeout(() => setChatStep(2), 1100))
     timers.push(setTimeout(() => setChatStep(3), 1900))
 
-    // chat → before (좌우 슬라이드)
-    timers.push(setTimeout(() => setPhase('before'), TO_BEFORE))
-
-    // before → after (fade)
+    // chat → after (좌우 슬라이드)
     timers.push(setTimeout(() => setPhase('after'), TO_AFTER))
 
     // 거래 카드 팝업
@@ -59,26 +55,20 @@ function ChatPhone({ visible }: { visible: boolean }) {
     return () => timers.forEach(clearTimeout)
   }, [visible, loopKey])
 
-  // chat ↔ before 는 좌우 슬라이드
-  const chatX  = phase === 'chat'   ? '0%'    : '-100%'
-  const beforeX = phase === 'before' ? '0%'
-                : phase === 'chat'   ? '100%'  : '0%'
-
+  const chatX  = phase === 'chat'  ? '0%'   : '-100%'
+  const afterX = phase === 'after' ? '0%'   : '100%'
   const slideTransition = 'transform 0.55s cubic-bezier(0.4, 0, 0.2, 1)'
-
-  // before → after 는 opacity fade
-  const afterOpacity = phase === 'after' ? 1 : 0
 
   const screenshotStyle: React.CSSProperties = {
     position: 'absolute',
-    top: '-44px',
-    bottom: '-34px',
+    top: 0,
+    bottom: '-20px',
     left: 0,
     right: 0,
     objectFit: 'cover',
     objectPosition: 'top',
     width: '100%',
-    height: 'calc(100% + 78px)',
+    height: 'calc(100% + 20px)',
   }
 
   return (
@@ -151,29 +141,20 @@ function ChatPhone({ visible }: { visible: boolean }) {
         </div>
       </div>
 
-      {/* ── before + after 화면 (같은 자리에 겹침, fade 전환) ── */}
+      {/* ── after 화면 (좌우 슬라이드) ── */}
       <div
         className="absolute inset-0 overflow-hidden"
-        style={{ transform: `translateX(${beforeX})`, transition: slideTransition }}
+        style={{ transform: `translateX(${afterX})`, transition: slideTransition }}
       >
-        {/* before */}
-        <img
-          src="/screenshot-before.jpg"
-          alt="입력 전 거래 목록"
-          style={{ ...screenshotStyle, opacity: afterOpacity === 1 ? 0 : 1, transition: 'opacity 0.4s ease' }}
-        />
-        {/* after */}
         <img
           src="/screenshot-after.jpg"
           alt="김치찌개 추가된 거래 목록"
-          style={{ ...screenshotStyle, opacity: afterOpacity, transition: 'opacity 0.4s ease' }}
+          style={screenshotStyle}
         />
 
         {/* 거래 카드 팝업 */}
         {showCard && (
-          <div
-            className="animate-bubble-in absolute bottom-20 left-4 right-4 z-10 rounded-2xl border border-grape-100 bg-white px-4 py-3 shadow-xl"
-          >
+          <div className="animate-bubble-in absolute bottom-20 left-4 right-4 z-10 rounded-2xl border border-grape-100 bg-white px-4 py-3 shadow-xl">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span className="flex h-7 w-7 items-center justify-center rounded-full bg-grape-100 text-sm">🍇</span>
