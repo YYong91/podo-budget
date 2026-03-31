@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react"
+import { Link } from "react-router-dom"
 import { useInView } from '../../hooks/useInView'
 
 type Phase = 'chat' | 'after'
@@ -202,7 +203,7 @@ export function HeroSection() {
         >
           <div className="mb-4 inline-flex items-center gap-1.5 rounded-full border border-grape-200 bg-grape-50 px-3.5 py-1 text-xs font-medium text-grape-700">
             <span className="inline-block h-1.5 w-1.5 rounded-full bg-grape-500" />
-            AI 가계부의 새로운 기준
+            드디어 꾸준히 쓰게 되는 가계부
           </div>
           <h1
             className="text-pretty text-4xl font-extrabold leading-tight sm:text-5xl md:text-[3.5rem]"
@@ -224,7 +225,8 @@ export function HeroSection() {
             <span className="block font-semibold text-stone-700">AI가 알아서 분류하는</span>
             <span className="block">우리 집 가계부</span>
           </p>
-          <button
+          <Link
+            to="/login"
             className="mt-8 font-bold text-white text-base shadow-lg transition-all duration-200 hover:-translate-y-0.5 hover:shadow-grape-300/60 hover:shadow-xl active:scale-95"
             style={{
               borderRadius: 32,
@@ -234,7 +236,7 @@ export function HeroSection() {
             }}
           >
             지금 무료로 시작하기 →
-          </button>
+          </Link>
           <p className="mt-3 text-xs text-stone-400">신용카드 불필요 · 30초면 충분해요</p>
         </div>
 
