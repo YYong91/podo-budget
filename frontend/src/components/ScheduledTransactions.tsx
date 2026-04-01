@@ -59,7 +59,7 @@ export default function ScheduledTransactions({
   const hasExpense = scheduled.some(r => r.type === 'expense')
   const hasIncome = scheduled.some(r => r.type === 'income')
   const title = hasExpense && hasIncome
-    ? '지출/수입 예정'
+    ? '예정'
     : hasExpense ? '지출 예정' : '수입 예정'
 
   const totalExpense = scheduled.filter(r => r.type === 'expense').reduce((s, r) => s + r.amount, 0)
@@ -71,17 +71,21 @@ export default function ScheduledTransactions({
         onClick={collapsed ? handleExpand : handleCollapse}
         className="w-full flex items-center justify-between p-4 hover:bg-[var(--surface-hover)] transition-colors"
       >
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 shrink-0">
           <span className="text-sm font-semibold text-[var(--text-primary)]">{title}</span>
-          <span className="text-xs text-[var(--text-tertiary)]">{scheduled.length}건</span>
+          <span className="text-xs text-[var(--text-tertiary)] whitespace-nowrap">{scheduled.length}건</span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-sm font-medium text-[var(--text-secondary)]">
-            {hasExpense && hasIncome
-              ? `지출 ${formatAmount(totalExpense)} · 수입 ${formatAmount(totalIncome)}`
-              : formatAmount(hasExpense ? totalExpense : totalIncome)
-            }
-          </span>
+          {hasExpense && hasIncome ? (
+            <div className="text-right text-xs font-medium text-[var(--text-secondary)] leading-relaxed">
+              <div>지출 {formatAmount(totalExpense)}</div>
+              <div>수입 {formatAmount(totalIncome)}</div>
+            </div>
+          ) : (
+            <span className="text-sm font-medium text-[var(--text-secondary)]">
+              {formatAmount(hasExpense ? totalExpense : totalIncome)}
+            </span>
+          )}
           {collapsed
             ? <ChevronDown className="w-4 h-4 text-[var(--text-tertiary)]" />
             : <ChevronUp className="w-4 h-4 text-[var(--text-tertiary)]" />

@@ -41,7 +41,7 @@ describe('ScheduledTransactions', () => {
     expect(screen.getByText('수입 예정')).toBeInTheDocument()
   })
 
-  it('지출+수입 있으면 "지출/수입 예정" 타이틀을 표시한다', () => {
+  it('지출+수입 있으면 "예정" 타이틀을 표시한다', () => {
     render(
       <ScheduledTransactions
         items={[
@@ -51,7 +51,7 @@ describe('ScheduledTransactions', () => {
         currentYear={2026} currentMonth={3} onExecute={vi.fn()} onSkip={vi.fn()}
       />
     )
-    expect(screen.getByText('지출/수입 예정')).toBeInTheDocument()
+    expect(screen.getByText('예정')).toBeInTheDocument()
   })
 
   it('접힌 상태에서 건수와 총액을 표시한다', () => {
