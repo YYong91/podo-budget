@@ -4,7 +4,7 @@
  * TransactionList에서 월 뷰 관련 JSX를 분리한 컴포넌트.
  */
 
-import { useRef, useMemo, useCallback } from 'react'
+import { useRef, useMemo, useCallback, useState } from 'react'
 import PeriodNavigator from '../stats/PeriodNavigator'
 import MiniCalendar from '../MiniCalendar'
 import TransactionItem from '../TransactionItem'
@@ -12,7 +12,7 @@ import ScheduledTransactions from '../ScheduledTransactions'
 import EmptyState from '../EmptyState'
 import WelcomeCard from '../WelcomeCard'
 import BotNudgeCard from '../BotNudgeCard'
-import { Search } from 'lucide-react'
+import { Search, ChevronDown, ChevronUp } from 'lucide-react'
 import { formatAmount } from '../../utils/format'
 import { formatDateHeader } from '../../utils/calendar'
 import { recurringApi } from '../../api/recurring'
@@ -49,6 +49,21 @@ export default function MonthlyView({
   memberMap,
 }: MonthlyViewProps) {
   const { addToast } = useToast()
+
+  // 달력 접기/펼치기 (최초 방문: 펼침, 이후: 사용자 선호 유지)
+  const CALENDAR_COLLAPSE_KEY = 'podo-calendar-collapsed'
+  const [calendarCollapsed, setCalendarCollapsed] = useState(() => {
+    const stored = localStorage.getItem(CALENDAR_COLLAPSE_KEY)
+    if (stored === null) return false // 최초 방문 → 펼침
+    return stored === 'true'
+  })
+  const toggleCalendar = useCallback(() => {
+    setCalendarCollapsed(prev => {
+      const next = !prev
+      localStorage.setItem(CALENDAR_COLLAPSE_KEY, String(next))
+      return next
+    })
+  }, [])
 
   // 날짜 섹션 ref 맵
   const dateRefs = useRef<Map<string, HTMLDivElement>>(new Map())
@@ -123,16 +138,33 @@ export default function MonthlyView({
         <BotNudgeCard onDismiss={onBotNudgeDismiss} />
       )}
 
-      {/* 미니 캘린더 */}
-      <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] p-3">
-        <MiniCalendar
-          year={monthly.currentYear}
-          month={monthly.currentMonth}
-          daySummaries={monthly.daySummaries}
-          onDateClick={handleDateClick}
-          today={todayString}
-        />
-      </div>
+      {/* 미니 캘린더 (접기/펼치기) */}
+      {calendarCollapsed ? (
+        <button
+          onClick={toggleCalendar}
+          className="w-full flex items-center justify-center gap-2 py-3 bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] hover:bg-[var(--surface-hover)] transition-colors"
+        >
+          <span className="text-xs text-[var(--text-tertiary)]">달력 펼치기</span>
+          <ChevronDown className="w-3.5 h-3.5 text-[var(--text-tertiary)]" />
+        </button>
+      ) : (
+        <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] p-3">
+          <MiniCalendar
+            year={monthly.currentYear}
+            month={monthly.currentMonth}
+            daySummaries={monthly.daySummaries}
+            onDateClick={handleDateClick}
+            today={todayString}
+          />
+          <button
+            onClick={toggleCalendar}
+            className="w-full flex items-center justify-center gap-1.5 pt-2 mt-1 border-t border-[var(--border-subtle)]"
+          >
+            <span className="text-xs text-[var(--text-tertiary)]">접기</span>
+            <ChevronUp className="w-3.5 h-3.5 text-[var(--text-tertiary)]" />
+          </button>
+        </div>
+      )}
 
       {/* 예정 거래 섹션 — 캘린더 아래, 거래 리스트 위 */}
       <ScheduledTransactions
