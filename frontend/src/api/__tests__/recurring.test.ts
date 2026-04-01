@@ -9,10 +9,13 @@ import { mockRecurringTransactions } from '../../mocks/fixtures'
 
 describe('recurringApi', () => {
   describe('getAll', () => {
-    it('모든 정기 거래 목록을 조회한다', async () => {
+    it('활성 정기 거래 목록을 조회한다', async () => {
       const response = await recurringApi.getAll()
-      expect(response.data).toEqual(mockRecurringTransactions)
+      // GET /recurring은 is_active=true인 항목만 반환
+      const activeOnly = mockRecurringTransactions.filter((r) => r.is_active)
+      expect(response.data).toEqual(activeOnly)
       expect(Array.isArray(response.data)).toBe(true)
+      expect(response.data.every((r) => r.is_active)).toBe(true)
     })
 
     it('타입별 필터로 지출만 조회한다', async () => {

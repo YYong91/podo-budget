@@ -8,7 +8,7 @@ import { useRef, useMemo, useCallback } from 'react'
 import PeriodNavigator from '../stats/PeriodNavigator'
 import MiniCalendar from '../MiniCalendar'
 import TransactionItem from '../TransactionItem'
-import PendingRecurring from '../PendingRecurring'
+import ScheduledTransactions from '../ScheduledTransactions'
 import EmptyState from '../EmptyState'
 import WelcomeCard from '../WelcomeCard'
 import BotNudgeCard from '../BotNudgeCard'
@@ -123,30 +123,6 @@ export default function MonthlyView({
         <BotNudgeCard onDismiss={onBotNudgeDismiss} />
       )}
 
-      {/* 반복 거래 알림 */}
-      <PendingRecurring
-        items={monthly.pendingRecurring}
-        onExecute={async (id) => {
-          try {
-            await recurringApi.execute(id)
-            addToast('success', TOAST.RECURRING_EXECUTED)
-            monthly.setPendingRecurring((prev) => prev.filter((r) => r.id !== id))
-            monthly.fetchData()
-          } catch {
-            addToast('error', TOAST.RECURRING_EXECUTE_FAILED)
-          }
-        }}
-        onSkip={async (id) => {
-          try {
-            const res = await recurringApi.skip(id)
-            addToast('success', `다음 예정일: ${res.data.next_due_date}`)
-            monthly.setPendingRecurring((prev) => prev.filter((r) => r.id !== id))
-          } catch {
-            addToast('error', TOAST.RECURRING_SKIP_FAILED)
-          }
-        }}
-      />
-
       {/* 미니 캘린더 */}
       <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] p-3">
         <MiniCalendar
@@ -157,6 +133,31 @@ export default function MonthlyView({
           today={todayString}
         />
       </div>
+
+      {/* 예정 거래 섹션 — 캘린더 아래, 거래 리스트 위 */}
+      <ScheduledTransactions
+        items={monthly.allRecurring}
+        currentYear={monthly.currentYear}
+        currentMonth={monthly.currentMonth}
+        onExecute={async (id) => {
+          try {
+            await recurringApi.execute(id)
+            addToast('success', TOAST.RECURRING_EXECUTED)
+            monthly.fetchData()
+          } catch {
+            addToast('error', TOAST.RECURRING_EXECUTE_FAILED)
+          }
+        }}
+        onSkip={async (id) => {
+          try {
+            await recurringApi.skip(id)
+            addToast('success', TOAST.RECURRING_SKIPPED)
+            monthly.fetchData()
+          } catch {
+            addToast('error', TOAST.RECURRING_SKIP_FAILED)
+          }
+        }}
+      />
 
       {/* 거래 리스트 */}
       {monthly.loading ? (
