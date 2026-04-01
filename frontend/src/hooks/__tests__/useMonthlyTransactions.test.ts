@@ -222,6 +222,17 @@ describe('useMonthlyTransactions', () => {
     })
   })
 
+  describe('allRecurring', () => {
+    it('활성 정기거래 전체를 allRecurring으로 반환한다', async () => {
+      const { result } = renderHook(() =>
+        useMonthlyTransactions({ activeHouseholdId: 1 })
+      )
+      await waitFor(() => expect(result.current.loading).toBe(false))
+      expect(result.current.allRecurring.length).toBeGreaterThan(0)
+      expect(result.current.allRecurring.every((r: any) => r.is_active)).toBe(true)
+    })
+  })
+
   describe('에러 처리', () => {
     it('error 상태가 기본 false이다', () => {
       const { result } = renderHook(() =>
