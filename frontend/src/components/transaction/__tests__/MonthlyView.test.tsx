@@ -3,7 +3,7 @@
  * @description MonthlyView 컴포넌트 단위 테스트 — 캘린더, 요약, 거래 리스트 렌더링 검증
  */
 
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
@@ -96,6 +96,10 @@ function setupCurrentMonthHandlers() {
 }
 
 describe('MonthlyView 컴포넌트', () => {
+  beforeEach(() => {
+    localStorage.removeItem('podo-calendar-collapsed')
+  })
+
   it('월 네비게이션 헤더를 표시한다', () => {
     renderPage()
     const now = new Date()
@@ -333,5 +337,71 @@ describe('MonthlyView 컴포넌트', () => {
 
     // cleanup
     localStorage.removeItem('podo-welcome-dismissed')
+  })
+
+  describe('달력 접기/펼치기', () => {
+    it('최초 방문 시 달력이 펼쳐져 있다', async () => {
+      renderPage()
+      await waitFor(() => {
+        expect(screen.getByText('일')).toBeInTheDocument()
+        expect(screen.getByText('토')).toBeInTheDocument()
+      })
+      expect(screen.getByText('접기')).toBeInTheDocument()
+    })
+
+    it('접기 버튼 클릭 시 달력이 숨겨지고 "달력 펼치기" 버튼이 표시된다', async () => {
+      const user = userEvent.setup()
+      renderPage()
+      await waitFor(() => {
+        expect(screen.getByText('접기')).toBeInTheDocument()
+      })
+
+      await user.click(screen.getByText('접기'))
+
+      await waitFor(() => {
+        expect(screen.getByText('달력 펼치기')).toBeInTheDocument()
+        expect(screen.queryByText('접기')).not.toBeInTheDocument()
+      })
+    })
+
+    it('펼치기 버튼 클릭 시 달력이 다시 표시된다', async () => {
+      const user = userEvent.setup()
+      renderPage()
+      await waitFor(() => {
+        expect(screen.getByText('접기')).toBeInTheDocument()
+      })
+
+      await user.click(screen.getByText('접기'))
+      await waitFor(() => {
+        expect(screen.getByText('달력 펼치기')).toBeInTheDocument()
+      })
+
+      await user.click(screen.getByText('달력 펼치기'))
+      await waitFor(() => {
+        expect(screen.getByText('접기')).toBeInTheDocument()
+        expect(screen.getByText('일')).toBeInTheDocument()
+      })
+    })
+
+    it('접힌 상태가 localStorage에 저장된다', async () => {
+      const user = userEvent.setup()
+      renderPage()
+      await waitFor(() => {
+        expect(screen.getByText('접기')).toBeInTheDocument()
+      })
+
+      await user.click(screen.getByText('접기'))
+
+      expect(localStorage.getItem('podo-calendar-collapsed')).toBe('true')
+    })
+
+    it('localStorage에 접힌 상태가 있으면 접힌 상태로 시작한다', async () => {
+      localStorage.setItem('podo-calendar-collapsed', 'true')
+      renderPage()
+      await waitFor(() => {
+        expect(screen.getByText('달력 펼치기')).toBeInTheDocument()
+        expect(screen.queryByText('접기')).not.toBeInTheDocument()
+      })
+    })
   })
 })
