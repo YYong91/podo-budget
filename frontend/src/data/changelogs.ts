@@ -18,6 +18,14 @@ export interface Changelog {
 
 export const changelogs: Changelog[] = [
   {
+    version: '0.14.0',
+    date: '2026-04-01',
+    title: '정기거래 예정 섹션 추가',
+    items: [
+      { tag: '신규', text: '가계부 홈에 이번 달 정기거래 예정 섹션 추가' },
+    ],
+  },
+  {
     version: '0.13.1',
     date: '2026-03-29',
     title: '기본 결제수단 제공',
