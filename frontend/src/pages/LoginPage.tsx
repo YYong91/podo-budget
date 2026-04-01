@@ -3,7 +3,7 @@
  * @description 로그인 페이지 — Supabase Auth (#337)
  *
  * Grape 디자인 시스템 + 다크모드 지원.
- * 이메일+비밀번호 + Google 소셜 로그인 (카카오는 비즈앱 승인 후 #349).
+ * 이메일+비밀번호 + Google/카카오 소셜 로그인.
  */
 
 import { useState, useCallback } from 'react'
@@ -102,6 +102,21 @@ export default function LoginPage() {
     }
   }, [])
 
+  const handleKakaoLogin = useCallback(async () => {
+    setError('')
+    const { error: oauthError } = await supabase.auth.signInWithOAuth({
+      provider: 'kakao',
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+      },
+    })
+    if (oauthError) {
+      setError(oauthError.message || '카카오 로그인에 실패했습니다')
+    } else {
+      localStorage.setItem(LAST_LOGIN_KEY, 'kakao')
+    }
+  }, [])
+
   return (
     <div className="min-h-screen bg-[var(--surface)] flex items-center justify-center p-4">
       <div className="w-full max-w-sm space-y-8">
@@ -136,8 +151,18 @@ export default function LoginPage() {
             <p className="text-xs text-grape-600 text-center -mt-1">최근에 이 방법으로 로그인했어요</p>
           )}
 
-          {/* 카카오 (비즈앱 승인 후 활성화 #349) */}
-          {/* <button className="w-full ...">카카오로 계속하기</button> */}
+          <button
+            onClick={handleKakaoLogin}
+            className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-[#FEE500] rounded-xl hover:bg-[#FDD835] transition-colors"
+          >
+            <svg className="w-5 h-5" viewBox="0 0 24 24">
+              <path fill="#000000" d="M12 3C6.477 3 2 6.463 2 10.691c0 2.724 1.8 5.113 4.508 6.459-.2.745-.723 2.7-.828 3.12-.13.524.192.517.404.376.166-.11 2.646-1.8 3.72-2.532.7.1 1.42.153 2.196.153 5.523 0 10-3.463 10-7.576C22 6.463 17.523 3 12 3z" />
+            </svg>
+            <span className="text-sm font-medium text-[#000000]/85">카카오로 계속하기</span>
+          </button>
+          {lastProvider === 'kakao' && (
+            <p className="text-xs text-grape-600 text-center -mt-1">최근에 이 방법으로 로그인했어요</p>
+          )}
 
           <p className="text-xs text-center text-[var(--text-muted)]">
             계속 진행 시{' '}

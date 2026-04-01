@@ -54,6 +54,7 @@ export function useMonthlyTransactions({ activeHouseholdId }: UseMonthlyTransact
   const [expenses, setExpenses] = useState<Expense[]>([])
   const [incomes, setIncomes] = useState<Income[]>([])
   const [categories, setCategories] = useState<Category[]>([])
+  const [allRecurring, setAllRecurring] = useState<RecurringTransaction[]>([])
   const [pendingRecurring, setPendingRecurring] = useState<RecurringTransaction[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
@@ -103,15 +104,21 @@ export function useMonthlyTransactions({ activeHouseholdId }: UseMonthlyTransact
         household_id: activeHouseholdId,
       }
 
-      const [expRes, incRes, pendingRes] = await Promise.all([
+      const [expRes, incRes, recurringRes] = await Promise.all([
         expenseApi.getAll(baseParams).catch(() => ({ data: [] as Expense[] })),
         incomeApi.getAll(baseParams).catch(() => ({ data: [] as Income[] })),
-        recurringApi.getPending(activeHouseholdId).catch(() => ({ data: [] as RecurringTransaction[] })),
+        recurringApi.getAll({ household_id: activeHouseholdId }).catch(() => ({ data: [] as RecurringTransaction[] })),
       ])
+
+      // is_active 필터링 (백엔드 응답에 비활성 항목이 포함될 수 있으므로 프론트에서도 방어)
+      const activeRecurring = (recurringRes?.data ?? []).filter(r => r.is_active)
+      const todayStr = new Date().toISOString().slice(0, 10)
 
       setExpenses(expRes.data)
       setIncomes(incRes.data)
-      setPendingRecurring(pendingRes?.data ?? [])
+      setAllRecurring(activeRecurring)
+      // 오늘 이전 또는 오늘 도래한 항목만 pending으로 분류
+      setPendingRecurring(activeRecurring.filter(r => r.next_due_date <= todayStr))
     } catch {
       setError(true)
     } finally {
@@ -194,6 +201,7 @@ export function useMonthlyTransactions({ activeHouseholdId }: UseMonthlyTransact
     incomes,
     categories,
     categoryMap,
+    allRecurring,
     pendingRecurring,
     setPendingRecurring,
 

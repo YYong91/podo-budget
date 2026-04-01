@@ -283,7 +283,7 @@ export const handlers = [
   http.get(`${BASE_URL}/recurring`, ({ request }) => {
     const url = new URL(request.url)
     const type = url.searchParams.get('type')
-    let filtered = [...mockRecurringTransactions]
+    let filtered = mockRecurringTransactions.filter((r) => r.is_active)
     if (type) filtered = filtered.filter((r) => r.type === type)
     return HttpResponse.json(filtered)
   }),
