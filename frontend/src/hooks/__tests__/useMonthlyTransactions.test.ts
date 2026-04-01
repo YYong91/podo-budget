@@ -229,7 +229,7 @@ describe('useMonthlyTransactions', () => {
       )
       await waitFor(() => expect(result.current.loading).toBe(false))
       expect(result.current.allRecurring.length).toBeGreaterThan(0)
-      expect(result.current.allRecurring.every((r: any) => r.is_active)).toBe(true)
+      expect(result.current.allRecurring.every((r) => r.is_active)).toBe(true)
     })
   })
 
