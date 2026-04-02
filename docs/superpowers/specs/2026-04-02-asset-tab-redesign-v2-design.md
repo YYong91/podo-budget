@@ -53,9 +53,20 @@
 부동산       -124만원
 ```
 
-- 데이터 소스: 이번 달 스냅샷 `breakdown` vs 전월 스냅샷 `breakdown` 유형별 차이
-- 저축 항목: `Category.is_savings === true`인 카테고리의 이번 달 지출 합산 (별도 API)
-- 변화량 0인 유형은 숨김
+- 데이터 소스 2개를 프론트에서 합산:
+  1. **스냅샷 breakdown 차이**: 이번 달 스냅샷 `breakdown` vs 전월 스냅샷 `breakdown`
+  2. **저축 API**: `/api/assets/monthly-savings`에서 저축성지출 합산
+- `breakdown`은 Text 컬럼에 JSON 문자열로 저장됨. API 응답 시 `dict[str, float] | None`으로 파싱 제공.
+- breakdown JSON 키는 Asset type 코드: `{"stock_kr": 5000000, "stock_us": 3000000, "deposit": 10000000, "real_estate": 50000000, "loan": -20000000}`
+- 프론트에서 표시 그룹으로 매핑:
+  | 표시 라벨 | breakdown 키 |
+  |----------|-------------|
+  | 투자 | stock_kr + stock_us + crypto |
+  | 예적금 | deposit |
+  | 부동산/기타 | real_estate + other |
+  | 대출 | loan (부호 반전: 잔액 감소 = 양수 표시) |
+  | 저축 | monthly-savings API (breakdown에 없음) |
+- 변화량 0인 항목은 숨김
 
 **순자산 감소 시 프레이밍:**
 - 변화량은 빨간색으로 정직하게 표시
@@ -190,6 +201,10 @@ original_amount = Column(Numeric(18, 2), nullable=True)  # 대출 원금 (상환
 
 Alembic 마이그레이션 1건.
 
+### Asset 스키마 — 필드 추가
+
+`backend/app/schemas/asset.py`의 `AssetCreate`, `AssetUpdate`, `AssetResponse`에 `original_amount: float | None = None` 추가. 프론트에서 대출 등록/수정 시 전달하고, 조회 시 받아올 수 있도록.
+
 ### AssetGoal — 변경 없음
 
 기존 모델/API 그대로 유지. 프론트에서 마일스톤 UI로 표현 방식만 변경.
@@ -225,7 +240,10 @@ savings_total = select(func.coalesce(func.sum(Expense.amount), 0)).where(
 { "month": "2026-04", "savings": 500000 }
 ```
 
-기존 `total_income`, `total_expense`, `net_savings` 필드 제거.
+- `month` 필드: 기존 별도 `year`/`month` 정수 → `"YYYY-MM"` 문자열로 통합
+- 기존 `total_income`, `total_expense`, `net_savings` 필드 제거
+- 프론트 `MonthlySavings` 타입도 동일하게 변경: `{ month: string; savings: number }`
+- `AssetDashboard`에서 `monthlySavings.net_savings` 참조를 `monthlySavings.savings`로 전환
 
 ### 기타 API — 변경 없음
 
