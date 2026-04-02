@@ -10,20 +10,20 @@ import type { Asset } from '../../types'
 const MANUAL_TYPES = ['deposit', 'real_estate', 'other', 'loan']
 const NUDGE_THRESHOLD_DAYS = 30
 
+function isStale(asset: Asset): boolean {
+  if (!MANUAL_TYPES.includes(asset.type)) return false
+  const updatedAt = asset.updated_at ? new Date(asset.updated_at).getTime() : 0
+  const daysSince = (Date.now() - updatedAt) / 86_400_000
+  return daysSince >= NUDGE_THRESHOLD_DAYS
+}
+
 interface UpdateNudgeProps {
   assets: Asset[]
   onNavigate: () => void
 }
 
 export default function UpdateNudge({ assets, onNavigate }: UpdateNudgeProps) {
-  const now = Date.now()
-
-  const staleAssets = assets.filter(a => {
-    if (!MANUAL_TYPES.includes(a.type)) return false
-    const updatedAt = a.updated_at ? new Date(a.updated_at).getTime() : 0
-    const daysSince = (now - updatedAt) / 86_400_000
-    return daysSince >= NUDGE_THRESHOLD_DAYS
-  })
+  const staleAssets = assets.filter(isStale)
 
   // 넛지 표시 조건 미충족 시 렌더링 없음
   if (staleAssets.length === 0) return null

@@ -187,7 +187,13 @@ export default function AssetDashboard() {
           aria-modal="true"
           aria-labelledby="goal-modal-title"
         >
-          <div className="absolute inset-0 bg-black/40" onClick={() => setShowGoalModal(false)} />
+          <button
+            type="button"
+            className="absolute inset-0 bg-black/40"
+            aria-label="모달 닫기"
+            onClick={() => setShowGoalModal(false)}
+            onKeyDown={e => e.key === 'Escape' && setShowGoalModal(false)}
+          />
           <div className="relative bg-[var(--surface-card)] w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl p-6 space-y-5">
             <div className="flex items-center justify-between">
               <h2 id="goal-modal-title" className="text-lg font-bold text-[var(--text-primary)]">순자산 목표 설정</h2>
