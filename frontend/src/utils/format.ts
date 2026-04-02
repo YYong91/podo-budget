@@ -47,6 +47,7 @@ export function getLocalDateString(date: Date = new Date()): string {
 /**
  * 금액을 한국어 단위로 포맷 (억/만원)
  * 예: 240_000_000 → "2억 4,000만원", 43_000_000 → "4,300만원"
+ * 주의: 10,000원 미만 금액은 "0만원"으로 표시됨 — 만원 이상의 값에서만 사용할 것
  */
 export function formatKoreanAmount(amount: number): string {
   const eok = Math.floor(amount / 100_000_000)

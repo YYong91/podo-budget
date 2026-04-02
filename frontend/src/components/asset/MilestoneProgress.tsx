@@ -8,7 +8,6 @@
  *   - 5억 이상  → 5000만원 단위
  */
 
-import type { AssetGoal } from '../../types'
 import { formatKoreanAmount } from '../../utils/format'
 
 export interface MilestoneResult {
@@ -20,7 +19,8 @@ export interface MilestoneResult {
 
 interface MilestoneProgressProps {
   netWorth: number
-  goal: Pick<AssetGoal, 'target_net_worth' | 'target_date'> | null
+  /** 목표가 설정됐는지 여부 — truthy면 마일스톤 바 표시, null이면 설정 CTA 표시 */
+  goal: object | null
   onGoalEdit: () => void
 }
 
