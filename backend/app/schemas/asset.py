@@ -15,6 +15,7 @@ class AssetBase(BaseModel):
     maturity_date: date | None = None
     repayment_type: str | None = None
     monthly_payment: float | None = None
+    original_amount: float | None = None  # 대출 원금 (상환 진척도용)
     account_id: int | None = None
     memo: str | None = None
 
@@ -35,6 +36,7 @@ class AssetUpdate(BaseModel):
     maturity_date: date | None = None
     repayment_type: str | None = None
     monthly_payment: float | None = None
+    original_amount: float | None = None  # 대출 원금 (상환 진척도용)
     memo: str | None = None
 
 

@@ -322,3 +322,43 @@ async def test_delete_goal_not_found(authenticated_client, test_user: User, db_s
     """목표 없을 때 삭제 시도 → 404"""
     response = await authenticated_client.delete("/api/assets/goal")
     assert response.status_code == 404
+
+
+# ──────────────────────────────────────────────
+# original_amount — 대출 원금 (상환 진척도용)
+# ──────────────────────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_create_loan_with_original_amount(authenticated_client, test_household: Household):
+    """대출 등록 시 original_amount 필드가 저장된다"""
+    resp = await authenticated_client.post(
+        "/api/assets",
+        json={
+            "name": "주담대",
+            "type": "loan",
+            "is_liability": True,
+            "manual_value": 78000000,
+            "original_amount": 200000000,
+            "household_id": test_household.id,
+        },
+    )
+    assert resp.status_code == 201
+    data = resp.json()
+    assert data["original_amount"] == 200000000
+
+
+@pytest.mark.asyncio
+async def test_create_asset_without_original_amount(authenticated_client, test_household: Household):
+    """original_amount 없이도 정상 등록된다"""
+    resp = await authenticated_client.post(
+        "/api/assets",
+        json={
+            "name": "신한 적금",
+            "type": "deposit",
+            "manual_value": 5000000,
+            "household_id": test_household.id,
+        },
+    )
+    assert resp.status_code == 201
+    assert resp.json()["original_amount"] is None
