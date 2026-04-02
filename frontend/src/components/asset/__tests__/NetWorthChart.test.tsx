@@ -47,6 +47,6 @@ describe('NetWorthChart', () => {
 
   it('스냅샷이 없으면 빈 상태를 표시한다', () => {
     render(<NetWorthChart snapshots={[]} />)
-    expect(screen.getByText(/아직 기록이 없어요/)).toBeInTheDocument()
+    expect(screen.getByText(/다음 달부터 추이를 볼 수 있어요/)).toBeInTheDocument()
   })
 })

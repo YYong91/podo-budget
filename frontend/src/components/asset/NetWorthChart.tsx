@@ -28,7 +28,7 @@ function filterByPeriod(snapshots: AssetSnapshot[], days: number): AssetSnapshot
 }
 
 /** Y축 범위 계산 (data.length > 0 보장된 상태에서만 호출) */
-function computeYDomain(values: number[]): [number, number] {
+export function computeYDomain(values: number[]): [number, number] {
   const minVal = Math.min(...values)
   const maxVal = Math.max(...values)
   const margin = (maxVal - minVal) * 0.1 || Math.abs(maxVal) * 0.1 || 1000000
@@ -39,6 +39,28 @@ function computeYDomain(values: number[]): [number, number] {
 }
 
 export default function NetWorthChart({ snapshots }: NetWorthChartProps) {
+  // 스냅샷 1개 이하: 차트 미표시
+  if (snapshots.length <= 1) {
+    return (
+      <div className="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)] shadow-sm p-5 flex items-center justify-center h-32">
+        <p className="text-sm text-[var(--text-muted)]">다음 달부터 추이를 볼 수 있어요</p>
+      </div>
+    )
+  }
+
+  // 스냅샷 2~3개: 3M 탭만 활성 가능
+  const fewSnapshots = snapshots.length <= 3
+
+  return <NetWorthChartInner snapshots={snapshots} fewSnapshots={fewSnapshots} />
+}
+
+function NetWorthChartInner({
+  snapshots,
+  fewSnapshots,
+}: {
+  snapshots: AssetSnapshot[]
+  fewSnapshots: boolean
+}) {
   const [period, setPeriod] = useState<Period>('3M')
 
   const data = useMemo(() => {
@@ -51,35 +73,47 @@ export default function NetWorthChart({ snapshots }: NetWorthChartProps) {
       }))
   }, [snapshots, period])
 
-  if (snapshots.length === 0) {
-    return (
-      <div className="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)] shadow-sm p-5 flex items-center justify-center h-40">
-        <p className="text-sm text-[var(--text-muted)]">아직 기록이 없어요</p>
-      </div>
-    )
-  }
+  // 기간 요약: 데이터 첫~마지막 순자산 차이
+  const periodSummary = useMemo(() => {
+    if (data.length < 2) return null
+    const first = data[0].netWorth
+    const last = data[data.length - 1].netWorth
+    const diff = last - first
+    const sign = diff >= 0 ? '+' : ''
+    return `${data.length}개월간 ${sign}${formatKoreanAmount(Math.abs(diff))}`
+  }, [data])
 
   const yDomain = data.length > 0
     ? computeYDomain(data.map(d => d.netWorth))
     : ([0, 100000000] as [number, number])
 
+  function isTabDisabled(p: Period): boolean {
+    return fewSnapshots && p !== '3M'
+  }
+
   return (
     <div className="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)] shadow-sm p-5">
       {/* 기간 탭 */}
       <div className="flex gap-2 mb-4 justify-end">
-        {(['3M', '6M', '12M'] as Period[]).map(p => (
-          <button
-            key={p}
-            onClick={() => setPeriod(p)}
-            className={`text-xs px-2 py-0.5 rounded-full transition-colors ${
-              period === p
-                ? 'bg-grape-100 text-grape-600 font-medium'
-                : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
-            }`}
-          >
-            {p}
-          </button>
-        ))}
+        {(['3M', '6M', '12M'] as Period[]).map(p => {
+          const disabled = isTabDisabled(p)
+          return (
+            <button
+              key={p}
+              onClick={() => !disabled && setPeriod(p)}
+              disabled={disabled}
+              className={`text-xs px-2 py-0.5 rounded-full transition-colors ${
+                period === p
+                  ? 'bg-grape-100 text-grape-600 font-medium'
+                  : disabled
+                  ? 'text-[var(--text-muted)] opacity-30 cursor-not-allowed'
+                  : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
+              }`}
+            >
+              {p}
+            </button>
+          )
+        })}
       </div>
 
       {data.length === 0 ? (
@@ -87,47 +121,54 @@ export default function NetWorthChart({ snapshots }: NetWorthChartProps) {
           <p className="text-sm text-[var(--text-muted)]">선택한 기간의 기록이 없어요</p>
         </div>
       ) : (
-        <ResponsiveContainer width="100%" height={160}>
-          <AreaChart data={data} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
-            <defs>
-              <linearGradient id="netWorthGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="var(--color-grape-400)" stopOpacity={0.3} />
-                <stop offset="95%" stopColor="var(--color-grape-400)" stopOpacity={0} />
-              </linearGradient>
-            </defs>
-            <XAxis
-              dataKey="date"
-              tick={{ fontSize: 10, fill: 'var(--text-muted)' }}
-              axisLine={false}
-              tickLine={false}
-            />
-            <YAxis
-              domain={yDomain}
-              tick={{ fontSize: 10, fill: 'var(--text-muted)' }}
-              tickFormatter={(v) => formatKoreanAmount(v)}
-              axisLine={false}
-              tickLine={false}
-              width={60}
-            />
-            <Tooltip
-              formatter={(value) => [formatKoreanAmount(Number(value)), '순자산']}
-              contentStyle={{
-                fontSize: 12,
-                border: '1px solid var(--border-default)',
-                borderRadius: 8,
-                backgroundColor: 'var(--surface-card)',
-              }}
-            />
-            <Area
-              type="monotone"
-              dataKey="netWorth"
-              stroke="var(--color-grape-400)"
-              strokeWidth={2}
-              fill="url(#netWorthGradient)"
-              dot={false}
-            />
-          </AreaChart>
-        </ResponsiveContainer>
+        <>
+          <ResponsiveContainer width="100%" height={160}>
+            <AreaChart data={data} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
+              <defs>
+                <linearGradient id="netWorthGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="var(--color-grape-400)" stopOpacity={0.3} />
+                  <stop offset="95%" stopColor="var(--color-grape-400)" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <XAxis
+                dataKey="date"
+                tick={{ fontSize: 10, fill: 'var(--text-muted)' }}
+                axisLine={false}
+                tickLine={false}
+              />
+              <YAxis
+                domain={yDomain}
+                tick={{ fontSize: 10, fill: 'var(--text-muted)' }}
+                tickFormatter={(v) => formatKoreanAmount(v)}
+                axisLine={false}
+                tickLine={false}
+                width={60}
+              />
+              <Tooltip
+                formatter={(value) => [formatKoreanAmount(Number(value)), '순자산']}
+                contentStyle={{
+                  fontSize: 12,
+                  border: '1px solid var(--border-default)',
+                  borderRadius: 8,
+                  backgroundColor: 'var(--surface-card)',
+                }}
+              />
+              <Area
+                type="monotone"
+                dataKey="netWorth"
+                stroke="var(--color-grape-400)"
+                strokeWidth={2}
+                fill="url(#netWorthGradient)"
+                dot={false}
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+
+          {/* 기간 요약 */}
+          {periodSummary && (
+            <p className="text-xs text-[var(--text-muted)] text-right mt-2">{periodSummary}</p>
+          )}
+        </>
       )}
     </div>
   )

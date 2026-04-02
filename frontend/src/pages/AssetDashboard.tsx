@@ -174,7 +174,7 @@ export default function AssetDashboard() {
 
       <UpdateNudge
         assets={assets}
-        onNavigate={() => navigate('/assets')}
+        onNavigate={(assetId) => navigate(`/assets/${assetId}`)}
       />
 
       <AssetGroupList assets={assets} onAdd={handleAddAsset} />

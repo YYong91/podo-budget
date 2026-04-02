@@ -8,7 +8,7 @@ import { Plus } from 'lucide-react'
 import type { AssetType } from '../../types'
 
 interface AssetOnboardingProps {
-  onAdd: (type: AssetType) => void
+  onAdd: (type?: AssetType) => void
 }
 
 const ASSET_TYPES: { type: AssetType; label: string; emoji: string }[] = [
@@ -23,8 +23,8 @@ const ASSET_TYPES: { type: AssetType; label: string; emoji: string }[] = [
 export default function AssetOnboarding({ onAdd }: AssetOnboardingProps) {
   return (
     <div className="text-center py-8">
-      <p className="text-lg font-bold text-[var(--text-primary)] mb-1">자산을 기록해볼까요?</p>
-      <p className="text-sm text-[var(--text-muted)] mb-6">어떤 자산을 먼저 추가할까요?</p>
+      <p className="text-lg font-bold text-[var(--text-primary)] mb-1">우리 가족 자산을 정리해볼까요?</p>
+      <p className="text-sm text-[var(--text-muted)] mb-6">하나만 등록하면 바로 순자산이 보여요</p>
 
       <div className="grid grid-cols-3 gap-3">
         {ASSET_TYPES.map(({ type, label, emoji }) => (
@@ -41,7 +41,7 @@ export default function AssetOnboarding({ onAdd }: AssetOnboardingProps) {
 
       {/* 직접 입력 버튼 */}
       <button
-        onClick={() => onAdd('other' as AssetType)}
+        onClick={() => onAdd()}
         className="mt-4 flex items-center justify-center gap-1.5 mx-auto text-sm text-[var(--text-muted)] hover:text-grape-600 transition-colors"
       >
         <Plus className="w-4 h-4" />

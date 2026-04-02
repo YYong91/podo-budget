@@ -126,7 +126,7 @@ describe('AssetDashboard', () => {
     renderDashboard()
     await waitFor(() => {
       // AssetOnboarding 컴포넌트의 실제 텍스트
-      expect(screen.getByText('자산을 기록해볼까요?')).toBeInTheDocument()
+      expect(screen.getByText('우리 가족 자산을 정리해볼까요?')).toBeInTheDocument()
     })
   })
 

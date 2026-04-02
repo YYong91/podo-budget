@@ -19,7 +19,7 @@ function isStale(asset: Asset): boolean {
 
 interface UpdateNudgeProps {
   assets: Asset[]
-  onNavigate: () => void
+  onNavigate: (assetId: number) => void
 }
 
 export default function UpdateNudge({ assets, onNavigate }: UpdateNudgeProps) {
@@ -42,7 +42,7 @@ export default function UpdateNudge({ assets, onNavigate }: UpdateNudgeProps) {
       </div>
 
       <button
-        onClick={onNavigate}
+        onClick={() => onNavigate(staleAssets[0].id)}
         className="text-xs text-warm-600 hover:text-warm-700 whitespace-nowrap transition-colors"
       >
         확인

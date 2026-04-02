@@ -91,3 +91,10 @@ class AssetParseResponse(BaseModel):
     """자연어 파싱 결과"""
 
     items: list[AssetCreate]
+
+
+class MonthlySavingsResponse(BaseModel):
+    """이번 달 저축액"""
+
+    month: str
+    savings: float
