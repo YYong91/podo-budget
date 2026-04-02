@@ -5,14 +5,16 @@
 
 import { Plus } from 'lucide-react'
 
+import type { AssetType } from '../../types'
+
 interface AssetOnboardingProps {
-  onAdd: (type: string) => void
+  onAdd: (type: AssetType) => void
 }
 
-const ASSET_TYPES = [
+const ASSET_TYPES: { type: AssetType; label: string; emoji: string }[] = [
   { type: 'deposit', label: '예·적금', emoji: '🏦' },
   { type: 'stock_kr', label: '국내 주식', emoji: '📈' },
-  { type: 'stock_us', label: '해외 주식', emoji: '🌐' },
+  { type: 'crypto', label: '코인', emoji: '🪙' },
   { type: 'real_estate', label: '부동산', emoji: '🏠' },
   { type: 'other', label: '기타 자산', emoji: '💼' },
   { type: 'loan', label: '대출', emoji: '📋' },
@@ -39,7 +41,7 @@ export default function AssetOnboarding({ onAdd }: AssetOnboardingProps) {
 
       {/* 직접 입력 버튼 */}
       <button
-        onClick={() => onAdd('other')}
+        onClick={() => onAdd('other' as AssetType)}
         className="mt-4 flex items-center justify-center gap-1.5 mx-auto text-sm text-[var(--text-muted)] hover:text-grape-600 transition-colors"
       >
         <Plus className="w-4 h-4" />

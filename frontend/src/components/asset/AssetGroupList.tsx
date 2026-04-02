@@ -6,14 +6,14 @@
 import { useNavigate } from 'react-router-dom'
 import { Plus, ChevronRight } from 'lucide-react'
 import { formatAmount } from '../../utils/format'
-import type { Asset } from '../../types'
+import type { Asset, AssetType } from '../../types'
 
 interface AssetGroupListProps {
   assets: Asset[]
-  onAdd: (type?: string) => void
+  onAdd: (type?: AssetType) => void
 }
 
-const ASSET_GROUPS: { label: string; types: string[]; isLiability?: boolean }[] = [
+const ASSET_GROUPS: { label: string; types: AssetType[]; isLiability?: boolean }[] = [
   { label: '투자', types: ['stock_kr', 'stock_us', 'crypto'] },
   { label: '예적금', types: ['deposit'] },
   { label: '부동산', types: ['real_estate'] },
