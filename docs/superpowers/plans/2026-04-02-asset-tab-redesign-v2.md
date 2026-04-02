@@ -424,7 +424,7 @@ describe('computeStreak', () => {
       { net_worth: 190 },
       { net_worth: 180 },
     ] // 최신→과거
-    expect(computeStreak(snapshots)).toBe(3)
+    expect(computeStreak(snapshots)).toBe(2)
   })
 
   it('감소가 있으면 스트릭이 끊긴다', () => {
@@ -976,10 +976,43 @@ export default function NetWorthChart({ snapshots }: NetWorthChartProps) {
 }
 ```
 
-- [ ] **Step 2: 커밋**
+- [ ] **Step 2: 기본 테스트 작성**
+
+`frontend/src/components/asset/__tests__/NetWorthChart.test.tsx`:
+
+```typescript
+import { describe, it, expect } from 'vitest'
+import { render, screen } from '@testing-library/react'
+import NetWorthChart from '../NetWorthChart'
+
+describe('NetWorthChart', () => {
+  it('스냅샷 1개 이하면 안내 메시지를 표시한다', () => {
+    render(<NetWorthChart snapshots={[]} />)
+    expect(screen.getByText(/다음 달부터/)).toBeInTheDocument()
+  })
+
+  it('스냅샷 2개 이상이면 차트를 렌더링한다', () => {
+    const snapshots = [
+      { snapshot_date: '2026-01-01', total_assets: 100, total_liabilities: 0, net_worth: 100, breakdown: null },
+      { snapshot_date: '2026-02-01', total_assets: 120, total_liabilities: 0, net_worth: 120, breakdown: null },
+    ]
+    render(<NetWorthChart snapshots={snapshots} />)
+    expect(screen.getByText('순자산 추이')).toBeInTheDocument()
+    expect(screen.getByText('3M')).toBeInTheDocument()
+  })
+})
+```
+
+- [ ] **Step 3: 테스트 통과 확인**
 
 ```bash
-git add frontend/src/components/asset/NetWorthChart.tsx
+cd frontend && npx vitest run src/components/asset/__tests__/NetWorthChart.test.tsx
+```
+
+- [ ] **Step 4: 커밋**
+
+```bash
+git add frontend/src/components/asset/NetWorthChart.tsx frontend/src/components/asset/__tests__/NetWorthChart.test.tsx
 git commit -m "feat: NetWorthChart 컴포넌트 — 인터랙티브 추이 차트"
 ```
 
@@ -1363,15 +1396,14 @@ export default function AssetDashboard() {
   const totalAssets = summary?.total_assets ?? 0
   const totalLiabilities = summary?.total_liabilities ?? 0
 
-  // 성과 카드 데이터 (스냅샷이 있을 때만)
+  // 성과 카드 데이터: live vs 마지막 스냅샷 (스냅샷이 있을 때만)
   const lastSnapshot = snapshots.length > 0 ? snapshots[snapshots.length - 1] : null
-  const prevSnapshot = snapshots.length >= 2 ? snapshots[snapshots.length - 2] : null
-  const netWorthChange = prevSnapshot ? netWorth - prevSnapshot.net_worth : null
+  const netWorthChange = lastSnapshot ? netWorth - lastSnapshot.net_worth : null
 
-  const breakdownDiff = prevSnapshot && summary
+  const breakdownDiff = lastSnapshot && summary
     ? computeBreakdownDiff(
         { breakdown: summary.breakdown, totalLiabilities },
-        { breakdown: prevSnapshot.breakdown, totalLiabilities: prevSnapshot.total_liabilities },
+        { breakdown: lastSnapshot.breakdown, totalLiabilities: lastSnapshot.total_liabilities },
       )
     : []
 
