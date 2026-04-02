@@ -50,16 +50,18 @@ export function getLocalDateString(date: Date = new Date()): string {
  * 주의: 10,000원 미만 금액은 "0만원"으로 표시됨 — 만원 이상의 값에서만 사용할 것
  */
 export function formatKoreanAmount(amount: number): string {
-  const eok = Math.floor(amount / 100_000_000)
-  const man = Math.floor((amount % 100_000_000) / 10_000)
+  const prefix = amount < 0 ? '-' : ''
+  const abs = Math.abs(amount)
+  const eok = Math.floor(abs / 100_000_000)
+  const man = Math.floor((abs % 100_000_000) / 10_000)
 
   if (eok > 0 && man > 0) {
-    return `${eok}억 ${man.toLocaleString('ko-KR')}만원`
+    return `${prefix}${eok}억 ${man.toLocaleString('ko-KR')}만원`
   }
   if (eok > 0) {
-    return `${eok}억원`
+    return `${prefix}${eok}억원`
   }
-  return `${man.toLocaleString('ko-KR')}만원`
+  return `${prefix}${man.toLocaleString('ko-KR')}만원`
 }
 
 /** 금액을 축약 형태로 포맷 (캘린더 셀용) */

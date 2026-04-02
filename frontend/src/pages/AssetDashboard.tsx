@@ -51,7 +51,8 @@ export default function AssetDashboard() {
       .then(([assetsRes, summaryRes, snapshotsRes, goalRes, savingsRes]) => {
         setAssets(assetsRes.data)
         setSummary(summaryRes.data)
-        setSnapshots([...snapshotsRes.data].reverse()) // 과거→최신 순
+        // 과거→최신 순으로 저장 (차트 표시용). 스트릭 계산 시 최신→과거로 reverse 필요
+        setSnapshots([...snapshotsRes.data].reverse())
         setGoal(goalRes.data)
         setSavings(savingsRes.data)
       })

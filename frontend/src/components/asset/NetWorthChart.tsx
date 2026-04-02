@@ -27,8 +27,9 @@ function filterByPeriod(snapshots: AssetSnapshot[], days: number): AssetSnapshot
   return snapshots.filter(s => new Date(s.snapshot_date).getTime() >= cutoff)
 }
 
-/** Y축 범위 계산 (data.length > 0 보장된 상태에서만 호출) */
+/** Y축 범위 계산 */
 export function computeYDomain(values: number[]): [number, number] {
+  if (values.length === 0) return [0, 100_000_000]
   const minVal = Math.min(...values)
   const maxVal = Math.max(...values)
   const margin = (maxVal - minVal) * 0.1 || Math.abs(maxVal) * 0.1 || 1000000
