@@ -12,6 +12,11 @@ import { server } from '../../mocks/server'
 import { http, HttpResponse } from 'msw'
 import AssetDashboard from '../AssetDashboard'
 
+// useToast 모킹 — ToastProvider 없이 테스트 가능하도록
+vi.mock('../../hooks/useToast', () => ({
+  useToast: () => ({ addToast: vi.fn(), removeToast: vi.fn() }),
+}))
+
 // recharts 모킹 — jsdom에서 SVG 렌더링 불가 대응 (AreaChart 사용)
 vi.mock('recharts', () => ({
   AreaChart: ({ children }: { children: React.ReactNode }) => <div data-testid="area-chart">{children}</div>,

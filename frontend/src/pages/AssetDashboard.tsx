@@ -17,10 +17,12 @@ import NetWorthChart from '../components/asset/NetWorthChart'
 import AssetGroupList from '../components/asset/AssetGroupList'
 import AssetOnboarding from '../components/asset/AssetOnboarding'
 import UpdateNudge from '../components/asset/UpdateNudge'
+import { useToast } from '../hooks/useToast'
 import type { Asset, AssetSummary, AssetSnapshot, AssetGoal, MonthlySavings, AssetType } from '../types'
 
 export default function AssetDashboard() {
   const navigate = useNavigate()
+  const { addToast } = useToast()
   const [assets, setAssets] = useState<Asset[]>([])
   const [summary, setSummary] = useState<AssetSummary | null>(null)
   const [snapshots, setSnapshots] = useState<AssetSnapshot[]>([])
@@ -71,7 +73,9 @@ export default function AssetDashboard() {
       })
       setGoal(res.data)
       setShowGoalModal(false)
-    } catch { /* 실패 시 모달 유지 */ } finally {
+    } catch {
+      addToast('error', '목표 저장에 실패했습니다')
+    } finally {
       setGoalSaving(false)
     }
   }
@@ -82,7 +86,9 @@ export default function AssetDashboard() {
       await assetApi.deleteGoal(activeHouseholdId!)
       setGoal(null)
       setShowGoalModal(false)
-    } catch { /* 무시 */ } finally {
+    } catch {
+      addToast('error', '목표 삭제에 실패했습니다')
+    } finally {
       setGoalSaving(false)
     }
   }
