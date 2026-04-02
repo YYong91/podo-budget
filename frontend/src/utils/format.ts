@@ -44,6 +44,26 @@ export function getLocalDateString(date: Date = new Date()): string {
   return `${y}-${m}-${d}`
 }
 
+/**
+ * 금액을 한국어 단위로 포맷 (억/만원)
+ * 예: 240_000_000 → "2억 4,000만원", 43_000_000 → "4,300만원"
+ * 주의: 10,000원 미만 금액은 "0만원"으로 표시됨 — 만원 이상의 값에서만 사용할 것
+ */
+export function formatKoreanAmount(amount: number): string {
+  const prefix = amount < 0 ? '-' : ''
+  const abs = Math.abs(amount)
+  const eok = Math.floor(abs / 100_000_000)
+  const man = Math.floor((abs % 100_000_000) / 10_000)
+
+  if (eok > 0 && man > 0) {
+    return `${prefix}${eok}억 ${man.toLocaleString('ko-KR')}만원`
+  }
+  if (eok > 0) {
+    return `${prefix}${eok}억원`
+  }
+  return `${prefix}${man.toLocaleString('ko-KR')}만원`
+}
+
 /** 금액을 축약 형태로 포맷 (캘린더 셀용) */
 export function formatCompactAmount(amount: number): string {
   if (amount < 10000) {

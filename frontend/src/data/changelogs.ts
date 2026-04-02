@@ -19,9 +19,15 @@ export interface Changelog {
 export const changelogs: Changelog[] = [
   {
     version: '0.14.0',
-    date: '2026-04-01',
-    title: '정기거래 예정 섹션 추가',
+    date: '2026-04-02',
+    title: '자산 탭 리뉴얼 + 정기거래 예정',
     items: [
+      { tag: '개선', text: '순자산 중심 UI로 자산 탭 전면 리디자인' },
+      { tag: '신규', text: '이번 달 성과 카드 — 변화량과 원인을 한눈에' },
+      { tag: '신규', text: '마일스톤 프로그레스 — 매달 체감 가능한 성장 지표' },
+      { tag: '개선', text: '추이 차트 — 기간 선택, 역동적 Y축, 영역 차트' },
+      { tag: '신규', text: '자산 0개일 때 온보딩 — 유형 선택으로 바로 등록' },
+      { tag: '신규', text: '대출 상환 진척도 표시' },
       { tag: '신규', text: '가계부 홈에 이번 달 정기거래 예정 섹션 추가' },
     ],
   },

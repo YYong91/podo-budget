@@ -58,7 +58,7 @@ export const assetApi = {
 
   /* 월별 저축 추이 */
   getMonthlySavings: (householdId: number) =>
-    apiClient.get<MonthlySavings[]>('/assets/monthly-savings', {
+    apiClient.get<MonthlySavings>('/assets/monthly-savings', {
       params: { household_id: householdId },
     }),
 }

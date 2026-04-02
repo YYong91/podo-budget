@@ -20,6 +20,7 @@ from app.schemas.asset import (
     AssetSummary,
     AssetUpdate,
     AssetWithPrice,
+    MonthlySavingsResponse,
 )
 from app.schemas.asset_goal import AssetGoalCreate, AssetGoalWithInsight
 from app.services import asset_goal_service, asset_service, price_service
@@ -214,13 +215,13 @@ async def delete_goal(
     await db.commit()
 
 
-@router.get("/monthly-savings")
+@router.get("/monthly-savings", response_model=MonthlySavingsResponse)
 async def get_monthly_savings(
     household_id: int | None = Query(None),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> object:
-    """이번 달 저축액 (수입 - 지출)"""
+    """이번 달 저축성지출 카테고리 기반 저축액"""
     if household_id is None:
         household_id = await get_user_active_household_id(current_user, db)
     await get_household_member(household_id, current_user, db)

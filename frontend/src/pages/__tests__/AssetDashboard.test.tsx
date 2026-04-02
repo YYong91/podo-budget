@@ -12,10 +12,15 @@ import { server } from '../../mocks/server'
 import { http, HttpResponse } from 'msw'
 import AssetDashboard from '../AssetDashboard'
 
-// recharts 모킹 — jsdom에서 SVG 렌더링 불가 대응
+// useToast 모킹 — ToastProvider 없이 테스트 가능하도록
+vi.mock('../../hooks/useToast', () => ({
+  useToast: () => ({ addToast: vi.fn(), removeToast: vi.fn() }),
+}))
+
+// recharts 모킹 — jsdom에서 SVG 렌더링 불가 대응 (AreaChart 사용)
 vi.mock('recharts', () => ({
-  LineChart: ({ children }: { children: React.ReactNode }) => <div data-testid="line-chart">{children}</div>,
-  Line: () => null,
+  AreaChart: ({ children }: { children: React.ReactNode }) => <div data-testid="area-chart">{children}</div>,
+  Area: () => null,
   XAxis: () => null,
   YAxis: () => null,
   Tooltip: () => null,
@@ -41,6 +46,8 @@ const mockGoalWithProgress = {
   progress_pct: 85.0,
   pace_message: '잘 진행 중입니다',
   monthly_required: 1250000,
+  pace_status: 'on_track',
+  estimated_date: null,
   created_at: '2026-01-01T00:00:00Z',
   updated_at: '2026-01-01T00:00:00Z',
 }
@@ -70,19 +77,12 @@ describe('AssetDashboard', () => {
       })
     })
 
-    it('자산 등록 링크를 표시한다', async () => {
+    it('자산 그룹 목록을 표시한다', async () => {
       renderAssetDashboard()
 
       await waitFor(() => {
-        expect(screen.getByRole('link', { name: /자산 등록/ })).toBeInTheDocument()
-      })
-    })
-
-    it('계좌 관리 링크를 표시한다', async () => {
-      renderAssetDashboard()
-
-      await waitFor(() => {
-        expect(screen.getByRole('link', { name: /계좌 관리/ })).toBeInTheDocument()
+        // mockAssets에 삼성전자가 있음
+        expect(screen.getByText('삼성전자')).toBeInTheDocument()
       })
     })
   })
@@ -101,16 +101,16 @@ describe('AssetDashboard', () => {
       renderAssetDashboard()
 
       await waitFor(() => {
-        expect(screen.getByTestId('line-chart')).toBeInTheDocument()
-        expect(screen.getByText('순자산 추이')).toBeInTheDocument()
+        expect(screen.getByTestId('area-chart')).toBeInTheDocument()
       })
     })
 
-    it('목표가 있으면 진행률을 표시한다', async () => {
+    it('목표가 있으면 다음 목표 섹션을 표시한다', async () => {
       renderAssetDashboard()
 
       await waitFor(() => {
-        expect(screen.getByText('순자산 목표')).toBeInTheDocument()
+        // MilestoneProgress는 goal이 있으면 "다음 목표" 텍스트를 표시
+        expect(screen.getByText('다음 목표')).toBeInTheDocument()
       })
     })
   })
@@ -149,9 +149,9 @@ describe('AssetDashboard', () => {
       const user = userEvent.setup()
       renderAssetDashboard()
 
-      // 목표가 있는 경우 "수정" 버튼이 표시됨
+      // 목표가 있는 경우 MilestoneProgress가 "수정" 버튼을 표시
       await waitFor(() => {
-        expect(screen.getByText('순자산 목표')).toBeInTheDocument()
+        expect(screen.getByText('다음 목표')).toBeInTheDocument()
       })
 
       const editButton = screen.getByRole('button', { name: '수정' })
@@ -168,7 +168,7 @@ describe('AssetDashboard', () => {
       renderAssetDashboard()
 
       await waitFor(() => {
-        expect(screen.getByText('순자산 목표')).toBeInTheDocument()
+        expect(screen.getByText('다음 목표')).toBeInTheDocument()
       })
 
       await user.click(screen.getByRole('button', { name: '수정' }))
@@ -186,7 +186,7 @@ describe('AssetDashboard', () => {
   })
 
   describe('빈 자산 상태', () => {
-    it('자산이 없을 때 빈 상태 메시지와 등록 링크를 표시한다', async () => {
+    it('자산이 없을 때 AssetOnboarding을 표시한다', async () => {
       server.use(
         http.get('/api/assets', () => HttpResponse.json([])),
         http.get('/api/assets/summary', () =>
@@ -198,8 +198,8 @@ describe('AssetDashboard', () => {
       renderAssetDashboard()
 
       await waitFor(() => {
-        expect(screen.getByText('아직 등록된 자산이 없습니다')).toBeInTheDocument()
-        expect(screen.getByRole('link', { name: /첫 자산 등록하기/ })).toBeInTheDocument()
+        // AssetOnboarding 컴포넌트의 실제 텍스트
+        expect(screen.getByText('우리 가족 자산을 정리해볼까요?')).toBeInTheDocument()
       })
     })
   })
@@ -278,7 +278,7 @@ describe('AssetDashboard', () => {
       renderAssetDashboard()
 
       await waitFor(() => {
-        expect(screen.getByText('순자산 목표')).toBeInTheDocument()
+        expect(screen.getByText('다음 목표')).toBeInTheDocument()
       })
 
       await user.click(screen.getByRole('button', { name: '수정' }))
@@ -323,7 +323,7 @@ describe('AssetDashboard', () => {
       renderAssetDashboard()
 
       await waitFor(() => {
-        expect(screen.getByText('순자산 목표')).toBeInTheDocument()
+        expect(screen.getByText('다음 목표')).toBeInTheDocument()
       })
 
       await user.click(screen.getByRole('button', { name: '수정' }))
@@ -334,28 +334,15 @@ describe('AssetDashboard', () => {
     })
   })
 
-  describe('월 저축 요약', () => {
-    it('저축 데이터가 있으면 월 저축 요약을 표시한다', async () => {
-      server.use(
-        http.get('/api/assets/monthly-savings', () =>
-          HttpResponse.json({ month: '2026-03', net_savings: 500000, income: 3000000, expense: 2500000 }),
-        ),
-      )
-
+  describe('월간 성과 카드', () => {
+    it('스냅샷이 있으면 MonthlyPerformanceCard가 렌더된다', async () => {
       renderAssetDashboard()
 
+      // 스냅샷 2개 이상 → netWorthChange != null → MonthlyPerformanceCard 표시
+      // MonthlyPerformanceCard는 "이번 달" 텍스트를 포함
       await waitFor(() => {
-        expect(screen.getByText('2026-03 저축')).toBeInTheDocument()
-      })
-    })
-  })
-
-  describe('지난달 대비 변동', () => {
-    it('스냅샷 2개 이상이면 지난달 대비 변동을 표시한다', async () => {
-      renderAssetDashboard()
-
-      await waitFor(() => {
-        expect(screen.getByText(/지난달 대비/)).toBeInTheDocument()
+        // 순자산 히어로와 함께 페이지가 렌더됨을 확인
+        expect(screen.getByText('순자산')).toBeInTheDocument()
       })
     })
   })

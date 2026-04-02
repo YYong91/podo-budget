@@ -9,8 +9,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.asset_goal import AssetGoal
 from app.models.asset_snapshot import AssetSnapshot
+from app.models.category import Category
 from app.models.expense import Expense
-from app.models.income import Income
 from app.models.user import User
 from app.services.asset_service import get_asset_summary
 
@@ -143,35 +143,30 @@ def _calc_avg_monthly_growth(snapshots: list[AssetSnapshot]) -> float | None:
 
 
 async def get_monthly_savings(household_id: int, db: AsyncSession) -> dict[str, Any]:
-    """이번 달 수입 - 지출 = 순저축액 (exclude_from_stats 항목 제외, #182)"""
+    """이번 달 저축성지출 카테고리 합산 (is_savings=True 카테고리 기반)"""
     today = datetime.now(ZoneInfo("Asia/Seoul")).date()
     year = today.year
     month = today.month
 
-    # 이번 달 수입 합산 (통계 제외 항목 제외)
-    income_q = select(func.coalesce(func.sum(Income.amount), 0)).where(
-        extract("year", Income.date) == year,
-        extract("month", Income.date) == month,
-        Income.household_id == household_id,
-        Income.exclude_from_stats.is_(False),
+    # 저축성 카테고리 ID 조회
+    savings_cat_q = select(Category.id).where(
+        Category.is_savings.is_(True),
+        Category.household_id == household_id,
     )
-    # 이번 달 지출 합산 (통계 제외 항목 제외)
-    expense_q = select(func.coalesce(func.sum(Expense.amount), 0)).where(
+
+    # 이번 달 저축성 지출 합산 (통계 제외 항목도 제외)
+    savings_q = select(func.coalesce(func.sum(Expense.amount), 0)).where(
         extract("year", Expense.date) == year,
         extract("month", Expense.date) == month,
         Expense.household_id == household_id,
+        Expense.category_id.in_(savings_cat_q),
         Expense.exclude_from_stats.is_(False),
     )
 
-    income_result = await db.execute(income_q)
-    expense_result = await db.execute(expense_q)
-    total_income = float(income_result.scalar_one())
-    total_expense = float(expense_result.scalar_one())
+    result = await db.execute(savings_q)
+    savings = float(result.scalar_one())
 
     return {
-        "year": year,
-        "month": month,
-        "total_income": total_income,
-        "total_expense": total_expense,
-        "net_savings": total_income - total_expense,
+        "month": f"{year}-{month:02d}",
+        "savings": savings,
     }

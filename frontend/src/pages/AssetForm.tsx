@@ -1,7 +1,7 @@
 /* 자산 등록/수정 폼 */
 
 import { useState, useEffect } from 'react'
-import { useNavigate, useParams, Link } from 'react-router-dom'
+import { useNavigate, useParams, useSearchParams, Link } from 'react-router-dom'
 import { ArrowLeft, Search, Trash2 } from 'lucide-react'
 import { useToast } from '../hooks/useToast'
 import { TOAST } from '../constants/toastMessages'
@@ -35,8 +35,11 @@ function isLiabilityType(type: AssetType): boolean {
 export default function AssetForm() {
   const navigate = useNavigate()
   const { id } = useParams<{ id: string }>()
+  const [searchParams] = useSearchParams()
   const isEdit = !!id
   const { addToast } = useToast()
+
+  const preselectedType = (searchParams.get('type') as AssetType | null) ?? 'deposit'
 
   const [mode, setMode] = useState<Mode>('natural')
   const [loading, setLoading] = useState(false)
@@ -48,11 +51,11 @@ export default function AssetForm() {
   const [previewItems, setPreviewItems] = useState<CreateAssetParams[] | null>(null)
 
   // 직접 입력 모드
-  const [assetType, setAssetType] = useState<AssetType>('deposit')
+  const [assetType, setAssetType] = useState<AssetType>(preselectedType)
   const [form, setForm] = useState<CreateAssetParams>({
     name: '',
-    type: 'deposit',
-    is_liability: false,
+    type: preselectedType,
+    is_liability: isLiabilityType(preselectedType),
   })
 
   // 계좌 목록
@@ -96,6 +99,7 @@ export default function AssetForm() {
           maturity_date: asset.maturity_date ?? undefined,
           repayment_type: asset.repayment_type ?? undefined,
           monthly_payment: asset.monthly_payment ?? undefined,
+          original_amount: asset.original_amount ?? null,
           account_id: asset.account_id ?? undefined,
           memo: asset.memo ?? undefined,
         })
@@ -513,35 +517,49 @@ export default function AssetForm() {
                 </div>
               </div>
               {assetType === 'loan' && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label htmlFor="asset-repayment-type" className="block text-sm font-medium text-[var(--text-secondary)] mb-2">상환방식</label>
-                    <select
-                      id="asset-repayment-type"
-                      value={form.repayment_type ?? ''}
-                      onChange={e => setForm(f => ({ ...f, repayment_type: e.target.value || null }))}
-                      className="w-full border border-[var(--input-border)] rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
-                    >
-                      <option value="">선택</option>
-                      <option value="equal_principal_interest">원리금균등</option>
-                      <option value="equal_principal">원금균등</option>
-                      <option value="bullet">만기일시</option>
-                    </select>
+                <>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label htmlFor="asset-repayment-type" className="block text-sm font-medium text-[var(--text-secondary)] mb-2">상환방식</label>
+                      <select
+                        id="asset-repayment-type"
+                        value={form.repayment_type ?? ''}
+                        onChange={e => setForm(f => ({ ...f, repayment_type: e.target.value || null }))}
+                        className="w-full border border-[var(--input-border)] rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
+                      >
+                        <option value="">선택</option>
+                        <option value="equal_principal_interest">원리금균등</option>
+                        <option value="equal_principal">원금균등</option>
+                        <option value="bullet">만기일시</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label htmlFor="asset-monthly-payment" className="block text-sm font-medium text-[var(--text-secondary)] mb-2">월 상환액 (원)</label>
+                      <input
+                        id="asset-monthly-payment"
+                        type="number"
+                        inputMode="numeric"
+                        step="any"
+                        value={form.monthly_payment ?? ''}
+                        onChange={e => setForm(f => ({ ...f, monthly_payment: e.target.value ? Number(e.target.value) : null }))}
+                        placeholder="0"
+                        className="w-full border border-[var(--input-border)] rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
+                      />
+                    </div>
                   </div>
                   <div>
-                    <label htmlFor="asset-monthly-payment" className="block text-sm font-medium text-[var(--text-secondary)] mb-2">월 상환액 (원)</label>
+                    <label htmlFor="asset-original-amount" className="block text-sm font-medium text-[var(--text-secondary)] mb-2">원래 대출금 (선택)</label>
                     <input
-                      id="asset-monthly-payment"
+                      id="asset-original-amount"
                       type="number"
                       inputMode="numeric"
-                      step="any"
-                      value={form.monthly_payment ?? ''}
-                      onChange={e => setForm(f => ({ ...f, monthly_payment: e.target.value ? Number(e.target.value) : null }))}
-                      placeholder="0"
+                      value={form.original_amount ?? ''}
+                      onChange={e => setForm(f => ({ ...f, original_amount: e.target.value ? Number(e.target.value) : null }))}
+                      placeholder="대출 원금 (상환 진척도 표시용)"
                       className="w-full border border-[var(--input-border)] rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
                     />
                   </div>
-                </div>
+                </>
               )}
             </>
           )}
