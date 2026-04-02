@@ -24,7 +24,18 @@ const PERIOD_DAYS: Record<Period, number> = {
 
 function filterByPeriod(snapshots: AssetSnapshot[], days: number): AssetSnapshot[] {
   const cutoff = Date.now() - days * 86400000
-  return snapshots.filter(s => new Date(s.recorded_at).getTime() >= cutoff)
+  return snapshots.filter(s => new Date(s.snapshot_date).getTime() >= cutoff)
+}
+
+/** Y축 범위 계산 (data.length > 0 보장된 상태에서만 호출) */
+function computeYDomain(values: number[]): [number, number] {
+  const minVal = Math.min(...values)
+  const maxVal = Math.max(...values)
+  const margin = (maxVal - minVal) * 0.1 || Math.abs(maxVal) * 0.1 || 1000000
+  return [
+    Math.floor((minVal - margin) / 1000000) * 1000000,
+    Math.ceil((maxVal + margin) / 1000000) * 1000000,
+  ]
 }
 
 export default function NetWorthChart({ snapshots }: NetWorthChartProps) {
@@ -33,9 +44,9 @@ export default function NetWorthChart({ snapshots }: NetWorthChartProps) {
   const data = useMemo(() => {
     const filtered = filterByPeriod(snapshots, PERIOD_DAYS[period])
     return filtered
-      .sort((a, b) => new Date(a.recorded_at).getTime() - new Date(b.recorded_at).getTime())
+      .sort((a, b) => new Date(a.snapshot_date).getTime() - new Date(b.snapshot_date).getTime())
       .map(s => ({
-        date: new Date(s.recorded_at).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' }),
+        date: new Date(s.snapshot_date).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' }),
         netWorth: s.net_worth,
       }))
   }, [snapshots, period])
@@ -48,13 +59,9 @@ export default function NetWorthChart({ snapshots }: NetWorthChartProps) {
     )
   }
 
-  // Y축 범위: 데이터 최소-최대값 기준 ±10% 마진
-  const values = data.map(d => d.netWorth)
-  const minVal = Math.min(...values)
-  const maxVal = Math.max(...values)
-  const margin = (maxVal - minVal) * 0.1 || Math.abs(maxVal) * 0.1 || 1000000
-  const yMin = Math.floor((minVal - margin) / 1000000) * 1000000
-  const yMax = Math.ceil((maxVal + margin) / 1000000) * 1000000
+  const yDomain = data.length > 0
+    ? computeYDomain(data.map(d => d.netWorth))
+    : ([0, 100000000] as [number, number])
 
   return (
     <div className="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)] shadow-sm p-5">
@@ -95,7 +102,7 @@ export default function NetWorthChart({ snapshots }: NetWorthChartProps) {
               tickLine={false}
             />
             <YAxis
-              domain={[yMin, yMax]}
+              domain={yDomain}
               tick={{ fontSize: 10, fill: 'var(--text-muted)' }}
               tickFormatter={(v) => formatKoreanAmount(v)}
               axisLine={false}

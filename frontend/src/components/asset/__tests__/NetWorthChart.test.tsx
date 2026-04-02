@@ -16,14 +16,11 @@ vi.mock('recharts', async () => {
 })
 
 const makeSnapshot = (daysAgo: number, netWorth: number): AssetSnapshot => ({
-  id: daysAgo,
-  household_id: 1,
+  snapshot_date: new Date(Date.now() - daysAgo * 86400000).toISOString().split('T')[0],
   net_worth: netWorth,
   total_assets: netWorth + 10000000,
   total_liabilities: 10000000,
   breakdown: {},
-  memo: null,
-  recorded_at: new Date(Date.now() - daysAgo * 86400000).toISOString(),
 })
 
 describe('NetWorthChart', () => {
