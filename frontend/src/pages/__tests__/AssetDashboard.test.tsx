@@ -338,7 +338,7 @@ describe('AssetDashboard', () => {
     it('저축 데이터가 있으면 월 저축 요약을 표시한다', async () => {
       server.use(
         http.get('/api/assets/monthly-savings', () =>
-          HttpResponse.json({ month: '2026-03', net_savings: 500000, income: 3000000, expense: 2500000 }),
+          HttpResponse.json({ month: '2026-03', savings: 500000 }),
         ),
       )
 

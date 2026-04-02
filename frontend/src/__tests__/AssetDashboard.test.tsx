@@ -64,7 +64,7 @@ describe('AssetDashboard', () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     vi.mocked(assetApi.getGoal).mockResolvedValue({ data: null } as any)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    vi.mocked(assetApi.getMonthlySavings).mockResolvedValue({ data: { year: 2026, month: 3, total_income: 3000000, total_expense: 2500000, net_savings: 500000 } } as any)
+    vi.mocked(assetApi.getMonthlySavings).mockResolvedValue({ data: { month: '2026-03', savings: 500000 } } as any)
   })
 
   test('로딩 후 순자산 표시', async () => {
