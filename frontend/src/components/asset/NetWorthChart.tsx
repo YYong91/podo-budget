@@ -110,7 +110,7 @@ export default function NetWorthChart({ snapshots }: NetWorthChartProps) {
               width={60}
             />
             <Tooltip
-              formatter={(value: number) => [formatKoreanAmount(value), '순자산']}
+              formatter={(value) => [formatKoreanAmount(Number(value)), '순자산']}
               contentStyle={{
                 fontSize: 12,
                 border: '1px solid var(--border-default)',
