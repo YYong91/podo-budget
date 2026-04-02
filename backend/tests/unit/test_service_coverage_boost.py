@@ -227,13 +227,12 @@ async def test_asset_goal_achieved(db_session, test_user, test_household):
 
 @pytest.mark.asyncio
 async def test_asset_monthly_savings(db_session, test_user, test_household):
-    """이번 달 저축액"""
+    """이번 달 저축액 — 저축성지출 카테고리 기반"""
     from app.services.asset_goal_service import get_monthly_savings
 
     result = await get_monthly_savings(test_household.id, db_session)
-    assert "net_savings" in result
-    assert "total_income" in result
-    assert "total_expense" in result
+    assert "savings" in result
+    assert "month" in result
 
 
 @pytest.mark.asyncio
