@@ -109,13 +109,8 @@ export default function AssetDashboard() {
         setSummary(summaryRes.data)
         setSnapshots(snapshotsRes.data.slice().reverse())
         setGoal(goalRes.data)
-        // 월별 저축: 배열이면 최신 1건, 단일 객체면 그대로
-        const savingsData = savingsRes.data
-        if (Array.isArray(savingsData)) {
-          setMonthlySavings(savingsData.length > 0 ? savingsData[savingsData.length - 1] : null)
-        } else {
-          setMonthlySavings(savingsData)
-        }
+        // 월별 저축: 단일 객체로 변경됨 (#Task3)
+        setMonthlySavings(savingsRes.data)
       })
       .catch(() => setError('자산 정보를 불러오지 못했습니다'))
       .finally(() => setLoading(false))
@@ -260,14 +255,14 @@ export default function AssetDashboard() {
         <div className="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)]/60 shadow-sm p-4 flex items-center justify-between">
           <div>
             <p className="text-xs text-[var(--text-muted)]">{monthlySavings.month} 저축</p>
-            <p className={`text-lg font-bold ${monthlySavings.net_savings >= 0 ? 'text-leaf-600' : 'text-rose-600'}`}>
-              {formatAmount(monthlySavings.net_savings)}
+            <p className={`text-lg font-bold ${monthlySavings.savings >= 0 ? 'text-leaf-600' : 'text-rose-600'}`}>
+              {formatAmount(monthlySavings.savings)}
             </p>
           </div>
-          {monthlySavings.net_savings > 0 && (
+          {monthlySavings.savings > 0 && (
             <TrendingUp className="w-5 h-5 text-leaf-500" />
           )}
-          {monthlySavings.net_savings < 0 && (
+          {monthlySavings.savings < 0 && (
             <TrendingDown className="w-5 h-5 text-rose-500" />
           )}
         </div>

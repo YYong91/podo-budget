@@ -125,7 +125,9 @@ describe('assetApi', () => {
     it('월별 저축 추이를 조회한다', async () => {
       const response = await assetApi.getMonthlySavings(1)
       expect(response.data).toEqual(mockMonthlySavings)
-      expect(Array.isArray(response.data)).toBe(true)
+      // 단일 객체 응답 (배열 아님)
+      expect(response.data).toHaveProperty('month')
+      expect(response.data).toHaveProperty('savings')
     })
   })
 })

@@ -397,6 +397,7 @@ export const mockAssets = [
     purchase_price: 70000,
     current_price: 72000,
     currency: 'KRW',
+    original_amount: null,
     memo: null,
     household_id: 1,
     user_id: 1,
@@ -414,6 +415,7 @@ export const mockAssets = [
     purchase_price: 5000000,
     current_price: 5000000,
     currency: 'KRW',
+    original_amount: null,
     memo: null,
     household_id: 1,
     user_id: 1,
@@ -445,10 +447,7 @@ export const mockAssetGoal = {
 /**
  * 테스트용 월별 저축 추이
  */
-export const mockMonthlySavings = [
-  { month: '2026-01', total_income: 4000000, total_expense: 2500000, net_savings: 1500000 },
-  { month: '2026-02', total_income: 4000000, total_expense: 2800000, net_savings: 1200000 },
-]
+export const mockMonthlySavings = { month: '2026-04', savings: 500000 }
 
 /**
  * 테스트용 자연어 채팅 응답
