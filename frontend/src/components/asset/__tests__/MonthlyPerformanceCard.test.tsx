@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { render, screen } from '@testing-library/react'
-import MonthlyPerformanceCard, { computeBreakdownDiff, computeStreak } from '../MonthlyPerformanceCard'
+import MonthlyPerformanceCard, { computeBreakdownDiff, computeStreak, findPositiveMessage } from '../MonthlyPerformanceCard'
 
 describe('computeBreakdownDiff', () => {
   it('breakdown 차이를 올바르게 계산한다', () => {
@@ -58,5 +58,20 @@ describe('MonthlyPerformanceCard', () => {
       <MonthlyPerformanceCard netWorthChange={100000} breakdownDiff={[]} streak={3} savings={0} />
     )
     expect(screen.getByText(/3개월 연속/)).toBeInTheDocument()
+  })
+})
+
+describe('findPositiveMessage', () => {
+  it('대출 상환이 있으면 대출 잔액 감소 메시지를 반환한다', () => {
+    const diff = [{ label: '대출 상환', amount: 500000 }]
+    expect(findPositiveMessage(diff, 0)).toMatch(/대출 잔액/)
+  })
+
+  it('저축이 있으면 저축 유지 메시지를 반환한다', () => {
+    expect(findPositiveMessage([], 300000)).toMatch(/저축/)
+  })
+
+  it('해당 없으면 null을 반환한다', () => {
+    expect(findPositiveMessage([], 0)).toBeNull()
   })
 })

@@ -31,14 +31,15 @@ const DISPLAY_GROUPS: { label: string; keys: string[] }[] = [
 
 /** breakdown 차이 + 부채 차이를 합산하여 표시 항목 생성 */
 export function computeBreakdownDiff(
-  current: { breakdown: Record<string, number>; totalLiabilities: number },
+  current: { breakdown: Record<string, number> | null; totalLiabilities: number },
   previous: { breakdown: Record<string, number> | null; totalLiabilities: number },
 ): BreakdownItem[] {
+  const curBreakdown = current.breakdown ?? {}
   const prevBreakdown = previous.breakdown ?? {}
   const items: BreakdownItem[] = []
 
   for (const group of DISPLAY_GROUPS) {
-    const curSum = group.keys.reduce((s, k) => s + (current.breakdown[k] ?? 0), 0)
+    const curSum = group.keys.reduce((s, k) => s + (curBreakdown[k] ?? 0), 0)
     const prevSum = group.keys.reduce((s, k) => s + (prevBreakdown[k] ?? 0), 0)
     const diff = curSum - prevSum
     if (diff !== 0) {
@@ -126,7 +127,7 @@ export default function MonthlyPerformanceCard({
             <div key={item.label} className="flex justify-between text-sm">
               <span className="text-[var(--text-tertiary)]">{item.label}</span>
               <span className={item.amount >= 0 ? 'text-leaf-600' : 'text-rose-600'}>
-                {item.amount >= 0 ? '+' : ''}{formatCompactAmount(Math.abs(item.amount))}원
+                {item.amount >= 0 ? '+' : '-'}{formatCompactAmount(Math.abs(item.amount))}원
               </span>
             </div>
           ))}
