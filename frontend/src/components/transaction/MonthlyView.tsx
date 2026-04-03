@@ -36,6 +36,8 @@ interface MonthlyViewProps {
   onBotNudgeDismiss: () => void
   /** 멀티멤버 가구의 user_id → username 매핑 (단독 가구는 null) */
   memberMap: Map<number, string> | null
+  /** 월 총 예산 (null이면 미설정) */
+  totalBudget: number | null
 }
 
 export default function MonthlyView({
@@ -49,6 +51,7 @@ export default function MonthlyView({
   botNudgeDismissed,
   onBotNudgeDismiss,
   memberMap,
+  totalBudget,
 }: MonthlyViewProps) {
   const { addToast } = useToast()
 
@@ -102,35 +105,14 @@ export default function MonthlyView({
       <HeroSummary
         label={`${monthly.currentMonth + 1}월 지출`}
         amount={monthly.totalExpense}
-        sublabel={`수입 ${formatAmount(monthly.totalIncome)} · 잔액 ${formatAmount(monthly.totalIncome - monthly.totalExpense)}`}
+        sublabel={
+          totalBudget != null && totalBudget > 0
+            ? `예산 대비 ${Math.round((monthly.totalExpense / totalBudget) * 100)}%`
+            : monthly.totalIncome > 0
+              ? `수입 대비 ${Math.round((monthly.totalExpense / monthly.totalIncome) * 100)}%`
+              : undefined
+        }
       />
-
-      {/* 요약 + 필터 */}
-      <div className="flex items-center justify-center gap-6">
-        <button
-          onClick={() => monthly.toggleFilter('expense')}
-          className={`text-center transition-opacity ${
-            monthly.filter === 'income' ? 'opacity-40' : ''
-          }`}
-        >
-          <div className="text-xs text-[var(--text-tertiary)]">지출</div>
-          <div className={`text-base font-bold ${monthly.filter !== 'income' ? 'text-grape-600' : 'text-[var(--text-muted)]'}`}>
-            {formatAmount(monthly.totalExpense)}
-          </div>
-        </button>
-        <div className="w-px h-8 bg-[var(--border-default)]" />
-        <button
-          onClick={() => monthly.toggleFilter('income')}
-          className={`text-center transition-opacity ${
-            monthly.filter === 'expense' ? 'opacity-40' : ''
-          }`}
-        >
-          <div className="text-xs text-[var(--text-tertiary)]">수입</div>
-          <div className={`text-base font-bold ${monthly.filter !== 'expense' ? 'text-leaf-600' : 'text-[var(--text-muted)]'}`}>
-            {formatAmount(monthly.totalIncome)}
-          </div>
-        </button>
-      </div>
 
       {/* 온보딩 웰컴 카드 */}
       {!welcomeDismissed && !monthly.loading && (
@@ -174,6 +156,34 @@ export default function MonthlyView({
           </button>
         </div>
       )}
+
+      {/* 세그먼트 필터 — 캘린더 아래, 리스트 바로 위 */}
+      <div className="flex items-center bg-[var(--surface-elevated)] rounded-lg p-1">
+        {(['all', 'expense', 'income'] as const).map((type) => {
+          const label = type === 'all' ? '전체' : type === 'expense' ? '지출' : '수입'
+          const isActive = type === 'all' ? monthly.filter === 'all' : monthly.filter === type
+          return (
+            <button
+              key={type}
+              onClick={() => {
+                if (type === 'all') {
+                  // "전체" 선택 — 현재 필터가 있으면 토글로 해제
+                  if (monthly.filter !== 'all') monthly.toggleFilter(monthly.filter as 'expense' | 'income')
+                } else {
+                  monthly.toggleFilter(type)
+                }
+              }}
+              className={`flex-1 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                isActive
+                  ? 'bg-[var(--surface-card)] text-[var(--text-primary)] shadow-sm'
+                  : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
+              }`}
+            >
+              {label}
+            </button>
+          )
+        })}
+      </div>
 
       {/* 예정 거래 섹션 — 캘린더 아래, 거래 리스트 위 */}
       <ScheduledTransactions

@@ -416,6 +416,13 @@ export const handlers = [
   }),
 
   /**
+   * GET /api/budgets/total-budget - 월 총 예산 조회
+   */
+  http.get(`${BASE_URL}/budgets/total-budget`, () => {
+    return HttpResponse.json({ total_monthly_budget: null })
+  }),
+
+  /**
    * GET /api/budgets/monthly-stats - 월별 예산 대비 지출 통계
    */
   http.get(`${BASE_URL}/budgets/monthly-stats`, () => {
