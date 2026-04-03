@@ -1,11 +1,12 @@
 /**
  * @file AssetDashboard.tsx
- * @description 자산 대시보드 — 컴포넌트 조합 + 데이터 fetching
+ * @description 자산 대시보드 — React Query 기반 섹션별 독립 로딩
  */
 
-import { useEffect, useState, useCallback } from 'react'
+import { useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { X } from 'lucide-react'
+import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query'
 import { assetApi } from '../api/assets'
 import { useHouseholdStore } from '../stores/useHouseholdStore'
 import ErrorState from '../components/ErrorState'
@@ -18,7 +19,7 @@ import AssetGroupList from '../components/asset/AssetGroupList'
 import AssetOnboarding from '../components/asset/AssetOnboarding'
 import UpdateNudge from '../components/asset/UpdateNudge'
 import { useToast } from '../hooks/useToast'
-import type { Asset, AssetSummary, AssetSnapshot, AssetGoal, MonthlySavings, AssetType } from '../types'
+import type { AssetType } from '../types'
 
 /** 자산 대시보드 로딩 스켈레톤 */
 function AssetDashboardSkeleton() {
@@ -58,75 +59,91 @@ function AssetDashboardSkeleton() {
 export default function AssetDashboard() {
   const navigate = useNavigate()
   const { addToast } = useToast()
-  const [assets, setAssets] = useState<Asset[]>([])
-  const [summary, setSummary] = useState<AssetSummary | null>(null)
-  const [snapshots, setSnapshots] = useState<AssetSnapshot[]>([])
-  const [goal, setGoal] = useState<AssetGoal | null>(null)
-  const [savings, setSavings] = useState<MonthlySavings | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const queryClient = useQueryClient()
+  const activeHouseholdId = useHouseholdStore((s) => s.activeHouseholdId)
+
+  // UI 상태 (데이터와 무관한 모달/폼 상태)
   const [showGoalModal, setShowGoalModal] = useState(false)
   const [goalAmount, setGoalAmount] = useState('')
   const [goalDate, setGoalDate] = useState('')
-  const [goalSaving, setGoalSaving] = useState(false)
-  const activeHouseholdId = useHouseholdStore((s) => s.activeHouseholdId)
 
-  const fetchData = useCallback(() => {
-    if (!activeHouseholdId) return
-    setLoading(true)
-    setError(null)
-    const hid = activeHouseholdId
-    Promise.all([
-      assetApi.getAll(hid),
-      assetApi.getSummary(hid),
-      assetApi.getSnapshots(hid, 12),
-      assetApi.getGoal(hid).catch(() => ({ data: null })),
-      assetApi.getMonthlySavings(hid).catch(() => ({ data: null })),
-    ])
-      .then(([assetsRes, summaryRes, snapshotsRes, goalRes, savingsRes]) => {
-        setAssets(assetsRes.data)
-        setSummary(summaryRes.data)
-        // 과거→최신 순으로 저장 (차트 표시용). 스트릭 계산 시 최신→과거로 reverse 필요
-        setSnapshots([...snapshotsRes.data].reverse())
-        setGoal(goalRes.data)
-        setSavings(savingsRes.data)
-      })
-      .catch(() => setError('자산 정보를 불러오지 못했습니다'))
-      .finally(() => setLoading(false))
-  }, [activeHouseholdId])
+  // 자산 목록 — 핵심 데이터, 이것의 로딩 상태로 전체 스켈레톤 제어
+  const {
+    data: assets = [],
+    isLoading: assetsLoading,
+    isError: assetsError,
+  } = useQuery({
+    queryKey: ['assets', activeHouseholdId],
+    queryFn: () => assetApi.getAll(activeHouseholdId!).then(r => r.data),
+    enabled: !!activeHouseholdId,
+  })
 
-  useEffect(() => { fetchData() }, [fetchData])
+  // 자산 요약 (순자산/총자산/총부채)
+  const { data: summary } = useQuery({
+    queryKey: ['asset-summary', activeHouseholdId],
+    queryFn: () => assetApi.getSummary(activeHouseholdId!).then(r => r.data),
+    enabled: !!activeHouseholdId,
+  })
 
-  const handleSaveGoal = async () => {
+  // 스냅샷 — 과거→최신 순으로 저장 (차트 표시용)
+  const { data: snapshots = [] } = useQuery({
+    queryKey: ['asset-snapshots', activeHouseholdId],
+    queryFn: () =>
+      assetApi.getSnapshots(activeHouseholdId!, 12).then(r => [...r.data].reverse()),
+    enabled: !!activeHouseholdId,
+  })
+
+  // 순자산 목표 — 미설정이면 null (404 → null 처리)
+  const { data: goal = null } = useQuery({
+    queryKey: ['asset-goal', activeHouseholdId],
+    queryFn: () =>
+      assetApi.getGoal(activeHouseholdId!).then(r => r.data).catch(() => null),
+    enabled: !!activeHouseholdId,
+  })
+
+  // 월 저축액
+  const { data: savings = null } = useQuery({
+    queryKey: ['asset-savings', activeHouseholdId],
+    queryFn: () =>
+      assetApi.getMonthlySavings(activeHouseholdId!).then(r => r.data).catch(() => null),
+    enabled: !!activeHouseholdId,
+  })
+
+  // 목표 저장 뮤테이션
+  const setGoalMutation = useMutation({
+    mutationFn: (data: { target_net_worth: number; target_date: string }) =>
+      assetApi.setGoal({ ...data, household_id: activeHouseholdId! }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['asset-goal', activeHouseholdId] })
+      setShowGoalModal(false)
+    },
+    onError: () => {
+      addToast('error', '목표 저장에 실패했습니다')
+    },
+  })
+
+  // 목표 삭제 뮤테이션
+  const deleteGoalMutation = useMutation({
+    mutationFn: () => assetApi.deleteGoal(activeHouseholdId!),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['asset-goal', activeHouseholdId] })
+      setShowGoalModal(false)
+    },
+    onError: () => {
+      addToast('error', '목표 삭제에 실패했습니다')
+    },
+  })
+
+  const goalSaving = setGoalMutation.isPending || deleteGoalMutation.isPending
+
+  const handleSaveGoal = () => {
     const amount = Number(goalAmount)
     if (!amount || !goalDate) return
-    setGoalSaving(true)
-    try {
-      const res = await assetApi.setGoal({
-        target_net_worth: amount,
-        target_date: goalDate,
-        household_id: activeHouseholdId!,
-      })
-      setGoal(res.data)
-      setShowGoalModal(false)
-    } catch {
-      addToast('error', '목표 저장에 실패했습니다')
-    } finally {
-      setGoalSaving(false)
-    }
+    setGoalMutation.mutate({ target_net_worth: amount, target_date: goalDate })
   }
 
-  const handleDeleteGoal = async () => {
-    setGoalSaving(true)
-    try {
-      await assetApi.deleteGoal(activeHouseholdId!)
-      setGoal(null)
-      setShowGoalModal(false)
-    } catch {
-      addToast('error', '목표 삭제에 실패했습니다')
-    } finally {
-      setGoalSaving(false)
-    }
+  const handleDeleteGoal = () => {
+    deleteGoalMutation.mutate()
   }
 
   const openGoalModal = () => {
@@ -145,8 +162,8 @@ export default function AssetDashboard() {
     navigate(`/assets/new${params}`)
   }, [navigate])
 
-  if (loading) return <AssetDashboardSkeleton />
-  if (error) return <ErrorState message={error} onRetry={fetchData} />
+  if (assetsLoading) return <AssetDashboardSkeleton />
+  if (assetsError) return <ErrorState message="자산 정보를 불러오지 못했습니다" onRetry={() => queryClient.invalidateQueries({ queryKey: ['assets', activeHouseholdId] })} />
 
   // 빈 상태 — 온보딩
   if (assets.length === 0) {

@@ -5,12 +5,12 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
-import { MemoryRouter } from 'react-router-dom'
+import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { server } from '../../mocks/server'
 import { http, HttpResponse } from 'msw'
 import AssetDashboard from '../AssetDashboard'
+import { renderWithQueryClient } from '../../test-utils'
 
 // useToast 모킹 — ToastProvider 없이 테스트 가능하도록
 vi.mock('../../hooks/useToast', () => ({
@@ -53,11 +53,7 @@ const mockGoalWithProgress = {
 }
 
 function renderAssetDashboard() {
-  return render(
-    <MemoryRouter>
-      <AssetDashboard />
-    </MemoryRouter>,
-  )
+  return renderWithQueryClient(<AssetDashboard />)
 }
 
 beforeEach(() => {
