@@ -45,12 +45,12 @@ function TransactionItem({
   return (
     <Link
       to={detailPath}
-      className={`flex flex-col gap-1 px-4 py-4 hover:bg-[var(--surface-hover)] transition-colors ${
+      className={`flex flex-col gap-1.5 px-4 py-4 hover:bg-[var(--surface-hover)] transition-colors ${
         excludeFromStats ? 'opacity-50' : ''
       }`}
     >
       <div className="flex items-center justify-between gap-2">
-        <span className="text-sm font-medium text-[var(--text-primary)] truncate">
+        <span className="text-base font-medium text-[var(--text-primary)] truncate">
           {description}
         </span>
         <span
