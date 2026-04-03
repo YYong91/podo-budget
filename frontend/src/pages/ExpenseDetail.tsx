@@ -15,7 +15,7 @@ import { paymentMethodApi } from '../api/paymentMethods'
 import { useHouseholdStore } from '../stores/useHouseholdStore'
 import RegisterRecurringModal from '../components/RegisterRecurringModal'
 import ErrorState from '../components/ErrorState'
-import LoadingSpinner from '../components/LoadingSpinner'
+import { Skeleton } from '../components/skeleton/Skeleton'
 import type { Expense, Category, PaymentMethod } from '../types'
 import { formatAmount } from '../utils/format'
 
@@ -162,7 +162,19 @@ export default function ExpenseDetail() {
   }
 
   if (loading) {
-    return <LoadingSpinner />
+    return (
+      <div className="space-y-6 animate-pulse">
+        <div className="flex items-center justify-between">
+          <Skeleton className="w-9 h-9 rounded-lg" />
+          <div className="flex gap-2">
+            <Skeleton className="w-16 h-9 rounded-xl" />
+            <Skeleton className="w-16 h-9 rounded-xl" />
+          </div>
+        </div>
+        <Skeleton className="h-40 rounded-2xl" />
+        <Skeleton className="h-32 rounded-2xl" />
+      </div>
+    )
   }
 
   if (error) {

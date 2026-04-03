@@ -9,7 +9,7 @@ import { useTickerSearch } from '../hooks/useTickerSearch'
 import { assetApi } from '../api/assets'
 import { accountApi } from '../api/accounts'
 import { useHouseholdStore } from '../stores/useHouseholdStore'
-import LoadingSpinner from '../components/LoadingSpinner'
+import { Skeleton } from '../components/skeleton/Skeleton'
 import type { CreateAssetParams, Account } from '../types'
 import { trackEvent } from '../utils/analytics'
 
@@ -196,7 +196,14 @@ export default function AssetForm() {
   const isManualType = ['deposit', 'real_estate', 'other', 'loan'].includes(assetType)
 
   if (initialLoading) {
-    return <LoadingSpinner className="min-h-[50vh]" />
+    return (
+      <div className="max-w-xl mx-auto space-y-6 animate-pulse">
+        <Skeleton className="w-9 h-9 rounded-lg" />
+        <Skeleton className="h-12 rounded-xl" />
+        <Skeleton className="h-40 rounded-2xl" />
+        <Skeleton className="h-12 rounded-xl" />
+      </div>
+    )
   }
 
   return (
