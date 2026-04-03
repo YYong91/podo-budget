@@ -149,7 +149,7 @@ export default function IncomeDetail() {
     categories.find((c) => c.id === income.category_id)?.name || '분류 안 됨'
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-page-in">
       <div className="flex items-center justify-between">
         <Link
           to="/income"

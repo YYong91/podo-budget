@@ -183,7 +183,7 @@ export default function AssetDashboard() {
     : null
 
   return (
-    <div className="space-y-4 px-4 py-6">
+    <div className="space-y-4 px-4 py-6 animate-page-in animate-stagger">
       <NetWorthHero
         netWorth={netWorth}
         totalAssets={totalAssets}

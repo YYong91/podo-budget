@@ -178,7 +178,7 @@ export default function TransactionList() {
 
   return (
     <PullToRefresh onRefresh={handleRefresh}>
-    <div className="space-y-4">
+    <div className="space-y-4 animate-page-in">
       {search.isSearchMode ? (
         <SearchMode
           search={search}

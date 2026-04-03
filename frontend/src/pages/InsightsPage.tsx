@@ -308,7 +308,7 @@ export default function InsightsPage() {
   const handleNext = useCallback(() => setMonthStr(m => shiftMonth(m, 1)), [])
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 animate-page-in animate-stagger">
       {/* 월 네비게이션 + 설정 아이콘 */}
       <div className="flex items-center justify-between">
         <div className="flex-1" />
@@ -344,6 +344,7 @@ export default function InsightsPage() {
       {/* 빈 상태 */}
       {!loading && !error && !expenseStats?.total && !incomeStats?.total && (
         <EmptyState
+          variant="primary"
           title="이번 달 거래 내역이 없습니다"
           description="가계부에 수입이나 지출을 기록하면 리포트가 생성됩니다"
           action={{ label: '가계부로 이동', onClick: () => navigate('/home') }}

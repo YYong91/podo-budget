@@ -234,7 +234,7 @@ export default function BudgetManager() {
   const allocationPercent = hasTotalBudget ? (allocatedTotal / totalNum) * 100 : 0
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-page-in">
       <button onClick={() => goBack()} className="p-2.5 -ml-2.5 rounded-lg hover:bg-[var(--surface-hover)] transition-colors">
         <ArrowLeft className="w-5 h-5 text-[var(--text-secondary)]" />
       </button>

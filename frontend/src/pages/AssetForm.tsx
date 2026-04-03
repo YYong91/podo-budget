@@ -200,7 +200,7 @@ export default function AssetForm() {
   }
 
   return (
-    <div className="max-w-xl mx-auto space-y-6">
+    <div className="max-w-xl mx-auto space-y-6 animate-page-in">
       <Link to="/assets" aria-label="뒤로가기" className="p-2 -ml-2 rounded-lg hover:bg-[var(--surface-hover)] text-[var(--text-tertiary)] inline-block">
         <ArrowLeft className="w-5 h-5" />
       </Link>

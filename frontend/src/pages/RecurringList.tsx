@@ -232,7 +232,7 @@ export default function RecurringList() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-page-in">
       {/* 헤더 */}
       <div className="flex items-center justify-between">
         <button onClick={() => goBack()} className="p-2.5 -ml-2.5 rounded-lg hover:bg-[var(--surface-hover)] transition-colors">

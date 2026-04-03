@@ -212,7 +212,7 @@ export default function MonthlyView({
           />
         </div>
       ) : (
-        <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] overflow-hidden">
+        <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] overflow-hidden animate-stagger">
           {Array.from(monthly.grouped.entries()).map(([dateKey, txs], index) => {
             // 날짜별 합계: 지출은 음수, 수입은 양수
             const dailyTotal = txs.reduce(
