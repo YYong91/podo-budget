@@ -29,14 +29,14 @@ Apple Human Interface Guidelines 원칙(Clarity, Deference, Depth)을 기반으�
 - letter-spacing을 NetWorthHero 하나에서만 사용
 - 행간(line-height)이 Tailwind 기본값 그대로
 
-### 디자인: 3단계 타이포 토큰
+### 디자인: 2개 커스텀 타이포 토큰
 
 `index.css`에 유틸리티 클래스로 정의하여 전역 적용:
 
 ```css
-/* 영웅 숫자 — 순자산, 월 합계 */
+/* 영웅 숫자 — 순자산, 월 합계. 숫자 요소에만 적용 (라벨 제외) */
 .text-display {
-  @apply text-3xl font-bold tracking-tight leading-none;
+  @apply text-3xl font-bold tracking-tight leading-tight;
 }
 
 /* 금액 — 거래 목록, 카드 내 금액 */
@@ -49,7 +49,7 @@ Apple Human Interface Guidelines 원칙(Clarity, Deference, Depth)을 기반으�
 - `tabular-nums` — 숫자 고정폭 정렬 (₩12,000과 ₩1,200이 같은 자릿수만큼 공간 차지)
 - `tracking-wide` — 금액 숫자에 자간을 줘서 가독성 향상
 - `tracking-tight` — 큰 숫자(히어로)는 조여서 덩어리감
-- `leading-none` / `leading-snug` — 행간 조정으로 시각적 밀도 제어
+- `leading-tight` — 히어로 숫자에 안전한 행간 (한글 descender 잘림 방지)
 
 ### 적용 위치
 
@@ -82,8 +82,12 @@ Apple Human Interface Guidelines 원칙(Clarity, Deference, Depth)을 기반으�
 <SkeletonCircle className="w-10 h-10" /> // 아바타/아이콘
 ```
 
-- 내부: `animate-pulse bg-[var(--surface-hover)] rounded-lg`
-- 다크모드: `bg-[var(--surface-elevated)]`로 자동 전환
+- 내부: `animate-pulse bg-[var(--skeleton-base)] rounded-lg`
+- CSS 변수로 라이트/다크 자동 전환:
+  ```css
+  :root { --skeleton-base: var(--color-warm-200); }
+  .dark { --skeleton-base: #3d3452; /* border-default과 동일, surface-card 대비 충분한 대비 */ }
+  ```
 
 **페이지별 스켈레톤**:
 
@@ -131,7 +135,7 @@ Apple Human Interface Guidelines 원칙(Clarity, Deference, Depth)을 기반으�
 ```
 
 **적용**:
-- 가계부 홈: 월간 지출 히어로 (기존 UnifiedSummaryCards 4칸 → 히어로 아래로 이동 또는 제거)
+- 가계부 홈: 월간 지출 히어로 추가. 기존 UnifiedSummaryCards는 히어로 아래로 이동하되 유지 (스코프 예외: 히어로 도입으로 인한 레이아웃 재배치. 기능 삭제 아님)
 - 돌아보기: 첫 번째 카드를 히어로 크기로
 - 자산탭: 기존 NetWorthHero에 `.text-display` 토큰만 교체
 
@@ -166,7 +170,7 @@ Apple Human Interface Guidelines 원칙(Clarity, Deference, Depth)을 기반으�
 ```
 
 **변경사항**:
-- 날짜 헤더에 **일별 합계** 표시 (현재 없음)
+- 날짜 헤더에 **일별 합계** 표시 (현재 없음) — 스코프 예외: 정보 계층 강화를 위한 최소한의 데이터 추가. 합산 로직은 기존 데이터에서 단순 reduce.
 - 헤더 배경: `surface-elevated`로 미세 구분
 - 헤더와 아이템 사이 간격: `mt-2`
 - 날짜 그룹 간 간격: `mt-6`
@@ -246,18 +250,32 @@ Apple Human Interface Guidelines 원칙(Clarity, Deference, Depth)을 기반으�
 .animate-stagger > *:nth-child(3) { animation-delay: 80ms; }
 .animate-stagger > *:nth-child(4) { animation-delay: 120ms; }
 .animate-stagger > *:nth-child(5) { animation-delay: 160ms; }
+/* 6번째 이후는 애니메이션 없이 즉시 표시 */
+.animate-stagger > *:nth-child(n+6) { animation: none; }
 ```
 - 최대 5개까지 stagger, 이후는 즉시 표시
 - 홈 거래 목록, 자산 그룹, 돌아보기 카드에 적용
 
 **3) 바텀시트/모달 스프링 개선**:
+
+기존 `index.css`의 `sheet-up` 키프레임(0.25s ease-out)을 iOS 스프링 근사값으로 오버라이드:
 ```css
-@keyframes sheet-up {
-  from { transform: translateY(100%); }
-  to   { transform: translateY(0); }
+/* 기존 sheet-up 키프레임은 유지, 타이밍만 변경 */
+.animate-sheet-up {
+  animation: sheet-up 0.3s cubic-bezier(0.32, 0.72, 0, 1);
 }
-/* iOS 스프링 근사값 */
-animation: sheet-up 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+```
+영향 범위: CategoryBottomSheet, 목표 설정 모달 등 `animate-sheet-up` 사용하는 컴포넌트.
+
+**접근성 — prefers-reduced-motion 대응**:
+```css
+@media (prefers-reduced-motion: reduce) {
+  .animate-page-in,
+  .animate-stagger > *,
+  .animate-sheet-up {
+    animation: none !important;
+  }
+}
 ```
 
 **명시적으로 안 하는 것**:
@@ -298,6 +316,13 @@ animation: sheet-up 0.3s cubic-bezier(0.32, 0.72, 0, 1);
 
 **금액 인풋 특별 처리**: `text-2xl font-bold tabular-nums tracking-tight text-center`
 
+**마이그레이션 전략**: PR 1에서 `.input-base` 토큰을 정의하고, 각 화면 PR(2-4)에서 해당 페이지의 인라인 인풋 스타일을 `.input-base`로 교체.
+
+인풋이 있는 페이지 목록:
+- PR 2: TransactionForm (자연어/직접 입력), 검색 필드
+- PR 3: ExpenseForm, IncomeForm, AssetForm
+- PR 4: CategoryManager, BudgetManager, 설정 페이지, 목표 설정 모달
+
 ---
 
 ## 8. 다크모드 디테일
@@ -308,14 +333,20 @@ animation: sheet-up 0.3s cubic-bezier(0.32, 0.72, 0, 1);
 
 ### 디자인: 보정 포인트 5가지
 
-**1) 카드 elevation — shadow → border**:
+**1) 카드 elevation — `.card-surface` 유틸리티 클래스**:
+
+라이트/다크 전환을 한 곳에서 관리:
 ```css
-.dark {
-  /* 다크에서 shadow-sm이 안 보이므로 border로 깊이 표현 */
+.card-surface {
+  @apply bg-[var(--surface-card)] rounded-2xl shadow-sm;
+}
+.dark .card-surface {
+  @apply shadow-none border border-[var(--border-default)];
 }
 ```
-- 라이트: `shadow-sm` 유지
-- 다크: shadow 제거, `border border-[var(--border-default)]`로 대체
+- 라이트: `shadow-sm`으로 깊이
+- 다크: shadow 제거, border로 깊이 표현
+- 기존 카드 컴포넌트에서 인라인 스타일 → `.card-surface`로 교체
 
 **2) 히어로 그라데이션 다크 버전**:
 ```
@@ -325,11 +356,8 @@ animation: sheet-up 0.3s cubic-bezier(0.32, 0.72, 0, 1);
 - 진한 배경 위 은은한 보라빛 — Grape 브랜드 유지
 
 **3) 스켈레톤 다크 색상**:
-```
-라이트: bg-[var(--surface-hover)]
-다크:   bg-[var(--surface-elevated)]
-```
-- 명도 차이를 키워서 pulse 맥동이 보이게
+
+`--skeleton-base` 변수 사용 (섹션 2 참조). surface-card(#231e30) 대비 충분한 명도 차이 확보.
 
 **4) 금액 색상 가독성**:
 ```
@@ -366,6 +394,20 @@ PR 2, 3은 서로 독립 — 병렬 진행 가능.
 | #116 (React Query) | 스켈레톤과 함께 도입하면 시너지. 이번 스코프에서는 미포함 |
 | #482 (자산 재설계) | v2 완료 상태. 디자인 토큰만 통일 |
 | #540-545 (자산탭 디테일) | PR 4에서 일부 해소 가능 |
+
+## 미포함 페이지
+
+다음 페이지는 공통 컴포넌트(EmptyState, Skeleton, 폼 토큰) 교체로 자동 개선되며, 별도 디자인 작업은 하지 않음:
+- OnboardingPage — WelcomeCard 기반, 공통 토큰 적용으로 충분
+- CategoryManager, BudgetManager — EmptyState + 폼 토큰 교체 (PR 4)
+- AdminPage — 내부 도구, 디자인 polish 대상 아님
+- NotFoundPage — 텍스트만, EmptyState inline variant 적용
+
+## 테스트 전략
+
+- PR 1: Skeleton, EmptyState variant에 대한 단위 테스트 추가
+- PR 2-5: 기존 테스트의 assertion 텍스트/구조 변경 시 업데이트
+- 각 PR에서 `npm run lint && npm run test:run && npm run build` 통과 필수
 
 ## 기술 제약
 
