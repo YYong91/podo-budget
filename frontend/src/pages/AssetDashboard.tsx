@@ -23,7 +23,7 @@ import type { Asset, AssetSummary, AssetSnapshot, AssetGoal, MonthlySavings, Ass
 /** 자산 대시보드 로딩 스켈레톤 */
 function AssetDashboardSkeleton() {
   return (
-    <div className="space-y-4 px-4 py-6">
+    <div className="space-y-4 py-6">
       {/* 순자산 히어로 골격 */}
       <div className="card-surface p-6 space-y-3">
         <Skeleton className="h-4 w-24" />
@@ -151,7 +151,7 @@ export default function AssetDashboard() {
   // 빈 상태 — 온보딩
   if (assets.length === 0) {
     return (
-      <div className="px-4 py-6">
+      <div className="py-6">
         <AssetOnboarding onAdd={handleAddAsset} />
       </div>
     )
@@ -183,7 +183,7 @@ export default function AssetDashboard() {
     : null
 
   return (
-    <div className="space-y-4 px-4 py-6 animate-page-in animate-stagger">
+    <div className="space-y-4 py-6 animate-page-in animate-stagger">
       <NetWorthHero
         netWorth={netWorth}
         totalAssets={totalAssets}
