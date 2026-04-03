@@ -206,6 +206,7 @@ export default function MonthlyView({
       ) : monthly.grouped.size === 0 ? (
         <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)]">
           <EmptyState
+            variant="primary"
             title={monthly.filter === 'all' ? '거래 내역이 없습니다' : `${monthly.filter === 'expense' ? '지출' : '수입'} 내역이 없습니다`}
             description="이번 달의 거래를 추가해보세요."
           />

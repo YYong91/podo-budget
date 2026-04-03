@@ -8,6 +8,7 @@
 
 import { useMemo } from 'react'
 import { Search, X } from 'lucide-react'
+import EmptyState from '../EmptyState'
 import TransactionItem from '../TransactionItem'
 import { formatAmount } from '../../utils/format'
 import { formatDateHeader } from '../../utils/calendar'
@@ -236,10 +237,12 @@ export default function SearchMode({
         search.searchLoading ? (
           <SearchSkeleton />
         ) : search.searchGrouped.size === 0 ? (
-          <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] p-12 text-center">
-            <Search className="w-8 h-8 mx-auto mb-2 text-[var(--text-muted)] opacity-50" />
-            <p className="text-sm text-[var(--text-primary)] font-medium mb-1">검색 결과가 없습니다</p>
-            <p className="text-xs text-[var(--text-tertiary)]">다른 검색어를 시도해보세요</p>
+          <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)]">
+            <EmptyState
+              variant="inline"
+              title="검색 결과가 없습니다"
+              description="다른 검색어를 시도해보세요"
+            />
           </div>
         ) : (
           <>
