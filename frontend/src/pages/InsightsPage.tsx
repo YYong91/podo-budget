@@ -396,8 +396,8 @@ export default function InsightsPage() {
             <MonthlyHighlights
               incomeTotal={incomeStats.total}
               expenseTotal={expenseStats.total}
-              budgetStats={budgetStats}
-              comparison={comparison}
+              budgetStats={budgetStats ?? null}
+              comparison={comparison ?? null}
             />
           )}
 
@@ -408,7 +408,7 @@ export default function InsightsPage() {
 
           {/* 5. 예산 상황 */}
           {sectionVisibility.budget && (
-            <BudgetVsActual budgetStats={budgetStats} monthStr={monthStr} />
+            <BudgetVsActual budgetStats={budgetStats ?? null} monthStr={monthStr} />
           )}
 
           {/* 6. 카드 실적 */}
@@ -418,7 +418,7 @@ export default function InsightsPage() {
 
           {/* 7. 자산 변화 */}
           {sectionVisibility.assets && (
-            <AssetChangeSummary summary={assetSummary} previousSnapshot={prevSnapshot} />
+            <AssetChangeSummary summary={assetSummary ?? null} previousSnapshot={prevSnapshot} />
           )}
 
           {/* 8. AI 상세 분석 */}

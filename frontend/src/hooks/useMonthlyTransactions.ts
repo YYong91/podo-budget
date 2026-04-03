@@ -18,7 +18,7 @@ import { incomeApi } from '../api/income'
 import { recurringApi } from '../api/recurring'
 import { categoryApi } from '../api/categories'
 import { getMonthRange } from '../utils/calendar'
-import type { Expense, Income, Category, RecurringTransaction } from '../types'
+import type { Expense, Income, RecurringTransaction } from '../types'
 import type { UnifiedTransaction } from './useTransactionSearch'
 
 type FilterType = 'all' | 'expense' | 'income'
