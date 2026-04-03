@@ -111,12 +111,12 @@ Apple Human Interface Guidelines 원칙(Clarity, Deference, Depth)을 기반으�
 - 가계부 홈에는 히어로가 없음 — 월 합계가 4칸으로 나뉘어 핵심 숫자 불명확
 - 돌아보기도 요약 카드들이 동일 크기로 나열
 
-### 디자인: 공통 HeroSection 컴포넌트
+### 디자인: 공통 HeroSummary 컴포넌트
 
-**신규 파일**: `components/HeroSection.tsx`
+**신규 파일**: `components/stats/HeroSummary.tsx`
 
 ```tsx
-<HeroSection
+<HeroSummary
   label="4월 지출"
   amount={1240000}
   sublabel="수입 ₩3,200,000 · 잔액 +₩1,960,000"
@@ -381,7 +381,7 @@ Apple Human Interface Guidelines 원칙(Clarity, Deference, Depth)을 기반으�
 | PR | 내용 | 의존성 |
 |---|---|---|
 | **PR 1: 디자인 토큰 + 공통 컴포넌트** | 타이포 유틸리티, Skeleton 프리미티브, EmptyState variant, 폼 토큰, 모션 키프레임, 다크모드 보정 | 없음 |
-| **PR 2: 가계부 홈** | HeroSection, 거래 리스트 여백/그룹핑, 스켈레톤 교체, 빈 상태 적용 | PR 1 |
+| **PR 2: 가계부 홈** | HeroSummary, 거래 리스트 여백/그룹핑, 스켈레톤 교체, 빈 상태 적용 | PR 1 |
 | **PR 3: 돌아보기 + 입력폼** | 돌아보기 히어로, TransactionForm/AssetForm 폼 토큰, 스켈레톤 | PR 1 |
 | **PR 4: 자산탭 + 설정** | 자산탭 디자인 언어 통일, 설정 정리, 나머지 스켈레톤/빈 상태 | PR 1 |
 | **PR 5: 모션 + 최종 polish** | 페이지 진입 애니메이션, stagger, 바텀시트 스프링, 다크모드 QA | PR 2-4 |
