@@ -33,6 +33,7 @@ from app.api import (
     webhooks,
 )
 from app.core.config import settings
+from app.core.database import engine
 from app.core.exceptions import register_exception_handlers
 from app.core.rate_limit import limiter
 
@@ -90,18 +91,14 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         warnings.warn("TELEGRAM_WEBHOOK_SECRET이 설정되지 않았습니다. 웹훅 엔드포인트가 인증 없이 열려 있습니다.", stacklevel=2)
 
     # Alembic 마이그레이션 실행 — create_all 대신 사용해 기존 DB에도 스키마 변경 적용
-    # lifespan은 이미 async context이므로, alembic Python API(동기→asyncio.run) 대신
-    # env.py의 async 마이그레이션 로직을 직접 await한다.
-    # 이전 방식(alembic_command.upgrade)은 nested event loop 충돌로 실패했음.
+    # asyncio.to_thread로 별도 스레드에서 실행하여 nested event loop 충돌 방지
+    # (lifespan은 async context → alembic_command.upgrade 내부 asyncio.run() 충돌)
+    import asyncio
     import logging
     import pathlib
 
-    from sqlalchemy import pool
-    from sqlalchemy.engine import Connection
-    from sqlalchemy.ext.asyncio import create_async_engine
-
+    from alembic import command as alembic_command
     from alembic.config import Config as AlembicConfig
-    from app.core.database import Base
 
     logger = logging.getLogger(__name__)
 
@@ -110,26 +107,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         alembic_ini = alembic_dir / "alembic.ini"
         alembic_cfg = AlembicConfig(str(alembic_ini))
         alembic_cfg.set_main_option("script_location", str(alembic_dir / "alembic"))
-
-        # MIGRATION_DATABASE_URL(Direct connection) 우선, 없으면 DATABASE_URL
-        migration_url = settings.MIGRATION_DATABASE_URL or settings.DATABASE_URL
-        # pgbouncer(transaction pooler) 경유 시 prepared statement 캐시 비활성화
-        # SQLite(E2E/테스트)에서는 지원하지 않는 옵션이므로 PostgreSQL만 적용
-        use_pg_pooler_args = not settings.MIGRATION_DATABASE_URL and "postgresql" in migration_url
-        connect_args: dict[str, int] = {"prepared_statement_cache_size": 0, "statement_cache_size": 0} if use_pg_pooler_args else {}
-
-        engine = create_async_engine(migration_url, poolclass=pool.NullPool, connect_args=connect_args)
-
-        def do_run_migrations(connection: Connection) -> None:
-            from alembic import context
-
-            context.configure(connection=connection, target_metadata=Base.metadata, render_as_batch=True)
-            with context.begin_transaction():
-                context.run_migrations()
-
-        async with engine.connect() as connection:
-            await connection.run_sync(do_run_migrations)
-        await engine.dispose()
+        await asyncio.to_thread(alembic_command.upgrade, alembic_cfg, "head")
         logger.info("Alembic 마이그레이션 완료")
     except Exception:
         logger.exception("Alembic 마이그레이션 실패 — 앱은 기동하지만 스키마가 불일치할 수 있음")
@@ -138,6 +116,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         import gc
         import sys as _sys
 
+        del alembic_command, AlembicConfig
         for mod_name in [m for m in _sys.modules if m.startswith("alembic") or m.startswith("mako")]:
             del _sys.modules[mod_name]
         gc.collect()
