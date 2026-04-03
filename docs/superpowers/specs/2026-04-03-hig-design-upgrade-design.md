@@ -174,8 +174,7 @@ Apple Human Interface Guidelines 원칙(Clarity, Deference, Depth)을 기반으�
 - 헤더 배경: `surface-elevated`로 미세 구분
 - 헤더와 아이템 사이 간격: `mt-2`
 - 날짜 그룹 간 간격: `mt-6`
-- **아이템 간 border 제거** — 여백으로 구분 (HIG: 불필요한 선 제거)
-- 아이템 간 미세 간격: `gap-1`
+- **아이템 간 border 제거** — 기존 `divide-y` 또는 border-bottom 방식에서 `flex flex-col gap-1` 레이아웃으로 전환. 여백으로 구분 (HIG: 불필요한 선 제거)
 
 ---
 
@@ -188,7 +187,7 @@ Apple Human Interface Guidelines 원칙(Clarity, Deference, Depth)을 기반으�
 
 ### 디자인: 3티어 시스템
 
-기존 `EmptyState`에 `variant` prop 추가:
+기존 `EmptyState`에 `variant` prop 추가 (기본값: `"primary"`):
 
 **Tier 1 — `variant="primary"`** (주요 탭: 홈, 자산, 돌아보기):
 ```
@@ -302,6 +301,9 @@ Apple Human Interface Guidelines 원칙(Clarity, Deference, Depth)을 기반으�
     border border-[var(--input-border)] rounded-xl
     focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-400
     transition-colors;
+}
+.dark .input-base {
+  @apply focus:ring-grape-400/40 focus:border-grape-300;
 }
 ```
 - 높이 통일: `py-3` (44px — HIG 최소 터치 타겟)
