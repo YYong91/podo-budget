@@ -11,7 +11,7 @@ import { useToast } from '../hooks/useToast'
 import { TOAST } from '../constants/toastMessages'
 import { adminApi } from '../api/admin'
 
-import LoadingSpinner from '../components/LoadingSpinner'
+import { Skeleton } from '../components/skeleton/Skeleton'
 import AdminOverview from '../components/admin/AdminOverview'
 import AdminFeedbackDashboard from '../components/admin/AdminFeedbackDashboard'
 import AdminUserManager from '../components/admin/AdminUserManager'
@@ -47,9 +47,15 @@ export default function AdminPage() {
     loadData()
   }, [user?.is_admin, loadData])
 
-  // 사용자 프로필 로딩 중 — 비관리자로 오판하지 않도록 스피너 표시 (#154)
+  // 사용자 프로필 로딩 중 — 비관리자로 오판하지 않도록 스켈레톤 표시 (#154)
   if (authLoading) {
-    return <LoadingSpinner className="min-h-[50vh]" />
+    return (
+      <div className="space-y-6 animate-pulse min-h-[50vh]">
+        <Skeleton className="h-10 w-48 rounded-xl" />
+        <Skeleton className="h-32 rounded-2xl" />
+        <Skeleton className="h-48 rounded-2xl" />
+      </div>
+    )
   }
 
   // 비관리자 접근 방지 (백엔드 API도 require_admin으로 검증)
@@ -63,7 +69,13 @@ export default function AdminPage() {
   }
 
   if (loading) {
-    return <LoadingSpinner className="min-h-[50vh]" />
+    return (
+      <div className="space-y-6 animate-pulse min-h-[50vh]">
+        <Skeleton className="h-10 w-48 rounded-xl" />
+        <Skeleton className="h-32 rounded-2xl" />
+        <Skeleton className="h-48 rounded-2xl" />
+      </div>
+    )
   }
 
   return (

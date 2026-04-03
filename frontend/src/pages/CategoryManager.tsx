@@ -12,8 +12,24 @@ import { TOAST } from '../constants/toastMessages'
 import { categoryApi } from '../api/categories'
 import EmptyState from '../components/EmptyState'
 import ErrorState from '../components/ErrorState'
-import LoadingSpinner from '../components/LoadingSpinner'
+import { Skeleton } from '../components/skeleton/Skeleton'
 import type { Category } from '../types'
+
+function CategoryManagerSkeleton() {
+  return (
+    <div className="space-y-3">
+      {[1, 2, 3, 4].map(i => (
+        <div key={i} className="card-surface p-4 flex items-center justify-between">
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-32" />
+            <Skeleton className="h-3 w-20" />
+          </div>
+          <Skeleton className="h-8 w-16" />
+        </div>
+      ))}
+    </div>
+  )
+}
 
 export default function CategoryManager() {
   const goBack = useGoBack('/settings')
@@ -163,7 +179,7 @@ export default function CategoryManager() {
   }
 
   if (loading) {
-    return <LoadingSpinner />
+    return <CategoryManagerSkeleton />
   }
 
   /* 에러 발생 시 */
@@ -181,7 +197,7 @@ export default function CategoryManager() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-page-in">
       <div className="flex items-center justify-between">
         <button onClick={() => goBack()} className="p-2.5 -ml-2.5 rounded-lg hover:bg-[var(--surface-hover)] transition-colors">
           <ArrowLeft className="w-5 h-5 text-[var(--text-secondary)]" />
@@ -253,7 +269,7 @@ export default function CategoryManager() {
                     value={newName}
                     onChange={(e) => setNewName(e.target.value)}
                     placeholder="카테고리 이름"
-                    className="w-full px-3 py-2 border border-[var(--input-border)] rounded-lg focus:ring-2 focus:ring-grape-500 focus:border-transparent"
+                    className="input-base w-full"
                     // eslint-disable-next-line jsx-a11y/no-autofocus
                     autoFocus
                   />
@@ -275,7 +291,7 @@ export default function CategoryManager() {
                     value={newDescription}
                     onChange={(e) => setNewDescription(e.target.value)}
                     placeholder="설명 (선택)"
-                    className="w-full px-3 py-2 border border-[var(--input-border)] rounded-lg focus:ring-2 focus:ring-grape-500 focus:border-transparent"
+                    className="input-base w-full"
                   />
                 </td>
                 <td className="px-4 sm:px-6 py-4 hidden sm:table-cell"></td>
@@ -345,7 +361,7 @@ export default function CategoryManager() {
                             onChange={(e) =>
                               setEditForm({ ...editForm, name: e.target.value })
                             }
-                            className="w-full px-3 py-2 border border-[var(--input-border)] rounded-lg focus:ring-2 focus:ring-grape-500 focus:border-transparent"
+                            className="input-base w-full"
                             // eslint-disable-next-line jsx-a11y/no-autofocus
                             autoFocus
                           />
@@ -391,7 +407,7 @@ export default function CategoryManager() {
                               description: e.target.value,
                             })
                           }
-                          className="w-full px-3 py-2 border border-[var(--input-border)] rounded-lg focus:ring-2 focus:ring-grape-500 focus:border-transparent"
+                          className="input-base w-full"
                         />
                       ) : (
                         <span className="text-sm text-[var(--text-secondary)]">
@@ -451,6 +467,7 @@ export default function CategoryManager() {
               <tr>
                 <td colSpan={5}>
                   <EmptyState
+                    variant="section"
                     title="아직 카테고리가 없습니다"
                     description="새 카테고리를 추가하여 지출을 체계적으로 관리해보세요."
                     action={{

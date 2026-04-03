@@ -44,7 +44,7 @@ interface MenuItem {
 /* ─── 메뉴 목록 (설정 메인) ─── */
 function SettingsMenu({ menuItems }: { menuItems: MenuItem[] }) {
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-page-in">
       <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] overflow-hidden">
         {menuItems.map((item, idx) => {
           const Icon = item.icon

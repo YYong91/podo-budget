@@ -45,7 +45,7 @@ function TransactionItem({
   return (
     <Link
       to={detailPath}
-      className={`flex flex-col gap-1 px-4 py-3 hover:bg-[var(--surface-hover)] transition-colors ${
+      className={`flex flex-col gap-1 px-4 py-4 hover:bg-[var(--surface-hover)] transition-colors ${
         excludeFromStats ? 'opacity-50' : ''
       }`}
     >
@@ -54,7 +54,7 @@ function TransactionItem({
           {description}
         </span>
         <span
-          className={`text-sm font-semibold whitespace-nowrap ${
+          className={`text-amount whitespace-nowrap ${
             type === 'income' ? 'text-leaf-600' : 'text-[var(--text-primary)]'
           }`}
         >

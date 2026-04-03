@@ -23,6 +23,7 @@ import { useHouseholdStore } from '../stores/useHouseholdStore'
 
 // 컴포넌트
 import PeriodNavigator from '../components/stats/PeriodNavigator'
+import HeroSummary from '../components/stats/HeroSummary'
 import UnifiedSummaryCards from '../components/stats/UnifiedSummaryCards'
 // CategoryPieChart는 CategoryTopList에 탭으로 통합됨
 import CategoryTopList from '../components/stats/CategoryTopList'
@@ -37,10 +38,12 @@ import SectionToggleModal, {
   saveSectionSettings,
   type SectionVisibility,
 } from '../components/stats/SectionToggleModal'
+import { Skeleton } from '../components/skeleton/Skeleton'
 
 // 유틸
 import { calculateHealthScore } from '../utils/healthScore'
 import { trackEvent } from '../utils/analytics'
+import { formatAmount } from '../utils/format'
 
 // 타입
 import type {
@@ -64,6 +67,46 @@ function shiftMonth(monthStr: string, delta: number): string {
 function getNavLabel(monthStr: string): string {
   const [y, m] = monthStr.split('-').map(Number)
   return `${y}년 ${m}월`
+}
+
+// ── 로딩 스켈레톤 ──
+
+function InsightsPageSkeleton() {
+  return (
+    <div className="space-y-4">
+      {/* 히어로 골격 */}
+      <div className="card-surface p-6 space-y-3">
+        <Skeleton className="h-4 w-20" />
+        <Skeleton className="h-8 w-48" />
+        <Skeleton className="h-3 w-36" />
+      </div>
+      {/* 요약 카드 4개 */}
+      <div className="grid grid-cols-2 gap-3">
+        {[1, 2, 3, 4].map(i => (
+          <div key={i} className="card-surface p-4 space-y-2">
+            <Skeleton className="h-3 w-16" />
+            <Skeleton className="h-6 w-24" />
+          </div>
+        ))}
+      </div>
+      {/* 차트 영역 */}
+      <div className="card-surface p-4">
+        <Skeleton className="h-48 w-full rounded-xl" />
+      </div>
+      {/* 카테고리 리스트 */}
+      <div className="card-surface p-4 space-y-3">
+        {[1, 2, 3, 4, 5].map(i => (
+          <div key={i} className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Skeleton className="h-8 w-8 rounded-full" />
+              <Skeleton className="h-4 w-20" />
+            </div>
+            <Skeleton className="h-4 w-16" />
+          </div>
+        ))}
+      </div>
+    </div>
+  )
 }
 
 // ── 메인 페이지 ──
@@ -265,7 +308,7 @@ export default function InsightsPage() {
   const handleNext = useCallback(() => setMonthStr(m => shiftMonth(m, 1)), [])
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 animate-page-in animate-stagger">
       {/* 월 네비게이션 + 설정 아이콘 */}
       <div className="flex items-center justify-between">
         <div className="flex-1" />
@@ -290,23 +333,8 @@ export default function InsightsPage() {
         />
       )}
 
-      {/* 로딩 — 스켈레톤 UI */}
-      {loading && (
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-3">
-            {[...Array(4)].map((_, i) => (
-              <div key={i} className="bg-[var(--surface-card)] rounded-2xl p-4 animate-pulse">
-                <div className="h-3 w-16 bg-warm-200 rounded mb-3" />
-                <div className="h-6 w-24 bg-warm-200 rounded" />
-              </div>
-            ))}
-          </div>
-          <div className="bg-[var(--surface-card)] rounded-2xl p-5 animate-pulse">
-            <div className="h-4 w-32 bg-warm-200 rounded mb-4" />
-            <div className="h-48 bg-warm-100 rounded-xl" />
-          </div>
-        </div>
-      )}
+      {/* 로딩 — Skeleton 프리미티브 기반 스켈레톤 UI */}
+      {loading && <InsightsPageSkeleton />}
 
       {/* 에러 상태 */}
       {!loading && error && (
@@ -316,6 +344,7 @@ export default function InsightsPage() {
       {/* 빈 상태 */}
       {!loading && !error && !expenseStats?.total && !incomeStats?.total && (
         <EmptyState
+          variant="primary"
           title="이번 달 거래 내역이 없습니다"
           description="가계부에 수입이나 지출을 기록하면 리포트가 생성됩니다"
           action={{ label: '가계부로 이동', onClick: () => navigate('/home') }}
@@ -324,6 +353,13 @@ export default function InsightsPage() {
 
       {!loading && !error && (expenseStats?.total || incomeStats?.total) && (
         <>
+          {/* 0. 히어로 — 이달 지출 총액 강조 */}
+          <HeroSummary
+            label={`${Number(monthStr.split('-')[1])}월 지출`}
+            amount={expenseStats?.total ?? 0}
+            sublabel={`수입 ${formatAmount(incomeStats?.total ?? 0)}`}
+          />
+
           {/* 1. 종합 요약 */}
           {(expenseStats || incomeStats) && (
             <UnifiedSummaryCards

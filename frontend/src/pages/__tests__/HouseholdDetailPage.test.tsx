@@ -173,7 +173,7 @@ describe('HouseholdDetailPage', () => {
     storeState.isLoading = true
     storeState.currentHousehold = null
     renderPage()
-    expect(document.querySelector('.animate-spin')).toBeInTheDocument()
+    expect(document.querySelector('.animate-pulse')).toBeInTheDocument()
   })
 
   it('로딩 중이지만 데이터가 있으면 콘텐츠를 표시한다', () => {

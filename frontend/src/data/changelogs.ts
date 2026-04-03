@@ -18,6 +18,16 @@ export interface Changelog {
 
 export const changelogs: Changelog[] = [
   {
+    version: '0.15.0',
+    date: '2026-04-03',
+    title: '디자인 업그레이드',
+    items: [
+      { tag: '개선', text: '전체 화면 디자인 완성도 향상 — Apple HIG 기반 타이포/여백/모션 개선' },
+      { tag: '개선', text: '스켈레톤 로딩 UI 도입 — 로딩 중에도 콘텐츠 구조 유지' },
+      { tag: '개선', text: '다크모드 디테일 개선 — 카드 깊이감, 히어로 그라데이션 보정' },
+    ],
+  },
+  {
     version: '0.14.0',
     date: '2026-04-02',
     title: '자산 탭 리뉴얼 + 정기거래 예정',

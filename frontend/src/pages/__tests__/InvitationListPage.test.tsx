@@ -115,8 +115,8 @@ describe('InvitationListPage', () => {
 
       renderInvitationList()
 
-      const spinner = document.querySelector('.animate-spin')
-      expect(spinner).toBeInTheDocument()
+      const skeleton = document.querySelector('.animate-pulse')
+      expect(skeleton).toBeInTheDocument()
     })
   })
 

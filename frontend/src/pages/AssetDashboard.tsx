@@ -9,7 +9,7 @@ import { X } from 'lucide-react'
 import { assetApi } from '../api/assets'
 import { useHouseholdStore } from '../stores/useHouseholdStore'
 import ErrorState from '../components/ErrorState'
-import LoadingSpinner from '../components/LoadingSpinner'
+import { Skeleton } from '../components/skeleton/Skeleton'
 import NetWorthHero from '../components/asset/NetWorthHero'
 import MonthlyPerformanceCard, { computeBreakdownDiff, computeStreak, findPositiveMessage } from '../components/asset/MonthlyPerformanceCard'
 import MilestoneProgress from '../components/asset/MilestoneProgress'
@@ -19,6 +19,41 @@ import AssetOnboarding from '../components/asset/AssetOnboarding'
 import UpdateNudge from '../components/asset/UpdateNudge'
 import { useToast } from '../hooks/useToast'
 import type { Asset, AssetSummary, AssetSnapshot, AssetGoal, MonthlySavings, AssetType } from '../types'
+
+/** 자산 대시보드 로딩 스켈레톤 */
+function AssetDashboardSkeleton() {
+  return (
+    <div className="space-y-4 px-4 py-6">
+      {/* 순자산 히어로 골격 */}
+      <div className="card-surface p-6 space-y-3">
+        <Skeleton className="h-4 w-24" />
+        <Skeleton className="h-10 w-52" />
+        <Skeleton className="h-3 w-32" />
+      </div>
+      {/* 자산 카드 2개 */}
+      <div className="grid grid-cols-2 gap-3">
+        {[1, 2].map(i => (
+          <div key={i} className="card-surface p-4 space-y-2">
+            <Skeleton className="h-3 w-16" />
+            <Skeleton className="h-6 w-24" />
+          </div>
+        ))}
+      </div>
+      {/* 자산 리스트 */}
+      <div className="card-surface p-4 space-y-3">
+        {[1, 2, 3].map(i => (
+          <div key={i} className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Skeleton className="h-8 w-8 rounded-full" />
+              <Skeleton className="h-4 w-20" />
+            </div>
+            <Skeleton className="h-4 w-16" />
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
 
 export default function AssetDashboard() {
   const navigate = useNavigate()
@@ -110,7 +145,7 @@ export default function AssetDashboard() {
     navigate(`/assets/new${params}`)
   }, [navigate])
 
-  if (loading) return <LoadingSpinner className="min-h-[50vh]" />
+  if (loading) return <AssetDashboardSkeleton />
   if (error) return <ErrorState message={error} onRetry={fetchData} />
 
   // 빈 상태 — 온보딩
@@ -148,7 +183,7 @@ export default function AssetDashboard() {
     : null
 
   return (
-    <div className="space-y-4 px-4 py-6">
+    <div className="space-y-4 px-4 py-6 animate-page-in animate-stagger">
       <NetWorthHero
         netWorth={netWorth}
         totalAssets={totalAssets}

@@ -67,11 +67,11 @@ describe('ExpenseDetail', () => {
       })
     })
 
-    it('로딩 중에는 스피너를 표시한다', () => {
+    it('로딩 중에는 스켈레톤을 표시한다', () => {
       renderExpenseDetail()
-      // 로딩 스피너는 animate-spin 클래스를 가진 div로 렌더링됨
-      const spinner = document.querySelector('.animate-spin')
-      expect(spinner).toBeInTheDocument()
+      // 스켈레톤 로딩은 animate-pulse 클래스를 가진 div로 렌더링됨
+      const skeleton = document.querySelector('.animate-pulse')
+      expect(skeleton).toBeInTheDocument()
     })
   })
 

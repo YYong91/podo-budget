@@ -83,12 +83,12 @@ describe('AdminPage', () => {
       expect(screen.getByText('관리자만 접근할 수 있습니다')).toBeInTheDocument()
     })
 
-    it('인증 로딩 중에는 스피너를 표시한다', () => {
+    it('인증 로딩 중에는 스켈레톤을 표시한다', () => {
       mockAuthLoading = true
       renderPage()
 
-      const spinner = document.querySelector('.animate-spin')
-      expect(spinner).toBeInTheDocument()
+      const skeleton = document.querySelector('.animate-pulse')
+      expect(skeleton).toBeInTheDocument()
     })
   })
 
