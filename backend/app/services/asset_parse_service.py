@@ -9,7 +9,7 @@ ASSET_PARSE_PROMPT = """사용자가 보유 자산이나 부채를 자연어로 
 
 각 항목의 필드:
 - name: 자산명 (예: "삼성전자", "신한은행 적금", "주택담보대출")
-- type: stock_kr | stock_us | crypto | deposit | real_estate | other | loan
+- type: stock_kr | stock_us | crypto | deposit | real_estate | other | loan | insurance | vehicle
 - is_liability: 부채면 true, 자산이면 false
 - ticker: 종목코드(한국) 또는 티커(미국) 또는 코인심볼. 모르면 null
 - quantity: 수량 (주식 주수, 코인 개수). 해당없으면 null
