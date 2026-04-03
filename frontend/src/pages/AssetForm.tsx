@@ -15,7 +15,7 @@ import type { CreateAssetParams, Account } from '../types'
 import { trackEvent } from '../utils/analytics'
 
 type Mode = 'natural' | 'direct'
-type AssetType = 'stock_kr' | 'stock_us' | 'crypto' | 'deposit' | 'real_estate' | 'other' | 'loan'
+type AssetType = 'stock_kr' | 'stock_us' | 'crypto' | 'deposit' | 'real_estate' | 'other' | 'loan' | 'insurance' | 'vehicle'
 
 const TYPE_LABELS: Record<AssetType, string> = {
   stock_kr: '한국주식/ETF',
@@ -23,6 +23,8 @@ const TYPE_LABELS: Record<AssetType, string> = {
   crypto: '코인',
   deposit: '예적금',
   real_estate: '부동산',
+  insurance: '보험/연금',
+  vehicle: '자동차',
   other: '기타자산',
   loan: '대출/부채',
 }
@@ -204,7 +206,7 @@ export default function AssetForm() {
   }
 
   const isInvestmentType = ['stock_kr', 'stock_us', 'crypto'].includes(assetType)
-  const isManualType = ['deposit', 'real_estate', 'other', 'loan'].includes(assetType)
+  const isManualType = ['deposit', 'real_estate', 'other', 'loan', 'insurance', 'vehicle'].includes(assetType)
 
   if (initialLoading) {
     return (

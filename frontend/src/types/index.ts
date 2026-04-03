@@ -1,6 +1,6 @@
 /* 공통 타입 정의 */
 
-export type AssetType = 'stock_kr' | 'stock_us' | 'crypto' | 'deposit' | 'real_estate' | 'other' | 'loan'
+export type AssetType = 'stock_kr' | 'stock_us' | 'crypto' | 'deposit' | 'real_estate' | 'other' | 'loan' | 'insurance' | 'vehicle'
 export type AccountType = 'brokerage' | 'bank' | 'crypto_exchange' | 'other'
 
 export interface Account {

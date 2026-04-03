@@ -16,6 +16,8 @@ const ASSET_TYPES: { type: AssetType; label: string; emoji: string }[] = [
   { type: 'stock_kr', label: '국내 주식', emoji: '📈' },
   { type: 'crypto', label: '코인', emoji: '🪙' },
   { type: 'real_estate', label: '부동산', emoji: '🏠' },
+  { type: 'insurance', label: '보험/연금', emoji: '🔒' },
+  { type: 'vehicle', label: '자동차', emoji: '🚗' },
   { type: 'other', label: '기타 자산', emoji: '💼' },
   { type: 'loan', label: '대출', emoji: '📋' },
 ]

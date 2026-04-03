@@ -3,6 +3,7 @@
 import { render, screen, waitFor, fireEvent, act } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { vi, describe, test, expect, beforeEach, afterEach } from 'vitest'
 import AssetForm from '../pages/AssetForm'
 import { assetApi } from '../api/assets'
@@ -22,6 +23,7 @@ vi.mock('../api/assets', () => ({
     getById: vi.fn(),
     update: vi.fn(),
     delete: vi.fn(),
+    createSnapshot: vi.fn().mockResolvedValue({}),
   },
 }))
 
@@ -48,14 +50,20 @@ const mockStocksKr = [
   { id: 3, ticker: '373220', name: 'LG에너지솔루션', market: 'KOSPI' },
 ]
 
+const queryClient = new QueryClient({
+  defaultOptions: { queries: { retry: false } },
+})
+
 function renderAssetForm() {
   return render(
-    <MemoryRouter initialEntries={['/assets/new']}>
-      <Routes>
-        <Route path="/assets/new" element={<AssetForm />} />
-        <Route path="/assets" element={<div>자산 목록</div>} />
-      </Routes>
-    </MemoryRouter>
+    <QueryClientProvider client={queryClient}>
+      <MemoryRouter initialEntries={['/assets/new']}>
+        <Routes>
+          <Route path="/assets/new" element={<AssetForm />} />
+          <Route path="/assets" element={<div>자산 목록</div>} />
+        </Routes>
+      </MemoryRouter>
+    </QueryClientProvider>
   )
 }
 

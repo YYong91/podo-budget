@@ -16,7 +16,7 @@ class Asset(Base):  # type: ignore[misc]
     household_id = Column(Integer, ForeignKey("households.id", ondelete="CASCADE"), nullable=False)
     created_by = Column(Integer, ForeignKey("users.id"), nullable=False)
     name = Column(String, nullable=False)
-    type = Column(String, nullable=False)  # stock_kr, stock_us, crypto, deposit, real_estate, other, loan
+    type = Column(String, nullable=False)  # stock_kr, stock_us, crypto, deposit, real_estate, other, loan, insurance, vehicle
     is_liability = Column(Boolean, nullable=False, default=False)
 
     # 투자형 (stock/crypto)

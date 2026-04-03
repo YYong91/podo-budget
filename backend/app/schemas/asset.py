@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field
 
 class AssetBase(BaseModel):
     name: str
-    type: str = Field(..., pattern="^(stock_kr|stock_us|crypto|deposit|real_estate|other|loan)$")
+    type: str = Field(..., pattern="^(stock_kr|stock_us|crypto|deposit|real_estate|other|loan|insurance|vehicle)$")
     is_liability: bool = False
     ticker: str | None = None
     quantity: float | None = None
@@ -26,7 +26,7 @@ class AssetCreate(AssetBase):
 
 class AssetUpdate(BaseModel):
     name: str | None = None
-    type: str | None = Field(None, pattern="^(stock_kr|stock_us|crypto|deposit|real_estate|other|loan)$")
+    type: str | None = Field(None, pattern="^(stock_kr|stock_us|crypto|deposit|real_estate|other|loan|insurance|vehicle)$")
     is_liability: bool | None = None
     ticker: str | None = None
     quantity: float | None = None
