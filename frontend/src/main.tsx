@@ -3,6 +3,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ToastProvider } from './contexts/ToastContext'
 import { AuthProvider } from './contexts/AuthContext'
 import { ThemeProvider } from './contexts/ThemeContext'
@@ -10,6 +11,17 @@ import { initSentry, getErrorBoundary } from './utils/sentry'
 import { initAnalytics } from './utils/analytics'
 import './index.css'
 import App from './App.tsx'
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 30 * 1000,        // 30초 — 탭 복귀 시 캐시 즉시 표시
+      gcTime: 5 * 60 * 1000,       // 5분 — 비활성 캐시 유지
+      retry: 1,                     // 1회 재시도
+      refetchOnWindowFocus: false,  // 포커스 시 자동 refetch 비활성화 (수동 제어)
+    },
+  },
+})
 
 // beforeinstallprompt 이벤트를 React 마운트 전에 캡처 — 늦게 등록하면 이벤트를 놓침
 declare global {
@@ -56,13 +68,15 @@ async function bootstrap() {
     <StrictMode>
       <BrowserRouter>
         <ThemeProvider>
-          <AuthProvider>
-            <ToastProvider>
-              <App />
-              {/* api/client.ts 글로벌 에러 핸들러용 react-hot-toast Toaster (#243) */}
-              <Toaster position="top-center" toastOptions={{ duration: 3000 }} />
-            </ToastProvider>
-          </AuthProvider>
+          <QueryClientProvider client={queryClient}>
+            <AuthProvider>
+              <ToastProvider>
+                <App />
+                {/* api/client.ts 글로벌 에러 핸들러용 react-hot-toast Toaster (#243) */}
+                <Toaster position="top-center" toastOptions={{ duration: 3000 }} />
+              </ToastProvider>
+            </AuthProvider>
+          </QueryClientProvider>
         </ThemeProvider>
       </BrowserRouter>
     </StrictMode>

@@ -1,6 +1,6 @@
 """이메일 서비스 단위 테스트"""
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 
@@ -26,12 +26,12 @@ async def test_send_invitation_email_success():
     """이메일 발송 성공"""
     with (
         patch("app.services.email_service.settings") as mock_settings,
-        patch("app.services.email_service.resend") as mock_resend,
+        patch("resend.Emails") as mock_emails,
+        patch("resend.api_key", new="", create=True),
     ):
         mock_settings.RESEND_API_KEY = "re_test_key"  # pragma: allowlist secret  # pragma: allowlist secret
         mock_settings.RESEND_FROM_EMAIL = "Test <test@test.com>"
         mock_settings.CORS_ORIGINS = "http://localhost:5173"
-        mock_resend.Emails = MagicMock()
 
         result = await send_invitation_email(
             to_email="test@example.com",
@@ -40,8 +40,8 @@ async def test_send_invitation_email_success():
             invite_token="test-token-123",
         )
         assert result is True
-        mock_resend.Emails.send.assert_called_once()
-        call_args = mock_resend.Emails.send.call_args[0][0]
+        mock_emails.send.assert_called_once()
+        call_args = mock_emails.send.call_args[0][0]
         assert call_args["to"] == ["test@example.com"]
         assert "테스트 가구" in call_args["subject"]
         assert "test-token-123" in call_args["html"]
@@ -52,12 +52,13 @@ async def test_send_invitation_email_failure():
     """이메일 발송 실패 시 False 반환"""
     with (
         patch("app.services.email_service.settings") as mock_settings,
-        patch("app.services.email_service.resend") as mock_resend,
+        patch("resend.Emails") as mock_emails,
+        patch("resend.api_key", new="", create=True),
     ):
         mock_settings.RESEND_API_KEY = "re_test_key"  # pragma: allowlist secret  # pragma: allowlist secret
         mock_settings.RESEND_FROM_EMAIL = "Test <test@test.com>"
         mock_settings.CORS_ORIGINS = "http://localhost:5173"
-        mock_resend.Emails.send.side_effect = Exception("API error")
+        mock_emails.send.side_effect = Exception("API error")
 
         result = await send_invitation_email(
             to_email="test@example.com",

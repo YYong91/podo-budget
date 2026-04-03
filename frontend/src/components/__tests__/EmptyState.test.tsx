@@ -115,4 +115,29 @@ describe('EmptyState', () => {
       expect(primaryButton.className).not.toBe(secondaryButton.className)
     })
   })
+
+  describe('EmptyState variants', () => {
+    it('primary variant는 큰 아이콘 영역을 표시한다', () => {
+      render(<EmptyState variant="primary" title="비어있음" />)
+      expect(screen.getByText('비어있음')).toBeInTheDocument()
+      expect(screen.getByText('비어있음').className).toContain('text-lg')
+    })
+
+    it('section variant는 작은 레이아웃을 표시한다', () => {
+      render(<EmptyState variant="section" title="비어있음" />)
+      expect(screen.getByText('비어있음')).toBeInTheDocument()
+      expect(screen.getByText('비어있음').className).toContain('text-sm')
+    })
+
+    it('inline variant는 아이콘 없이 텍스트만 표시한다', () => {
+      render(<EmptyState variant="inline" title="결과 없음" />)
+      expect(screen.getByText('결과 없음')).toBeInTheDocument()
+      expect(screen.queryByTestId('empty-state-icon')).not.toBeInTheDocument()
+    })
+
+    it('variant 미지정 시 primary가 기본값이다', () => {
+      render(<EmptyState title="기본" />)
+      expect(screen.getByText('기본').className).toContain('text-lg')
+    })
+  })
 })

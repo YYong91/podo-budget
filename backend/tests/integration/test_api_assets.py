@@ -322,3 +322,114 @@ async def test_delete_goal_not_found(authenticated_client, test_user: User, db_s
     """목표 없을 때 삭제 시도 → 404"""
     response = await authenticated_client.delete("/api/assets/goal")
     assert response.status_code == 404
+
+
+# ──────────────────────────────────────────────
+# original_amount — 대출 원금 (상환 진척도용)
+# ──────────────────────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_create_loan_with_original_amount(authenticated_client, test_household: Household):
+    """대출 등록 시 original_amount 필드가 저장된다"""
+    resp = await authenticated_client.post(
+        "/api/assets",
+        json={
+            "name": "주담대",
+            "type": "loan",
+            "is_liability": True,
+            "manual_value": 78000000,
+            "original_amount": 200000000,
+            "household_id": test_household.id,
+        },
+    )
+    assert resp.status_code == 201
+    data = resp.json()
+    assert data["original_amount"] == 200000000
+
+
+@pytest.mark.asyncio
+async def test_create_asset_without_original_amount(authenticated_client, test_household: Household):
+    """original_amount 없이도 정상 등록된다"""
+    resp = await authenticated_client.post(
+        "/api/assets",
+        json={
+            "name": "신한 적금",
+            "type": "deposit",
+            "manual_value": 5000000,
+            "household_id": test_household.id,
+        },
+    )
+    assert resp.status_code == 201
+    assert resp.json()["original_amount"] is None
+
+
+# ──────────────────────────────────────────────
+# GET /api/assets/monthly-savings — 저축성지출 기반 저축액
+# ──────────────────────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_monthly_savings_uses_savings_category(authenticated_client, test_household, db_session):
+    """monthly-savings가 저축성지출 카테고리 기반으로 계산된다"""
+    from datetime import date
+
+    from app.models.category import Category
+    from app.models.expense import Expense
+
+    today = date.today()
+
+    # 저축성 카테고리 생성
+    savings_cat = Category(
+        name="적금",
+        type="expense",
+        household_id=test_household.id,
+        is_savings=True,
+        exclude_auto_payment=False,
+    )
+    db_session.add(savings_cat)
+    await db_session.flush()
+
+    # 일반 카테고리 생성
+    normal_cat = Category(
+        name="식비",
+        type="expense",
+        household_id=test_household.id,
+        is_savings=False,
+        exclude_auto_payment=False,
+    )
+    db_session.add(normal_cat)
+    await db_session.flush()
+
+    # 저축성 지출 50만원
+    db_session.add(
+        Expense(
+            amount=500000,
+            description="적금 이체",
+            date=today,
+            household_id=test_household.id,
+            category_id=savings_cat.id,
+        )
+    )
+    # 일반 지출 30만원 (저축에 포함되면 안 됨)
+    db_session.add(
+        Expense(
+            amount=300000,
+            description="점심",
+            date=today,
+            household_id=test_household.id,
+            category_id=normal_cat.id,
+        )
+    )
+    await db_session.commit()
+
+    resp = await authenticated_client.get(
+        "/api/assets/monthly-savings",
+        params={"household_id": test_household.id},
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["savings"] == 500000
+    assert "month" in data
+    assert "total_income" not in data  # 기존 필드 제거됨
+    assert "net_savings" not in data

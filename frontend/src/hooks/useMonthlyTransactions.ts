@@ -2,21 +2,62 @@
  * @file useMonthlyTransactions.ts
  * @description 월별 거래 데이터 fetch + 필터링 + 그룹핑 훅
  * TransactionList에서 월 뷰 관련 데이터 로직을 추출하여 단일 책임 원칙을 따른다.
+ *
+ * [React Query 전환]
+ * - 데이터 fetch: useState+useEffect → useQuery (캐시 기반)
+ * - 카테고리 인라인 수정: setState → queryClient.setQueryData (캐시 직접 업데이트)
+ * - PullToRefresh: fetchData → query.refetch 위임
+ * - setExpenses/setIncomes 인터페이스는 유지 (TransactionList 변경 없음)
  */
 
-import { useEffect, useState, useMemo, useCallback } from 'react'
+import { useEffect, useMemo, useCallback } from 'react'
 import { useSearchParams } from 'react-router-dom'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { expenseApi } from '../api/expenses'
 import { incomeApi } from '../api/income'
 import { recurringApi } from '../api/recurring'
 import { categoryApi } from '../api/categories'
 import { getMonthRange } from '../utils/calendar'
-import type { Expense, Income, Category, RecurringTransaction } from '../types'
+import type { Expense, Income, RecurringTransaction } from '../types'
 import type { UnifiedTransaction } from './useTransactionSearch'
 
 type FilterType = 'all' | 'expense' | 'income'
 
 export const FILTER_STORAGE_KEY = 'podo-transaction-filter'
+
+// 쿼리 키 팩토리 — 캐시 무효화 시 참조 일관성 보장
+export const monthlyTransactionsKeys = {
+  all: ['monthly-transactions'] as const,
+  byMonth: (householdId: number, year: number, month: number) =>
+    ['monthly-transactions', householdId, year, month] as const,
+  categories: ['categories'] as const,
+}
+
+const CATEGORY_STALE_TIME = 5 * 60 * 1000 // 카테고리는 5분 캐시 (변경 빈도 낮음)
+
+type MonthlyData = { expenses: Expense[]; incomes: Income[]; recurring: RecurringTransaction[] }
+
+// 훅 외부 fetch 함수 — React Query queryFn으로 사용
+async function fetchMonthlyData(
+  householdId: number,
+  start: string,
+  end: string,
+): Promise<{ expenses: Expense[]; incomes: Income[]; recurring: RecurringTransaction[] }> {
+  const baseParams = { start_date: start, end_date: end, limit: 1000, household_id: householdId }
+
+  const [expRes, incRes, recurringRes] = await Promise.all([
+    expenseApi.getAll(baseParams).catch(() => ({ data: [] as Expense[] })),
+    incomeApi.getAll(baseParams).catch(() => ({ data: [] as Income[] })),
+    recurringApi.getAll({ household_id: householdId }).catch(() => ({ data: [] as RecurringTransaction[] })),
+  ])
+
+  // 핵심 데이터(지출+수입) 모두 빈 응답이고 정기거래도 없으면 — 전부 실패한 것으로 간주
+  const expenses = expRes.data
+  const incomes = incRes.data
+  const recurring = recurringRes.data ?? []
+
+  return { expenses, incomes, recurring }
+}
 
 interface UseMonthlyTransactionsOptions {
   activeHouseholdId: number | null
@@ -24,6 +65,7 @@ interface UseMonthlyTransactionsOptions {
 
 export function useMonthlyTransactions({ activeHouseholdId }: UseMonthlyTransactionsOptions) {
   const [searchParams, setSearchParams] = useSearchParams()
+  const queryClient = useQueryClient()
 
   // URL에서 월 파라미터 읽기 (YYYY-MM 형식)
   const monthParam = searchParams.get('month')
@@ -49,15 +91,6 @@ export function useMonthlyTransactions({ activeHouseholdId }: UseMonthlyTransact
       sessionStorage.removeItem(FILTER_STORAGE_KEY)
     }
   }, [filter])
-
-  // 데이터 상태
-  const [expenses, setExpenses] = useState<Expense[]>([])
-  const [incomes, setIncomes] = useState<Income[]>([])
-  const [categories, setCategories] = useState<Category[]>([])
-  const [allRecurring, setAllRecurring] = useState<RecurringTransaction[]>([])
-  const [pendingRecurring, setPendingRecurring] = useState<RecurringTransaction[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(false)
 
   // URL 파라미터 업데이트
   const setParams = useCallback((updates: Record<string, string | null>) => {
@@ -85,48 +118,93 @@ export function useMonthlyTransactions({ activeHouseholdId }: UseMonthlyTransact
     setParams({ filter: newFilter })
   }, [filter, setParams])
 
-  // 카테고리 로드
-  useEffect(() => {
-    categoryApi.getAll().then(res => setCategories(res.data)).catch(() => {})
-  }, [])
+  // 월별 데이터 쿼리 (지출 + 수입 + 정기거래)
+  const { start, end } = getMonthRange(currentYear, currentMonth)
 
-  // 데이터 로드
+  const {
+    data: transactionData,
+    isLoading: isTransactionLoading,
+    isError,
+    refetch,
+  } = useQuery({
+    queryKey: monthlyTransactionsKeys.byMonth(activeHouseholdId ?? 0, currentYear, currentMonth),
+    queryFn: () => fetchMonthlyData(activeHouseholdId!, start, end),
+    enabled: !!activeHouseholdId,
+  })
+
+  // 카테고리 쿼리 (5분 캐시 — 변경 빈도 낮음)
+  const { data: categories = [] } = useQuery({
+    queryKey: monthlyTransactionsKeys.categories,
+    queryFn: () => categoryApi.getAll().then(res => res.data),
+    staleTime: CATEGORY_STALE_TIME,
+  })
+
+  // activeHouseholdId가 없으면 로딩 중으로 간주 (기존 동작 유지)
+  const loading = !activeHouseholdId || isTransactionLoading
+  const error = isError
+
+  const expenses: Expense[] = transactionData?.expenses ?? []
+  const incomes: Income[] = transactionData?.incomes ?? []
+
+  // 정기거래: is_active 필터링 + pending 분류
+  const todayStr = new Date().toISOString().slice(0, 10)
+  const allRecurring = useMemo(
+    () => (transactionData?.recurring ?? []).filter(r => r.is_active),
+    [transactionData?.recurring],
+  )
+  const pendingRecurring = useMemo(
+    () => allRecurring.filter(r => r.next_due_date <= todayStr),
+    // todayStr은 날짜가 바뀌어야 변하므로 useMemo 의존성에서 제외 (렌더링 기준)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [allRecurring],
+  )
+
+  // PullToRefresh / 에러 재시도 시 호출하는 공개 인터페이스
   const fetchData = useCallback(async () => {
-    if (!activeHouseholdId) return
-    setLoading(true)
-    setError(false)
-    try {
-      const { start, end } = getMonthRange(currentYear, currentMonth)
-      const baseParams = {
-        start_date: start,
-        end_date: end,
-        limit: 1000,
-        household_id: activeHouseholdId,
-      }
+    await refetch()
+  }, [refetch])
 
-      const [expRes, incRes, recurringRes] = await Promise.all([
-        expenseApi.getAll(baseParams).catch(() => ({ data: [] as Expense[] })),
-        incomeApi.getAll(baseParams).catch(() => ({ data: [] as Income[] })),
-        recurringApi.getAll({ household_id: activeHouseholdId }).catch(() => ({ data: [] as RecurringTransaction[] })),
-      ])
+  // 카테고리 인라인 변경 — 캐시를 직접 업데이트해 리패치 없이 즉시 반영
+  // TransactionList의 setExpenses/setIncomes 호출 인터페이스를 그대로 유지한다
+  const setExpenses = useCallback(
+    (updater: Expense[] | ((prev: Expense[]) => Expense[])) => {
+      const key = monthlyTransactionsKeys.byMonth(activeHouseholdId ?? 0, currentYear, currentMonth)
+      queryClient.setQueryData(key, (prev: MonthlyData | undefined) => {
+        if (!prev) return prev
+        const current = prev.expenses
+        const next = typeof updater === 'function' ? updater(current) : updater
+        return { ...prev, expenses: next }
+      })
+    },
+    [queryClient, activeHouseholdId, currentYear, currentMonth],
+  )
 
-      // is_active 필터링 (백엔드 응답에 비활성 항목이 포함될 수 있으므로 프론트에서도 방어)
-      const activeRecurring = (recurringRes?.data ?? []).filter(r => r.is_active)
-      const todayStr = new Date().toISOString().slice(0, 10)
+  const setIncomes = useCallback(
+    (updater: Income[] | ((prev: Income[]) => Income[])) => {
+      const key = monthlyTransactionsKeys.byMonth(activeHouseholdId ?? 0, currentYear, currentMonth)
+      queryClient.setQueryData(key, (prev: MonthlyData | undefined) => {
+        if (!prev) return prev
+        const current = prev.incomes
+        const next = typeof updater === 'function' ? updater(current) : updater
+        return { ...prev, incomes: next }
+      })
+    },
+    [queryClient, activeHouseholdId, currentYear, currentMonth],
+  )
 
-      setExpenses(expRes.data)
-      setIncomes(incRes.data)
-      setAllRecurring(activeRecurring)
-      // 오늘 이전 또는 오늘 도래한 항목만 pending으로 분류
-      setPendingRecurring(activeRecurring.filter(r => r.next_due_date <= todayStr))
-    } catch {
-      setError(true)
-    } finally {
-      setLoading(false)
-    }
-  }, [currentYear, currentMonth, activeHouseholdId])
-
-  useEffect(() => { fetchData() }, [fetchData])
+  // setPendingRecurring — ScheduledTransactions execute/skip 후 UI 즉시 반영용
+  // React Query 전환 후에도 인터페이스 유지 (호출 측 변경 없음)
+  const setPendingRecurring = useCallback(
+    (updater: RecurringTransaction[] | ((prev: RecurringTransaction[]) => RecurringTransaction[])) => {
+      const key = monthlyTransactionsKeys.byMonth(activeHouseholdId ?? 0, currentYear, currentMonth)
+      queryClient.setQueryData(key, (prev: MonthlyData | undefined) => {
+        if (!prev) return prev
+        const next = typeof updater === 'function' ? updater(prev.recurring) : updater
+        return { ...prev, recurring: next }
+      })
+    },
+    [queryClient, activeHouseholdId, currentYear, currentMonth],
+  )
 
   // 카테고리 O(1) 조회용 Map
   const categoryMap = useMemo(() => new Map(categories.map(c => [c.id, c])), [categories])
@@ -205,7 +283,7 @@ export function useMonthlyTransactions({ activeHouseholdId }: UseMonthlyTransact
     pendingRecurring,
     setPendingRecurring,
 
-    // 상태 업데이터 (카테고리 변경 등에서 사용)
+    // 상태 업데이터 (카테고리 변경 등에서 사용 — 캐시 직접 업데이트)
     setExpenses,
     setIncomes,
 

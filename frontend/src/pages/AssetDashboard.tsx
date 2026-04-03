@@ -1,166 +1,187 @@
-/* 자산/부채 현황 대시보드 — 순자산 중심 + 목표 기반 UI */
+/**
+ * @file AssetDashboard.tsx
+ * @description 자산 대시보드 — React Query 기반 섹션별 독립 로딩
+ */
 
-import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
-import {
-  Plus, TrendingUp, TrendingDown, Landmark, Wallet,
-  ChevronRight, ChevronDown, ChevronUp, Target, Bell, Building2, X,
-} from 'lucide-react'
-import {
-  LineChart, Line, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer,
-} from 'recharts'
+import { useState, useCallback, useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { X } from 'lucide-react'
+import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query'
 import { assetApi } from '../api/assets'
 import { useHouseholdStore } from '../stores/useHouseholdStore'
 import ErrorState from '../components/ErrorState'
-import LoadingSpinner from '../components/LoadingSpinner'
-import type { Asset, AssetSummary, AssetSnapshot, AssetGoal, MonthlySavings } from '../types'
-import { formatAmount } from '../utils/format'
+import { Skeleton } from '../components/skeleton/Skeleton'
+import NetWorthHero from '../components/asset/NetWorthHero'
+import MonthlyPerformanceCard, { computeBreakdownDiff, computeStreak, findPositiveMessage } from '../components/asset/MonthlyPerformanceCard'
+import MilestoneProgress from '../components/asset/MilestoneProgress'
+import NetWorthChart from '../components/asset/NetWorthChart'
+import AssetGroupList from '../components/asset/AssetGroupList'
+import AssetOnboarding from '../components/asset/AssetOnboarding'
+import UpdateNudge from '../components/asset/UpdateNudge'
+import { useToast } from '../hooks/useToast'
+import type { AssetSummary, AssetType } from '../types'
 
-
-function formatPct(pct: number | null): string {
-  if (pct == null) return ''
-  return `${pct >= 0 ? '+' : ''}${pct.toFixed(2)}%`
-}
-
-const TYPE_LABELS: Record<string, string> = {
-  stock_kr: '한국주식',
-  stock_us: '미국주식',
-  crypto: '코인',
-  deposit: '예적금',
-  real_estate: '부동산',
-  other: '기타',
-  loan: '대출',
-}
-
-/* 유형 그룹 정의 */
-interface TypeGroup {
-  key: string
-  label: string
-  icon: React.ComponentType<{ className?: string }>
-  types: string[]
-  isLiability?: boolean
-  colorClass: string
-  iconColorClass: string
-}
-
-const TYPE_GROUPS: TypeGroup[] = [
-  { key: 'investment', label: '투자', icon: TrendingUp, types: ['stock_kr', 'stock_us', 'crypto'], colorClass: 'text-[var(--text-secondary)]', iconColorClass: 'text-grape-500' },
-  { key: 'deposit', label: '예적금', icon: Landmark, types: ['deposit'], colorClass: 'text-[var(--text-secondary)]', iconColorClass: 'text-leaf-600' },
-  { key: 'real_estate', label: '부동산/기타', icon: Building2, types: ['real_estate', 'other'], colorClass: 'text-[var(--text-secondary)]', iconColorClass: 'text-[var(--text-tertiary)]' },
-  { key: 'liability', label: '부채', icon: TrendingDown, types: ['loan'], isLiability: true, colorClass: 'text-rose-600', iconColorClass: 'text-rose-500' },
-]
-
-function AssetRow({ asset }: { asset: Asset }) {
+/** 자산 대시보드 로딩 스켈레톤 */
+function AssetDashboardSkeleton() {
   return (
-    <Link
-      to={`/assets/${asset.id}`}
-      className="flex items-center justify-between py-2.5 border-b border-[var(--border-subtle)] last:border-0 hover:bg-[var(--surface-elevated)] rounded transition-colors"
-    >
-      <div>
-        <p className="text-sm font-medium text-[var(--text-primary)]">{asset.name}</p>
-        <p className="text-xs text-[var(--text-muted)]">{TYPE_LABELS[asset.type] ?? asset.type}</p>
+    <div className="space-y-4 py-6">
+      {/* 순자산 히어로 골격 */}
+      <div className="card-surface p-6 space-y-3">
+        <Skeleton className="h-4 w-24" />
+        <Skeleton className="h-10 w-52" />
+        <Skeleton className="h-3 w-32" />
       </div>
-      <div className="flex items-center gap-1">
-        <div className="text-right">
-          <p className={`text-sm font-semibold ${asset.is_liability ? 'text-rose-600' : 'text-[var(--text-primary)]'}`}>
-            {asset.current_value != null ? formatAmount(asset.current_value) : '-'}
-          </p>
-          {asset.profit_loss_pct != null && (
-            <p className={`text-xs ${asset.profit_loss_pct >= 0 ? 'text-leaf-600' : 'text-rose-600'}`}>
-              {formatPct(asset.profit_loss_pct)}
-            </p>
-          )}
-        </div>
-        <ChevronRight className="w-4 h-4 text-[var(--text-muted)] shrink-0" />
+      {/* 자산 카드 2개 */}
+      <div className="grid grid-cols-2 gap-3">
+        {[1, 2].map(i => (
+          <div key={i} className="card-surface p-4 space-y-2">
+            <Skeleton className="h-3 w-16" />
+            <Skeleton className="h-6 w-24" />
+          </div>
+        ))}
       </div>
-    </Link>
+      {/* 자산 리스트 */}
+      <div className="card-surface p-4 space-y-3">
+        {[1, 2, 3].map(i => (
+          <div key={i} className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Skeleton className="h-8 w-8 rounded-full" />
+              <Skeleton className="h-4 w-20" />
+            </div>
+            <Skeleton className="h-4 w-16" />
+          </div>
+        ))}
+      </div>
+    </div>
   )
 }
 
 export default function AssetDashboard() {
-  const [assets, setAssets] = useState<Asset[]>([])
-  const [summary, setSummary] = useState<AssetSummary | null>(null)
-  const [snapshots, setSnapshots] = useState<AssetSnapshot[]>([])
-  const [goal, setGoal] = useState<AssetGoal | null>(null)
-  const [monthlySavings, setMonthlySavings] = useState<MonthlySavings | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const navigate = useNavigate()
+  const { addToast } = useToast()
+  const queryClient = useQueryClient()
+  const activeHouseholdId = useHouseholdStore((s) => s.activeHouseholdId)
+
+  // UI 상태 (데이터와 무관한 모달/폼 상태)
   const [showGoalModal, setShowGoalModal] = useState(false)
   const [goalAmount, setGoalAmount] = useState('')
   const [goalDate, setGoalDate] = useState('')
-  const [goalSaving, setGoalSaving] = useState(false)
-  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
-  const { activeHouseholdId } = useHouseholdStore()
 
-  const fetchData = () => {
-    if (!activeHouseholdId) return  // 가구 로딩 전 API 호출 방지 (#149)
-    setLoading(true)
-    setError(null)
-    const hid = activeHouseholdId
-    Promise.all([
-      assetApi.getAll(hid),
-      assetApi.getSummary(hid),
-      assetApi.getSnapshots(hid, 12),
-      assetApi.getGoal(hid).catch(() => ({ data: null })),
-      assetApi.getMonthlySavings(hid).catch(() => ({ data: null })),
-    ])
-      .then(([assetsRes, summaryRes, snapshotsRes, goalRes, savingsRes]) => {
-        setAssets(assetsRes.data)
-        setSummary(summaryRes.data)
-        setSnapshots(snapshotsRes.data.slice().reverse())
-        setGoal(goalRes.data)
-        // 월별 저축: 배열이면 최신 1건, 단일 객체면 그대로
-        const savingsData = savingsRes.data
-        if (Array.isArray(savingsData)) {
-          setMonthlySavings(savingsData.length > 0 ? savingsData[savingsData.length - 1] : null)
-        } else {
-          setMonthlySavings(savingsData)
+  // 자산 목록 — 핵심 데이터, 이것의 로딩 상태로 전체 스켈레톤 제어
+  const {
+    data: assets = [],
+    isLoading: assetsLoading,
+    isError: assetsError,
+  } = useQuery({
+    queryKey: ['assets', activeHouseholdId],
+    queryFn: () => assetApi.getAll(activeHouseholdId!).then(r => r.data),
+    enabled: !!activeHouseholdId,
+  })
+
+  // 스냅샷 — 과거→최신 순으로 저장 (차트 + placeholder용)
+  const { data: snapshots = [] } = useQuery({
+    queryKey: ['asset-snapshots', activeHouseholdId],
+    queryFn: () =>
+      assetApi.getSnapshots(activeHouseholdId!, 12).then(r => [...r.data].reverse()),
+    enabled: !!activeHouseholdId,
+  })
+
+  // 자산 요약 — 스냅샷 데이터를 기본으로 표시, 실시간 시세는 사용자 수동 트리거
+  const summary = useMemo((): AssetSummary | undefined => {
+    if (snapshots.length === 0) return undefined
+    const latest = snapshots[snapshots.length - 1]
+    return {
+      net_worth: latest.net_worth,
+      total_assets: latest.total_assets,
+      total_liabilities: latest.total_liabilities,
+      breakdown: latest.breakdown ?? {},
+      total_profit_loss: 0,
+      total_profit_loss_pct: null,
+    }
+  }, [snapshots])
+
+  // 시세 업데이트 — 사용자가 버튼 클릭 시 실시간 시세 조회 + 스냅샷 저장
+  const [syncing, setSyncing] = useState(false)
+  const handleSyncPrices = useCallback(async () => {
+    if (!activeHouseholdId) return
+    setSyncing(true)
+    try {
+      // createSnapshot 내부에서 get_asset_summary → Yahoo Finance 실시간 시세 조회 + 스냅샷 저장
+      await assetApi.createSnapshot(activeHouseholdId)
+      // 스냅샷 캐시 갱신 → UI 자동 업데이트
+      await queryClient.invalidateQueries({ queryKey: ['asset-snapshots'] })
+      addToast('success', '시세가 업데이트되었습니다')
+    } catch {
+      addToast('error', '시세 업데이트에 실패했습니다')
+    } finally {
+      setSyncing(false)
+    }
+  }, [activeHouseholdId, queryClient, addToast])
+
+  // 순자산 목표 — 미설정이면 null (404 → null 처리)
+  const { data: goal = null } = useQuery({
+    queryKey: ['asset-goal', activeHouseholdId],
+    queryFn: async () => {
+      try {
+        const res = await assetApi.getGoal(activeHouseholdId!)
+        return res.data
+      } catch (err: unknown) {
+        // 404(목표 미설정)만 null — 서버 에러는 throw
+        if (err && typeof err === 'object' && 'response' in err) {
+          const axiosErr = err as { response?: { status?: number } }
+          if (axiosErr.response?.status === 404) return null
         }
-      })
-      .catch(() => setError('자산 정보를 불러오지 못했습니다'))
-      .finally(() => setLoading(false))
-  }
+        throw err
+      }
+    },
+    enabled: !!activeHouseholdId,
+  })
 
-  useEffect(() => {
-    fetchData()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeHouseholdId])
+  // 월 저축액
+  const { data: savings = null } = useQuery({
+    queryKey: ['asset-savings', activeHouseholdId],
+    queryFn: () =>
+      assetApi.getMonthlySavings(activeHouseholdId!).then(r => r.data).catch(() => null),
+    enabled: !!activeHouseholdId,
+  })
 
-  /* 목표 저장 */
-  const handleSaveGoal = async () => {
+  // 목표 저장 뮤테이션
+  const setGoalMutation = useMutation({
+    mutationFn: (data: { target_net_worth: number; target_date: string }) =>
+      assetApi.setGoal({ ...data, household_id: activeHouseholdId! }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['asset-goal', activeHouseholdId] })
+      setShowGoalModal(false)
+    },
+    onError: () => {
+      addToast('error', '목표 저장에 실패했습니다')
+    },
+  })
+
+  // 목표 삭제 뮤테이션
+  const deleteGoalMutation = useMutation({
+    mutationFn: () => assetApi.deleteGoal(activeHouseholdId!),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['asset-goal', activeHouseholdId] })
+      setShowGoalModal(false)
+    },
+    onError: () => {
+      addToast('error', '목표 삭제에 실패했습니다')
+    },
+  })
+
+  const goalSaving = setGoalMutation.isPending || deleteGoalMutation.isPending
+
+  const handleSaveGoal = () => {
     const amount = Number(goalAmount)
     if (!amount || !goalDate) return
-    setGoalSaving(true)
-    try {
-      const res = await assetApi.setGoal({
-        target_net_worth: amount,
-        target_date: goalDate,
-        household_id: activeHouseholdId!,
-      })
-      setGoal(res.data)
-      setShowGoalModal(false)
-    } catch {
-      // 실패 시 모달 유지
-    } finally {
-      setGoalSaving(false)
-    }
+    setGoalMutation.mutate({ target_net_worth: amount, target_date: goalDate })
   }
 
-  /* 목표 삭제 */
-  const handleDeleteGoal = async () => {
-    setGoalSaving(true)
-    try {
-      await assetApi.deleteGoal(activeHouseholdId!)
-      setGoal(null)
-      setShowGoalModal(false)
-    } catch {
-      // 무시
-    } finally {
-      setGoalSaving(false)
-    }
+  const handleDeleteGoal = () => {
+    deleteGoalMutation.mutate()
   }
 
-  /* 목표 모달 열기 */
   const openGoalModal = () => {
     if (goal) {
       setGoalAmount(String(goal.target_net_worth))
@@ -172,282 +193,121 @@ export default function AssetDashboard() {
     setShowGoalModal(true)
   }
 
-  if (loading) {
-    return <LoadingSpinner className="min-h-[50vh]" />
-  }
+  const handleAddAsset = useCallback((type?: AssetType) => {
+    const params = type ? `?type=${type}` : ''
+    navigate(`/assets/new${params}`)
+  }, [navigate])
 
-  if (error) {
-    return <ErrorState message={error} onRetry={fetchData} />
+  if (assetsLoading) return <AssetDashboardSkeleton />
+  if (assetsError) return <ErrorState message="자산 정보를 불러오지 못했습니다" onRetry={() => queryClient.invalidateQueries({ queryKey: ['assets', activeHouseholdId] })} />
+
+  // 빈 상태 — 온보딩
+  if (assets.length === 0) {
+    return (
+      <div className="py-6">
+        <AssetOnboarding onAdd={handleAddAsset} />
+      </div>
+    )
   }
 
   const netWorth = summary?.net_worth ?? 0
   const totalAssets = summary?.total_assets ?? 0
   const totalLiabilities = summary?.total_liabilities ?? 0
 
-  /* 지난달 대비 변동 */
-  const prevMonthNW = snapshots.length >= 2 ? snapshots[snapshots.length - 2].net_worth : null
-  const prevMonthDiff = prevMonthNW != null ? netWorth - prevMonthNW : null
+  // 성과 카드: 이번 달(최신) vs 직전 월 스냅샷 비교
+  // snapshots은 과거→최신 순 (reverse됨), 마지막이 이번 달, 그 앞이 직전 월
+  const prevSnapshot = snapshots.length >= 2 ? snapshots[snapshots.length - 2] : null
+  const netWorthChange = prevSnapshot ? netWorth - prevSnapshot.net_worth : null
 
-  /* 순자산 추이 recharts 데이터 (#240) */
-  const chartData = snapshots.map(s => ({
-    month: s.snapshot_date.slice(0, 7),
-    순자산: s.net_worth,
-    ...(goal ? { 목표: goal.target_net_worth } : {}),
-  }))
+  const breakdownDiff = prevSnapshot && summary
+    ? computeBreakdownDiff(
+        { breakdown: summary.breakdown, totalLiabilities },
+        { breakdown: prevSnapshot.breakdown, totalLiabilities: prevSnapshot.total_liabilities },
+      )
+    : []
 
-  /* 유형별 그룹 구성 */
-  const groupedAssets = TYPE_GROUPS.map(group => {
-    const items = group.isLiability
-      ? assets.filter(a => a.is_liability)
-      : assets.filter(a => !a.is_liability && group.types.includes(a.type))
-    const total = items.reduce((sum, a) => sum + (a.current_value ?? 0), 0)
-    return { ...group, items, total }
-  }).filter(g => g.items.length > 0)
+  const streak = computeStreak(
+    snapshots.map(s => ({ net_worth: s.net_worth })),
+  )
 
-  /* 업데이트 촉구: 가장 최근 자산의 updated_at 확인 */
-  const latestUpdatedAt = assets.length > 0
-    ? assets.reduce((latest, a) => (a.updated_at > latest ? a.updated_at : latest), assets[0].updated_at)
+  const savingsAmount = savings?.savings ?? 0
+  const positiveMessage = netWorthChange != null && netWorthChange < 0
+    ? findPositiveMessage(breakdownDiff, savingsAmount)
     : null
-  const daysSinceUpdate = latestUpdatedAt
-    ? Math.floor((Date.now() - new Date(latestUpdatedAt).getTime()) / (1000 * 60 * 60 * 24))
-    : null
-  const showNudge = daysSinceUpdate != null && daysSinceUpdate > 30
-
-  const toggleGroup = (key: string) => {
-    setCollapsed(prev => ({ ...prev, [key]: !prev[key] }))
-  }
 
   return (
-    <div className="space-y-6">
-      {/* 1. 순자산 히어로 섹션 */}
-      <div className={`rounded-2xl border shadow-sm p-6 ${netWorth >= 0 ? 'bg-gradient-to-br from-grape-50 to-grape-100 border-grape-200/60' : 'bg-gradient-to-br from-rose-50 to-red-50 border-rose-200/60'}`}>
-        <p className="text-sm text-[var(--text-tertiary)] mb-1">순자산</p>
-        <p className={`text-3xl font-bold tracking-tight ${netWorth >= 0 ? 'text-grape-600' : 'text-rose-600'}`}>
-          {formatAmount(netWorth)}
-        </p>
-        {/* 지난달 대비 변동 */}
-        {prevMonthDiff != null && (
-          <p className={`text-sm mt-1 font-medium ${prevMonthDiff >= 0 ? 'text-leaf-600' : 'text-rose-600'}`}>
-            지난달 대비 {prevMonthDiff >= 0 ? '+' : ''}{formatAmount(prevMonthDiff)}
-          </p>
-        )}
-        {/* 자산/부채 요약 */}
-        <div className="flex gap-4 mt-3 text-xs text-[var(--text-tertiary)]">
-          <span>자산 {formatAmount(totalAssets)}</span>
-          <span>부채 {formatAmount(totalLiabilities)}</span>
-        </div>
-        {/* 액션 버튼 — pill 스타일 */}
-        <div className="flex gap-2 mt-4">
-          <Link
-            to="/accounts"
-            className={`flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-full text-sm font-medium transition-colors ${netWorth >= 0 ? 'bg-grape-200/50 text-grape-600 hover:bg-grape-200/80' : 'bg-rose-200/50 text-rose-600 hover:bg-rose-200/80'}`}
-          >
-            <Wallet className="w-4 h-4" />
-            계좌 관리
-          </Link>
-          <Link
-            to="/assets/new"
-            className={`flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-full text-sm font-medium transition-colors ${netWorth >= 0 ? 'bg-grape-600 text-white hover:bg-grape-700' : 'bg-rose-600 text-white hover:bg-rose-700'}`}
-          >
-            <Plus className="w-4 h-4" />
-            자산 등록
-          </Link>
-        </div>
-      </div>
+    <div className="space-y-4 py-6 animate-page-in animate-stagger">
+      <NetWorthHero
+        netWorth={netWorth}
+        totalAssets={totalAssets}
+        totalLiabilities={totalLiabilities}
+      />
 
-      {/* 월 저축 요약 */}
-      {monthlySavings && (
-        <div className="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)]/60 shadow-sm p-4 flex items-center justify-between">
-          <div>
-            <p className="text-xs text-[var(--text-muted)]">{monthlySavings.month} 저축</p>
-            <p className={`text-lg font-bold ${monthlySavings.net_savings >= 0 ? 'text-leaf-600' : 'text-rose-600'}`}>
-              {formatAmount(monthlySavings.net_savings)}
-            </p>
-          </div>
-          {monthlySavings.net_savings > 0 && (
-            <TrendingUp className="w-5 h-5 text-leaf-500" />
-          )}
-          {monthlySavings.net_savings < 0 && (
-            <TrendingDown className="w-5 h-5 text-rose-500" />
-          )}
-        </div>
+      {/* 시세 업데이트 버튼 — 주식/코인 실시간 시세 조회 + 스냅샷 저장 */}
+      <button
+        onClick={handleSyncPrices}
+        disabled={syncing}
+        className="w-full py-2.5 text-xs font-medium text-[var(--text-secondary)] bg-[var(--surface-elevated)] rounded-lg hover:bg-[var(--surface-hover)] transition-colors disabled:opacity-50"
+      >
+        {syncing ? '시세 업데이트 중...' : '시세 업데이트'}
+      </button>
+
+      {netWorthChange != null && (
+        <MonthlyPerformanceCard
+          netWorthChange={netWorthChange}
+          breakdownDiff={breakdownDiff}
+          streak={streak}
+          savings={savingsAmount}
+          positiveMessage={positiveMessage}
+        />
       )}
 
-      {/* 2. 목표 진행률 */}
-      {goal ? (
-        <div className="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)]/60 shadow-sm p-5">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-semibold text-[var(--text-secondary)] flex items-center gap-2">
-              <Target className="w-4 h-4 text-grape-500" />
-              순자산 목표
-            </h2>
-            <button
-              onClick={openGoalModal}
-              className="text-xs text-grape-600 hover:text-grape-700 font-medium"
-            >
-              수정
-            </button>
-          </div>
-          <div className="flex items-center justify-between text-sm mb-2">
-            <span className="text-[var(--text-tertiary)]">목표 {formatAmount(goal.target_net_worth)}</span>
-            <span className="font-semibold text-grape-600">{goal.progress_pct.toFixed(1)}%</span>
-          </div>
-          {/* 진행 바 */}
-          <div className="w-full h-2.5 bg-[var(--surface-hover)] rounded-full overflow-hidden">
-            <div
-              className="h-full bg-grape-500 rounded-full transition-all duration-500"
-              style={{ width: `${Math.min(goal.progress_pct, 100)}%` }}
-            />
-          </div>
-          <div className="flex items-center justify-between mt-2 text-xs text-[var(--text-muted)]">
-            <span>{goal.pace_message}</span>
-            {goal.monthly_required != null && (
-              <span>월 {formatAmount(goal.monthly_required)} 필요</span>
-            )}
-          </div>
-        </div>
-      ) : (
-        <button
-          onClick={openGoalModal}
-          className="w-full bg-[var(--surface-card)] rounded-2xl border-2 border-dashed border-[var(--border-default)] p-5 flex items-center justify-center gap-2 text-[var(--text-muted)] hover:border-grape-300 hover:text-grape-500 transition-colors"
-        >
-          <Target className="w-5 h-5" />
-          <span className="text-sm font-medium">순자산 목표를 설정해보세요</span>
-        </button>
-      )}
+      <MilestoneProgress
+        netWorth={netWorth}
+        goal={goal}
+        onGoalEdit={openGoalModal}
+      />
 
-      {/* 3. 순자산 추이 차트 (#240: chart.js → recharts) */}
-      {snapshots.length > 1 && (
-        <div className="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)]/60 shadow-sm p-5">
-          <h2 className="text-sm font-semibold text-[var(--text-secondary)] mb-4">순자산 추이</h2>
-          <div className="h-56" role="img" aria-label="순자산 추이 차트">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={chartData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
-                <XAxis dataKey="month" tick={{ fontSize: 10 }} />
-                <YAxis
-                  tickFormatter={(v) => `₩${Number(v).toLocaleString()}`}
-                  tick={{ fontSize: 9 }}
-                  width={72}
-                />
-                <Tooltip formatter={(v) => `₩${Number(v).toLocaleString()}`} />
-                {goal && <Legend />}
-                <Line
-                  type="monotone"
-                  dataKey="순자산"
-                  stroke="#9333EA"
-                  strokeWidth={2}
-                  dot={{ r: 4, fill: '#9333EA' }}
-                  activeDot={{ r: 5 }}
-                />
-                {goal && (
-                  <Line
-                    type="monotone"
-                    dataKey="목표"
-                    stroke="#D1D5DB"
-                    strokeWidth={1.5}
-                    strokeDasharray="5 5"
-                    dot={false}
-                    activeDot={false}
-                  />
-                )}
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-      )}
+      <NetWorthChart snapshots={snapshots} />
 
-      {/* 4. 유형별 자산 목록 */}
-      {groupedAssets.length > 0 && (
-        <div className="space-y-3">
-          {groupedAssets.map(group => {
-            const Icon = group.icon
-            const isCollapsed = collapsed[group.key] ?? false
-            return (
-              <div key={group.key} className="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)]/60 shadow-sm overflow-hidden">
-                {/* 그룹 헤더 */}
-                <button
-                  onClick={() => toggleGroup(group.key)}
-                  className="w-full flex items-center justify-between p-4 hover:bg-[var(--surface-hover)] transition-colors"
-                >
-                  <div className="flex items-center gap-2">
-                    <Icon className={`w-4 h-4 ${group.iconColorClass}`} />
-                    <span className={`text-sm font-semibold ${group.colorClass}`}>
-                      {group.label}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className={`text-sm font-semibold ${group.isLiability ? 'text-rose-600' : 'text-[var(--text-primary)]'}`}>
-                      {formatAmount(group.total)}
-                    </span>
-                    {isCollapsed
-                      ? <ChevronDown className="w-4 h-4 text-[var(--text-muted)]" />
-                      : <ChevronUp className="w-4 h-4 text-[var(--text-muted)]" />
-                    }
-                  </div>
-                </button>
-                {/* 자산 항목 */}
-                {!isCollapsed && (
-                  <div className="px-4 pb-3">
-                    {group.items.map(asset => (
-                      <AssetRow key={asset.id} asset={asset} />
-                    ))}
-                  </div>
-                )}
-              </div>
-            )
-          })}
-        </div>
-      )}
+      <UpdateNudge
+        assets={assets}
+        onNavigate={(assetId) => navigate(`/assets/${assetId}`)}
+      />
 
-      {/* 5. 업데이트 촉구 카드 */}
-      {showNudge && (
-        <div className="bg-amber-50 border border-amber-200/60 rounded-2xl p-4 flex items-start gap-3">
-          <Bell className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
-          <div>
-            <p className="text-sm font-medium text-amber-600">자산 현황을 업데이트해보세요</p>
-            <p className="text-xs text-amber-600 mt-0.5">
-              마지막 업데이트: {daysSinceUpdate}일 전
-            </p>
-          </div>
-        </div>
-      )}
+      <AssetGroupList assets={assets} onAdd={handleAddAsset} />
 
-      {/* 빈 상태 */}
-      {assets.length === 0 && (
-        <div className="text-center py-16">
-          <Landmark className="w-12 h-12 text-[var(--text-muted)] mx-auto mb-3" />
-          <p className="text-[var(--text-tertiary)] mb-4">아직 등록된 자산이 없습니다</p>
-          <Link
-            to="/assets/new"
-            className="inline-flex items-center gap-2 px-4 py-2 bg-grape-600 text-white rounded-lg text-sm font-medium hover:bg-grape-700 transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            첫 자산 등록하기
-          </Link>
-        </div>
-      )}
-
-      {/* 6. 목표 설정 모달 */}
+      {/* 목표 설정 모달 */}
       {showGoalModal && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center" role="dialog" aria-modal="true" aria-labelledby="goal-modal-title">
-          {/* 배경 오버레이 */}
-          {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- 모달 배경 오버레이 */}
-          <div
+        <div
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="goal-modal-title"
+        >
+          <button
+            type="button"
             className="absolute inset-0 bg-black/40"
+            aria-label="모달 닫기"
             onClick={() => setShowGoalModal(false)}
+            onKeyDown={e => e.key === 'Escape' && setShowGoalModal(false)}
           />
-          {/* 모달 본체 */}
-          <div className="relative bg-[var(--surface-card)] w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl p-6 space-y-5 animate-in slide-in-from-bottom sm:slide-in-from-bottom-0">
+          <div className="relative bg-[var(--surface-card)] w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl p-6 space-y-5">
             <div className="flex items-center justify-between">
               <h2 id="goal-modal-title" className="text-lg font-bold text-[var(--text-primary)]">순자산 목표 설정</h2>
-              <button onClick={() => setShowGoalModal(false)} className="text-[var(--text-muted)] hover:text-[var(--text-secondary)]" aria-label="닫기">
+              <button
+                onClick={() => setShowGoalModal(false)}
+                className="text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
+                aria-label="닫기"
+              >
                 <X className="w-5 h-5" />
               </button>
             </div>
-
             <div className="space-y-4">
               <div>
-                <label htmlFor="goal-amount" className="block text-sm font-medium text-[var(--text-secondary)] mb-1">목표 금액</label>
+                <label htmlFor="goal-amount" className="block text-sm font-medium text-[var(--text-secondary)] mb-1">
+                  목표 금액
+                </label>
                 <input
                   id="goal-amount"
                   type="number"
@@ -459,7 +319,9 @@ export default function AssetDashboard() {
                 />
               </div>
               <div>
-                <label htmlFor="goal-date" className="block text-sm font-medium text-[var(--text-secondary)] mb-1">목표 날짜</label>
+                <label htmlFor="goal-date" className="block text-sm font-medium text-[var(--text-secondary)] mb-1">
+                  목표 날짜
+                </label>
                 <input
                   id="goal-date"
                   type="date"
@@ -469,7 +331,6 @@ export default function AssetDashboard() {
                 />
               </div>
             </div>
-
             <div className="flex gap-3">
               {goal && (
                 <button

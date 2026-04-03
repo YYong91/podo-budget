@@ -7,6 +7,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { http, HttpResponse } from 'msw'
 import { server } from '../../../mocks/server'
 import TransactionList from '../../../pages/TransactionList'
@@ -43,10 +44,15 @@ vi.mock('../../../contexts/AuthContext', () => ({
 }))
 
 function renderPage(initialRoute = '/home') {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false, gcTime: 0 } },
+  })
   return render(
-    <MemoryRouter initialEntries={[initialRoute]}>
-      <TransactionList />
-    </MemoryRouter>,
+    <QueryClientProvider client={queryClient}>
+      <MemoryRouter initialEntries={[initialRoute]}>
+        <TransactionList />
+      </MemoryRouter>
+    </QueryClientProvider>,
   )
 }
 
@@ -337,6 +343,16 @@ describe('MonthlyView 컴포넌트', () => {
 
     // cleanup
     localStorage.removeItem('podo-welcome-dismissed')
+  })
+
+  it('월간 지출 히어로 카드를 표시한다', async () => {
+    setupCurrentMonthHandlers()
+    renderPage()
+    await waitFor(() => {
+      // HeroSummary label — "N월 지출"
+      const now = new Date()
+      expect(screen.getByText(`${now.getMonth() + 1}월 지출`)).toBeInTheDocument()
+    })
   })
 
   describe('달력 접기/펼치기', () => {

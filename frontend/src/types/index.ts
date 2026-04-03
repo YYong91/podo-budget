@@ -47,6 +47,7 @@ export interface Asset {
   current_value: number | null
   profit_loss: number | null
   profit_loss_pct: number | null
+  original_amount: number | null
 }
 
 export interface AssetSummary {
@@ -97,9 +98,7 @@ export interface AssetGoal {
 
 export interface MonthlySavings {
   month: string
-  total_income: number
-  total_expense: number
-  net_savings: number
+  savings: number
 }
 
 export interface CreateAssetParams {
@@ -115,6 +114,7 @@ export interface CreateAssetParams {
   repayment_type?: string | null
   monthly_payment?: number | null
   account_id?: number | null
+  original_amount?: number | null
   memo?: string | null
   household_id?: number | null
 }

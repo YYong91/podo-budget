@@ -12,7 +12,7 @@ import { incomeApi } from '../api/income'
 import { categoryApi } from '../api/categories'
 import RegisterRecurringModal from '../components/RegisterRecurringModal'
 import ErrorState from '../components/ErrorState'
-import LoadingSpinner from '../components/LoadingSpinner'
+import { Skeleton } from '../components/skeleton/Skeleton'
 import type { Income, Category } from '../types'
 import { formatAmount } from '../utils/format'
 
@@ -127,7 +127,19 @@ export default function IncomeDetail() {
   }
 
   if (loading) {
-    return <LoadingSpinner />
+    return (
+      <div className="space-y-6 animate-pulse">
+        <div className="flex items-center justify-between">
+          <Skeleton className="w-9 h-9 rounded-lg" />
+          <div className="flex gap-2">
+            <Skeleton className="w-16 h-9 rounded-xl" />
+            <Skeleton className="w-16 h-9 rounded-xl" />
+          </div>
+        </div>
+        <Skeleton className="h-40 rounded-2xl" />
+        <Skeleton className="h-32 rounded-2xl" />
+      </div>
+    )
   }
 
   if (error) {
@@ -149,7 +161,7 @@ export default function IncomeDetail() {
     categories.find((c) => c.id === income.category_id)?.name || '분류 안 됨'
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-page-in">
       <div className="flex items-center justify-between">
         <Link
           to="/income"
@@ -214,7 +226,7 @@ export default function IncomeDetail() {
               inputMode="numeric"
               value={editForm.amount}
               onChange={(e) => setEditForm({ ...editForm, amount: Number(e.target.value) })}
-              className="w-full px-4 py-2 text-xl sm:text-2xl font-bold text-[var(--text-primary)] border border-[var(--input-border)] rounded-xl focus:ring-2 focus:ring-leaf-500/30 focus:border-leaf-500"
+              className="input-base text-xl sm:text-2xl font-bold"
               placeholder="10000"
             />
           ) : (
@@ -233,7 +245,7 @@ export default function IncomeDetail() {
               type="text"
               value={editForm.description}
               onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
-              className="w-full px-4 py-2 text-lg border border-[var(--input-border)] rounded-xl focus:ring-2 focus:ring-leaf-500/30 focus:border-leaf-500"
+              className="input-base text-lg"
               placeholder="월급"
             />
           ) : (
@@ -254,7 +266,7 @@ export default function IncomeDetail() {
                   category_id: e.target.value ? Number(e.target.value) : null,
                 })
               }
-              className="w-full px-4 py-2 text-lg border border-[var(--input-border)] rounded-xl focus:ring-2 focus:ring-leaf-500/30 focus:border-leaf-500"
+              className="input-base text-lg"
             >
               <option value="">분류 안 됨</option>
               {categories.map((cat) => (
@@ -277,7 +289,7 @@ export default function IncomeDetail() {
               type="date"
               value={editForm.date}
               onChange={(e) => setEditForm({ ...editForm, date: e.target.value })}
-              className="w-full px-4 py-2 text-lg border border-[var(--input-border)] rounded-xl focus:ring-2 focus:ring-leaf-500/30 focus:border-leaf-500"
+              className="input-base text-lg"
             />
           ) : (
             <p className="text-lg text-[var(--text-primary)]">{formatDate(income.date)}</p>
@@ -294,7 +306,7 @@ export default function IncomeDetail() {
               value={editForm.memo}
               onChange={(e) => setEditForm({ ...editForm, memo: e.target.value })}
               placeholder="추가 메모 (선택)"
-              className="w-full px-4 py-2 text-lg border border-[var(--input-border)] rounded-xl focus:ring-2 focus:ring-leaf-500/30 focus:border-leaf-500"
+              className="input-base text-lg"
             />
           ) : income.memo ? (
             <p className="text-lg text-[var(--text-primary)]">{income.memo}</p>

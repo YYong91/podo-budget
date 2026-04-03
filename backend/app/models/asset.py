@@ -32,6 +32,7 @@ class Asset(Base):  # type: ignore[misc]
     # 대출 전용
     repayment_type = Column(String, nullable=True)  # equal_principal_interest, equal_principal, bullet
     monthly_payment = Column(Numeric(18, 2), nullable=True)
+    original_amount = Column(Numeric(18, 2), nullable=True)  # 대출 원금 (상환 진척도용)
 
     account_id = Column(Integer, ForeignKey("accounts.id", ondelete="SET NULL"), nullable=True)
     memo = Column(Text, nullable=True)

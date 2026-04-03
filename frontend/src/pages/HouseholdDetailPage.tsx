@@ -15,7 +15,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { useHouseholdRole } from '../hooks/useHouseholdRole'
 import InviteMemberModal from '../components/InviteMemberModal'
 import EmptyState from '../components/EmptyState'
-import LoadingSpinner from '../components/LoadingSpinner'
+import { Skeleton } from '../components/skeleton/Skeleton'
 import ErrorState from '../components/ErrorState'
 import MembersTab from '../components/household/MembersTab'
 import InvitationsTab from '../components/household/InvitationsTab'
@@ -25,6 +25,28 @@ import { formatRole, getRoleBadgeColor } from '../utils/household'
 import { trackEvent } from '../utils/analytics'
 
 type TabType = 'members' | 'invitations' | 'settings'
+
+function HouseholdDetailSkeleton() {
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center gap-3">
+        <Skeleton className="h-5 w-5 rounded" />
+        <Skeleton className="h-5 w-40" />
+      </div>
+      <div className="space-y-3">
+        {[1, 2, 3].map(i => (
+          <div key={i} className="card-surface p-4 flex items-center justify-between">
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-3 w-16" />
+            </div>
+            <Skeleton className="h-8 w-16" />
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
 
 export default function HouseholdDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -233,7 +255,7 @@ export default function HouseholdDetailPage() {
    * 로딩 상태
    */
   if (isLoading && !currentHousehold) {
-    return <LoadingSpinner />
+    return <HouseholdDetailSkeleton />
   }
 
   /**

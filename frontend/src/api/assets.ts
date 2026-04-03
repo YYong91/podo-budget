@@ -26,6 +26,11 @@ export const assetApi = {
       params: { household_id: householdId },
     }),
 
+  createSnapshot: (householdId: number) =>
+    apiClient.post<AssetSnapshot>('/assets/snapshots', null, {
+      params: { household_id: householdId },
+    }),
+
   getSnapshots: (householdId: number, months?: number) =>
     apiClient.get<AssetSnapshot[]>('/assets/snapshots', {
       params: {
@@ -58,7 +63,7 @@ export const assetApi = {
 
   /* 월별 저축 추이 */
   getMonthlySavings: (householdId: number) =>
-    apiClient.get<MonthlySavings[]>('/assets/monthly-savings', {
+    apiClient.get<MonthlySavings>('/assets/monthly-savings', {
       params: { household_id: householdId },
     }),
 }

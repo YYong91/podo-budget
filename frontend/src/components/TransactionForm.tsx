@@ -300,7 +300,7 @@ export default function TransactionForm({ type }: TransactionFormProps) {
               onChange={(e) => ni.setNaturalInput(e.target.value)}
               placeholder={cfg.naturalPlaceholder}
               rows={5}
-              className={`w-full px-4 py-3 bg-${c}-50/50 border border-[var(--input-border)] rounded-xl focus:ring-2 focus:ring-${c}-500/30 focus:border-${c}-500 resize-none`}
+              className={`input-base bg-${c}-50/50 resize-none`}
               disabled={loading}
             />
             <p className="mt-2 text-xs text-[var(--text-muted)]">
@@ -511,7 +511,7 @@ export default function TransactionForm({ type }: TransactionFormProps) {
                 value={formData.amount}
                 onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
                 placeholder={cfg.formPlaceholder.amount}
-                className={`w-full pl-8 pr-4 py-3 border border-[var(--input-border)] rounded-xl focus:ring-2 focus:ring-${c}-500/30 focus:border-${c}-500`}
+                className={`input-base pl-8 pr-4`}
                 disabled={loading}
                 min="1"
                 step="any"
@@ -530,7 +530,7 @@ export default function TransactionForm({ type }: TransactionFormProps) {
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               placeholder={cfg.formPlaceholder.description}
-              className={`w-full px-4 py-3 border border-[var(--input-border)] rounded-xl focus:ring-2 focus:ring-${c}-500/30 focus:border-${c}-500`}
+              className="input-base"
               disabled={loading}
             />
           </div>
@@ -553,7 +553,7 @@ export default function TransactionForm({ type }: TransactionFormProps) {
                   setFormData({ ...formData, category_id: catId })
                 }
               }}
-              className={`w-full px-4 py-3 border border-[var(--input-border)] rounded-xl focus:ring-2 focus:ring-${c}-500/30 focus:border-${c}-500`}
+              className="input-base"
               disabled={loading}
             >
               <option value="">분류 안 됨</option>
@@ -570,7 +570,7 @@ export default function TransactionForm({ type }: TransactionFormProps) {
                   value={newCategoryNameForForm}
                   onChange={(e) => setNewCategoryNameForForm(e.target.value)}
                   placeholder="새 카테고리 이름"
-                  className={`flex-1 px-3 py-2 border border-${c}-300 rounded-lg text-sm focus:ring-2 focus:ring-${c}-500/30 focus:border-${c}-500`}
+                  className="input-base flex-1"
                   onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleCreateCategoryForForm() } }}
                   // eslint-disable-next-line jsx-a11y/no-autofocus
                   autoFocus
@@ -615,7 +615,7 @@ export default function TransactionForm({ type }: TransactionFormProps) {
                   id={`${idPrefix}-payment-method`}
                   value={formData.payment_method_id}
                   onChange={(e) => setFormData({ ...formData, payment_method_id: e.target.value })}
-                  className={`w-full px-4 py-3 border border-[var(--input-border)] rounded-xl focus:ring-2 focus:ring-${c}-500/30 focus:border-${c}-500`}
+                  className="input-base"
                   disabled={loading}
                 >
                   <option value="">선택 안 함</option>
@@ -644,7 +644,7 @@ export default function TransactionForm({ type }: TransactionFormProps) {
               type="date"
               value={formData.date}
               onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-              className={`w-full px-4 py-3 border border-[var(--input-border)] rounded-xl focus:ring-2 focus:ring-${c}-500/30 focus:border-${c}-500`}
+              className="input-base"
               disabled={loading}
             />
           </div>
@@ -660,7 +660,7 @@ export default function TransactionForm({ type }: TransactionFormProps) {
               value={formData.memo}
               onChange={(e) => setFormData({ ...formData, memo: e.target.value })}
               placeholder="추가 메모 (선택)"
-              className={`w-full px-4 py-3 border border-[var(--input-border)] rounded-xl focus:ring-2 focus:ring-${c}-500/30 focus:border-${c}-500`}
+              className="input-base"
               disabled={loading}
             />
           </div>

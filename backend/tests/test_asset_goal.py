@@ -49,12 +49,9 @@ async def test_goal_delete_not_found(authenticated_client):
 
 @pytest.mark.asyncio
 async def test_monthly_savings(authenticated_client):
-    """월별 저축액 조회"""
+    """월별 저축액 조회 — 저축성지출 카테고리 기반"""
     resp = await authenticated_client.get("/api/assets/monthly-savings")
     assert resp.status_code == 200
     data = resp.json()
-    assert "net_savings" in data
-    assert "total_income" in data
-    assert "total_expense" in data
-    assert "year" in data
+    assert "savings" in data
     assert "month" in data

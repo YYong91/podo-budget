@@ -15,7 +15,7 @@ import { paymentMethodApi } from '../api/paymentMethods'
 import { useHouseholdStore } from '../stores/useHouseholdStore'
 import RegisterRecurringModal from '../components/RegisterRecurringModal'
 import ErrorState from '../components/ErrorState'
-import LoadingSpinner from '../components/LoadingSpinner'
+import { Skeleton } from '../components/skeleton/Skeleton'
 import type { Expense, Category, PaymentMethod } from '../types'
 import { formatAmount } from '../utils/format'
 
@@ -162,7 +162,19 @@ export default function ExpenseDetail() {
   }
 
   if (loading) {
-    return <LoadingSpinner />
+    return (
+      <div className="space-y-6 animate-pulse">
+        <div className="flex items-center justify-between">
+          <Skeleton className="w-9 h-9 rounded-lg" />
+          <div className="flex gap-2">
+            <Skeleton className="w-16 h-9 rounded-xl" />
+            <Skeleton className="w-16 h-9 rounded-xl" />
+          </div>
+        </div>
+        <Skeleton className="h-40 rounded-2xl" />
+        <Skeleton className="h-32 rounded-2xl" />
+      </div>
+    )
   }
 
   if (error) {
@@ -185,7 +197,7 @@ export default function ExpenseDetail() {
     categories.find((c) => c.id === expense.category_id)?.name || '분류 안 됨'
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-page-in">
       <div className="flex items-center justify-between">
         <Link
           to="/expenses"
@@ -254,7 +266,7 @@ export default function ExpenseDetail() {
               onChange={(e) =>
                 setEditForm({ ...editForm, amount: Number(e.target.value) })
               }
-              className="w-full px-4 py-2 text-xl sm:text-2xl font-bold text-[var(--text-primary)] border border-[var(--input-border)] rounded-xl focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
+              className="input-base text-xl sm:text-2xl font-bold"
               placeholder="10000"
             />
           ) : (
@@ -277,7 +289,7 @@ export default function ExpenseDetail() {
               onChange={(e) =>
                 setEditForm({ ...editForm, description: e.target.value })
               }
-              className="w-full px-4 py-2 text-lg border border-[var(--input-border)] rounded-xl focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
+              className="input-base text-lg"
               placeholder="김치찌개"
             />
           ) : (
@@ -300,7 +312,7 @@ export default function ExpenseDetail() {
                   category_id: e.target.value ? Number(e.target.value) : null,
                 })
               }
-              className="w-full px-4 py-2 text-lg border border-[var(--input-border)] rounded-xl focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
+              className="input-base text-lg"
             >
               <option value="">분류 안 됨</option>
               {categories.map((cat) => (
@@ -330,7 +342,7 @@ export default function ExpenseDetail() {
                     payment_method_id: e.target.value ? Number(e.target.value) : null,
                   })
                 }
-                className="w-full px-4 py-2 text-lg border border-[var(--input-border)] rounded-xl focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
+                className="input-base text-lg"
               >
                 <option value="">선택 안 함</option>
                 {paymentMethods.map((pm) => (
@@ -360,7 +372,7 @@ export default function ExpenseDetail() {
               onChange={(e) =>
                 setEditForm({ ...editForm, date: e.target.value })
               }
-              className="w-full px-4 py-2 text-lg border border-[var(--input-border)] rounded-xl focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
+              className="input-base text-lg"
             />
           ) : (
             <p className="text-lg text-[var(--text-primary)]">{formatDate(expense.date)}</p>
@@ -381,7 +393,7 @@ export default function ExpenseDetail() {
                 setEditForm({ ...editForm, memo: e.target.value })
               }
               placeholder="추가 메모 (선택)"
-              className="w-full px-4 py-2 text-lg border border-[var(--input-border)] rounded-xl focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
+              className="input-base text-lg"
             />
           ) : expense.memo ? (
             <p className="text-lg text-[var(--text-primary)]">{expense.memo}</p>

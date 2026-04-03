@@ -20,6 +20,7 @@ from app.schemas.asset import (
     AssetSummary,
     AssetUpdate,
     AssetWithPrice,
+    MonthlySavingsResponse,
 )
 from app.schemas.asset_goal import AssetGoalCreate, AssetGoalWithInsight
 from app.services import asset_goal_service, asset_service, price_service
@@ -69,6 +70,27 @@ async def get_summary(
         household_id = await get_user_active_household_id(current_user, db)
     await get_household_member(household_id, current_user, db)
     return await asset_service.get_asset_summary(db, current_user, household_id)
+
+
+@router.post("/snapshots", response_model=AssetSnapshotResponse, status_code=status.HTTP_201_CREATED)
+async def create_snapshot(
+    household_id: int | None = Query(None),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> object:
+    """이번 달 스냅샷 생성/업데이트 — 실시간 시세 기반으로 순자산 저장"""
+    if household_id is None:
+        household_id = await get_user_active_household_id(current_user, db)
+    await get_household_member(household_id, current_user, db)
+    s = await asset_service.create_snapshot(db, current_user, household_id)
+    breakdown = json.loads(s.breakdown) if s.breakdown else None  # type: ignore[arg-type]
+    return AssetSnapshotResponse(
+        snapshot_date=s.snapshot_date,
+        total_assets=float(s.total_assets),
+        total_liabilities=float(s.total_liabilities),
+        net_worth=float(s.net_worth),
+        breakdown=breakdown,
+    )
 
 
 @router.get("/snapshots", response_model=list[AssetSnapshotResponse])
@@ -214,13 +236,13 @@ async def delete_goal(
     await db.commit()
 
 
-@router.get("/monthly-savings")
+@router.get("/monthly-savings", response_model=MonthlySavingsResponse)
 async def get_monthly_savings(
     household_id: int | None = Query(None),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> object:
-    """이번 달 저축액 (수입 - 지출)"""
+    """이번 달 저축성지출 카테고리 기반 저축액"""
     if household_id is None:
         household_id = await get_user_active_household_id(current_user, db)
     await get_household_member(household_id, current_user, db)

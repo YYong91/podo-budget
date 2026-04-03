@@ -5,7 +5,9 @@
  */
 
 import { useRef, useMemo, useCallback, useState } from 'react'
+import { Skeleton } from '../skeleton/Skeleton'
 import PeriodNavigator from '../stats/PeriodNavigator'
+import HeroSummary from '../stats/HeroSummary'
 import MiniCalendar from '../MiniCalendar'
 import TransactionItem from '../TransactionItem'
 import ScheduledTransactions from '../ScheduledTransactions'
@@ -34,6 +36,8 @@ interface MonthlyViewProps {
   onBotNudgeDismiss: () => void
   /** 멀티멤버 가구의 user_id → username 매핑 (단독 가구는 null) */
   memberMap: Map<number, string> | null
+  /** 월 총 예산 (null이면 미설정) */
+  totalBudget: number | null
 }
 
 export default function MonthlyView({
@@ -47,6 +51,7 @@ export default function MonthlyView({
   botNudgeDismissed,
   onBotNudgeDismiss,
   memberMap,
+  totalBudget,
 }: MonthlyViewProps) {
   const { addToast } = useToast()
 
@@ -96,32 +101,18 @@ export default function MonthlyView({
         </button>
       </div>
 
-      {/* 요약 + 필터 */}
-      <div className="flex items-center justify-center gap-6">
-        <button
-          onClick={() => monthly.toggleFilter('expense')}
-          className={`text-center transition-opacity ${
-            monthly.filter === 'income' ? 'opacity-40' : ''
-          }`}
-        >
-          <div className="text-xs text-[var(--text-tertiary)]">지출</div>
-          <div className={`text-base font-bold ${monthly.filter !== 'income' ? 'text-grape-600' : 'text-[var(--text-muted)]'}`}>
-            {formatAmount(monthly.totalExpense)}
-          </div>
-        </button>
-        <div className="w-px h-8 bg-[var(--border-default)]" />
-        <button
-          onClick={() => monthly.toggleFilter('income')}
-          className={`text-center transition-opacity ${
-            monthly.filter === 'expense' ? 'opacity-40' : ''
-          }`}
-        >
-          <div className="text-xs text-[var(--text-tertiary)]">수입</div>
-          <div className={`text-base font-bold ${monthly.filter !== 'expense' ? 'text-leaf-600' : 'text-[var(--text-muted)]'}`}>
-            {formatAmount(monthly.totalIncome)}
-          </div>
-        </button>
-      </div>
+      {/* 월간 지출 히어로 요약 — currentMonth는 0-indexed이므로 +1 */}
+      <HeroSummary
+        label={`${monthly.currentMonth + 1}월 지출`}
+        amount={monthly.totalExpense}
+        sublabel={
+          totalBudget != null && totalBudget > 0
+            ? `예산 대비 ${Math.round((monthly.totalExpense / totalBudget) * 100)}%`
+            : monthly.totalIncome > 0
+              ? `수입 대비 ${Math.round((monthly.totalExpense / monthly.totalIncome) * 100)}%`
+              : undefined
+        }
+      />
 
       {/* 온보딩 웰컴 카드 */}
       {!welcomeDismissed && !monthly.loading && (
@@ -166,6 +157,33 @@ export default function MonthlyView({
         </div>
       )}
 
+      {/* 세그먼트 필터 — 캘린더 아래, 리스트 바로 위 */}
+      <div className="flex items-center bg-[var(--surface-elevated)] rounded-lg p-1">
+        {(['all', 'expense', 'income'] as const).map((type) => {
+          const label = type === 'all' ? '전체' : type === 'expense' ? '지출' : '수입'
+          const isActive = type === 'all' ? monthly.filter === 'all' : monthly.filter === type
+          return (
+            <button
+              key={type}
+              onClick={() => {
+                if (type === 'all') {
+                  if (monthly.filter !== 'all') monthly.toggleFilter(monthly.filter as 'expense' | 'income')
+                } else {
+                  monthly.toggleFilter(type)
+                }
+              }}
+              className={`flex-1 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                isActive
+                  ? 'bg-[var(--surface-card)] text-[var(--text-primary)] shadow-sm'
+                  : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
+              }`}
+            >
+              {label}
+            </button>
+          )
+        })}
+      </div>
+
       {/* 예정 거래 섹션 — 캘린더 아래, 거래 리스트 위 */}
       <ScheduledTransactions
         items={monthly.allRecurring}
@@ -197,43 +215,56 @@ export default function MonthlyView({
       ) : monthly.grouped.size === 0 ? (
         <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)]">
           <EmptyState
+            variant="primary"
             title={monthly.filter === 'all' ? '거래 내역이 없습니다' : `${monthly.filter === 'expense' ? '지출' : '수입'} 내역이 없습니다`}
             description="이번 달의 거래를 추가해보세요."
           />
         </div>
       ) : (
-        <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] overflow-hidden">
-          {Array.from(monthly.grouped.entries()).map(([dateKey, txs]) => (
-            <div key={dateKey}>
-              {/* 스티키 날짜 헤더 */}
-              <div
-                ref={(el) => { if (el) dateRefs.current.set(dateKey, el) }}
-                className="sticky top-0 md:top-0 z-10 bg-[var(--surface-elevated)] px-4 py-2 border-b border-[var(--border-subtle)] scroll-mt-14 md:scroll-mt-0"
-              >
-                <span className="text-xs font-semibold text-[var(--text-secondary)]">
-                  {formatDateHeader(dateKey)}
-                </span>
+        <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] overflow-hidden animate-stagger">
+          {Array.from(monthly.grouped.entries()).map(([dateKey, txs], index) => {
+            // 날짜별 합계: 지출은 음수, 수입은 양수
+            const dailyTotal = txs.reduce(
+              (sum, tx) => sum + (tx.type === 'expense' ? -tx.amount : tx.amount),
+              0
+            )
+            return (
+              <div key={dateKey} className={index > 0 ? 'mt-6' : ''}>
+                {/* 스티키 날짜 헤더 — 날짜 텍스트 + 일별 합계 */}
+                <div
+                  ref={(el) => { if (el) dateRefs.current.set(dateKey, el) }}
+                  className="sticky top-0 md:top-0 z-10 bg-[var(--surface-elevated)] px-4 py-2 scroll-mt-14 md:scroll-mt-0"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-[var(--text-secondary)]">
+                      {formatDateHeader(dateKey)}
+                    </span>
+                    <span className="text-amount text-[var(--text-muted)]">
+                      {formatAmount(dailyTotal)}
+                    </span>
+                  </div>
+                </div>
+                {/* 거래 항목들 — border 대신 gap으로 간격 */}
+                <div className="flex flex-col gap-1">
+                  {txs.map(tx => (
+                    <TransactionItem
+                      key={`${tx.type}-${tx.id}`}
+                      id={tx.id}
+                      type={tx.type}
+                      description={tx.description}
+                      amount={tx.amount}
+                      categoryId={tx.category_id}
+                      categoryMap={monthly.categoryMap}
+                      excludeFromStats={tx.exclude_from_stats}
+                      recurringTransactionId={tx.recurring_transaction_id}
+                      onCategoryClick={categoryClickHandlers.get(`${tx.type}-${tx.id}`)!}
+                      recordedBy={memberMap && tx.user_id != null ? memberMap.get(tx.user_id) : undefined}
+                    />
+                  ))}
+                </div>
               </div>
-              {/* 거래 항목들 */}
-              <div className="divide-y divide-[var(--border-subtle)]">
-                {txs.map(tx => (
-                  <TransactionItem
-                    key={`${tx.type}-${tx.id}`}
-                    id={tx.id}
-                    type={tx.type}
-                    description={tx.description}
-                    amount={tx.amount}
-                    categoryId={tx.category_id}
-                    categoryMap={monthly.categoryMap}
-                    excludeFromStats={tx.exclude_from_stats}
-                    recurringTransactionId={tx.recurring_transaction_id}
-                    onCategoryClick={categoryClickHandlers.get(`${tx.type}-${tx.id}`)!}
-                    recordedBy={memberMap && tx.user_id != null ? memberMap.get(tx.user_id) : undefined}
-                  />
-                ))}
-              </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       )}
     </>
@@ -243,23 +274,28 @@ export default function MonthlyView({
 /** 월별 거래 리스트 로딩 스켈레톤 */
 function MonthlyViewSkeleton() {
   return (
-    <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] overflow-hidden">
-      {[1, 2, 3].map(i => (
-        <div key={i}>
-          <div className="bg-[var(--surface-elevated)] px-4 py-2 border-b border-[var(--border-subtle)]">
-            <div className="h-3 w-24 bg-[var(--surface-hover)] rounded animate-pulse" />
-          </div>
-          {[1, 2].map(j => (
-            <div key={j} className="px-4 py-3 space-y-2">
-              <div className="flex justify-between">
-                <div className="h-4 w-32 bg-[var(--border-subtle)] rounded animate-pulse" />
-                <div className="h-4 w-20 bg-[var(--border-subtle)] rounded animate-pulse" />
-              </div>
-              <div className="h-3 w-12 bg-[var(--border-subtle)] rounded-full animate-pulse" />
-            </div>
-          ))}
+    <div className="space-y-4">
+      {/* 히어로 골격 */}
+      <div className="card-surface p-6 space-y-3">
+        <Skeleton className="h-4 w-20" />
+        <Skeleton className="h-8 w-48" />
+        <Skeleton className="h-3 w-36" />
+      </div>
+      {/* 날짜 헤더 + 거래 3줄 */}
+      <div className="card-surface overflow-hidden">
+        <div className="px-4 py-2">
+          <Skeleton className="h-3 w-24" />
         </div>
-      ))}
+        {[1, 2, 3].map(i => (
+          <div key={i} className="px-4 py-4 flex items-center justify-between">
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-32" />
+              <Skeleton className="h-3 w-16 rounded-full" />
+            </div>
+            <Skeleton className="h-4 w-20" />
+          </div>
+        ))}
+      </div>
     </div>
   )
 }

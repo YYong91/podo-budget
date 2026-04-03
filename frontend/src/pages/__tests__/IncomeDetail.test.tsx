@@ -49,10 +49,10 @@ describe('IncomeDetail', () => {
       })
     })
 
-    it('로딩 중에는 스피너를 표시한다', () => {
+    it('로딩 중에는 스켈레톤을 표시한다', () => {
       renderIncomeDetail()
-      const spinner = document.querySelector('.animate-spin')
-      expect(spinner).toBeInTheDocument()
+      const skeleton = document.querySelector('.animate-pulse')
+      expect(skeleton).toBeInTheDocument()
     })
   })
 

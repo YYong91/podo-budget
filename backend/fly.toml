@@ -33,11 +33,11 @@ primary_region = "nrt"  # 도쿄 (Tokyo Narita)
     timeout = "10s"
     path = "/health"
 
-# 무료 티어: shared-cpu-1x + 256MB
+# 256MB — Alembic inline 실행으로 OOM 해결 (2026-04-03)
 [[vm]]
   cpu_kind = "shared"
   cpus = 1
-  memory_mb = 512
+  memory_mb = 256
 
 # 유료 플랜 전환 시 (고성능 필요하면)
 # [[vm]]

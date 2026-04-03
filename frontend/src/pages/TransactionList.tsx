@@ -8,6 +8,7 @@
 import { useEffect, useState, useMemo, useCallback } from 'react'
 import { expenseApi } from '../api/expenses'
 import { incomeApi } from '../api/income'
+import budgetApi from '../api/budgets'
 import { useHouseholdStore } from '../stores/useHouseholdStore'
 import { useToast } from '../hooks/useToast'
 import { TOAST } from '../constants/toastMessages'
@@ -57,6 +58,15 @@ export default function TransactionList() {
     localStorage.getItem('podo-welcome-dismissed') === 'true'
   )
   const [totalTransactionCount, setTotalTransactionCount] = useState(0)
+
+  // 월 총 예산
+  const [totalBudget, setTotalBudget] = useState<number | null>(null)
+  useEffect(() => {
+    if (!activeHouseholdId) return
+    budgetApi.getTotalBudget()
+      .then(res => setTotalBudget(res.data.total_monthly_budget))
+      .catch(() => setTotalBudget(null))
+  }, [activeHouseholdId])
 
   // 봇 넛지 카드 상태
   const isBotLinked = !!user?.is_telegram_linked || !!user?.is_kakao_linked
@@ -178,7 +188,7 @@ export default function TransactionList() {
 
   return (
     <PullToRefresh onRefresh={handleRefresh}>
-    <div className="space-y-4">
+    <div className="space-y-4 animate-page-in">
       {search.isSearchMode ? (
         <SearchMode
           search={search}
@@ -207,6 +217,7 @@ export default function TransactionList() {
           botNudgeDismissed={botNudgeDismissed}
           onBotNudgeDismiss={handleBotNudgeDismiss}
           memberMap={memberMap}
+          totalBudget={totalBudget}
         />
       )}
 

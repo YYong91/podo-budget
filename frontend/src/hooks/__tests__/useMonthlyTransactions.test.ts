@@ -5,6 +5,21 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
+import { createElement } from 'react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import type { ReactNode } from 'react'
+
+// useQuery를 위한 QueryClientProvider 래퍼
+// react-router-dom이 전체 mock이므로 MemoryRouter 없이 QueryClientProvider만 사용
+// .ts 파일이므로 JSX 대신 createElement 사용
+function createQueryWrapper() {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false, gcTime: 0 } },
+  })
+  return function Wrapper({ children }: { children: ReactNode }) {
+    return createElement(QueryClientProvider, { client: queryClient }, children)
+  }
+}
 
 // react-router-dom mock
 const mockSearchParams = new URLSearchParams()
@@ -42,8 +57,7 @@ describe('useMonthlyTransactions', () => {
   describe('초기 상태', () => {
     it('현재 월로 시작한다 (URL 파라미터 없을 때)', () => {
       const { result } = renderHook(() =>
-        useMonthlyTransactions({ activeHouseholdId: 1 })
-      )
+        useMonthlyTransactions({ activeHouseholdId: 1 }), { wrapper: createQueryWrapper() })
 
       const now = new Date()
       expect(result.current.currentYear).toBe(now.getFullYear())
@@ -54,8 +68,7 @@ describe('useMonthlyTransactions', () => {
       mockSearchParams.set('month', '2025-06')
 
       const { result } = renderHook(() =>
-        useMonthlyTransactions({ activeHouseholdId: 1 })
-      )
+        useMonthlyTransactions({ activeHouseholdId: 1 }), { wrapper: createQueryWrapper() })
 
       expect(result.current.currentYear).toBe(2025)
       expect(result.current.currentMonth).toBe(5) // 0-indexed
@@ -63,8 +76,7 @@ describe('useMonthlyTransactions', () => {
 
     it('기본 필터는 all이다', () => {
       const { result } = renderHook(() =>
-        useMonthlyTransactions({ activeHouseholdId: 1 })
-      )
+        useMonthlyTransactions({ activeHouseholdId: 1 }), { wrapper: createQueryWrapper() })
 
       expect(result.current.filter).toBe('all')
     })
@@ -73,8 +85,7 @@ describe('useMonthlyTransactions', () => {
       mockSearchParams.set('filter', 'expense')
 
       const { result } = renderHook(() =>
-        useMonthlyTransactions({ activeHouseholdId: 1 })
-      )
+        useMonthlyTransactions({ activeHouseholdId: 1 }), { wrapper: createQueryWrapper() })
 
       expect(result.current.filter).toBe('expense')
     })
@@ -83,8 +94,7 @@ describe('useMonthlyTransactions', () => {
   describe('데이터 로딩', () => {
     it('activeHouseholdId가 있으면 데이터를 로드한다', async () => {
       const { result } = renderHook(() =>
-        useMonthlyTransactions({ activeHouseholdId: 1 })
-      )
+        useMonthlyTransactions({ activeHouseholdId: 1 }), { wrapper: createQueryWrapper() })
 
       // 초기 로딩 상태
       expect(result.current.loading).toBe(true)
@@ -99,8 +109,7 @@ describe('useMonthlyTransactions', () => {
 
     it('activeHouseholdId가 null이면 데이터를 로드하지 않는다', async () => {
       const { result } = renderHook(() =>
-        useMonthlyTransactions({ activeHouseholdId: null })
-      )
+        useMonthlyTransactions({ activeHouseholdId: null }), { wrapper: createQueryWrapper() })
 
       // loading이 true 상태로 유지 (fetchData가 early return)
       expect(result.current.loading).toBe(true)
@@ -110,8 +119,7 @@ describe('useMonthlyTransactions', () => {
 
     it('카테고리 맵이 생성된다', async () => {
       const { result } = renderHook(() =>
-        useMonthlyTransactions({ activeHouseholdId: 1 })
-      )
+        useMonthlyTransactions({ activeHouseholdId: 1 }), { wrapper: createQueryWrapper() })
 
       await waitFor(() => {
         expect(result.current.categoryMap.size).toBeGreaterThan(0)
@@ -130,8 +138,7 @@ describe('useMonthlyTransactions', () => {
       mockSearchParams.set('month', '2025-03')
 
       const { result } = renderHook(() =>
-        useMonthlyTransactions({ activeHouseholdId: 1 })
-      )
+        useMonthlyTransactions({ activeHouseholdId: 1 }), { wrapper: createQueryWrapper() })
 
       expect(result.current.monthLabel).toBe('2025년 3월')
     })
@@ -140,8 +147,7 @@ describe('useMonthlyTransactions', () => {
   describe('그룹핑 및 요약', () => {
     it('totalExpense와 totalIncome을 계산한다', async () => {
       const { result } = renderHook(() =>
-        useMonthlyTransactions({ activeHouseholdId: 1 })
-      )
+        useMonthlyTransactions({ activeHouseholdId: 1 }), { wrapper: createQueryWrapper() })
 
       await waitFor(() => {
         expect(result.current.loading).toBe(false)
@@ -154,8 +160,7 @@ describe('useMonthlyTransactions', () => {
 
     it('grouped가 Map<string, UnifiedTransaction[]> 형태이다', async () => {
       const { result } = renderHook(() =>
-        useMonthlyTransactions({ activeHouseholdId: 1 })
-      )
+        useMonthlyTransactions({ activeHouseholdId: 1 }), { wrapper: createQueryWrapper() })
 
       await waitFor(() => {
         expect(result.current.loading).toBe(false)
@@ -166,8 +171,7 @@ describe('useMonthlyTransactions', () => {
 
     it('daySummaries가 날짜별 지출/수입 합계를 제공한다', async () => {
       const { result } = renderHook(() =>
-        useMonthlyTransactions({ activeHouseholdId: 1 })
-      )
+        useMonthlyTransactions({ activeHouseholdId: 1 }), { wrapper: createQueryWrapper() })
 
       await waitFor(() => {
         expect(result.current.loading).toBe(false)
@@ -186,8 +190,7 @@ describe('useMonthlyTransactions', () => {
   describe('상태 업데이터', () => {
     it('setExpenses가 지출 목록을 업데이트한다', async () => {
       const { result } = renderHook(() =>
-        useMonthlyTransactions({ activeHouseholdId: 1 })
-      )
+        useMonthlyTransactions({ activeHouseholdId: 1 }), { wrapper: createQueryWrapper() })
 
       await waitFor(() => {
         expect(result.current.loading).toBe(false)
@@ -199,8 +202,7 @@ describe('useMonthlyTransactions', () => {
 
     it('setIncomes가 수입 목록을 업데이트한다', async () => {
       const { result } = renderHook(() =>
-        useMonthlyTransactions({ activeHouseholdId: 1 })
-      )
+        useMonthlyTransactions({ activeHouseholdId: 1 }), { wrapper: createQueryWrapper() })
 
       await waitFor(() => {
         expect(result.current.loading).toBe(false)
@@ -211,8 +213,7 @@ describe('useMonthlyTransactions', () => {
 
     it('setPendingRecurring이 대기 중인 반복 거래를 업데이트한다', async () => {
       const { result } = renderHook(() =>
-        useMonthlyTransactions({ activeHouseholdId: 1 })
-      )
+        useMonthlyTransactions({ activeHouseholdId: 1 }), { wrapper: createQueryWrapper() })
 
       await waitFor(() => {
         expect(result.current.loading).toBe(false)
@@ -225,8 +226,7 @@ describe('useMonthlyTransactions', () => {
   describe('allRecurring', () => {
     it('활성 정기거래 전체를 allRecurring으로 반환한다', async () => {
       const { result } = renderHook(() =>
-        useMonthlyTransactions({ activeHouseholdId: 1 })
-      )
+        useMonthlyTransactions({ activeHouseholdId: 1 }), { wrapper: createQueryWrapper() })
       await waitFor(() => expect(result.current.loading).toBe(false))
       expect(result.current.allRecurring.length).toBeGreaterThan(0)
       expect(result.current.allRecurring.every((r) => r.is_active)).toBe(true)
@@ -236,16 +236,14 @@ describe('useMonthlyTransactions', () => {
   describe('에러 처리', () => {
     it('error 상태가 기본 false이다', () => {
       const { result } = renderHook(() =>
-        useMonthlyTransactions({ activeHouseholdId: 1 })
-      )
+        useMonthlyTransactions({ activeHouseholdId: 1 }), { wrapper: createQueryWrapper() })
 
       expect(result.current.error).toBe(false)
     })
 
     it('fetchData 함수를 제공한다 (refetch용)', () => {
       const { result } = renderHook(() =>
-        useMonthlyTransactions({ activeHouseholdId: 1 })
-      )
+        useMonthlyTransactions({ activeHouseholdId: 1 }), { wrapper: createQueryWrapper() })
 
       expect(typeof result.current.fetchData).toBe('function')
     })
@@ -256,8 +254,7 @@ describe('useMonthlyTransactions', () => {
       mockSearchParams.set('filter', 'expense')
 
       renderHook(() =>
-        useMonthlyTransactions({ activeHouseholdId: 1 })
-      )
+        useMonthlyTransactions({ activeHouseholdId: 1 }), { wrapper: createQueryWrapper() })
 
       expect(sessionStorage.getItem('podo-transaction-filter')).toBe('expense')
     })
@@ -266,8 +263,7 @@ describe('useMonthlyTransactions', () => {
       sessionStorage.setItem('podo-transaction-filter', 'income')
 
       const { result } = renderHook(() =>
-        useMonthlyTransactions({ activeHouseholdId: 1 })
-      )
+        useMonthlyTransactions({ activeHouseholdId: 1 }), { wrapper: createQueryWrapper() })
 
       expect(result.current.filter).toBe('income')
     })

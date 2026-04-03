@@ -69,6 +69,10 @@
     100% { transform: translateY(0); opacity: 1; }
   }
 
+  /* 페이지 전환 / 바텀시트 애니메이션 */
+  --animate-page-in: page-in 0.25s ease-out;
+  --animate-sheet-up: sheet-up 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+
   /* 랜딩페이지 애니메이션 */
   --animate-fade-in-up: fade-in-up 0.6s ease-out both;
   --animate-float-glow: float-glow 8s ease-in-out infinite;
@@ -103,6 +107,12 @@
   30% { transform: translateY(-4px); }
 }
 
+/* 페이지 진입 애니메이션 */
+@keyframes page-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
 /* ─── 시멘틱 테마 변수 (라이트 모드 기본값) ─── */
 :root {
   --surface: var(--color-cream);
@@ -117,6 +127,7 @@
   --text-muted: var(--color-warm-400);
   --input-border: var(--color-warm-300);
   --input-bg: #ffffff;
+  --skeleton-base: var(--color-warm-200);
 }
 
 /* ─── 다크모드 시멘틱 변수 ─── */
@@ -133,6 +144,7 @@
   --text-muted: #6b6080;
   --input-border: #4d4562;
   --input-bg: #1e1a2a;
+  --skeleton-base: #3d3452;
 
   /* ─── 다크모드 색상 팔레트 오버라이드 ─── */
   /* 배경용 (50-200): 어둡게, 보더/악센트용 (300): 중간톤 */
@@ -248,7 +260,7 @@ body {
 }
 
 .animate-sheet-up {
-  animation: sheet-up 0.25s ease-out;
+  animation: sheet-up 0.3s cubic-bezier(0.32, 0.72, 0, 1);
 }
 
 /* iOS 네이티브 date input이 w-full을 무시하고 컨테이너 밖으로 넘치는 버그 수정 (#114) */
@@ -258,4 +270,57 @@ input[type="datetime-local"] {
   box-sizing: border-box;
   -webkit-appearance: none;
   appearance: none;
+}
+
+/* ── HIG 디자인 토큰 ── */
+
+/* 타이포그래피 */
+.text-display {
+  @apply text-3xl font-bold tracking-tight leading-tight;
+}
+.text-amount {
+  @apply text-sm font-semibold tabular-nums tracking-wide;
+}
+
+/* 폼 */
+.input-base {
+  @apply w-full px-3 py-3 text-sm
+    bg-[var(--input-bg)] text-[var(--text-primary)]
+    border border-[var(--input-border)] rounded-xl
+    focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-400
+    transition-colors;
+}
+.dark .input-base {
+  @apply focus:ring-grape-400/40 focus:border-grape-300;
+}
+
+/* 카드 */
+.card-surface {
+  @apply bg-[var(--surface-card)] rounded-2xl shadow-sm;
+}
+.dark .card-surface {
+  @apply shadow-none border border-[var(--border-default)];
+}
+
+/* 모션 */
+.animate-page-in {
+  animation: page-in 0.25s ease-out;
+}
+
+.animate-stagger > * {
+  animation: page-in 0.2s ease-out both;
+}
+.animate-stagger > *:nth-child(1) { animation-delay: 0ms; }
+.animate-stagger > *:nth-child(2) { animation-delay: 40ms; }
+.animate-stagger > *:nth-child(3) { animation-delay: 80ms; }
+.animate-stagger > *:nth-child(4) { animation-delay: 120ms; }
+.animate-stagger > *:nth-child(5) { animation-delay: 160ms; }
+.animate-stagger > *:nth-child(n+6) { animation: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-page-in,
+  .animate-stagger > *,
+  .animate-sheet-up {
+    animation: none !important;
+  }
 }
