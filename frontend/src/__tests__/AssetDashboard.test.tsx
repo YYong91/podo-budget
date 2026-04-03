@@ -36,6 +36,7 @@ vi.mock('../api/assets', () => ({
     getAll: vi.fn(),
     getSummary: vi.fn(),
     getSnapshots: vi.fn(),
+    createSnapshot: vi.fn(),
     getGoal: vi.fn(),
     getMonthlySavings: vi.fn(),
     setGoal: vi.fn(),

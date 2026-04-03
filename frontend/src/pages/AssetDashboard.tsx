@@ -106,9 +106,7 @@ export default function AssetDashboard() {
     if (!activeHouseholdId) return
     setSyncing(true)
     try {
-      // getSummary → 실시간 시세 조회 (Yahoo Finance/업비트)
-      await assetApi.getSummary(activeHouseholdId)
-      // 스냅샷 저장 (이번 달 upsert)
+      // createSnapshot 내부에서 get_asset_summary → Yahoo Finance 실시간 시세 조회 + 스냅샷 저장
       await assetApi.createSnapshot(activeHouseholdId)
       // 스냅샷 캐시 갱신 → UI 자동 업데이트
       await queryClient.invalidateQueries({ queryKey: ['asset-snapshots'] })
@@ -216,20 +214,20 @@ export default function AssetDashboard() {
   const totalAssets = summary?.total_assets ?? 0
   const totalLiabilities = summary?.total_liabilities ?? 0
 
-  // 성과 카드: live vs 마지막 스냅샷
-  const lastSnapshot = snapshots.length > 0 ? snapshots[snapshots.length - 1] : null
-  const netWorthChange = lastSnapshot ? netWorth - lastSnapshot.net_worth : null
+  // 성과 카드: 이번 달(최신) vs 직전 월 스냅샷 비교
+  // snapshots은 과거→최신 순 (reverse됨), 마지막이 이번 달, 그 앞이 직전 월
+  const prevSnapshot = snapshots.length >= 2 ? snapshots[snapshots.length - 2] : null
+  const netWorthChange = prevSnapshot ? netWorth - prevSnapshot.net_worth : null
 
-  const breakdownDiff = lastSnapshot && summary
+  const breakdownDiff = prevSnapshot && summary
     ? computeBreakdownDiff(
         { breakdown: summary.breakdown, totalLiabilities },
-        { breakdown: lastSnapshot.breakdown, totalLiabilities: lastSnapshot.total_liabilities },
+        { breakdown: prevSnapshot.breakdown, totalLiabilities: prevSnapshot.total_liabilities },
       )
     : []
 
-  // live 순자산 prepend → 이번 달도 스트릭에 포함
   const streak = computeStreak(
-    [{ net_worth: netWorth }, ...[...snapshots].reverse().map(s => ({ net_worth: s.net_worth }))],
+    snapshots.map(s => ({ net_worth: s.net_worth })),
   )
 
   const savingsAmount = savings?.savings ?? 0
