@@ -96,8 +96,19 @@ export default function AssetDashboard() {
   // 순자산 목표 — 미설정이면 null (404 → null 처리)
   const { data: goal = null } = useQuery({
     queryKey: ['asset-goal', activeHouseholdId],
-    queryFn: () =>
-      assetApi.getGoal(activeHouseholdId!).then(r => r.data).catch(() => null),
+    queryFn: async () => {
+      try {
+        const res = await assetApi.getGoal(activeHouseholdId!)
+        return res.data
+      } catch (err: unknown) {
+        // 404(목표 미설정)만 null — 서버 에러는 throw
+        if (err && typeof err === 'object' && 'response' in err) {
+          const axiosErr = err as { response?: { status?: number } }
+          if (axiosErr.response?.status === 404) return null
+        }
+        throw err
+      }
+    },
     enabled: !!activeHouseholdId,
   })
 

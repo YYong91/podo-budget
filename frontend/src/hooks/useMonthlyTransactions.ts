@@ -35,6 +35,8 @@ export const monthlyTransactionsKeys = {
 
 const CATEGORY_STALE_TIME = 5 * 60 * 1000 // 카테고리는 5분 캐시 (변경 빈도 낮음)
 
+type MonthlyData = { expenses: Expense[]; incomes: Income[]; recurring: RecurringTransaction[] }
+
 // 훅 외부 fetch 함수 — React Query queryFn으로 사용
 async function fetchMonthlyData(
   householdId: number,
@@ -49,11 +51,12 @@ async function fetchMonthlyData(
     recurringApi.getAll({ household_id: householdId }).catch(() => ({ data: [] as RecurringTransaction[] })),
   ])
 
-  return {
-    expenses: expRes.data,
-    incomes: incRes.data,
-    recurring: recurringRes.data ?? [],
-  }
+  // 핵심 데이터(지출+수입) 모두 빈 응답이고 정기거래도 없으면 — 전부 실패한 것으로 간주
+  const expenses = expRes.data
+  const incomes = incRes.data
+  const recurring = recurringRes.data ?? []
+
+  return { expenses, incomes, recurring }
 }
 
 interface UseMonthlyTransactionsOptions {
@@ -166,27 +169,27 @@ export function useMonthlyTransactions({ activeHouseholdId }: UseMonthlyTransact
   const setExpenses = useCallback(
     (updater: Expense[] | ((prev: Expense[]) => Expense[])) => {
       const key = monthlyTransactionsKeys.byMonth(activeHouseholdId ?? 0, currentYear, currentMonth)
-      queryClient.setQueryData(key, (prev: typeof transactionData) => {
+      queryClient.setQueryData(key, (prev: MonthlyData | undefined) => {
         if (!prev) return prev
         const current = prev.expenses
         const next = typeof updater === 'function' ? updater(current) : updater
         return { ...prev, expenses: next }
       })
     },
-    [queryClient, activeHouseholdId, currentYear, currentMonth, transactionData],
+    [queryClient, activeHouseholdId, currentYear, currentMonth],
   )
 
   const setIncomes = useCallback(
     (updater: Income[] | ((prev: Income[]) => Income[])) => {
       const key = monthlyTransactionsKeys.byMonth(activeHouseholdId ?? 0, currentYear, currentMonth)
-      queryClient.setQueryData(key, (prev: typeof transactionData) => {
+      queryClient.setQueryData(key, (prev: MonthlyData | undefined) => {
         if (!prev) return prev
         const current = prev.incomes
         const next = typeof updater === 'function' ? updater(current) : updater
         return { ...prev, incomes: next }
       })
     },
-    [queryClient, activeHouseholdId, currentYear, currentMonth, transactionData],
+    [queryClient, activeHouseholdId, currentYear, currentMonth],
   )
 
   // setPendingRecurring — ScheduledTransactions execute/skip 후 UI 즉시 반영용
@@ -194,13 +197,13 @@ export function useMonthlyTransactions({ activeHouseholdId }: UseMonthlyTransact
   const setPendingRecurring = useCallback(
     (updater: RecurringTransaction[] | ((prev: RecurringTransaction[]) => RecurringTransaction[])) => {
       const key = monthlyTransactionsKeys.byMonth(activeHouseholdId ?? 0, currentYear, currentMonth)
-      queryClient.setQueryData(key, (prev: typeof transactionData) => {
+      queryClient.setQueryData(key, (prev: MonthlyData | undefined) => {
         if (!prev) return prev
         const next = typeof updater === 'function' ? updater(prev.recurring) : updater
         return { ...prev, recurring: next }
       })
     },
-    [queryClient, activeHouseholdId, currentYear, currentMonth, transactionData],
+    [queryClient, activeHouseholdId, currentYear, currentMonth],
   )
 
   // 카테고리 O(1) 조회용 Map
