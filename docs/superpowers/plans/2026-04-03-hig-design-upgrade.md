@@ -680,7 +680,7 @@ Run: `cd frontend && npx vitest run`
 Expected: PASS
 
 ```bash
-git add frontend/src/components/transaction/MonthlyView.tsx
+git add frontend/src/components/transaction/MonthlyView.tsx frontend/src/components/transaction/SearchMode.tsx
 git commit -m "style: 가계부 홈 빈 상태 variant 적용"
 ```
 
@@ -712,9 +712,9 @@ git commit -m "chore: PR 2 가계부 홈 디자인 적용 완료"
 
 InsightsPage의 첫 번째 섹션(월 요약)을 HeroSummary로 교체.
 
-- [ ] **Step 2: LoadingSpinner → 스켈레톤 교체**
+- [ ] **Step 2: 인라인 로딩 스피너 → Skeleton 프리미티브 교체**
 
-InsightsPage의 loading 상태를 Skeleton 프리미티브 조합으로 교체:
+InsightsPage는 LoadingSpinner가 아닌 인라인 `animate-pulse` 스켈레톤을 사용 중. 이를 공통 Skeleton 프리미티브로 교체:
 ```tsx
 import { Skeleton } from '../components/skeleton/Skeleton'
 
@@ -815,7 +815,8 @@ git commit -m "style: TransactionForm input-base 폼 토큰 적용"
 - [ ] **Step 3: 테스트 확인 + 커밋**
 
 ```bash
-git commit -m "style: AssetForm/ExpenseDetail/IncomeDetail input-base 적용"
+git add frontend/src/pages/AssetForm.tsx frontend/src/pages/ExpenseForm.tsx frontend/src/pages/IncomeForm.tsx frontend/src/pages/ExpenseDetail.tsx frontend/src/pages/IncomeDetail.tsx
+git commit -m "style: 입력폼 + 상세 페이지 input-base 적용"
 ```
 
 ---
@@ -882,9 +883,9 @@ git commit -m "style: 자산탭 디자인 토큰 통일 + 스켈레톤 + 다크�
 - Modify: `frontend/src/pages/RecurringList.tsx`
 - Modify: 기타 LoadingSpinner 사용 페이지
 
-- [ ] **Step 1: 나머지 페이지 LoadingSpinner → 스켈레톤**
+- [ ] **Step 1: 나머지 페이지 로딩 상태 → 스켈레톤**
 
-LoadingSpinner를 사용하는 나머지 페이지를 해당 페이지 구조에 맞는 스켈레톤으로 교체:
+LoadingSpinner 또는 인라인 로딩 스피너를 사용하는 나머지 페이지를 해당 페이지 구조에 맞는 스켈레톤으로 교체:
 - `frontend/src/pages/RecurringList.tsx`
 - `frontend/src/pages/CategoryManager.tsx`
 - `frontend/src/pages/BudgetManager.tsx`
@@ -895,8 +896,9 @@ LoadingSpinner를 사용하는 나머지 페이지를 해당 페이지 구조에
 
 - [ ] **Step 2: 나머지 EmptyState variant 적용**
 
-- CategoryManager, BudgetManager: `variant="section"`
+- CategoryManager, BudgetManager, AccountManager: `variant="section"`
 - RecurringList: `variant="primary"`
+- FeedbackPage: `variant="section"`
 
 - [ ] **Step 3: 나머지 폼 input-base 적용**
 
