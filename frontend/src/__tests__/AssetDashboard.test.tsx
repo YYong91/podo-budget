@@ -70,12 +70,10 @@ describe('AssetDashboard', () => {
     vi.mocked(assetApi.getAll).mockResolvedValue({ data: mockAssets } as any)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     vi.mocked(assetApi.getSummary).mockResolvedValue({ data: mockSummary } as any)
-    vi.mocked(assetApi.getSnapshots).mockResolvedValue({
-      data: [
-        { snapshot_date: '2026-03-01', total_assets: 85000000, total_liabilities: 0, net_worth: 85000000, breakdown: { stock_kr: 700000, deposit: 84300000 } },
-      ],
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } as any)
+    vi.mocked(assetApi.getSnapshots).mockResolvedValue({ data: [
+      { snapshot_date: '2026-03-01', total_assets: 85000000, total_liabilities: 0, net_worth: 85000000, breakdown: { stock_kr: 700000, deposit: 84300000 } },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ] } as any)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     vi.mocked(assetApi.getGoal).mockResolvedValue({ data: null } as any)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
