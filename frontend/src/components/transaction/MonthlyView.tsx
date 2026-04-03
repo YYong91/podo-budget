@@ -5,6 +5,7 @@
  */
 
 import { useRef, useMemo, useCallback, useState } from 'react'
+import { Skeleton } from '../skeleton/Skeleton'
 import PeriodNavigator from '../stats/PeriodNavigator'
 import HeroSummary from '../stats/HeroSummary'
 import MiniCalendar from '../MiniCalendar'
@@ -263,23 +264,28 @@ export default function MonthlyView({
 /** 월별 거래 리스트 로딩 스켈레톤 */
 function MonthlyViewSkeleton() {
   return (
-    <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] overflow-hidden">
-      {[1, 2, 3].map(i => (
-        <div key={i}>
-          <div className="bg-[var(--surface-elevated)] px-4 py-2 border-b border-[var(--border-subtle)]">
-            <div className="h-3 w-24 bg-[var(--surface-hover)] rounded animate-pulse" />
-          </div>
-          {[1, 2].map(j => (
-            <div key={j} className="px-4 py-3 space-y-2">
-              <div className="flex justify-between">
-                <div className="h-4 w-32 bg-[var(--border-subtle)] rounded animate-pulse" />
-                <div className="h-4 w-20 bg-[var(--border-subtle)] rounded animate-pulse" />
-              </div>
-              <div className="h-3 w-12 bg-[var(--border-subtle)] rounded-full animate-pulse" />
-            </div>
-          ))}
+    <div className="space-y-4">
+      {/* 히어로 골격 */}
+      <div className="card-surface p-6 space-y-3">
+        <Skeleton className="h-4 w-20" />
+        <Skeleton className="h-8 w-48" />
+        <Skeleton className="h-3 w-36" />
+      </div>
+      {/* 날짜 헤더 + 거래 3줄 */}
+      <div className="card-surface overflow-hidden">
+        <div className="px-4 py-2">
+          <Skeleton className="h-3 w-24" />
         </div>
-      ))}
+        {[1, 2, 3].map(i => (
+          <div key={i} className="px-4 py-4 flex items-center justify-between">
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-32" />
+              <Skeleton className="h-3 w-16 rounded-full" />
+            </div>
+            <Skeleton className="h-4 w-20" />
+          </div>
+        ))}
+      </div>
     </div>
   )
 }
