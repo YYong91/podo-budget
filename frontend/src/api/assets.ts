@@ -26,6 +26,11 @@ export const assetApi = {
       params: { household_id: householdId },
     }),
 
+  createSnapshot: (householdId: number) =>
+    apiClient.post<AssetSnapshot>('/assets/snapshots', null, {
+      params: { household_id: householdId },
+    }),
+
   getSnapshots: (householdId: number, months?: number) =>
     apiClient.get<AssetSnapshot[]>('/assets/snapshots', {
       params: {

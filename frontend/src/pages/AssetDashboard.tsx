@@ -86,8 +86,8 @@ export default function AssetDashboard() {
     enabled: !!activeHouseholdId,
   })
 
-  // 최신 스냅샷으로 placeholder 생성 — 실시간 시세 도착 전까지 즉시 표시
-  const snapshotPlaceholder = useMemo(() => {
+  // 자산 요약 — 스냅샷 데이터를 기본으로 표시, 실시간 시세는 사용자 수동 트리거
+  const summary = useMemo((): AssetSummary | undefined => {
     if (snapshots.length === 0) return undefined
     const latest = snapshots[snapshots.length - 1]
     return {
@@ -95,17 +95,30 @@ export default function AssetDashboard() {
       total_assets: latest.total_assets,
       total_liabilities: latest.total_liabilities,
       breakdown: latest.breakdown ?? {},
-    } as AssetSummary
+      total_profit_loss: 0,
+      total_profit_loss_pct: null,
+    }
   }, [snapshots])
 
-  // 자산 요약 (실시간 시세) — 스냅샷 placeholder를 먼저 보여주고 백그라운드에서 갱신
-  const { data: summary } = useQuery({
-    queryKey: ['asset-summary', activeHouseholdId],
-    queryFn: () => assetApi.getSummary(activeHouseholdId!).then(r => r.data),
-    enabled: !!activeHouseholdId,
-    placeholderData: snapshotPlaceholder,
-    staleTime: 5 * 60 * 1000, // 실시간 시세는 5분 캐시
-  })
+  // 시세 업데이트 — 사용자가 버튼 클릭 시 실시간 시세 조회 + 스냅샷 저장
+  const [syncing, setSyncing] = useState(false)
+  const handleSyncPrices = useCallback(async () => {
+    if (!activeHouseholdId) return
+    setSyncing(true)
+    try {
+      // getSummary → 실시간 시세 조회 (Yahoo Finance/업비트)
+      await assetApi.getSummary(activeHouseholdId)
+      // 스냅샷 저장 (이번 달 upsert)
+      await assetApi.createSnapshot(activeHouseholdId)
+      // 스냅샷 캐시 갱신 → UI 자동 업데이트
+      await queryClient.invalidateQueries({ queryKey: ['asset-snapshots'] })
+      addToast('success', '시세가 업데이트되었습니다')
+    } catch {
+      addToast('error', '시세 업데이트에 실패했습니다')
+    } finally {
+      setSyncing(false)
+    }
+  }, [activeHouseholdId, queryClient, addToast])
 
   // 순자산 목표 — 미설정이면 null (404 → null 처리)
   const { data: goal = null } = useQuery({
@@ -231,6 +244,15 @@ export default function AssetDashboard() {
         totalAssets={totalAssets}
         totalLiabilities={totalLiabilities}
       />
+
+      {/* 시세 업데이트 버튼 — 주식/코인 실시간 시세 조회 + 스냅샷 저장 */}
+      <button
+        onClick={handleSyncPrices}
+        disabled={syncing}
+        className="w-full py-2.5 text-xs font-medium text-[var(--text-secondary)] bg-[var(--surface-elevated)] rounded-lg hover:bg-[var(--surface-hover)] transition-colors disabled:opacity-50"
+      >
+        {syncing ? '시세 업데이트 중...' : '시세 업데이트'}
+      </button>
 
       {netWorthChange != null && (
         <MonthlyPerformanceCard
