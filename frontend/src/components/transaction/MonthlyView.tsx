@@ -203,37 +203,49 @@ export default function MonthlyView({
         </div>
       ) : (
         <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] overflow-hidden">
-          {Array.from(monthly.grouped.entries()).map(([dateKey, txs]) => (
-            <div key={dateKey}>
-              {/* 스티키 날짜 헤더 */}
-              <div
-                ref={(el) => { if (el) dateRefs.current.set(dateKey, el) }}
-                className="sticky top-0 md:top-0 z-10 bg-[var(--surface-elevated)] px-4 py-2 border-b border-[var(--border-subtle)] scroll-mt-14 md:scroll-mt-0"
-              >
-                <span className="text-xs font-semibold text-[var(--text-secondary)]">
-                  {formatDateHeader(dateKey)}
-                </span>
+          {Array.from(monthly.grouped.entries()).map(([dateKey, txs], index) => {
+            // 날짜별 합계: 지출은 음수, 수입은 양수
+            const dailyTotal = txs.reduce(
+              (sum, tx) => sum + (tx.type === 'expense' ? -tx.amount : tx.amount),
+              0
+            )
+            return (
+              <div key={dateKey} className={index > 0 ? 'mt-6' : ''}>
+                {/* 스티키 날짜 헤더 — 날짜 텍스트 + 일별 합계 */}
+                <div
+                  ref={(el) => { if (el) dateRefs.current.set(dateKey, el) }}
+                  className="sticky top-0 md:top-0 z-10 bg-[var(--surface-elevated)] px-4 py-2 scroll-mt-14 md:scroll-mt-0"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-[var(--text-secondary)]">
+                      {formatDateHeader(dateKey)}
+                    </span>
+                    <span className="text-amount text-[var(--text-muted)]">
+                      {formatAmount(dailyTotal)}
+                    </span>
+                  </div>
+                </div>
+                {/* 거래 항목들 — border 대신 gap으로 간격 */}
+                <div className="flex flex-col gap-1">
+                  {txs.map(tx => (
+                    <TransactionItem
+                      key={`${tx.type}-${tx.id}`}
+                      id={tx.id}
+                      type={tx.type}
+                      description={tx.description}
+                      amount={tx.amount}
+                      categoryId={tx.category_id}
+                      categoryMap={monthly.categoryMap}
+                      excludeFromStats={tx.exclude_from_stats}
+                      recurringTransactionId={tx.recurring_transaction_id}
+                      onCategoryClick={categoryClickHandlers.get(`${tx.type}-${tx.id}`)!}
+                      recordedBy={memberMap && tx.user_id != null ? memberMap.get(tx.user_id) : undefined}
+                    />
+                  ))}
+                </div>
               </div>
-              {/* 거래 항목들 */}
-              <div className="divide-y divide-[var(--border-subtle)]">
-                {txs.map(tx => (
-                  <TransactionItem
-                    key={`${tx.type}-${tx.id}`}
-                    id={tx.id}
-                    type={tx.type}
-                    description={tx.description}
-                    amount={tx.amount}
-                    categoryId={tx.category_id}
-                    categoryMap={monthly.categoryMap}
-                    excludeFromStats={tx.exclude_from_stats}
-                    recurringTransactionId={tx.recurring_transaction_id}
-                    onCategoryClick={categoryClickHandlers.get(`${tx.type}-${tx.id}`)!}
-                    recordedBy={memberMap && tx.user_id != null ? memberMap.get(tx.user_id) : undefined}
-                  />
-                ))}
-              </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       )}
     </>
