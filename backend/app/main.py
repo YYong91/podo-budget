@@ -113,7 +113,10 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
         # MIGRATION_DATABASE_URL(Direct connection) 우선, 없으면 DATABASE_URL
         migration_url = settings.MIGRATION_DATABASE_URL or settings.DATABASE_URL
-        connect_args: dict[str, int] = {} if settings.MIGRATION_DATABASE_URL else {"prepared_statement_cache_size": 0, "statement_cache_size": 0}
+        # pgbouncer(transaction pooler) 경유 시 prepared statement 캐시 비활성화
+        # SQLite(E2E/테스트)에서는 지원하지 않는 옵션이므로 PostgreSQL만 적용
+        use_pg_pooler_args = not settings.MIGRATION_DATABASE_URL and "postgresql" in migration_url
+        connect_args: dict[str, int] = {"prepared_statement_cache_size": 0, "statement_cache_size": 0} if use_pg_pooler_args else {}
 
         engine = create_async_engine(migration_url, poolclass=pool.NullPool, connect_args=connect_args)
 
