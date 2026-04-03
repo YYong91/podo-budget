@@ -14,7 +14,7 @@ import { useToast } from '../hooks/useToast'
 import { TOAST } from '../constants/toastMessages'
 import EmptyState from '../components/EmptyState'
 import ErrorState from '../components/ErrorState'
-import LoadingSpinner from '../components/LoadingSpinner'
+import { Skeleton } from '../components/skeleton/Skeleton'
 
 /**
  * 날짜 포맷팅 함수 (YYYY.MM.DD HH:mm)
@@ -80,6 +80,26 @@ function getExpiryStatus(expiresAt: string): {
     message: '곧 만료',
     color: 'text-rose-600',
   }
+}
+
+function InvitationListSkeleton() {
+  return (
+    <div className="space-y-4">
+      {[1, 2].map(i => (
+        <div key={i} className="card-surface p-5 space-y-3">
+          <Skeleton className="h-5 w-40" />
+          <div className="space-y-2">
+            <Skeleton className="h-3 w-32" />
+            <Skeleton className="h-3 w-24" />
+          </div>
+          <div className="flex gap-3 pt-2">
+            <Skeleton className="h-9 flex-1" />
+            <Skeleton className="h-9 flex-1" />
+          </div>
+        </div>
+      ))}
+    </div>
+  )
 }
 
 export default function InvitationListPage() {
@@ -160,7 +180,7 @@ export default function InvitationListPage() {
    * 로딩 상태
    */
   if (isLoading && myInvitations.length === 0) {
-    return <LoadingSpinner />
+    return <InvitationListSkeleton />
   }
 
   /**
@@ -199,6 +219,7 @@ export default function InvitationListPage() {
       {/* 초대 목록 */}
       {pendingInvitations.length === 0 ? (
         <EmptyState
+          variant="section"
           title="받은 초대가 없습니다"
           description="다른 사람으로부터 초대를 받으면 여기에 표시됩니다"
           action={{

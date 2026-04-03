@@ -14,9 +14,25 @@ import { TOAST } from '../constants/toastMessages'
 import budgetApi from '../api/budgets'
 import EmptyState from '../components/EmptyState'
 import ErrorState from '../components/ErrorState'
-import LoadingSpinner from '../components/LoadingSpinner'
+import { Skeleton } from '../components/skeleton/Skeleton'
 import type { BudgetAlert, CategoryBudgetOverview } from '../types'
 import { formatAmount } from '../utils/format'
+
+function BudgetManagerSkeleton() {
+  return (
+    <div className="space-y-3">
+      {[1, 2, 3, 4].map(i => (
+        <div key={i} className="card-surface p-4 flex items-center justify-between">
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-28" />
+            <Skeleton className="h-3 w-36" />
+          </div>
+          <Skeleton className="h-8 w-24" />
+        </div>
+      ))}
+    </div>
+  )
+}
 
 export default function BudgetManager() {
   const goBack = useGoBack('/settings')
@@ -206,7 +222,7 @@ export default function BudgetManager() {
   }
 
   if (loading) {
-    return <LoadingSpinner />
+    return <BudgetManagerSkeleton />
   }
 
   if (error) {
@@ -237,7 +253,7 @@ export default function BudgetManager() {
             step="10000"
             value={localTotalBudget}
             onChange={(e) => setLocalTotalBudget(e.target.value)}
-            className="w-44 px-3 py-2 text-sm border border-[var(--input-border)] rounded-lg focus:outline-none focus:ring-2 focus:ring-grape-500 text-right"
+            className="input-base w-44 text-right"
             placeholder="미설정"
             aria-label="월 총 예산"
           />
@@ -341,6 +357,7 @@ export default function BudgetManager() {
       {/* 카테고리별 예산 인라인 편집 */}
       {overview.length === 0 ? (
         <EmptyState
+          variant="section"
           title="등록된 카테고리가 없습니다"
           description="카테고리 관리 페이지에서 카테고리를 먼저 추가해주세요"
         />
@@ -393,7 +410,7 @@ export default function BudgetManager() {
                         step="1000"
                         value={localAmounts[item.category_id] ?? ''}
                         onChange={(e) => handleAmountChange(item.category_id, e.target.value)}
-                        className="w-28 px-2 py-1.5 text-sm border border-[var(--input-border)] rounded-lg focus:outline-none focus:ring-2 focus:ring-grape-500 text-right"
+                        className="input-base w-28 text-right"
                         placeholder="예산 없음"
                         aria-label={`${item.category_name} 예산`}
                       />

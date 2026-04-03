@@ -14,6 +14,7 @@ import { categoryApi } from '../api/categories'
 import { useHouseholdStore } from '../stores/useHouseholdStore'
 import EmptyState from '../components/EmptyState'
 import ErrorState from '../components/ErrorState'
+import { Skeleton } from '../components/skeleton/Skeleton'
 import RecurringModal from '../components/recurring/RecurringModal'
 import type { RecurringFormData } from '../components/recurring/RecurringModal'
 import type { RecurringTransaction, RecurringTransactionCreate, Category } from '../types'
@@ -34,6 +35,22 @@ const emptyForm: RecurringFormData = {
   interval: '14',
   start_date: getLocalDateString(),
   end_date: '',
+}
+
+function RecurringListSkeleton() {
+  return (
+    <div className="space-y-3">
+      {[1, 2, 3, 4].map(i => (
+        <div key={i} className="card-surface p-4 flex items-center justify-between">
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-32" />
+            <Skeleton className="h-3 w-20" />
+          </div>
+          <Skeleton className="h-8 w-16" />
+        </div>
+      ))}
+    </div>
+  )
 }
 
 export default function RecurringList() {
@@ -249,12 +266,11 @@ export default function RecurringList() {
 
       {/* 목록 */}
       {loading ? (
-        <div className="flex items-center justify-center h-32">
-          <div className="animate-spin rounded-full border-b-2 border-grape-600 w-6 h-6" />
-        </div>
+        <RecurringListSkeleton />
       ) : items.length === 0 ? (
         <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)]/60">
           <EmptyState
+            variant="primary"
             title="등록된 반복 거래가 없습니다"
             description="매월 반복되는 지출이나 수입을 등록하면 자동으로 알려드립니다."
             action={{ label: '반복 거래 추가', onClick: openAdd }}

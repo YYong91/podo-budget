@@ -15,10 +15,27 @@ import { TOAST } from '../constants/toastMessages'
 import CreateHouseholdModal from '../components/CreateHouseholdModal'
 import EmptyState from '../components/EmptyState'
 import ErrorState from '../components/ErrorState'
-import LoadingSpinner from '../components/LoadingSpinner'
+import { Skeleton } from '../components/skeleton/Skeleton'
 import type { CreateHouseholdDto } from '../types'
 import { formatDate, formatRole, getRoleBadgeColor } from '../utils/household'
 import { trackEvent } from '../utils/analytics'
+
+function HouseholdListSkeleton() {
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      {[1, 2, 3].map(i => (
+        <div key={i} className="card-surface p-5 space-y-3">
+          <Skeleton className="h-5 w-36" />
+          <Skeleton className="h-3 w-48" />
+          <div className="flex justify-between pt-2">
+            <Skeleton className="h-3 w-12" />
+            <Skeleton className="h-3 w-20" />
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
 
 export default function HouseholdListPage() {
   const navigate = useNavigate()
@@ -84,7 +101,7 @@ export default function HouseholdListPage() {
    * 로딩 상태
    */
   if (isLoading && households.length === 0) {
-    return <LoadingSpinner />
+    return <HouseholdListSkeleton />
   }
 
   /**
@@ -126,6 +143,7 @@ export default function HouseholdListPage() {
       {/* 가구 목록 */}
       {households.length === 0 ? (
         <EmptyState
+          variant="section"
           title="아직 속한 가구가 없습니다"
           description="새로운 가구를 만들거나 다른 사람의 초대를 받아보세요"
           action={{
