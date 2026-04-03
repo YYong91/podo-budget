@@ -7,6 +7,7 @@ import { describe, it, expect, vi } from 'vitest'
 import { render, screen, waitFor, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { http, HttpResponse } from 'msw'
 import { server } from '../../mocks/server'
 import TransactionList from '../TransactionList'
@@ -44,10 +45,15 @@ vi.mock('../../contexts/AuthContext', () => ({
 
 
 function renderPage(initialRoute = '/home') {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false, gcTime: 0 } },
+  })
   return render(
-    <MemoryRouter initialEntries={[initialRoute]}>
-      <TransactionList />
-    </MemoryRouter>,
+    <QueryClientProvider client={queryClient}>
+      <MemoryRouter initialEntries={[initialRoute]}>
+        <TransactionList />
+      </MemoryRouter>
+    </QueryClientProvider>,
   )
 }
 
