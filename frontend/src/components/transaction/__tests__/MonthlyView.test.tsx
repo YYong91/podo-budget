@@ -339,6 +339,16 @@ describe('MonthlyView 컴포넌트', () => {
     localStorage.removeItem('podo-welcome-dismissed')
   })
 
+  it('월간 지출 히어로 카드를 표시한다', async () => {
+    setupCurrentMonthHandlers()
+    renderPage()
+    await waitFor(() => {
+      // HeroSummary label — "N월 지출"
+      const now = new Date()
+      expect(screen.getByText(`${now.getMonth() + 1}월 지출`)).toBeInTheDocument()
+    })
+  })
+
   describe('달력 접기/펼치기', () => {
     it('최초 방문 시 달력이 펼쳐져 있다', async () => {
       renderPage()

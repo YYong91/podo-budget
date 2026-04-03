@@ -6,6 +6,7 @@
 
 import { useRef, useMemo, useCallback, useState } from 'react'
 import PeriodNavigator from '../stats/PeriodNavigator'
+import HeroSummary from '../stats/HeroSummary'
 import MiniCalendar from '../MiniCalendar'
 import TransactionItem from '../TransactionItem'
 import ScheduledTransactions from '../ScheduledTransactions'
@@ -95,6 +96,13 @@ export default function MonthlyView({
           <Search className="w-5 h-5 text-[var(--text-secondary)]" />
         </button>
       </div>
+
+      {/* 월간 지출 히어로 요약 — currentMonth는 0-indexed이므로 +1 */}
+      <HeroSummary
+        label={`${monthly.currentMonth + 1}월 지출`}
+        amount={monthly.totalExpense}
+        sublabel={`수입 ${formatAmount(monthly.totalIncome)} · 잔액 ${formatAmount(monthly.totalIncome - monthly.totalExpense)}`}
+      />
 
       {/* 요약 + 필터 */}
       <div className="flex items-center justify-center gap-6">
