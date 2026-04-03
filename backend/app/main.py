@@ -195,12 +195,27 @@ app.add_middleware(
 )
 
 
-# Request ID 미들웨어 — 모든 응답에 X-Request-ID 헤더 추가 (#244)
+# Request ID + 타이밍 미들웨어 — 모든 응답에 X-Request-ID + 처리 시간 로깅 (#244)
 @app.middleware("http")
 async def add_request_id(request: Request, call_next: Callable[[Request], Awaitable[Response]]) -> Response:
+    import time
+
     request_id = request.headers.get("X-Request-ID") or str(uuid.uuid4())[:8]
+    start = time.monotonic()
     response = await call_next(request)
+    elapsed_ms = (time.monotonic() - start) * 1000
     response.headers["X-Request-ID"] = request_id
+    response.headers["X-Response-Time"] = f"{elapsed_ms:.0f}ms"
+    # /health, /docs 등은 로깅 생략
+    path = request.url.path
+    if path.startswith("/api/") and elapsed_ms > 500:
+        logging.getLogger("perf").warning(
+            "SLOW %s %s → %dms [%s]",
+            request.method,
+            path,
+            elapsed_ms,
+            request_id,
+        )
     return response
 
 
