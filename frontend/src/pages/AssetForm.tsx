@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams, useSearchParams, Link } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
 import { ArrowLeft, Search, Trash2 } from 'lucide-react'
 import { useToast } from '../hooks/useToast'
 import { TOAST } from '../constants/toastMessages'
@@ -34,6 +35,7 @@ function isLiabilityType(type: AssetType): boolean {
 
 export default function AssetForm() {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const { id } = useParams<{ id: string }>()
   const [searchParams] = useSearchParams()
   const isEdit = !!id
@@ -145,6 +147,7 @@ export default function AssetForm() {
       }
       addToast('success', TOAST.ASSET_SAVED)
       trackEvent('asset_added')
+      await queryClient.invalidateQueries({ queryKey: ['assets'] })
       navigate('/assets')
     } catch {
       addToast('error', TOAST.SAVE_FAILED)
@@ -170,6 +173,7 @@ export default function AssetForm() {
         addToast('success', TOAST.ASSET_SAVED)
         trackEvent('asset_added')
       }
+      await queryClient.invalidateQueries({ queryKey: ['assets'] })
       navigate('/assets')
     } catch {
       addToast('error', TOAST.SAVE_FAILED)
@@ -184,6 +188,7 @@ export default function AssetForm() {
     try {
       await assetApi.delete(Number(id))
       addToast('success', TOAST.ASSET_DELETED)
+      await queryClient.invalidateQueries({ queryKey: ['assets'] })
       navigate('/assets')
     } catch {
       addToast('error', TOAST.DELETE_FAILED)
