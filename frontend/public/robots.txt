@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Allow: /landing
+
+Disallow: /api/
+Disallow: /auth/
+
+Sitemap: https://budget.podonest.com/sitemap.xml
