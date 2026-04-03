@@ -17,9 +17,9 @@ primary_region = "nrt"
 [http_service]
   internal_port = 8000
   force_https = true
-  auto_stop_machines = true   # 비용 절약: 사용 안 할 때 자동 중지
+  auto_stop_machines = true   # 트래픽 없으면 자동 중지
   auto_start_machines = true
-  min_machines_running = 0    # 비용 절약: 최소 0대
+  min_machines_running = 1    # 항상 1대 유지 — 콜드스타트 방지, 프리 티어 범위
 
   [[http_service.checks]]
     grace_period = "120s"
@@ -28,7 +28,7 @@ primary_region = "nrt"
     timeout = "10s"
     path = "/health"
 
-# 256MB로 충분 — auto_stop으로 비용 절약 + 프리 티어 범위
+# 256MB로 충분 — min_machines_running=1로 콜드스타트 없이 프리 티어 유지
 [[vm]]
   cpu_kind = "shared"
   cpus = 1
