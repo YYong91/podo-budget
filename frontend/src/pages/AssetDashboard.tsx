@@ -3,7 +3,7 @@
  * @description 자산 대시보드 — React Query 기반 섹션별 독립 로딩
  */
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { X } from 'lucide-react'
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query'
@@ -19,7 +19,7 @@ import AssetGroupList from '../components/asset/AssetGroupList'
 import AssetOnboarding from '../components/asset/AssetOnboarding'
 import UpdateNudge from '../components/asset/UpdateNudge'
 import { useToast } from '../hooks/useToast'
-import type { AssetType } from '../types'
+import type { AssetSummary, AssetType } from '../types'
 
 /** 자산 대시보드 로딩 스켈레톤 */
 function AssetDashboardSkeleton() {
@@ -78,19 +78,33 @@ export default function AssetDashboard() {
     enabled: !!activeHouseholdId,
   })
 
-  // 자산 요약 (순자산/총자산/총부채)
-  const { data: summary } = useQuery({
-    queryKey: ['asset-summary', activeHouseholdId],
-    queryFn: () => assetApi.getSummary(activeHouseholdId!).then(r => r.data),
-    enabled: !!activeHouseholdId,
-  })
-
-  // 스냅샷 — 과거→최신 순으로 저장 (차트 표시용)
+  // 스냅샷 — 과거→최신 순으로 저장 (차트 + placeholder용)
   const { data: snapshots = [] } = useQuery({
     queryKey: ['asset-snapshots', activeHouseholdId],
     queryFn: () =>
       assetApi.getSnapshots(activeHouseholdId!, 12).then(r => [...r.data].reverse()),
     enabled: !!activeHouseholdId,
+  })
+
+  // 최신 스냅샷으로 placeholder 생성 — 실시간 시세 도착 전까지 즉시 표시
+  const snapshotPlaceholder = useMemo(() => {
+    if (snapshots.length === 0) return undefined
+    const latest = snapshots[snapshots.length - 1]
+    return {
+      net_worth: latest.net_worth,
+      total_assets: latest.total_assets,
+      total_liabilities: latest.total_liabilities,
+      breakdown: latest.breakdown ?? {},
+    } as AssetSummary
+  }, [snapshots])
+
+  // 자산 요약 (실시간 시세) — 스냅샷 placeholder를 먼저 보여주고 백그라운드에서 갱신
+  const { data: summary } = useQuery({
+    queryKey: ['asset-summary', activeHouseholdId],
+    queryFn: () => assetApi.getSummary(activeHouseholdId!).then(r => r.data),
+    enabled: !!activeHouseholdId,
+    placeholderData: snapshotPlaceholder,
+    staleTime: 5 * 60 * 1000, // 실시간 시세는 5분 캐시
   })
 
   // 순자산 목표 — 미설정이면 null (404 → null 처리)

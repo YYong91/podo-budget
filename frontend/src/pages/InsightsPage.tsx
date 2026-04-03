@@ -50,7 +50,7 @@ import { formatAmount } from '../utils/format'
 
 // 타입
 import type {
-  StructuredInsights, HealthScore,
+  AssetSummary, StructuredInsights, HealthScore,
 } from '../types'
 
 // ── 날짜 유틸 ──
@@ -170,13 +170,7 @@ export default function InsightsPage() {
     enabled: !!activeHouseholdId,
   })
 
-  // ── Group 4: 자산 ──
-
-  const { data: assetSummary } = useQuery({
-    queryKey: ['insights-asset-summary', activeHouseholdId],
-    queryFn: () => assetApi.getSummary(activeHouseholdId!).then(r => r.data),
-    enabled: !!activeHouseholdId,
-  })
+  // ── Group 4: 자산 — 스냅샷만 사용 (getSummary는 Yahoo Finance 호출로 30초+ 걸림) ──
 
   const { data: snapshots = [] } = useQuery({
     queryKey: ['insights-snapshots', activeHouseholdId],
@@ -203,10 +197,20 @@ export default function InsightsPage() {
 
   // ── 파생 상태 (useMemo — 쿼리 결과 변경 시 재계산) ──
 
-  // 이전 스냅샷: snapshot_date 오름차순 정렬 후 첫 번째 (= 더 오래된 것)
-  const prevSnapshot = useMemo(() => {
+  // 스냅샷에서 자산 데이터 파생 — getSummary 대체 (Yahoo Finance 실시간 호출 제거)
+  const { prevSnapshot, assetSummary } = useMemo(() => {
     const sorted = [...snapshots].sort((a, b) => a.snapshot_date.localeCompare(b.snapshot_date))
-    return sorted.length >= 2 ? sorted[0] : null
+    const latest = sorted.length > 0 ? sorted[sorted.length - 1] : null
+    const prev = sorted.length >= 2 ? sorted[0] : null
+    const summary: AssetSummary | null = latest ? {
+      net_worth: latest.net_worth,
+      total_assets: latest.total_assets,
+      total_liabilities: latest.total_liabilities,
+      breakdown: latest.breakdown ?? {},
+      total_profit_loss: 0,       // 스냅샷에는 수익률 없음 — 돌아보기에서 미사용
+      total_profit_loss_pct: null,
+    } : null
+    return { prevSnapshot: prev, assetSummary: summary }
   }, [snapshots])
 
   // 저축성 지출 합계 (is_savings=true 카테고리만 집계)

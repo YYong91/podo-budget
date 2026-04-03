@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 # 시세 캐시
 _CACHE_MISS = object()  # "캐시 미스" sentinel — None(실패 캐시)과 구분 (#159)
 _price_cache: dict[str, tuple[float | None, float]] = {}  # key → (price_or_none, timestamp)
-CACHE_TTL = 300  # 성공 캐시 5분
+CACHE_TTL = 1800  # 성공 캐시 30분 — 빈번한 Yahoo Finance 호출 방지
 NEGATIVE_CACHE_TTL = 30  # 실패 캐시 30초 — 외부 API rate limit 방어 (#159)
 
 # singleflight 락 — 동시 요청이 같은 ticker 외부 API를 중복 호출하는 것을 방지 (#166)
