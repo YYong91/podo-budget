@@ -165,7 +165,7 @@ export default function InsightsPage() {
   // ── Group 3: 예산 ──
 
   const { data: budgetStats } = useQuery({
-    queryKey: ['insights-budget', monthStr],
+    queryKey: ['insights-budget', monthStr, activeHouseholdId],
     queryFn: () => getMonthlyStats(monthStr).then(r => r.data),
     enabled: !!activeHouseholdId,
   })
@@ -187,7 +187,7 @@ export default function InsightsPage() {
   // ── Group 5: 카테고리 — is_savings 계산용 (staleTime 연장으로 중복 요청 방지) ──
 
   const { data: expenseCategories = [] } = useQuery({
-    queryKey: ['categories-expense'],
+    queryKey: ['categories-expense', activeHouseholdId],
     queryFn: () => categoryApi.getAll({ type: 'expense' }).then(r => r.data),
     staleTime: 5 * 60 * 1000,
     enabled: !!activeHouseholdId,
