@@ -433,3 +433,37 @@ async def test_monthly_savings_uses_savings_category(authenticated_client, test_
     assert "month" in data
     assert "total_income" not in data  # 기존 필드 제거됨
     assert "net_savings" not in data
+
+
+@pytest.mark.asyncio
+async def test_create_insurance_asset(authenticated_client, test_household):
+    """보험/연금 자산유형 생성"""
+    response = await authenticated_client.post(
+        "/api/assets",
+        json={
+            "name": "국민연금",
+            "type": "insurance",
+            "manual_value": 15000000,
+            "household_id": test_household.id,
+        },
+    )
+    assert response.status_code == 201
+    assert response.json()["type"] == "insurance"
+    assert response.json()["manual_value"] == 15000000
+
+
+@pytest.mark.asyncio
+async def test_create_vehicle_asset(authenticated_client, test_household):
+    """자동차 자산유형 생성"""
+    response = await authenticated_client.post(
+        "/api/assets",
+        json={
+            "name": "현대 아이오닉6",
+            "type": "vehicle",
+            "manual_value": 35000000,
+            "household_id": test_household.id,
+        },
+    )
+    assert response.status_code == 201
+    assert response.json()["type"] == "vehicle"
+    assert response.json()["manual_value"] == 35000000
