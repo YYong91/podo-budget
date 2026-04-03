@@ -2,11 +2,14 @@
  * @file InsightsPage.tsx
  * @description 이달의 리포트 페이지 (월간)
  * 종합 요약 → 지출 카테고리 TOP → 예산 상황 → 자산 변화 → 이달의 인사이트 → AI 상세 분석
+ *
+ * React Query로 9개 API를 그룹별 독립 쿼리로 전환 — 핵심 데이터부터 섹션별 점진적 렌더링
  */
 
-import { useEffect, useState, useCallback } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Sparkles, Settings } from 'lucide-react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import ErrorState from '../components/ErrorState'
 import { useToast } from '../hooks/useToast'
 import { TOAST } from '../constants/toastMessages'
@@ -47,9 +50,7 @@ import { formatAmount } from '../utils/format'
 
 // 타입
 import type {
-  StatsResponse, ComparisonResponse, BudgetMonthlyStatsResponse,
-  AssetSummary, AssetSnapshot, StructuredInsights, HealthScore,
-  PaymentMethodUsage,
+  StructuredInsights, HealthScore,
 } from '../types'
 
 // ── 날짜 유틸 ──
@@ -114,20 +115,9 @@ function InsightsPageSkeleton() {
 export default function InsightsPage() {
   const navigate = useNavigate()
   const { addToast } = useToast()
+  const queryClient = useQueryClient()
   const [monthStr, setMonthStr] = useState(toMonthStr(new Date()))
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(false)
   const activeHouseholdId = useHouseholdStore((s) => s.activeHouseholdId)
-
-  // 데이터 상태
-  const [expenseStats, setExpenseStats] = useState<StatsResponse | null>(null)
-  const [incomeStats, setIncomeStats] = useState<StatsResponse | null>(null)
-  const [budgetStats, setBudgetStats] = useState<BudgetMonthlyStatsResponse | null>(null)
-  const [comparison, setComparison] = useState<ComparisonResponse | null>(null)
-  const [incomeComparison, setIncomeComparison] = useState<ComparisonResponse | null>(null)
-  const [assetSummary, setAssetSummary] = useState<AssetSummary | null>(null)
-  const [prevSnapshot, setPrevSnapshot] = useState<AssetSnapshot | null>(null)
-  const [cardUsage, setCardUsage] = useState<PaymentMethodUsage[]>([])
 
   // 섹션 표시 설정
   const [sectionVisibility, setSectionVisibility] = useState<SectionVisibility>(loadSectionSettings)
@@ -138,110 +128,123 @@ export default function InsightsPage() {
     saveSectionSettings(updated)
   }, [])
 
-  // 저축성 지출 합계
-  const [savingsTotal, setSavingsTotal] = useState<number | undefined>(undefined)
-
-  // AI 분석 상태
-  const [healthScore, setHealthScore] = useState<HealthScore | null>(null)
+  // AI 분석 상태 (사용자 트리거 — 캐시 불필요)
   const [structuredInsights, setStructuredInsights] = useState<StructuredInsights | null>(null)
   const [aiLoading, setAiLoading] = useState(false)
 
-  // 데이터 로딩
-  useEffect(() => {
-    let cancelled = false
-    async function fetchAll() {
-      setLoading(true)
-      setError(false)
-      setStructuredInsights(null)
-      try {
-        if (!activeHouseholdId) {
-          setLoading(false)
-          return  // 가구 로딩 전 API 호출 방지 (#149)
-        }
-        const dateStr = `${monthStr}-15`
-        const hhId = activeHouseholdId
+  const dateStr = `${monthStr}-15`
 
-        // 1차 병렬: 지출/수입 통계 + 비교 + 예산 + 자산 + 카테고리 + 카드 실적
-        const [expRes, incRes, compRes, incCompRes, budgetRes, assetRes, snapRes, catRes, cardRes] = await Promise.allSettled([
-          statsApi.getStats('monthly', dateStr, hhId),
-          incomeApi.getStats('monthly', dateStr, hhId),
-          statsApi.getComparison('monthly', dateStr, 3, hhId),
-          incomeApi.getComparison('monthly', dateStr, 3, hhId),
-          getMonthlyStats(monthStr),
-          assetApi.getSummary(hhId),
-          assetApi.getSnapshots(hhId, 2),
-          categoryApi.getAll({ type: 'expense' }),
-          paymentMethodApi.getMonthlyUsage(monthStr, hhId),
-        ])
+  // ── Group 1: 핵심 데이터 — 지출/수입 통계 (렌더 게이팅 기준) ──
 
-        if (cancelled) return
+  const { data: expenseStats, isLoading: expLoading } = useQuery({
+    queryKey: ['insights-expense', monthStr, activeHouseholdId],
+    queryFn: () => statsApi.getStats('monthly', dateStr, activeHouseholdId!).then(r => r.data),
+    enabled: !!activeHouseholdId,
+  })
 
-        const exp = expRes.status === 'fulfilled' ? expRes.value.data : null
-        const inc = incRes.status === 'fulfilled' ? incRes.value.data : null
-        const comp = compRes.status === 'fulfilled' ? compRes.value.data : null
-        const incComp = incCompRes.status === 'fulfilled' ? incCompRes.value.data : null
-        const budget = budgetRes.status === 'fulfilled' ? budgetRes.value.data : null
-        const asset = assetRes.status === 'fulfilled' ? assetRes.value.data : null
-        const snaps = snapRes.status === 'fulfilled' ? snapRes.value.data : []
-        const cats = catRes.status === 'fulfilled' ? catRes.value.data : []
-        const cards = cardRes.status === 'fulfilled' ? cardRes.value.data : []
+  const { data: incomeStats, isLoading: incLoading } = useQuery({
+    queryKey: ['insights-income', monthStr, activeHouseholdId],
+    queryFn: () => incomeApi.getStats('monthly', dateStr, activeHouseholdId!).then(r => r.data),
+    enabled: !!activeHouseholdId,
+  })
 
-        // 핵심 데이터(지출+수입) 모두 실패하면 에러 상태
-        if (!exp && !inc && expRes.status === 'rejected' && incRes.status === 'rejected') {
-          setError(true)
-          return
-        }
+  // ── Group 2: 비교 데이터 — 전월 대비 트렌드 ──
 
-        setExpenseStats(exp)
-        setIncomeStats(inc)
-        setComparison(comp)
-        setIncomeComparison(incComp)
-        setBudgetStats(budget)
-        setAssetSummary(asset)
-        setCardUsage(cards)
+  const { data: comparison } = useQuery({
+    queryKey: ['insights-expense-comparison', monthStr, activeHouseholdId],
+    queryFn: () => statsApi.getComparison('monthly', dateStr, 3, activeHouseholdId!).then(r => r.data),
+    enabled: !!activeHouseholdId,
+  })
 
-        // 이전 스냅샷 (가장 오래된 것)
-        const sortedSnaps = (snaps ?? []).sort((a: AssetSnapshot, b: AssetSnapshot) =>
-          a.snapshot_date.localeCompare(b.snapshot_date)
-        )
-        setPrevSnapshot(sortedSnaps.length >= 2 ? sortedSnaps[0] : null)
+  const { data: incomeComparison } = useQuery({
+    queryKey: ['insights-income-comparison', monthStr, activeHouseholdId],
+    queryFn: () => incomeApi.getComparison('monthly', dateStr, 3, activeHouseholdId!).then(r => r.data),
+    enabled: !!activeHouseholdId,
+  })
 
-        // 저축성 지출 합계 계산 (is_savings=true 카테고리의 지출만 집계)
-        const savingsCatNames = new Set(cats.filter(c => c.is_savings).map(c => c.name))
-        let computedSavingsTotal: number | undefined
-        if (savingsCatNames.size > 0 && exp?.by_category) {
-          computedSavingsTotal = exp.by_category
-            .filter(c => savingsCatNames.has(c.category))
-            .reduce((sum, c) => sum + c.amount, 0)
-        }
-        // 저축성 카테고리가 하나라도 있으면 새 방식, 없으면 undefined(기존 방식 유지)
-        setSavingsTotal(savingsCatNames.size > 0 ? (computedSavingsTotal ?? 0) : undefined)
+  // ── Group 3: 예산 ──
 
-        // 건강 점수 계산
-        if (exp || inc) {
-          const score = calculateHealthScore({
-            incomeTotal: inc?.total ?? 0,
-            expenseTotal: exp?.total ?? 0,
-            savingsTotal: savingsCatNames.size > 0 ? (computedSavingsTotal ?? 0) : undefined,
-            budgetTotal: budget?.total_budget ?? undefined,
-            budgetSpent: budget?.total_spent ?? undefined,
-            totalLiabilities: asset?.total_liabilities ?? 0,
-            totalAssets: asset?.total_assets ?? 0,
-            avgLoanRate: 0,
-          })
-          setHealthScore(score)
-        }
-      } catch {
-        setError(true)
-      } finally {
-        if (!cancelled) setLoading(false)
-      }
-    }
-    fetchAll()
-    return () => { cancelled = true }
-  }, [monthStr, activeHouseholdId])
+  const { data: budgetStats } = useQuery({
+    queryKey: ['insights-budget', monthStr, activeHouseholdId],
+    queryFn: () => getMonthlyStats(monthStr).then(r => r.data),
+    enabled: !!activeHouseholdId,
+  })
 
-  // AI 분석 생성
+  // ── Group 4: 자산 ──
+
+  const { data: assetSummary } = useQuery({
+    queryKey: ['insights-asset-summary', activeHouseholdId],
+    queryFn: () => assetApi.getSummary(activeHouseholdId!).then(r => r.data),
+    enabled: !!activeHouseholdId,
+  })
+
+  const { data: snapshots = [] } = useQuery({
+    queryKey: ['insights-snapshots', activeHouseholdId],
+    queryFn: () => assetApi.getSnapshots(activeHouseholdId!, 2).then(r => r.data),
+    enabled: !!activeHouseholdId,
+  })
+
+  // ── Group 5: 카테고리 — is_savings 계산용 (staleTime 연장으로 중복 요청 방지) ──
+
+  const { data: expenseCategories = [] } = useQuery({
+    queryKey: ['categories-expense', activeHouseholdId],
+    queryFn: () => categoryApi.getAll({ type: 'expense' }).then(r => r.data),
+    staleTime: 5 * 60 * 1000,
+    enabled: !!activeHouseholdId,
+  })
+
+  // ── Group 6: 카드 실적 ──
+
+  const { data: cardUsage = [] } = useQuery({
+    queryKey: ['insights-card-usage', monthStr, activeHouseholdId],
+    queryFn: () => paymentMethodApi.getMonthlyUsage(monthStr, activeHouseholdId!).then(r => r.data),
+    enabled: !!activeHouseholdId,
+  })
+
+  // ── 파생 상태 (useMemo — 쿼리 결과 변경 시 재계산) ──
+
+  // 이전 스냅샷: snapshot_date 오름차순 정렬 후 첫 번째 (= 더 오래된 것)
+  const prevSnapshot = useMemo(() => {
+    const sorted = [...snapshots].sort((a, b) => a.snapshot_date.localeCompare(b.snapshot_date))
+    return sorted.length >= 2 ? sorted[0] : null
+  }, [snapshots])
+
+  // 저축성 지출 합계 (is_savings=true 카테고리만 집계)
+  const savingsTotal = useMemo(() => {
+    const savingsCatNames = new Set(
+      expenseCategories.filter(c => c.is_savings).map(c => c.name)
+    )
+    // 저축성 카테고리가 정의되지 않았으면 undefined (기존 계산 방식 유지)
+    if (savingsCatNames.size === 0) return undefined
+    if (!expenseStats?.by_category) return 0
+    return expenseStats.by_category
+      .filter(c => savingsCatNames.has(c.category))
+      .reduce((sum, c) => sum + c.amount, 0)
+  }, [expenseCategories, expenseStats])
+
+  const healthScore = useMemo((): HealthScore | null => {
+    if (!expenseStats && !incomeStats) return null
+    return calculateHealthScore({
+      incomeTotal: incomeStats?.total ?? 0,
+      expenseTotal: expenseStats?.total ?? 0,
+      savingsTotal,
+      budgetTotal: budgetStats?.total_budget ?? undefined,
+      budgetSpent: budgetStats?.total_spent ?? undefined,
+      totalLiabilities: assetSummary?.total_liabilities ?? 0,
+      totalAssets: assetSummary?.total_assets ?? 0,
+      avgLoanRate: 0,
+    })
+  }, [expenseStats, incomeStats, savingsTotal, budgetStats, assetSummary])
+
+  // ── 로딩 / 에러 판단 ──
+
+  // 핵심 데이터(지출+수입) 중 하나라도 오면 렌더 시작
+  const loading = !activeHouseholdId || (expLoading && incLoading)
+
+  // 핵심 데이터가 모두 undefined이고 로딩도 끝났으면 에러 (네트워크/서버 오류)
+  const error = !expenseStats && !incomeStats && !expLoading && !incLoading && !!activeHouseholdId
+
+  // AI 분석 생성 (사용자 트리거 — React Query 불필요)
   const handleGenerateAI = useCallback(async () => {
     if (!expenseStats && !incomeStats) {
       addToast('error', TOAST.AI_NO_DATA)
@@ -305,10 +308,16 @@ export default function InsightsPage() {
     } finally {
       setAiLoading(false)
     }
-  }, [monthStr, expenseStats, incomeStats, budgetStats, assetSummary, prevSnapshot, healthScore, comparison, incomeComparison])
+  }, [monthStr, expenseStats, incomeStats, budgetStats, assetSummary, prevSnapshot, healthScore, comparison, incomeComparison, savingsTotal, addToast])
 
-  const handlePrev = useCallback(() => setMonthStr(m => shiftMonth(m, -1)), [])
-  const handleNext = useCallback(() => setMonthStr(m => shiftMonth(m, 1)), [])
+  const handlePrev = useCallback(() => {
+    setMonthStr(m => shiftMonth(m, -1))
+    setStructuredInsights(null) // 월 이동 시 AI 분석 초기화
+  }, [])
+  const handleNext = useCallback(() => {
+    setMonthStr(m => shiftMonth(m, 1))
+    setStructuredInsights(null) // 월 이동 시 AI 분석 초기화
+  }, [])
 
   return (
     <div className="space-y-4 animate-page-in animate-stagger">
@@ -339,13 +348,18 @@ export default function InsightsPage() {
       {/* 로딩 — Skeleton 프리미티브 기반 스켈레톤 UI */}
       {loading && <InsightsPageSkeleton />}
 
-      {/* 에러 상태 */}
+      {/* 에러 상태 — 핵심 데이터(지출+수입) 모두 실패 시 */}
       {!loading && error && (
-        <ErrorState onRetry={() => { setError(false); setLoading(true) }} />
+        <ErrorState
+          onRetry={() => {
+            queryClient.invalidateQueries({ queryKey: ['insights-expense', monthStr, activeHouseholdId] })
+            queryClient.invalidateQueries({ queryKey: ['insights-income', monthStr, activeHouseholdId] })
+          }}
+        />
       )}
 
       {/* 빈 상태 */}
-      {!loading && !error && !expenseStats?.total && !incomeStats?.total && (
+      {!loading && !error && !!(expenseStats !== undefined || incomeStats !== undefined) && !expenseStats?.total && !incomeStats?.total && (
         <EmptyState
           variant="primary"
           title="이번 달 거래 내역이 없습니다"
@@ -382,8 +396,8 @@ export default function InsightsPage() {
             <MonthlyHighlights
               incomeTotal={incomeStats.total}
               expenseTotal={expenseStats.total}
-              budgetStats={budgetStats}
-              comparison={comparison}
+              budgetStats={budgetStats ?? null}
+              comparison={comparison ?? null}
             />
           )}
 
@@ -394,7 +408,7 @@ export default function InsightsPage() {
 
           {/* 5. 예산 상황 */}
           {sectionVisibility.budget && (
-            <BudgetVsActual budgetStats={budgetStats} monthStr={monthStr} />
+            <BudgetVsActual budgetStats={budgetStats ?? null} monthStr={monthStr} />
           )}
 
           {/* 6. 카드 실적 */}
@@ -404,7 +418,7 @@ export default function InsightsPage() {
 
           {/* 7. 자산 변화 */}
           {sectionVisibility.assets && (
-            <AssetChangeSummary summary={assetSummary} previousSnapshot={prevSnapshot} />
+            <AssetChangeSummary summary={assetSummary ?? null} previousSnapshot={prevSnapshot} />
           )}
 
           {/* 8. AI 상세 분석 */}

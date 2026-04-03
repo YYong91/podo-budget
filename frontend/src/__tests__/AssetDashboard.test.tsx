@@ -1,10 +1,10 @@
 /* 자산 대시보드 컴포넌트 테스트 */
 
-import { render, screen, waitFor } from '@testing-library/react'
-import { MemoryRouter } from 'react-router-dom'
+import { screen, waitFor } from '@testing-library/react'
 import { vi, describe, test, expect, beforeEach } from 'vitest'
 import AssetDashboard from '../pages/AssetDashboard'
 import { assetApi } from '../api/assets'
+import { renderWithQueryClient } from '../test-utils'
 
 // useToast 모킹 — ToastProvider 없이 테스트 가능하도록
 vi.mock('../hooks/useToast', () => ({
@@ -60,11 +60,7 @@ const mockSummary: any = {
 }
 
 function renderDashboard() {
-  return render(
-    <MemoryRouter>
-      <AssetDashboard />
-    </MemoryRouter>,
-  )
+  return renderWithQueryClient(<AssetDashboard />)
 }
 
 describe('AssetDashboard', () => {
