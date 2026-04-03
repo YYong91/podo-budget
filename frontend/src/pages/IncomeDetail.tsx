@@ -214,7 +214,7 @@ export default function IncomeDetail() {
               inputMode="numeric"
               value={editForm.amount}
               onChange={(e) => setEditForm({ ...editForm, amount: Number(e.target.value) })}
-              className="input-base text-xl sm:text-2xl font-bold py-2"
+              className="input-base text-xl sm:text-2xl font-bold"
               placeholder="10000"
             />
           ) : (
@@ -233,7 +233,7 @@ export default function IncomeDetail() {
               type="text"
               value={editForm.description}
               onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
-              className="input-base text-lg py-2"
+              className="input-base text-lg"
               placeholder="월급"
             />
           ) : (
@@ -254,7 +254,7 @@ export default function IncomeDetail() {
                   category_id: e.target.value ? Number(e.target.value) : null,
                 })
               }
-              className="input-base text-lg py-2"
+              className="input-base text-lg"
             >
               <option value="">분류 안 됨</option>
               {categories.map((cat) => (
@@ -277,7 +277,7 @@ export default function IncomeDetail() {
               type="date"
               value={editForm.date}
               onChange={(e) => setEditForm({ ...editForm, date: e.target.value })}
-              className="input-base text-lg py-2"
+              className="input-base text-lg"
             />
           ) : (
             <p className="text-lg text-[var(--text-primary)]">{formatDate(income.date)}</p>
@@ -294,7 +294,7 @@ export default function IncomeDetail() {
               value={editForm.memo}
               onChange={(e) => setEditForm({ ...editForm, memo: e.target.value })}
               placeholder="추가 메모 (선택)"
-              className="input-base text-lg py-2"
+              className="input-base text-lg"
             />
           ) : income.memo ? (
             <p className="text-lg text-[var(--text-primary)]">{income.memo}</p>

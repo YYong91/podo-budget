@@ -254,7 +254,7 @@ export default function ExpenseDetail() {
               onChange={(e) =>
                 setEditForm({ ...editForm, amount: Number(e.target.value) })
               }
-              className="input-base text-xl sm:text-2xl font-bold py-2"
+              className="input-base text-xl sm:text-2xl font-bold"
               placeholder="10000"
             />
           ) : (
@@ -277,7 +277,7 @@ export default function ExpenseDetail() {
               onChange={(e) =>
                 setEditForm({ ...editForm, description: e.target.value })
               }
-              className="input-base text-lg py-2"
+              className="input-base text-lg"
               placeholder="김치찌개"
             />
           ) : (
@@ -300,7 +300,7 @@ export default function ExpenseDetail() {
                   category_id: e.target.value ? Number(e.target.value) : null,
                 })
               }
-              className="input-base text-lg py-2"
+              className="input-base text-lg"
             >
               <option value="">분류 안 됨</option>
               {categories.map((cat) => (
@@ -330,7 +330,7 @@ export default function ExpenseDetail() {
                     payment_method_id: e.target.value ? Number(e.target.value) : null,
                   })
                 }
-                className="input-base text-lg py-2"
+                className="input-base text-lg"
               >
                 <option value="">선택 안 함</option>
                 {paymentMethods.map((pm) => (
@@ -360,7 +360,7 @@ export default function ExpenseDetail() {
               onChange={(e) =>
                 setEditForm({ ...editForm, date: e.target.value })
               }
-              className="input-base text-lg py-2"
+              className="input-base text-lg"
             />
           ) : (
             <p className="text-lg text-[var(--text-primary)]">{formatDate(expense.date)}</p>
@@ -381,7 +381,7 @@ export default function ExpenseDetail() {
                 setEditForm({ ...editForm, memo: e.target.value })
               }
               placeholder="추가 메모 (선택)"
-              className="input-base text-lg py-2"
+              className="input-base text-lg"
             />
           ) : expense.memo ? (
             <p className="text-lg text-[var(--text-primary)]">{expense.memo}</p>
