@@ -214,7 +214,7 @@ export default function IncomeDetail() {
               inputMode="numeric"
               value={editForm.amount}
               onChange={(e) => setEditForm({ ...editForm, amount: Number(e.target.value) })}
-              className="w-full px-4 py-2 text-xl sm:text-2xl font-bold text-[var(--text-primary)] border border-[var(--input-border)] rounded-xl focus:ring-2 focus:ring-leaf-500/30 focus:border-leaf-500"
+              className="input-base text-xl sm:text-2xl font-bold py-2"
               placeholder="10000"
             />
           ) : (
@@ -233,7 +233,7 @@ export default function IncomeDetail() {
               type="text"
               value={editForm.description}
               onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
-              className="w-full px-4 py-2 text-lg border border-[var(--input-border)] rounded-xl focus:ring-2 focus:ring-leaf-500/30 focus:border-leaf-500"
+              className="input-base text-lg py-2"
               placeholder="월급"
             />
           ) : (
@@ -254,7 +254,7 @@ export default function IncomeDetail() {
                   category_id: e.target.value ? Number(e.target.value) : null,
                 })
               }
-              className="w-full px-4 py-2 text-lg border border-[var(--input-border)] rounded-xl focus:ring-2 focus:ring-leaf-500/30 focus:border-leaf-500"
+              className="input-base text-lg py-2"
             >
               <option value="">분류 안 됨</option>
               {categories.map((cat) => (
@@ -277,7 +277,7 @@ export default function IncomeDetail() {
               type="date"
               value={editForm.date}
               onChange={(e) => setEditForm({ ...editForm, date: e.target.value })}
-              className="w-full px-4 py-2 text-lg border border-[var(--input-border)] rounded-xl focus:ring-2 focus:ring-leaf-500/30 focus:border-leaf-500"
+              className="input-base text-lg py-2"
             />
           ) : (
             <p className="text-lg text-[var(--text-primary)]">{formatDate(income.date)}</p>
@@ -294,7 +294,7 @@ export default function IncomeDetail() {
               value={editForm.memo}
               onChange={(e) => setEditForm({ ...editForm, memo: e.target.value })}
               placeholder="추가 메모 (선택)"
-              className="w-full px-4 py-2 text-lg border border-[var(--input-border)] rounded-xl focus:ring-2 focus:ring-leaf-500/30 focus:border-leaf-500"
+              className="input-base text-lg py-2"
             />
           ) : income.memo ? (
             <p className="text-lg text-[var(--text-primary)]">{income.memo}</p>
