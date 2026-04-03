@@ -1,5 +1,4 @@
 import logging
-import sys
 import uuid
 from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
@@ -74,8 +73,6 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     종료 시:
     - 리소스 정리 (현재는 없음)
     """
-    import subprocess
-
     import app.models as _models  # noqa: F811, F401
 
     # JWT_SECRET 검증 (podo-auth SSO 연동)
@@ -94,24 +91,33 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         warnings.warn("TELEGRAM_WEBHOOK_SECRET이 설정되지 않았습니다. 웹훅 엔드포인트가 인증 없이 열려 있습니다.", stacklevel=2)
 
     # Alembic 마이그레이션 실행 — create_all 대신 사용해 기존 DB에도 스키마 변경 적용
+    # Python API로 inline 실행 (subprocess 대비 ~100MB 메모리 절약 → 256MB VM에서 OOM 방지)
     import logging
     import pathlib
 
-    logger = logging.getLogger(__name__)
-    # alembic.ini는 app 패키지의 부모 디렉토리에 위치 (backend/ 또는 컨테이너의 /app/)
-    alembic_dir = pathlib.Path(__file__).parent.parent
+    from alembic import command as alembic_command
+    from alembic.config import Config as AlembicConfig
 
-    result = subprocess.run(
-        [sys.executable, "-m", "alembic", "upgrade", "head"],
-        capture_output=True,
-        text=True,
-        cwd=str(alembic_dir),
-    )
-    if result.returncode != 0:
-        # PostgreSQL에서는 Alembic이 유일한 스키마 관리 경로 — fallback 없이 에러 로그만 출력
-        logger.error("Alembic 마이그레이션 실패: %s", result.stderr)
-    else:
-        logger.info("Alembic 마이그레이션 완료: %s", result.stdout)
+    logger = logging.getLogger(__name__)
+    alembic_dir = pathlib.Path(__file__).parent.parent
+    alembic_ini = alembic_dir / "alembic.ini"
+
+    try:
+        alembic_cfg = AlembicConfig(str(alembic_ini))
+        alembic_cfg.set_main_option("script_location", str(alembic_dir / "alembic"))
+        alembic_command.upgrade(alembic_cfg, "head")
+        logger.info("Alembic 마이그레이션 완료")
+    except Exception:
+        logger.exception("Alembic 마이그레이션 실패")
+    finally:
+        # 마이그레이션 후 alembic 모듈 언로드 — ~10MB 회수
+        import gc
+        import sys as _sys
+
+        del alembic_command, AlembicConfig
+        for mod_name in [m for m in _sys.modules if m.startswith("alembic") or m.startswith("mako")]:
+            del _sys.modules[mod_name]
+        gc.collect()
 
     # sort_order=0인 카테고리를 실제 사용 횟수(지출+수입)로 초기화
     from sqlalchemy import text

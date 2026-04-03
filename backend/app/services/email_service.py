@@ -12,8 +12,6 @@ import functools
 import html
 import logging
 
-import resend
-
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
@@ -39,6 +37,8 @@ async def send_invitation_email(
     if not settings.RESEND_API_KEY:
         logger.info("RESEND_API_KEY 미설정 — 이메일 발송 건너뜀")
         return False
+
+    import resend  # lazy import — 시작 시 2MB 절약 (초대 시에만 로드)
 
     resend.api_key = settings.RESEND_API_KEY
     frontend_url = settings.CORS_ORIGINS.split(",")[0].strip()

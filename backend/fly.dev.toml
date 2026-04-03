@@ -28,7 +28,8 @@ primary_region = "nrt"
     timeout = "10s"
     path = "/health"
 
+# 256MB로 충분 — auto_stop으로 비용 절약 + 프리 티어 범위
 [[vm]]
   cpu_kind = "shared"
   cpus = 1
-  memory_mb = 512
+  memory_mb = 256
