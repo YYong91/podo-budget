@@ -14,6 +14,8 @@ const TYPE_LABELS: Record<string, string> = {
   crypto: '암호화폐',
   deposit: '예적금',
   real_estate: '부동산',
+  insurance: '보험/연금',
+  vehicle: '자동차',
   other: '기타',
   loan: '대출',
 }

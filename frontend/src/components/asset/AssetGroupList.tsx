@@ -17,6 +17,8 @@ const ASSET_GROUPS: { label: string; types: AssetType[]; isLiability?: boolean }
   { label: '투자', types: ['stock_kr', 'stock_us', 'crypto'] },
   { label: '예적금', types: ['deposit'] },
   { label: '부동산', types: ['real_estate'] },
+  { label: '보험/연금', types: ['insurance'] },
+  { label: '자동차', types: ['vehicle'] },
   { label: '기타', types: ['other'] },
   { label: '부채 (대출)', types: ['loan'], isLiability: true },
 ]
