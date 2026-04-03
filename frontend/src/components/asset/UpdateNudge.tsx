@@ -7,7 +7,7 @@ import { AlertCircle } from 'lucide-react'
 import type { Asset } from '../../types'
 
 // 수동 입력 자산 유형 (시세 자동 조회 제외)
-const MANUAL_TYPES = ['deposit', 'real_estate', 'other', 'loan']
+const MANUAL_TYPES = ['deposit', 'real_estate', 'other', 'loan', 'insurance', 'vehicle']
 const NUDGE_THRESHOLD_DAYS = 30
 
 function isStale(asset: Asset): boolean {

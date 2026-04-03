@@ -206,7 +206,7 @@ export default function AssetForm() {
   }
 
   const isInvestmentType = ['stock_kr', 'stock_us', 'crypto'].includes(assetType)
-  const isManualType = ['deposit', 'real_estate', 'other', 'loan'].includes(assetType)
+  const isManualType = ['deposit', 'real_estate', 'other', 'loan', 'insurance', 'vehicle'].includes(assetType)
 
   if (initialLoading) {
     return (

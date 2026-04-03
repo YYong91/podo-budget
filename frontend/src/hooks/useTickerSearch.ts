@@ -8,10 +8,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { assetApi } from '../api/assets'
 import { stockApi } from '../api/stocks'
-import type { AssetSearchResult } from '../types'
+import type { AssetSearchResult, AssetType } from '../types'
 
 type Market = 'kr' | 'us' | 'crypto'
-type AssetType = 'stock_kr' | 'stock_us' | 'crypto' | 'deposit' | 'real_estate' | 'other' | 'loan'
 
 /** assetType에서 market을 추출. 투자형이 아니면 undefined */
 function getMarket(assetType: AssetType): Market | undefined {
