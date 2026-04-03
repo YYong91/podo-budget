@@ -236,10 +236,10 @@ export default function MonthlyView({
                   className="sticky top-0 md:top-0 z-10 bg-[var(--surface-elevated)] px-4 py-2 scroll-mt-14 md:scroll-mt-0"
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold text-[var(--text-secondary)]">
+                    <span className="text-sm font-semibold text-[var(--text-secondary)]">
                       {formatDateHeader(dateKey)}
                     </span>
-                    <span className="text-amount text-[var(--text-muted)]">
+                    <span className="text-sm font-semibold tabular-nums text-[var(--text-muted)]">
                       {formatAmount(dailyTotal)}
                     </span>
                   </div>

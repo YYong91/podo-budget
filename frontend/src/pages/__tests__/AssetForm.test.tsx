@@ -8,6 +8,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import AssetForm from '../AssetForm'
 
 // useNavigate 모킹
@@ -46,6 +47,7 @@ vi.mock('../../api/assets', () => ({
     getById: (...args: unknown[]) => mockAssetGetById(...args),
     parse: (...args: unknown[]) => mockAssetParse(...args),
     search: (...args: unknown[]) => mockAssetSearch(...args),
+    createSnapshot: vi.fn().mockResolvedValue({}),
   },
 }))
 
@@ -70,25 +72,31 @@ vi.mock('../../utils/analytics', () => ({
   trackEvent: vi.fn(),
 }))
 
+const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+
 function renderNewAssetForm() {
   return render(
-    <MemoryRouter initialEntries={['/assets/new']}>
-      <Routes>
-        <Route path="/assets/new" element={<AssetForm />} />
-        <Route path="/assets" element={<div>자산 목록</div>} />
-      </Routes>
-    </MemoryRouter>,
+    <QueryClientProvider client={queryClient}>
+      <MemoryRouter initialEntries={['/assets/new']}>
+        <Routes>
+          <Route path="/assets/new" element={<AssetForm />} />
+          <Route path="/assets" element={<div>자산 목록</div>} />
+        </Routes>
+      </MemoryRouter>
+    </QueryClientProvider>,
   )
 }
 
 function renderEditAssetForm(id: number) {
   return render(
-    <MemoryRouter initialEntries={[`/assets/${id}/edit`]}>
-      <Routes>
-        <Route path="/assets/:id/edit" element={<AssetForm />} />
-        <Route path="/assets" element={<div>자산 목록</div>} />
-      </Routes>
-    </MemoryRouter>,
+    <QueryClientProvider client={queryClient}>
+      <MemoryRouter initialEntries={[`/assets/${id}/edit`]}>
+        <Routes>
+          <Route path="/assets/:id/edit" element={<AssetForm />} />
+          <Route path="/assets" element={<div>자산 목록</div>} />
+        </Routes>
+      </MemoryRouter>
+    </QueryClientProvider>,
   )
 }
 

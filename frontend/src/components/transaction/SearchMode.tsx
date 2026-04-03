@@ -250,7 +250,7 @@ export default function SearchMode({
               {Array.from(search.searchGrouped.entries()).map(([dateKey, txs]) => (
                 <div key={dateKey}>
                   <div className="bg-[var(--surface-elevated)] px-4 py-2 border-b border-[var(--border-subtle)]">
-                    <span className="text-xs font-semibold text-[var(--text-secondary)]">
+                    <span className="text-sm font-semibold text-[var(--text-secondary)]">
                       {formatDateHeader(dateKey)}
                     </span>
                   </div>
