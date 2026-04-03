@@ -154,7 +154,10 @@ export default function InsightsPage() {
       setError(false)
       setStructuredInsights(null)
       try {
-        if (!activeHouseholdId) return  // 가구 로딩 전 API 호출 방지 (#149)
+        if (!activeHouseholdId) {
+          setLoading(false)
+          return  // 가구 로딩 전 API 호출 방지 (#149)
+        }
         const dateStr = `${monthStr}-15`
         const hhId = activeHouseholdId
 
@@ -351,7 +354,7 @@ export default function InsightsPage() {
         />
       )}
 
-      {!loading && !error && (expenseStats?.total || incomeStats?.total) && (
+      {!loading && !error && !!(expenseStats?.total || incomeStats?.total) && (
         <>
           {/* 0. 히어로 — 이달 지출 총액 강조 */}
           <HeroSummary
