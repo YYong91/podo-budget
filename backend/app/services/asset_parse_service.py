@@ -9,7 +9,7 @@ ASSET_PARSE_PROMPT = """사용자가 보유 자산이나 부채를 자연어로 
 
 각 항목의 필드:
 - name: 자산명 (예: "삼성전자", "신한은행 적금", "주택담보대출")
-- type: stock_kr | stock_us | crypto | deposit | real_estate | other | loan
+- type: stock_kr | stock_us | crypto | deposit | real_estate | other | loan | insurance | vehicle
 - is_liability: 부채면 true, 자산이면 false
 - ticker: 종목코드(한국) 또는 티커(미국) 또는 코인심볼. 모르면 null
 - quantity: 수량 (주식 주수, 코인 개수). 해당없으면 null
@@ -24,6 +24,8 @@ ASSET_PARSE_PROMPT = """사용자가 보유 자산이나 부채를 자연어로 
 한국 주식 종목코드 예시: 삼성전자=005930, SK하이닉스=000660, 카카오=035720, NAVER=035420
 미국 주식 티커 예시: 애플=AAPL, 테슬라=TSLA, 엔비디아=NVDA, SPY, QQQ
 코인 심볼 예시: 비트코인=BTC, 이더리움=ETH, 리플=XRP
+보험/연금 예시: 국민연금, 퇴직연금, 종신보험, 실손보험
+자동차 예시: 현대 아이오닉6, 테슬라 모델3, BMW 520i
 
 금액 단위: 모두 원(KRW) 기준. "7만원"=70000, "2억"=200000000, "5천만원"=50000000
 

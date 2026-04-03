@@ -416,6 +416,24 @@ describe('AssetForm', () => {
     })
   })
 
+  describe('직접 입력 모드 — 보험/자동차', () => {
+    it('보험/연금 유형이 직접 입력 드롭다운에 표시된다', async () => {
+      renderNewAssetForm()
+      await userEvent.click(screen.getByText('직접 입력'))
+      const select = screen.getByRole('combobox')
+      await userEvent.selectOptions(select, 'insurance')
+      expect((select as HTMLSelectElement).value).toBe('insurance')
+    })
+
+    it('자동차 유형이 직접 입력 드롭다운에 표시된다', async () => {
+      renderNewAssetForm()
+      await userEvent.click(screen.getByText('직접 입력'))
+      const select = screen.getByRole('combobox')
+      await userEvent.selectOptions(select, 'vehicle')
+      expect((select as HTMLSelectElement).value).toBe('vehicle')
+    })
+  })
+
   describe('직접 입력 모드 — 대출/부채', () => {
     it('대출 유형 선택 시 상환방식과 월 상환액 필드를 표시한다', async () => {
       const user = userEvent.setup()

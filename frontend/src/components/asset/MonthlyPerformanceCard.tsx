@@ -26,7 +26,7 @@ interface MonthlyPerformanceCardProps {
 const DISPLAY_GROUPS: { label: string; keys: string[] }[] = [
   { label: '투자', keys: ['stock_kr', 'stock_us', 'crypto'] },
   { label: '예적금', keys: ['deposit'] },
-  { label: '부동산/기타', keys: ['real_estate', 'other'] },
+  { label: '부동산/기타', keys: ['real_estate', 'insurance', 'vehicle', 'other'] },
 ]
 
 /** breakdown 차이 + 부채 차이를 합산하여 표시 항목 생성 */
