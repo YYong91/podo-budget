@@ -8,9 +8,8 @@ import logging
 import time
 from datetime import datetime, timedelta
 
-import httpx
-
 from app.core.metrics import record_external_api_call
+from app.services.http_client import get_http_client
 
 logger = logging.getLogger(__name__)
 
@@ -47,18 +46,18 @@ async def get_exchange_rate(currency: str) -> float | None:
     # API 호출
     t0 = time.monotonic()
     try:
-        async with httpx.AsyncClient(timeout=5.0) as client:
-            resp = await client.get(f"https://api.frankfurter.dev/v1/latest?base={currency}&symbols=KRW")
-            resp.raise_for_status()
-            data = resp.json()
-            rate = data["rates"]["KRW"]
-            latency = (time.monotonic() - t0) * 1000
+        client = get_http_client()
+        resp = await client.get(f"https://api.frankfurter.dev/v1/latest?base={currency}&symbols=KRW")
+        resp.raise_for_status()
+        data = resp.json()
+        rate = data["rates"]["KRW"]
+        latency = (time.monotonic() - t0) * 1000
 
-            # 캐시 저장
-            _rate_cache[currency] = (rate, now)
-            record_external_api_call(service="frankfurter", success=True, latency_ms=latency)
-            logger.info(f"환율 조회 성공: 1 {currency} = {rate:,.2f} KRW")
-            return rate  # type: ignore[no-any-return]
+        # 캐시 저장
+        _rate_cache[currency] = (rate, now)
+        record_external_api_call(service="frankfurter", success=True, latency_ms=latency)
+        logger.info(f"환율 조회 성공: 1 {currency} = {rate:,.2f} KRW")
+        return rate  # type: ignore[no-any-return]
 
     except Exception as e:
         latency = (time.monotonic() - t0) * 1000
