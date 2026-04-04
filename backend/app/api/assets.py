@@ -1,5 +1,6 @@
 """자산 관리 API"""
 
+import asyncio
 import json
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -194,12 +195,11 @@ async def get_all_prices(
         household_id = await get_user_active_household_id(current_user, db)
     await get_household_member(household_id, current_user, db)  # 가구 접근 권한 검증 (#135)
     assets = await asset_service.get_assets(db, current_user, household_id)
-    prices = {}
-    for asset in assets:
-        if asset.ticker:
-            info = await price_service.get_asset_current_value(asset, db)
-            prices[asset.id] = info
-    return prices
+    ticker_assets = [a for a in assets if a.ticker]
+    if not ticker_assets:
+        return {}
+    results = await asyncio.gather(*[price_service.get_asset_current_value(a, db) for a in ticker_assets])
+    return {a.id: info for a, info in zip(ticker_assets, results, strict=False)}
 
 
 @router.get("/goal", response_model=AssetGoalWithInsight | None)
