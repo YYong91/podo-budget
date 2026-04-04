@@ -46,6 +46,14 @@ def _get_http_client() -> httpx.AsyncClient:
     return _http_client
 
 
+async def close_http_client() -> None:
+    """공유 httpx 클라이언트 종료 — app lifespan shutdown에서 호출"""
+    global _http_client
+    if _http_client is not None and not _http_client.is_closed:
+        await _http_client.aclose()
+        _http_client = None
+
+
 def _lock_for(key: str) -> asyncio.Lock:
     """키별 락 반환 (없으면 생성) — asyncio 단일 스레드이므로 race-free"""
     if key not in _price_locks:

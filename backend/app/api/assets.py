@@ -59,12 +59,19 @@ async def get_assets(
     if with_prices:
         return await asset_service.get_assets_with_prices(db, current_user, household_id)
     # 시세 조회 없이 DB 데이터만 반환 (빠름)
+    # 투자형 자산은 수량×매입가(cost basis)를 fallback으로 사용
     assets = await asset_service.get_assets(db, current_user, household_id)
     return [
         {
             **{c.name: getattr(a, c.name) for c in a.__table__.columns},
             "current_price": None,
-            "current_value": a.manual_value,
+            "current_value": (
+                float(a.quantity) * float(a.avg_buy_price)
+                if a.type in ("stock_kr", "stock_us", "crypto") and a.quantity and a.avg_buy_price
+                else float(a.manual_value)
+                if a.manual_value
+                else None
+            ),
             "profit_loss": None,
             "profit_loss_pct": None,
         }
