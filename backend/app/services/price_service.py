@@ -30,6 +30,21 @@ NEGATIVE_CACHE_TTL = 30  # 실패 캐시 30초 — 외부 API rate limit 방어 
 # singleflight 락 — 동시 요청이 같은 ticker 외부 API를 중복 호출하는 것을 방지 (#166)
 _price_locks: dict[str, asyncio.Lock] = {}
 
+# httpx 클라이언트 풀링 — 매 요청마다 새 클라이언트 생성 대신 모듈 레벨에서 공유
+_http_client: httpx.AsyncClient | None = None
+
+
+def _get_http_client() -> httpx.AsyncClient:
+    """공유 httpx 클라이언트 반환 (lazy init)"""
+    global _http_client
+    if _http_client is None or _http_client.is_closed:
+        _http_client = httpx.AsyncClient(
+            timeout=10,
+            headers={"User-Agent": "Mozilla/5.0"},
+            limits=httpx.Limits(max_connections=20, max_keepalive_connections=10),
+        )
+    return _http_client
+
 
 def _lock_for(key: str) -> asyncio.Lock:
     """키별 락 반환 (없으면 생성) — asyncio 단일 스레드이므로 race-free"""
@@ -49,21 +64,20 @@ async def _get_yahoo_price(yahoo_ticker: str) -> float | None:
     """
     t0 = time.monotonic()
     try:
-        async with httpx.AsyncClient(timeout=10) as client:
-            resp = await client.get(
-                f"https://query1.finance.yahoo.com/v8/finance/chart/{yahoo_ticker}",
-                params={"interval": "1d", "range": "1d"},
-                headers={"User-Agent": "Mozilla/5.0"},
-            )
-            latency = (time.monotonic() - t0) * 1000
-            if resp.status_code == 200:
-                data = resp.json()
-                meta = data["chart"]["result"][0]["meta"]
-                price = float(meta["regularMarketPrice"])
-                if price > 0:
-                    record_external_api_call(service="yahoo", success=True, latency_ms=latency)
-                    return price
-            record_external_api_call(service="yahoo", success=False, latency_ms=latency)
+        client = _get_http_client()
+        resp = await client.get(
+            f"https://query1.finance.yahoo.com/v8/finance/chart/{yahoo_ticker}",
+            params={"interval": "1d", "range": "1d"},
+        )
+        latency = (time.monotonic() - t0) * 1000
+        if resp.status_code == 200:
+            data = resp.json()
+            meta = data["chart"]["result"][0]["meta"]
+            price = float(meta["regularMarketPrice"])
+            if price > 0:
+                record_external_api_call(service="yahoo", success=True, latency_ms=latency)
+                return price
+        record_external_api_call(service="yahoo", success=False, latency_ms=latency)
     except Exception:
         latency = (time.monotonic() - t0) * 1000
         record_external_api_call(service="yahoo", success=False, latency_ms=latency)
@@ -157,20 +171,20 @@ async def get_crypto_price(symbol: str) -> float | None:
         market = f"KRW-{symbol.upper()}"
         t0 = time.monotonic()
         try:
-            async with httpx.AsyncClient(timeout=10) as client:
-                resp = await client.get(
-                    "https://api.upbit.com/v1/ticker",
-                    params={"markets": market},
-                )
-                latency = (time.monotonic() - t0) * 1000
-                if resp.status_code == 200:
-                    data = resp.json()
-                    if data and len(data) > 0:
-                        price = float(data[0]["trade_price"])
-                        _set_cached(key, price)
-                        record_external_api_call(service="upbit", success=True, latency_ms=latency)
-                        return price
-                record_external_api_call(service="upbit", success=False, latency_ms=latency)
+            client = _get_http_client()
+            resp = await client.get(
+                "https://api.upbit.com/v1/ticker",
+                params={"markets": market},
+            )
+            latency = (time.monotonic() - t0) * 1000
+            if resp.status_code == 200:
+                data = resp.json()
+                if data and len(data) > 0:
+                    price = float(data[0]["trade_price"])
+                    _set_cached(key, price)
+                    record_external_api_call(service="upbit", success=True, latency_ms=latency)
+                    return price
+            record_external_api_call(service="upbit", success=False, latency_ms=latency)
         except Exception:
             latency = (time.monotonic() - t0) * 1000
             record_external_api_call(service="upbit", success=False, latency_ms=latency)
@@ -256,19 +270,18 @@ async def get_asset_current_value(asset, db: AsyncSession | None = None) -> dict
 async def search_stock_us(query: str) -> list[dict[str, Any]]:
     """미국 종목 검색"""
     try:
-        async with httpx.AsyncClient(timeout=10) as client:
-            resp = await client.get(
-                "https://query1.finance.yahoo.com/v1/finance/search",
-                params={"q": query, "quotesCount": 10},
-                headers={"User-Agent": "Mozilla/5.0"},
-            )
-            if resp.status_code == 200:
-                data = resp.json()
-                results = []
-                for item in data.get("quotes", []):
-                    if item.get("quoteType") in ("EQUITY", "ETF"):
-                        results.append({"ticker": item["symbol"], "name": item.get("shortname", ""), "market": "US"})
-                return results
+        client = _get_http_client()
+        resp = await client.get(
+            "https://query1.finance.yahoo.com/v1/finance/search",
+            params={"q": query, "quotesCount": 10},
+        )
+        if resp.status_code == 200:
+            data = resp.json()
+            results = []
+            for item in data.get("quotes", []):
+                if item.get("quoteType") in ("EQUITY", "ETF"):
+                    results.append({"ticker": item["symbol"], "name": item.get("shortname", ""), "market": "US"})
+            return results
     except Exception:
         pass
     return []
@@ -277,21 +290,21 @@ async def search_stock_us(query: str) -> list[dict[str, Any]]:
 async def search_crypto(query: str) -> list[dict[str, Any]]:
     """코인 검색 (업비트 마켓)"""
     try:
-        async with httpx.AsyncClient(timeout=10) as client:
-            resp = await client.get("https://api.upbit.com/v1/market/all", params={"isDetails": "false"})
-            if resp.status_code == 200:
-                data = resp.json()
-                results = []
-                q = query.upper()
-                for item in data:
-                    market = item["market"]
-                    if not market.startswith("KRW-"):
-                        continue
-                    symbol = market.replace("KRW-", "")
-                    name = item.get("korean_name", "")
-                    if q in symbol or q in name:
-                        results.append({"ticker": symbol, "name": name, "market": "CRYPTO"})
-                return results[:10]
+        client = _get_http_client()
+        resp = await client.get("https://api.upbit.com/v1/market/all", params={"isDetails": "false"})
+        if resp.status_code == 200:
+            data = resp.json()
+            results = []
+            q = query.upper()
+            for item in data:
+                market = item["market"]
+                if not market.startswith("KRW-"):
+                    continue
+                symbol = market.replace("KRW-", "")
+                name = item.get("korean_name", "")
+                if q in symbol or q in name:
+                    results.append({"ticker": symbol, "name": name, "market": "CRYPTO"})
+            return results[:10]
     except Exception:
         pass
     return []
