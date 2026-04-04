@@ -123,3 +123,32 @@ async def test_category_response_includes_is_system_field(authenticated_client: 
 
     assert sys_item["is_system"] is True
     assert hh_item["is_system"] is False
+
+
+@pytest.mark.asyncio
+async def test_create_category_with_emoji(authenticated_client):
+    """이모지와 함께 카테고리 생성"""
+    response = await authenticated_client.post(
+        "/api/categories",
+        json={
+            "name": "테스트이모지",
+            "type": "expense",
+            "emoji": "🧪",
+        },
+    )
+    assert response.status_code == 201
+    assert response.json()["emoji"] == "🧪"
+
+
+@pytest.mark.asyncio
+async def test_create_category_without_emoji_uses_default(authenticated_client):
+    """이모지 없이 생성하면 기본값 📌"""
+    response = await authenticated_client.post(
+        "/api/categories",
+        json={
+            "name": "이모지없음",
+            "type": "expense",
+        },
+    )
+    assert response.status_code == 201
+    assert response.json()["emoji"] == "📌"

@@ -8,6 +8,7 @@ from pydantic import BaseModel, ConfigDict, Field
 class CategoryBase(BaseModel):
     name: str = Field(..., max_length=100, description="카테고리 이름 (최대 100자)")
     description: str | None = Field(None, max_length=500, description="카테고리 설명 (최대 500자)")
+    emoji: str | None = Field("📌", max_length=10, description="카테고리 이모지")
 
 
 class CategoryCreate(CategoryBase):
@@ -22,6 +23,7 @@ class CategoryUpdate(BaseModel):
     type: str | None = None
     is_savings: bool | None = None
     exclude_auto_payment: bool | None = None
+    emoji: str | None = Field(None, max_length=10, description="카테고리 이모지")
 
 
 class CategoryReorderRequest(BaseModel):
@@ -36,6 +38,7 @@ class CategoryResponse(CategoryBase):
     sort_order: int = 0
     is_savings: bool = False
     exclude_auto_payment: bool = False
+    emoji: str | None = "📌"
     is_system: bool = False
     created_at: datetime
 
