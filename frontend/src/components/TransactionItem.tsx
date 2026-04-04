@@ -27,6 +27,8 @@ const CATEGORY_COLORS: Record<string, string> = {
   '대출/이자': 'bg-zinc-100 dark:bg-zinc-800/30',
   '세금/공과금': 'bg-neutral-100 dark:bg-neutral-800/30',
   '구독': 'bg-violet-100 dark:bg-violet-900/30',
+  '용돈': 'bg-emerald-100 dark:bg-emerald-900/30',
+  '저축/투자': 'bg-cyan-100 dark:bg-cyan-900/30',
   '기타': 'bg-gray-100 dark:bg-gray-800/30',
 }
 
