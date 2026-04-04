@@ -39,10 +39,10 @@ import type { Category } from '../../types'
 // ── 테스트용 데이터 ──
 
 const mockCategories: Category[] = [
-  { id: 1, name: '식비', type: 'expense', description: null, sort_order: 1, is_savings: false, is_system: true, exclude_auto_payment: false, created_at: '2024-01-01T00:00:00Z' },
-  { id: 2, name: '교통', type: 'expense', description: null, sort_order: 2, is_savings: false, is_system: true, exclude_auto_payment: false, created_at: '2024-01-01T00:00:00Z' },
-  { id: 3, name: '급여', type: 'income', description: null, sort_order: 3, is_savings: false, is_system: true, exclude_auto_payment: false, created_at: '2024-01-01T00:00:00Z' },
-  { id: 4, name: '부업', type: 'both', description: null, sort_order: 4, is_savings: false, is_system: false, exclude_auto_payment: false, created_at: '2024-01-01T00:00:00Z' },
+  { id: 1, name: '식비', type: 'expense', description: null, sort_order: 1, is_savings: false, is_system: true, exclude_auto_payment: false, emoji: null, created_at: '2024-01-01T00:00:00Z' },
+  { id: 2, name: '교통', type: 'expense', description: null, sort_order: 2, is_savings: false, is_system: true, exclude_auto_payment: false, emoji: null, created_at: '2024-01-01T00:00:00Z' },
+  { id: 3, name: '급여', type: 'income', description: null, sort_order: 3, is_savings: false, is_system: true, exclude_auto_payment: false, emoji: null, created_at: '2024-01-01T00:00:00Z' },
+  { id: 4, name: '부업', type: 'both', description: null, sort_order: 4, is_savings: false, is_system: false, exclude_auto_payment: false, emoji: null, created_at: '2024-01-01T00:00:00Z' },
 ]
 
 function setupCategoryHandler(categories: Category[] = mockCategories) {
@@ -546,6 +546,7 @@ describe('useNaturalInput', () => {
         name: '외식',
         type: 'expense',
         description: null,
+        emoji: null,
         sort_order: 99,
         is_savings: false,
         is_system: false,
