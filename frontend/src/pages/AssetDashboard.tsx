@@ -76,6 +76,7 @@ export default function AssetDashboard() {
     queryKey: ['assets', activeHouseholdId],
     queryFn: () => assetApi.getAll(activeHouseholdId!).then(r => r.data),
     enabled: !!activeHouseholdId,
+    staleTime: 5 * 60 * 1000, // 5분 — 자산 데이터는 수동 업데이트만 발생
   })
 
   // 스냅샷 — 과거→최신 순으로 저장 (차트 + placeholder용)
@@ -84,6 +85,7 @@ export default function AssetDashboard() {
     queryFn: () =>
       assetApi.getSnapshots(activeHouseholdId!, 12).then(r => [...r.data].reverse()),
     enabled: !!activeHouseholdId,
+    staleTime: 10 * 60 * 1000, // 10분 — 스냅샷은 시세 업데이트 시에만 변경
   })
 
   // 자산 요약 — 스냅샷 데이터를 기본으로 표시, 실시간 시세는 사용자 수동 트리거
@@ -135,6 +137,7 @@ export default function AssetDashboard() {
       }
     },
     enabled: !!activeHouseholdId,
+    staleTime: 10 * 60 * 1000, // 10분 — 목표는 드물게 변경
   })
 
   // 월 저축액
@@ -143,6 +146,7 @@ export default function AssetDashboard() {
     queryFn: () =>
       assetApi.getMonthlySavings(activeHouseholdId!).then(r => r.data).catch(() => null),
     enabled: !!activeHouseholdId,
+    staleTime: 10 * 60 * 1000, // 10분 — 저축액은 거래 입력 시에만 변경
   })
 
   // 목표 저장 뮤테이션
