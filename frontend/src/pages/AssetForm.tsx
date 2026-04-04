@@ -149,9 +149,7 @@ export default function AssetForm() {
       }
       addToast('success', TOAST.ASSET_SAVED)
       trackEvent('asset_added')
-      await assetApi.createSnapshot(activeHouseholdId!)
       await queryClient.invalidateQueries({ queryKey: ['assets'] })
-      await queryClient.invalidateQueries({ queryKey: ['asset-snapshots'] })
       navigate('/assets')
     } catch {
       addToast('error', TOAST.SAVE_FAILED)
@@ -177,9 +175,7 @@ export default function AssetForm() {
         addToast('success', TOAST.ASSET_SAVED)
         trackEvent('asset_added')
       }
-      await assetApi.createSnapshot(activeHouseholdId!)
       await queryClient.invalidateQueries({ queryKey: ['assets'] })
-      await queryClient.invalidateQueries({ queryKey: ['asset-snapshots'] })
       navigate('/assets')
     } catch {
       addToast('error', TOAST.SAVE_FAILED)
@@ -194,9 +190,7 @@ export default function AssetForm() {
     try {
       await assetApi.delete(Number(id))
       addToast('success', TOAST.ASSET_DELETED)
-      await assetApi.createSnapshot(activeHouseholdId!)
       await queryClient.invalidateQueries({ queryKey: ['assets'] })
-      await queryClient.invalidateQueries({ queryKey: ['asset-snapshots'] })
       navigate('/assets')
     } catch {
       addToast('error', TOAST.DELETE_FAILED)
