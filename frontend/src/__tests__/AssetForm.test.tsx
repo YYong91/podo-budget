@@ -50,7 +50,9 @@ const mockStocksKr = [
   { id: 3, ticker: '373220', name: 'LG에너지솔루션', market: 'KOSPI' },
 ]
 
-const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+const queryClient = new QueryClient({
+  defaultOptions: { queries: { retry: false } },
+})
 
 function renderAssetForm() {
   return render(
