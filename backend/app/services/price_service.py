@@ -11,13 +11,13 @@ import logging
 import time
 from typing import Any
 
-import httpx
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.metrics import record_external_api_call
 from app.models.stock import Stock
 from app.services.exchange_rate import get_exchange_rate
+from app.services.http_client import get_http_client as _get_http_client
 
 logger = logging.getLogger(__name__)
 
@@ -30,28 +30,8 @@ NEGATIVE_CACHE_TTL = 30  # 실패 캐시 30초 — 외부 API rate limit 방어 
 # singleflight 락 — 동시 요청이 같은 ticker 외부 API를 중복 호출하는 것을 방지 (#166)
 _price_locks: dict[str, asyncio.Lock] = {}
 
-# httpx 클라이언트 풀링 — 매 요청마다 새 클라이언트 생성 대신 모듈 레벨에서 공유
-_http_client: httpx.AsyncClient | None = None
 
-
-def _get_http_client() -> httpx.AsyncClient:
-    """공유 httpx 클라이언트 반환 (lazy init)"""
-    global _http_client
-    if _http_client is None or _http_client.is_closed:
-        _http_client = httpx.AsyncClient(
-            timeout=10,
-            headers={"User-Agent": "Mozilla/5.0"},
-            limits=httpx.Limits(max_connections=20, max_keepalive_connections=10),
-        )
-    return _http_client
-
-
-async def close_http_client() -> None:
-    """공유 httpx 클라이언트 종료 — app lifespan shutdown에서 호출"""
-    global _http_client
-    if _http_client is not None and not _http_client.is_closed:
-        await _http_client.aclose()
-        _http_client = None
+# _get_http_client, close_http_client → app.services.http_client로 이동
 
 
 def _lock_for(key: str) -> asyncio.Lock:

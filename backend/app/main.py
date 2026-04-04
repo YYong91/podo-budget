@@ -140,7 +140,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     yield
 
     # shutdown: 공유 httpx 클라이언트 정리
-    from app.services.price_service import close_http_client
+    from app.services.http_client import close_http_client
 
     await close_http_client()
 

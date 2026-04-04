@@ -1,8 +1,11 @@
 """자산 관리 API"""
 
+import asyncio
 import json
+import logging
+import os
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -26,7 +29,47 @@ from app.schemas.asset_goal import AssetGoalCreate, AssetGoalWithInsight
 from app.services import asset_goal_service, asset_service, price_service
 from app.services.asset_parse_service import parse_asset_input
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter()
+
+
+@router.post("/snapshots/batch")
+async def create_all_snapshots(
+    x_cron_secret: str | None = Header(None, alias="X-Cron-Secret"),
+    db: AsyncSession = Depends(get_db),
+) -> object:
+    """전체 가구 일일 스냅샷 배치 생성 (cron 전용)"""
+    from app.models.household import Household
+    from app.models.household_member import HouseholdMember
+    from app.models.user import User as UserModel
+
+    expected = os.getenv("CRON_SECRET", "")
+    if not expected or x_cron_secret != expected:
+        raise HTTPException(status_code=403, detail="Forbidden")
+
+    result = await db.execute(select(Household))
+    households = list(result.scalars().all())
+
+    created = 0
+    for household in households:
+        member_result = await db.execute(select(HouseholdMember).where(HouseholdMember.household_id == household.id).limit(1))
+        member = member_result.scalar_one_or_none()
+        if not member:
+            continue
+
+        user_result = await db.execute(select(UserModel).where(UserModel.id == member.user_id))
+        user = user_result.scalar_one_or_none()
+        if not user:
+            continue
+
+        try:
+            await asset_service.create_snapshot(db, user, int(household.id))
+            created += 1
+        except Exception:
+            logger.exception(f"스냅샷 생성 실패: household_id={household.id}")
+
+    return {"created": created, "total_households": len(households)}
 
 
 @router.post("", response_model=AssetResponse, status_code=status.HTTP_201_CREATED)
@@ -194,12 +237,11 @@ async def get_all_prices(
         household_id = await get_user_active_household_id(current_user, db)
     await get_household_member(household_id, current_user, db)  # 가구 접근 권한 검증 (#135)
     assets = await asset_service.get_assets(db, current_user, household_id)
-    prices = {}
-    for asset in assets:
-        if asset.ticker:
-            info = await price_service.get_asset_current_value(asset, db)
-            prices[asset.id] = info
-    return prices
+    ticker_assets = [a for a in assets if a.ticker]
+    if not ticker_assets:
+        return {}
+    results = await asyncio.gather(*[price_service.get_asset_current_value(a, db) for a in ticker_assets])
+    return {a.id: info for a, info in zip(ticker_assets, results, strict=False)}
 
 
 @router.get("/goal", response_model=AssetGoalWithInsight | None)

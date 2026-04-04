@@ -5,6 +5,7 @@ get_exchange_rate() 캐시 로직 검증:
 - 캐시 히트 시 API 호출 스킵
 - 캐시 만료 후 재조회
 - API 실패 시 None + negative 캐시
+- 공유 httpx 클라이언트 사용 확인
 """
 
 from datetime import datetime, timedelta
@@ -49,27 +50,25 @@ async def test_cache_hit_skips_api():
     # 캐시에 직접 삽입
     _rate_cache["USD"] = (1300.0, datetime.now())
 
-    with patch("httpx.AsyncClient") as mock_client_cls:
+    with patch("app.services.exchange_rate.get_http_client") as mock_get_client:
         result = await get_exchange_rate("USD")
         # API 호출이 없어야 함
-        mock_client_cls.assert_not_called()
+        mock_get_client.assert_not_called()
 
     assert result == 1300.0
 
 
 @pytest.mark.asyncio
 async def test_cache_miss_calls_api():
-    """캐시 없을 때 API 호출"""
+    """캐시 없을 때 공유 httpx 클라이언트로 API 호출"""
     mock_response = MagicMock()
     mock_response.raise_for_status = MagicMock()
     mock_response.json.return_value = {"rates": {"KRW": 1320.5}}
 
     mock_client = AsyncMock()
     mock_client.get.return_value = mock_response
-    mock_client.__aenter__ = AsyncMock(return_value=mock_client)
-    mock_client.__aexit__ = AsyncMock(return_value=False)
 
-    with patch("httpx.AsyncClient", return_value=mock_client):
+    with patch("app.services.exchange_rate.get_http_client", return_value=mock_client):
         result = await get_exchange_rate("USD")
 
     assert result == 1320.5
@@ -91,10 +90,8 @@ async def test_expired_cache_recalls_api():
 
     mock_client = AsyncMock()
     mock_client.get.return_value = mock_response
-    mock_client.__aenter__ = AsyncMock(return_value=mock_client)
-    mock_client.__aexit__ = AsyncMock(return_value=False)
 
-    with patch("httpx.AsyncClient", return_value=mock_client):
+    with patch("app.services.exchange_rate.get_http_client", return_value=mock_client):
         result = await get_exchange_rate("EUR")
 
     assert result == 1250.0
@@ -105,10 +102,8 @@ async def test_api_failure_returns_none_and_caches_negative():
     """API 실패 → None 반환 + negative 캐시 저장"""
     mock_client = AsyncMock()
     mock_client.get.side_effect = Exception("네트워크 오류")
-    mock_client.__aenter__ = AsyncMock(return_value=mock_client)
-    mock_client.__aexit__ = AsyncMock(return_value=False)
 
-    with patch("httpx.AsyncClient", return_value=mock_client):
+    with patch("app.services.exchange_rate.get_http_client", return_value=mock_client):
         result = await get_exchange_rate("JPY")
 
     assert result is None
@@ -123,9 +118,9 @@ async def test_negative_cache_hit_returns_none():
     # 최근에 실패한 캐시
     _rate_cache["CNY"] = (None, datetime.now())
 
-    with patch("httpx.AsyncClient") as mock_client_cls:
+    with patch("app.services.exchange_rate.get_http_client") as mock_get_client:
         result = await get_exchange_rate("CNY")
-        mock_client_cls.assert_not_called()
+        mock_get_client.assert_not_called()
 
     assert result is None
 
@@ -143,10 +138,8 @@ async def test_expired_negative_cache_recalls_api():
 
     mock_client = AsyncMock()
     mock_client.get.return_value = mock_response
-    mock_client.__aenter__ = AsyncMock(return_value=mock_client)
-    mock_client.__aexit__ = AsyncMock(return_value=False)
 
-    with patch("httpx.AsyncClient", return_value=mock_client):
+    with patch("app.services.exchange_rate.get_http_client", return_value=mock_client):
         result = await get_exchange_rate("GBP")
 
     assert result == 1700.0
@@ -160,3 +153,19 @@ def test_clear_rate_cache():
 
     clear_rate_cache()
     assert len(_rate_cache) == 0
+
+
+@pytest.mark.asyncio
+async def test_uses_shared_http_client():
+    """exchange_rate가 price_service의 공유 httpx 클라이언트를 사용하는지 확인"""
+    mock_response = MagicMock()
+    mock_response.raise_for_status = MagicMock()
+    mock_response.json.return_value = {"rates": {"KRW": 1400.0}}
+
+    mock_client = AsyncMock()
+    mock_client.get.return_value = mock_response
+
+    with patch("app.services.exchange_rate.get_http_client", return_value=mock_client) as mock_get:
+        await get_exchange_rate("USD")
+        # _get_http_client이 호출됐는지 확인 (공유 클라이언트 사용 증명)
+        mock_get.assert_called_once()
