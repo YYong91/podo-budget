@@ -48,15 +48,28 @@ async def create_asset(
 @router.get("", response_model=list[AssetWithPrice])
 async def get_assets(
     household_id: int | None = Query(None),
+    with_prices: bool = Query(False),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> object:
-    """자산 목록 (시세 포함)"""
+    """자산 목록 — 기본은 DB 데이터만, with_prices=true 시 실시간 시세 포함"""
     if household_id is None:
         household_id = await get_user_active_household_id(current_user, db)
     await get_household_member(household_id, current_user, db)
-    results = await asset_service.get_assets_with_prices(db, current_user, household_id)
-    return results
+    if with_prices:
+        return await asset_service.get_assets_with_prices(db, current_user, household_id)
+    # 시세 조회 없이 DB 데이터만 반환 (빠름)
+    assets = await asset_service.get_assets(db, current_user, household_id)
+    return [
+        {
+            **{c.name: getattr(a, c.name) for c in a.__table__.columns},
+            "current_price": None,
+            "current_value": a.manual_value,
+            "profit_loss": None,
+            "profit_loss_pct": None,
+        }
+        for a in assets
+    ]
 
 
 @router.get("/summary", response_model=AssetSummary)
