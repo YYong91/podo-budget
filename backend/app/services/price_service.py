@@ -129,11 +129,11 @@ async def get_stock_us_price(ticker: str) -> tuple[float | None, float | None]:
     """미국 주식/ETF 현재가 조회 (USD + KRW 환산, #195: USD/KRW는 exchange_rate 서비스 위임)"""
     key = f"us:{ticker}"
     cached_usd = _get_cached(key)
-    usd_krw = await get_exchange_rate("USD")
 
     if cached_usd is not _CACHE_MISS:
         if cached_usd is None:
             return None, None  # 실패 캐시 hit
+        usd_krw = await get_exchange_rate("USD")
         return cached_usd, cached_usd * usd_krw if usd_krw else None  # type: ignore[return-value,operator]
 
     async with _lock_for(key):
@@ -141,9 +141,14 @@ async def get_stock_us_price(ticker: str) -> tuple[float | None, float | None]:
         if cached_usd is not _CACHE_MISS:
             if cached_usd is None:
                 return None, None
+            usd_krw = await get_exchange_rate("USD")
             return cached_usd, cached_usd * usd_krw if usd_krw else None  # type: ignore[return-value,operator]
 
-        price_usd = await _get_yahoo_price(ticker)
+        # 환율 + Yahoo 시세를 병렬 조회
+        usd_krw, price_usd = await asyncio.gather(
+            get_exchange_rate("USD"),
+            _get_yahoo_price(ticker),
+        )
         if price_usd is not None:
             _set_cached(key, price_usd)
             krw_price = price_usd * usd_krw if usd_krw else None
