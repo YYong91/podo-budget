@@ -43,11 +43,12 @@ export default function CategoryManager() {
   const [newName, setNewName] = useState('')
   const [newDescription, setNewDescription] = useState('')
   const [newIsSavings, setNewIsSavings] = useState(false)
+  const [newEmoji, setNewEmoji] = useState('📌')
   const [isAdding, setIsAdding] = useState(false)
 
   // 편집 모드 (카테고리 ID)
   const [editingId, setEditingId] = useState<number | null>(null)
-  const [editForm, setEditForm] = useState({ name: '', description: '', is_savings: false })
+  const [editForm, setEditForm] = useState({ name: '', description: '', is_savings: false, emoji: '📌' })
 
   // 삭제 확인 모달
   const [deleteTarget, setDeleteTarget] = useState<number | null>(null)
@@ -90,11 +91,13 @@ export default function CategoryManager() {
         name: newName.trim(),
         description: newDescription.trim() || undefined,
         is_savings: newIsSavings,
+        emoji: newEmoji,
       })
       addToast('success', TOAST.CATEGORY_ADDED)
       setNewName('')
       setNewDescription('')
       setNewIsSavings(false)
+      setNewEmoji('📌')
       setIsAdding(false)
       fetchCategories()
     } catch {
@@ -111,6 +114,7 @@ export default function CategoryManager() {
       name: category.name,
       description: category.description || '',
       is_savings: category.is_savings,
+      emoji: category.emoji || '📌',
     })
   }
 
@@ -128,6 +132,7 @@ export default function CategoryManager() {
         name: editForm.name.trim(),
         description: editForm.description.trim() || undefined,
         is_savings: editForm.is_savings,
+        emoji: editForm.emoji,
       })
       addToast('success', TOAST.CATEGORY_UPDATED)
       setEditingId(null)
@@ -244,6 +249,9 @@ export default function CategoryManager() {
                 <th className="px-2 sm:px-3 py-3 text-center text-xs font-medium text-[var(--text-tertiary)] uppercase tracking-wider w-16">
                   순서
                 </th>
+                <th className="px-2 sm:px-3 py-3 text-center text-xs font-medium text-[var(--text-tertiary)] uppercase tracking-wider w-16">
+                  아이콘
+                </th>
                 <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-[var(--text-tertiary)] uppercase tracking-wider">
                   이름
                 </th>
@@ -263,6 +271,18 @@ export default function CategoryManager() {
             {isAdding && (
               <tr className="bg-grape-50">
                 <td className="px-2 sm:px-3 py-4"></td>
+                <td className="px-2 sm:px-3 py-4 text-center">
+                  <input
+                    type="text"
+                    value={newEmoji}
+                    onChange={(e) => {
+                      const val = e.target.value
+                      if (val.length <= 2) setNewEmoji(val || '📌')
+                    }}
+                    className="input-base w-14 text-center text-xl p-2"
+                    maxLength={2}
+                  />
+                </td>
                 <td className="px-4 sm:px-6 py-4">
                   <input
                     type="text"
@@ -309,6 +329,7 @@ export default function CategoryManager() {
                         setNewName('')
                         setNewDescription('')
                         setNewIsSavings(false)
+                        setNewEmoji('📌')
                       }}
                       className="px-3 py-1.5 text-sm font-medium text-[var(--text-secondary)] bg-[var(--surface-hover)] rounded-lg hover:bg-[var(--surface-hover)] transition-colors"
                     >
@@ -351,6 +372,22 @@ export default function CategoryManager() {
                           </svg>
                         </button>
                       </div>
+                    </td>
+                    <td className="px-2 sm:px-3 py-4 text-center">
+                      {isEditing ? (
+                        <input
+                          type="text"
+                          value={editForm.emoji}
+                          onChange={(e) => {
+                            const val = e.target.value
+                            if (val.length <= 2) setEditForm({ ...editForm, emoji: val || '📌' })
+                          }}
+                          className="input-base w-14 text-center text-xl p-2"
+                          maxLength={2}
+                        />
+                      ) : (
+                        <span className="text-xl">{category.emoji}</span>
+                      )}
                     </td>
                     <td className="px-4 sm:px-6 py-4">
                       {isEditing ? (
@@ -465,7 +502,7 @@ export default function CategoryManager() {
               })
             ) : (
               <tr>
-                <td colSpan={5}>
+                <td colSpan={6}>
                   <EmptyState
                     variant="section"
                     title="아직 카테고리가 없습니다"
