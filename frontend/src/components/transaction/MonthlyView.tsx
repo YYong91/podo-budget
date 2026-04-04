@@ -157,7 +157,32 @@ export default function MonthlyView({
         </div>
       )}
 
-      {/* 세그먼트 필터 — 캘린더 아래, 리스트 바로 위 */}
+      {/* 예정 거래 섹션 — 캘린더 바로 아래 */}
+      <ScheduledTransactions
+        items={monthly.allRecurring}
+        currentYear={monthly.currentYear}
+        currentMonth={monthly.currentMonth}
+        onExecute={async (id) => {
+          try {
+            await recurringApi.execute(id)
+            addToast('success', TOAST.RECURRING_EXECUTED)
+            monthly.fetchData()
+          } catch {
+            addToast('error', TOAST.RECURRING_EXECUTE_FAILED)
+          }
+        }}
+        onSkip={async (id) => {
+          try {
+            await recurringApi.skip(id)
+            addToast('success', TOAST.RECURRING_SKIPPED)
+            monthly.fetchData()
+          } catch {
+            addToast('error', TOAST.RECURRING_SKIP_FAILED)
+          }
+        }}
+      />
+
+      {/* 세그먼트 필터 — 예정 거래 아래, 리스트 바로 위 */}
       <div className="flex items-center bg-[var(--surface-elevated)] rounded-lg p-1">
         {(['all', 'expense', 'income'] as const).map((type) => {
           const label = type === 'all' ? '전체' : type === 'expense' ? '지출' : '수입'
@@ -183,31 +208,6 @@ export default function MonthlyView({
           )
         })}
       </div>
-
-      {/* 예정 거래 섹션 — 캘린더 아래, 거래 리스트 위 */}
-      <ScheduledTransactions
-        items={monthly.allRecurring}
-        currentYear={monthly.currentYear}
-        currentMonth={monthly.currentMonth}
-        onExecute={async (id) => {
-          try {
-            await recurringApi.execute(id)
-            addToast('success', TOAST.RECURRING_EXECUTED)
-            monthly.fetchData()
-          } catch {
-            addToast('error', TOAST.RECURRING_EXECUTE_FAILED)
-          }
-        }}
-        onSkip={async (id) => {
-          try {
-            await recurringApi.skip(id)
-            addToast('success', TOAST.RECURRING_SKIPPED)
-            monthly.fetchData()
-          } catch {
-            addToast('error', TOAST.RECURRING_SKIP_FAILED)
-          }
-        }}
-      />
 
       {/* 거래 리스트 */}
       {monthly.loading ? (
