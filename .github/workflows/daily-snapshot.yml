@@ -1,0 +1,16 @@
+name: Daily Asset Snapshot
+on:
+  schedule:
+    - cron: '0 15 * * *'  # UTC 15:00 = KST 00:00
+  workflow_dispatch:
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger snapshot batch
+        run: |
+          curl -sf -X POST \
+            "${{ secrets.PROD_API_URL }}/api/assets/snapshots/batch" \
+            -H "X-Cron-Secret: ${{ secrets.CRON_SECRET }}" \
+            -H "Content-Type: application/json"

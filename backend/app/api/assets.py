@@ -2,8 +2,10 @@
 
 import asyncio
 import json
+import logging
+import os
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -27,7 +29,47 @@ from app.schemas.asset_goal import AssetGoalCreate, AssetGoalWithInsight
 from app.services import asset_goal_service, asset_service, price_service
 from app.services.asset_parse_service import parse_asset_input
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter()
+
+
+@router.post("/snapshots/batch")
+async def create_all_snapshots(
+    x_cron_secret: str | None = Header(None, alias="X-Cron-Secret"),
+    db: AsyncSession = Depends(get_db),
+) -> object:
+    """전체 가구 일일 스냅샷 배치 생성 (cron 전용)"""
+    from app.models.household import Household
+    from app.models.household_member import HouseholdMember
+    from app.models.user import User as UserModel
+
+    expected = os.getenv("CRON_SECRET", "")
+    if not expected or x_cron_secret != expected:
+        raise HTTPException(status_code=403, detail="Forbidden")
+
+    result = await db.execute(select(Household))
+    households = list(result.scalars().all())
+
+    created = 0
+    for household in households:
+        member_result = await db.execute(select(HouseholdMember).where(HouseholdMember.household_id == household.id).limit(1))
+        member = member_result.scalar_one_or_none()
+        if not member:
+            continue
+
+        user_result = await db.execute(select(UserModel).where(UserModel.id == member.user_id))
+        user = user_result.scalar_one_or_none()
+        if not user:
+            continue
+
+        try:
+            await asset_service.create_snapshot(db, user, household.id)
+            created += 1
+        except Exception:
+            logger.exception(f"스냅샷 생성 실패: household_id={household.id}")
+
+    return {"created": created, "total_households": len(households)}
 
 
 @router.post("", response_model=AssetResponse, status_code=status.HTTP_201_CREATED)

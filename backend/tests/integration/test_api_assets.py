@@ -435,6 +435,37 @@ async def test_monthly_savings_uses_savings_category(authenticated_client, test_
     assert "net_savings" not in data
 
 
+# ──────────────────────────────────────────────
+# POST /api/assets/snapshots/batch — 일일 스냅샷 배치 (cron)
+# ──────────────────────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_snapshot_batch_forbidden_without_secret(authenticated_client):
+    """cron secret 없이 호출하면 403"""
+    response = await authenticated_client.post("/api/assets/snapshots/batch")
+    assert response.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_snapshot_batch_with_valid_secret(authenticated_client, test_household, monkeypatch):
+    """cron secret으로 호출하면 스냅샷 생성"""
+    monkeypatch.setenv("CRON_SECRET", "test-secret-123")
+    response = await authenticated_client.post(
+        "/api/assets/snapshots/batch",
+        headers={"X-Cron-Secret": "test-secret-123"},  # pragma: allowlist secret
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert "created" in data
+    assert "total_households" in data
+
+
+# ──────────────────────────────────────────────
+# 자산 유형 확장 (insurance, vehicle)
+# ──────────────────────────────────────────────
+
+
 @pytest.mark.asyncio
 async def test_create_insurance_asset(authenticated_client, test_household):
     """보험/연금 자산유형 생성"""
