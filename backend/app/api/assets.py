@@ -64,7 +64,7 @@ async def create_all_snapshots(
             continue
 
         try:
-            await asset_service.create_snapshot(db, user, household.id)
+            await asset_service.create_snapshot(db, user, int(household.id))
             created += 1
         except Exception:
             logger.exception(f"스냅샷 생성 실패: household_id={household.id}")
