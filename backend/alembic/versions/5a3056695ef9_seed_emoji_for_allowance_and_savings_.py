@@ -23,7 +23,7 @@ def upgrade() -> None:
     """용돈/저축투자 시스템 카테고리 이모지 시딩 (이전 마이그레이션에서 누락)"""
     EMOJI_MAP = {
         "용돈": "🤑",
-        "저축/투자": "🏦",
+        "저축/투자": "🌱",
     }
     conn = op.get_bind()
     for name, emoji in EMOJI_MAP.items():
