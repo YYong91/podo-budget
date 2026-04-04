@@ -442,8 +442,8 @@ describe('CategoryManager', () => {
   describe('type 탭 전환', () => {
     it('수입 카테고리 탭 클릭 시 수입 카테고리를 표시한다', async () => {
       const incomeCategories = [
-        { id: 10, name: '급여', type: 'income', description: '월급', sort_order: 1, is_savings: false, is_system: true, created_at: '2024-01-01T00:00:00Z' },
-        { id: 11, name: '부수입', type: 'income', description: null, sort_order: 2, is_savings: false, is_system: false, created_at: '2024-01-01T00:00:00Z' },
+        { id: 10, name: '급여', type: 'income', description: '월급', sort_order: 1, is_savings: false, is_system: true, exclude_auto_payment: false, emoji: '📌', created_at: '2024-01-01T00:00:00Z' },
+        { id: 11, name: '부수입', type: 'income', description: null, sort_order: 2, is_savings: false, is_system: false, exclude_auto_payment: false, emoji: '📌', created_at: '2024-01-01T00:00:00Z' },
       ]
 
       server.use(
@@ -521,8 +521,8 @@ describe('CategoryManager', () => {
 
     it('저축성 카테고리에 저축 뱃지를 표시한다', async () => {
       const savingsCategories = [
-        { id: 10, name: '적금', type: 'expense' as const, description: null, sort_order: 1, is_savings: true, is_system: false, created_at: '2024-01-01T00:00:00Z' },
-        { id: 11, name: '식비', type: 'expense' as const, description: null, sort_order: 2, is_savings: false, is_system: false, created_at: '2024-01-01T00:00:00Z' },
+        { id: 10, name: '적금', type: 'expense' as const, description: null, sort_order: 1, is_savings: true, is_system: false, exclude_auto_payment: false, emoji: '📌', created_at: '2024-01-01T00:00:00Z' },
+        { id: 11, name: '식비', type: 'expense' as const, description: null, sort_order: 2, is_savings: false, is_system: false, exclude_auto_payment: false, emoji: '📌', created_at: '2024-01-01T00:00:00Z' },
       ]
 
       server.use(

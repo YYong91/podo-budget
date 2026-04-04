@@ -38,7 +38,6 @@ class CategoryResponse(CategoryBase):
     sort_order: int = 0
     is_savings: bool = False
     exclude_auto_payment: bool = False
-    emoji: str | None = "📌"
     is_system: bool = False
     created_at: datetime
 

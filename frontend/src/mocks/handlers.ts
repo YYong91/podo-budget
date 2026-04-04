@@ -386,7 +386,7 @@ export const handlers = [
     if (!category) {
       return HttpResponse.json({ detail: 'Not found' }, { status: 404 })
     }
-    const body = await request.json() as { name?: string; description?: string }
+    const body = await request.json() as { name?: string; description?: string; emoji?: string }
     const updated = {
       ...category,
       ...body,
