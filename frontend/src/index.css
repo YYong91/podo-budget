@@ -279,7 +279,7 @@ input[type="datetime-local"] {
   @apply text-3xl font-bold tracking-tight leading-tight;
 }
 .text-amount {
-  @apply text-base font-bold tabular-nums tracking-wide;
+  @apply text-base font-bold tabular-nums;
 }
 
 /* 폼 */
