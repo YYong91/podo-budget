@@ -1,12 +1,40 @@
 /**
  * @file TransactionItem.tsx
- * @description 2줄 구조 거래 항목 — 설명+금액 / 카테고리뱃지
+ * @description 아이콘 원 + 2줄 텍스트 구조 거래 항목 — 이모지 아이콘 / 설명+금액 / 카테고리+뱃지
  */
 
 import { memo } from 'react'
 import { Link } from 'react-router-dom'
 import { formatAmount } from '../utils/format'
 import type { Category } from '../types'
+
+// 시스템 카테고리 이름 → 배경색 (light + dark)
+const CATEGORY_COLORS: Record<string, string> = {
+  '식비': 'bg-orange-100 dark:bg-orange-900/30',
+  '카페/음료': 'bg-amber-100 dark:bg-amber-900/30',
+  '교통': 'bg-blue-100 dark:bg-blue-900/30',
+  '주거/관리비': 'bg-stone-200 dark:bg-stone-800/30',
+  '통신': 'bg-sky-100 dark:bg-sky-900/30',
+  '생활용품': 'bg-teal-100 dark:bg-teal-900/30',
+  '의류/미용': 'bg-fuchsia-100 dark:bg-fuchsia-900/30',
+  '의료/건강': 'bg-rose-100 dark:bg-rose-900/30',
+  '교육/자기계발': 'bg-indigo-100 dark:bg-indigo-900/30',
+  '문화/여가': 'bg-purple-100 dark:bg-purple-900/30',
+  '경조사': 'bg-red-100 dark:bg-red-900/30',
+  '자녀/육아': 'bg-pink-100 dark:bg-pink-900/30',
+  '반려동물': 'bg-yellow-100 dark:bg-yellow-900/30',
+  '보험': 'bg-slate-100 dark:bg-slate-800/30',
+  '대출/이자': 'bg-zinc-100 dark:bg-zinc-800/30',
+  '세금/공과금': 'bg-neutral-100 dark:bg-neutral-800/30',
+  '구독': 'bg-violet-100 dark:bg-violet-900/30',
+  '기타': 'bg-gray-100 dark:bg-gray-800/30',
+}
+
+function getCategoryBgColor(categoryName: string | undefined, type: 'expense' | 'income'): string {
+  if (type === 'income') return 'bg-leaf-100'
+  if (!categoryName) return 'bg-grape-100'
+  return CATEGORY_COLORS[categoryName] ?? 'bg-grape-100'
+}
 
 interface TransactionItemProps {
   id: number
@@ -45,46 +73,51 @@ function TransactionItem({
   return (
     <Link
       to={detailPath}
-      className={`flex flex-col gap-1.5 px-4 py-4 hover:bg-[var(--surface-hover)] transition-colors ${
+      className={`flex items-start gap-3 px-4 py-3.5 hover:bg-[var(--surface-hover)] transition-colors ${
         excludeFromStats ? 'opacity-50' : ''
       }`}
     >
-      <div className="flex items-center justify-between gap-2">
-        <span className="text-base font-medium text-[var(--text-primary)] truncate">
-          {description}
-        </span>
-        <span
-          className={`text-amount whitespace-nowrap ${
-            type === 'income' ? 'text-leaf-600' : 'text-[var(--text-primary)]'
-          }`}
-        >
-          {type === 'expense' ? '-' : '+'}{formatAmount(amount)}
-        </span>
-      </div>
-      <div className="flex items-center gap-1.5">
-        <button
-          onClick={(e) => {
-            e.preventDefault()
-            e.stopPropagation()
-            onCategoryClick()
-          }}
-          className={`text-xs px-2 py-0.5 rounded-full transition-colors ${
-            type === 'income'
-              ? 'bg-leaf-50 text-leaf-600 hover:bg-leaf-100'
-              : 'bg-grape-50 text-grape-600 hover:bg-grape-100'
-          }`}
-        >
-          {category?.name ?? '분류 안 됨'}
-        </button>
-        {isRecurring && (
-          <span className="text-xs bg-[var(--border-default)] text-[var(--text-secondary)] px-1.5 py-0.5 rounded-full">정기</span>
-        )}
-        {excludeFromStats && (
-          <span className="text-xs bg-[var(--surface-hover)] text-[var(--text-tertiary)] px-1.5 py-0.5 rounded-full">통계제외</span>
-        )}
-        {recordedBy && (
-          <span className="text-xs text-[var(--text-tertiary)]">{recordedBy}</span>
-        )}
+      {/* 왼쪽 아이콘 원 — 카테고리 변경 트리거 */}
+      <button
+        onClick={(e) => {
+          e.preventDefault()
+          e.stopPropagation()
+          onCategoryClick()
+        }}
+        className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 transition-colors hover:opacity-80 ${getCategoryBgColor(category?.name, type)}`}
+        aria-label="카테고리 변경"
+      >
+        <span className="text-lg">{category?.emoji ?? '📌'}</span>
+      </button>
+
+      {/* 오른쪽 텍스트 영역 */}
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-base font-medium text-[var(--text-primary)] truncate">
+            {description}
+          </span>
+          <span
+            className={`text-amount whitespace-nowrap ${
+              type === 'income' ? 'text-leaf-600' : 'text-[var(--text-primary)]'
+            }`}
+          >
+            {type === 'expense' ? '-' : '+'}{formatAmount(amount)}
+          </span>
+        </div>
+        <div className="flex items-center gap-1.5 mt-0.5">
+          <span className="text-xs text-[var(--text-muted)]">
+            {category?.name ?? '분류 안 됨'}
+          </span>
+          {isRecurring && (
+            <span className="text-xs bg-[var(--border-default)] text-[var(--text-secondary)] px-1.5 py-0.5 rounded-full">정기</span>
+          )}
+          {excludeFromStats && (
+            <span className="text-xs bg-[var(--surface-hover)] text-[var(--text-tertiary)] px-1.5 py-0.5 rounded-full">통계제외</span>
+          )}
+          {recordedBy && (
+            <span className="text-xs text-[var(--text-tertiary)]">{recordedBy}</span>
+          )}
+        </div>
       </div>
     </Link>
   )

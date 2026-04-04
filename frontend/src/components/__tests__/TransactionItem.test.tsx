@@ -71,7 +71,7 @@ describe('TransactionItem', () => {
     const user = userEvent.setup()
     const onCategoryClick = vi.fn()
     renderItem({ onCategoryClick })
-    await user.click(screen.getByText('식비'))
+    await user.click(screen.getByRole('button', { name: '카테고리 변경' }))
     expect(onCategoryClick).toHaveBeenCalledTimes(1)
   })
 
