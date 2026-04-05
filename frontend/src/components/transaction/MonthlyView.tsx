@@ -209,6 +209,7 @@ export default function MonthlyView({
         })}
       </div>
 
+
       {/* 거래 리스트 */}
       {monthly.loading ? (
         <MonthlyViewSkeleton />

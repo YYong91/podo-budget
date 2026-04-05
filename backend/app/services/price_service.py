@@ -31,9 +31,6 @@ NEGATIVE_CACHE_TTL = 30  # 실패 캐시 30초 — 외부 API rate limit 방어 
 _price_locks: dict[str, asyncio.Lock] = {}
 
 
-# _get_http_client, close_http_client → app.services.http_client로 이동
-
-
 def _lock_for(key: str) -> asyncio.Lock:
     """키별 락 반환 (없으면 생성) — asyncio 단일 스레드이므로 race-free"""
     if key not in _price_locks:
