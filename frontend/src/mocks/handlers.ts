@@ -366,11 +366,12 @@ export const handlers = [
    * POST /api/categories - 카테고리 생성
    */
   http.post(`${BASE_URL}/categories`, async ({ request }) => {
-    const body = await request.json() as { name: string; description?: string }
+    const body = await request.json() as { name: string; description?: string; emoji?: string }
     const newCategory = {
       id: Math.max(...mockCategories.map((c) => c.id)) + 1,
       name: body.name,
       description: body.description ?? null,
+      emoji: body.emoji ?? '📌',
       is_system: false,
       created_at: new Date().toISOString(),
     }
@@ -385,7 +386,7 @@ export const handlers = [
     if (!category) {
       return HttpResponse.json({ detail: 'Not found' }, { status: 404 })
     }
-    const body = await request.json() as { name?: string; description?: string }
+    const body = await request.json() as { name?: string; description?: string; emoji?: string }
     const updated = {
       ...category,
       ...body,

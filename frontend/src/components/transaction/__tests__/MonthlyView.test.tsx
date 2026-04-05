@@ -185,8 +185,8 @@ describe('MonthlyView 컴포넌트', () => {
       expect(screen.getByText('김치찌개')).toBeInTheDocument()
     })
 
-    const categoryBadge = screen.getByRole('button', { name: '식비' })
-    fireEvent.click(categoryBadge)
+    const categoryBtns = screen.getAllByRole('button', { name: '카테고리 변경' })
+    fireEvent.click(categoryBtns[0])
 
     await waitFor(() => {
       expect(screen.getByRole('dialog', { name: '카테고리 변경' })).toBeInTheDocument()

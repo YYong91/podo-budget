@@ -133,7 +133,7 @@ export default function GuidePage() {
             <strong>날짜 이동:</strong> 캘린더에서 날짜를 탭하면 해당 날짜의 거래로 자동 스크롤
           </p>
           <p>
-            <strong>카테고리 변경:</strong> 거래 항목의 카테고리 뱃지를 탭하면 바텀시트에서 바로 변경
+            <strong>카테고리 변경:</strong> 거래 항목의 카테고리 아이콘을 탭하면 바텀시트에서 바로 변경
           </p>
           <p>
             <strong>상세/수정:</strong> 거래 항목을 탭하면 상세 페이지에서 수정/삭제

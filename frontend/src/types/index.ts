@@ -141,6 +141,7 @@ export interface Category {
   name: string
   type: 'expense' | 'income' | 'both'
   description: string | null
+  emoji: string | null
   sort_order: number
   is_savings: boolean
   is_system: boolean

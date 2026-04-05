@@ -7,10 +7,10 @@ export const categoryApi = {
   getAll: (params?: { type?: 'expense' | 'income' }) =>
     apiClient.get<Category[]>('/categories', { params }),
 
-  create: (data: { name: string; description?: string; is_savings?: boolean }) =>
+  create: (data: { name: string; description?: string; is_savings?: boolean; emoji?: string }) =>
     apiClient.post<Category>('/categories', data),
 
-  update: (id: number, data: { name?: string; description?: string; is_savings?: boolean }) =>
+  update: (id: number, data: { name?: string; description?: string; is_savings?: boolean; emoji?: string }) =>
     apiClient.put<Category>(`/categories/${id}`, data),
 
   delete: (id: number) =>

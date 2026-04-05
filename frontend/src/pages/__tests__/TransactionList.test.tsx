@@ -527,7 +527,7 @@ describe('TransactionList', () => {
   })
 
   describe('검색 결과 카테고리 뱃지 클릭 → 필터 (#323)', () => {
-    it('검색 결과에서 카테고리 뱃지 클릭 시 해당 카테고리 필터 적용', async () => {
+    it('검색 결과에서 카테고리 아이콘 클릭 시 해당 카테고리 필터 적용', async () => {
       renderPage('/?search=김치찌개')
 
       // 검색 결과 로드 대기
@@ -535,9 +535,9 @@ describe('TransactionList', () => {
         expect(screen.getByText('김치찌개')).toBeInTheDocument()
       })
 
-      // 카테고리 뱃지("식비") 클릭 — 검색 모드에서는 카테고리 필터가 적용되어야 함
-      const categoryBadge = screen.getByRole('button', { name: '식비' })
-      fireEvent.click(categoryBadge)
+      // 카테고리 아이콘 버튼 클릭 — 검색 모드에서는 카테고리 필터가 적용되어야 함
+      const categoryBtn = screen.getByRole('button', { name: '카테고리 변경' })
+      fireEvent.click(categoryBtn)
 
       // 카테고리 바텀시트가 열리지 않아야 함 (검색 모드이므로)
       await waitFor(() => {
@@ -550,7 +550,7 @@ describe('TransactionList', () => {
       })
     })
 
-    it('같은 카테고리 뱃지 재클릭 시 필터 해제 (토글)', async () => {
+    it('같은 카테고리 아이콘 재클릭 시 필터 해제 (토글)', async () => {
       // 이미 식비(id=1) 필터가 적용된 상태로 진입
       renderPage('/?search=김치찌개&category=1')
 
@@ -558,9 +558,9 @@ describe('TransactionList', () => {
         expect(screen.getByText('김치찌개')).toBeInTheDocument()
       })
 
-      // "식비" 뱃지 클릭 — 이미 같은 카테고리로 필터 중이므로 해제되어야 함
-      const categoryBadge = screen.getByRole('button', { name: '식비' })
-      fireEvent.click(categoryBadge)
+      // 카테고리 아이콘 클릭 — 이미 같은 카테고리로 필터 중이므로 해제되어야 함
+      const categoryBtn = screen.getByRole('button', { name: '카테고리 변경' })
+      fireEvent.click(categoryBtn)
 
       // 필터가 해제되어 칩이 기본 "카테고리"로 복귀
       await waitFor(() => {
@@ -568,7 +568,7 @@ describe('TransactionList', () => {
       })
     })
 
-    it('월 뷰에서는 카테고리 뱃지 클릭 시 기존 바텀시트 열기', async () => {
+    it('월 뷰에서는 카테고리 아이콘 클릭 시 기존 바텀시트 열기', async () => {
       setupCurrentMonthHandlers()
       renderPage()
 
@@ -576,9 +576,9 @@ describe('TransactionList', () => {
         expect(screen.getByText('김치찌개')).toBeInTheDocument()
       })
 
-      // 월 뷰에서 카테고리 뱃지 클릭 → 카테고리 변경 바텀시트 열림
-      const categoryBadge = screen.getByRole('button', { name: '식비' })
-      fireEvent.click(categoryBadge)
+      // 월 뷰에서 카테고리 아이콘 클릭 → 카테고리 변경 바텀시트 열림
+      const categoryBtns = screen.getAllByRole('button', { name: '카테고리 변경' })
+      fireEvent.click(categoryBtns[0])
 
       await waitFor(() => {
         expect(screen.getByRole('dialog', { name: '카테고리 변경' })).toBeInTheDocument()
