@@ -13,11 +13,13 @@ import {
 import type { LucideIcon } from 'lucide-react'
 import { useChangelog } from '../hooks/useChangelog'
 import { trackPageView } from '../utils/analytics'
+import { FEATURES } from '../config/features'
 
 
+// FEATURES.assets 플래그에 따라 자산 탭을 조건부 포함
 const navItems: { path: string; label: string; icon: LucideIcon }[] = [
   { path: '/home', label: '가계부', icon: Receipt },
-  { path: '/assets', label: '자산', icon: Landmark },
+  ...(FEATURES.assets ? [{ path: '/assets', label: '자산', icon: Landmark }] : []),
   { path: '/insights', label: '돌아보기', icon: TrendingUp },
   { path: '/settings', label: '더보기', icon: SettingsIcon },
 ]

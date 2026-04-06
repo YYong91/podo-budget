@@ -9,6 +9,7 @@ import { render, screen, fireEvent, act } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import Layout from '../Layout'
 import { changelogs } from '../../data/changelogs'
+import { FEATURES } from '../../config/features'
 
 /**
  * useAuth 훅 모킹
@@ -79,7 +80,12 @@ describe('Layout', () => {
       renderLayout()
       expect(screen.getAllByRole('link', { name: '가계부' }).length).toBe(2)
       expect(screen.getAllByRole('link', { name: /돌아보기/i }).length).toBe(2)
-      expect(screen.getAllByRole('link', { name: /^자산$/i }).length).toBe(2)
+      // FEATURES.assets=false일 때 자산 탭은 표시되지 않아야 한다
+      if (FEATURES.assets) {
+        expect(screen.getAllByRole('link', { name: /^자산$/i }).length).toBe(2)
+      } else {
+        expect(screen.queryAllByRole('link', { name: /^자산$/i }).length).toBe(0)
+      }
       expect(screen.getAllByRole('link', { name: /더보기/i }).length).toBe(2)
     })
 
@@ -99,7 +105,7 @@ describe('Layout', () => {
       })
     })
 
-    it('/assets 경로에서 자산 탭이 활성화된다', () => {
+    it.skipIf(!FEATURES.assets)('/assets 경로에서 자산 탭이 활성화된다', () => {
       renderLayout('/assets')
       const assetLinks = screen.getAllByRole('link', { name: /^자산$/i })
       assetLinks.forEach(link => {
