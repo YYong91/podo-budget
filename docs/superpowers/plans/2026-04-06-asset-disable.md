@@ -89,7 +89,7 @@ const navItems: { path: string; label: string; icon: LucideIcon }[] = [
 ]
 ```
 
-`Landmark` import는 유지 (FEATURES.assets=true일 때 필요).
+`Landmark` import는 유지 (FEATURES.assets=true일 때 필요). 단 `FEATURES.assets=false`일 때 ESLint `no-unused-vars` 에러가 날 수 있으므로, spread 구문 안에서 인라인으로 참조하거나, lint 에러가 나면 Task 8 전체 검증에서 수정.
 
 - [ ] **Step 2: Layout 테스트 업데이트**
 
@@ -230,9 +230,16 @@ if (FEATURES.assets && assetSummary) {
 
 - [ ] **Step 2: InsightsPage 테스트 업데이트**
 
-자산 스냅샷 관련 MSW mock 응답이 빈 배열이면 기존 테스트는 이미 통과할 것. `FEATURES.assets=false`이므로 `enabled: false` → 쿼리 미실행 → 관련 UI 미렌더링.
+파일: `frontend/src/pages/__tests__/InsightsPage.test.tsx`
 
-자산 관련 assertion이 있으면 조건부 처리 또는 제거.
+`FEATURES.assets=false`이므로 `enabled: false` → 스냅샷 쿼리 미실행 → 자산 관련 UI 미렌더링.
+
+테스트에서 자산 관련 assertion 확인:
+```bash
+grep -n "asset\|자산\|snapshot\|순자산\|net_worth" frontend/src/pages/__tests__/InsightsPage.test.tsx
+```
+
+있으면 제거하거나 `FEATURES.assets` 조건부 스킵. 없으면 수정 불필요.
 
 - [ ] **Step 3: 테스트 실행**
 
@@ -298,7 +305,14 @@ import { FEATURES } from '../../config/features'
 
 - [ ] **Step 4: 테스트 업데이트**
 
-UnifiedSummaryCards 테스트에서 순자산 카드 클릭 → `/assets` 이동 테스트가 있으면 조건부 스킵.
+파일: `frontend/src/components/stats/__tests__/UnifiedSummaryCards.test.tsx`
+
+순자산 카드 관련 assertion 확인:
+```bash
+grep -n "asset\|자산\|순자산\|net_worth\|/assets" frontend/src/components/stats/__tests__/UnifiedSummaryCards.test.tsx
+```
+
+순자산 카드 클릭 → `/assets` 이동 테스트가 있으면 `it.skipIf(!FEATURES.assets)` 또는 제거.
 
 - [ ] **Step 5: 테스트 실행**
 
