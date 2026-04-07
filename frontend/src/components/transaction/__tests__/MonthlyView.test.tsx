@@ -378,7 +378,7 @@ describe('MonthlyView 컴포넌트', () => {
       expect(screen.getByText('접기')).toBeInTheDocument()
     })
 
-    it('접기 버튼 클릭 시 달력이 숨겨지고 "달력 펼치기" 버튼이 표시된다', async () => {
+    it('접기 버튼 클릭 시 주간 스트립으로 전환되고 펼치기 아이콘이 표시된다', async () => {
       const user = userEvent.setup()
       renderPage()
       await waitFor(() => {
@@ -388,12 +388,12 @@ describe('MonthlyView 컴포넌트', () => {
       await user.click(screen.getByText('접기'))
 
       await waitFor(() => {
-        expect(screen.getByText('달력 펼치기')).toBeInTheDocument()
+        expect(screen.getByTestId('calendar-expand')).toBeInTheDocument()
         expect(screen.queryByText('접기')).not.toBeInTheDocument()
       })
     })
 
-    it('펼치기 버튼 클릭 시 달력이 다시 표시된다', async () => {
+    it('펼치기 아이콘 클릭 시 달력이 다시 표시된다', async () => {
       const user = userEvent.setup()
       renderPage()
       await waitFor(() => {
@@ -402,10 +402,10 @@ describe('MonthlyView 컴포넌트', () => {
 
       await user.click(screen.getByText('접기'))
       await waitFor(() => {
-        expect(screen.getByText('달력 펼치기')).toBeInTheDocument()
+        expect(screen.getByTestId('calendar-expand')).toBeInTheDocument()
       })
 
-      await user.click(screen.getByText('달력 펼치기'))
+      await user.click(screen.getByTestId('calendar-expand'))
       await waitFor(() => {
         expect(screen.getByText('접기')).toBeInTheDocument()
         expect(screen.getByText('일')).toBeInTheDocument()
@@ -424,12 +424,21 @@ describe('MonthlyView 컴포넌트', () => {
       expect(localStorage.getItem('podo-calendar-collapsed')).toBe('true')
     })
 
-    it('localStorage에 접힌 상태가 있으면 접힌 상태로 시작한다', async () => {
+    it('localStorage에 접힌 상태가 있으면 주간 스트립으로 시작한다', async () => {
       localStorage.setItem('podo-calendar-collapsed', 'true')
       renderPage()
       await waitFor(() => {
-        expect(screen.getByText('달력 펼치기')).toBeInTheDocument()
+        expect(screen.getByTestId('calendar-expand')).toBeInTheDocument()
         expect(screen.queryByText('접기')).not.toBeInTheDocument()
+      })
+    })
+
+    it('캘린더 접힌 상태에서 주간 스트립이 표시된다', async () => {
+      localStorage.setItem('podo-calendar-collapsed', 'true')
+      renderPage()
+      await waitFor(() => {
+        const weeks = document.querySelectorAll('[data-testid="calendar-week"]')
+        expect(weeks.length).toBe(1)
       })
     })
   })

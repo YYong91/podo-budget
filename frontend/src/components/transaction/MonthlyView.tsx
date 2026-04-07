@@ -139,13 +139,23 @@ export default function MonthlyView({
 
       {/* 미니 캘린더 (접기/펼치기) */}
       {calendarCollapsed ? (
-        <button
-          onClick={toggleCalendar}
-          className="w-full flex items-center justify-center gap-2 py-3 bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] hover:bg-[var(--surface-hover)] transition-colors"
-        >
-          <span className="text-xs text-[var(--text-tertiary)]">달력 펼치기</span>
-          <ChevronDown className="w-3.5 h-3.5 text-[var(--text-tertiary)]" />
-        </button>
+        <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] p-3">
+          <MiniCalendar
+            year={monthly.currentYear}
+            month={monthly.currentMonth}
+            daySummaries={monthly.daySummaries}
+            onDateClick={handleDateClick}
+            today={todayString}
+            weekOnly
+          />
+          <button
+            data-testid="calendar-expand"
+            onClick={toggleCalendar}
+            className="w-full flex justify-center py-1"
+          >
+            <ChevronDown className="w-4 h-4 text-[var(--text-muted)]" />
+          </button>
+        </div>
       ) : (
         <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] p-3">
           <MiniCalendar
@@ -156,6 +166,7 @@ export default function MonthlyView({
             today={todayString}
           />
           <button
+            data-testid="calendar-collapse"
             onClick={toggleCalendar}
             className="w-full flex items-center justify-center gap-1.5 pt-2 mt-1 border-t border-[var(--border-subtle)]"
           >
