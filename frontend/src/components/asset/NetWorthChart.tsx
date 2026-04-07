@@ -161,6 +161,7 @@ function NetWorthChartInner({
                 strokeWidth={2}
                 fill="url(#netWorthGradient)"
                 dot={false}
+                isAnimationActive={false}
               />
             </AreaChart>
           </ResponsiveContainer>
