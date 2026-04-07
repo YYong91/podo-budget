@@ -3,7 +3,6 @@
  * @description 설정 > 새소식 섹션 — 앱 업데이트 내역 타임라인
  */
 
-import { useEffect } from 'react'
 import { useChangelog } from '../../hooks/useChangelog'
 import type { ChangelogItem } from '../../data/changelogs'
 import SubPageWrapper from './SubPageWrapper'
@@ -15,12 +14,7 @@ const TAG_STYLES: Record<ChangelogItem['tag'], string> = {
 }
 
 export default function ChangelogSection() {
-  const { hasUnread, markAsRead, changelogs } = useChangelog()
-
-  // 새소식 페이지 진입 시 즉시 읽음 처리
-  useEffect(() => {
-    if (hasUnread) markAsRead()
-  }, [hasUnread, markAsRead])
+  const { changelogs } = useChangelog()
 
   return (
     <SubPageWrapper>
