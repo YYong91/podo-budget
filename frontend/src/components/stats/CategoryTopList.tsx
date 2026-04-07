@@ -141,6 +141,7 @@ export default function CategoryTopList({ categories, maxItems = 5, monthStr }: 
                   outerRadius="80%"
                   paddingAngle={2}
                   strokeWidth={0}
+                  isAnimationActive={false}
                 >
                   {chartData.map((_, index) => (
                     <Cell key={index} fill={CATEGORY_COLORS[index % CATEGORY_COLORS.length]} />
