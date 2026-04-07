@@ -96,6 +96,9 @@ export default function GuidePage() {
 
       {/* 1. 간편 입력 */}
       <SectionCard id="natural-input" icon={MessageSquare} title="간편 입력 (자연어 AI 파싱)">
+        <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
+          하단 탭바의 <strong className="text-grape-600">✏️ 버튼</strong>을 눌러 바로 입력하세요. 자연어로 입력하면 AI가 자동으로 분류하고 저장합니다.
+        </p>
         <p>
           화면 우측 하단의 <strong>+ 버튼</strong>을 누르면 자연어로 지출/수입을 입력할 수 있습니다. AI가 자동으로
           금액, 카테고리, 날짜를 분류합니다.
