@@ -5,6 +5,7 @@
  */
 
 import { Link } from 'react-router-dom'
+import { FEATURES } from '../../config/features'
 
 interface UnifiedSummaryCardsProps {
   incomeTotal: number
@@ -72,8 +73,8 @@ export default function UnifiedSummaryCards({
 
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-      {/* 순자산 카드 → 자산 페이지 */}
-      {netWorth != null && (
+      {/* 순자산 카드 → 자산 페이지 (FEATURES.assets 활성 시에만 표시) */}
+      {FEATURES.assets && netWorth != null && (
         <Link to="/assets" className={`col-span-2 lg:col-span-4 bg-gradient-to-br from-warm-50 to-warm-100 border border-[var(--border-default)] ${cardBase} text-center`}>
           <p className="text-sm text-[var(--text-tertiary)] mb-0.5">순자산</p>
           <p className="text-xl sm:text-2xl font-bold text-[var(--text-primary)]">{formatLargeAmount(netWorth)}</p>

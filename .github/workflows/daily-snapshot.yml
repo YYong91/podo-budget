@@ -1,7 +1,7 @@
 name: Daily Asset Snapshot
 on:
-  schedule:
-    - cron: '0 15 * * *'  # UTC 15:00 = KST 00:00
+  # schedule 비활성화 — 자산 기능 일시 중단 (VITE_FEATURE_ASSETS=false)
+  # 복원 시: schedule: cron: '0 15 * * *' (UTC 15:00 = KST 00:00) 추가
   workflow_dispatch:
 
 jobs:

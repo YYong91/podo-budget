@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect, useRef } from 'react'
 import { Routes, Route, Navigate, useSearchParams, useLocation, useNavigationType } from 'react-router-dom'
 import Layout from './components/Layout'
 import ProtectedRoute from './components/ProtectedRoute'
+import { FEATURES } from './config/features'
 
 /* 코드 스플리팅: 페이지별 lazy loading으로 초기 번들 크기 축소 */
 const ExpenseForm = lazy(() => import('./pages/ExpenseForm'))
@@ -110,10 +111,21 @@ function App() {
             <Route path="/invitations" element={<InvitationListPage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/settings/:section" element={<SettingsPage />} />
-            <Route path="/assets" element={<AssetDashboard />} />
-            <Route path="/assets/new" element={<AssetForm />} />
-            <Route path="/assets/:id" element={<AssetForm />} />
-            <Route path="/accounts" element={<AccountManager />} />
+            {/* 자산/계좌 라우트: FEATURES.assets 플래그로 조건부 활성화 */}
+            {FEATURES.assets && (
+              <>
+                <Route path="/assets" element={<AssetDashboard />} />
+                <Route path="/assets/new" element={<AssetForm />} />
+                <Route path="/assets/:id" element={<AssetForm />} />
+                <Route path="/accounts" element={<AccountManager />} />
+              </>
+            )}
+            {!FEATURES.assets && (
+              <>
+                <Route path="/assets/*" element={<Navigate to="/home" replace />} />
+                <Route path="/accounts/*" element={<Navigate to="/home" replace />} />
+              </>
+            )}
             <Route path="/payment-methods" element={<PaymentMethodManager />} />
             <Route path="/guide" element={<GuidePage />} />
             <Route path="/feedback" element={<FeedbackPage />} />

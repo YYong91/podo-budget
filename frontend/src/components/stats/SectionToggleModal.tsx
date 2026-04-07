@@ -6,6 +6,7 @@
  */
 
 import { X } from 'lucide-react'
+import { FEATURES } from '../../config/features'
 
 const STORAGE_KEY = 'podo-insights-sections'
 
@@ -45,12 +46,13 @@ export function saveSectionSettings(settings: SectionVisibility): void {
 }
 
 // 토글 가능한 섹션 목록 (종합 요약은 제외 — 항상 ON)
+// 자산 섹션은 FEATURES.assets 플래그가 활성화된 경우에만 표시
 const SECTION_LIST: { key: keyof SectionVisibility; label: string }[] = [
   { key: 'highlights', label: '이달의 주목할 점' },
   { key: 'categoryTop', label: '지출 카테고리' },
   { key: 'budget', label: '예산 상황' },
   { key: 'cardUsage', label: '카드 실적' },
-  { key: 'assets', label: '자산 변화' },
+  ...(FEATURES.assets ? [{ key: 'assets' as keyof SectionVisibility, label: '자산 변화' }] : []),
   { key: 'ai', label: 'AI 상세 분석' },
 ]
 

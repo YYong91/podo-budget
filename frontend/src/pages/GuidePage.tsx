@@ -4,6 +4,7 @@
  */
 
 import { useGoBack } from '../hooks/useGoBack'
+import { FEATURES } from '../config/features'
 import {
   ArrowLeft,
   MessageSquare,
@@ -26,12 +27,13 @@ const sections = [
   { id: 'budgets', icon: PiggyBank, label: '예산 관리' },
   { id: 'categories', icon: Tags, label: '카테고리 관리' },
   { id: 'insights', icon: BarChart3, label: '리포트 (이달의 리포트)' },
-  { id: 'assets', icon: Landmark, label: '자산 관리' },
+  // 자산 관리 — FEATURES.assets 플래그가 꺼지면 목차에서도 숨김
+  ...(FEATURES.assets ? [{ id: 'assets', icon: Landmark, label: '자산 관리' }] : []),
   { id: 'household', icon: Users, label: '공유 가계부' },
   { id: 'telegram', icon: Send, label: '텔레그램 봇 연동' },
   { id: 'kakao', icon: MessageCircle, label: '카카오톡 봇 연동' },
   { id: 'tips', icon: Lightbulb, label: '팁과 단축키' },
-] as const
+]
 
 function ExampleBox({ children }: { children: React.ReactNode }) {
   return <div className="bg-[var(--surface-elevated)] rounded-lg p-3 text-sm text-[var(--text-secondary)] space-y-1">{children}</div>
@@ -94,6 +96,9 @@ export default function GuidePage() {
 
       {/* 1. 간편 입력 */}
       <SectionCard id="natural-input" icon={MessageSquare} title="간편 입력 (자연어 AI 파싱)">
+        <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
+          하단 탭바의 <strong className="text-grape-600">✏️ 버튼</strong>을 눌러 바로 입력하세요. 자연어로 입력하면 AI가 자동으로 분류하고 저장합니다.
+        </p>
         <p>
           화면 우측 하단의 <strong>+ 버튼</strong>을 누르면 자연어로 지출/수입을 입력할 수 있습니다. AI가 자동으로
           금액, 카테고리, 날짜를 분류합니다.
@@ -223,33 +228,35 @@ export default function GuidePage() {
         </ExampleBox>
       </SectionCard>
 
-      {/* 7. 자산 관리 */}
-      <SectionCard id="assets" icon={Landmark} title="자산 관리">
-        <p>주식, 코인, 예적금, 부동산, 대출 등 다양한 자산을 한 곳에서 순자산 중심으로 관리합니다.</p>
-        <ExampleBox>
-          <p>
-            <strong>지원 자산:</strong> 주식, 암호화폐, 예적금, 부동산, 대출 등
-          </p>
-          <p>
-            <strong>처음 등록:</strong> 자산 탭 → 자산 유형 선택 → 정보 입력
-          </p>
-          <p>
-            <strong>순자산 히어로:</strong> 현재 순자산, 총 자산, 총 부채를 상단에서 한눈에 확인
-          </p>
-          <p>
-            <strong>이번 달 성과:</strong> 지난 스냅샷 대비 순자산 변화량과 유형별 원인 분해, 저축 연속 달성 스트릭 표시
-          </p>
-          <p>
-            <strong>목표 설정:</strong> 순자산 목표 금액과 날짜를 설정하면 다음 마일스톤까지 진행률과 달성 페이스 추적
-          </p>
-          <p>
-            <strong>추이 차트:</strong> 3M/6M/12M 기간별 순자산 변화를 영역 차트로 확인
-          </p>
-          <p>
-            <strong>종류별 보기:</strong> 투자, 예적금, 부동산/기타, 부채 그룹으로 자산 목록 확인. 대출은 원래 대출금 입력 시 상환 진척도 표시
-          </p>
-        </ExampleBox>
-      </SectionCard>
+      {/* 7. 자산 관리 — FEATURES.assets 플래그가 꺼지면 섹션 숨김 */}
+      {FEATURES.assets && (
+        <SectionCard id="assets" icon={Landmark} title="자산 관리">
+          <p>주식, 코인, 예적금, 부동산, 대출 등 다양한 자산을 한 곳에서 순자산 중심으로 관리합니다.</p>
+          <ExampleBox>
+            <p>
+              <strong>지원 자산:</strong> 주식, 암호화폐, 예적금, 부동산, 대출 등
+            </p>
+            <p>
+              <strong>처음 등록:</strong> 자산 탭 → 자산 유형 선택 → 정보 입력
+            </p>
+            <p>
+              <strong>순자산 히어로:</strong> 현재 순자산, 총 자산, 총 부채를 상단에서 한눈에 확인
+            </p>
+            <p>
+              <strong>이번 달 성과:</strong> 지난 스냅샷 대비 순자산 변화량과 유형별 원인 분해, 저축 연속 달성 스트릭 표시
+            </p>
+            <p>
+              <strong>목표 설정:</strong> 순자산 목표 금액과 날짜를 설정하면 다음 마일스톤까지 진행률과 달성 페이스 추적
+            </p>
+            <p>
+              <strong>추이 차트:</strong> 3M/6M/12M 기간별 순자산 변화를 영역 차트로 확인
+            </p>
+            <p>
+              <strong>종류별 보기:</strong> 투자, 예적금, 부동산/기타, 부채 그룹으로 자산 목록 확인. 대출은 원래 대출금 입력 시 상환 진척도 표시
+            </p>
+          </ExampleBox>
+        </SectionCard>
+      )}
 
       {/* 8. 공유 가계부 */}
       <SectionCard id="household" icon={Users} title="공유 가계부 (가구/초대)">

@@ -18,6 +18,16 @@ export interface Changelog {
 
 export const changelogs: Changelog[] = [
   {
+    version: '0.16.0',
+    date: '2026-04-06',
+    title: '가계부 집중 업데이트',
+    items: [
+      { tag: '개선', text: '자산 기능을 일시 비활성화하여 가계부 핵심에 집중합니다' },
+      { tag: '개선', text: '하단 메뉴가 리퀴드 글래스 아일랜드로 새로워졌어요' },
+      { tag: '신규', text: '탭바에서 바로 거래를 입력할 수 있어요 — 자연어로 쓰면 AI가 자동 분류/저장' },
+    ],
+  },
+  {
     version: '0.15.0',
     date: '2026-04-03',
     title: '디자인 업그레이드',
