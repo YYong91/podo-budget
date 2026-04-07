@@ -4,7 +4,7 @@
  * 성공(카테고리 이모지+금액+"수정 →"), 파싱 에러, 서버 에러(재시도) 세 가지 타입.
  * 3초 후 자동 닫힘.
  */
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 export type ActionToastData =
@@ -34,10 +34,14 @@ const AUTO_DISMISS_MS = 3000
 export default function ActionToast({ data, onClose }: ActionToastProps) {
   const navigate = useNavigate()
 
+  const onCloseRef = useRef(onClose)
+  useEffect(() => { onCloseRef.current = onClose })
+
+  // 마운트 시 한 번만 타이머 설정 — onClose ref로 항상 최신 콜백 참조
   useEffect(() => {
-    const timer = setTimeout(onClose, AUTO_DISMISS_MS)
+    const timer = setTimeout(() => onCloseRef.current(), AUTO_DISMISS_MS)
     return () => clearTimeout(timer)
-  }, [onClose])
+  }, [])
 
   if (data.type === 'success') {
     const amountText = `₩${data.totalAmount.toLocaleString()}`
@@ -82,7 +86,7 @@ export default function ActionToast({ data, onClose }: ActionToastProps) {
         <p className="text-xs text-[var(--text-muted)] mt-0.5 truncate">{data.originalText}</p>
       </div>
       <button
-        onClick={data.onRetry}
+        onClick={() => { onClose(); data.onRetry() }}
         className="text-sm font-medium text-grape-600 hover:text-grape-700 whitespace-nowrap flex-shrink-0"
       >
         다시 시도 →

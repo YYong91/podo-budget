@@ -74,4 +74,32 @@ describe('ActionToast', () => {
     expect(onClose).toHaveBeenCalled()
     vi.useRealTimers()
   })
+
+  it('"수정 →" 클릭 시 onClose를 호출한다', async () => {
+    const user = userEvent.setup()
+    const onClose = vi.fn()
+    renderToast(successData, onClose)
+    await user.click(screen.getByText(/수정/))
+    expect(onClose).toHaveBeenCalled()
+  })
+
+  it('언마운트 시 타이머를 취소한다', () => {
+    vi.useFakeTimers()
+    const onClose = vi.fn()
+    const { unmount } = renderToast(successData, onClose)
+    unmount()
+    vi.advanceTimersByTime(3000)
+    expect(onClose).not.toHaveBeenCalled()
+    vi.useRealTimers()
+  })
+
+  it('"다시 시도 →" 클릭 시 onClose를 호출한다', async () => {
+    const user = userEvent.setup()
+    const onClose = vi.fn()
+    const onRetry = vi.fn()
+    renderToast({ type: 'server_error', originalText: '점심 8000원', onRetry }, onClose)
+    await user.click(screen.getByText(/다시 시도/))
+    expect(onClose).toHaveBeenCalled()
+    expect(onRetry).toHaveBeenCalled()
+  })
 })
