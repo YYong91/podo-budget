@@ -110,10 +110,10 @@ describe('TransactionList', () => {
     expect(screen.getByText(monthLabel)).toBeInTheDocument()
   })
 
-  it('지출/수입 요약 영역을 표시한다', async () => {
+  it('월간 지출 히어로 라벨을 표시한다', async () => {
     renderPage()
-    expect(screen.getByText('지출')).toBeInTheDocument()
-    expect(screen.getByText('수입')).toBeInTheDocument()
+    const now = new Date()
+    expect(screen.getByText(`${now.getMonth() + 1}월 지출`)).toBeInTheDocument()
   })
 
   it('데이터 로드 후 거래 목록을 표시한다', async () => {
@@ -125,24 +125,6 @@ describe('TransactionList', () => {
         || screen.queryByRole('link') !== null
       expect(hasTransactions).toBe(true)
     })
-  })
-
-  it('지출 필터 버튼을 클릭하면 필터가 적용된다', async () => {
-    const user = userEvent.setup()
-    renderPage()
-    // 지출 버튼 클릭
-    const expenseBtn = screen.getByText('지출')
-    await user.click(expenseBtn)
-    // 필터가 적용되어도 페이지는 정상 렌더링
-    expect(screen.getByText('지출')).toBeInTheDocument()
-  })
-
-  it('수입 필터 버튼을 클릭하면 필터가 적용된다', async () => {
-    const user = userEvent.setup()
-    renderPage()
-    const incomeBtn = screen.getByText('수입')
-    await user.click(incomeBtn)
-    expect(screen.getByText('수입')).toBeInTheDocument()
   })
 
   it('이전 월 버튼을 클릭하면 월이 변경된다', async () => {
@@ -184,67 +166,6 @@ describe('TransactionList', () => {
       })
     })
 
-    it('지출 필터 클릭 후 수입만 있을 때 지출 항목이 숨겨진다', async () => {
-      // 수입 1건, 지출 1건 반환하도록 설정
-      const now = new Date()
-      const pad = (n: number) => String(n).padStart(2, '0')
-      const currentMonthISO = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T12:00:00Z`
-
-      server.use(
-        http.get('/api/expenses', () =>
-          HttpResponse.json([
-            {
-              id: 201,
-              amount: 8000,
-              description: '점심식사',
-              category_id: 1,
-              raw_input: null,
-              memo: null,
-              household_id: 1,
-              user_id: null,
-              exclude_from_stats: false,
-              date: currentMonthISO,
-              created_at: currentMonthISO,
-              updated_at: currentMonthISO,
-            },
-          ])
-        ),
-        http.get('/api/income', () =>
-          HttpResponse.json([
-            {
-              id: 301,
-              amount: 3000000,
-              description: '월급',
-              category_id: null,
-              raw_input: null,
-              memo: null,
-              household_id: 1,
-              user_id: null,
-              date: currentMonthISO,
-              created_at: currentMonthISO,
-              updated_at: currentMonthISO,
-            },
-          ])
-        ),
-      )
-
-      const user = userEvent.setup()
-      renderPage()
-
-      // 데이터 로드 대기
-      await waitFor(() => {
-        expect(screen.getByText('점심식사')).toBeInTheDocument()
-      })
-
-      // 수입 필터 클릭 → 수입 항목만 표시
-      const incomeBtn = screen.getByText('수입')
-      await user.click(incomeBtn)
-
-      await waitFor(() => {
-        expect(screen.getByText('월급')).toBeInTheDocument()
-        expect(screen.queryByText('점심식사')).not.toBeInTheDocument()
-      })
-    })
   })
 
   describe('검색 모드', () => {

@@ -113,10 +113,10 @@ describe('MonthlyView 컴포넌트', () => {
     expect(screen.getByText(monthLabel)).toBeInTheDocument()
   })
 
-  it('지출/수입 요약 영역을 표시한다', () => {
+  it('월간 지출 히어로 라벨을 표시한다', () => {
     renderPage()
-    expect(screen.getByText('지출')).toBeInTheDocument()
-    expect(screen.getByText('수입')).toBeInTheDocument()
+    const now = new Date()
+    expect(screen.getByText(`${now.getMonth() + 1}월 지출`)).toBeInTheDocument()
   })
 
   it('미니 캘린더(요일 헤더)를 표시한다', async () => {
@@ -158,24 +158,6 @@ describe('MonthlyView 컴포넌트', () => {
     })
   })
 
-  it('지출 필터 클릭 시 수입 항목이 숨겨진다', async () => {
-    setupCurrentMonthHandlers()
-    const user = userEvent.setup()
-    renderPage()
-
-    await waitFor(() => {
-      expect(screen.getByText('김치찌개')).toBeInTheDocument()
-      expect(screen.getByText('월급')).toBeInTheDocument()
-    })
-
-    // 지출 필터 클릭
-    await user.click(screen.getByText('지출'))
-
-    await waitFor(() => {
-      expect(screen.getByText('김치찌개')).toBeInTheDocument()
-      expect(screen.queryByText('월급')).not.toBeInTheDocument()
-    })
-  })
 
   it('카테고리 뱃지 클릭 시 바텀시트가 열린다', async () => {
     setupCurrentMonthHandlers()
@@ -205,50 +187,6 @@ describe('MonthlyView 컴포넌트', () => {
     })
   })
 
-  it('수입 필터 클릭 시 지출 항목이 숨겨진다', async () => {
-    setupCurrentMonthHandlers()
-    const user = userEvent.setup()
-    renderPage()
-
-    await waitFor(() => {
-      expect(screen.getByText('김치찌개')).toBeInTheDocument()
-      expect(screen.getByText('월급')).toBeInTheDocument()
-    })
-
-    // 수입 필터 클릭
-    await user.click(screen.getByText('수입'))
-
-    await waitFor(() => {
-      expect(screen.queryByText('김치찌개')).not.toBeInTheDocument()
-      expect(screen.getByText('월급')).toBeInTheDocument()
-    })
-  })
-
-  it('필터 두 번 클릭 시 전체 모드로 복귀한다', async () => {
-    setupCurrentMonthHandlers()
-    const user = userEvent.setup()
-    renderPage()
-
-    await waitFor(() => {
-      expect(screen.getByText('김치찌개')).toBeInTheDocument()
-      expect(screen.getByText('월급')).toBeInTheDocument()
-    })
-
-    // 지출 필터 클릭 (지출만 표시)
-    await user.click(screen.getByText('지출'))
-
-    await waitFor(() => {
-      expect(screen.queryByText('월급')).not.toBeInTheDocument()
-    })
-
-    // 다시 클릭 (전체로 복귀)
-    await user.click(screen.getByText('지출'))
-
-    await waitFor(() => {
-      expect(screen.getByText('김치찌개')).toBeInTheDocument()
-      expect(screen.getByText('월급')).toBeInTheDocument()
-    })
-  })
 
   it('다음 월 버튼 클릭 시 월이 변경된다', async () => {
     const user = userEvent.setup()
@@ -268,34 +206,6 @@ describe('MonthlyView 컴포넌트', () => {
     })
   })
 
-  it('지출 필터 적용 후 빈 상태 시 필터별 메시지를 표시한다', async () => {
-    // 수입만 있는 상태
-    const now = new Date()
-    const pad = (n: number) => String(n).padStart(2, '0')
-    const currentMonthISO = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T12:00:00Z`
-
-    server.use(
-      http.get('/api/expenses', () => HttpResponse.json([])),
-      http.get('/api/income', () =>
-        HttpResponse.json([
-          { id: 201, amount: 3000000, description: '월급', category_id: null, raw_input: null, memo: null, household_id: 1, user_id: null, date: currentMonthISO, created_at: currentMonthISO, updated_at: currentMonthISO },
-        ])
-      ),
-    )
-
-    const user = userEvent.setup()
-    renderPage()
-
-    await waitFor(() => {
-      expect(screen.getByText('월급')).toBeInTheDocument()
-    })
-
-    await user.click(screen.getByText('지출'))
-
-    await waitFor(() => {
-      expect(screen.getByText('지출 내역이 없습니다')).toBeInTheDocument()
-    })
-  })
 
   it('웰컴 카드가 신규 사용자에게 표시된다', async () => {
     // 웰컴 카드 dismissed 상태 초기화

@@ -107,6 +107,10 @@ export default function MonthlyView({
           ? monthly.totalExpense / totalBudget
           : undefined
 
+        const remainingBudget = totalBudget != null && totalBudget > 0
+          ? totalBudget - monthly.totalExpense
+          : undefined
+
         const sublabel = budgetRatio == null && monthly.totalIncome > 0
           ? `수입 대비 ${Math.round((monthly.totalExpense / monthly.totalIncome) * 100)}%`
           : undefined
@@ -118,6 +122,7 @@ export default function MonthlyView({
             sublabel={sublabel}
             sublabelLoading={totalBudget === undefined}
             budgetRatio={budgetRatio}
+            remainingBudget={remainingBudget}
           />
         )
       })()}
@@ -201,33 +206,6 @@ export default function MonthlyView({
         }}
       />
 
-      {/* 세그먼트 필터 — 예정 거래 아래, 리스트 바로 위 */}
-      <div className="flex items-center bg-[var(--surface-elevated)] rounded-xl p-1">
-        {(['all', 'expense', 'income'] as const).map((type) => {
-          const label = type === 'all' ? '전체' : type === 'expense' ? '지출' : '수입'
-          const isActive = type === 'all' ? monthly.filter === 'all' : monthly.filter === type
-          return (
-            <button
-              key={type}
-              onClick={() => {
-                if (type === 'all') {
-                  if (monthly.filter !== 'all') monthly.toggleFilter(monthly.filter as 'expense' | 'income')
-                } else {
-                  monthly.toggleFilter(type)
-                }
-              }}
-              className={`flex-1 py-2 text-xs rounded-md transition-colors ${
-                isActive
-                  ? 'bg-grape-100 text-grape-600 font-semibold dark:bg-grape-900/40 dark:text-grape-300'
-                  : 'font-medium text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
-              }`}
-            >
-              {label}
-            </button>
-          )
-        })}
-      </div>
-
       {/* 거래 리스트 */}
       {monthly.loading ? (
         <MonthlyViewSkeleton />
@@ -235,7 +213,7 @@ export default function MonthlyView({
         <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)]">
           <EmptyState
             variant="primary"
-            title={monthly.filter === 'all' ? '거래 내역이 없습니다' : `${monthly.filter === 'expense' ? '지출' : '수입'} 내역이 없습니다`}
+            title="거래 내역이 없습니다"
             description="이번 달의 거래를 추가해보세요."
           />
         </div>

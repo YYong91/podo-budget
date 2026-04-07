@@ -225,11 +225,12 @@ export function useMonthlyTransactions({ activeHouseholdId }: UseMonthlyTransact
       })
     }
 
-    // 날짜 역순 + 같은 날짜 내 id 역순
+    // 날짜 역순 + 같은 날짜 내 created_at 역순 (입력 순서 보존)
+    // id 비교는 지출/수입이 별개 테이블이라 시퀀스가 달라 의미 없음
     filtered.sort((a, b) => {
       const dateCmp = b.date.localeCompare(a.date)
       if (dateCmp !== 0) return dateCmp
-      return b.id - a.id
+      return b.created_at.localeCompare(a.created_at)
     })
 
     // 날짜별 그룹핑
