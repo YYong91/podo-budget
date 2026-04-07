@@ -4,7 +4,7 @@
  * 각 섹션 UI는 components/settings/ 하위로 위임한다.
  */
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
 import {
   Tags, PiggyBank, Repeat, Users, BookOpen, MessageSquarePlus,
@@ -92,7 +92,12 @@ function SettingsMenu({ menuItems }: { menuItems: MenuItem[] }) {
 /* ─── 메인 설정 페이지 ─── */
 export default function SettingsPage() {
   const { user } = useAuth()
-  const { hasUnread } = useChangelog()
+  const { hasUnread, markAsRead } = useChangelog()
+
+  // 더보기 탭 진입 시 읽음 처리 (새소식까지 들어가지 않아도 인지한 것으로 간주)
+  useEffect(() => {
+    if (hasUnread) markAsRead()
+  }, [hasUnread, markAsRead])
   const { resolvedTheme } = useTheme()
   const { isInstalled, isIOS, promptInstall } = useInstallPrompt()
   const [showIosGuide, setShowIosGuide] = useState(false)
