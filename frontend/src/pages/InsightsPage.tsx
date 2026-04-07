@@ -23,6 +23,7 @@ import { assetApi } from '../api/assets'
 import { categoryApi } from '../api/categories'
 import { paymentMethodApi } from '../api/paymentMethods'
 import { useHouseholdStore } from '../stores/useHouseholdStore'
+import { FEATURES } from '../config/features'
 
 // 컴포넌트
 import PeriodNavigator from '../components/stats/PeriodNavigator'
@@ -171,11 +172,12 @@ export default function InsightsPage() {
   })
 
   // ── Group 4: 자산 — 스냅샷만 사용 (getSummary는 Yahoo Finance 호출로 30초+ 걸림) ──
+  // FEATURES.assets가 false면 쿼리 자체를 실행하지 않아 불필요한 API 호출을 방지한다
 
   const { data: snapshots = [] } = useQuery({
     queryKey: ['insights-snapshots', activeHouseholdId],
     queryFn: () => assetApi.getSnapshots(activeHouseholdId!, 2).then(r => r.data),
-    enabled: !!activeHouseholdId,
+    enabled: !!activeHouseholdId && FEATURES.assets,
   })
 
   // ── Group 5: 카테고리 — is_savings 계산용 (staleTime 연장으로 중복 요청 방지) ──
@@ -198,7 +200,9 @@ export default function InsightsPage() {
   // ── 파생 상태 (useMemo — 쿼리 결과 변경 시 재계산) ──
 
   // 스냅샷에서 자산 데이터 파생 — getSummary 대체 (Yahoo Finance 실시간 호출 제거)
+  // FEATURES.assets가 false면 빈 값 반환 (쿼리도 비활성화되어 snapshots는 항상 [])
   const { prevSnapshot, assetSummary } = useMemo(() => {
+    if (!FEATURES.assets) return { prevSnapshot: null, assetSummary: null }
     const sorted = [...snapshots].sort((a, b) => a.snapshot_date.localeCompare(b.snapshot_date))
     const latest = sorted.length > 0 ? sorted[sorted.length - 1] : null
     const prev = sorted.length >= 2 ? sorted[0] : null
@@ -287,8 +291,8 @@ export default function InsightsPage() {
         }
       }
 
-      // 자산 데이터
-      if (assetSummary) {
+      // 자산 데이터 (플래그 비활성 시 AI 분석 요청에서 제외)
+      if (FEATURES.assets && assetSummary) {
         requestData.assets = {
           total_assets: assetSummary.total_assets,
           total_liabilities: assetSummary.total_liabilities,
@@ -420,8 +424,8 @@ export default function InsightsPage() {
             <CardUsageSummary usage={cardUsage} />
           )}
 
-          {/* 7. 자산 변화 */}
-          {sectionVisibility.assets && (
+          {/* 7. 자산 변화 — 플래그 비활성 시 섹션 전체 미표시 */}
+          {FEATURES.assets && sectionVisibility.assets && (
             <AssetChangeSummary summary={assetSummary ?? null} previousSnapshot={prevSnapshot} />
           )}
 
