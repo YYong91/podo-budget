@@ -53,9 +53,12 @@ describe('QuickInput', () => {
     expect(screen.getByLabelText('입력 취소')).toBeInTheDocument()
   })
 
-  it('isOpen=false일 때 아무것도 렌더링하지 않는다', () => {
-    renderQuickInput({ isOpen: false })
-    expect(screen.queryByPlaceholderText(/점심/)).not.toBeInTheDocument()
+  it('isOpen=false일 때 CSS로 숨겨진다 (항상 마운트, opacity-0)', () => {
+    // 모프 애니메이션을 위해 항상 마운트 — isOpen=false 시 opacity-0 + scale-95 클래스로 숨김
+    const { container } = renderQuickInput({ isOpen: false })
+    const wrapper = container.firstChild as HTMLElement
+    expect(wrapper.className).toContain('opacity-0')
+    expect(wrapper.className).toContain('scale-95')
   })
 
   it('취소 버튼 클릭 시 onClose를 호출한다', async () => {
