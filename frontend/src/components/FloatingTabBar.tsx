@@ -33,17 +33,15 @@ export default function FloatingTabBar({ onInputOpen, hasUnreadChangelog, isHidd
       className={`md:hidden fixed bottom-0 left-0 right-0 z-30 flex justify-center pointer-events-none transition-all duration-200 ${
         isHidden ? 'opacity-0 scale-95' : 'opacity-100 scale-100'
       }`}
-      // 네이티브 앱 스타일: safe area에 바짝 붙여 하단 공백 최소화
       style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 2px)' }}
     >
       {/* 플로팅 아일랜드 */}
-      {/* Apple HIG: 탭바 높이 49pt, 터치 타겟 최소 44pt */}
-      {/* py-1.5(6px)*2 + icon(20px) + gap(2px) + label(12px) ≈ 46px (≥44pt 충족) */}
+      {/* Apple HIG: 터치 타겟 최소 44pt — py-1.5(6px)*2 + icon(20px) + gap(2px) + label(12px) ≈ 46px */}
       <nav
         aria-label="하단 탭 메뉴"
-        className="pointer-events-auto flex items-center gap-0.5 px-3 py-1.5 rounded-full shadow-lg border border-[var(--glass-border)] bg-[var(--glass-bg)] backdrop-blur-xl"
+        className="pointer-events-auto flex items-center gap-1 px-5 py-1.5 rounded-full shadow-lg border border-[var(--glass-border)] bg-[var(--glass-bg)] backdrop-blur-xl"
       >
-        {/* 탭 목록 */}
+        {/* 탭 목록 — w-16 고정 너비로 모든 탭의 pill 모양 일관성 확보 */}
         {NAV_ITEMS.map(item => {
           const active = isActive(item.path)
           const Icon = item.icon
@@ -52,9 +50,9 @@ export default function FloatingTabBar({ onInputOpen, hasUnreadChangelog, isHidd
               key={item.path}
               to={item.path}
               aria-current={active ? 'page' : undefined}
-              // 선택된 탭: pill 배경(grape-100) + grape 색상, 미선택: 투명 배경
-              // transition-all로 pill 나타남/사라짐을 부드럽게 처리
-              className={`flex flex-col items-center justify-center gap-0.5 px-3 py-1.5 rounded-full transition-all duration-200 ${
+              // w-16 고정 → 텍스트 길이 무관하게 항상 동일한 pill 크기
+              // bg-grape-100/80: 선택된 탭 pill 배경 (투명 전환 200ms)
+              className={`w-16 flex flex-col items-center justify-center gap-0.5 py-1.5 rounded-full transition-all duration-200 ${
                 active
                   ? 'text-grape-600 bg-grape-100/80'
                   : 'text-[var(--text-muted)] active:text-[var(--text-tertiary)]'
