@@ -18,6 +18,14 @@ export interface Changelog {
 
 export const changelogs: Changelog[] = [
   {
+    version: '0.16.0',
+    date: '2026-04-06',
+    title: '가계부 집중 업데이트',
+    items: [
+      { tag: '개선', text: '자산 기능을 일시 비활성화하여 가계부 핵심에 집중합니다' },
+    ],
+  },
+  {
     version: '0.15.0',
     date: '2026-04-03',
     title: '디자인 업그레이드',
