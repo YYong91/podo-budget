@@ -23,6 +23,7 @@ export const changelogs: Changelog[] = [
     title: '가계부 집중 업데이트',
     items: [
       { tag: '개선', text: '자산 기능을 일시 비활성화하여 가계부 핵심에 집중합니다' },
+      { tag: '개선', text: '하단 메뉴가 리퀴드 글래스 아일랜드로 새로워졌어요' },
     ],
   },
   {

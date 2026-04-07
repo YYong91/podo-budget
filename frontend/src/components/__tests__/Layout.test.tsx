@@ -16,22 +16,27 @@ import { FEATURES } from '../../config/features'
  * 실제 렌더링 대신 최소한의 구조만 제공하여 Layout 책임 범위를 명확히 함
  * useLocation을 사용하여 aria-current를 실제 컴포넌트와 동일하게 설정
  */
+/**
+ * FloatingTabBar 모킹용 컴포넌트 — 이름이 대문자로 시작해야 훅 규칙 적용 가능
+ */
+function MockFloatingTabBar({ onInputOpen, hasUnreadChangelog }: { onInputOpen: () => void; hasUnreadChangelog?: boolean }) {
+  const { pathname } = useLocation()
+  const isActive = (path: string) => pathname === path || pathname.startsWith(path + '/')
+  return (
+    <nav aria-label="하단 탭 메뉴" data-testid="floating-tab-bar">
+      <a href="/home" aria-label="가계부" aria-current={isActive('/home') ? 'page' : undefined}>가계부</a>
+      <a href="/insights" aria-label="돌아보기" aria-current={isActive('/insights') ? 'page' : undefined}>돌아보기</a>
+      <a href="/settings" aria-label="더보기" aria-current={isActive('/settings') ? 'page' : undefined}>
+        더보기
+        {hasUnreadChangelog && <span className="bg-red-500 rounded-full w-2 h-2" />}
+      </a>
+      <button onClick={onInputOpen}>거래 입력</button>
+    </nav>
+  )
+}
+
 vi.mock('../FloatingTabBar', () => ({
-  default: ({ onInputOpen, hasUnreadChangelog }: { onInputOpen: () => void; hasUnreadChangelog?: boolean }) => {
-    const { pathname } = useLocation()
-    const isActive = (path: string) => pathname === path || pathname.startsWith(path + '/')
-    return (
-      <nav aria-label="하단 탭 메뉴" data-testid="floating-tab-bar">
-        <a href="/home" aria-label="가계부" aria-current={isActive('/home') ? 'page' : undefined}>가계부</a>
-        <a href="/insights" aria-label="돌아보기" aria-current={isActive('/insights') ? 'page' : undefined}>돌아보기</a>
-        <a href="/settings" aria-label="더보기" aria-current={isActive('/settings') ? 'page' : undefined}>
-          더보기
-          {hasUnreadChangelog && <span className="bg-red-500 rounded-full w-2 h-2" />}
-        </a>
-        <button onClick={onInputOpen}>거래 입력</button>
-      </nav>
-    )
-  },
+  default: MockFloatingTabBar,
 }))
 
 /**
