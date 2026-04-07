@@ -4,6 +4,7 @@ import type { } from 'react'
 import { useState, useEffect } from 'react'
 import { Link, Outlet, useLocation } from 'react-router-dom'
 import FloatingActionButton from './FloatingActionButton'
+import FloatingTabBar from './FloatingTabBar'
 import InstallBanner from './InstallBanner'
 import { useHouseholdStore } from '../stores/useHouseholdStore'
 import {
@@ -205,49 +206,20 @@ export default function Layout() {
         </aside>
 
         {/* 메인 콘텐츠 */}
-        <main className="flex-1 p-4 pb-40 md:p-6 md:pb-24 max-w-6xl mx-auto w-full">
+        <main className="flex-1 p-4 pb-24 md:p-6 md:pb-24 max-w-6xl mx-auto w-full">
           <Outlet />
         </main>
 
-        {/* 플로팅 액션 버튼 */}
+        {/* 플로팅 액션 버튼 — 데스크톱 전용 (모바일은 FloatingTabBar 내 입력 버튼 사용) */}
         <FloatingActionButton />
         <InstallBanner />
       </div>
 
-      {/* 모바일 하단 탭 바 */}
-      <nav aria-label="하단 탭 메뉴" className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-[var(--surface-card)] border-t border-[var(--border-default)] safe-area-bottom">
-        <div className="flex items-center justify-around h-14 pwa-nav-container">
-          {navItems.map(item => {
-            const active = isActive(item.path)
-            const Icon = item.icon
-            return (
-              <Link
-                key={item.path}
-                to={item.path}
-                aria-current={active ? 'page' : undefined}
-                className={`
-                  flex flex-col items-center justify-center gap-0.5 flex-1 h-full
-                  transition-colors
-                  ${active
-                    ? 'text-grape-600'
-                    : 'text-[var(--text-muted)] active:text-[var(--text-tertiary)]'
-                  }
-                `}
-              >
-                <span className="relative">
-                  <Icon className={`w-5 h-5 pwa-nav-icon ${active ? 'stroke-[2.5]' : ''}`} />
-                  {item.path === '/settings' && hasUnreadChangelog && (
-                    <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full" />
-                  )}
-                </span>
-                <span className={`text-[10px] leading-tight pwa-nav-label ${active ? 'font-semibold' : 'font-medium'}`}>
-                  {item.label}
-                </span>
-              </Link>
-            )
-          })}
-        </div>
-      </nav>
+      {/* 플로팅 탭 바 — 모바일 전용 */}
+      <FloatingTabBar
+        onInputOpen={() => {}}
+        hasUnreadChangelog={hasUnreadChangelog}
+      />
     </div>
   )
 }

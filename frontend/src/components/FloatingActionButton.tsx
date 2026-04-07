@@ -35,7 +35,7 @@ export default function FloatingActionButton() {
   }
 
   return (
-    <div ref={ref} className="fixed bottom-[calc(3.5rem+env(safe-area-inset-bottom,0px)+0.75rem)] md:bottom-6 right-4 md:right-6 z-40 flex flex-col items-end gap-3 pwa-fab-position">
+    <div ref={ref} className="hidden md:flex fixed bottom-6 right-6 z-40 flex-col items-end gap-3">
       {/* 팝오버 메뉴 */}
       {open && (
         <div className="flex flex-col gap-2 mb-1 animate-in fade-in slide-in-from-bottom-2 duration-150">
