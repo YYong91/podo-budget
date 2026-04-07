@@ -1,5 +1,6 @@
 import { Lightbulb, Target, TrendingUp, Info } from 'lucide-react'
 import type { StructuredInsights } from '../../types'
+import { FEATURES } from '../../config/features'
 
 interface StructuredInsightsViewProps {
   insights: StructuredInsights
@@ -28,8 +29,8 @@ export default function StructuredInsightsView({ insights }: StructuredInsightsV
         ))}
       </div>
 
-      {/* 자산 분석 */}
-      {insights.asset_analysis && (
+      {/* 자산 분석 (FEATURES.assets 활성 시에만 표시) */}
+      {FEATURES.assets && insights.asset_analysis && (
         <div className="space-y-2">
           <h4 className="text-sm font-semibold text-[var(--text-secondary)] flex items-center gap-1.5">
             <TrendingUp className="w-4 h-4 text-grape-500" />

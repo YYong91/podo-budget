@@ -2,6 +2,7 @@
  * @file GuidePage.test.tsx
  * @description 사용 가이드 페이지 테스트
  * 목차, 섹션 카드, 뒤로가기 버튼을 테스트한다.
+ * FEATURES.assets 플래그에 따라 자산 관리 섹션 노출 여부도 검증한다.
  */
 
 import { describe, it, expect, vi } from 'vitest'
@@ -30,7 +31,7 @@ describe('GuidePage', () => {
       expect(screen.getByText('목차')).toBeInTheDocument()
     })
 
-    it('모든 섹션 링크를 목차에 표시한다', () => {
+    it('기본 섹션 링크를 목차에 표시한다', () => {
       renderPage()
       // 목차 링크와 섹션 제목이 각각 존재하므로 getAllByText 사용
       expect(screen.getAllByText('간편 입력 (자연어 AI 파싱)').length).toBeGreaterThanOrEqual(2)
@@ -39,12 +40,21 @@ describe('GuidePage', () => {
       expect(screen.getAllByText('예산 관리').length).toBeGreaterThanOrEqual(2)
       expect(screen.getAllByText('카테고리 관리').length).toBeGreaterThanOrEqual(2)
       expect(screen.getAllByText('리포트 (이달의 리포트)').length).toBeGreaterThanOrEqual(2)
-      expect(screen.getAllByText('자산 관리').length).toBeGreaterThanOrEqual(2)
       // 공유 가계부 — 목차에서는 "공유 가계부", 섹션에서는 "공유 가계부 (가구/초대)"
       expect(screen.getByText('공유 가계부')).toBeInTheDocument()
       expect(screen.getAllByText('텔레그램 봇 연동').length).toBeGreaterThanOrEqual(2)
       expect(screen.getAllByText('카카오톡 봇 연동').length).toBeGreaterThanOrEqual(2)
       expect(screen.getAllByText('팁과 단축키').length).toBeGreaterThanOrEqual(2)
+    })
+  })
+
+  describe('자산 관리 섹션 (FEATURES.assets 플래그)', () => {
+    it('FEATURES.assets=false(기본값) 이면 자산 관리 섹션이 표시되지 않는다', () => {
+      // VITE_FEATURE_ASSETS 환경변수가 설정되지 않으면 assets=false
+      // vi.mock은 모듈 최상단에서만 사용 가능하므로,
+      // 테스트 환경에서 import.meta.env.VITE_FEATURE_ASSETS가 undefined → false
+      renderPage()
+      expect(screen.queryByText('자산 관리')).not.toBeInTheDocument()
     })
   })
 

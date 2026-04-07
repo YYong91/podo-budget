@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { server } from '../../mocks/server'
 import { http, HttpResponse } from 'msw'
 import InsightsPage from '../InsightsPage'
+import { FEATURES } from '../../config/features'
 
 
 vi.mock('../../stores/useHouseholdStore', () => ({
@@ -202,7 +203,12 @@ describe('InsightsPage', () => {
     expect(modal).toHaveTextContent('이달의 주목할 점')
     expect(modal).toHaveTextContent('지출 카테고리')
     expect(modal).toHaveTextContent('예산 상황')
-    expect(modal).toHaveTextContent('자산 변화')
+    // 자산 섹션은 FEATURES.assets 플래그에 따라 조건부 표시
+    if (FEATURES.assets) {
+      expect(modal).toHaveTextContent('자산 변화')
+    } else {
+      expect(modal).not.toHaveTextContent('자산 변화')
+    }
     expect(modal).toHaveTextContent('AI 상세 분석')
   })
 

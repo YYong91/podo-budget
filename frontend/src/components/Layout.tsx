@@ -1,10 +1,12 @@
 /* 메인 레이아웃 - 데스크톱 사이드바 + 모바일 하단 탭 바 (포도책방 통일 디자인) */
 
-import type { } from 'react'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { Link, Outlet, useLocation } from 'react-router-dom'
-import FloatingActionButton from './FloatingActionButton'
+import FloatingTabBar from './FloatingTabBar'
 import InstallBanner from './InstallBanner'
+import QuickInput, { type QuickInputHandle } from './QuickInput'
+import ActionToast from './ActionToast'
+import type { ActionToastData } from './ActionToast'
 import { useHouseholdStore } from '../stores/useHouseholdStore'
 import {
   Receipt, TrendingUp, Settings as SettingsIcon,
@@ -13,23 +15,38 @@ import {
 import type { LucideIcon } from 'lucide-react'
 import { useChangelog } from '../hooks/useChangelog'
 import { trackPageView } from '../utils/analytics'
+import { FEATURES } from '../config/features'
 
 
+// FEATURES.assets 플래그에 따라 자산 탭을 조건부 포함
 const navItems: { path: string; label: string; icon: LucideIcon }[] = [
   { path: '/home', label: '가계부', icon: Receipt },
-  { path: '/assets', label: '자산', icon: Landmark },
+  ...(FEATURES.assets ? [{ path: '/assets', label: '자산', icon: Landmark }] : []),
   { path: '/insights', label: '돌아보기', icon: TrendingUp },
   { path: '/settings', label: '더보기', icon: SettingsIcon },
 ]
 
 export default function Layout() {
   const [householdDropdownOpen, setHouseholdDropdownOpen] = useState(false)
+  const [isInputMode, setIsInputMode] = useState(false)
+  const [toastData, setToastData] = useState<ActionToastData | null>(null)
+  // iOS Safari에서 키보드를 사용자 제스처 컨텍스트에서 띄우려면 동기적으로 focus() 호출 필요
+  const quickInputRef = useRef<QuickInputHandle>(null)
   const location = useLocation()
   // selector로 필요한 값만 구독 — isLoading 등 미사용 필드 변경 시 불필요한 리렌더 방지 (#167)
   const households = useHouseholdStore((s) => s.households)
   const activeHouseholdId = useHouseholdStore((s) => s.activeHouseholdId)
   const myInvitations = useHouseholdStore((s) => s.myInvitations)
   const setActiveHouseholdId = useHouseholdStore((s) => s.setActiveHouseholdId)
+
+  // 에러 시 isInputMode를 닫지 않음 — 입력창 유지하여 바로 재입력 가능
+  const handleSaveSuccess = useCallback((data: ActionToastData) => {
+    setToastData(data)
+  }, [])
+
+  const handleSaveError = useCallback((data: ActionToastData) => {
+    setToastData(data)
+  }, [])
 
   // 초기 fetch는 ProtectedRoute의 initializeApp()에서 수행
 
@@ -203,49 +220,42 @@ export default function Layout() {
         </aside>
 
         {/* 메인 콘텐츠 */}
-        <main className="flex-1 p-4 pb-40 md:p-6 md:pb-24 max-w-6xl mx-auto w-full">
+        <main className="flex-1 p-4 pb-24 md:p-6 md:pb-24 max-w-6xl mx-auto w-full">
           <Outlet />
         </main>
 
-        {/* 플로팅 액션 버튼 */}
-        <FloatingActionButton />
         <InstallBanner />
       </div>
 
-      {/* 모바일 하단 탭 바 */}
-      <nav aria-label="하단 탭 메뉴" className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-[var(--surface-card)] border-t border-[var(--border-default)] safe-area-bottom">
-        <div className="flex items-center justify-around h-14 pwa-nav-container">
-          {navItems.map(item => {
-            const active = isActive(item.path)
-            const Icon = item.icon
-            return (
-              <Link
-                key={item.path}
-                to={item.path}
-                aria-current={active ? 'page' : undefined}
-                className={`
-                  flex flex-col items-center justify-center gap-0.5 flex-1 h-full
-                  transition-colors
-                  ${active
-                    ? 'text-grape-600'
-                    : 'text-[var(--text-muted)] active:text-[var(--text-tertiary)]'
-                  }
-                `}
-              >
-                <span className="relative">
-                  <Icon className={`w-5 h-5 pwa-nav-icon ${active ? 'stroke-[2.5]' : ''}`} />
-                  {item.path === '/settings' && hasUnreadChangelog && (
-                    <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full" />
-                  )}
-                </span>
-                <span className={`text-[10px] leading-tight pwa-nav-label ${active ? 'font-semibold' : 'font-medium'}`}>
-                  {item.label}
-                </span>
-              </Link>
-            )
-          })}
+      {/* 플로팅 탭 바 — 모바일 전용 */}
+      <FloatingTabBar
+        onInputOpen={() => {
+          if (activeHouseholdId) {
+            setIsInputMode(true)
+            // iOS Safari: 사용자 제스처 컨텍스트 내에서 동기적으로 focus() 호출해야 키보드가 뜸
+            quickInputRef.current?.focus()
+          }
+        }}
+        hasUnreadChangelog={hasUnreadChangelog}
+        isHidden={isInputMode}
+      />
+      <QuickInput
+        ref={quickInputRef}
+        isOpen={isInputMode}
+        onClose={() => setIsInputMode(false)}
+        onSaveSuccess={handleSaveSuccess}
+        onSaveError={handleSaveError}
+        householdId={activeHouseholdId!}
+      />
+      {toastData && (
+        // FloatingTabBar 높이(~80px) + 여백 12px = 약 100px
+        <div className="md:hidden fixed left-0 right-0 z-40 flex justify-center px-4"
+          style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + 100px)' }}>
+          <div className="w-full max-w-md">
+            <ActionToast data={toastData} onClose={() => setToastData(null)} />
+          </div>
         </div>
-      </nav>
+      )}
     </div>
   )
 }

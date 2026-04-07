@@ -32,6 +32,15 @@ vi.mock('../../hooks/useToast', () => ({
   useToast: () => ({ addToast: vi.fn(), removeToast: vi.fn() }),
 }))
 
+// useChangelog 모킹 — 실제 localStorage 접근 및 상태 업데이트로 인한 re-render 방지
+vi.mock('../../hooks/useChangelog', () => ({
+  useChangelog: () => ({
+    hasUnread: true,
+    markAsRead: vi.fn(),
+    changelogs,
+  }),
+}))
+
 // useAuth 모킹
 vi.mock('../../contexts/AuthContext', () => ({
   useAuth: () => ({

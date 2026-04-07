@@ -15,7 +15,7 @@ export const chatApi = {
    * @param preview - true이면 파싱 결과만 반환 (저장하지 않음)
    */
   /** LLM 호출이 포함되므로 30초 타임아웃 적용 */
-  sendMessage: (message: string, householdId: number, preview?: boolean) =>
+  sendMessage: (message: string, householdId: number, preview?: boolean, signal?: AbortSignal) =>
     apiClient.post<ChatResponse>(
       '/chat',
       {
@@ -23,6 +23,6 @@ export const chatApi = {
         household_id: householdId,
         ...(preview != null && { preview }),
       },
-      { timeout: 30000 },
+      { timeout: 30000, signal },
     ),
 }

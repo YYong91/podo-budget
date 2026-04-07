@@ -113,10 +113,10 @@ describe('MonthlyView 컴포넌트', () => {
     expect(screen.getByText(monthLabel)).toBeInTheDocument()
   })
 
-  it('지출/수입 요약 영역을 표시한다', () => {
+  it('월간 지출 히어로 라벨을 표시한다', () => {
     renderPage()
-    expect(screen.getByText('지출')).toBeInTheDocument()
-    expect(screen.getByText('수입')).toBeInTheDocument()
+    const now = new Date()
+    expect(screen.getByText(`${now.getMonth() + 1}월 지출`)).toBeInTheDocument()
   })
 
   it('미니 캘린더(요일 헤더)를 표시한다', async () => {
@@ -158,24 +158,6 @@ describe('MonthlyView 컴포넌트', () => {
     })
   })
 
-  it('지출 필터 클릭 시 수입 항목이 숨겨진다', async () => {
-    setupCurrentMonthHandlers()
-    const user = userEvent.setup()
-    renderPage()
-
-    await waitFor(() => {
-      expect(screen.getByText('김치찌개')).toBeInTheDocument()
-      expect(screen.getByText('월급')).toBeInTheDocument()
-    })
-
-    // 지출 필터 클릭
-    await user.click(screen.getByText('지출'))
-
-    await waitFor(() => {
-      expect(screen.getByText('김치찌개')).toBeInTheDocument()
-      expect(screen.queryByText('월급')).not.toBeInTheDocument()
-    })
-  })
 
   it('카테고리 뱃지 클릭 시 바텀시트가 열린다', async () => {
     setupCurrentMonthHandlers()
@@ -205,50 +187,6 @@ describe('MonthlyView 컴포넌트', () => {
     })
   })
 
-  it('수입 필터 클릭 시 지출 항목이 숨겨진다', async () => {
-    setupCurrentMonthHandlers()
-    const user = userEvent.setup()
-    renderPage()
-
-    await waitFor(() => {
-      expect(screen.getByText('김치찌개')).toBeInTheDocument()
-      expect(screen.getByText('월급')).toBeInTheDocument()
-    })
-
-    // 수입 필터 클릭
-    await user.click(screen.getByText('수입'))
-
-    await waitFor(() => {
-      expect(screen.queryByText('김치찌개')).not.toBeInTheDocument()
-      expect(screen.getByText('월급')).toBeInTheDocument()
-    })
-  })
-
-  it('필터 두 번 클릭 시 전체 모드로 복귀한다', async () => {
-    setupCurrentMonthHandlers()
-    const user = userEvent.setup()
-    renderPage()
-
-    await waitFor(() => {
-      expect(screen.getByText('김치찌개')).toBeInTheDocument()
-      expect(screen.getByText('월급')).toBeInTheDocument()
-    })
-
-    // 지출 필터 클릭 (지출만 표시)
-    await user.click(screen.getByText('지출'))
-
-    await waitFor(() => {
-      expect(screen.queryByText('월급')).not.toBeInTheDocument()
-    })
-
-    // 다시 클릭 (전체로 복귀)
-    await user.click(screen.getByText('지출'))
-
-    await waitFor(() => {
-      expect(screen.getByText('김치찌개')).toBeInTheDocument()
-      expect(screen.getByText('월급')).toBeInTheDocument()
-    })
-  })
 
   it('다음 월 버튼 클릭 시 월이 변경된다', async () => {
     const user = userEvent.setup()
@@ -268,34 +206,6 @@ describe('MonthlyView 컴포넌트', () => {
     })
   })
 
-  it('지출 필터 적용 후 빈 상태 시 필터별 메시지를 표시한다', async () => {
-    // 수입만 있는 상태
-    const now = new Date()
-    const pad = (n: number) => String(n).padStart(2, '0')
-    const currentMonthISO = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T12:00:00Z`
-
-    server.use(
-      http.get('/api/expenses', () => HttpResponse.json([])),
-      http.get('/api/income', () =>
-        HttpResponse.json([
-          { id: 201, amount: 3000000, description: '월급', category_id: null, raw_input: null, memo: null, household_id: 1, user_id: null, date: currentMonthISO, created_at: currentMonthISO, updated_at: currentMonthISO },
-        ])
-      ),
-    )
-
-    const user = userEvent.setup()
-    renderPage()
-
-    await waitFor(() => {
-      expect(screen.getByText('월급')).toBeInTheDocument()
-    })
-
-    await user.click(screen.getByText('지출'))
-
-    await waitFor(() => {
-      expect(screen.getByText('지출 내역이 없습니다')).toBeInTheDocument()
-    })
-  })
 
   it('웰컴 카드가 신규 사용자에게 표시된다', async () => {
     // 웰컴 카드 dismissed 상태 초기화
@@ -355,6 +265,19 @@ describe('MonthlyView 컴포넌트', () => {
     })
   })
 
+  it('예산이 설정되면 프로그레스 바가 표시된다', async () => {
+    setupCurrentMonthHandlers()
+    server.use(
+      http.get('/api/budgets/total-budget', () =>
+        HttpResponse.json({ total_monthly_budget: 500000 })
+      ),
+    )
+    renderPage()
+    await waitFor(() => {
+      expect(document.querySelector('[role="progressbar"]')).not.toBeNull()
+    })
+  })
+
   describe('달력 접기/펼치기', () => {
     it('최초 방문 시 달력이 펼쳐져 있다', async () => {
       renderPage()
@@ -365,7 +288,7 @@ describe('MonthlyView 컴포넌트', () => {
       expect(screen.getByText('접기')).toBeInTheDocument()
     })
 
-    it('접기 버튼 클릭 시 달력이 숨겨지고 "달력 펼치기" 버튼이 표시된다', async () => {
+    it('접기 버튼 클릭 시 주간 스트립으로 전환되고 펼치기 아이콘이 표시된다', async () => {
       const user = userEvent.setup()
       renderPage()
       await waitFor(() => {
@@ -375,12 +298,12 @@ describe('MonthlyView 컴포넌트', () => {
       await user.click(screen.getByText('접기'))
 
       await waitFor(() => {
-        expect(screen.getByText('달력 펼치기')).toBeInTheDocument()
+        expect(screen.getByTestId('calendar-expand')).toBeInTheDocument()
         expect(screen.queryByText('접기')).not.toBeInTheDocument()
       })
     })
 
-    it('펼치기 버튼 클릭 시 달력이 다시 표시된다', async () => {
+    it('펼치기 아이콘 클릭 시 달력이 다시 표시된다', async () => {
       const user = userEvent.setup()
       renderPage()
       await waitFor(() => {
@@ -389,10 +312,10 @@ describe('MonthlyView 컴포넌트', () => {
 
       await user.click(screen.getByText('접기'))
       await waitFor(() => {
-        expect(screen.getByText('달력 펼치기')).toBeInTheDocument()
+        expect(screen.getByTestId('calendar-expand')).toBeInTheDocument()
       })
 
-      await user.click(screen.getByText('달력 펼치기'))
+      await user.click(screen.getByTestId('calendar-expand'))
       await waitFor(() => {
         expect(screen.getByText('접기')).toBeInTheDocument()
         expect(screen.getByText('일')).toBeInTheDocument()
@@ -411,12 +334,21 @@ describe('MonthlyView 컴포넌트', () => {
       expect(localStorage.getItem('podo-calendar-collapsed')).toBe('true')
     })
 
-    it('localStorage에 접힌 상태가 있으면 접힌 상태로 시작한다', async () => {
+    it('localStorage에 접힌 상태가 있으면 주간 스트립으로 시작한다', async () => {
       localStorage.setItem('podo-calendar-collapsed', 'true')
       renderPage()
       await waitFor(() => {
-        expect(screen.getByText('달력 펼치기')).toBeInTheDocument()
+        expect(screen.getByTestId('calendar-expand')).toBeInTheDocument()
         expect(screen.queryByText('접기')).not.toBeInTheDocument()
+      })
+    })
+
+    it('캘린더 접힌 상태에서 주간 스트립이 표시된다', async () => {
+      localStorage.setItem('podo-calendar-collapsed', 'true')
+      renderPage()
+      await waitFor(() => {
+        const weeks = document.querySelectorAll('[data-testid="calendar-week"]')
+        expect(weeks.length).toBe(1)
       })
     })
   })

@@ -128,6 +128,10 @@
   --input-border: var(--color-warm-300);
   --input-bg: #ffffff;
   --skeleton-base: var(--color-warm-200);
+
+  /* 리퀴드 글래스 탭바 */
+  --glass-bg: rgba(255, 255, 255, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.2);
 }
 
 /* ─── 다크모드 시멘틱 변수 ─── */
@@ -145,6 +149,10 @@
   --input-border: #4d4562;
   --input-bg: #1e1a2a;
   --skeleton-base: #3d3452;
+
+  /* 리퀴드 글래스 탭바 (다크모드) */
+  --glass-bg: rgba(35, 30, 48, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.1);
 
   /* ─── 다크모드 색상 팔레트 오버라이드 ─── */
   /* 배경용 (50-200): 어둡게, 보더/악센트용 (300): 중간톤 */
@@ -200,20 +208,15 @@
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
-/* PWA standalone 모드에서 하단 탭 바 크기 확대 */
+/* PWA standalone 모드에서 플로팅 아일랜드 아이콘/라벨 크기 확대 */
 @media (display-mode: standalone) {
-  .pwa-nav-container {
-    height: 4rem; /* 56px → 64px */
-  }
-  .pwa-nav-icon {
+  /* 플로팅 아일랜드 — standalone PWA 모드에서 아이콘/라벨 확대 */
+  .floating-island-icon {
     width: 1.5rem !important;
-    height: 1.5rem !important; /* 20px → 24px */
+    height: 1.5rem !important;
   }
-  .pwa-nav-label {
-    font-size: 11px !important; /* 10px → 11px */
-  }
-  .pwa-fab-position {
-    bottom: calc(4rem + env(safe-area-inset-bottom, 0px) + 0.75rem) !important;
+  .floating-island-label {
+    font-size: 11px !important;
   }
 }
 

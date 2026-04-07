@@ -5,6 +5,7 @@
  */
 
 import { Link } from 'react-router-dom'
+import { FEATURES } from '../../config/features'
 
 interface UnifiedSummaryCardsProps {
   incomeTotal: number
@@ -72,8 +73,8 @@ export default function UnifiedSummaryCards({
 
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-      {/* 순자산 카드 → 자산 페이지 */}
-      {netWorth != null && (
+      {/* 순자산 카드 → 자산 페이지 (FEATURES.assets 활성 시에만 표시) */}
+      {FEATURES.assets && netWorth != null && (
         <Link to="/assets" className={`col-span-2 lg:col-span-4 bg-gradient-to-br from-warm-50 to-warm-100 border border-[var(--border-default)] ${cardBase} text-center`}>
           <p className="text-sm text-[var(--text-tertiary)] mb-0.5">순자산</p>
           <p className="text-xl sm:text-2xl font-bold text-[var(--text-primary)]">{formatLargeAmount(netWorth)}</p>
@@ -83,8 +84,8 @@ export default function UnifiedSummaryCards({
         </Link>
       )}
 
-      {/* 총 수입 → 수입 필터 목록 */}
-      <Link to={monthStr ? `/?month=${monthStr}&filter=income` : '/?filter=income'} className={`bg-gradient-to-br from-leaf-50 to-leaf-100 border border-leaf-200/60 ${cardBase}`}>
+      {/* 총 수입 → 홈 목록 */}
+      <Link to={monthStr ? `/?month=${monthStr}` : '/'} className={`bg-gradient-to-br from-leaf-50 to-leaf-100 border border-leaf-200/60 ${cardBase}`}>
         <p className="text-sm text-leaf-600/70">총 수입</p>
         <p className="text-xl sm:text-2xl font-bold tracking-tight text-[var(--text-primary)] mt-1">
           {formatAmount(incomeTotal)}
@@ -94,8 +95,8 @@ export default function UnifiedSummaryCards({
         )}
       </Link>
 
-      {/* 총 지출 → 지출 필터 목록 */}
-      <Link to={monthStr ? `/?month=${monthStr}&filter=expense` : '/?filter=expense'} className={`bg-gradient-to-br from-grape-50 to-grape-100 border border-grape-200/60 ${cardBase}`}>
+      {/* 총 지출 → 홈 목록 */}
+      <Link to={monthStr ? `/?month=${monthStr}` : '/'} className={`bg-gradient-to-br from-grape-50 to-grape-100 border border-grape-200/60 ${cardBase}`}>
         <p className="text-sm text-grape-600/70">총 지출</p>
         <p className="text-xl sm:text-2xl font-bold tracking-tight text-[var(--text-primary)] mt-1">
           {formatAmount(expenseTotal)}

@@ -6,9 +6,47 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, act } from '@testing-library/react'
-import { MemoryRouter } from 'react-router-dom'
+import { MemoryRouter, useLocation } from 'react-router-dom'
 import Layout from '../Layout'
 import { changelogs } from '../../data/changelogs'
+import { FEATURES } from '../../config/features'
+
+/**
+ * FloatingTabBar 모킹 — Layout 테스트에서 독립적으로 검증
+ * 실제 렌더링 대신 최소한의 구조만 제공하여 Layout 책임 범위를 명확히 함
+ * useLocation을 사용하여 aria-current를 실제 컴포넌트와 동일하게 설정
+ */
+/**
+ * FloatingTabBar 모킹용 컴포넌트 — 이름이 대문자로 시작해야 훅 규칙 적용 가능
+ */
+function MockFloatingTabBar({ onInputOpen, hasUnreadChangelog }: { onInputOpen: () => void; hasUnreadChangelog?: boolean }) {
+  const { pathname } = useLocation()
+  const isActive = (path: string) => pathname === path || pathname.startsWith(path + '/')
+  return (
+    <nav aria-label="하단 탭 메뉴" data-testid="floating-tab-bar">
+      <a href="/home" aria-label="가계부" aria-current={isActive('/home') ? 'page' : undefined}>가계부</a>
+      <a href="/insights" aria-label="돌아보기" aria-current={isActive('/insights') ? 'page' : undefined}>돌아보기</a>
+      <a href="/settings" aria-label="더보기" aria-current={isActive('/settings') ? 'page' : undefined}>
+        더보기
+        {hasUnreadChangelog && <span className="bg-red-500 rounded-full w-2 h-2" />}
+      </a>
+      <button onClick={onInputOpen}>거래 입력</button>
+    </nav>
+  )
+}
+
+vi.mock('../FloatingTabBar', () => ({
+  default: MockFloatingTabBar,
+}))
+
+// function 선언은 호이스팅 — vi.mock 팩토리보다 먼저 접근 가능
+// React 19는 ref를 일반 prop으로 처리하므로 forwardRef 없이도 ref 전달 가능
+function MockQuickInput({ isOpen }: { isOpen: boolean; onClose: () => void; onSaveSuccess: () => void; onSaveError: () => void; householdId: number }) {
+  if (!isOpen) return null
+  return <div data-testid="quick-input">QuickInput</div>
+}
+vi.mock('../QuickInput', () => ({ default: MockQuickInput }))
+vi.mock('../ActionToast', () => ({ default: () => null }))
 
 /**
  * useAuth 훅 모킹
@@ -79,7 +117,12 @@ describe('Layout', () => {
       renderLayout()
       expect(screen.getAllByRole('link', { name: '가계부' }).length).toBe(2)
       expect(screen.getAllByRole('link', { name: /돌아보기/i }).length).toBe(2)
-      expect(screen.getAllByRole('link', { name: /^자산$/i }).length).toBe(2)
+      // FEATURES.assets=false일 때 자산 탭은 표시되지 않아야 한다
+      if (FEATURES.assets) {
+        expect(screen.getAllByRole('link', { name: /^자산$/i }).length).toBe(2)
+      } else {
+        expect(screen.queryAllByRole('link', { name: /^자산$/i }).length).toBe(0)
+      }
       expect(screen.getAllByRole('link', { name: /더보기/i }).length).toBe(2)
     })
 
@@ -99,7 +142,7 @@ describe('Layout', () => {
       })
     })
 
-    it('/assets 경로에서 자산 탭이 활성화된다', () => {
+    it.skipIf(!FEATURES.assets)('/assets 경로에서 자산 탭이 활성화된다', () => {
       renderLayout('/assets')
       const assetLinks = screen.getAllByRole('link', { name: /^자산$/i })
       assetLinks.forEach(link => {
@@ -262,6 +305,28 @@ describe('Layout', () => {
       }
       renderLayout()
       expect(screen.getByText('받은 초대')).toBeInTheDocument()
+    })
+  })
+
+  describe('즉시 입력 UX', () => {
+    it('거래 입력 버튼 클릭 시 QuickInput이 표시된다', async () => {
+      storeState = {
+        households: [{ id: 1, name: '우리집' }],
+        activeHouseholdId: 1,
+        myInvitations: [],
+        setActiveHouseholdId: vi.fn(),
+      }
+      renderLayout()
+      const inputBtn = screen.getByText('거래 입력')
+      fireEvent.click(inputBtn)
+      expect(screen.getByTestId('quick-input')).toBeInTheDocument()
+    })
+
+    it('activeHouseholdId가 null이면 거래 입력 버튼 클릭 시 QuickInput이 표시되지 않는다', () => {
+      // storeState.activeHouseholdId는 beforeEach에서 null로 초기화됨
+      renderLayout()
+      fireEvent.click(screen.getByText('거래 입력'))
+      expect(screen.queryByTestId('quick-input')).not.toBeInTheDocument()
     })
   })
 })
