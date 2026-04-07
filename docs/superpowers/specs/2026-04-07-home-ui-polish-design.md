@@ -32,7 +32,9 @@
 
 **sublabel 변경:**
 - 예산 있는 경우: `sublabel` 제거, 대신 새 `budgetRatio?: number` prop으로 바 렌더링
-- 기존 `sublabelLoading` prop 유지 → 로딩 중 바 영역 invisible placeholder
+- 기존 `sublabelLoading` prop 유지 → 로딩 중 바 영역을 invisible placeholder로 높이 예약
+  - 스켈레톤 애니메이션 사용 안 함 (히어로카드 상단 요소 불안정 느낌 방지)
+  - 데이터 도착 시 width 0 → 목표값 애니메이션으로 자연스럽게 등장
 
 **Props 변경:**
 ```typescript
@@ -53,8 +55,9 @@ interface HeroSummaryProps {
 
 ### 은은한 그라데이션 배경
 
-- `card-surface` 클래스 유지, 추가로 `bg-gradient-to-br from-[var(--surface-card)] to-grape-50/50`
-- 다크모드에서 grape-50/50이 자연스럽게 흡수됨
+- `card-surface` 클래스 유지, 추가로 `bg-gradient-to-b from-grape-50/60 to-[var(--surface-card)]`
+- 카드 상단에 grape 색감이 올라오고 아래로 자연스럽게 페이드
+- 다크모드에서 grape-50/60이 자연스럽게 흡수됨
 
 ---
 
@@ -90,7 +93,7 @@ interface MiniCalendarProps {
 }
 ```
 
-- `weekOnly=true`: 오늘이 속한 행(week) 하나만 그리드 렌더링
+- `weekOnly=true`: **오늘(today prop)이 속한 행(week) 하나만** 그리드 렌더링 (월 이동과 무관하게 항상 오늘 기준)
 - 요일 헤더는 동일하게 표시
 - 높이: 자동으로 1행만 표시되어 축소됨
 - 펼치기 버튼: 스트립 아래 `ChevronDown` 아이콘 (텍스트 없이 아이콘만)
