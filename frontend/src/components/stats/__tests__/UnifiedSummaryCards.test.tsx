@@ -63,16 +63,16 @@ describe('UnifiedSummaryCards', () => {
       expect(screen.queryByText('순자산')).not.toBeInTheDocument()
     })
 
-    it('총 수입 카드 클릭 시 수입 필터 목록으로 이동한다', () => {
+    it('총 수입 카드 클릭 시 홈 목록으로 이동한다', () => {
       renderCards()
       const link = screen.getByText('총 수입').closest('a')
-      expect(link).toHaveAttribute('href', '/?month=2026-03&filter=income')
+      expect(link).toHaveAttribute('href', '/?month=2026-03')
     })
 
-    it('총 지출 카드 클릭 시 지출 필터 목록으로 이동한다', () => {
+    it('총 지출 카드 클릭 시 홈 목록으로 이동한다', () => {
       renderCards()
       const link = screen.getByText('총 지출').closest('a')
-      expect(link).toHaveAttribute('href', '/?month=2026-03&filter=expense')
+      expect(link).toHaveAttribute('href', '/?month=2026-03')
     })
   })
 })

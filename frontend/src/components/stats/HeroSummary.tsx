@@ -9,6 +9,8 @@ interface HeroSummaryProps {
   sublabelLoading?: boolean
   /** 예산 사용 비율 (0~1+). 주어지면 프로그레스 바 표시 */
   budgetRatio?: number
+  /** 예산 잔여액 (음수이면 초과). budgetRatio와 함께 사용 */
+  remainingBudget?: number
   children?: ReactNode
   className?: string
 }
@@ -20,7 +22,7 @@ function getBudgetFillColor(percentage: number): string {
   return 'bg-grape-400'
 }
 
-export default function HeroSummary({ label, amount, sublabel, sublabelLoading, budgetRatio, children, className = '' }: HeroSummaryProps) {
+export default function HeroSummary({ label, amount, sublabel, sublabelLoading, budgetRatio, remainingBudget, children, className = '' }: HeroSummaryProps) {
   const percentage = budgetRatio != null ? Math.round(budgetRatio * 100) : null
 
   const [animatedWidth, setAnimatedWidth] = useState(0)
@@ -47,15 +49,28 @@ export default function HeroSummary({ label, amount, sublabel, sublabelLoading, 
           aria-valuenow={percentage}
           className={`mt-3 ${sublabelLoading ? 'invisible' : ''}`}
         >
-          <div className="flex items-center gap-2">
-            <div className="flex-1 h-1.5 bg-[var(--surface-hover)] rounded-full overflow-hidden">
-              <div
-                className={`h-full rounded-full ${getBudgetFillColor(percentage)} transition-all duration-700 ease-out`}
-                style={{ width: `${animatedWidth}%` }}
-              />
-            </div>
-            <span className="text-xs text-[var(--text-muted)] tabular-nums">{percentage}%</span>
+          <div className="h-1.5 bg-[var(--surface-hover)] rounded-full overflow-hidden">
+            <div
+              className={`h-full rounded-full ${getBudgetFillColor(percentage)} transition-all duration-700 ease-out`}
+              style={{ width: `${animatedWidth}%` }}
+            />
           </div>
+          {remainingBudget != null && (
+            <div className="flex justify-between mt-1.5">
+              <span className="text-[10px] text-[var(--text-muted)] tabular-nums">
+                예산 {percentage}% 사용
+              </span>
+              {remainingBudget >= 0 ? (
+                <span className="text-[10px] text-grape-500 dark:text-grape-300 font-medium tabular-nums">
+                  {formatAmount(remainingBudget)} 남음
+                </span>
+              ) : (
+                <span className="text-[10px] text-red-500 font-medium tabular-nums">
+                  {formatAmount(Math.abs(remainingBudget))} 초과
+                </span>
+              )}
+            </div>
+          )}
         </div>
       )}
       {children}

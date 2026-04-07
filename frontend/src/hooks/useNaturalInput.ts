@@ -16,7 +16,6 @@ import { chatApi } from '../api/chat'
 import { useHouseholdStore } from '../stores/useHouseholdStore'
 import type { Category, ParsedExpenseItem } from '../types'
 import { trackEvent } from '../utils/analytics'
-import { FILTER_STORAGE_KEY } from './useMonthlyTransactions'
 
 type TransactionType = 'expense' | 'income'
 
@@ -177,7 +176,6 @@ export function useNaturalInput(type: TransactionType) {
       addToast('success', config.successMessage)
       setPreviewItems(null)
       setNaturalInput('')
-      sessionStorage.removeItem(FILTER_STORAGE_KEY)
       setTimeout(() => navigate(config.listRoute), 500)
     } catch {
       addToast('error', TOAST.SAVE_FAILED)

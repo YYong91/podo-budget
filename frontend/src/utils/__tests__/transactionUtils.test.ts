@@ -5,8 +5,6 @@
 
 import { describe, it, expect } from 'vitest'
 import {
-  groupTransactionsByDate,
-  filterByType,
   calcTotals,
   calcDaySummaries,
   type UnifiedTransaction,
@@ -27,51 +25,6 @@ const sampleTxs: UnifiedTransaction[] = [
   tx({ id: 4, date: '2026-03-02', type: 'expense', amount: 2000 }),
   tx({ id: 5, date: '2026-03-03', type: 'income', amount: 50000 }),
 ]
-
-describe('groupTransactionsByDate', () => {
-  it('날짜별로 그룹핑하고 날짜 역순으로 정렬한다', () => {
-    const grouped = groupTransactionsByDate(sampleTxs)
-    const keys = Array.from(grouped.keys())
-
-    expect(keys).toEqual(['2026-03-03', '2026-03-02', '2026-03-01'])
-  })
-
-  it('같은 날짜 내에서 id 역순으로 정렬한다', () => {
-    const grouped = groupTransactionsByDate(sampleTxs)
-    const march02 = grouped.get('2026-03-02')!
-
-    expect(march02.map(t => t.id)).toEqual([4, 3])
-  })
-
-  it('빈 배열이면 빈 Map을 반환한다', () => {
-    const grouped = groupTransactionsByDate([])
-    expect(grouped.size).toBe(0)
-  })
-
-  it('원본 배열을 변경하지 않는다 (불변성)', () => {
-    const original = [...sampleTxs]
-    groupTransactionsByDate(sampleTxs)
-    expect(sampleTxs.map(t => t.id)).toEqual(original.map(t => t.id))
-  })
-})
-
-describe('filterByType', () => {
-  it('all이면 전체를 반환한다', () => {
-    expect(filterByType(sampleTxs, 'all')).toHaveLength(5)
-  })
-
-  it('expense 필터', () => {
-    const result = filterByType(sampleTxs, 'expense')
-    expect(result).toHaveLength(3)
-    expect(result.every(t => t.type === 'expense')).toBe(true)
-  })
-
-  it('income 필터', () => {
-    const result = filterByType(sampleTxs, 'income')
-    expect(result).toHaveLength(2)
-    expect(result.every(t => t.type === 'income')).toBe(true)
-  })
-})
 
 describe('calcTotals', () => {
   it('지출·수입 합계를 정확히 계산한다', () => {

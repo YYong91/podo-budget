@@ -22,6 +22,7 @@ export interface UnifiedTransaction {
   id: number
   type: 'expense' | 'income'
   date: string
+  created_at: string
   description: string
   amount: number
   category_id: number | null
