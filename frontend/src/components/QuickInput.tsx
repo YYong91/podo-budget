@@ -3,9 +3,6 @@
  * @description 플로팅 아일랜드가 입력창으로 전환되어 자연어 → LLM 파싱 → 즉시 저장하는 메신저 스타일 입력 UI.
  * visualViewport API로 키보드 높이에 맞춰 위치를 동적 조정한다.
  */
-// iOS safe-area + 기본 하단 여백 — 컴포넌트 외부에서 계산하여 렌더마다 재생성 방지
-const safeAreaBottom = 'calc(env(safe-area-inset-bottom, 0px) + 12px)'
-
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { X, ArrowUp, Loader2 } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
@@ -29,11 +26,7 @@ export default function QuickInput({ isOpen, onClose, onSaveSuccess, onSaveError
   const inputRef = useRef<HTMLInputElement>(null)
   // handleSubmit을 ref로 보관 — onRetry 콜백에서 self-reference 시 ESLint no-use-before-define 우회
   const handleSubmitRef = useRef<() => Promise<void>>(async () => {})
-  // unmount 후 setState/콜백 호출 방지
-  const isMountedRef = useRef(true)
   const queryClient = useQueryClient()
-
-  useEffect(() => () => { isMountedRef.current = false }, [])
 
   // 열릴 때 포커스 처리
   useEffect(() => {
@@ -64,11 +57,11 @@ export default function QuickInput({ isOpen, onClose, onSaveSuccess, onSaveError
     return () => document.removeEventListener('keydown', handleKeyDown)
   }, [isOpen, onClose])
 
-  // 카테고리 캐시에서 이모지 조회 — 캐시 없으면 fallback
+  // 카테고리 캐시에서 이모지 조회 — 캐시 없으면 '📝' fallback
   const getCategoryInfo = useCallback((categoryId: number): { emoji: string; name: string } => {
     const categories = queryClient.getQueryData<Category[]>(monthlyTransactionsKeys.categories)
     const cat = categories?.find(c => c.id === categoryId)
-    return { emoji: cat?.emoji ?? '📝', name: cat?.name ?? '기타' }
+    return { emoji: cat?.emoji ?? '📝', name: cat?.name ?? '' }
   }, [queryClient])
 
   const handleSubmit = useCallback(async () => {
@@ -81,7 +74,7 @@ export default function QuickInput({ isOpen, onClose, onSaveSuccess, onSaveError
     const timeoutId = setTimeout(() => controller.abort(), 15000)
 
     try {
-      const { data: response } = await chatApi.sendMessage(trimmed, householdId, false, controller.signal)
+      const { data: response } = await chatApi.sendMessage(trimmed, householdId, false)
       clearTimeout(timeoutId)
 
       const expenses = response.expenses_created ?? []
@@ -90,25 +83,24 @@ export default function QuickInput({ isOpen, onClose, onSaveSuccess, onSaveError
 
       if (totalItems.length === 0) {
         // 파싱 실패 — 입력창 유지
-        if (!isMountedRef.current) return
         setIsLoading(false)
         onSaveError({ type: 'parse_error' })
         return
       }
 
+      // 캐시 무효화 — 홈 거래 목록 갱신
+      await queryClient.invalidateQueries({ queryKey: monthlyTransactionsKeys.all })
+
       const firstItem = (expenses[0] ?? incomes[0]) as Expense | Income
       const isExpense = expenses.length > 0
-      const { emoji, name: categoryName } = getCategoryInfo(firstItem.category_id ?? 0)
+      const { emoji, name: categoryName } = getCategoryInfo(firstItem.category_id)
       const totalAmount = totalItems.reduce((sum, item) => sum + Number(item.amount), 0)
       // 다중 저장 시 스펙: 가계부 홈으로 이동
       const editPath = totalItems.length > 1
         ? '/home'
         : isExpense ? `/expenses/${firstItem.id}` : `/income/${firstItem.id}`
 
-      // onClose 먼저 호출 — invalidateQueries가 실패해도 입력창은 닫힌다
       onClose()
-      // 캐시 무효화는 백그라운드에서 (실패해도 UX에 영향 없음)
-      queryClient.invalidateQueries({ queryKey: monthlyTransactionsKeys.all }).catch(() => {})
       onSaveSuccess({
         type: 'success',
         categoryEmoji: emoji,
@@ -120,7 +112,6 @@ export default function QuickInput({ isOpen, onClose, onSaveSuccess, onSaveError
       })
     } catch {
       clearTimeout(timeoutId)
-      if (!isMountedRef.current) return
       setIsLoading(false)
       onSaveError({
         type: 'server_error',
@@ -136,6 +127,8 @@ export default function QuickInput({ isOpen, onClose, onSaveSuccess, onSaveError
   })
 
   if (!isOpen) return null
+
+  const safeAreaBottom = 'calc(env(safe-area-inset-bottom, 0px) + 12px)'
 
   return (
     <div
