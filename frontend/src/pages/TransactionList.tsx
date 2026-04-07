@@ -59,8 +59,8 @@ export default function TransactionList() {
   )
   const [totalTransactionCount, setTotalTransactionCount] = useState(0)
 
-  // 월 총 예산
-  const [totalBudget, setTotalBudget] = useState<number | null>(null)
+  // 월 총 예산 (undefined = 로딩 중, null = 예산 미설정, number = 설정됨)
+  const [totalBudget, setTotalBudget] = useState<number | null | undefined>(undefined)
   useEffect(() => {
     if (!activeHouseholdId) return
     budgetApi.getTotalBudget()
