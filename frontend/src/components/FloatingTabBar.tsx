@@ -3,7 +3,7 @@
  * @description iOS 26 리퀴드 글래스 스타일 플로팅 아일랜드 탭바 (모바일 전용)
  */
 import { Link, useLocation } from 'react-router-dom'
-import { Receipt, TrendingUp, Settings as SettingsIcon, Pencil, Landmark } from 'lucide-react'
+import { NotebookPen, CalendarDays, Ellipsis, Pencil, Landmark } from 'lucide-react'
 import { FEATURES } from '../config/features'
 
 interface FloatingTabBarProps {
@@ -16,10 +16,10 @@ interface FloatingTabBarProps {
 }
 
 const NAV_ITEMS = [
-  { path: '/home', label: '가계부', icon: Receipt },
+  { path: '/home', label: '가계부', icon: NotebookPen },
   ...(FEATURES.assets ? [{ path: '/assets', label: '자산', icon: Landmark }] : []),
-  { path: '/insights', label: '돌아보기', icon: TrendingUp },
-  { path: '/settings', label: '더보기', icon: SettingsIcon },
+  { path: '/insights', label: '돌아보기', icon: CalendarDays },
+  { path: '/settings', label: '더보기', icon: Ellipsis },
 ]
 
 export default function FloatingTabBar({ onInputOpen, hasUnreadChangelog, isHidden }: FloatingTabBarProps) {
@@ -33,15 +33,16 @@ export default function FloatingTabBar({ onInputOpen, hasUnreadChangelog, isHidd
       className={`md:hidden fixed bottom-0 left-0 right-0 z-30 flex justify-center pointer-events-none transition-all duration-200 ${
         isHidden ? 'opacity-0 scale-95' : 'opacity-100 scale-100'
       }`}
-      style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 2px)' }}
+      style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
     >
       {/* 플로팅 아일랜드 */}
-      {/* Apple HIG: 터치 타겟 최소 44pt — py-1.5(6px)*2 + icon(20px) + gap(2px) + label(12px) ≈ 46px */}
+      {/* py-1(4px): island 상하 여백 최소화 → pill이 island 경계에 바짝 붙는 네이티브 느낌 */}
+      {/* 터치 타겟: py-1(4px) + py-1.5(6px) + icon(20px) + gap(2px) + label(12px) + py-1.5(6px) + py-1(4px) = 54px ≥ 44pt ✓ */}
       <nav
         aria-label="하단 탭 메뉴"
-        className="pointer-events-auto flex items-center gap-1 px-5 py-1.5 rounded-full shadow-lg border border-[var(--glass-border)] bg-[var(--glass-bg)] backdrop-blur-xl"
+        className="pointer-events-auto flex items-center gap-1 px-3 py-1 rounded-full shadow-lg border border-[var(--glass-border)] bg-[var(--glass-bg)] backdrop-blur-xl"
       >
-        {/* 탭 목록 — w-16 고정 너비로 모든 탭의 pill 모양 일관성 확보 */}
+        {/* 탭 목록 — w-[72px] 고정 너비로 pill 일관성 확보, 탭 너비 확대로 여유있는 느낌 */}
         {NAV_ITEMS.map(item => {
           const active = isActive(item.path)
           const Icon = item.icon
@@ -50,9 +51,9 @@ export default function FloatingTabBar({ onInputOpen, hasUnreadChangelog, isHidd
               key={item.path}
               to={item.path}
               aria-current={active ? 'page' : undefined}
-              // w-16 고정 → 텍스트 길이 무관하게 항상 동일한 pill 크기
-              // bg-grape-100/80: 선택된 탭 pill 배경 (투명 전환 200ms)
-              className={`w-16 flex flex-col items-center justify-center gap-0.5 py-1.5 rounded-full transition-all duration-200 ${
+              // w-[72px]: Apple Files 앱 수준의 넉넉한 탭 너비 → 일관된 pill 모양
+              // py-1.5: 터치 타겟 확보 + island 경계와의 시각적 여백(py-1) 대비 강조
+              className={`w-[72px] flex flex-col items-center justify-center gap-0.5 py-1.5 rounded-full transition-all duration-200 ${
                 active
                   ? 'text-grape-600 bg-grape-100/80'
                   : 'text-[var(--text-muted)] active:text-[var(--text-tertiary)]'
