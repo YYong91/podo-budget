@@ -39,6 +39,13 @@ vi.mock('../FloatingTabBar', () => ({
   default: MockFloatingTabBar,
 }))
 
+function MockQuickInput({ isOpen }: { isOpen: boolean; onClose: () => void; onSaveSuccess: () => void; onSaveError: () => void; householdId: number }) {
+  if (!isOpen) return null
+  return <div data-testid="quick-input">QuickInput</div>
+}
+vi.mock('../QuickInput', () => ({ default: MockQuickInput }))
+vi.mock('../ActionToast', () => ({ default: () => null }))
+
 /**
  * useAuth 훅 모킹
  */
@@ -296,6 +303,21 @@ describe('Layout', () => {
       }
       renderLayout()
       expect(screen.getByText('받은 초대')).toBeInTheDocument()
+    })
+  })
+
+  describe('즉시 입력 UX', () => {
+    it('거래 입력 버튼 클릭 시 QuickInput이 표시된다', async () => {
+      storeState = {
+        households: [{ id: 1, name: '우리집' }],
+        activeHouseholdId: 1,
+        myInvitations: [],
+        setActiveHouseholdId: vi.fn(),
+      }
+      renderLayout()
+      const inputBtn = screen.getByText('거래 입력')
+      fireEvent.click(inputBtn)
+      expect(screen.getByTestId('quick-input')).toBeInTheDocument()
     })
   })
 })

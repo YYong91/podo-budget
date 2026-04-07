@@ -1,11 +1,13 @@
 /* 메인 레이아웃 - 데스크톱 사이드바 + 모바일 하단 탭 바 (포도책방 통일 디자인) */
 
 import type { } from 'react'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Link, Outlet, useLocation } from 'react-router-dom'
-import FloatingActionButton from './FloatingActionButton'
 import FloatingTabBar from './FloatingTabBar'
 import InstallBanner from './InstallBanner'
+import QuickInput from './QuickInput'
+import ActionToast from './ActionToast'
+import type { ActionToastData } from './ActionToast'
 import { useHouseholdStore } from '../stores/useHouseholdStore'
 import {
   Receipt, TrendingUp, Settings as SettingsIcon,
@@ -27,12 +29,23 @@ const navItems: { path: string; label: string; icon: LucideIcon }[] = [
 
 export default function Layout() {
   const [householdDropdownOpen, setHouseholdDropdownOpen] = useState(false)
+  const [isInputMode, setIsInputMode] = useState(false)
+  const [toastData, setToastData] = useState<ActionToastData | null>(null)
   const location = useLocation()
   // selector로 필요한 값만 구독 — isLoading 등 미사용 필드 변경 시 불필요한 리렌더 방지 (#167)
   const households = useHouseholdStore((s) => s.households)
   const activeHouseholdId = useHouseholdStore((s) => s.activeHouseholdId)
   const myInvitations = useHouseholdStore((s) => s.myInvitations)
   const setActiveHouseholdId = useHouseholdStore((s) => s.setActiveHouseholdId)
+
+  // 에러 시 isInputMode를 닫지 않음 — 입력창 유지하여 바로 재입력 가능
+  const handleSaveSuccess = useCallback((data: ActionToastData) => {
+    setToastData(data)
+  }, [])
+
+  const handleSaveError = useCallback((data: ActionToastData) => {
+    setToastData(data)
+  }, [])
 
   // 초기 fetch는 ProtectedRoute의 initializeApp()에서 수행
 
@@ -210,16 +223,29 @@ export default function Layout() {
           <Outlet />
         </main>
 
-        {/* 플로팅 액션 버튼 — 데스크톱 전용 (모바일은 FloatingTabBar 내 입력 버튼 사용) */}
-        <FloatingActionButton />
         <InstallBanner />
       </div>
 
       {/* 플로팅 탭 바 — 모바일 전용 */}
       <FloatingTabBar
-        onInputOpen={() => {}}
+        onInputOpen={() => { if (activeHouseholdId) setIsInputMode(true) }}
         hasUnreadChangelog={hasUnreadChangelog}
       />
+      <QuickInput
+        isOpen={isInputMode}
+        onClose={() => setIsInputMode(false)}
+        onSaveSuccess={handleSaveSuccess}
+        onSaveError={handleSaveError}
+        householdId={activeHouseholdId!}
+      />
+      {toastData && (
+        <div className="md:hidden fixed left-0 right-0 z-40 flex justify-center px-4"
+          style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + 100px)' }}>
+          <div className="w-full max-w-md">
+            <ActionToast data={toastData} onClose={() => setToastData(null)} />
+          </div>
+        </div>
+      )}
     </div>
   )
 }
