@@ -2,11 +2,13 @@
  * @file QuickInput.tsx
  * @description 플로팅 아일랜드가 입력창으로 전환되어 자연어 → LLM 파싱 → 즉시 저장하는 메신저 스타일 입력 UI.
  * visualViewport API로 키보드 높이에 맞춰 위치를 동적 조정한다.
+ * forwardRef로 focus()를 노출 — iOS Safari는 사용자 제스처 컨텍스트에서 focus()를 호출해야 키보드가 뜬다.
  */
 // iOS safe-area + 기본 하단 여백 — 컴포넌트 외부에서 계산하여 렌더마다 재생성 방지
-const safeAreaBottom = 'calc(env(safe-area-inset-bottom, 0px) + 12px)'
+// FloatingTabBar와 동일한 여백 — 6px (Apple HIG: safe area 바로 위 최소 여백)
+const safeAreaBottom = 'calc(env(safe-area-inset-bottom, 0px) + 6px)'
 
-import { useState, useRef, useEffect, useCallback } from 'react'
+import { useState, useRef, useEffect, useCallback, forwardRef, useImperativeHandle } from 'react'
 import { X, ArrowUp, Loader2 } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
 import { chatApi } from '../api/chat'
@@ -22,7 +24,14 @@ interface QuickInputProps {
   householdId: number
 }
 
-export default function QuickInput({ isOpen, onClose, onSaveSuccess, onSaveError, householdId }: QuickInputProps) {
+export interface QuickInputHandle {
+  focus(): void
+}
+
+const QuickInput = forwardRef<QuickInputHandle, QuickInputProps>(function QuickInput(
+  { isOpen, onClose, onSaveSuccess, onSaveError, householdId },
+  ref
+) {
   const [text, setText] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [bottomOffset, setBottomOffset] = useState(0)
@@ -35,11 +44,10 @@ export default function QuickInput({ isOpen, onClose, onSaveSuccess, onSaveError
 
   useEffect(() => () => { isMountedRef.current = false }, [])
 
-  // 열릴 때 포커스 처리
-  useEffect(() => {
-    if (!isOpen) return
-    requestAnimationFrame(() => inputRef.current?.focus())
-  }, [isOpen])
+  // iOS Safari에서 키보드를 사용자 제스처 컨텍스트에서 트리거하기 위해 focus()를 외부에 노출
+  useImperativeHandle(ref, () => ({
+    focus: () => inputRef.current?.focus(),
+  }))
 
   // visualViewport 키보드 높이 대응 — iOS Safari fixed 요소 위치 보정
   useEffect(() => {
@@ -54,15 +62,23 @@ export default function QuickInput({ isOpen, onClose, onSaveSuccess, onSaveError
     return () => vv.removeEventListener('resize', handleResize)
   }, [isOpen])
 
+  // 닫기 — 상태 초기화 후 onClose 호출 (X 버튼, ESC 공용)
+  // 항상 마운트된 상태이므로 닫힐 때 수동 리셋
+  const handleClose = useCallback(() => {
+    setText('')
+    setIsLoading(false)
+    onClose()
+  }, [onClose])
+
   // ESC로 닫기
   useEffect(() => {
     if (!isOpen) return
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
+      if (e.key === 'Escape') handleClose()
     }
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [isOpen, onClose])
+  }, [isOpen, handleClose])
 
   // 카테고리 캐시에서 이모지 조회 — 캐시 없으면 fallback
   const getCategoryInfo = useCallback((categoryId: number): { emoji: string; name: string } => {
@@ -105,6 +121,10 @@ export default function QuickInput({ isOpen, onClose, onSaveSuccess, onSaveError
         ? '/home'
         : isExpense ? `/expenses/${firstItem.id}` : `/income/${firstItem.id}`
 
+      if (!isMountedRef.current) return
+      // 성공 시 로딩/입력 상태 초기화 후 닫기
+      setIsLoading(false)
+      setText('')
       // onClose 먼저 호출 — invalidateQueries가 실패해도 입력창은 닫힌다
       onClose()
       // 캐시 무효화는 백그라운드에서 (실패해도 UX에 영향 없음)
@@ -135,17 +155,17 @@ export default function QuickInput({ isOpen, onClose, onSaveSuccess, onSaveError
     handleSubmitRef.current = handleSubmit
   })
 
-  if (!isOpen) return null
-
   return (
     <div
-      className="md:hidden fixed left-0 right-0 z-30 flex justify-center pointer-events-none"
+      className={`md:hidden fixed left-0 right-0 z-30 flex justify-center pointer-events-none transition-all duration-200 ${
+        isOpen ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
+      }`}
       style={{ bottom: bottomOffset > 0 ? `${bottomOffset}px` : safeAreaBottom }}
     >
-      <div className="pointer-events-auto flex items-center gap-2 px-4 py-2 rounded-full shadow-lg border border-[var(--glass-border)] bg-[var(--glass-bg)] backdrop-blur-xl w-[calc(100%-2rem)] max-w-md">
+      <div className={`${isOpen ? 'pointer-events-auto' : ''} flex items-center gap-2 px-4 py-2 rounded-full shadow-lg border border-[var(--glass-border)] bg-[var(--glass-bg)] backdrop-blur-xl w-[calc(100%-2rem)] max-w-md`}>
         {/* 취소 버튼 */}
         <button
-          onClick={onClose}
+          onClick={handleClose}
           aria-label="입력 취소"
           className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
         >
@@ -180,4 +200,6 @@ export default function QuickInput({ isOpen, onClose, onSaveSuccess, onSaveError
       </div>
     </div>
   )
-}
+})
+
+export default QuickInput

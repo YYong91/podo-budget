@@ -39,6 +39,8 @@ vi.mock('../FloatingTabBar', () => ({
   default: MockFloatingTabBar,
 }))
 
+// function 선언은 호이스팅 — vi.mock 팩토리보다 먼저 접근 가능
+// React 19는 ref를 일반 prop으로 처리하므로 forwardRef 없이도 ref 전달 가능
 function MockQuickInput({ isOpen }: { isOpen: boolean; onClose: () => void; onSaveSuccess: () => void; onSaveError: () => void; householdId: number }) {
   if (!isOpen) return null
   return <div data-testid="quick-input">QuickInput</div>

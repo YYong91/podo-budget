@@ -1,10 +1,10 @@
 /* 메인 레이아웃 - 데스크톱 사이드바 + 모바일 하단 탭 바 (포도책방 통일 디자인) */
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { Link, Outlet, useLocation } from 'react-router-dom'
 import FloatingTabBar from './FloatingTabBar'
 import InstallBanner from './InstallBanner'
-import QuickInput from './QuickInput'
+import QuickInput, { type QuickInputHandle } from './QuickInput'
 import ActionToast from './ActionToast'
 import type { ActionToastData } from './ActionToast'
 import { useHouseholdStore } from '../stores/useHouseholdStore'
@@ -30,6 +30,8 @@ export default function Layout() {
   const [householdDropdownOpen, setHouseholdDropdownOpen] = useState(false)
   const [isInputMode, setIsInputMode] = useState(false)
   const [toastData, setToastData] = useState<ActionToastData | null>(null)
+  // iOS Safari에서 키보드를 사용자 제스처 컨텍스트에서 띄우려면 동기적으로 focus() 호출 필요
+  const quickInputRef = useRef<QuickInputHandle>(null)
   const location = useLocation()
   // selector로 필요한 값만 구독 — isLoading 등 미사용 필드 변경 시 불필요한 리렌더 방지 (#167)
   const households = useHouseholdStore((s) => s.households)
@@ -227,10 +229,18 @@ export default function Layout() {
 
       {/* 플로팅 탭 바 — 모바일 전용 */}
       <FloatingTabBar
-        onInputOpen={() => { if (activeHouseholdId) setIsInputMode(true) }}
+        onInputOpen={() => {
+          if (activeHouseholdId) {
+            setIsInputMode(true)
+            // iOS Safari: 사용자 제스처 컨텍스트 내에서 동기적으로 focus() 호출해야 키보드가 뜸
+            quickInputRef.current?.focus()
+          }
+        }}
         hasUnreadChangelog={hasUnreadChangelog}
+        isHidden={isInputMode}
       />
       <QuickInput
+        ref={quickInputRef}
         isOpen={isInputMode}
         onClose={() => setIsInputMode(false)}
         onSaveSuccess={handleSaveSuccess}
