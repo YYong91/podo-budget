@@ -28,10 +28,11 @@ describe('StructuredInsightsView', () => {
     expect(screen.getByText(/도시락/)).toBeInTheDocument()
   })
 
-  it('자산 분석을 표시한다', () => {
+  it('FEATURES.assets가 false이면 자산 분석 섹션을 숨긴다', () => {
+    // FEATURES.assets 기본값이 false이므로 자산 분석 섹션이 렌더링되지 않음
     render(<StructuredInsightsView insights={mockInsights} />)
-    expect(screen.getByText(/순자산/)).toBeInTheDocument()
-    expect(screen.getByText(/분산 투자/)).toBeInTheDocument()
+    expect(screen.queryByText('자산 분석')).not.toBeInTheDocument()
+    expect(screen.queryByText(/분산 투자/)).not.toBeInTheDocument()
   })
 
   it('액션 아이템을 표시한다', () => {
