@@ -74,21 +74,6 @@ describe('useMonthlyTransactions', () => {
       expect(result.current.currentMonth).toBe(5) // 0-indexed
     })
 
-    it('기본 필터는 all이다', () => {
-      const { result } = renderHook(() =>
-        useMonthlyTransactions({ activeHouseholdId: 1 }), { wrapper: createQueryWrapper() })
-
-      expect(result.current.filter).toBe('all')
-    })
-
-    it('URL의 filter 파라미터를 읽는다', () => {
-      mockSearchParams.set('filter', 'expense')
-
-      const { result } = renderHook(() =>
-        useMonthlyTransactions({ activeHouseholdId: 1 }), { wrapper: createQueryWrapper() })
-
-      expect(result.current.filter).toBe('expense')
-    })
   })
 
   describe('데이터 로딩', () => {
@@ -249,23 +234,4 @@ describe('useMonthlyTransactions', () => {
     })
   })
 
-  describe('필터 상태 복원', () => {
-    it('필터 변경 시 sessionStorage에 백업한다', () => {
-      mockSearchParams.set('filter', 'expense')
-
-      renderHook(() =>
-        useMonthlyTransactions({ activeHouseholdId: 1 }), { wrapper: createQueryWrapper() })
-
-      expect(sessionStorage.getItem('podo-transaction-filter')).toBe('expense')
-    })
-
-    it('URL에 filter가 없으면 sessionStorage에서 복원한다', () => {
-      sessionStorage.setItem('podo-transaction-filter', 'income')
-
-      const { result } = renderHook(() =>
-        useMonthlyTransactions({ activeHouseholdId: 1 }), { wrapper: createQueryWrapper() })
-
-      expect(result.current.filter).toBe('income')
-    })
-  })
 })

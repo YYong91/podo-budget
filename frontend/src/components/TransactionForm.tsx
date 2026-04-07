@@ -20,7 +20,6 @@ import type { PaymentMethod } from '../types'
 import { useNaturalInput } from '../hooks/useNaturalInput'
 import ParsedItemPreviewCard from './ParsedItemPreviewCard'
 import { trackEvent } from '../utils/analytics'
-import { FILTER_STORAGE_KEY } from '../hooks/useMonthlyTransactions'
 
 type TransactionType = 'expense' | 'income'
 type InputMode = 'natural' | 'form' | 'ocr'
@@ -217,7 +216,6 @@ export default function TransactionForm({ type }: TransactionFormProps) {
       })
       trackEvent(cfg.eventName, { mode: 'form' })
       addToast('success', cfg.savedMessage)
-      sessionStorage.removeItem(FILTER_STORAGE_KEY)
       setTimeout(() => navigate(cfg.listRoute), 500)
     } catch {
       addToast('error', TOAST.SAVE_FAILED)

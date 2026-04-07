@@ -10,7 +10,7 @@
  * - setExpenses/setIncomes 인터페이스는 유지 (TransactionList 변경 없음)
  */
 
-import { useEffect, useMemo, useCallback } from 'react'
+import { useMemo, useCallback } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { expenseApi } from '../api/expenses'
@@ -20,10 +20,6 @@ import { categoryApi } from '../api/categories'
 import { getMonthRange } from '../utils/calendar'
 import type { Expense, Income, RecurringTransaction } from '../types'
 import type { UnifiedTransaction } from './useTransactionSearch'
-
-type FilterType = 'all' | 'expense' | 'income'
-
-export const FILTER_STORAGE_KEY = 'podo-transaction-filter'
 
 // 쿼리 키 팩토리 — 캐시 무효화 시 참조 일관성 보장
 export const monthlyTransactionsKeys = {
@@ -78,19 +74,7 @@ export function useMonthlyTransactions({ activeHouseholdId }: UseMonthlyTransact
     return [now.getFullYear(), now.getMonth()]
   }, [monthParam])
 
-  // 필터: URL → sessionStorage → 'all' 순서로 복원
-  const urlFilter = searchParams.get('filter') as FilterType | null
-  const filter: FilterType = urlFilter || (sessionStorage.getItem(FILTER_STORAGE_KEY) as FilterType) || 'all'
   const categoryFilter = searchParams.get('category')
-
-  // 필터 변경 시 sessionStorage에 백업 (상세→목록 복귀 시 복원용)
-  useEffect(() => {
-    if (filter !== 'all') {
-      sessionStorage.setItem(FILTER_STORAGE_KEY, filter)
-    } else {
-      sessionStorage.removeItem(FILTER_STORAGE_KEY)
-    }
-  }, [filter])
 
   // URL 파라미터 업데이트
   const setParams = useCallback((updates: Record<string, string | null>) => {
@@ -110,13 +94,6 @@ export function useMonthlyTransactions({ activeHouseholdId }: UseMonthlyTransact
     const pad = (n: number) => String(n).padStart(2, '0')
     setParams({ month: `${d.getFullYear()}-${pad(d.getMonth() + 1)}` })
   }, [currentYear, currentMonth, setParams])
-
-  // 필터 토글 — 해제 시 sessionStorage도 클리어 (복원 방지)
-  const toggleFilter = useCallback((type: 'expense' | 'income') => {
-    const newFilter = filter === type ? null : type
-    if (!newFilter) sessionStorage.removeItem(FILTER_STORAGE_KEY)
-    setParams({ filter: newFilter })
-  }, [filter, setParams])
 
   // 월별 데이터 쿼리 (지출 + 수입 + 정기거래)
   const { start, end } = getMonthRange(currentYear, currentMonth)
@@ -216,10 +193,10 @@ export function useMonthlyTransactions({ activeHouseholdId }: UseMonthlyTransact
       ...incomes.map(i => ({ ...i, type: 'income' as const })),
     ]
 
-    // 필터 적용 (타입 + 카테고리)
-    let filtered = filter === 'all' ? all : all.filter(t => t.type === filter)
+    // 카테고리 필터 적용
+    let filtered = all
     if (categoryFilter) {
-      filtered = filtered.filter(t => {
+      filtered = all.filter(t => {
         const cat = t.category_id != null ? categoryMap.get(t.category_id) : null
         return cat?.name === categoryFilter
       })
@@ -260,7 +237,7 @@ export function useMonthlyTransactions({ activeHouseholdId }: UseMonthlyTransact
     }
 
     return { grouped, totalExpense, totalIncome, daySummaries }
-  }, [expenses, incomes, filter, categoryFilter, categoryMap])
+  }, [expenses, incomes, categoryFilter, categoryMap])
 
   const monthLabel = `${currentYear}년 ${currentMonth + 1}월`
 
@@ -270,10 +247,6 @@ export function useMonthlyTransactions({ activeHouseholdId }: UseMonthlyTransact
     currentMonth,
     monthLabel,
     navigateMonth,
-
-    // 필터
-    filter,
-    toggleFilter,
 
     // 데이터
     expenses,
