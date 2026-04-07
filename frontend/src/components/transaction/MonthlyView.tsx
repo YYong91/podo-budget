@@ -36,8 +36,8 @@ interface MonthlyViewProps {
   onBotNudgeDismiss: () => void
   /** 멀티멤버 가구의 user_id → username 매핑 (단독 가구는 null) */
   memberMap: Map<number, string> | null
-  /** 월 총 예산 (null이면 미설정) */
-  totalBudget: number | null
+  /** 월 총 예산 (undefined = 로딩 중, null = 미설정, number = 설정됨) */
+  totalBudget: number | null | undefined
 }
 
 export default function MonthlyView({
@@ -105,6 +105,7 @@ export default function MonthlyView({
       <HeroSummary
         label={`${monthly.currentMonth + 1}월 지출`}
         amount={monthly.totalExpense}
+        sublabelLoading={totalBudget === undefined}
         sublabel={
           totalBudget != null && totalBudget > 0
             ? `예산 대비 ${Math.round((monthly.totalExpense / totalBudget) * 100)}%`
