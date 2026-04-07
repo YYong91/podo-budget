@@ -319,5 +319,12 @@ describe('Layout', () => {
       fireEvent.click(inputBtn)
       expect(screen.getByTestId('quick-input')).toBeInTheDocument()
     })
+
+    it('activeHouseholdId가 null이면 거래 입력 버튼 클릭 시 QuickInput이 표시되지 않는다', () => {
+      // storeState.activeHouseholdId는 beforeEach에서 null로 초기화됨
+      renderLayout()
+      fireEvent.click(screen.getByText('거래 입력'))
+      expect(screen.queryByTestId('quick-input')).not.toBeInTheDocument()
+    })
   })
 })

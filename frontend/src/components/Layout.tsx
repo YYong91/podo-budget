@@ -1,6 +1,5 @@
 /* 메인 레이아웃 - 데스크톱 사이드바 + 모바일 하단 탭 바 (포도책방 통일 디자인) */
 
-import type { } from 'react'
 import { useState, useEffect, useCallback } from 'react'
 import { Link, Outlet, useLocation } from 'react-router-dom'
 import FloatingTabBar from './FloatingTabBar'
@@ -239,6 +238,7 @@ export default function Layout() {
         householdId={activeHouseholdId!}
       />
       {toastData && (
+        // FloatingTabBar 높이(~80px) + 여백 12px = 약 100px
         <div className="md:hidden fixed left-0 right-0 z-40 flex justify-center px-4"
           style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + 100px)' }}>
           <div className="w-full max-w-md">
