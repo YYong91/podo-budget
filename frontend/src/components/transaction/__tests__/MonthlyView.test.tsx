@@ -355,6 +355,19 @@ describe('MonthlyView 컴포넌트', () => {
     })
   })
 
+  it('예산이 설정되면 프로그레스 바가 표시된다', async () => {
+    setupCurrentMonthHandlers()
+    server.use(
+      http.get('/api/budgets/total-budget', () =>
+        HttpResponse.json({ total_monthly_budget: 500000 })
+      ),
+    )
+    renderPage()
+    await waitFor(() => {
+      expect(document.querySelector('[role="progressbar"]')).not.toBeNull()
+    })
+  })
+
   describe('달력 접기/펼치기', () => {
     it('최초 방문 시 달력이 펼쳐져 있다', async () => {
       renderPage()

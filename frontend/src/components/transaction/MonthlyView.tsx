@@ -102,18 +102,25 @@ export default function MonthlyView({
       </div>
 
       {/* 월간 지출 히어로 요약 — currentMonth는 0-indexed이므로 +1 */}
-      <HeroSummary
-        label={`${monthly.currentMonth + 1}월 지출`}
-        amount={monthly.totalExpense}
-        sublabelLoading={totalBudget === undefined}
-        sublabel={
-          totalBudget != null && totalBudget > 0
-            ? `예산 대비 ${Math.round((monthly.totalExpense / totalBudget) * 100)}%`
-            : monthly.totalIncome > 0
-              ? `수입 대비 ${Math.round((monthly.totalExpense / monthly.totalIncome) * 100)}%`
-              : undefined
-        }
-      />
+      {(() => {
+        const budgetRatio = totalBudget != null && totalBudget > 0
+          ? monthly.totalExpense / totalBudget
+          : undefined
+
+        const sublabel = budgetRatio == null && monthly.totalIncome > 0
+          ? `수입 대비 ${Math.round((monthly.totalExpense / monthly.totalIncome) * 100)}%`
+          : undefined
+
+        return (
+          <HeroSummary
+            label={`${monthly.currentMonth + 1}월 지출`}
+            amount={monthly.totalExpense}
+            sublabel={sublabel}
+            sublabelLoading={totalBudget === undefined}
+            budgetRatio={budgetRatio}
+          />
+        )
+      })()}
 
       {/* 온보딩 웰컴 카드 */}
       {!welcomeDismissed && !monthly.loading && (
@@ -184,7 +191,7 @@ export default function MonthlyView({
       />
 
       {/* 세그먼트 필터 — 예정 거래 아래, 리스트 바로 위 */}
-      <div className="flex items-center bg-[var(--surface-elevated)] rounded-lg p-1">
+      <div className="flex items-center bg-[var(--surface-elevated)] rounded-xl p-1">
         {(['all', 'expense', 'income'] as const).map((type) => {
           const label = type === 'all' ? '전체' : type === 'expense' ? '지출' : '수입'
           const isActive = type === 'all' ? monthly.filter === 'all' : monthly.filter === type
@@ -198,10 +205,10 @@ export default function MonthlyView({
                   monthly.toggleFilter(type)
                 }
               }}
-              className={`flex-1 py-1.5 text-xs font-medium rounded-md transition-colors ${
+              className={`flex-1 py-2 text-xs rounded-md transition-colors ${
                 isActive
-                  ? 'bg-[var(--surface-card)] text-[var(--text-primary)] shadow-sm'
-                  : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
+                  ? 'bg-grape-100 text-grape-600 font-semibold dark:bg-grape-900/40 dark:text-grape-300'
+                  : 'font-medium text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
               }`}
             >
               {label}
