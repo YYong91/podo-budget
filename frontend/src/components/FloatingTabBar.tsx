@@ -3,7 +3,7 @@
  * @description iOS 26 리퀴드 글래스 스타일 플로팅 아일랜드 탭바 (모바일 전용)
  */
 import { Link, useLocation } from 'react-router-dom'
-import { Receipt, TrendingUp, Settings as SettingsIcon, Pencil, Landmark } from 'lucide-react'
+import { NotebookPen, CalendarDays, Ellipsis, Pencil, Landmark } from 'lucide-react'
 import { FEATURES } from '../config/features'
 
 interface FloatingTabBarProps {
@@ -16,10 +16,10 @@ interface FloatingTabBarProps {
 }
 
 const NAV_ITEMS = [
-  { path: '/home', label: '가계부', icon: Receipt },
+  { path: '/home', label: '가계부', icon: NotebookPen },
   ...(FEATURES.assets ? [{ path: '/assets', label: '자산', icon: Landmark }] : []),
-  { path: '/insights', label: '돌아보기', icon: TrendingUp },
-  { path: '/settings', label: '더보기', icon: SettingsIcon },
+  { path: '/insights', label: '돌아보기', icon: CalendarDays },
+  { path: '/settings', label: '더보기', icon: Ellipsis },
 ]
 
 export default function FloatingTabBar({ onInputOpen, hasUnreadChangelog, isHidden }: FloatingTabBarProps) {
