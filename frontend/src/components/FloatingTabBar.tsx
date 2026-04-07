@@ -33,7 +33,7 @@ export default function FloatingTabBar({ onInputOpen, hasUnreadChangelog, isHidd
       className={`md:hidden fixed bottom-0 left-0 right-0 z-30 flex justify-center pointer-events-none transition-all duration-200 ${
         isHidden ? 'opacity-0 scale-95' : 'opacity-100 scale-100'
       }`}
-      style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 2px)' }}
+      style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
     >
       {/* 플로팅 아일랜드 */}
       {/* py-1(4px): island 상하 여백 최소화 → pill이 island 경계에 바짝 붙는 네이티브 느낌 */}
