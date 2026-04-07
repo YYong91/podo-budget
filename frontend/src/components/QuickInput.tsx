@@ -98,7 +98,7 @@ export default function QuickInput({ isOpen, onClose, onSaveSuccess, onSaveError
 
       const firstItem = (expenses[0] ?? incomes[0]) as Expense | Income
       const isExpense = expenses.length > 0
-      const { emoji, name: categoryName } = getCategoryInfo(firstItem.category_id)
+      const { emoji, name: categoryName } = getCategoryInfo(firstItem.category_id ?? 0)
       const totalAmount = totalItems.reduce((sum, item) => sum + Number(item.amount), 0)
       // 다중 저장 시 스펙: 가계부 홈으로 이동
       const editPath = totalItems.length > 1
