@@ -53,7 +53,17 @@ export function removeRecentSearch(query: string): void {
 }
 
 /** 기간 프리셋 → 날짜 범위 계산 */
-function getSearchDateRange(period: string): { start_date?: string; end_date?: string } {
+function getSearchDateRange(
+  period: string,
+  startDate?: string,
+  endDate?: string,
+): { start_date?: string; end_date?: string } {
+  if (period === 'custom') {
+    return {
+      ...(startDate && { start_date: startDate }),
+      ...(endDate && { end_date: endDate }),
+    }
+  }
   if (period === 'all') return {}
   const now = new Date()
   const end = getLocalDateString(now)
@@ -81,7 +91,9 @@ export function useTransactionSearch({ activeHouseholdId }: UseTransactionSearch
   const isSearchMode = searchParams.has('search')
   const searchType = (searchParams.get('type') as 'all' | 'expense' | 'income') || 'all'
   const searchCategoryId = searchParams.get('category') ? Number(searchParams.get('category')) : null
-  const searchPeriod = (searchParams.get('period') as 'all' | '1m' | '3m' | '6m' | 'year') || 'all'
+  const searchPeriod = (searchParams.get('period') as 'all' | '1m' | '3m' | '6m' | 'year' | 'custom') || 'all'
+  const searchStartDate = searchParams.get('start_date') ?? ''
+  const searchEndDate = searchParams.get('end_date') ?? ''
   const hasSearchFilters = !!(searchCategoryId || searchPeriod !== 'all' || searchType !== 'all')
 
   // 검색 결과 상태
@@ -121,7 +133,17 @@ export function useTransactionSearch({ activeHouseholdId }: UseTransactionSearch
 
   // 검색 모드 해제 → 월 뷰 복귀
   const exitSearchMode = useCallback(() => {
-    setParams({ search: null, type: null, category: null, period: null, member: null })
+    setParams({ search: null, type: null, category: null, period: null, member: null, start_date: null, end_date: null })
+    setOpenFilter(null)
+  }, [setParams])
+
+  // 직접 입력 날짜 범위 적용
+  const setCustomDateRange = useCallback((startDate: string, endDate: string) => {
+    setParams({
+      period: 'custom',
+      start_date: startDate || null,
+      end_date: endDate || null,
+    })
     setOpenFilter(null)
   }, [setParams])
 
@@ -154,7 +176,7 @@ export function useTransactionSearch({ activeHouseholdId }: UseTransactionSearch
 
     try {
       const offset = append ? searchOffsetRef.current : 0
-      const dateRange = getSearchDateRange(searchPeriod)
+      const dateRange = getSearchDateRange(searchPeriod, searchStartDate, searchEndDate)
       const baseParams = {
         query: searchQuery || undefined,
         skip: offset,
@@ -209,7 +231,7 @@ export function useTransactionSearch({ activeHouseholdId }: UseTransactionSearch
       setSearchLoadingMore(false)
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps -- addToast는 안정적 참조
-  }, [searchQuery, activeHouseholdId, searchType, searchCategoryId, searchPeriod])
+  }, [searchQuery, activeHouseholdId, searchType, searchCategoryId, searchPeriod, searchStartDate, searchEndDate])
 
   // 검색어 또는 필터 변경 시 검색 실행
   useEffect(() => {
@@ -225,7 +247,7 @@ export function useTransactionSearch({ activeHouseholdId }: UseTransactionSearch
       setSearchSummary(null)
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps -- fetchSearchResults 내부에서 동일 state 참조
-  }, [isSearchMode, searchQuery, searchType, searchCategoryId, searchPeriod])
+  }, [isSearchMode, searchQuery, searchType, searchCategoryId, searchPeriod, searchStartDate, searchEndDate])
 
   // 검색 모드 진입 시 인풋 포커스
   useEffect(() => {
@@ -278,6 +300,8 @@ export function useTransactionSearch({ activeHouseholdId }: UseTransactionSearch
     searchType,
     searchCategoryId,
     searchPeriod,
+    searchStartDate,
+    searchEndDate,
     hasSearchFilters,
 
     // 검색 결과
@@ -306,6 +330,7 @@ export function useTransactionSearch({ activeHouseholdId }: UseTransactionSearch
     exitSearchMode,
     submitSearch,
     setSearchFilter,
+    setCustomDateRange,
     fetchSearchResults,
   }
 }
