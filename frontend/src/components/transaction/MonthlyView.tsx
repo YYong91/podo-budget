@@ -91,7 +91,14 @@ export default function MonthlyView({
     <>
       {/* 월 네비게이션 + 검색 버튼 */}
       <div className="relative">
-        <PeriodNavigator label={monthly.monthLabel} onPrev={() => monthly.navigateMonth(-1)} onNext={() => monthly.navigateMonth(1)} />
+        <PeriodNavigator
+          label={monthly.monthLabel}
+          onPrev={() => monthly.navigateMonth(-1)}
+          onNext={() => monthly.navigateMonth(1)}
+          currentYear={monthly.currentYear}
+          currentMonth={monthly.currentMonth}
+          onMonthSelect={monthly.navigateToMonth}
+        />
         <button
           onClick={onEnterSearchMode}
           className="absolute right-0 top-1/2 -translate-y-1/2 p-2 rounded-xl hover:bg-[var(--surface-hover)] transition-colors"
