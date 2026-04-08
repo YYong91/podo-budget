@@ -6,7 +6,7 @@
 
 /* eslint-disable react-hooks/refs -- search 훅이 반환하는 객체 내 refs와 값을 함께 사용하므로 린터 오탐 발생 */
 
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { Search, X } from 'lucide-react'
 import EmptyState from '../EmptyState'
 import TransactionItem from '../TransactionItem'
@@ -49,18 +49,31 @@ export default function SearchMode({
   const [localEnd, setLocalEnd] = useState(search.searchEndDate)
 
   // 금액 범위 — 로컬 상태 (적용 버튼 클릭 시 URL 반영)
-  const [localMinAmount, setLocalMinAmount] = useState(search.searchMinAmount ? String(search.searchMinAmount) : '')
-  const [localMaxAmount, setLocalMaxAmount] = useState(search.searchMaxAmount ? String(search.searchMaxAmount) : '')
+  const [localMinAmount, setLocalMinAmount] = useState(search.searchMinAmount !== null ? String(search.searchMinAmount) : '')
+  const [localMaxAmount, setLocalMaxAmount] = useState(search.searchMaxAmount !== null ? String(search.searchMaxAmount) : '')
   const [amountPanelOpen, setAmountPanelOpen] = useState(false)
+  const [amountError, setAmountError] = useState<string | null>(null)
 
-  // 금액 칩 라벨
+  // 금액 패널 외부 클릭 시 닫기
+  useEffect(() => {
+    if (!amountPanelOpen) return
+    const handleClick = () => { setAmountPanelOpen(false); setAmountError(null) }
+    document.addEventListener('pointerdown', handleClick)
+    return () => document.removeEventListener('pointerdown', handleClick)
+  }, [amountPanelOpen])
+
+  // 금액 칩 라벨 (만원 단위는 10000 이상일 때만 축약)
+  const formatAmountLabel = (n: number) =>
+    n >= 10000 ? `${Math.floor(n / 10000)}만원` : `${n.toLocaleString()}원`
+
   const amountChipLabel = useMemo(() => {
-    if (search.searchMinAmount && search.searchMaxAmount) {
-      return `${(search.searchMinAmount / 10000).toFixed(0)}만 ~ ${(search.searchMaxAmount / 10000).toFixed(0)}만원`
+    if (search.searchMinAmount !== null && search.searchMaxAmount !== null) {
+      return `${formatAmountLabel(search.searchMinAmount)} ~ ${formatAmountLabel(search.searchMaxAmount)}`
     }
-    if (search.searchMinAmount) return `${search.searchMinAmount.toLocaleString()}원 이상`
-    if (search.searchMaxAmount) return `${search.searchMaxAmount.toLocaleString()}원 이하`
+    if (search.searchMinAmount !== null) return `${formatAmountLabel(search.searchMinAmount)} 이상`
+    if (search.searchMaxAmount !== null) return `${formatAmountLabel(search.searchMaxAmount)} 이하`
     return '금액'
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- formatAmountLabel은 순수 함수
   }, [search.searchMinAmount, search.searchMaxAmount])
 
   // 기간 칩 라벨
@@ -193,16 +206,18 @@ export default function SearchMode({
         </div>
 
         {/* 금액 */}
-        <button
-          onClick={() => setAmountPanelOpen(prev => !prev)}
-          className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-            search.amountActive
-              ? 'bg-grape-600 text-white'
-              : 'bg-[var(--surface-hover)] text-[var(--text-secondary)]'
-          }`}
-        >
-          {amountChipLabel}
-        </button>
+        <div onPointerDown={(e) => e.stopPropagation()}>
+          <button
+            onClick={() => { setAmountPanelOpen(prev => !prev); setAmountError(null) }}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+              search.amountActive
+                ? 'bg-grape-600 text-white'
+                : 'bg-[var(--surface-hover)] text-[var(--text-secondary)]'
+            }`}
+          >
+            {amountChipLabel}
+          </button>
+        </div>
       </div>
 
       {/* 직접 입력 — custom 선택 시 날짜 범위 인풋 노출 */}
@@ -240,48 +255,57 @@ export default function SearchMode({
 
       {/* 금액 범위 입력 패널 */}
       {amountPanelOpen && (
-        <div className="flex items-center gap-2">
-          <input
-            type="number"
-            placeholder="최소 금액"
-            value={localMinAmount}
-            min={1}
-            onChange={(e) => setLocalMinAmount(e.target.value)}
-            className="flex-1 px-3 py-2 rounded-xl border border-[var(--border-default)] bg-[var(--surface-card)] text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-grape-300"
-          />
-          <span className="text-[var(--text-muted)] text-sm shrink-0">~</span>
-          <input
-            type="number"
-            placeholder="최대 금액"
-            value={localMaxAmount}
-            min={1}
-            onChange={(e) => setLocalMaxAmount(e.target.value)}
-            className="flex-1 px-3 py-2 rounded-xl border border-[var(--border-default)] bg-[var(--surface-card)] text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-grape-300"
-          />
-          <button
-            onClick={() => {
-              search.setAmountRange(
-                localMinAmount ? Number(localMinAmount) : null,
-                localMaxAmount ? Number(localMaxAmount) : null,
-              )
-              setAmountPanelOpen(false)
-            }}
-            className="px-3 py-2 rounded-xl bg-grape-600 text-white text-sm font-medium hover:bg-grape-700 transition-colors shrink-0"
-          >
-            적용
-          </button>
-          {search.amountActive && (
+        <div className="space-y-2" onPointerDown={(e) => e.stopPropagation()}>
+          <div className="flex items-center gap-2">
+            <input
+              type="number"
+              placeholder="최소 금액"
+              value={localMinAmount}
+              min={1}
+              onChange={(e) => { setLocalMinAmount(e.target.value); setAmountError(null) }}
+              className="flex-1 px-3 py-2 rounded-xl border border-[var(--border-default)] bg-[var(--surface-card)] text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-grape-300"
+            />
+            <span className="text-[var(--text-muted)] text-sm shrink-0">~</span>
+            <input
+              type="number"
+              placeholder="최대 금액"
+              value={localMaxAmount}
+              min={1}
+              onChange={(e) => { setLocalMaxAmount(e.target.value); setAmountError(null) }}
+              className="flex-1 px-3 py-2 rounded-xl border border-[var(--border-default)] bg-[var(--surface-card)] text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-grape-300"
+            />
             <button
               onClick={() => {
-                search.setAmountRange(null, null)
-                setLocalMinAmount('')
-                setLocalMaxAmount('')
+                const min = localMinAmount ? Number(localMinAmount) : null
+                const max = localMaxAmount ? Number(localMaxAmount) : null
+                if (min !== null && max !== null && min > max) {
+                  setAmountError('최소 금액이 최대 금액보다 클 수 없어요')
+                  return
+                }
+                search.setAmountRange(min, max)
                 setAmountPanelOpen(false)
               }}
-              className="px-3 py-2 rounded-xl border border-[var(--border-default)] text-sm text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] transition-colors shrink-0"
+              className="px-3 py-2 rounded-xl bg-grape-600 text-white text-sm font-medium hover:bg-grape-700 transition-colors shrink-0"
             >
-              초기화
+              적용
             </button>
+            {search.amountActive && (
+              <button
+                onClick={() => {
+                  search.setAmountRange(null, null)
+                  setLocalMinAmount('')
+                  setLocalMaxAmount('')
+                  setAmountError(null)
+                  setAmountPanelOpen(false)
+                }}
+                className="px-3 py-2 rounded-xl border border-[var(--border-default)] text-sm text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] transition-colors shrink-0"
+              >
+                초기화
+              </button>
+            )}
+          </div>
+          {amountError && (
+            <p className="text-xs text-red-500 px-1">{amountError}</p>
           )}
         </div>
       )}

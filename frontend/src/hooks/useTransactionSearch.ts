@@ -94,8 +94,8 @@ export function useTransactionSearch({ activeHouseholdId }: UseTransactionSearch
   const searchPeriod = (searchParams.get('period') as 'all' | '1m' | '3m' | '6m' | 'year' | 'custom') || 'all'
   const searchStartDate = searchParams.get('start_date') ?? ''
   const searchEndDate = searchParams.get('end_date') ?? ''
-  const searchMinAmount = searchParams.get('min_amount') ? Number(searchParams.get('min_amount')) : null
-  const searchMaxAmount = searchParams.get('max_amount') ? Number(searchParams.get('max_amount')) : null
+  const searchMinAmount = searchParams.has('min_amount') ? Number(searchParams.get('min_amount')) : null
+  const searchMaxAmount = searchParams.has('max_amount') ? Number(searchParams.get('max_amount')) : null
   // custom 기간은 날짜가 실제로 입력된 경우에만 필터로 간주
   const periodActive = searchPeriod !== 'all' && !(searchPeriod === 'custom' && !searchStartDate && !searchEndDate)
   const amountActive = !!(searchMinAmount || searchMaxAmount)
@@ -138,7 +138,7 @@ export function useTransactionSearch({ activeHouseholdId }: UseTransactionSearch
 
   // 검색 모드 해제 → 월 뷰 복귀
   const exitSearchMode = useCallback(() => {
-    setParams({ search: null, type: null, category: null, period: null, member: null, start_date: null, end_date: null })
+    setParams({ search: null, type: null, category: null, period: null, member: null, start_date: null, end_date: null, min_amount: null, max_amount: null })
     setOpenFilter(null)
   }, [setParams])
 

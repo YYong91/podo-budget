@@ -106,9 +106,12 @@ export const handlers = [
   http.get(`${BASE_URL}/expenses/search/summary`, ({ request }) => {
     const url = new URL(request.url)
     const query = url.searchParams.get('query')
-    const filtered = query
-      ? mockExpenses.filter((e) => e.description.toLowerCase().includes(query.toLowerCase()))
-      : mockExpenses
+    const minAmount = url.searchParams.get('min_amount')
+    const maxAmount = url.searchParams.get('max_amount')
+    let filtered = [...mockExpenses]
+    if (query) filtered = filtered.filter((e) => e.description.toLowerCase().includes(query.toLowerCase()))
+    if (minAmount) filtered = filtered.filter((e) => e.amount >= Number(minAmount))
+    if (maxAmount) filtered = filtered.filter((e) => e.amount <= Number(maxAmount))
     return HttpResponse.json({
       total_count: filtered.length,
       total_amount: filtered.reduce((sum, e) => sum + e.amount, 0),
@@ -244,9 +247,12 @@ export const handlers = [
   http.get(`${BASE_URL}/income/search/summary`, ({ request }) => {
     const url = new URL(request.url)
     const query = url.searchParams.get('query')
-    const filtered = query
-      ? mockIncomes.filter((i) => i.description.toLowerCase().includes(query.toLowerCase()))
-      : mockIncomes
+    const minAmount = url.searchParams.get('min_amount')
+    const maxAmount = url.searchParams.get('max_amount')
+    let filtered = [...mockIncomes]
+    if (query) filtered = filtered.filter((i) => i.description.toLowerCase().includes(query.toLowerCase()))
+    if (minAmount) filtered = filtered.filter((i) => i.amount >= Number(minAmount))
+    if (maxAmount) filtered = filtered.filter((i) => i.amount <= Number(maxAmount))
     return HttpResponse.json({
       total_count: filtered.length,
       total_amount: filtered.reduce((sum, i) => sum + i.amount, 0),
