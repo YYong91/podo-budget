@@ -67,8 +67,8 @@ function shiftMonth(monthStr: string, delta: number): string {
 }
 
 function getNavLabel(monthStr: string): string {
-  const [y, m] = monthStr.split('-').map(Number)
-  return `${y}년 ${m}월`
+  const [, m] = monthStr.split('-').map(Number)
+  return `${m}월`
 }
 
 // ── 로딩 스켈레톤 ──

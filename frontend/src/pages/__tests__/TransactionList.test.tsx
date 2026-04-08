@@ -106,7 +106,7 @@ describe('TransactionList', () => {
     renderPage()
     // 현재 월이 표시되어야 함
     const now = new Date()
-    const monthLabel = `${now.getFullYear()}년 ${now.getMonth() + 1}월`
+    const monthLabel = `${now.getMonth() + 1}월`
     expect(screen.getByText(monthLabel)).toBeInTheDocument()
   })
 
@@ -131,7 +131,7 @@ describe('TransactionList', () => {
     const user = userEvent.setup()
     renderPage()
     const now = new Date()
-    const currentLabel = `${now.getFullYear()}년 ${now.getMonth() + 1}월`
+    const currentLabel = `${now.getMonth() + 1}월`
     expect(screen.getByText(currentLabel)).toBeInTheDocument()
 
     // 이전 월 버튼 클릭 (첫 번째 네비게이션 버튼)
@@ -141,7 +141,7 @@ describe('TransactionList', () => {
 
     // 이전 월이 표시되어야 함
     const prevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
-    const prevLabel = `${prevMonth.getFullYear()}년 ${prevMonth.getMonth() + 1}월`
+    const prevLabel = `${prevMonth.getMonth() + 1}월`
     await waitFor(() => {
       expect(screen.getByText(prevLabel)).toBeInTheDocument()
     })
@@ -537,7 +537,7 @@ describe('TransactionList', () => {
       renderPage('/?search=')
 
       const now = new Date()
-      const monthLabel = `${now.getFullYear()}년 ${now.getMonth() + 1}월`
+      const monthLabel = `${now.getMonth() + 1}월`
 
       await waitFor(() => {
         expect(screen.getByPlaceholderText('거래 내역 검색')).toBeInTheDocument()

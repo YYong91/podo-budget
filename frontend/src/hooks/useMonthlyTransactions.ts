@@ -239,7 +239,7 @@ export function useMonthlyTransactions({ activeHouseholdId }: UseMonthlyTransact
     return { grouped, totalExpense, totalIncome, daySummaries }
   }, [expenses, incomes, categoryFilter, categoryMap])
 
-  const monthLabel = `${currentYear}년 ${currentMonth + 1}월`
+  const monthLabel = `${currentMonth + 1}월`
 
   return {
     // 날짜 네비게이션

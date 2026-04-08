@@ -109,7 +109,7 @@ describe('MonthlyView 컴포넌트', () => {
   it('월 네비게이션 헤더를 표시한다', () => {
     renderPage()
     const now = new Date()
-    const monthLabel = `${now.getFullYear()}년 ${now.getMonth() + 1}월`
+    const monthLabel = `${now.getMonth() + 1}월`
     expect(screen.getByText(monthLabel)).toBeInTheDocument()
   })
 
@@ -145,14 +145,14 @@ describe('MonthlyView 컴포넌트', () => {
     const user = userEvent.setup()
     renderPage()
     const now = new Date()
-    const currentLabel = `${now.getFullYear()}년 ${now.getMonth() + 1}월`
+    const currentLabel = `${now.getMonth() + 1}월`
     expect(screen.getByText(currentLabel)).toBeInTheDocument()
 
     const navButtons = screen.getAllByRole('button')
     await user.click(navButtons[0])
 
     const prevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
-    const prevLabel = `${prevMonth.getFullYear()}년 ${prevMonth.getMonth() + 1}월`
+    const prevLabel = `${prevMonth.getMonth() + 1}월`
     await waitFor(() => {
       expect(screen.getByText(prevLabel)).toBeInTheDocument()
     })
@@ -192,7 +192,7 @@ describe('MonthlyView 컴포넌트', () => {
     const user = userEvent.setup()
     renderPage()
     const now = new Date()
-    const currentLabel = `${now.getFullYear()}년 ${now.getMonth() + 1}월`
+    const currentLabel = `${now.getMonth() + 1}월`
     expect(screen.getByText(currentLabel)).toBeInTheDocument()
 
     // 다음 월 버튼 클릭 (두 번째 네비게이션 버튼)
@@ -200,7 +200,7 @@ describe('MonthlyView 컴포넌트', () => {
     await user.click(navButtons[1])
 
     const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1)
-    const nextLabel = `${nextMonth.getFullYear()}년 ${nextMonth.getMonth() + 1}월`
+    const nextLabel = `${nextMonth.getMonth() + 1}월`
     await waitFor(() => {
       expect(screen.getByText(nextLabel)).toBeInTheDocument()
     })

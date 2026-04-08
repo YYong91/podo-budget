@@ -125,7 +125,7 @@ describe('useMonthlyTransactions', () => {
       const { result } = renderHook(() =>
         useMonthlyTransactions({ activeHouseholdId: 1 }), { wrapper: createQueryWrapper() })
 
-      expect(result.current.monthLabel).toBe('2025년 3월')
+      expect(result.current.monthLabel).toBe('3월')
     })
   })
 
