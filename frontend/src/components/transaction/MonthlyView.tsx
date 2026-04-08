@@ -14,7 +14,7 @@ import ScheduledTransactions from '../ScheduledTransactions'
 import EmptyState from '../EmptyState'
 import WelcomeCard from '../WelcomeCard'
 import BotNudgeCard from '../BotNudgeCard'
-import { Search, ChevronDown, ChevronUp, Home } from 'lucide-react'
+import { Search, ChevronDown, ChevronUp, NotebookTabs } from 'lucide-react'
 import { formatAmount } from '../../utils/format'
 import { formatDateHeader } from '../../utils/calendar'
 import { recurringApi } from '../../api/recurring'
@@ -102,7 +102,7 @@ export default function MonthlyView({
             className="absolute left-0 top-1/2 -translate-y-1/2 p-2 rounded-xl hover:bg-[var(--surface-hover)] transition-colors z-10"
             aria-label="가계부 전환"
           >
-            <Home className="w-5 h-5 text-[var(--text-secondary)]" />
+            <NotebookTabs className="w-5 h-5 text-[var(--text-secondary)]" />
           </button>
         )}
         <PeriodNavigator
