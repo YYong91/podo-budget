@@ -6,7 +6,7 @@
 
 /* eslint-disable react-hooks/refs -- search 훅이 반환하는 객체 내 refs와 값을 함께 사용하므로 린터 오탐 발생 */
 
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { Search, X } from 'lucide-react'
 import EmptyState from '../EmptyState'
 import TransactionItem from '../TransactionItem'
@@ -43,6 +43,23 @@ export default function SearchMode({
     }
     return '카테고리'
   }, [search.searchCategoryId, monthly.categoryMap])
+
+  // 기간 직접 입력 — 로컬 상태 (URL에는 적용 버튼 클릭 시 반영)
+  const [localStart, setLocalStart] = useState(search.searchStartDate)
+  const [localEnd, setLocalEnd] = useState(search.searchEndDate)
+
+  // 기간 칩 라벨
+  const periodChipLabel = useMemo(() => {
+    if (search.searchPeriod === 'custom') {
+      if (search.searchStartDate || search.searchEndDate) {
+        // YYYY-MM-DD → MM.DD 형식으로 축약
+        const fmt = (d: string) => d ? d.slice(5).replace('-', '.') : '?'
+        return `${fmt(search.searchStartDate)} ~ ${fmt(search.searchEndDate)}`
+      }
+      return '직접 입력'
+    }
+    return { all: '기간: 전체', '1m': '최근 1개월', '3m': '최근 3개월', '6m': '최근 6개월', year: '올해' }[search.searchPeriod] ?? '기간'
+  }, [search.searchPeriod, search.searchStartDate, search.searchEndDate])
 
   return (
     <>
@@ -134,7 +151,7 @@ export default function SearchMode({
                 : 'bg-[var(--surface-hover)] text-[var(--text-secondary)]'
             }`}
           >
-            {{ all: '기간: 전체', '1m': '최근 1개월', '3m': '최근 3개월', '6m': '최근 6개월', year: '올해' }[search.searchPeriod]}
+            {periodChipLabel}
           </button>
           {search.openFilter === 'period' && (
             <div className="absolute top-full left-0 mt-1 bg-[var(--surface-card)] rounded-xl shadow-lg border border-[var(--border-default)] py-1 z-20 min-w-[130px]">
@@ -144,6 +161,7 @@ export default function SearchMode({
                 { value: '3m', label: '최근 3개월' },
                 { value: '6m', label: '최근 6개월' },
                 { value: 'year', label: '올해' },
+                { value: 'custom', label: '직접 입력' },
               ].map(opt => (
                 <button
                   key={opt.value}
@@ -159,6 +177,39 @@ export default function SearchMode({
           )}
         </div>
       </div>
+
+      {/* 직접 입력 — custom 선택 시 날짜 범위 인풋 노출 */}
+      {search.searchPeriod === 'custom' && (
+        <div className="flex items-center gap-2">
+          <label htmlFor="search-start-date" className="sr-only">시작일</label>
+          <input
+            id="search-start-date"
+            aria-label="시작일"
+            type="date"
+            value={localStart}
+            max={localEnd || undefined}
+            onChange={(e) => setLocalStart(e.target.value)}
+            className="flex-1 px-3 py-2 rounded-xl border border-[var(--border-default)] bg-[var(--surface-card)] text-sm text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-grape-300"
+          />
+          <span className="text-[var(--text-muted)] text-sm shrink-0">~</span>
+          <label htmlFor="search-end-date" className="sr-only">종료일</label>
+          <input
+            id="search-end-date"
+            aria-label="종료일"
+            type="date"
+            value={localEnd}
+            min={localStart || undefined}
+            onChange={(e) => setLocalEnd(e.target.value)}
+            className="flex-1 px-3 py-2 rounded-xl border border-[var(--border-default)] bg-[var(--surface-card)] text-sm text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-grape-300"
+          />
+          <button
+            onClick={() => search.setCustomDateRange(localStart, localEnd)}
+            className="px-3 py-2 rounded-xl bg-grape-600 text-white text-sm font-medium hover:bg-grape-700 transition-colors shrink-0"
+          >
+            적용
+          </button>
+        </div>
+      )}
 
       {/* 빈 검색어: 최근 검색 + 카테고리 바로가기 */}
       {!search.searchQuery && !search.hasSearchFilters && (
