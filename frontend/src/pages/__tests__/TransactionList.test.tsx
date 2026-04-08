@@ -30,6 +30,8 @@ vi.mock('../../stores/useHouseholdStore', () => ({
   useHouseholdStore: (selector: (s: Record<string, unknown>) => unknown) =>
     selector({
       activeHouseholdId: 1,
+      households: [{ id: 1, name: '우리집' }],
+      setActiveHouseholdId: vi.fn(),
       currentHousehold: null,
       fetchHouseholdDetail: vi.fn(),
     }),

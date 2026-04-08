@@ -13,6 +13,7 @@ import { useHouseholdStore } from '../stores/useHouseholdStore'
 import { useToast } from '../hooks/useToast'
 import { TOAST } from '../constants/toastMessages'
 import CategoryBottomSheet from '../components/CategoryBottomSheet'
+import HouseholdBottomSheet from '../components/HouseholdBottomSheet'
 import PullToRefresh from '../components/PullToRefresh'
 import ErrorState from '../components/ErrorState'
 import { useAuth } from '../contexts/AuthContext'
@@ -24,6 +25,8 @@ import MonthlyView from '../components/transaction/MonthlyView'
 
 export default function TransactionList() {
   const activeHouseholdId = useHouseholdStore((s) => s.activeHouseholdId)
+  const households = useHouseholdStore((s) => s.households)
+  const setActiveHouseholdId = useHouseholdStore((s) => s.setActiveHouseholdId)
   const currentHousehold = useHouseholdStore((s) => s.currentHousehold)
   const fetchHouseholdDetail = useHouseholdStore((s) => s.fetchHouseholdDetail)
   const { addToast } = useToast()
@@ -103,6 +106,9 @@ export default function TransactionList() {
       )
     }
   }, [welcomeDismissed, monthly.loading, monthly.expenses.length, monthly.incomes.length])
+
+  // 가구 전환 바텀시트 상태
+  const [householdSheetOpen, setHouseholdSheetOpen] = useState(false)
 
   // 카테고리 바텀시트 상태
   const [sheetOpen, setSheetOpen] = useState(false)
@@ -218,8 +224,19 @@ export default function TransactionList() {
           onBotNudgeDismiss={handleBotNudgeDismiss}
           memberMap={memberMap}
           totalBudget={totalBudget}
+          showHouseholdSwitcher={households.length > 1}
+          onOpenHouseholdSheet={() => setHouseholdSheetOpen(true)}
         />
       )}
+
+      {/* 가구 전환 바텀시트 */}
+      <HouseholdBottomSheet
+        isOpen={householdSheetOpen}
+        onClose={() => setHouseholdSheetOpen(false)}
+        households={households}
+        activeHouseholdId={activeHouseholdId}
+        onSelect={setActiveHouseholdId}
+      />
 
       {/* 카테고리 바텀시트 */}
       <CategoryBottomSheet

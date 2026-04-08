@@ -14,7 +14,7 @@ import ScheduledTransactions from '../ScheduledTransactions'
 import EmptyState from '../EmptyState'
 import WelcomeCard from '../WelcomeCard'
 import BotNudgeCard from '../BotNudgeCard'
-import { Search, ChevronDown, ChevronUp } from 'lucide-react'
+import { Search, ChevronDown, ChevronUp, Home } from 'lucide-react'
 import { formatAmount } from '../../utils/format'
 import { formatDateHeader } from '../../utils/calendar'
 import { recurringApi } from '../../api/recurring'
@@ -38,6 +38,9 @@ interface MonthlyViewProps {
   memberMap: Map<number, string> | null
   /** 월 총 예산 (undefined = 로딩 중, null = 미설정, number = 설정됨) */
   totalBudget: number | null | undefined
+  /** 복수 가구 소속일 때 true — 가구 전환 아이콘 노출 */
+  showHouseholdSwitcher?: boolean
+  onOpenHouseholdSheet?: () => void
 }
 
 export default function MonthlyView({
@@ -52,6 +55,8 @@ export default function MonthlyView({
   onBotNudgeDismiss,
   memberMap,
   totalBudget,
+  showHouseholdSwitcher,
+  onOpenHouseholdSheet,
 }: MonthlyViewProps) {
   const { addToast } = useToast()
 
@@ -89,8 +94,17 @@ export default function MonthlyView({
 
   return (
     <>
-      {/* 월 네비게이션 + 검색 버튼 */}
+      {/* 월 네비게이션 + 좌측 가구 전환 + 우측 검색 버튼 */}
       <div className="relative">
+        {showHouseholdSwitcher && (
+          <button
+            onClick={onOpenHouseholdSheet}
+            className="absolute left-0 top-1/2 -translate-y-1/2 p-2 rounded-xl hover:bg-[var(--surface-hover)] transition-colors"
+            aria-label="가계부 전환"
+          >
+            <Home className="w-5 h-5 text-[var(--text-secondary)]" />
+          </button>
+        )}
         <PeriodNavigator
           label={monthly.monthLabel}
           onPrev={() => monthly.navigateMonth(-1)}
