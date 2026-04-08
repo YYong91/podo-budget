@@ -193,6 +193,7 @@ export default function TransactionList() {
   }
 
   return (
+    <>
     <PullToRefresh onRefresh={handleRefresh}>
     <div className="space-y-4 animate-page-in">
       {search.isSearchMode ? (
@@ -229,7 +230,10 @@ export default function TransactionList() {
         />
       )}
 
-      {/* 가구 전환 바텀시트 */}
+    </div>
+    </PullToRefresh>
+
+      {/* 가구 전환 바텀시트 — PullToRefresh 바깥에 배치 (터치 이벤트 충돌 방지) */}
       <HouseholdBottomSheet
         isOpen={householdSheetOpen}
         onClose={() => setHouseholdSheetOpen(false)}
@@ -238,7 +242,7 @@ export default function TransactionList() {
         onSelect={setActiveHouseholdId}
       />
 
-      {/* 카테고리 바텀시트 */}
+      {/* 카테고리 바텀시트 — PullToRefresh 바깥에 배치 (터치 이벤트 충돌 방지) */}
       <CategoryBottomSheet
         isOpen={sheetOpen}
         onClose={() => { setSheetOpen(false); setIsFilterCategorySheet(false) }}
@@ -251,7 +255,6 @@ export default function TransactionList() {
         saving={sheetSaving}
         title={isFilterCategorySheet ? '카테고리 선택' : undefined}
       />
-    </div>
-    </PullToRefresh>
+    </>
   )
 }
