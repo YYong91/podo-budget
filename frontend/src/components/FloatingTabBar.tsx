@@ -14,7 +14,7 @@ const isPWA =
 
 const tabBarPaddingBottom = isPWA
   ? 'env(safe-area-inset-bottom, 0px)'
-  : 'calc(env(safe-area-inset-bottom, 0px) + 49px)'
+  : 'calc(env(safe-area-inset-bottom, 0px) + 24px)'
 
 interface FloatingTabBarProps {
   /** 입력 버튼 클릭 시 호출 */
@@ -44,7 +44,7 @@ export default function FloatingTabBar({ onInputOpen, hasUnreadChangelog, isHidd
       {/* 터치 타겟: py-1(4px) + py-1.5(6px) + icon(20px) + gap(2px) + label(12px) + py-1.5(6px) + py-1(4px) = 54px ≥ 44pt ✓ */}
       <nav
         aria-label="하단 탭 메뉴"
-        className="pointer-events-auto flex items-center gap-1 px-3 py-1 rounded-full shadow-lg border border-[var(--glass-border)] bg-[var(--glass-bg)] backdrop-blur-xl"
+        className="pointer-events-auto flex items-center gap-1 px-3 py-1 rounded-full shadow-[0_4px_24px_rgba(0,0,0,0.12)] border border-[var(--glass-border)] bg-[var(--glass-bg)] backdrop-blur-xl"
       >
         {/* 탭 목록 — w-[72px] 고정 너비로 pill 일관성 확보, 탭 너비 확대로 여유있는 느낌 */}
         {NAV_ITEMS.map(item => {
