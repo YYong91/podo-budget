@@ -5,7 +5,7 @@
 
 import { memo } from 'react'
 import { Link } from 'react-router-dom'
-import { formatAmount } from '../utils/format'
+import { formatAmount, formatAmountWithSign } from '../utils/format'
 import type { Category } from '../types'
 
 // 시스템 카테고리 이름 → 배경색 (light + dark)
@@ -103,7 +103,7 @@ function TransactionItem({
               type === 'income' ? 'text-leaf-600' : 'text-[var(--text-primary)]'
             }`}
           >
-            {type === 'expense' ? '-' : '+'}{formatAmount(amount)}
+            {formatAmountWithSign(amount, type)}
           </span>
         </div>
         <div className="flex items-center gap-1.5 mt-0.5">

@@ -103,7 +103,7 @@ export default function ScheduledTransactions({
                 <div key={r.id} className="px-4 py-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2 min-w-0">
-                      <span className="text-xs text-[var(--text-tertiary)] w-6 shrink-0">{day}일</span>
+                      <span className="text-xs text-[var(--text-tertiary)] w-8 shrink-0 whitespace-nowrap">{day}일</span>
                       <span className="text-sm text-[var(--text-primary)] truncate">{r.description}</span>
                     </div>
                     <span className={`text-sm font-medium shrink-0 ${

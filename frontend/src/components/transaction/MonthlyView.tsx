@@ -236,8 +236,8 @@ export default function MonthlyView({
                     <span className="text-sm font-semibold text-[var(--text-secondary)]">
                       {formatDateHeader(dateKey)}
                     </span>
-                    <span className="text-sm font-semibold tabular-nums text-[var(--text-muted)]">
-                      {formatAmount(dailyTotal)}
+                    <span className="text-sm font-semibold tabular-nums tracking-tight text-[var(--text-muted)]">
+                      {dailyTotal > 0 ? '+' : ''}{formatAmount(dailyTotal)}
                     </span>
                   </div>
                 </div>

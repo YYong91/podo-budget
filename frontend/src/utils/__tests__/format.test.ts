@@ -39,8 +39,8 @@ describe('formatAmount', () => {
     expect(formatAmount(8000.3)).toBe('₩8,000')
   })
 
-  it('음수 금액도 포맷한다', () => {
-    expect(formatAmount(-5000)).toBe('₩-5,000')
+  it('음수 금액은 부호를 ₩ 앞에 표시한다', () => {
+    expect(formatAmount(-5000)).toBe('-₩5,000')
   })
 })
 
