@@ -6,7 +6,6 @@
 import { useEffect } from 'react'
 import { X, Home, Check } from 'lucide-react'
 import type { Household } from '../types'
-import { useBodyScrollLock } from '../hooks/useBodyScrollLock'
 
 interface HouseholdBottomSheetProps {
   isOpen: boolean
@@ -23,7 +22,14 @@ export default function HouseholdBottomSheet({
   activeHouseholdId,
   onSelect,
 }: HouseholdBottomSheetProps) {
-  useBodyScrollLock(isOpen)
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden'
+    }
+    return () => {
+      document.body.style.overflow = ''
+    }
+  }, [isOpen])
 
   useEffect(() => {
     if (!isOpen) return

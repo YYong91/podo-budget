@@ -6,7 +6,6 @@
 import { useEffect } from 'react'
 import { X } from 'lucide-react'
 import type { Category } from '../types'
-import { useBodyScrollLock } from '../hooks/useBodyScrollLock'
 
 interface CategoryBottomSheetProps {
   isOpen: boolean
@@ -30,7 +29,14 @@ export default function CategoryBottomSheet({
   saving = false,
   title = '카테고리 변경',
 }: CategoryBottomSheetProps) {
-  useBodyScrollLock(isOpen)
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden'
+    }
+    return () => {
+      document.body.style.overflow = ''
+    }
+  }, [isOpen])
 
   useEffect(() => {
     if (!isOpen) return

@@ -227,30 +227,6 @@ input[type="date"] {
   max-width: 100%;
 }
 
-/* 모달/바텀시트 열릴 때 body 스크롤 완전 차단 (iOS Safari/PWA 포함) */
-html.scroll-locked,
-html.scroll-locked body {
-  overflow: hidden !important;
-  overscroll-behavior: none !important;
-  touch-action: none !important;
-  -webkit-overflow-scrolling: auto !important;
-}
-
-html.scroll-locked body {
-  position: fixed !important;
-  width: 100% !important;
-}
-
-/* 스크롤 잠금 상태에서도 모달 내부는 터치/스크롤 허용 */
-html.scroll-locked [role="dialog"] {
-  touch-action: auto !important;
-}
-
-html.scroll-locked [role="dialog"] .overflow-y-auto {
-  touch-action: pan-y !important;
-  -webkit-overflow-scrolling: touch !important;
-}
-
 body {
   margin: 0;
   min-width: 320px;
