@@ -5,7 +5,7 @@
 
 import { memo } from 'react'
 import { Link } from 'react-router-dom'
-import { formatAmount, formatAmountWithSign } from '../utils/format'
+import { formatAmountWithSign } from '../utils/format'
 import type { Category } from '../types'
 
 // 시스템 카테고리 이름 → 배경색 (light + dark)
