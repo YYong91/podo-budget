@@ -96,7 +96,7 @@ export default function MonthlyView({
     <>
       {/* 월 네비게이션 + 좌측 가구 전환 + 우측 검색 버튼 */}
       <div className="relative">
-        {showHouseholdSwitcher && (
+        {showHouseholdSwitcher && onOpenHouseholdSheet && (
           <button
             onClick={onOpenHouseholdSheet}
             className="absolute left-0 top-1/2 -translate-y-1/2 p-2 rounded-xl hover:bg-[var(--surface-hover)] transition-colors"

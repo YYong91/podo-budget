@@ -14,9 +14,10 @@ import { trackPageView } from '../utils/analytics'
 import { NAV_ITEMS } from '../constants/navItems'
 
 export default function Layout() {
-  const [householdDropdownOpen, setHouseholdDropdownOpen] = useState(false)
   const [isInputMode, setIsInputMode] = useState(false)
   const [toastData, setToastData] = useState<ActionToastData | null>(null)
+  // 데스크톱 사이드바 가구 드롭다운 상태
+  const [householdDropdownOpen, setHouseholdDropdownOpen] = useState(false)
   // iOS Safari에서 키보드를 사용자 제스처 컨텍스트에서 띄우려면 동기적으로 focus() 호출 필요
   const quickInputRef = useRef<QuickInputHandle>(null)
   const location = useLocation()

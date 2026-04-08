@@ -3,7 +3,7 @@
  * @description 가구 전환 바텀시트 — 복수 가구 소속 계정에서 활성 가구를 선택
  */
 
-import { useEffect, useRef } from 'react'
+import { useEffect } from 'react'
 import { X, Home, Check } from 'lucide-react'
 import type { Household } from '../types'
 
@@ -22,8 +22,6 @@ export default function HouseholdBottomSheet({
   activeHouseholdId,
   onSelect,
 }: HouseholdBottomSheetProps) {
-  const sheetRef = useRef<HTMLDivElement>(null)
-
   useEffect(() => {
     if (!isOpen) return
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -49,7 +47,6 @@ export default function HouseholdBottomSheet({
       {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions */}
       <div className="absolute inset-0 bg-black/40 transition-opacity" onClick={onClose} />
       <div
-        ref={sheetRef}
         className="relative w-full md:max-w-sm bg-[var(--surface-card)] rounded-t-2xl md:rounded-2xl flex flex-col animate-sheet-up md:animate-none"
       >
         {/* 헤더 */}
@@ -61,7 +58,7 @@ export default function HouseholdBottomSheet({
         </div>
 
         {/* 가구 목록 */}
-        <div className="overflow-y-auto p-2 pb-safe">
+        <div className="overflow-y-auto p-2" style={{ paddingBottom: 'max(8px, env(safe-area-inset-bottom))' }}>
           {households.map(h => {
             const isActive = h.id === activeHouseholdId
             return (
