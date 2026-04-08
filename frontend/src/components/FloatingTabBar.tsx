@@ -3,8 +3,8 @@
  * @description iOS 26 리퀴드 글래스 스타일 플로팅 아일랜드 탭바 (모바일 전용)
  */
 import { Link, useLocation } from 'react-router-dom'
-import { NotebookPen, BarChart2, Ellipsis, Pencil, Landmark } from 'lucide-react'
-import { FEATURES } from '../config/features'
+import { Pencil } from 'lucide-react'
+import { NAV_ITEMS } from '../constants/navItems'
 
 // PWA standalone 모드 여부 — 브라우저에서 열면 false
 // iOS Safari 하단 주소창(49px)을 피하기 위해 non-PWA 환경에서 추가 여백 적용
@@ -25,12 +25,6 @@ interface FloatingTabBarProps {
   isHidden?: boolean
 }
 
-const NAV_ITEMS = [
-  { path: '/home', label: '가계부', icon: NotebookPen },
-  ...(FEATURES.assets ? [{ path: '/assets', label: '자산', icon: Landmark }] : []),
-  { path: '/insights', label: '모아보기', icon: BarChart2 },
-  { path: '/settings', label: '더보기', icon: Ellipsis },
-]
 
 export default function FloatingTabBar({ onInputOpen, hasUnreadChangelog, isHidden }: FloatingTabBarProps) {
   const { pathname } = useLocation()

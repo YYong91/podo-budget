@@ -8,23 +8,10 @@ import QuickInput, { type QuickInputHandle } from './QuickInput'
 import ActionToast from './ActionToast'
 import type { ActionToastData } from './ActionToast'
 import { useHouseholdStore } from '../stores/useHouseholdStore'
-import {
-  Receipt, TrendingUp, Settings as SettingsIcon,
-  Mail, Home, ChevronDown, Landmark,
-} from 'lucide-react'
-import type { LucideIcon } from 'lucide-react'
+import { Mail, Home, ChevronDown } from 'lucide-react'
 import { useChangelog } from '../hooks/useChangelog'
 import { trackPageView } from '../utils/analytics'
-import { FEATURES } from '../config/features'
-
-
-// FEATURES.assets 플래그에 따라 자산 탭을 조건부 포함
-const navItems: { path: string; label: string; icon: LucideIcon }[] = [
-  { path: '/home', label: '가계부', icon: Receipt },
-  ...(FEATURES.assets ? [{ path: '/assets', label: '자산', icon: Landmark }] : []),
-  { path: '/insights', label: '돌아보기', icon: TrendingUp },
-  { path: '/settings', label: '더보기', icon: SettingsIcon },
-]
+import { NAV_ITEMS } from '../constants/navItems'
 
 export default function Layout() {
   const [householdDropdownOpen, setHouseholdDropdownOpen] = useState(false)
@@ -170,7 +157,7 @@ export default function Layout() {
 
           {/* 네비게이션 */}
           <nav aria-label="사이드바 메뉴" className="space-y-1 flex-1 overflow-y-auto">
-            {navItems.map(item => {
+            {NAV_ITEMS.map(item => {
               const active = isActive(item.path)
               const Icon = item.icon
               return (

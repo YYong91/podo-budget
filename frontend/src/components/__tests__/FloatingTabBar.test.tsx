@@ -16,10 +16,10 @@ function renderTabBar(onInputOpen = vi.fn(), initialPath = '/home') {
 }
 
 describe('FloatingTabBar', () => {
-  it('3개 탭(가계부/돌아보기/더보기)을 렌더링한다', () => {
+  it('3개 탭(가계부/모아보기/더보기)을 렌더링한다', () => {
     renderTabBar()
     expect(screen.getByRole('link', { name: '가계부' })).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: '돌아보기' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: '모아보기' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: '더보기' })).toBeInTheDocument()
   })
 
