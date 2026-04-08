@@ -94,7 +94,9 @@ export function useTransactionSearch({ activeHouseholdId }: UseTransactionSearch
   const searchPeriod = (searchParams.get('period') as 'all' | '1m' | '3m' | '6m' | 'year' | 'custom') || 'all'
   const searchStartDate = searchParams.get('start_date') ?? ''
   const searchEndDate = searchParams.get('end_date') ?? ''
-  const hasSearchFilters = !!(searchCategoryId || searchPeriod !== 'all' || searchType !== 'all')
+  // custom 기간은 날짜가 실제로 입력된 경우에만 필터로 간주
+  const periodActive = searchPeriod !== 'all' && !(searchPeriod === 'custom' && !searchStartDate && !searchEndDate)
+  const hasSearchFilters = !!(searchCategoryId || periodActive || searchType !== 'all')
 
   // 검색 결과 상태
   const [searchResults, setSearchResults] = useState<UnifiedTransaction[]>([])
