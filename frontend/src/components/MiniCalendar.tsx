@@ -32,9 +32,20 @@ function MiniCalendar({
 }: MiniCalendarProps) {
   const grid = useMemo(() => getCalendarGrid(year, month), [year, month])
 
-  const visibleWeeks = weekOnly
-    ? grid.filter((week) => week.some((day) => day?.dateString === today))
-    : grid
+  const visibleWeeks = useMemo(() => {
+    if (!weekOnly) return grid
+
+    // today가 이 달에 있으면 해당 주 표시
+    const todayWeek = grid.find((week) => week.some((day) => day?.dateString === today))
+    if (todayWeek) return [todayWeek]
+
+    // today가 없는 달(이전달/다음달) → 시간적으로 오늘에 가까운 쪽 끝 주 표시
+    // 이전달: 마지막 유효 주 / 다음달: 첫 번째 유효 주
+    const validWeeks = grid.filter((week) => week.some((day) => day !== null))
+    const todayDate = new Date(today)
+    const isPastMonth = new Date(year, month + 1, 0) < todayDate // 해당 달 말일 < 오늘
+    return isPastMonth ? [validWeeks.at(-1)!] : [validWeeks[0]]
+  }, [weekOnly, grid, today, year, month])
 
   return (
     <div className="select-none">
