@@ -299,7 +299,7 @@ export default function SearchMode({
               value={localMinAmount}
               min={1}
               onChange={(e) => { setLocalMinAmount(e.target.value); setAmountError(null) }}
-              className="flex-1 px-3 py-2 rounded-xl border border-[var(--border-default)] bg-[var(--surface-card)] text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-grape-300"
+              className="flex-1 min-w-0 px-3 py-2 rounded-xl border border-[var(--border-default)] bg-[var(--surface-card)] text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-grape-300"
             />
             <span className="text-[var(--text-muted)] text-sm shrink-0">~</span>
             <input
@@ -308,8 +308,10 @@ export default function SearchMode({
               value={localMaxAmount}
               min={1}
               onChange={(e) => { setLocalMaxAmount(e.target.value); setAmountError(null) }}
-              className="flex-1 px-3 py-2 rounded-xl border border-[var(--border-default)] bg-[var(--surface-card)] text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-grape-300"
+              className="flex-1 min-w-0 px-3 py-2 rounded-xl border border-[var(--border-default)] bg-[var(--surface-card)] text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-grape-300"
             />
+          </div>
+          <div className="flex items-center gap-2">
             <button
               onClick={() => {
                 const min = localMinAmount ? Number(localMinAmount) : null
@@ -321,7 +323,7 @@ export default function SearchMode({
                 search.setAmountRange(min, max)
                 setAmountPanelOpen(false)
               }}
-              className="px-3 py-2 rounded-xl bg-grape-600 text-white text-sm font-medium hover:bg-grape-700 transition-colors shrink-0"
+              className="flex-1 px-3 py-2 rounded-xl bg-grape-600 text-white text-sm font-medium hover:bg-grape-700 transition-colors"
             >
               적용
             </button>
@@ -334,7 +336,7 @@ export default function SearchMode({
                   setAmountError(null)
                   setAmountPanelOpen(false)
                 }}
-                className="px-3 py-2 rounded-xl border border-[var(--border-default)] text-sm text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] transition-colors shrink-0"
+                className="flex-1 px-3 py-2 rounded-xl border border-[var(--border-default)] text-sm text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] transition-colors"
               >
                 초기화
               </button>
