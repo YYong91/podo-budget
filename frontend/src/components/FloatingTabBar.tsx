@@ -3,26 +3,31 @@
  * @description iOS 26 리퀴드 글래스 스타일 플로팅 아일랜드 탭바 (모바일 전용)
  */
 import { Link, useLocation } from 'react-router-dom'
-import { NotebookPen, CalendarDays, Ellipsis, Pencil, Landmark } from 'lucide-react'
-import { FEATURES } from '../config/features'
+import { Pencil } from 'lucide-react'
+import { NAV_ITEMS } from '../constants/navItems'
+
+// PWA standalone 모드 여부 — 브라우저에서 열면 false
+// iOS Safari 하단 주소창(49px)을 피하기 위해 non-PWA 환경에서 추가 여백 적용
+const isPWA =
+  window.matchMedia('(display-mode: standalone)').matches ||
+  (window.navigator as unknown as { standalone?: boolean }).standalone === true
+
+const tabBarPaddingBottom = isPWA
+  ? 'env(safe-area-inset-bottom, 0px)'
+  : 'calc(env(safe-area-inset-bottom, 0px) + 24px)'
 
 interface FloatingTabBarProps {
   /** 입력 버튼 클릭 시 호출 */
   onInputOpen: () => void
   /** 읽지 않은 changelog 있을 때 true */
   hasUnreadChangelog?: boolean
+  /** 미확인 초대 있을 때 true — 설정 탭에 배지 표시 */
+  hasPendingInvitation?: boolean
   /** QuickInput 활성 시 true — 탭바를 페이드아웃하여 입력창과 겹치지 않게 함 */
   isHidden?: boolean
 }
 
-const NAV_ITEMS = [
-  { path: '/home', label: '가계부', icon: NotebookPen },
-  ...(FEATURES.assets ? [{ path: '/assets', label: '자산', icon: Landmark }] : []),
-  { path: '/insights', label: '돌아보기', icon: CalendarDays },
-  { path: '/settings', label: '더보기', icon: Ellipsis },
-]
-
-export default function FloatingTabBar({ onInputOpen, hasUnreadChangelog, isHidden }: FloatingTabBarProps) {
+export default function FloatingTabBar({ onInputOpen, hasUnreadChangelog, hasPendingInvitation, isHidden }: FloatingTabBarProps) {
   const { pathname } = useLocation()
 
   const isActive = (path: string) => pathname === path || pathname.startsWith(path + '/')
@@ -33,14 +38,14 @@ export default function FloatingTabBar({ onInputOpen, hasUnreadChangelog, isHidd
       className={`md:hidden fixed bottom-0 left-0 right-0 z-30 flex justify-center pointer-events-none transition-all duration-200 ${
         isHidden ? 'opacity-0 scale-95' : 'opacity-100 scale-100'
       }`}
-      style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
+      style={{ paddingBottom: tabBarPaddingBottom }}
     >
       {/* 플로팅 아일랜드 */}
       {/* py-1(4px): island 상하 여백 최소화 → pill이 island 경계에 바짝 붙는 네이티브 느낌 */}
       {/* 터치 타겟: py-1(4px) + py-1.5(6px) + icon(20px) + gap(2px) + label(12px) + py-1.5(6px) + py-1(4px) = 54px ≥ 44pt ✓ */}
       <nav
         aria-label="하단 탭 메뉴"
-        className="pointer-events-auto flex items-center gap-1 px-3 py-1 rounded-full shadow-lg border border-[var(--glass-border)] bg-[var(--glass-bg)] backdrop-blur-xl"
+        className="pointer-events-auto flex items-center gap-1 px-3 py-1 rounded-full shadow-[0_4px_24px_rgba(0,0,0,0.12)] border border-[var(--glass-border)] bg-[var(--glass-bg)] backdrop-blur-xl"
       >
         {/* 탭 목록 — w-[72px] 고정 너비로 pill 일관성 확보, 탭 너비 확대로 여유있는 느낌 */}
         {NAV_ITEMS.map(item => {
@@ -61,7 +66,7 @@ export default function FloatingTabBar({ onInputOpen, hasUnreadChangelog, isHidd
             >
               <span className="relative">
                 <Icon className={`w-5 h-5 floating-island-icon ${active ? 'stroke-[2.5]' : ''}`} />
-                {item.path === '/settings' && hasUnreadChangelog && (
+                {item.path === '/settings' && (hasUnreadChangelog || hasPendingInvitation) && (
                   <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full" />
                 )}
               </span>

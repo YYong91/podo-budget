@@ -67,8 +67,8 @@ function shiftMonth(monthStr: string, delta: number): string {
 }
 
 function getNavLabel(monthStr: string): string {
-  const [y, m] = monthStr.split('-').map(Number)
-  return `${y}년 ${m}월`
+  const [, m] = monthStr.split('-').map(Number)
+  return `${m}월`
 }
 
 // ── 로딩 스켈레톤 ──
@@ -318,6 +318,12 @@ export default function InsightsPage() {
     }
   }, [monthStr, expenseStats, incomeStats, budgetStats, assetSummary, prevSnapshot, healthScore, comparison, incomeComparison, savingsTotal, addToast])
 
+  // monthStr에서 파생된 연/월 (PeriodNavigator + HeroSummary에서 공유)
+  const { currentYear, currentMonth } = useMemo(() => {
+    const [y, m] = monthStr.split('-').map(Number)
+    return { currentYear: y, currentMonth: m - 1 } // currentMonth: 0-indexed
+  }, [monthStr])
+
   const handlePrev = useCallback(() => {
     setMonthStr(m => shiftMonth(m, -1))
     setStructuredInsights(null) // 월 이동 시 AI 분석 초기화
@@ -326,13 +332,24 @@ export default function InsightsPage() {
     setMonthStr(m => shiftMonth(m, 1))
     setStructuredInsights(null) // 월 이동 시 AI 분석 초기화
   }, [])
+  const handleMonthSelect = useCallback((year: number, month: number) => {
+    setMonthStr(toMonthStr(new Date(year, month, 1)))
+    setStructuredInsights(null) // 월 이동 시 AI 분석 초기화
+  }, [])
 
   return (
     <div className="space-y-4 animate-page-in animate-stagger">
       {/* 월 네비게이션 + 설정 아이콘 */}
       <div className="flex items-center justify-between">
         <div className="flex-1" />
-        <PeriodNavigator label={getNavLabel(monthStr)} onPrev={handlePrev} onNext={handleNext} />
+        <PeriodNavigator
+          label={getNavLabel(monthStr)}
+          onPrev={handlePrev}
+          onNext={handleNext}
+          currentYear={currentYear}
+          currentMonth={currentMonth}
+          onMonthSelect={handleMonthSelect}
+        />
         <div className="flex-1 flex justify-end">
           <button
             onClick={() => setShowSectionModal(true)}
@@ -380,7 +397,7 @@ export default function InsightsPage() {
         <>
           {/* 0. 히어로 — 이달 지출 총액 강조 */}
           <HeroSummary
-            label={`${Number(monthStr.split('-')[1])}월 지출`}
+            label={`${currentMonth + 1}월 지출`}
             amount={expenseStats?.total ?? 0}
             sublabel={`수입 ${formatAmount(incomeStats?.total ?? 0)}`}
           />

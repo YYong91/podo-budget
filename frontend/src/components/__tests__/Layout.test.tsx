@@ -25,7 +25,7 @@ function MockFloatingTabBar({ onInputOpen, hasUnreadChangelog }: { onInputOpen: 
   return (
     <nav aria-label="하단 탭 메뉴" data-testid="floating-tab-bar">
       <a href="/home" aria-label="가계부" aria-current={isActive('/home') ? 'page' : undefined}>가계부</a>
-      <a href="/insights" aria-label="돌아보기" aria-current={isActive('/insights') ? 'page' : undefined}>돌아보기</a>
+      <a href="/insights" aria-label="모아보기" aria-current={isActive('/insights') ? 'page' : undefined}>모아보기</a>
       <a href="/settings" aria-label="더보기" aria-current={isActive('/settings') ? 'page' : undefined}>
         더보기
         {hasUnreadChangelog && <span className="bg-red-500 rounded-full w-2 h-2" />}
@@ -116,7 +116,7 @@ describe('Layout', () => {
     it('모든 네비게이션 항목을 표시한다 (사이드바 + 하단 탭 바)', () => {
       renderLayout()
       expect(screen.getAllByRole('link', { name: '가계부' }).length).toBe(2)
-      expect(screen.getAllByRole('link', { name: /돌아보기/i }).length).toBe(2)
+      expect(screen.getAllByRole('link', { name: /모아보기/i }).length).toBe(2)
       // FEATURES.assets=false일 때 자산 탭은 표시되지 않아야 한다
       if (FEATURES.assets) {
         expect(screen.getAllByRole('link', { name: /^자산$/i }).length).toBe(2)
@@ -136,7 +136,7 @@ describe('Layout', () => {
 
     it('다른 경로의 네비게이션 항목에는 aria-current가 없다', () => {
       renderLayout('/home')
-      const reportLinks = screen.getAllByRole('link', { name: /돌아보기/i })
+      const reportLinks = screen.getAllByRole('link', { name: /모아보기/i })
       reportLinks.forEach(link => {
         expect(link).not.toHaveAttribute('aria-current')
       })

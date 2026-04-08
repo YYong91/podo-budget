@@ -343,14 +343,20 @@ async def _handle_change_payment_command(utterance: str, bot_user: Any, db: Asyn
         if category and (category.exclude_auto_payment or category.is_savings):
             return make_simple_text_response("저축성 지출은 결제수단을 설정할 수 없어요.")
 
-    # 사용자의 결제수단 목록 (display_order 순, 현재 제외, 상위 3개)
+    # 사용자의 결제수단 + 시스템 기본 결제수단 (현금, 계좌이체)
+    household_id = expense.household_id or active_household_id
     pm_query = (
         select(PaymentMethod)
         .where(
-            PaymentMethod.household_id == (expense.household_id or active_household_id),
-            PaymentMethod.is_active == True,  # noqa: E712
+            or_(
+                and_(
+                    PaymentMethod.household_id == household_id,
+                    PaymentMethod.is_active == True,  # noqa: E712
+                ),
+                PaymentMethod.is_system == True,  # noqa: E712
+            ),
         )
-        .order_by(PaymentMethod.display_order.asc(), PaymentMethod.id.asc())
+        .order_by(PaymentMethod.is_system.desc(), PaymentMethod.display_order.asc(), PaymentMethod.id.asc())
     )
     pm_result = await db.execute(pm_query)
     all_pms = list(pm_result.scalars().all())

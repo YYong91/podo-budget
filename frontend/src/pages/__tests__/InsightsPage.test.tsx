@@ -54,7 +54,7 @@ describe('InsightsPage', () => {
     renderWithQuery(<InsightsPage />)
     await waitFor(() => {
       const now = new Date()
-      expect(screen.getByText(`${now.getFullYear()}년 ${now.getMonth() + 1}월`)).toBeInTheDocument()
+      expect(screen.getByText(`${now.getMonth() + 1}월`)).toBeInTheDocument()
     })
   })
 

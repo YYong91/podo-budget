@@ -228,6 +228,8 @@ async def test_expenses_search_summary(db_session, test_user, test_household):
         category_id=None,
         household_id=test_household.id,
         member_user_id=None,
+        min_amount=None,
+        max_amount=None,
         current_user=test_user,
         db=db_session,
     )
@@ -331,6 +333,8 @@ async def test_expenses_get_list_with_filters(db_session, test_user, test_househ
         household_id=test_household.id,
         member_user_id=test_user.id,
         query="필터",
+        min_amount=None,
+        max_amount=None,
         current_user=test_user,
         db=db_session,
     )
@@ -580,6 +584,8 @@ async def test_income_search_summary(db_session, test_user, test_household):
         category_id=None,
         household_id=test_household.id,
         member_user_id=None,
+        min_amount=None,
+        max_amount=None,
         current_user=test_user,
         db=db_session,
     )
@@ -646,6 +652,8 @@ async def test_income_list_with_filters(db_session, test_user, test_household):
         household_id=test_household.id,
         member_user_id=None,
         query="필터",
+        min_amount=None,
+        max_amount=None,
         current_user=test_user,
         db=db_session,
     )

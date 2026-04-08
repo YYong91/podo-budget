@@ -51,6 +51,8 @@ export const handlers = [
     const categoryId = url.searchParams.get('category_id')
 
     const query = url.searchParams.get('query')
+    const minAmount = url.searchParams.get('min_amount')
+    const maxAmount = url.searchParams.get('max_amount')
 
     let filtered = [...mockExpenses]
 
@@ -70,6 +72,12 @@ export const handlers = [
     }
     if (categoryId) {
       filtered = filtered.filter((e) => e.category_id === Number(categoryId))
+    }
+    if (minAmount) {
+      filtered = filtered.filter((e) => e.amount >= Number(minAmount))
+    }
+    if (maxAmount) {
+      filtered = filtered.filter((e) => e.amount <= Number(maxAmount))
     }
 
     // 페이지네이션 적용
@@ -98,9 +106,12 @@ export const handlers = [
   http.get(`${BASE_URL}/expenses/search/summary`, ({ request }) => {
     const url = new URL(request.url)
     const query = url.searchParams.get('query')
-    const filtered = query
-      ? mockExpenses.filter((e) => e.description.toLowerCase().includes(query.toLowerCase()))
-      : mockExpenses
+    const minAmount = url.searchParams.get('min_amount')
+    const maxAmount = url.searchParams.get('max_amount')
+    let filtered = [...mockExpenses]
+    if (query) filtered = filtered.filter((e) => e.description.toLowerCase().includes(query.toLowerCase()))
+    if (minAmount) filtered = filtered.filter((e) => e.amount >= Number(minAmount))
+    if (maxAmount) filtered = filtered.filter((e) => e.amount <= Number(maxAmount))
     return HttpResponse.json({
       total_count: filtered.length,
       total_amount: filtered.reduce((sum, e) => sum + e.amount, 0),
@@ -203,8 +214,9 @@ export const handlers = [
     const limit = Number(url.searchParams.get('limit')) || 20
     const startDate = url.searchParams.get('start_date')
     const endDate = url.searchParams.get('end_date')
-
     const query = url.searchParams.get('query')
+    const minAmount = url.searchParams.get('min_amount')
+    const maxAmount = url.searchParams.get('max_amount')
 
     let filtered = [...mockIncomes]
     if (query) {
@@ -214,6 +226,8 @@ export const handlers = [
     }
     if (startDate) filtered = filtered.filter((i) => i.date >= startDate)
     if (endDate) filtered = filtered.filter((i) => i.date <= endDate)
+    if (minAmount) filtered = filtered.filter((i) => i.amount >= Number(minAmount))
+    if (maxAmount) filtered = filtered.filter((i) => i.amount <= Number(maxAmount))
 
     const paginated = filtered.slice(skip, skip + limit)
     return HttpResponse.json(paginated)
@@ -233,9 +247,12 @@ export const handlers = [
   http.get(`${BASE_URL}/income/search/summary`, ({ request }) => {
     const url = new URL(request.url)
     const query = url.searchParams.get('query')
-    const filtered = query
-      ? mockIncomes.filter((i) => i.description.toLowerCase().includes(query.toLowerCase()))
-      : mockIncomes
+    const minAmount = url.searchParams.get('min_amount')
+    const maxAmount = url.searchParams.get('max_amount')
+    let filtered = [...mockIncomes]
+    if (query) filtered = filtered.filter((i) => i.description.toLowerCase().includes(query.toLowerCase()))
+    if (minAmount) filtered = filtered.filter((i) => i.amount >= Number(minAmount))
+    if (maxAmount) filtered = filtered.filter((i) => i.amount <= Number(maxAmount))
     return HttpResponse.json({
       total_count: filtered.length,
       total_amount: filtered.reduce((sum, i) => sum + i.amount, 0),

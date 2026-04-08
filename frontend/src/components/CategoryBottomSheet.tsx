@@ -3,7 +3,7 @@
  * @description 카테고리 선택 바텀시트 — 모바일에서는 하단 시트, PC에서는 중앙 모달
  */
 
-import { useEffect, useRef } from 'react'
+import { useEffect } from 'react'
 import { X } from 'lucide-react'
 import type { Category } from '../types'
 
@@ -29,7 +29,14 @@ export default function CategoryBottomSheet({
   saving = false,
   title = '카테고리 변경',
 }: CategoryBottomSheetProps) {
-  const sheetRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden'
+    }
+    return () => {
+      document.body.style.overflow = ''
+    }
+  }, [isOpen])
 
   useEffect(() => {
     if (!isOpen) return
@@ -39,15 +46,6 @@ export default function CategoryBottomSheet({
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
   }, [isOpen, onClose])
-
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden'
-    }
-    return () => {
-      document.body.style.overflow = ''
-    }
-  }, [isOpen])
 
   if (!isOpen) return null
 
@@ -68,7 +66,6 @@ export default function CategoryBottomSheet({
         onClick={onClose}
       />
       <div
-        ref={sheetRef}
         className="relative w-full md:max-w-sm bg-[var(--surface-card)] rounded-t-2xl md:rounded-2xl max-h-[60vh] flex flex-col animate-sheet-up md:animate-none"
       >
         <div className="flex items-center justify-between px-4 pt-4 pb-2 border-b border-[var(--border-subtle)]">
@@ -77,7 +74,7 @@ export default function CategoryBottomSheet({
             <X className="w-4 h-4 text-[var(--text-muted)]" />
           </button>
         </div>
-        <div className="overflow-y-auto p-2">
+        <div className="overflow-y-auto overscroll-contain p-2">
           {saving ? (
             <div className="flex items-center justify-center py-8">
               <div className="animate-spin rounded-full border-b-2 border-warm-400 w-5 h-5" />
@@ -96,10 +93,11 @@ export default function CategoryBottomSheet({
                 <button
                   key={cat.id}
                   onClick={() => onSelect(cat.id)}
-                  className={`w-full text-left px-3 py-2.5 rounded-lg text-sm transition-colors ${
+                  className={`w-full text-left px-3 py-2.5 rounded-lg text-sm transition-colors flex items-center gap-2 ${
                     currentCategoryId === cat.id ? activeClass : 'text-[var(--text-secondary)] hover:bg-[var(--surface-hover)]'
                   }`}
                 >
+                  {cat.emoji && <span className="text-base leading-none">{cat.emoji}</span>}
                   {cat.name}
                 </button>
               ))}

@@ -55,6 +55,8 @@ def _apply_income_filters(  # type: ignore[no-untyped-def]
     end_date: str | None,
     category_id: int | None,
     member_user_id: int | None,
+    min_amount: int | None = None,
+    max_amount: int | None = None,
 ) -> object:
     """수입 공통 필터 적용"""
     if member_user_id is not None:
@@ -71,6 +73,10 @@ def _apply_income_filters(  # type: ignore[no-untyped-def]
         stmt = stmt.where(Income.date <= end_dt)
     if category_id is not None:
         stmt = stmt.where(Income.category_id == category_id)
+    if min_amount is not None:
+        stmt = stmt.where(Income.amount >= min_amount)
+    if max_amount is not None:
+        stmt = stmt.where(Income.amount <= max_amount)
     return stmt
 
 
@@ -106,6 +112,8 @@ async def get_incomes(
     household_id: int | None = None,
     member_user_id: int | None = Query(None, description="가구 내 특정 멤버의 수입만 조회"),
     query: str | None = Query(None, description="설명(description) 텍스트 검색"),
+    min_amount: int | None = Query(None, ge=1, description="최소 금액 (원 단위)"),
+    max_amount: int | None = Query(None, ge=1, description="최대 금액 (원 단위)"),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> object:
@@ -123,6 +131,8 @@ async def get_incomes(
         end_date=end_date,
         category_id=category_id,
         member_user_id=member_user_id,
+        min_amount=min_amount,
+        max_amount=max_amount,
     )
 
     stmt = stmt.order_by(Income.date.desc()).offset(skip).limit(limit)
@@ -234,6 +244,8 @@ async def get_incomes_search_summary(
     category_id: int | None = None,
     household_id: int | None = None,
     member_user_id: int | None = Query(None, description="가구 내 특정 멤버"),
+    min_amount: int | None = Query(None, ge=1, description="최소 금액 (원 단위)"),
+    max_amount: int | None = Query(None, ge=1, description="최대 금액 (원 단위)"),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> object:
@@ -250,6 +262,8 @@ async def get_incomes_search_summary(
         end_date=end_date,
         category_id=category_id,
         member_user_id=member_user_id,
+        min_amount=min_amount,
+        max_amount=max_amount,
     )
 
     result = await db.execute(stmt)

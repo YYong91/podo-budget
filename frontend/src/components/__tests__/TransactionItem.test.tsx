@@ -35,8 +35,9 @@ describe('TransactionItem', () => {
   it('지출 항목의 설명과 금액을 렌더링한다', () => {
     renderItem()
     expect(screen.getByText('김치찌개')).toBeInTheDocument()
-    // 금액은 '-' + formatAmount(8000) → '-₩8,000' 형태로 렌더링됨
-    expect(screen.getByText(/-₩8,000/)).toBeInTheDocument()
+    // 지출은 - 부호 없이 ₩8,000 형태로 렌더링
+    expect(screen.getByText(/₩8,000/)).toBeInTheDocument()
+    expect(screen.queryByText(/-₩8,000/)).not.toBeInTheDocument()
   })
 
   it('수입 항목은 + 부호와 함께 표시한다', () => {

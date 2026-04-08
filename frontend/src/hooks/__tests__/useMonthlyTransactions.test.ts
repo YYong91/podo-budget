@@ -118,6 +118,28 @@ describe('useMonthlyTransactions', () => {
     })
   })
 
+  describe('navigateToMonth', () => {
+    it('특정 연도/월로 직접 이동한다', () => {
+      const { result } = renderHook(() =>
+        useMonthlyTransactions({ activeHouseholdId: 1 }), { wrapper: createQueryWrapper() })
+
+      result.current.navigateToMonth(2025, 2) // 2025년 3월 (0-indexed)
+
+      expect(mockSetSearchParams).toHaveBeenCalled()
+      const updatedParams = mockSearchParams
+      expect(updatedParams.get('month')).toBe('2025-03')
+    })
+
+    it('연도를 넘나드는 월 이동도 처리한다', () => {
+      const { result } = renderHook(() =>
+        useMonthlyTransactions({ activeHouseholdId: 1 }), { wrapper: createQueryWrapper() })
+
+      result.current.navigateToMonth(2024, 11) // 2024년 12월
+
+      expect(mockSearchParams.get('month')).toBe('2024-12')
+    })
+  })
+
   describe('월 레이블', () => {
     it('현재 월의 한국어 레이블을 반환한다', () => {
       mockSearchParams.set('month', '2025-03')
@@ -125,7 +147,7 @@ describe('useMonthlyTransactions', () => {
       const { result } = renderHook(() =>
         useMonthlyTransactions({ activeHouseholdId: 1 }), { wrapper: createQueryWrapper() })
 
-      expect(result.current.monthLabel).toBe('2025년 3월')
+      expect(result.current.monthLabel).toBe('3월')
     })
   })
 

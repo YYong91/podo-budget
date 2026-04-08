@@ -88,12 +88,18 @@ export function useMonthlyTransactions({ activeHouseholdId }: UseMonthlyTransact
     }, { replace: true })
   }, [setSearchParams])
 
-  // 월 이동
+  // 월 이동 (상대적)
   const navigateMonth = useCallback((delta: number) => {
     const d = new Date(currentYear, currentMonth + delta, 1)
     const pad = (n: number) => String(n).padStart(2, '0')
     setParams({ month: `${d.getFullYear()}-${pad(d.getMonth() + 1)}` })
   }, [currentYear, currentMonth, setParams])
+
+  // 월 이동 (절대값) — MonthPicker에서 특정 연도/월로 직접 이동
+  const navigateToMonth = useCallback((year: number, month: number) => {
+    const pad = (n: number) => String(n).padStart(2, '0')
+    setParams({ month: `${year}-${pad(month + 1)}` })
+  }, [setParams])
 
   // 월별 데이터 쿼리 (지출 + 수입 + 정기거래)
   const { start, end } = getMonthRange(currentYear, currentMonth)
@@ -239,7 +245,7 @@ export function useMonthlyTransactions({ activeHouseholdId }: UseMonthlyTransact
     return { grouped, totalExpense, totalIncome, daySummaries }
   }, [expenses, incomes, categoryFilter, categoryMap])
 
-  const monthLabel = `${currentYear}년 ${currentMonth + 1}월`
+  const monthLabel = `${currentMonth + 1}월`
 
   return {
     // 날짜 네비게이션
@@ -247,6 +253,7 @@ export function useMonthlyTransactions({ activeHouseholdId }: UseMonthlyTransact
     currentMonth,
     monthLabel,
     navigateMonth,
+    navigateToMonth,
 
     // 데이터
     expenses,

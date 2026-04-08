@@ -6,7 +6,7 @@
 
 /* eslint-disable react-hooks/refs -- search 훅이 반환하는 객체 내 refs와 값을 함께 사용하므로 린터 오탐 발생 */
 
-import { useMemo } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { Search, X } from 'lucide-react'
 import EmptyState from '../EmptyState'
 import TransactionItem from '../TransactionItem'
@@ -27,6 +27,10 @@ interface SearchModeProps {
   memberMap: Map<number, string> | null
 }
 
+// 금액 칩 라벨 (만원 단위는 10000 이상일 때만 축약)
+const formatAmountLabel = (n: number) =>
+  n >= 10000 ? `${Math.floor(n / 10000)}만원` : `${n.toLocaleString()}원`
+
 export default function SearchMode({
   search,
   monthly,
@@ -43,6 +47,50 @@ export default function SearchMode({
     }
     return '카테고리'
   }, [search.searchCategoryId, monthly.categoryMap])
+
+  // 기간 직접 입력 — 로컬 상태 (URL에는 적용 버튼 클릭 시 반영)
+  const [localStart, setLocalStart] = useState(search.searchStartDate)
+  const [localEnd, setLocalEnd] = useState(search.searchEndDate)
+  useEffect(() => { setLocalStart(search.searchStartDate) }, [search.searchStartDate])
+  useEffect(() => { setLocalEnd(search.searchEndDate) }, [search.searchEndDate])
+
+  // 금액 범위 — 로컬 상태 (적용 버튼 클릭 시 URL 반영)
+  const [localMinAmount, setLocalMinAmount] = useState(search.searchMinAmount !== null ? String(search.searchMinAmount) : '')
+  const [localMaxAmount, setLocalMaxAmount] = useState(search.searchMaxAmount !== null ? String(search.searchMaxAmount) : '')
+  useEffect(() => { setLocalMinAmount(search.searchMinAmount !== null ? String(search.searchMinAmount) : '') }, [search.searchMinAmount])
+  useEffect(() => { setLocalMaxAmount(search.searchMaxAmount !== null ? String(search.searchMaxAmount) : '') }, [search.searchMaxAmount])
+  const [amountPanelOpen, setAmountPanelOpen] = useState(false)
+  const [amountError, setAmountError] = useState<string | null>(null)
+
+  // 금액 패널 외부 클릭 시 닫기
+  useEffect(() => {
+    if (!amountPanelOpen) return
+    const handleClick = () => { setAmountPanelOpen(false); setAmountError(null) }
+    document.addEventListener('pointerdown', handleClick)
+    return () => document.removeEventListener('pointerdown', handleClick)
+  }, [amountPanelOpen])
+
+  const amountChipLabel = useMemo(() => {
+    if (search.searchMinAmount !== null && search.searchMaxAmount !== null) {
+      return `${formatAmountLabel(search.searchMinAmount)} ~ ${formatAmountLabel(search.searchMaxAmount)}`
+    }
+    if (search.searchMinAmount !== null) return `${formatAmountLabel(search.searchMinAmount)} 이상`
+    if (search.searchMaxAmount !== null) return `${formatAmountLabel(search.searchMaxAmount)} 이하`
+    return '금액'
+  }, [search.searchMinAmount, search.searchMaxAmount])
+
+  // 기간 칩 라벨
+  const periodChipLabel = useMemo(() => {
+    if (search.searchPeriod === 'custom') {
+      if (search.searchStartDate || search.searchEndDate) {
+        // YYYY-MM-DD → MM.DD 형식으로 축약
+        const fmt = (d: string) => d ? d.slice(5).replace('-', '.') : '?'
+        return `${fmt(search.searchStartDate)} ~ ${fmt(search.searchEndDate)}`
+      }
+      return '직접 입력'
+    }
+    return { all: '기간: 전체', '1m': '최근 1개월', '3m': '최근 3개월', '6m': '최근 6개월', year: '올해' }[search.searchPeriod] ?? '기간'
+  }, [search.searchPeriod, search.searchStartDate, search.searchEndDate])
 
   return (
     <>
@@ -94,7 +142,7 @@ export default function SearchMode({
               ].map(opt => (
                 <button
                   key={opt.value}
-                  onClick={() => search.setSearchFilter('type', opt.value === 'all' ? null : opt.value)}
+                  onClick={() => { search.setSearchFilter('type', opt.value === 'all' ? null : opt.value); search.setOpenFilter(null); }}
                   className={`w-full text-left px-4 py-2 text-sm hover:bg-[var(--surface-hover)] ${
                     search.searchType === opt.value ? 'text-grape-600 font-medium' : 'text-[var(--text-primary)]'
                   }`}
@@ -134,7 +182,7 @@ export default function SearchMode({
                 : 'bg-[var(--surface-hover)] text-[var(--text-secondary)]'
             }`}
           >
-            {{ all: '기간: 전체', '1m': '최근 1개월', '3m': '최근 3개월', '6m': '최근 6개월', year: '올해' }[search.searchPeriod]}
+            {periodChipLabel}
           </button>
           {search.openFilter === 'period' && (
             <div className="absolute top-full left-0 mt-1 bg-[var(--surface-card)] rounded-xl shadow-lg border border-[var(--border-default)] py-1 z-20 min-w-[130px]">
@@ -144,6 +192,7 @@ export default function SearchMode({
                 { value: '3m', label: '최근 3개월' },
                 { value: '6m', label: '최근 6개월' },
                 { value: 'year', label: '올해' },
+                { value: 'custom', label: '직접 입력' },
               ].map(opt => (
                 <button
                   key={opt.value}
@@ -158,7 +207,153 @@ export default function SearchMode({
             </div>
           )}
         </div>
+
+        {/* 정렬 */}
+        <div className="relative" onPointerDown={(e) => e.stopPropagation()}>
+          <button
+            onClick={() => search.setOpenFilter(search.openFilter === 'sort' ? null : 'sort')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+              search.searchSortBy !== 'date' || search.searchSortOrder !== 'desc'
+                ? 'bg-grape-600 text-white'
+                : 'bg-[var(--surface-hover)] text-[var(--text-secondary)]'
+            }`}
+          >
+            {{ date_desc: '최신순', date_asc: '오래된 순', amount_desc: '금액 높은 순', amount_asc: '금액 낮은 순' }[`${search.searchSortBy}_${search.searchSortOrder}`] ?? '최신순'}
+          </button>
+          {search.openFilter === 'sort' && (
+            <div className="absolute top-full left-0 mt-1 bg-[var(--surface-card)] rounded-xl shadow-lg border border-[var(--border-default)] py-1 z-20 min-w-[140px]">
+              {[
+                { sortBy: 'date' as const, sortOrder: 'desc' as const, label: '최신순' },
+                { sortBy: 'date' as const, sortOrder: 'asc' as const, label: '오래된 순' },
+                { sortBy: 'amount' as const, sortOrder: 'desc' as const, label: '금액 높은 순' },
+                { sortBy: 'amount' as const, sortOrder: 'asc' as const, label: '금액 낮은 순' },
+              ].map(opt => (
+                <button
+                  key={`${opt.sortBy}_${opt.sortOrder}`}
+                  onClick={() => { search.setSortOrder(opt.sortBy, opt.sortOrder); search.setOpenFilter(null); }}
+                  className={`w-full text-left px-4 py-2 text-sm hover:bg-[var(--surface-hover)] ${
+                    search.searchSortBy === opt.sortBy && search.searchSortOrder === opt.sortOrder
+                      ? 'text-grape-600 font-medium'
+                      : 'text-[var(--text-primary)]'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* 금액 */}
+        <div onPointerDown={(e) => e.stopPropagation()}>
+          <button
+            onClick={() => { setAmountPanelOpen(prev => !prev); setAmountError(null) }}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+              search.amountActive
+                ? 'bg-grape-600 text-white'
+                : 'bg-[var(--surface-hover)] text-[var(--text-secondary)]'
+            }`}
+          >
+            {amountChipLabel}
+          </button>
+        </div>
       </div>
+
+      {/* 직접 입력 — custom 선택 시 날짜 범위 인풋 노출 */}
+      {search.searchPeriod === 'custom' && (
+        <div className="flex items-center gap-2">
+          <label htmlFor="search-start-date" className="sr-only">시작일</label>
+          <input
+            id="search-start-date"
+            aria-label="시작일"
+            type="date"
+            value={localStart}
+            max={localEnd || undefined}
+            onChange={(e) => setLocalStart(e.target.value)}
+            className="flex-1 px-3 py-2 rounded-xl border border-[var(--border-default)] bg-[var(--surface-card)] text-sm text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-grape-300"
+          />
+          <span className="text-[var(--text-muted)] text-sm shrink-0">~</span>
+          <label htmlFor="search-end-date" className="sr-only">종료일</label>
+          <input
+            id="search-end-date"
+            aria-label="종료일"
+            type="date"
+            value={localEnd}
+            min={localStart || undefined}
+            onChange={(e) => setLocalEnd(e.target.value)}
+            className="flex-1 px-3 py-2 rounded-xl border border-[var(--border-default)] bg-[var(--surface-card)] text-sm text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-grape-300"
+          />
+          <button
+            onClick={() => search.setCustomDateRange(localStart, localEnd)}
+            className="px-3 py-2 rounded-xl bg-grape-600 text-white text-sm font-medium hover:bg-grape-700 transition-colors shrink-0"
+          >
+            적용
+          </button>
+        </div>
+      )}
+
+      {/* 금액 범위 입력 패널 */}
+      {amountPanelOpen && (
+        <div className="space-y-2" onPointerDown={(e) => e.stopPropagation()}>
+          <div className="flex items-center gap-2">
+            <input
+              type="number"
+              placeholder="최소 금액"
+              value={localMinAmount}
+              min={1}
+              onChange={(e) => { setLocalMinAmount(e.target.value); setAmountError(null) }}
+              className="flex-1 min-w-0 px-3 py-2 rounded-xl border border-[var(--border-default)] bg-[var(--surface-card)] text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-grape-300"
+            />
+            <span className="text-[var(--text-muted)] text-sm shrink-0">~</span>
+            <input
+              type="number"
+              placeholder="최대 금액"
+              value={localMaxAmount}
+              min={1}
+              onChange={(e) => { setLocalMaxAmount(e.target.value); setAmountError(null) }}
+              className="flex-1 min-w-0 px-3 py-2 rounded-xl border border-[var(--border-default)] bg-[var(--surface-card)] text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-grape-300"
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                const min = localMinAmount ? Number(localMinAmount) : null
+                const max = localMaxAmount ? Number(localMaxAmount) : null
+                if ((min !== null && min <= 0) || (max !== null && max <= 0)) {
+                  setAmountError('금액은 0보다 커야 해요')
+                  return
+                }
+                if (min !== null && max !== null && min > max) {
+                  setAmountError('최소 금액이 최대 금액보다 클 수 없어요')
+                  return
+                }
+                search.setAmountRange(min, max)
+                setAmountPanelOpen(false)
+              }}
+              className="flex-1 px-3 py-2 rounded-xl bg-grape-600 text-white text-sm font-medium hover:bg-grape-700 transition-colors"
+            >
+              적용
+            </button>
+            {search.amountActive && (
+              <button
+                onClick={() => {
+                  search.setAmountRange(null, null)
+                  setLocalMinAmount('')
+                  setLocalMaxAmount('')
+                  setAmountError(null)
+                  setAmountPanelOpen(false)
+                }}
+                className="flex-1 px-3 py-2 rounded-xl border border-[var(--border-default)] text-sm text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] transition-colors"
+              >
+                초기화
+              </button>
+            )}
+          </div>
+          {amountError && (
+            <p className="text-xs text-red-500 px-1">{amountError}</p>
+          )}
+        </div>
+      )}
 
       {/* 빈 검색어: 최근 검색 + 카테고리 바로가기 */}
       {!search.searchQuery && !search.hasSearchFilters && (
@@ -199,8 +394,9 @@ export default function SearchMode({
                   <button
                     key={cat.id}
                     onClick={() => search.setSearchFilter('category', String(cat.id))}
-                    className="px-3 py-1.5 rounded-lg text-xs font-medium bg-[var(--surface-hover)] text-[var(--text-secondary)] hover:bg-grape-50 hover:text-grape-600 transition-colors"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-[var(--surface-hover)] text-[var(--text-secondary)] hover:bg-grape-50 hover:text-grape-600 transition-colors"
                   >
+                    {cat.emoji && <span className="text-sm leading-none">{cat.emoji}</span>}
                     {cat.name}
                   </button>
                 ))}

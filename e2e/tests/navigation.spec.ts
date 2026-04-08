@@ -1,11 +1,11 @@
 /**
  * 네비게이션 E2E 테스트
  *
- * 3탭 네비게이션(가계부/돌아보기/더보기)과 404 페이지를 검증한다.
+ * 3탭 네비게이션(가계부/모아보기/더보기)과 404 페이지를 검증한다.
  * 자산 탭은 VITE_FEATURE_ASSETS=false 로 비활성화됨.
  * Layout.tsx의 navItems 기반:
  *   - '/home' → 가계부 (Receipt)
- *   - '/insights' → 돌아보기 (TrendingUp)
+ *   - '/insights' → 모아보기 (TrendingUp)
  *   - '/settings' → 더보기 (Settings)
  */
 
@@ -19,8 +19,8 @@ test.describe('네비게이션', () => {
     // 하단탭에 가계부 항목이 있어야 함
     await expect(page.getByText('가계부').first()).toBeVisible({ timeout: 15000 })
 
-    // 돌아보기 탭
-    await page.getByRole('link', { name: '돌아보기' }).first().click()
+    // 모아보기 탭
+    await page.getByRole('link', { name: '모아보기' }).first().click()
     await expect(page).toHaveURL('/insights')
 
     // 더보기 탭
@@ -52,7 +52,7 @@ test.describe('네비게이션', () => {
     await expect(bottomNav).toBeVisible({ timeout: 15000 })
 
     // 하단 탭 바에 3개 탭이 모두 존재하는지 확인 (자산 탭은 피처 플래그 비활성화)
-    for (const label of ['가계부', '돌아보기', '더보기']) {
+    for (const label of ['가계부', '모아보기', '더보기']) {
       await expect(bottomNav.getByText(label)).toBeVisible()
     }
   })

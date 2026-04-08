@@ -30,6 +30,8 @@ vi.mock('../../stores/useHouseholdStore', () => ({
   useHouseholdStore: (selector: (s: Record<string, unknown>) => unknown) =>
     selector({
       activeHouseholdId: 1,
+      households: [{ id: 1, name: '우리집' }],
+      setActiveHouseholdId: vi.fn(),
       currentHousehold: null,
       fetchHouseholdDetail: vi.fn(),
     }),
@@ -106,7 +108,7 @@ describe('TransactionList', () => {
     renderPage()
     // 현재 월이 표시되어야 함
     const now = new Date()
-    const monthLabel = `${now.getFullYear()}년 ${now.getMonth() + 1}월`
+    const monthLabel = `${now.getMonth() + 1}월`
     expect(screen.getByText(monthLabel)).toBeInTheDocument()
   })
 
@@ -131,7 +133,7 @@ describe('TransactionList', () => {
     const user = userEvent.setup()
     renderPage()
     const now = new Date()
-    const currentLabel = `${now.getFullYear()}년 ${now.getMonth() + 1}월`
+    const currentLabel = `${now.getMonth() + 1}월`
     expect(screen.getByText(currentLabel)).toBeInTheDocument()
 
     // 이전 월 버튼 클릭 (첫 번째 네비게이션 버튼)
@@ -141,7 +143,7 @@ describe('TransactionList', () => {
 
     // 이전 월이 표시되어야 함
     const prevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
-    const prevLabel = `${prevMonth.getFullYear()}년 ${prevMonth.getMonth() + 1}월`
+    const prevLabel = `${prevMonth.getMonth() + 1}월`
     await waitFor(() => {
       expect(screen.getByText(prevLabel)).toBeInTheDocument()
     })
@@ -271,8 +273,8 @@ describe('TransactionList', () => {
       await waitFor(() => {
         expect(screen.getByText('카테고리로 보기')).toBeInTheDocument()
         // mockCategories에 '식비', '교통'이 있음
-        expect(screen.getByRole('button', { name: '식비' })).toBeInTheDocument()
-        expect(screen.getByRole('button', { name: '교통' })).toBeInTheDocument()
+        expect(screen.getByText('식비')).toBeInTheDocument()
+        expect(screen.getByText('교통')).toBeInTheDocument()
       })
     })
 
@@ -537,7 +539,7 @@ describe('TransactionList', () => {
       renderPage('/?search=')
 
       const now = new Date()
-      const monthLabel = `${now.getFullYear()}년 ${now.getMonth() + 1}월`
+      const monthLabel = `${now.getMonth() + 1}월`
 
       await waitFor(() => {
         expect(screen.getByPlaceholderText('거래 내역 검색')).toBeInTheDocument()

@@ -1,6 +1,8 @@
-/** 금액을 ₩ 형식으로 포맷 (소수점 제거) */
+/** 금액을 ₩ 형식으로 포맷 (소수점 제거, 음수는 부호를 ₩ 앞에 표시) */
 export function formatAmount(amount: number): string {
-  return `₩${Math.round(amount).toLocaleString('ko-KR')}`
+  const rounded = Math.round(amount)
+  if (rounded < 0) return `-₩${Math.abs(rounded).toLocaleString('ko-KR')}`
+  return `₩${rounded.toLocaleString('ko-KR')}`
 }
 
 /** 금액을 ₩ 형식으로 포맷 (수입이면 + 접두사 추가) */
