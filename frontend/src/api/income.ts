@@ -12,6 +12,8 @@ interface GetIncomesParams {
   household_id?: number
   member_user_id?: number
   query?: string
+  min_amount?: number
+  max_amount?: number
 }
 
 export const incomeApi = {

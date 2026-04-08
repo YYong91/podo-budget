@@ -94,9 +94,12 @@ export function useTransactionSearch({ activeHouseholdId }: UseTransactionSearch
   const searchPeriod = (searchParams.get('period') as 'all' | '1m' | '3m' | '6m' | 'year' | 'custom') || 'all'
   const searchStartDate = searchParams.get('start_date') ?? ''
   const searchEndDate = searchParams.get('end_date') ?? ''
+  const searchMinAmount = searchParams.get('min_amount') ? Number(searchParams.get('min_amount')) : null
+  const searchMaxAmount = searchParams.get('max_amount') ? Number(searchParams.get('max_amount')) : null
   // custom 기간은 날짜가 실제로 입력된 경우에만 필터로 간주
   const periodActive = searchPeriod !== 'all' && !(searchPeriod === 'custom' && !searchStartDate && !searchEndDate)
-  const hasSearchFilters = !!(searchCategoryId || periodActive || searchType !== 'all')
+  const amountActive = !!(searchMinAmount || searchMaxAmount)
+  const hasSearchFilters = !!(searchCategoryId || periodActive || searchType !== 'all' || amountActive)
 
   // 검색 결과 상태
   const [searchResults, setSearchResults] = useState<UnifiedTransaction[]>([])
@@ -165,6 +168,14 @@ export function useTransactionSearch({ activeHouseholdId }: UseTransactionSearch
     setOpenFilter(null)
   }, [setParams])
 
+  // 금액 범위 설정 (null이면 해당 파라미터 제거)
+  const setAmountRange = useCallback((min: number | null, max: number | null) => {
+    setParams({
+      min_amount: min !== null ? String(min) : null,
+      max_amount: max !== null ? String(max) : null,
+    })
+  }, [setParams])
+
   // 검색 API 호출 (append=true: 무한 스크롤 추가 로드)
   const fetchSearchResults = useCallback(async (append = false) => {
     if (!activeHouseholdId || (!searchQuery && !hasSearchFilters)) return
@@ -186,6 +197,8 @@ export function useTransactionSearch({ activeHouseholdId }: UseTransactionSearch
         household_id: activeHouseholdId,
         ...dateRange,
         ...(searchCategoryId && { category_id: searchCategoryId }),
+        ...(searchMinAmount && { min_amount: searchMinAmount }),
+        ...(searchMaxAmount && { max_amount: searchMaxAmount }),
       }
 
       const fetchExpenses = searchType !== 'income'
@@ -233,7 +246,7 @@ export function useTransactionSearch({ activeHouseholdId }: UseTransactionSearch
       setSearchLoadingMore(false)
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps -- addToast는 안정적 참조
-  }, [searchQuery, activeHouseholdId, searchType, searchCategoryId, searchPeriod, searchStartDate, searchEndDate])
+  }, [searchQuery, activeHouseholdId, searchType, searchCategoryId, searchPeriod, searchStartDate, searchEndDate, searchMinAmount, searchMaxAmount])
 
   // 검색어 또는 필터 변경 시 검색 실행
   useEffect(() => {
@@ -249,7 +262,7 @@ export function useTransactionSearch({ activeHouseholdId }: UseTransactionSearch
       setSearchSummary(null)
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps -- fetchSearchResults 내부에서 동일 state 참조
-  }, [isSearchMode, searchQuery, searchType, searchCategoryId, searchPeriod, searchStartDate, searchEndDate])
+  }, [isSearchMode, searchQuery, searchType, searchCategoryId, searchPeriod, searchStartDate, searchEndDate, searchMinAmount, searchMaxAmount])
 
   // 검색 모드 진입 시 인풋 포커스
   useEffect(() => {
@@ -304,6 +317,9 @@ export function useTransactionSearch({ activeHouseholdId }: UseTransactionSearch
     searchPeriod,
     searchStartDate,
     searchEndDate,
+    searchMinAmount,
+    searchMaxAmount,
+    amountActive,
     hasSearchFilters,
 
     // 검색 결과
@@ -333,6 +349,7 @@ export function useTransactionSearch({ activeHouseholdId }: UseTransactionSearch
     submitSearch,
     setSearchFilter,
     setCustomDateRange,
+    setAmountRange,
     fetchSearchResults,
   }
 }
