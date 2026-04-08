@@ -27,6 +27,10 @@ interface SearchModeProps {
   memberMap: Map<number, string> | null
 }
 
+// 금액 칩 라벨 (만원 단위는 10000 이상일 때만 축약)
+const formatAmountLabel = (n: number) =>
+  n >= 10000 ? `${Math.floor(n / 10000)}만원` : `${n.toLocaleString()}원`
+
 export default function SearchMode({
   search,
   monthly,
@@ -47,10 +51,14 @@ export default function SearchMode({
   // 기간 직접 입력 — 로컬 상태 (URL에는 적용 버튼 클릭 시 반영)
   const [localStart, setLocalStart] = useState(search.searchStartDate)
   const [localEnd, setLocalEnd] = useState(search.searchEndDate)
+  useEffect(() => { setLocalStart(search.searchStartDate) }, [search.searchStartDate])
+  useEffect(() => { setLocalEnd(search.searchEndDate) }, [search.searchEndDate])
 
   // 금액 범위 — 로컬 상태 (적용 버튼 클릭 시 URL 반영)
   const [localMinAmount, setLocalMinAmount] = useState(search.searchMinAmount !== null ? String(search.searchMinAmount) : '')
   const [localMaxAmount, setLocalMaxAmount] = useState(search.searchMaxAmount !== null ? String(search.searchMaxAmount) : '')
+  useEffect(() => { setLocalMinAmount(search.searchMinAmount !== null ? String(search.searchMinAmount) : '') }, [search.searchMinAmount])
+  useEffect(() => { setLocalMaxAmount(search.searchMaxAmount !== null ? String(search.searchMaxAmount) : '') }, [search.searchMaxAmount])
   const [amountPanelOpen, setAmountPanelOpen] = useState(false)
   const [amountError, setAmountError] = useState<string | null>(null)
 
@@ -62,10 +70,6 @@ export default function SearchMode({
     return () => document.removeEventListener('pointerdown', handleClick)
   }, [amountPanelOpen])
 
-  // 금액 칩 라벨 (만원 단위는 10000 이상일 때만 축약)
-  const formatAmountLabel = (n: number) =>
-    n >= 10000 ? `${Math.floor(n / 10000)}만원` : `${n.toLocaleString()}원`
-
   const amountChipLabel = useMemo(() => {
     if (search.searchMinAmount !== null && search.searchMaxAmount !== null) {
       return `${formatAmountLabel(search.searchMinAmount)} ~ ${formatAmountLabel(search.searchMaxAmount)}`
@@ -73,7 +77,6 @@ export default function SearchMode({
     if (search.searchMinAmount !== null) return `${formatAmountLabel(search.searchMinAmount)} 이상`
     if (search.searchMaxAmount !== null) return `${formatAmountLabel(search.searchMaxAmount)} 이하`
     return '금액'
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- formatAmountLabel은 순수 함수
   }, [search.searchMinAmount, search.searchMaxAmount])
 
   // 기간 칩 라벨
@@ -316,6 +319,10 @@ export default function SearchMode({
               onClick={() => {
                 const min = localMinAmount ? Number(localMinAmount) : null
                 const max = localMaxAmount ? Number(localMaxAmount) : null
+                if ((min !== null && min <= 0) || (max !== null && max <= 0)) {
+                  setAmountError('금액은 0보다 커야 해요')
+                  return
+                }
                 if (min !== null && max !== null && min > max) {
                   setAmountError('최소 금액이 최대 금액보다 클 수 없어요')
                   return

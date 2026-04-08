@@ -194,8 +194,8 @@ export default function TransactionList() {
 
   return (
     <>
-    <PullToRefresh onRefresh={handleRefresh}>
-    <div className="space-y-4 animate-page-in">
+      <PullToRefresh onRefresh={handleRefresh}>
+        <div className="space-y-4 animate-page-in">
       {search.isSearchMode ? (
         <SearchMode
           search={search}
@@ -230,8 +230,8 @@ export default function TransactionList() {
         />
       )}
 
-    </div>
-    </PullToRefresh>
+        </div>
+      </PullToRefresh>
 
       {/* 가구 전환 바텀시트 — PullToRefresh 바깥에 배치 (터치 이벤트 충돌 방지) */}
       <HouseholdBottomSheet
