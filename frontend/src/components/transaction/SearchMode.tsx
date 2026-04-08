@@ -250,8 +250,9 @@ export default function SearchMode({
                   <button
                     key={cat.id}
                     onClick={() => search.setSearchFilter('category', String(cat.id))}
-                    className="px-3 py-1.5 rounded-lg text-xs font-medium bg-[var(--surface-hover)] text-[var(--text-secondary)] hover:bg-grape-50 hover:text-grape-600 transition-colors"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-[var(--surface-hover)] text-[var(--text-secondary)] hover:bg-grape-50 hover:text-grape-600 transition-colors"
                   >
+                    {cat.emoji && <span className="text-sm leading-none">{cat.emoji}</span>}
                     {cat.name}
                   </button>
                 ))}

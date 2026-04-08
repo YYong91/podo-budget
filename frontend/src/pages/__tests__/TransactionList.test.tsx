@@ -273,8 +273,8 @@ describe('TransactionList', () => {
       await waitFor(() => {
         expect(screen.getByText('카테고리로 보기')).toBeInTheDocument()
         // mockCategories에 '식비', '교통'이 있음
-        expect(screen.getByRole('button', { name: '식비' })).toBeInTheDocument()
-        expect(screen.getByRole('button', { name: '교통' })).toBeInTheDocument()
+        expect(screen.getByText('식비')).toBeInTheDocument()
+        expect(screen.getByText('교통')).toBeInTheDocument()
       })
     })
 
