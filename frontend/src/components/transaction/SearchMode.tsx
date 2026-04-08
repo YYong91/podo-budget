@@ -139,7 +139,7 @@ export default function SearchMode({
               ].map(opt => (
                 <button
                   key={opt.value}
-                  onClick={() => search.setSearchFilter('type', opt.value === 'all' ? null : opt.value)}
+                  onClick={() => { search.setSearchFilter('type', opt.value === 'all' ? null : opt.value); search.setOpenFilter(null); }}
                   className={`w-full text-left px-4 py-2 text-sm hover:bg-[var(--surface-hover)] ${
                     search.searchType === opt.value ? 'text-grape-600 font-medium' : 'text-[var(--text-primary)]'
                   }`}
@@ -227,7 +227,7 @@ export default function SearchMode({
               ].map(opt => (
                 <button
                   key={`${opt.sortBy}_${opt.sortOrder}`}
-                  onClick={() => search.setSortOrder(opt.sortBy, opt.sortOrder)}
+                  onClick={() => { search.setSortOrder(opt.sortBy, opt.sortOrder); search.setOpenFilter(null); }}
                   className={`w-full text-left px-4 py-2 text-sm hover:bg-[var(--surface-hover)] ${
                     search.searchSortBy === opt.sortBy && search.searchSortOrder === opt.sortOrder
                       ? 'text-grape-600 font-medium'
