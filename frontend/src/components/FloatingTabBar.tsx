@@ -21,12 +21,13 @@ interface FloatingTabBarProps {
   onInputOpen: () => void
   /** 읽지 않은 changelog 있을 때 true */
   hasUnreadChangelog?: boolean
+  /** 미확인 초대 있을 때 true — 설정 탭에 배지 표시 */
+  hasPendingInvitation?: boolean
   /** QuickInput 활성 시 true — 탭바를 페이드아웃하여 입력창과 겹치지 않게 함 */
   isHidden?: boolean
 }
 
-
-export default function FloatingTabBar({ onInputOpen, hasUnreadChangelog, isHidden }: FloatingTabBarProps) {
+export default function FloatingTabBar({ onInputOpen, hasUnreadChangelog, hasPendingInvitation, isHidden }: FloatingTabBarProps) {
   const { pathname } = useLocation()
 
   const isActive = (path: string) => pathname === path || pathname.startsWith(path + '/')
@@ -65,7 +66,7 @@ export default function FloatingTabBar({ onInputOpen, hasUnreadChangelog, isHidd
             >
               <span className="relative">
                 <Icon className={`w-5 h-5 floating-island-icon ${active ? 'stroke-[2.5]' : ''}`} />
-                {item.path === '/settings' && hasUnreadChangelog && (
+                {item.path === '/settings' && (hasUnreadChangelog || hasPendingInvitation) && (
                   <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full" />
                 )}
               </span>

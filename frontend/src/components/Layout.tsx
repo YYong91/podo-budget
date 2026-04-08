@@ -14,9 +14,10 @@ import { trackPageView } from '../utils/analytics'
 import { NAV_ITEMS } from '../constants/navItems'
 
 export default function Layout() {
-  const [householdDropdownOpen, setHouseholdDropdownOpen] = useState(false)
   const [isInputMode, setIsInputMode] = useState(false)
   const [toastData, setToastData] = useState<ActionToastData | null>(null)
+  // 데스크톱 사이드바 가구 드롭다운 상태
+  const [householdDropdownOpen, setHouseholdDropdownOpen] = useState(false)
   // iOS Safari에서 키보드를 사용자 제스처 컨텍스트에서 띄우려면 동기적으로 focus() 호출 필요
   const quickInputRef = useRef<QuickInputHandle>(null)
   const location = useLocation()
@@ -68,46 +69,6 @@ export default function Layout() {
         </div>
       )}
 
-      {/* 모바일 전용 미니 헤더 — 가구 전환/초대 배지가 있을 때만 표시 */}
-      {(pendingInvitationCount > 0 || households.length > 1) && (
-        <header className="md:hidden bg-[var(--surface-card)] border-b border-[var(--border-default)] sticky top-0 z-30 h-12 flex items-center justify-end px-4 gap-3">
-          {households.length > 1 && (
-            <div className="relative">
-              <button
-                onClick={e => { e.stopPropagation(); setHouseholdDropdownOpen(!householdDropdownOpen) }}
-                className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs bg-grape-50 hover:bg-grape-100 text-grape-600 transition-colors"
-              >
-                <Home className="w-3.5 h-3.5" />
-                <span className="font-medium truncate max-w-[100px]">{activeHousehold?.name ?? '가구'}</span>
-                <ChevronDown className="w-3 h-3 text-[var(--text-muted)]" />
-              </button>
-              {householdDropdownOpen && (
-                <div className="absolute right-0 top-full mt-1 bg-[var(--surface-card)] border border-[var(--border-default)] rounded-lg shadow-lg z-50 py-1 min-w-[140px]">
-                  {households.map(h => (
-                    <button
-                      key={h.id}
-                      onClick={() => { setActiveHouseholdId(h.id); setHouseholdDropdownOpen(false) }}
-                      className={`w-full text-left px-3 py-2 text-sm hover:bg-[var(--surface-hover)] transition-colors truncate ${
-                        h.id === activeHouseholdId ? 'text-grape-600 font-medium bg-grape-50' : 'text-[var(--text-secondary)]'
-                      }`}
-                    >
-                      {h.name}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-          {pendingInvitationCount > 0 && (
-            <Link to="/invitations" className="relative p-1.5">
-              <Mail className="w-5 h-5 text-[var(--text-tertiary)]" />
-              <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[10px] px-1 py-0.5 rounded-full min-w-[16px] text-center leading-none">
-                {pendingInvitationCount}
-              </span>
-            </Link>
-          )}
-        </header>
-      )}
 
       <div className="flex">
         {/* 데스크톱 사이드바 (md 이상에서만 표시) */}
@@ -224,6 +185,7 @@ export default function Layout() {
           }
         }}
         hasUnreadChangelog={hasUnreadChangelog}
+        hasPendingInvitation={pendingInvitationCount > 0}
         isHidden={isInputMode}
       />
       <QuickInput
