@@ -14,6 +14,12 @@
 - release/x.x.x: 릴리즈 안정화 (develop에서 분기 → main 머지)
 - hotfix/xxx: 운영 긴급 수정 (main에서 분기 → main 머지)
 
+## PR 머지 전략
+- feature/fix → develop: **Squash merge** (커밋 히스토리 정리)
+- release → main: **Merge commit** (공통 조상 유지 → 다음 release 충돌 방지)
+- hotfix → main: **Merge commit** (같은 이유)
+- squash 머지는 커밋 SHA를 새로 만들어 히스토리 연결을 끊기 때문에, main 대상 PR은 반드시 merge commit 사용
+
 ## 버전 관리
 - SemVer (x.y.z) 기반, 현재 0.x.x (정식 출시 전)
 - release → main 머지 시: minor bump (0.6.0 → 0.7.0) — 자동
@@ -60,7 +66,7 @@
 3. dev 테스트     release push → dev 환경 자동 배포
 
 4. main 머지      gh pr create --base main
-                  CI 통과 후 머지
+                  CI 통과 후 **merge commit으로 머지** (squash 아님!)
 
 5. 자동 처리      운영 배포 + vX.X.X 태그 + develop 역머지 PR (모두 자동)
 
@@ -76,7 +82,7 @@
 2. 수정 + 테스트
 
 3. main 머지      gh pr create --base main
-                  CI 통과 후 머지
+                  CI 통과 후 **merge commit으로 머지** (squash 아님!)
 
 4. 자동 처리      운영 배포 + vX.X.Z 태그 + develop 역머지 PR (모두 자동)
 

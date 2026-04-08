@@ -61,7 +61,7 @@ export default function CategoryBottomSheet({
     : 'bg-grape-50 text-grape-600 font-medium'
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end md:items-center md:justify-center" role="dialog" aria-modal="true" aria-label={title}>
+    <div className="fixed inset-0 z-50 flex items-end md:items-center md:justify-center overscroll-contain touch-none" role="dialog" aria-modal="true" aria-label={title}>
       {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- 모달 배경 오버레이: Escape 키로 닫기 지원됨 */}
       <div
         className="absolute inset-0 bg-black/40 transition-opacity"
@@ -69,7 +69,7 @@ export default function CategoryBottomSheet({
       />
       <div
         ref={sheetRef}
-        className="relative w-full md:max-w-sm bg-[var(--surface-card)] rounded-t-2xl md:rounded-2xl max-h-[60vh] flex flex-col animate-sheet-up md:animate-none"
+        className="relative w-full md:max-w-sm bg-[var(--surface-card)] rounded-t-2xl md:rounded-2xl max-h-[60vh] flex flex-col animate-sheet-up md:animate-none touch-auto"
       >
         <div className="flex items-center justify-between px-4 pt-4 pb-2 border-b border-[var(--border-subtle)]">
           <h3 className="text-sm font-semibold text-[var(--text-primary)]">{title}</h3>
@@ -77,7 +77,7 @@ export default function CategoryBottomSheet({
             <X className="w-4 h-4 text-[var(--text-muted)]" />
           </button>
         </div>
-        <div className="overflow-y-auto p-2">
+        <div className="overflow-y-auto overscroll-contain p-2">
           {saving ? (
             <div className="flex items-center justify-center py-8">
               <div className="animate-spin rounded-full border-b-2 border-warm-400 w-5 h-5" />
