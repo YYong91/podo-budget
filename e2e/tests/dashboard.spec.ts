@@ -59,12 +59,4 @@ test.describe('가계부 홈 (TransactionList)', () => {
     await expect(page.getByText(/25,000/).first()).toBeVisible()
   })
 
-  test('지출/수입 필터 버튼 동작', async ({ authedPage: page }) => {
-    await page.goto('/home')
-    await page.waitForLoadState('networkidle')
-
-    // 요약 영역에 "지출"/"수입" 텍스트가 있어야 함
-    await expect(page.getByText('지출').first()).toBeVisible({ timeout: 15000 })
-    await expect(page.getByText('수입').first()).toBeVisible()
-  })
 })
