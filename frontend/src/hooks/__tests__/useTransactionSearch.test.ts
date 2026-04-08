@@ -115,6 +115,31 @@ describe('useTransactionSearch', () => {
 
       expect(result.current.hasSearchFilters).toBe(true)
     })
+
+    it('custom 기간이지만 날짜 미입력이면 hasSearchFilters가 false', () => {
+      mockSearchParams.set('search', '')
+      mockSearchParams.set('period', 'custom')
+      // start_date, end_date 없음
+
+      const { result } = renderHook(() =>
+        useTransactionSearch({ activeHouseholdId: 1 })
+      )
+
+      expect(result.current.hasSearchFilters).toBe(false)
+    })
+
+    it('custom 기간 + 날짜 입력 시 hasSearchFilters가 true', () => {
+      mockSearchParams.set('search', '')
+      mockSearchParams.set('period', 'custom')
+      mockSearchParams.set('start_date', '2026-01-01')
+      mockSearchParams.set('end_date', '2026-01-31')
+
+      const { result } = renderHook(() =>
+        useTransactionSearch({ activeHouseholdId: 1 })
+      )
+
+      expect(result.current.hasSearchFilters).toBe(true)
+    })
   })
 
   describe('검색 모드 진입/해제', () => {
