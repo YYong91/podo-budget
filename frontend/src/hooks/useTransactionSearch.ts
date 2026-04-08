@@ -233,20 +233,25 @@ export function useTransactionSearch({ activeHouseholdId }: UseTransactionSearch
         ...expData.map(e => ({ ...e, type: 'expense' as const })),
         ...incData.map(i => ({ ...i, type: 'income' as const })),
       ]
-      newItems.sort((a, b) => {
-        if (searchSortBy === 'amount') {
-          return searchSortOrder === 'desc' ? b.amount - a.amount : a.amount - b.amount
-        }
-        const dateCmp = searchSortOrder === 'desc'
-          ? b.date.localeCompare(a.date)
-          : a.date.localeCompare(b.date)
-        return dateCmp || b.id - a.id
-      })
+      const sortItems = (items: UnifiedTransaction[]) => {
+        items.sort((a, b) => {
+          if (searchSortBy === 'amount') {
+            return searchSortOrder === 'desc' ? b.amount - a.amount : a.amount - b.amount
+          }
+          const dateCmp = searchSortOrder === 'desc'
+            ? b.date.localeCompare(a.date)
+            : a.date.localeCompare(b.date)
+          // 타이브레이커: 날짜 정렬 방향과 동일하게 id도 정렬
+          return dateCmp || (searchSortOrder === 'desc' ? b.id - a.id : a.id - b.id)
+        })
+        return items
+      }
 
       if (append) {
-        setSearchResults(prev => [...prev, ...newItems])
+        // append 시 이전 결과와 합쳐 전체를 재정렬 (FE 클라이언트 정렬 특성상 필요)
+        setSearchResults(prev => sortItems([...prev, ...newItems]))
       } else {
-        setSearchResults(newItems)
+        setSearchResults(sortItems(newItems))
         const expSummary = results[2].data as { total_count: number; total_amount: number }
         const incSummary = results[3].data as { total_count: number; total_amount: number }
         setSearchSummary({

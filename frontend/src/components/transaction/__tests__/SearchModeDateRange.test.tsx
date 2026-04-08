@@ -156,3 +156,93 @@ describe('SearchMode — 기간 직접 입력', () => {
     expect(screen.getByRole('button', { name: /직접 입력/ })).toBeInTheDocument()
   })
 })
+
+describe('SearchMode — 정렬 칩', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('기본 정렬 칩은 "최신순"이고 비활성 스타일이다', () => {
+    const search = makeSearchMock({ searchSortBy: 'date', searchSortOrder: 'desc' })
+    render(
+      <SearchMode
+        search={search}
+        monthly={makeMonthlyMock() as ReturnType<typeof useMonthlyTransactions>}
+        {...defaultProps}
+      />
+    )
+    const chip = screen.getByRole('button', { name: '최신순' })
+    expect(chip).toBeInTheDocument()
+    expect(chip.className).toContain('surface-hover')
+  })
+
+  it('기본값이 아닌 정렬 선택 시 칩이 활성 스타일이다', () => {
+    const search = makeSearchMock({ searchSortBy: 'amount', searchSortOrder: 'desc' })
+    render(
+      <SearchMode
+        search={search}
+        monthly={makeMonthlyMock() as ReturnType<typeof useMonthlyTransactions>}
+        {...defaultProps}
+      />
+    )
+    const chip = screen.getByRole('button', { name: '금액 높은 순' })
+    expect(chip.className).toContain('grape-600')
+  })
+
+  it('정렬 칩 클릭 시 드롭다운이 열린다', async () => {
+    const user = userEvent.setup()
+    const search = makeSearchMock({ openFilter: null })
+    render(
+      <SearchMode
+        search={search}
+        monthly={makeMonthlyMock() as ReturnType<typeof useMonthlyTransactions>}
+        {...defaultProps}
+      />
+    )
+    await user.click(screen.getByRole('button', { name: '최신순' }))
+    expect(search.setOpenFilter).toHaveBeenCalledWith('sort')
+  })
+
+  it('드롭다운이 열리면 4가지 정렬 옵션이 표시된다', () => {
+    const search = makeSearchMock({ openFilter: 'sort' })
+    render(
+      <SearchMode
+        search={search}
+        monthly={makeMonthlyMock() as ReturnType<typeof useMonthlyTransactions>}
+        {...defaultProps}
+      />
+    )
+    // 칩 + 드롭다운 옵션 둘 다 "최신순" 텍스트를 가지므로 getAllByRole 사용
+    expect(screen.getAllByRole('button', { name: '최신순' }).length).toBeGreaterThanOrEqual(1)
+    expect(screen.getByRole('button', { name: '오래된 순' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '금액 높은 순' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '금액 낮은 순' })).toBeInTheDocument()
+  })
+
+  it('드롭다운에서 "금액 높은 순" 클릭 시 setSortOrder 호출된다', async () => {
+    const user = userEvent.setup()
+    const search = makeSearchMock({ openFilter: 'sort' })
+    render(
+      <SearchMode
+        search={search}
+        monthly={makeMonthlyMock() as ReturnType<typeof useMonthlyTransactions>}
+        {...defaultProps}
+      />
+    )
+    await user.click(screen.getByRole('button', { name: '금액 높은 순' }))
+    expect(search.setSortOrder).toHaveBeenCalledWith('amount', 'desc')
+  })
+
+  it('현재 선택된 정렬 옵션이 강조 표시된다', () => {
+    const search = makeSearchMock({ openFilter: 'sort', searchSortBy: 'amount', searchSortOrder: 'asc' })
+    render(
+      <SearchMode
+        search={search}
+        monthly={makeMonthlyMock() as ReturnType<typeof useMonthlyTransactions>}
+        {...defaultProps}
+      />
+    )
+    const activeOption = screen.getAllByRole('button', { name: '금액 낮은 순' })[0]
+    expect(activeOption.className).toContain('grape-600')
+  })
+})
