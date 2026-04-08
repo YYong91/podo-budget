@@ -3,9 +3,10 @@
  * @description 카테고리 선택 바텀시트 — 모바일에서는 하단 시트, PC에서는 중앙 모달
  */
 
-import { useEffect, useRef } from 'react'
+import { useEffect } from 'react'
 import { X } from 'lucide-react'
 import type { Category } from '../types'
+import { useBodyScrollLock } from '../hooks/useBodyScrollLock'
 
 interface CategoryBottomSheetProps {
   isOpen: boolean
@@ -29,7 +30,7 @@ export default function CategoryBottomSheet({
   saving = false,
   title = '카테고리 변경',
 }: CategoryBottomSheetProps) {
-  const sheetRef = useRef<HTMLDivElement>(null)
+  useBodyScrollLock(isOpen)
 
   useEffect(() => {
     if (!isOpen) return
@@ -39,32 +40,6 @@ export default function CategoryBottomSheet({
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
   }, [isOpen, onClose])
-
-  // 바텀시트 열릴 때 배경 스크롤 + PWA pull-to-refresh 차단
-  useEffect(() => {
-    if (!isOpen) return
-    document.body.style.overflow = 'hidden'
-
-    const sheet = sheetRef.current
-    if (!sheet) return
-
-    // 시트 내부 터치 이벤트가 body로 전파되지 않도록 차단
-    const preventScroll = (e: TouchEvent) => {
-      const target = e.target as HTMLElement
-      const scrollable = sheet.querySelector('.overflow-y-auto') as HTMLElement | null
-      // 스크롤 가능한 영역 내부이고, 실제로 스크롤이 있으면 허용
-      if (scrollable && scrollable.contains(target) && scrollable.scrollHeight > scrollable.clientHeight) {
-        return // 스크롤 가능 → 기본 동작 허용
-      }
-      e.preventDefault()
-    }
-    sheet.addEventListener('touchmove', preventScroll, { passive: false })
-
-    return () => {
-      document.body.style.overflow = ''
-      sheet.removeEventListener('touchmove', preventScroll)
-    }
-  }, [isOpen])
 
   if (!isOpen) return null
 
@@ -78,15 +53,14 @@ export default function CategoryBottomSheet({
     : 'bg-grape-50 text-grape-600 font-medium'
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end md:items-center md:justify-center overscroll-contain touch-none" role="dialog" aria-modal="true" aria-label={title}>
+    <div className="fixed inset-0 z-50 flex items-end md:items-center md:justify-center" role="dialog" aria-modal="true" aria-label={title}>
       {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- 모달 배경 오버레이: Escape 키로 닫기 지원됨 */}
       <div
         className="absolute inset-0 bg-black/40 transition-opacity"
         onClick={onClose}
       />
       <div
-        ref={sheetRef}
-        className="relative w-full md:max-w-sm bg-[var(--surface-card)] rounded-t-2xl md:rounded-2xl max-h-[60vh] flex flex-col animate-sheet-up md:animate-none touch-auto"
+        className="relative w-full md:max-w-sm bg-[var(--surface-card)] rounded-t-2xl md:rounded-2xl max-h-[60vh] flex flex-col animate-sheet-up md:animate-none"
       >
         <div className="flex items-center justify-between px-4 pt-4 pb-2 border-b border-[var(--border-subtle)]">
           <h3 className="text-sm font-semibold text-[var(--text-primary)]">{title}</h3>

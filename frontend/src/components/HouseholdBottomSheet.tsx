@@ -3,9 +3,10 @@
  * @description 가구 전환 바텀시트 — 복수 가구 소속 계정에서 활성 가구를 선택
  */
 
-import { useEffect, useRef } from 'react'
+import { useEffect } from 'react'
 import { X, Home, Check } from 'lucide-react'
 import type { Household } from '../types'
+import { useBodyScrollLock } from '../hooks/useBodyScrollLock'
 
 interface HouseholdBottomSheetProps {
   isOpen: boolean
@@ -22,6 +23,8 @@ export default function HouseholdBottomSheet({
   activeHouseholdId,
   onSelect,
 }: HouseholdBottomSheetProps) {
+  useBodyScrollLock(isOpen)
+
   useEffect(() => {
     if (!isOpen) return
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -31,41 +34,14 @@ export default function HouseholdBottomSheet({
     return () => document.removeEventListener('keydown', handleKeyDown)
   }, [isOpen, onClose])
 
-  const sheetRef = useRef<HTMLDivElement>(null)
-
-  // 바텀시트 열릴 때 배경 스크롤 + PWA pull-to-refresh 차단
-  useEffect(() => {
-    if (!isOpen) return
-    document.body.style.overflow = 'hidden'
-
-    const sheet = sheetRef.current
-    if (!sheet) return
-
-    const preventScroll = (e: TouchEvent) => {
-      const target = e.target as HTMLElement
-      const scrollable = sheet.querySelector('.overflow-y-auto') as HTMLElement | null
-      if (scrollable && scrollable.contains(target) && scrollable.scrollHeight > scrollable.clientHeight) {
-        return
-      }
-      e.preventDefault()
-    }
-    sheet.addEventListener('touchmove', preventScroll, { passive: false })
-
-    return () => {
-      document.body.style.overflow = ''
-      sheet.removeEventListener('touchmove', preventScroll)
-    }
-  }, [isOpen])
-
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end md:items-center md:justify-center overscroll-contain touch-none" role="dialog" aria-modal="true" aria-label="가계부 선택">
+    <div className="fixed inset-0 z-50 flex items-end md:items-center md:justify-center" role="dialog" aria-modal="true" aria-label="가계부 선택">
       {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions */}
       <div className="absolute inset-0 bg-black/40 transition-opacity" onClick={onClose} />
       <div
-        ref={sheetRef}
-        className="relative w-full md:max-w-sm bg-[var(--surface-card)] rounded-t-2xl md:rounded-2xl flex flex-col animate-sheet-up md:animate-none touch-auto"
+        className="relative w-full md:max-w-sm bg-[var(--surface-card)] rounded-t-2xl md:rounded-2xl flex flex-col animate-sheet-up md:animate-none"
       >
         {/* 헤더 */}
         <div className="flex items-center justify-between px-4 pt-4 pb-2 border-b border-[var(--border-subtle)]">
