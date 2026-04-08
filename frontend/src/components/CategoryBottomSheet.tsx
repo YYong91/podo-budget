@@ -40,12 +40,29 @@ export default function CategoryBottomSheet({
     return () => document.removeEventListener('keydown', handleKeyDown)
   }, [isOpen, onClose])
 
+  // 바텀시트 열릴 때 배경 스크롤 + PWA pull-to-refresh 차단
   useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden'
+    if (!isOpen) return
+    document.body.style.overflow = 'hidden'
+
+    const sheet = sheetRef.current
+    if (!sheet) return
+
+    // 시트 내부 터치 이벤트가 body로 전파되지 않도록 차단
+    const preventScroll = (e: TouchEvent) => {
+      const target = e.target as HTMLElement
+      const scrollable = sheet.querySelector('.overflow-y-auto') as HTMLElement | null
+      // 스크롤 가능한 영역 내부이고, 실제로 스크롤이 있으면 허용
+      if (scrollable && scrollable.contains(target) && scrollable.scrollHeight > scrollable.clientHeight) {
+        return // 스크롤 가능 → 기본 동작 허용
+      }
+      e.preventDefault()
     }
+    sheet.addEventListener('touchmove', preventScroll, { passive: false })
+
     return () => {
       document.body.style.overflow = ''
+      sheet.removeEventListener('touchmove', preventScroll)
     }
   }, [isOpen])
 

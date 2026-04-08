@@ -3,7 +3,7 @@
  * @description 가구 전환 바텀시트 — 복수 가구 소속 계정에서 활성 가구를 선택
  */
 
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { X, Home, Check } from 'lucide-react'
 import type { Household } from '../types'
 
@@ -31,12 +31,29 @@ export default function HouseholdBottomSheet({
     return () => document.removeEventListener('keydown', handleKeyDown)
   }, [isOpen, onClose])
 
+  const sheetRef = useRef<HTMLDivElement>(null)
+
+  // 바텀시트 열릴 때 배경 스크롤 + PWA pull-to-refresh 차단
   useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden'
+    if (!isOpen) return
+    document.body.style.overflow = 'hidden'
+
+    const sheet = sheetRef.current
+    if (!sheet) return
+
+    const preventScroll = (e: TouchEvent) => {
+      const target = e.target as HTMLElement
+      const scrollable = sheet.querySelector('.overflow-y-auto') as HTMLElement | null
+      if (scrollable && scrollable.contains(target) && scrollable.scrollHeight > scrollable.clientHeight) {
+        return
+      }
+      e.preventDefault()
     }
+    sheet.addEventListener('touchmove', preventScroll, { passive: false })
+
     return () => {
       document.body.style.overflow = ''
+      sheet.removeEventListener('touchmove', preventScroll)
     }
   }, [isOpen])
 
@@ -47,6 +64,7 @@ export default function HouseholdBottomSheet({
       {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions */}
       <div className="absolute inset-0 bg-black/40 transition-opacity" onClick={onClose} />
       <div
+        ref={sheetRef}
         className="relative w-full md:max-w-sm bg-[var(--surface-card)] rounded-t-2xl md:rounded-2xl flex flex-col animate-sheet-up md:animate-none touch-auto"
       >
         {/* 헤더 */}
