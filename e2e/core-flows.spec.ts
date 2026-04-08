@@ -41,10 +41,10 @@ test.describe('페이지 네비게이션', () => {
     await expect(nav.first()).toBeVisible({ timeout: 15000 })
 
     // 각 탭 클릭 → 페이지 전환 확인
-    // Layout navItems: 가계부(/), 자산(/assets), 돌아보기(/insights), 더보기(/settings)
+    // Layout navItems: 가계부(/), 자산(/assets), 모아보기(/insights), 더보기(/settings)
     const tabs = [
       { label: '자산', path: '/assets' },
-      { label: '돌아보기', path: '/insights' },
+      { label: '모아보기', path: '/insights' },
       { label: '더보기', path: '/settings' },
       { label: '가계부', path: '/' },
     ]

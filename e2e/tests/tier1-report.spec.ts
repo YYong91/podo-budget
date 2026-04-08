@@ -35,7 +35,7 @@ test.describe('Tier 1: 리포트', () => {
     await createExpense(page, { amount: 15000, description: '리포트 테스트 저녁' })
     await createExpense(page, { amount: 3500, description: '리포트 테스트 커피' })
 
-    // 2. 리포트 페이지 이동 (돌아보기 = /insights)
+    // 2. 리포트 페이지 이동 (모아보기 = /insights)
     await page.goto('/insights')
     await page.waitForLoadState('networkidle')
 
