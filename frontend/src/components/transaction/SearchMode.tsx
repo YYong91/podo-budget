@@ -205,6 +205,42 @@ export default function SearchMode({
           )}
         </div>
 
+        {/* 정렬 */}
+        <div className="relative" onPointerDown={(e) => e.stopPropagation()}>
+          <button
+            onClick={() => search.setOpenFilter(search.openFilter === 'sort' ? null : 'sort')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+              search.searchSortBy !== 'date' || search.searchSortOrder !== 'desc'
+                ? 'bg-grape-600 text-white'
+                : 'bg-[var(--surface-hover)] text-[var(--text-secondary)]'
+            }`}
+          >
+            {{ date_desc: '최신순', date_asc: '오래된 순', amount_desc: '금액 높은 순', amount_asc: '금액 낮은 순' }[`${search.searchSortBy}_${search.searchSortOrder}`] ?? '최신순'}
+          </button>
+          {search.openFilter === 'sort' && (
+            <div className="absolute top-full left-0 mt-1 bg-[var(--surface-card)] rounded-xl shadow-lg border border-[var(--border-default)] py-1 z-20 min-w-[140px]">
+              {[
+                { sortBy: 'date' as const, sortOrder: 'desc' as const, label: '최신순' },
+                { sortBy: 'date' as const, sortOrder: 'asc' as const, label: '오래된 순' },
+                { sortBy: 'amount' as const, sortOrder: 'desc' as const, label: '금액 높은 순' },
+                { sortBy: 'amount' as const, sortOrder: 'asc' as const, label: '금액 낮은 순' },
+              ].map(opt => (
+                <button
+                  key={`${opt.sortBy}_${opt.sortOrder}`}
+                  onClick={() => search.setSortOrder(opt.sortBy, opt.sortOrder)}
+                  className={`w-full text-left px-4 py-2 text-sm hover:bg-[var(--surface-hover)] ${
+                    search.searchSortBy === opt.sortBy && search.searchSortOrder === opt.sortOrder
+                      ? 'text-grape-600 font-medium'
+                      : 'text-[var(--text-primary)]'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
         {/* 금액 */}
         <div onPointerDown={(e) => e.stopPropagation()}>
           <button

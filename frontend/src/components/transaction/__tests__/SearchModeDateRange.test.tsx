@@ -23,6 +23,8 @@ function makeSearchMock(overrides: Partial<ReturnType<typeof useTransactionSearc
     searchMinAmount: null,
     searchMaxAmount: null,
     amountActive: false,
+    searchSortBy: 'date',
+    searchSortOrder: 'desc',
     hasSearchFilters: false,
     searchResults: [],
     searchSummary: null,
@@ -43,6 +45,7 @@ function makeSearchMock(overrides: Partial<ReturnType<typeof useTransactionSearc
     setSearchFilter: vi.fn(),
     setCustomDateRange: vi.fn(),
     setAmountRange: vi.fn(),
+    setSortOrder: vi.fn(),
     fetchSearchResults: vi.fn(),
     ...overrides,
   }

@@ -96,6 +96,8 @@ export function useTransactionSearch({ activeHouseholdId }: UseTransactionSearch
   const searchEndDate = searchParams.get('end_date') ?? ''
   const searchMinAmount = searchParams.has('min_amount') ? Number(searchParams.get('min_amount')) : null
   const searchMaxAmount = searchParams.has('max_amount') ? Number(searchParams.get('max_amount')) : null
+  const searchSortBy = (searchParams.get('sort_by') as 'date' | 'amount') || 'date'
+  const searchSortOrder = (searchParams.get('sort_order') as 'asc' | 'desc') || 'desc'
   // custom 기간은 날짜가 실제로 입력된 경우에만 필터로 간주
   const periodActive = searchPeriod !== 'all' && !(searchPeriod === 'custom' && !searchStartDate && !searchEndDate)
   const amountActive = !!(searchMinAmount || searchMaxAmount)
@@ -117,7 +119,7 @@ export function useTransactionSearch({ activeHouseholdId }: UseTransactionSearch
   const [recentSearches, setRecentSearches] = useState<string[]>(getRecentSearches())
 
   // 검색 필터 드롭다운 상태
-  const [openFilter, setOpenFilter] = useState<'type' | 'period' | null>(null)
+  const [openFilter, setOpenFilter] = useState<'type' | 'period' | 'sort' | null>(null)
 
   // URL 파라미터 업데이트
   const setParams = useCallback((updates: Record<string, string | null>) => {
@@ -138,7 +140,7 @@ export function useTransactionSearch({ activeHouseholdId }: UseTransactionSearch
 
   // 검색 모드 해제 → 월 뷰 복귀
   const exitSearchMode = useCallback(() => {
-    setParams({ search: null, type: null, category: null, period: null, member: null, start_date: null, end_date: null, min_amount: null, max_amount: null })
+    setParams({ search: null, type: null, category: null, period: null, member: null, start_date: null, end_date: null, min_amount: null, max_amount: null, sort_by: null, sort_order: null })
     setOpenFilter(null)
   }, [setParams])
 
@@ -173,6 +175,14 @@ export function useTransactionSearch({ activeHouseholdId }: UseTransactionSearch
     setParams({
       min_amount: min !== null ? String(min) : null,
       max_amount: max !== null ? String(max) : null,
+    })
+  }, [setParams])
+
+  // 정렬 설정 (기본값 date_desc이면 파라미터 제거)
+  const setSortOrder = useCallback((sortBy: 'date' | 'amount', sortOrder: 'asc' | 'desc') => {
+    setParams({
+      sort_by: sortBy !== 'date' ? sortBy : null,
+      sort_order: sortOrder !== 'desc' ? sortOrder : null,
     })
   }, [setParams])
 
@@ -223,7 +233,15 @@ export function useTransactionSearch({ activeHouseholdId }: UseTransactionSearch
         ...expData.map(e => ({ ...e, type: 'expense' as const })),
         ...incData.map(i => ({ ...i, type: 'income' as const })),
       ]
-      newItems.sort((a, b) => b.date.localeCompare(a.date) || b.id - a.id)
+      newItems.sort((a, b) => {
+        if (searchSortBy === 'amount') {
+          return searchSortOrder === 'desc' ? b.amount - a.amount : a.amount - b.amount
+        }
+        const dateCmp = searchSortOrder === 'desc'
+          ? b.date.localeCompare(a.date)
+          : a.date.localeCompare(b.date)
+        return dateCmp || b.id - a.id
+      })
 
       if (append) {
         setSearchResults(prev => [...prev, ...newItems])
@@ -246,7 +264,7 @@ export function useTransactionSearch({ activeHouseholdId }: UseTransactionSearch
       setSearchLoadingMore(false)
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps -- addToast는 안정적 참조
-  }, [searchQuery, activeHouseholdId, searchType, searchCategoryId, searchPeriod, searchStartDate, searchEndDate, searchMinAmount, searchMaxAmount])
+  }, [searchQuery, activeHouseholdId, searchType, searchCategoryId, searchPeriod, searchStartDate, searchEndDate, searchMinAmount, searchMaxAmount, searchSortBy, searchSortOrder])
 
   // 검색어 또는 필터 변경 시 검색 실행
   useEffect(() => {
@@ -262,7 +280,7 @@ export function useTransactionSearch({ activeHouseholdId }: UseTransactionSearch
       setSearchSummary(null)
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps -- fetchSearchResults 내부에서 동일 state 참조
-  }, [isSearchMode, searchQuery, searchType, searchCategoryId, searchPeriod, searchStartDate, searchEndDate, searchMinAmount, searchMaxAmount])
+  }, [isSearchMode, searchQuery, searchType, searchCategoryId, searchPeriod, searchStartDate, searchEndDate, searchMinAmount, searchMaxAmount, searchSortBy, searchSortOrder])
 
   // 검색 모드 진입 시 인풋 포커스
   useEffect(() => {
@@ -320,6 +338,8 @@ export function useTransactionSearch({ activeHouseholdId }: UseTransactionSearch
     searchMinAmount,
     searchMaxAmount,
     amountActive,
+    searchSortBy,
+    searchSortOrder,
     hasSearchFilters,
 
     // 검색 결과
@@ -350,6 +370,7 @@ export function useTransactionSearch({ activeHouseholdId }: UseTransactionSearch
     setSearchFilter,
     setCustomDateRange,
     setAmountRange,
+    setSortOrder,
     fetchSearchResults,
   }
 }

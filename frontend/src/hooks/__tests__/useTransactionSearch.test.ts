@@ -384,3 +384,60 @@ describe('금액 범위 필터', () => {
     expect(mockSetSearchParams).toHaveBeenCalled()
   })
 })
+
+describe('정렬', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockSearchParams.forEach((_v, k) => mockSearchParams.delete(k))
+  })
+
+  it('기본 정렬은 date_desc', () => {
+    const { result } = renderHook(() =>
+      useTransactionSearch({ activeHouseholdId: 1 })
+    )
+    expect(result.current.searchSortBy).toBe('date')
+    expect(result.current.searchSortOrder).toBe('desc')
+  })
+
+  it('URL에 sort_by=amount가 있으면 searchSortBy가 amount', () => {
+    mockSearchParams.set('search', '')
+    mockSearchParams.set('sort_by', 'amount')
+    const { result } = renderHook(() =>
+      useTransactionSearch({ activeHouseholdId: 1 })
+    )
+    expect(result.current.searchSortBy).toBe('amount')
+  })
+
+  it('URL에 sort_order=asc가 있으면 searchSortOrder가 asc', () => {
+    mockSearchParams.set('search', '')
+    mockSearchParams.set('sort_order', 'asc')
+    const { result } = renderHook(() =>
+      useTransactionSearch({ activeHouseholdId: 1 })
+    )
+    expect(result.current.searchSortOrder).toBe('asc')
+  })
+
+  it('setSortOrder가 URL에 sort 파라미터를 설정한다', () => {
+    mockSearchParams.set('search', '')
+    const { result } = renderHook(() =>
+      useTransactionSearch({ activeHouseholdId: 1 })
+    )
+    act(() => {
+      result.current.setSortOrder('amount', 'desc')
+    })
+    expect(mockSetSearchParams).toHaveBeenCalled()
+  })
+
+  it('기본값(date_desc)으로 setSortOrder 시 파라미터를 제거한다', () => {
+    mockSearchParams.set('search', '')
+    mockSearchParams.set('sort_by', 'amount')
+    mockSearchParams.set('sort_order', 'asc')
+    const { result } = renderHook(() =>
+      useTransactionSearch({ activeHouseholdId: 1 })
+    )
+    act(() => {
+      result.current.setSortOrder('date', 'desc')
+    })
+    expect(mockSetSearchParams).toHaveBeenCalled()
+  })
+})
