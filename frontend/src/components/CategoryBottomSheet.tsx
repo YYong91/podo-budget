@@ -96,10 +96,11 @@ export default function CategoryBottomSheet({
                 <button
                   key={cat.id}
                   onClick={() => onSelect(cat.id)}
-                  className={`w-full text-left px-3 py-2.5 rounded-lg text-sm transition-colors ${
+                  className={`w-full text-left px-3 py-2.5 rounded-lg text-sm transition-colors flex items-center gap-2 ${
                     currentCategoryId === cat.id ? activeClass : 'text-[var(--text-secondary)] hover:bg-[var(--surface-hover)]'
                   }`}
                 >
+                  {cat.emoji && <span className="text-base leading-none">{cat.emoji}</span>}
                   {cat.name}
                 </button>
               ))}
