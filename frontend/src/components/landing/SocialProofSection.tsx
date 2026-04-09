@@ -85,7 +85,7 @@ export function SocialProofSection() {
           }}
         >
           <p className="mb-3 text-xs font-bold uppercase tracking-widest text-grape-400">
-            이런 분께 딱 맞아요
+            사용자 시나리오
           </p>
           <h2 className="text-balance text-3xl font-bold text-warm-800 sm:text-4xl">
             이런 분께 딱 맞아요

@@ -1,4 +1,5 @@
 // --- 스크린샷 ---
+// hero, input.messenger는 현재 인라인 목업으로 대체 중. 추후 스크린샷 교체 시 사용.
 export const landingScreenshots = {
   hero: {
     path: '/screenshots/hero-chat.jpg',

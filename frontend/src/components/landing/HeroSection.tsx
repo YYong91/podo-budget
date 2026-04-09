@@ -125,7 +125,7 @@ function ChatPhone({ visible }: { visible: boolean }) {
               <div className="max-w-[80%] rounded-2xl rounded-bl-sm bg-stone-100 px-3 py-2 text-xs leading-relaxed text-stone-700 shadow-sm">
                 🍇 저녁 파스타 32,000원 기록했어요
                 <br /><br />
-                <span className="text-stone-400">3월 31일 (월) · 식비</span>
+                <span className="text-stone-400">오늘 · 식비</span>
               </div>
             </div>
           )}

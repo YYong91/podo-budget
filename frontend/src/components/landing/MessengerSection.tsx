@@ -49,7 +49,7 @@ export function MessengerSection() {
 
         {/* Visual Area — 두 가지 입력 방식 나란히 */}
         <div
-          className={`flex flex-1 items-start justify-center gap-4 ${
+          className={`flex flex-1 flex-col items-start justify-center gap-4 sm:flex-row ${
             isInView ? "animate-fade-in-up" : "opacity-0"
           }`}
           style={{ animationDelay: "0.2s" }}
