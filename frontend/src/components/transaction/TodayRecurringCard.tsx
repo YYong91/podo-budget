@@ -163,33 +163,35 @@ export default function TodayRecurringCard({ items, onExecute, onSkip }: TodayRe
         </div>
       )}
 
-      {/* 액션 버튼: [등록하기(flex-1)] [나후(subtle)] [건너뛰기(flex-1)] */}
-      <div className="flex gap-2">
-        <button
-          onClick={() => handleAction('execute')}
-          disabled={isLoading || (isEditing && (editingAmount == null || editingAmount <= 0))}
-          className={`flex-1 py-2 rounded-xl text-sm font-medium text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-            isExpense
-              ? 'bg-grape-600 hover:bg-grape-700'
-              : 'bg-leaf-600 hover:bg-leaf-700'
-          }`}
-        >
-          등록하기
-        </button>
-        {/* 나중에: 세션 스누즈. 배경 없는 텍스트 버튼으로 시각적 우선순위 낮춤 */}
+      {/* 액션 버튼: 1행 [등록하기 건너뛰기], 2행 [나중에] — 위계 명확화 */}
+      <div className="flex flex-col gap-1.5">
+        <div className="flex gap-2">
+          <button
+            onClick={() => handleAction('execute')}
+            disabled={isLoading || (isEditing && (editingAmount == null || editingAmount <= 0))}
+            className={`flex-1 py-2 rounded-xl text-sm font-medium text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+              isExpense
+                ? 'bg-grape-600 hover:bg-grape-700'
+                : 'bg-leaf-600 hover:bg-leaf-700'
+            }`}
+          >
+            등록하기
+          </button>
+          <button
+            onClick={() => handleAction('skip')}
+            disabled={isLoading}
+            className="flex-1 py-2 rounded-xl text-sm font-medium bg-[var(--surface-elevated)] text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            건너뛰기
+          </button>
+        </div>
+        {/* 나중에: 세션 스누즈. 전체 너비 텍스트 버튼으로 시각적 우선순위 명확히 낮춤 */}
         <button
           onClick={() => handleSnooze(current.id)}
           disabled={isLoading}
-          className="px-3 py-2 text-xs text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full py-2 text-xs text-[var(--text-muted)] hover:text-[var(--text-tertiary)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           나중에
-        </button>
-        <button
-          onClick={() => handleAction('skip')}
-          disabled={isLoading}
-          className="flex-1 py-2 rounded-xl text-sm font-medium bg-[var(--surface-elevated)] text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          건너뛰기
         </button>
       </div>
     </div>
