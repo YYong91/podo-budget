@@ -1,7 +1,7 @@
 /**
  * @file RecurringManageSection.tsx
  * @description 모아보기 > 정기거래 섹션
- * 활성 정기거래 목록과 이번 달 처리 상태(처리됨/예정/대기)를 표시한다.
+ * 활성 정기거래 목록과 이번 달 처리 상태(완료/예정/대기)를 표시한다.
  * 아코디언으로 접고 펼칠 수 있으며, 관리 페이지 링크를 제공한다.
  */
 
@@ -29,10 +29,11 @@ function StatusBadge({ nextDueDate, monthStr }: { nextDueDate: string; monthStr:
   const [, month, day] = nextDueDate.split('-').map(Number)
 
   if (status === 'done') {
-    return <span className="text-xs font-medium text-leaf-600">✓ 처리됨</span>
+    // 수입 색(leaf-600)과 구분 — text-tertiary로 표시
+    return <span className="text-xs text-[var(--text-tertiary)]">✓ 완료</span>
   }
   if (status === 'pending') {
-    return <span className="text-xs font-medium text-[var(--text-muted)]">대기 중</span>
+    return <span className="text-xs text-[var(--text-muted)]">대기 중</span>
   }
   // upcoming
   return <span className="text-xs text-[var(--text-tertiary)]">{month}/{day} 예정</span>
@@ -49,10 +50,7 @@ export default function RecurringManageSection({ items, monthStr }: Props) {
             <RefreshCw className="w-4 h-4 text-grape-600" />
             <h2 className="text-base font-semibold text-[var(--text-primary)]">정기거래</h2>
           </div>
-          <Link
-            to="/recurring"
-            className="text-xs text-grape-600 hover:text-grape-700 transition-colors"
-          >
+          <Link to="/recurring" className="text-xs text-grape-600 hover:text-grape-700 transition-colors">
             관리 →
           </Link>
         </div>
@@ -67,32 +65,20 @@ export default function RecurringManageSection({ items, monthStr }: Props) {
 
   return (
     <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] p-4 sm:p-6">
-      {/* 헤더 */}
+      {/* 헤더: 아이콘+제목 / 관리 링크 */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <RefreshCw className="w-4 h-4 text-grape-600" />
           <h2 className="text-base font-semibold text-[var(--text-primary)]">정기거래</h2>
         </div>
-        <div className="flex items-center gap-3">
-          <Link
-            to="/recurring"
-            className="text-xs text-grape-600 hover:text-grape-700 transition-colors"
-          >
-            관리 →
-          </Link>
-          <button
-            onClick={() => setExpanded(prev => !prev)}
-            className="text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] transition-colors"
-            aria-label={expanded ? '접기' : '펼치기'}
-          >
-            {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-          </button>
-        </div>
+        <Link to="/recurring" className="text-xs text-grape-600 hover:text-grape-700 transition-colors">
+          관리 →
+        </Link>
       </div>
 
       {/* 목록 (아코디언) */}
       {expanded && (
-        <div className="space-y-0">
+        <div className="space-y-0 mb-3">
           {items.map((item, idx) => {
             const isExpense = item.type === 'expense'
             return (
@@ -123,13 +109,26 @@ export default function RecurringManageSection({ items, monthStr }: Props) {
         </div>
       )}
 
-      {/* 요약 푸터 */}
-      <p className={`text-xs text-[var(--text-muted)] ${expanded ? 'mt-3 pt-3 border-t border-[var(--border-default)]' : ''}`}>
-        활성 {items.length}건
-        {monthlyExpenseTotal > 0 && (
-          <> · 이번 달 지출 <span className="font-medium text-[var(--text-secondary)]">{formatAmount(monthlyExpenseTotal)}</span></>
-        )}
-      </p>
+      {/* 요약 푸터 + 접기/펼치기 — 예산 섹션과 동일한 하단 배치 */}
+      <div className={`flex items-center justify-between pt-2 ${expanded ? 'border-t border-[var(--border-default)]' : ''}`}>
+        <p className="text-xs text-[var(--text-muted)]">
+          활성 {items.length}건
+          {monthlyExpenseTotal > 0 && (
+            <> · 이번 달 지출 <span className="font-medium text-[var(--text-secondary)]">{formatAmount(monthlyExpenseTotal)}</span></>
+          )}
+        </p>
+        <button
+          onClick={() => setExpanded(prev => !prev)}
+          className="flex items-center gap-0.5 text-xs text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] transition-colors"
+          aria-label={expanded ? '접기' : '펼치기'}
+        >
+          {expanded ? (
+            <><ChevronUp className="w-3.5 h-3.5" /> 접기</>
+          ) : (
+            <><ChevronDown className="w-3.5 h-3.5" /> 펼치기</>
+          )}
+        </button>
+      </div>
     </div>
   )
 }

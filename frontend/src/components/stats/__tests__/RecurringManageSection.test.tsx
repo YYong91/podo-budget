@@ -44,7 +44,7 @@ describe('RecurringManageSection', () => {
         monthStr={MONTH_STR}
       />
     )
-    expect(screen.getByText(/✓ 처리됨/)).toBeInTheDocument()
+    expect(screen.getByText(/✓ 완료/)).toBeInTheDocument()
   })
 
   it('next_due_date가 이번 달이면 예정 날짜를 표시한다', () => {
