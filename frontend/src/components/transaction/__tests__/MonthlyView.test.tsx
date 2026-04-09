@@ -118,7 +118,7 @@ describe('MonthlyView 컴포넌트', () => {
   it('월간 지출 히어로 라벨을 표시한다', () => {
     renderPage()
     const now = new Date()
-    expect(screen.getByText(`${now.getMonth() + 1}월 지출`)).toBeInTheDocument()
+    expect(screen.getByText(`지출`)).toBeInTheDocument()
   })
 
   it('미니 캘린더(요일 헤더)를 표시한다', async () => {
@@ -263,7 +263,7 @@ describe('MonthlyView 컴포넌트', () => {
     await waitFor(() => {
       // HeroSummary label — "N월 지출"
       const now = new Date()
-      expect(screen.getByText(`${now.getMonth() + 1}월 지출`)).toBeInTheDocument()
+      expect(screen.getByText(`지출`)).toBeInTheDocument()
     })
   })
 

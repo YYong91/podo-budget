@@ -148,7 +148,7 @@ export default function MonthlyView({
 
       {/* 월간 지출 히어로 요약 — currentMonth는 0-indexed이므로 +1 */}
       <HeroSummary
-        label={`${monthly.currentMonth + 1}월 지출`}
+        label="지출"
         totalExpense={monthly.totalExpense}
         totalBudget={totalBudget}
         pendingRecurringExpense={pendingRecurringExpense}

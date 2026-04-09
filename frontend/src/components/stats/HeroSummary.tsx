@@ -114,7 +114,7 @@ function buildAriaLabel(
   const budgetStr = formatAmount(totalBudget as number)
   switch (state.type) {
     case 'normal':
-      return `예산 ${budgetStr} 중 ${formatAmount(totalExpense)} 사용, ${formatAmount(pendingRecurringExpense)} 예정, ${formatAmount(state.remaining)} 남은`
+      return `예산 ${budgetStr} 중 ${formatAmount(totalExpense)} 사용, ${formatAmount(pendingRecurringExpense)} 예정, ${formatAmount(state.remaining)} 여유`
     case 'noRecurring':
       return `예산 ${budgetStr} 중 ${formatAmount(totalExpense)} 사용, ${formatAmount(state.remaining)} 남음`
     case 'projectedExceed':
@@ -247,7 +247,7 @@ function ProgressBar({
             </span>
             <span className="text-[var(--text-muted)]">·</span>
             <span className="text-grape-500 dark:text-grape-300 font-medium">
-              남은 {formatWon(state.remaining)}
+              여유 {formatWon(state.remaining)}
             </span>
           </>
         )}
