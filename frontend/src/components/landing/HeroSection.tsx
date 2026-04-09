@@ -109,7 +109,7 @@ function ChatPhone({ visible }: { visible: boolean }) {
           {chatStep >= 1 && (
             <div className="animate-bubble-in flex justify-end">
               <div className="max-w-[75%] rounded-2xl rounded-br-sm bg-grape-600 px-3 py-2 text-xs text-white shadow-sm">
-                점심 김치찌개 8000원
+                남편이랑 저녁 파스타 32000원
               </div>
             </div>
           )}
@@ -123,7 +123,7 @@ function ChatPhone({ visible }: { visible: boolean }) {
           {chatStep >= 3 && (
             <div className="animate-bubble-in flex justify-start">
               <div className="max-w-[80%] rounded-2xl rounded-bl-sm bg-stone-100 px-3 py-2 text-xs leading-relaxed text-stone-700 shadow-sm">
-                🍇 김치찌개 8,000원 기록했어요
+                🍇 저녁 파스타 32,000원 기록했어요
                 <br /><br />
                 <span className="text-stone-400">3월 31일 (월) · 식비</span>
               </div>
@@ -149,7 +149,7 @@ function ChatPhone({ visible }: { visible: boolean }) {
       >
         <img
           src="/screenshot-after.jpg"
-          alt="김치찌개 추가된 거래 목록"
+          alt="저녁 파스타 추가된 거래 목록"
           style={screenshotStyle}
         />
 
@@ -160,12 +160,12 @@ function ChatPhone({ visible }: { visible: boolean }) {
               <div className="flex items-center gap-2">
                 <span className="flex h-7 w-7 items-center justify-center rounded-full bg-grape-100 text-sm">🍇</span>
                 <div>
-                  <p className="text-xs font-bold text-stone-800">김치찌개</p>
+                  <p className="text-xs font-bold text-stone-800">저녁 파스타</p>
                   <p className="text-[10px] text-stone-400">식비 · 방금</p>
                 </div>
               </div>
               <div className="text-right">
-                <p className="text-sm font-bold text-rose-500">-8,000원</p>
+                <p className="text-sm font-bold text-rose-500">-32,000원</p>
                 <p className="text-[10px] font-medium text-leaf-600">✓ 추가됐어요</p>
               </div>
             </div>
@@ -214,16 +214,14 @@ export function HeroSection() {
               backgroundClip: "text",
             }}
           >
-            <span className="block">포도알처럼</span>
-            <span className="block">하나씩, 알찬</span>
+            <span className="block">말하듯 기록하면,</span>
             <span className="block" style={{ WebkitTextFillColor: "#292524", color: "#292524" }}>
-              가계부
+              AI가 알아서 정리해요
             </span>
           </h1>
           <p className="mt-5 max-w-sm text-base leading-relaxed text-stone-500 sm:text-lg">
-            <span className="block">말로 기록하면</span>
-            <span className="block font-semibold text-stone-700">AI가 알아서 분류하는</span>
-            <span className="block">우리 집 가계부</span>
+            <span className="block">메신저에 '남편이랑 저녁 파스타 32000원' 보내면 끝.</span>
+            <span className="block font-semibold text-stone-700">카테고리, 날짜, 결제수단까지 자동으로.</span>
           </p>
           <Link
             to="/login"
