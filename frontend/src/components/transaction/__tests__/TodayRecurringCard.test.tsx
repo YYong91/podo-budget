@@ -4,6 +4,11 @@ import userEvent from '@testing-library/user-event'
 import TodayRecurringCard from '../TodayRecurringCard'
 import type { RecurringTransaction } from '../../../types'
 
+const mockAddToast = vi.fn()
+vi.mock('../../../hooks/useToast', () => ({
+  useToast: () => ({ addToast: mockAddToast, removeToast: vi.fn() }),
+}))
+
 const makeItem = (overrides: Partial<RecurringTransaction>): RecurringTransaction => ({
   id: 1, user_id: 1, household_id: 1, type: 'expense',
   amount: 17000, description: '넷플릭스', category_id: null,
@@ -16,7 +21,10 @@ const makeItem = (overrides: Partial<RecurringTransaction>): RecurringTransactio
 })
 
 describe('TodayRecurringCard', () => {
-  beforeEach(() => sessionStorage.clear())
+  beforeEach(() => {
+    sessionStorage.clear()
+    mockAddToast.mockClear()
+  })
   it('빈 배열이면 아무것도 렌더링하지 않는다', () => {
     const { container } = render(
       <TodayRecurringCard items={[]} onExecute={vi.fn()} onSkip={vi.fn()} />
@@ -91,6 +99,17 @@ describe('TodayRecurringCard', () => {
     await userEvent.click(screen.getByText('등록하기'))
     await waitFor(() => {
       expect(screen.getByText('등록하기').closest('button')).not.toBeDisabled()
+    })
+  })
+
+  it('API 실패 시 에러 토스트가 표시된다', async () => {
+    const onExecute = vi.fn().mockRejectedValue(new Error('fail'))
+    render(
+      <TodayRecurringCard items={[makeItem({ id: 1, next_due_date: '2026-01-01' })]} onExecute={onExecute} onSkip={vi.fn()} />
+    )
+    await userEvent.click(screen.getByText('등록하기'))
+    await waitFor(() => {
+      expect(mockAddToast).toHaveBeenCalledWith('error', expect.any(String))
     })
   })
 

@@ -1,11 +1,12 @@
 import { useState, useMemo, useEffect } from 'react'
 import { formatAmount, getLocalDateString } from '../../utils/format'
+import { useToast } from '../../hooks/useToast'
 import type { RecurringTransaction } from '../../types'
 
 // sessionStorage 키: 현재 세션에서 "나중에" 처리된 정기거래 ID 목록
 const SNOOZE_KEY = 'podo-snoozed-recurring'
 
-interface TodayRecurringCardProps {
+type TodayRecurringCardProps = {
   items: RecurringTransaction[]
   onExecute: (id: number, amount?: number) => Promise<void>
   onSkip: (id: number) => Promise<void>
@@ -17,6 +18,7 @@ interface TodayRecurringCardProps {
  *  snoozedIds는 sessionStorage 기반 — 탭 닫으면 초기화되어 다음 방문 시 재표시된다.
  */
 export default function TodayRecurringCard({ items, onExecute, onSkip }: TodayRecurringCardProps) {
+  const { addToast } = useToast()
   const [processedIds, setProcessedIds] = useState<Set<number>>(new Set())
   const [snoozedIds, setSnoozedIds] = useState<Set<number>>(() => {
     // 마운트 시 sessionStorage에서 스누즈 목록 복원
@@ -37,7 +39,8 @@ export default function TodayRecurringCard({ items, onExecute, onSkip }: TodayRe
     setProcessedIds(new Set())
   }, [items])
 
-  const today = getLocalDateString()
+  // 날짜는 마운트 시 한 번만 계산 (렌더링마다 재계산 방지)
+  const today = useMemo(() => getLocalDateString(), [])
 
   // 오늘 또는 이전 날짜가 due_date이고, 처리/스누즈되지 않은 정기거래만 필터링
   const visibleItems = useMemo(
@@ -71,7 +74,8 @@ export default function TodayRecurringCard({ items, onExecute, onSkip }: TodayRe
       setProcessedIds(prev => new Set(prev).add(current.id))
       resetEditing()
     } catch {
-      // 실패 시 버튼 복원 (처리 상태 변경 없음)
+      // 실패 시 버튼 복원 (처리 상태 변경 없음), 사용자에게 에러 알림
+      addToast('error', '처리에 실패했습니다. 다시 시도해 주세요.')
     } finally {
       setIsLoading(false)
     }
@@ -146,7 +150,11 @@ export default function TodayRecurringCard({ items, onExecute, onSkip }: TodayRe
             <input
               type="number"
               value={editingAmount ?? ''}
-              onChange={e => setEditingAmount(e.target.value === '' ? null : Number(e.target.value))}
+              onChange={e => {
+              const val = Number(e.target.value)
+              setEditingAmount(e.target.value === '' || isNaN(val) ? null : val)
+            }}
+              aria-label="변경할 금액"
               className="flex-1 px-3 py-2 text-sm bg-transparent text-[var(--text-primary)] outline-none"
               placeholder={String(current.amount)}
               min={0}
