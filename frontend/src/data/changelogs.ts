@@ -18,6 +18,16 @@ export interface Changelog {
 
 export const changelogs: Changelog[] = [
   {
+    version: '0.19.0',
+    date: '2026-04-09',
+    title: '예산 현황 한눈에 보기',
+    items: [
+      { tag: '개선', text: '예산 프로그레스바에 정기지출 예정 금액까지 함께 표시' },
+      { tag: '개선', text: '오늘 처리할 정기거래만 카드로 간편하게 등록/건너뛰기' },
+      { tag: '신규', text: '모아보기에서 정기거래 관리 섹션 추가' },
+    ],
+  },
+  {
     version: '0.18.0',
     date: '2026-04-08',
     title: '검색 고도화 — 금액 범위 필터',
