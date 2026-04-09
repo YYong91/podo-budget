@@ -17,6 +17,7 @@ import EmptyState from '../components/EmptyState'
 
 // API
 import { statsApi, insightsApi } from '../api/insights'
+import { expenseApi } from '../api/expenses'
 import { incomeApi } from '../api/income'
 import { getMonthlyStats } from '../api/budgets'
 import { assetApi } from '../api/assets'
@@ -199,13 +200,40 @@ export default function InsightsPage() {
     enabled: !!activeHouseholdId,
   })
 
-  // ── Group 7: 정기거래 — 활성 건수 + 이번 달 지출 합계 (staleTime 연장으로 중복 요청 방지) ──
+  // ── Group 7: 정기거래 — 활성 목록 + 당월 실행/건너뜀 구분 ──
 
   const { data: recurringData = [] } = useQuery({
     queryKey: ['insights-recurring', activeHouseholdId],
     queryFn: () => recurringApi.getAll({ household_id: activeHouseholdId! }).then(res => res.data),
     staleTime: 5 * 60 * 1000,
     enabled: !!activeHouseholdId,
+  })
+
+  // 당월 지출/수입 중 recurring_transaction_id가 있는 것 조회 → 실제 실행 금액 매핑
+  const [recurringYear, recurringMonth] = monthStr.split('-').map(Number)
+  const recurringMonthStart = `${monthStr}-01`
+  const recurringMonthEnd = new Date(recurringYear, recurringMonth, 0).toISOString().slice(0, 10)
+
+  const { data: monthlyExpenseList = [] } = useQuery({
+    queryKey: ['insights-expense-list', monthStr, activeHouseholdId],
+    queryFn: () => expenseApi.getAll({
+      start_date: recurringMonthStart,
+      end_date: recurringMonthEnd,
+      household_id: activeHouseholdId!,
+      limit: 500,
+    }).then(r => r.data),
+    enabled: !!activeHouseholdId && sectionVisibility.recurring,
+  })
+
+  const { data: monthlyIncomeList = [] } = useQuery({
+    queryKey: ['insights-income-list', monthStr, activeHouseholdId],
+    queryFn: () => incomeApi.getAll({
+      start_date: recurringMonthStart,
+      end_date: recurringMonthEnd,
+      household_id: activeHouseholdId!,
+      limit: 500,
+    }).then(r => r.data),
+    enabled: !!activeHouseholdId && sectionVisibility.recurring,
   })
 
   // ── 파생 상태 (useMemo — 쿼리 결과 변경 시 재계산) ──
@@ -246,6 +274,18 @@ export default function InsightsPage() {
     () => recurringData.filter(r => r.is_active),
     [recurringData],
   )
+
+  // recurring_transaction_id → 실제 실행 금액 맵 (없으면 건너뜀)
+  const executedAmountMap = useMemo(() => {
+    const map = new Map<number, number>()
+    monthlyExpenseList
+      .filter(e => e.recurring_transaction_id != null)
+      .forEach(e => map.set(e.recurring_transaction_id!, e.amount))
+    monthlyIncomeList
+      .filter(i => i.recurring_transaction_id != null)
+      .forEach(i => map.set(i.recurring_transaction_id!, i.amount))
+    return map
+  }, [monthlyExpenseList, monthlyIncomeList])
 
   const healthScore = useMemo((): HealthScore | null => {
     if (!expenseStats && !incomeStats) return null
@@ -458,6 +498,7 @@ export default function InsightsPage() {
             <RecurringManageSection
               items={activeRecurringItems}
               monthStr={monthStr}
+              executedAmountMap={executedAmountMap}
             />
           )}
 
