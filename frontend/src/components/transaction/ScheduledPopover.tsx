@@ -40,10 +40,12 @@ export default function ScheduledPopover({ date, items, onClose }: ScheduledPopo
       if (e.key === 'Escape') onClose()
     }
 
-    document.addEventListener('mousedown', handleClickOutside)
+    // mousedown 대신 click 사용: mousedown은 React onClick보다 먼저 발동해
+    // popoverDate를 null로 만든 뒤 onClick이 다시 열어버리는 버그가 생김
+    document.addEventListener('click', handleClickOutside)
     document.addEventListener('keydown', handleKeyDown)
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
+      document.removeEventListener('click', handleClickOutside)
       document.removeEventListener('keydown', handleKeyDown)
     }
   }, [onClose])

@@ -114,7 +114,7 @@ function buildAriaLabel(
   const budgetStr = formatAmount(totalBudget as number)
   switch (state.type) {
     case 'normal':
-      return `예산 ${budgetStr} 중 ${formatAmount(totalExpense)} 사용, ${formatAmount(pendingRecurringExpense)} 예정, ${formatAmount(state.remaining)} 여유`
+      return `예산 ${budgetStr} 중 ${formatAmount(totalExpense)} 사용, ${formatAmount(pendingRecurringExpense)} 예정, ${formatAmount(state.remaining)} 남은`
     case 'noRecurring':
       return `예산 ${budgetStr} 중 ${formatAmount(totalExpense)} 사용, ${formatAmount(state.remaining)} 남음`
     case 'projectedExceed':
@@ -133,13 +133,11 @@ function ProgressBar({
   totalExpense,
   totalBudget,
   pendingRecurringExpense,
-  onProgressClick,
 }: {
   state: Exclude<BudgetState, { type: 'noBudget' }>
   totalExpense: number
   totalBudget: number | null | undefined
   pendingRecurringExpense: number
-  onProgressClick?: () => void
 }) {
   const budget = totalBudget as number
   const isLoading = state.type === 'loading'
@@ -206,10 +204,7 @@ function ProgressBar({
       role="progressbar"
       aria-valuenow={Math.min(Math.round((totalExpense / budget) * 100), 100)}
       aria-label={ariaLabel}
-      className={`mt-3 ${isLoading ? 'invisible' : ''} ${onProgressClick ? 'cursor-pointer' : ''}`}
-      onClick={onProgressClick}
-      onKeyDown={onProgressClick ? (e) => { if (e.key === 'Enter' || e.key === ' ') onProgressClick() } : undefined}
-      tabIndex={onProgressClick ? 0 : undefined}
+      className={`mt-3 ${isLoading ? 'invisible' : ''}`}
     >
       {/* 바 트랙 */}
       <div className="relative h-2 bg-[var(--surface-hover)] rounded-full overflow-visible">
@@ -244,7 +239,7 @@ function ProgressBar({
         {state.type === 'normal' && (
           <>
             <span className="text-[var(--text-muted)]">
-              쓴 돈 {formatWon(totalExpense)} ({Math.round(state.actualPct)}%)
+              지출 {formatWon(totalExpense)} ({Math.round(state.actualPct)}%)
             </span>
             <span className="text-[var(--text-muted)]">·</span>
             <span className="text-grape-400 dark:text-grape-300">
@@ -252,14 +247,14 @@ function ProgressBar({
             </span>
             <span className="text-[var(--text-muted)]">·</span>
             <span className="text-grape-500 dark:text-grape-300 font-medium">
-              여유 {formatWon(state.remaining)}
+              남은 {formatWon(state.remaining)}
             </span>
           </>
         )}
         {state.type === 'noRecurring' && (
           <>
             <span className="text-[var(--text-muted)]">
-              쓴 돈 {formatWon(totalExpense)} ({Math.round(state.actualPct)}%)
+              지출 {formatWon(totalExpense)} ({Math.round(state.actualPct)}%)
             </span>
             <span className="text-[var(--text-muted)]">·</span>
             <span className="text-grape-500 dark:text-grape-300 font-medium">
@@ -270,7 +265,7 @@ function ProgressBar({
         {state.type === 'projectedExceed' && (
           <>
             <span className="text-[var(--text-muted)]">
-              쓴 돈 {formatWon(totalExpense)} ({Math.round(state.actualPct)}%)
+              지출 {formatWon(totalExpense)} ({Math.round(state.actualPct)}%)
             </span>
             <span className="text-[var(--text-muted)]">·</span>
             <span className="text-[var(--text-muted)]">
@@ -406,26 +401,35 @@ export default function HeroSummary(props: HeroSummaryProps) {
 
   const state = classifyBudgetState(totalExpense, totalBudget, pendingRecurringExpense)
 
-  const headerLabel = totalBudget != null && totalBudget > 0 ? '이번 달 예산' : label
+  // 카드 전체를 클릭할 때 이동: 프로그레스바만 특정하지 않고 히어로 영역 전체 클릭 가능
+  const cardClickProps = onProgressClick
+    ? {
+        onClick: onProgressClick,
+        role: 'button' as const,
+        tabIndex: 0,
+        onKeyDown: (e: React.KeyboardEvent) => { if (e.key === 'Enter' || e.key === ' ') onProgressClick() },
+        className: `card-surface p-6 bg-gradient-to-b from-grape-50/60 to-transparent dark:from-grape-900/30 dark:to-transparent cursor-pointer ${className}`,
+      }
+    : { className: `card-surface p-6 bg-gradient-to-b from-grape-50/60 to-transparent dark:from-grape-900/30 dark:to-transparent ${className}` }
 
   return (
-    <div className={`card-surface p-6 bg-gradient-to-b from-grape-50/60 to-transparent dark:from-grape-900/30 dark:to-transparent ${className}`}>
+    <div {...cardClickProps}>
       <div className="flex justify-between items-baseline">
-        <p className="text-sm text-[var(--text-tertiary)] mb-1">{headerLabel}</p>
+        {/* "이번 달 지출"로 명확히 표기 — 예산 금액이 큰 숫자처럼 보이는 혼동 방지 */}
+        <p className="text-sm text-[var(--text-tertiary)] mb-1">{label}</p>
         {totalBudget != null && totalBudget > 0 && (
-          <p className="text-sm text-[var(--text-secondary)] tabular-nums">{formatAmount(totalBudget)}</p>
+          <p className="text-xs text-[var(--text-muted)] tabular-nums">예산 {formatAmount(totalBudget)}</p>
         )}
       </div>
       <p className="text-display text-[var(--text-primary)]">{formatAmount(totalExpense)}</p>
 
-      {/* 예산 설정됨 또는 로딩 → 프로그레스바 */}
+      {/* 예산 설정됨 또는 로딩 → 프로그레스바 (클릭 핸들러는 카드 레벨로 이동) */}
       {state.type !== 'noBudget' && (
         <ProgressBar
           state={state}
           totalExpense={totalExpense}
           totalBudget={totalBudget}
           pendingRecurringExpense={pendingRecurringExpense}
-          onProgressClick={onProgressClick}
         />
       )}
 
