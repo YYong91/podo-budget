@@ -21,6 +21,7 @@ from app.models.income import Income
 from app.models.recurring_transaction import RecurringTransaction
 from app.models.user import User
 from app.schemas.recurring_transaction import (
+    ExecuteRequest,
     ExecuteResponse,
     RecurringTransactionCreate,
     RecurringTransactionResponse,
@@ -213,10 +214,14 @@ async def delete_recurring(
 @router.post("/{recurring_id}/execute", response_model=ExecuteResponse, status_code=status.HTTP_201_CREATED)
 async def execute_recurring_transaction(
     recurring_id: int,
+    body: ExecuteRequest | None = None,  # 금액 재정의 가능 (None이면 기본 금액 사용)
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> object:
-    """정기 거래 실행 → Expense 또는 Income 생성"""
+    """정기 거래 실행 → Expense 또는 Income 생성
+
+    body.amount를 전달하면 기본 금액 대신 재정의 금액으로 거래를 생성합니다 (#596).
+    """
     # 권한 확인 (가구 멤버십 포함)
     await _get_user_recurring(recurring_id, current_user, db)
 
@@ -230,10 +235,14 @@ async def execute_recurring_transaction(
             detail="비활성화된 정기 거래는 실행할 수 없습니다",
         )
 
-    created_id = await execute_recurring(recurring, db)
+    # body.amount가 있으면 재정의 금액 사용, 없으면 기본 금액 사용
+    override_amount = body.amount if body is not None else None
+    created_id = await execute_recurring(recurring, db, amount_override=override_amount)
 
+    # 메시지에는 실제 사용된 금액 표시
+    actual_amount = override_amount if override_amount is not None else float(recurring.amount)
     return ExecuteResponse(
-        message=f"{recurring.description} {float(recurring.amount):,.0f}원이 {'지출' if recurring.type == 'expense' else '수입'}으로 등록되었습니다",
+        message=f"{recurring.description} {actual_amount:,.0f}원이 {'지출' if recurring.type == 'expense' else '수입'}으로 등록되었습니다",
         created_id=created_id,
         type=recurring.type,
         next_due_date=recurring.next_due_date,
