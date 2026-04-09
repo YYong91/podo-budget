@@ -240,6 +240,26 @@ describe('useMonthlyTransactions', () => {
     })
   })
 
+  describe('pendingRecurringExpense', () => {
+    it('이번 달 활성 정기 지출의 합계를 반환한다', async () => {
+      const { result } = renderHook(
+        () => useMonthlyTransactions({ activeHouseholdId: 1 }),
+        { wrapper: createQueryWrapper() },
+      )
+      await waitFor(() => expect(result.current.loading).toBe(false))
+      expect(typeof result.current.pendingRecurringExpense).toBe('number')
+    })
+
+    it('정기 수입은 제외한다', async () => {
+      const { result } = renderHook(
+        () => useMonthlyTransactions({ activeHouseholdId: 1 }),
+        { wrapper: createQueryWrapper() },
+      )
+      await waitFor(() => expect(result.current.loading).toBe(false))
+      expect(result.current.pendingRecurringExpense).toBeGreaterThanOrEqual(0)
+    })
+  })
+
   describe('에러 처리', () => {
     it('error 상태가 기본 false이다', () => {
       const { result } = renderHook(() =>

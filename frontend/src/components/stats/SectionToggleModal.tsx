@@ -16,6 +16,7 @@ export type SectionVisibility = {
   budget: boolean
   cardUsage: boolean
   assets: boolean
+  recurring: boolean
   ai: boolean
 }
 
@@ -25,6 +26,7 @@ export const DEFAULT_SECTIONS: SectionVisibility = {
   budget: true,
   cardUsage: true,
   assets: true,
+  recurring: true,
   ai: true,
 }
 
@@ -53,6 +55,7 @@ const SECTION_LIST: { key: keyof SectionVisibility; label: string }[] = [
   { key: 'budget', label: '예산 상황' },
   { key: 'cardUsage', label: '카드 실적' },
   ...(FEATURES.assets ? [{ key: 'assets' as keyof SectionVisibility, label: '자산 변화' }] : []),
+  { key: 'recurring', label: '정기거래 관리' },
   { key: 'ai', label: 'AI 상세 분석' },
 ]
 
