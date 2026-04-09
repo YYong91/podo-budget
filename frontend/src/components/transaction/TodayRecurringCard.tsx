@@ -107,14 +107,14 @@ export default function TodayRecurringCard({ items, onExecute, onSkip }: TodayRe
     <div className="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)] shadow-sm p-4">
       {/* 헤더 */}
       <div className="text-sm font-semibold text-[var(--text-primary)] mb-3">
-        📅 오늘 정기거래 {total}건
+        오늘 정기거래 {total}건
       </div>
 
       {/* 카드 본문 */}
       <div className="flex items-center justify-between mb-1">
         <div className="flex items-center gap-2 min-w-0">
-          {/* 지출/수입 아이콘 */}
-          <span className="text-lg">{isExpense ? '💸' : '💰'}</span>
+          {/* 카테고리 이모지 — 없으면 타입별 기본값 */}
+          <span className="text-lg">{current.category_emoji ?? (isExpense ? '💸' : '💰')}</span>
           <span className="text-sm font-medium text-[var(--text-primary)] truncate">
             {current.description}
           </span>

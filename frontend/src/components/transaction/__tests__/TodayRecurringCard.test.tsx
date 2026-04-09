@@ -17,6 +17,7 @@ const makeItem = (overrides: Partial<RecurringTransaction>): RecurringTransactio
   start_date: '2026-01-15', end_date: null,
   next_due_date: '2026-01-01', is_active: true,
   created_at: '2026-01-15T00:00:00Z', updated_at: '2026-01-15T00:00:00Z',
+  category_emoji: null,
   ...overrides,
 })
 
