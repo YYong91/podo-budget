@@ -140,9 +140,9 @@ export default function MonthlyView({
       {/* 오늘 처리 대기 중인 정기거래 카드 */}
       <TodayRecurringCard
         items={monthly.allRecurring}
-        onExecute={async (id) => {
+        onExecute={async (id, amount) => {
           try {
-            await recurringApi.execute(id)
+            await recurringApi.execute(id, amount)
             addToast('success', TOAST.RECURRING_EXECUTED)
             monthly.fetchData()
           } catch {

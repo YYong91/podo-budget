@@ -59,7 +59,8 @@ describe('TodayRecurringCard', () => {
       <TodayRecurringCard items={[makeItem({ id: 5, next_due_date: '2026-01-01' })]} onExecute={onExecute} onSkip={vi.fn()} />
     )
     await userEvent.click(screen.getByText('등록하기'))
-    expect(onExecute).toHaveBeenCalledWith(5)
+    // 금액 수정 없이 등록하면 amount는 undefined
+    expect(onExecute).toHaveBeenCalledWith(5, undefined)
   })
 
   it('건너뛰기 버튼 클릭 시 onSkip이 호출된다', async () => {
@@ -110,5 +111,35 @@ describe('TodayRecurringCard', () => {
     await userEvent.click(screen.getByText('나중에'))
     expect(onExecute).not.toHaveBeenCalled()
     expect(onSkip).not.toHaveBeenCalled()
+  })
+
+  it('금액 수정 버튼을 클릭하면 입력 필드가 표시된다', async () => {
+    render(
+      <TodayRecurringCard items={[makeItem({ id: 1, amount: 17000, next_due_date: '2026-01-01' })]} onExecute={vi.fn()} onSkip={vi.fn()} />
+    )
+    await userEvent.click(screen.getByText('금액 수정'))
+    expect(screen.getByRole('spinbutton')).toBeInTheDocument()
+  })
+
+  it('금액 수정 후 등록하면 수정된 금액으로 onExecute가 호출된다', async () => {
+    const onExecute = vi.fn().mockResolvedValue(undefined)
+    render(
+      <TodayRecurringCard items={[makeItem({ id: 5, amount: 17000, next_due_date: '2026-01-01' })]} onExecute={onExecute} onSkip={vi.fn()} />
+    )
+    await userEvent.click(screen.getByText('금액 수정'))
+    const input = screen.getByRole('spinbutton')
+    await userEvent.clear(input)
+    await userEvent.type(input, '19000')
+    await userEvent.click(screen.getByText('등록하기'))
+    expect(onExecute).toHaveBeenCalledWith(5, 19000)
+  })
+
+  it('금액 수정 없이 등록하면 amount 없이 onExecute가 호출된다', async () => {
+    const onExecute = vi.fn().mockResolvedValue(undefined)
+    render(
+      <TodayRecurringCard items={[makeItem({ id: 5, next_due_date: '2026-01-01' })]} onExecute={onExecute} onSkip={vi.fn()} />
+    )
+    await userEvent.click(screen.getByText('등록하기'))
+    expect(onExecute).toHaveBeenCalledWith(5, undefined)
   })
 })

@@ -7,7 +7,7 @@ const SNOOZE_KEY = 'podo-snoozed-recurring'
 
 interface TodayRecurringCardProps {
   items: RecurringTransaction[]
-  onExecute: (id: number) => Promise<void>
+  onExecute: (id: number, amount?: number) => Promise<void>
   onSkip: (id: number) => Promise<void>
 }
 
@@ -28,6 +28,9 @@ export default function TodayRecurringCard({ items, onExecute, onSkip }: TodayRe
     }
   })
   const [isLoading, setIsLoading] = useState(false)
+  // 금액 수정 모드 상태: null이면 수정 안 함, 숫자면 사용자가 입력한 금액
+  const [isEditing, setIsEditing] = useState(false)
+  const [editingAmount, setEditingAmount] = useState<number | null>(null)
 
   // items 참조가 바뀌면 (refetch 후) processedIds 클리어 — 실행된 건은 이미 next_due_date가 다음 달로 이동해 pendingItems에서 제외됨
   useEffect(() => {
@@ -49,16 +52,24 @@ export default function TodayRecurringCard({ items, onExecute, onSkip }: TodayRe
   const total = visibleItems.length
   const isExpense = current.type === 'expense'
 
+  // 카드 항목이 바뀔 때 편집 상태 초기화 (다음 항목으로 이동 시)
+  const resetEditing = () => {
+    setIsEditing(false)
+    setEditingAmount(null)
+  }
+
   const handleAction = async (action: 'execute' | 'skip') => {
     setIsLoading(true)
     try {
       if (action === 'execute') {
-        await onExecute(current.id)
+        // 금액 수정 모드였다면 수정된 금액 전달, 아니면 undefined (원래 금액 사용)
+        await onExecute(current.id, editingAmount ?? undefined)
       } else {
         await onSkip(current.id)
       }
       // 성공 시 처리된 ID 추가 → visibleItems에서 자동으로 제외
       setProcessedIds(prev => new Set(prev).add(current.id))
+      resetEditing()
     } catch {
       // 실패 시 버튼 복원 (처리 상태 변경 없음)
     } finally {
@@ -74,6 +85,18 @@ export default function TodayRecurringCard({ items, onExecute, onSkip }: TodayRe
       sessionStorage.setItem(SNOOZE_KEY, JSON.stringify([...next]))
       return next
     })
+    resetEditing()
+  }
+
+  /** 금액 수정 토글: 수정 모드 진입 시 현재 금액으로 초기화 */
+  const handleToggleEditing = () => {
+    if (isEditing) {
+      // 수정 취소 시 상태 초기화
+      resetEditing()
+    } else {
+      setIsEditing(true)
+      setEditingAmount(current.amount)
+    }
   }
 
   return (
@@ -84,7 +107,7 @@ export default function TodayRecurringCard({ items, onExecute, onSkip }: TodayRe
       </div>
 
       {/* 카드 본문 */}
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center justify-between mb-1">
         <div className="flex items-center gap-2 min-w-0">
           {/* 지출/수입 아이콘 */}
           <span className="text-lg">{isExpense ? '💸' : '💰'}</span>
@@ -101,6 +124,36 @@ export default function TodayRecurringCard({ items, onExecute, onSkip }: TodayRe
           1/{total}
         </span>
       </div>
+
+      {/* 금액 수정 토글 버튼 */}
+      <div className="mb-3">
+        <button
+          onClick={handleToggleEditing}
+          disabled={isLoading}
+          className="text-xs text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] underline underline-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {isEditing ? '수정 취소' : '금액 수정'}
+        </button>
+      </div>
+
+      {/* 금액 수정 입력 필드 (수정 모드일 때만 표시) */}
+      {isEditing && (
+        <div className="mb-3">
+          <div className="flex items-center border border-[var(--border-default)] rounded-lg overflow-hidden">
+            <span className="px-3 py-2 text-sm text-[var(--text-tertiary)] bg-[var(--surface-elevated)] border-r border-[var(--border-default)]">
+              ₩
+            </span>
+            <input
+              type="number"
+              value={editingAmount ?? ''}
+              onChange={e => setEditingAmount(e.target.value === '' ? null : Number(e.target.value))}
+              className="flex-1 px-3 py-2 text-sm bg-transparent text-[var(--text-primary)] outline-none"
+              placeholder={String(current.amount)}
+              min={0}
+            />
+          </div>
+        </div>
+      )}
 
       {/* 액션 버튼: [등록하기(flex-1)] [나중에(subtle)] [건너뛰기(flex-1)] */}
       <div className="flex gap-2">

@@ -24,8 +24,8 @@ export const recurringApi = {
   delete: (id: number) =>
     apiClient.delete(`/recurring/${id}`),
 
-  execute: (id: number) =>
-    apiClient.post<ExecuteResponse>(`/recurring/${id}/execute`),
+  execute: (id: number, amount?: number) =>
+    apiClient.post<ExecuteResponse>(`/recurring/${id}/execute`, amount != null ? { amount } : undefined),
 
   skip: (id: number) =>
     apiClient.post<{ next_due_date: string }>(`/recurring/${id}/skip`),
