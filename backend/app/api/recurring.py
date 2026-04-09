@@ -12,6 +12,7 @@ from zoneinfo import ZoneInfo
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.api.dependencies import get_household_member, get_user_active_household_id
 from app.core.auth import get_current_user
@@ -141,9 +142,9 @@ async def get_recurring_list(
     if type is not None:
         query = query.where(RecurringTransaction.type == type)
 
-    query = query.order_by(RecurringTransaction.next_due_date.asc())
+    query = query.order_by(RecurringTransaction.next_due_date.asc()).options(selectinload(RecurringTransaction.category))
     result = await db.execute(query)
-    return result.scalars().all()
+    return [RecurringTransactionResponse.from_orm_with_emoji(r) for r in result.scalars().all()]
 
 
 @router.get("/pending", response_model=list[RecurringTransactionResponse])
@@ -164,9 +165,9 @@ async def get_pending_recurring(
         RecurringTransaction.is_active.is_(True),
     )
 
-    query = query.order_by(RecurringTransaction.next_due_date.asc())
+    query = query.order_by(RecurringTransaction.next_due_date.asc()).options(selectinload(RecurringTransaction.category))
     result = await db.execute(query)
-    return result.scalars().all()
+    return [RecurringTransactionResponse.from_orm_with_emoji(r) for r in result.scalars().all()]
 
 
 @router.get("/{recurring_id}", response_model=RecurringTransactionResponse)

@@ -373,6 +373,7 @@ export interface RecurringTransaction {
   is_active: boolean
   created_at: string
   updated_at: string
+  category_emoji: string | null
 }
 
 export interface RecurringTransactionCreate {
