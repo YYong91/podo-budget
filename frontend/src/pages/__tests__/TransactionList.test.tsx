@@ -114,8 +114,7 @@ describe('TransactionList', () => {
 
   it('월간 지출 히어로 라벨을 표시한다', async () => {
     renderPage()
-    const now = new Date()
-    expect(screen.getByText(`지출`)).toBeInTheDocument()
+    expect(screen.getByText('지출')).toBeInTheDocument()
   })
 
   it('데이터 로드 후 거래 목록을 표시한다', async () => {
