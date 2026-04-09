@@ -1,6 +1,6 @@
 /**
  * @file RecurringList.tsx
- * @description 반복 거래 관리 페이지
+ * @description 정기거래 관리 페이지
  * 목록 표시 + 필터만 담당하며, 모달은 RecurringModal로 분리되어 있다.
  */
 
@@ -271,9 +271,9 @@ export default function RecurringList() {
         <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)]/60">
           <EmptyState
             variant="primary"
-            title="등록된 반복 거래가 없습니다"
+            title="등록된 정기거래가 없습니다"
             description="매월 반복되는 지출이나 수입을 등록하면 자동으로 알려드립니다."
-            action={{ label: '반복 거래 추가', onClick: openAdd }}
+            action={{ label: '정기거래 추가', onClick: openAdd }}
           />
         </div>
       ) : (

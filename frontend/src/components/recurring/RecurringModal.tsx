@@ -1,6 +1,6 @@
 /**
  * @file RecurringModal.tsx
- * @description 반복 거래 추가/수정 모달 컴포넌트
+ * @description 정기거래 추가/수정 모달 컴포넌트
  * 추가 시: 유형, 설명, 금액, 카테고리, 주기, 시작일, 종료일
  * 수정 시: 설명, 금액, 카테고리, 종료일만 수정 가능
  */
@@ -67,7 +67,7 @@ export default function RecurringModal({
       <div className="bg-[var(--surface-card)] rounded-2xl shadow-xl w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-5 border-b border-[var(--border-subtle)]">
           <h2 id="recurring-modal-title" className="text-lg font-semibold text-[var(--text-primary)]">
-            {editingId ? '반복 거래 수정' : '반복 거래 추가'}
+            {editingId ? '정기거래 수정' : '정기거래 추가'}
           </h2>
           <button onClick={onClose} className="p-1 rounded-md hover:bg-[var(--surface-hover)]" aria-label="닫기">
             <X className="w-5 h-5 text-[var(--text-tertiary)]" />

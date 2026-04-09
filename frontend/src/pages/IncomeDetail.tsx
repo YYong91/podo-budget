@@ -194,7 +194,7 @@ export default function IncomeDetail() {
                   onClick={() => setShowRecurringModal(true)}
                   className="shrink-0 whitespace-nowrap px-4 py-2 text-sm font-medium text-[var(--text-secondary)] bg-[var(--surface-hover)] rounded-xl hover:bg-[var(--border-default)] transition-colors"
                 >
-                  반복 거래 등록
+                  정기거래 등록
                 </button>
               )}
               <button

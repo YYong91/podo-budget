@@ -1,6 +1,6 @@
 /**
  * @file recurringUtils.ts
- * @description 반복 거래 관련 순수 유틸 함수
+ * @description 정기거래 관련 순수 유틸 함수
  * RecurringList.tsx에서 추출한 주기 포맷 로직.
  */
 
@@ -15,7 +15,7 @@ interface RecurringFrequencyInput {
 const DAY_NAMES = ['월', '화', '수', '목', '금', '토', '일'] as const
 
 /**
- * 반복 거래의 주기를 한국어 문자열로 포맷한다.
+ * 정기거래의 주기를 한국어 문자열로 포맷한다.
  *
  * @example
  * formatFrequency({ frequency: 'monthly', day_of_month: 25 }) // "매월 25일"

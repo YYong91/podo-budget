@@ -1,6 +1,6 @@
 /**
  * @file RecurringList.test.tsx
- * @description 반복 거래 관리 페이지 테스트
+ * @description 정기거래 관리 페이지 테스트
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
@@ -22,7 +22,7 @@ vi.mock('../../stores/useHouseholdStore', () => ({
     selector({ activeHouseholdId: 1 }),
 }))
 
-/** 테스트용 반복 거래 데이터 */
+/** 테스트용 정기거래 데이터 */
 const mockItems: RecurringTransaction[] = [
   {
     id: 1, user_id: 1, household_id: 1,
@@ -85,7 +85,7 @@ describe('RecurringList', () => {
     expect(screen.getByText('수입')).toBeInTheDocument()
   })
 
-  it('반복 거래 목록을 표시한다', async () => {
+  it('정기거래 목록을 표시한다', async () => {
     renderRecurringList()
     await waitFor(() => {
       expect(screen.getAllByText('넷플릭스').length).toBeGreaterThan(0)
@@ -161,7 +161,7 @@ describe('RecurringList', () => {
     server.use(http.get('/api/recurring', () => HttpResponse.json([])))
     renderRecurringList()
     await waitFor(() => {
-      expect(screen.getByText(/등록된 반복 거래가 없습니다/)).toBeInTheDocument()
+      expect(screen.getByText(/등록된 정기거래가 없습니다/)).toBeInTheDocument()
     })
   })
 
@@ -179,17 +179,17 @@ describe('RecurringList', () => {
     const user = userEvent.setup()
     renderRecurringList()
     await user.click(screen.getByText('추가'))
-    expect(screen.getByText('반복 거래 추가')).toBeInTheDocument()
+    expect(screen.getByText('정기거래 추가')).toBeInTheDocument()
   })
 
   it('모달에서 닫기 클릭 시 모달이 닫힌다', async () => {
     const user = userEvent.setup()
     renderRecurringList()
     await user.click(screen.getByText('추가'))
-    expect(screen.getByText('반복 거래 추가')).toBeInTheDocument()
+    expect(screen.getByText('정기거래 추가')).toBeInTheDocument()
 
     await user.click(screen.getByLabelText('닫기'))
-    expect(screen.queryByText('반복 거래 추가')).not.toBeInTheDocument()
+    expect(screen.queryByText('정기거래 추가')).not.toBeInTheDocument()
   })
 
   // ==================== 바로 등록 (execute) ====================
@@ -336,7 +336,7 @@ describe('RecurringList', () => {
     const editBtns = screen.getAllByTitle('수정')
     await user.click(editBtns[0])
 
-    expect(screen.getByText('반복 거래 수정')).toBeInTheDocument()
+    expect(screen.getByText('정기거래 수정')).toBeInTheDocument()
   })
 
   // ==================== 폼 제출 검증 ====================
@@ -351,11 +351,11 @@ describe('RecurringList', () => {
     renderRecurringList()
 
     await waitFor(() => {
-      expect(screen.getByText(/등록된 반복 거래가 없습니다/)).toBeInTheDocument()
+      expect(screen.getByText(/등록된 정기거래가 없습니다/)).toBeInTheDocument()
     })
 
     // 빈 상태 화면의 추가 버튼으로 모달 열기
-    await user.click(screen.getByText('반복 거래 추가'))
+    await user.click(screen.getByText('정기거래 추가'))
     expect(screen.getByRole('dialog')).toBeInTheDocument()
 
     // 금액만 입력하고 설명은 비워둠
@@ -377,10 +377,10 @@ describe('RecurringList', () => {
     renderRecurringList()
 
     await waitFor(() => {
-      expect(screen.getByText(/등록된 반복 거래가 없습니다/)).toBeInTheDocument()
+      expect(screen.getByText(/등록된 정기거래가 없습니다/)).toBeInTheDocument()
     })
 
-    await user.click(screen.getByText('반복 거래 추가'))
+    await user.click(screen.getByText('정기거래 추가'))
 
     await user.type(screen.getByLabelText('설명'), '테스트')
     // 금액을 입력하지 않음 (기본 빈 문자열)
@@ -413,7 +413,7 @@ describe('RecurringList', () => {
     await user.click(executeBtns[0])
 
     await waitFor(() => {
-      expect(mockAddToast).toHaveBeenCalledWith('error', '반복 거래 등록에 실패했어요')
+      expect(mockAddToast).toHaveBeenCalledWith('error', '정기거래 등록에 실패했어요')
     })
   })
 
@@ -443,7 +443,7 @@ describe('RecurringList', () => {
 
   // ==================== 신규 추가 제출 성공 ====================
 
-  it('신규 반복 거래를 성공적으로 추가한다', async () => {
+  it('신규 정기거래를 성공적으로 추가한다', async () => {
     server.use(
       http.get('/api/recurring', () => HttpResponse.json([])),
       http.get('/api/categories', () => HttpResponse.json([])),
@@ -460,10 +460,10 @@ describe('RecurringList', () => {
     renderRecurringList()
 
     await waitFor(() => {
-      expect(screen.getByText(/등록된 반복 거래가 없습니다/)).toBeInTheDocument()
+      expect(screen.getByText(/등록된 정기거래가 없습니다/)).toBeInTheDocument()
     })
 
-    await user.click(screen.getByText('반복 거래 추가'))
+    await user.click(screen.getByText('정기거래 추가'))
     expect(screen.getByRole('dialog')).toBeInTheDocument()
 
     await user.type(screen.getByLabelText('설명'), '테스트 반복')
@@ -494,7 +494,7 @@ describe('RecurringList', () => {
     const editBtns = screen.getAllByTitle('수정')
     await user.click(editBtns[0])
 
-    expect(screen.getByText('반복 거래 수정')).toBeInTheDocument()
+    expect(screen.getByText('정기거래 수정')).toBeInTheDocument()
 
     // 수정 모달의 저장 버튼 클릭
     await user.click(screen.getByText('수정하기'))
@@ -541,10 +541,10 @@ describe('RecurringList', () => {
     renderRecurringList()
 
     await waitFor(() => {
-      expect(screen.getByText(/등록된 반복 거래가 없습니다/)).toBeInTheDocument()
+      expect(screen.getByText(/등록된 정기거래가 없습니다/)).toBeInTheDocument()
     })
 
-    await user.click(screen.getByText('반복 거래 추가'))
+    await user.click(screen.getByText('정기거래 추가'))
     await user.type(screen.getByLabelText('설명'), '실패 테스트')
     await user.type(screen.getByLabelText('금액'), '10000')
     await user.click(screen.getByText('추가하기'))

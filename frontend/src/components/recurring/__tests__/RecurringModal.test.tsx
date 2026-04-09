@@ -45,12 +45,12 @@ describe('RecurringModal', () => {
 
   it('추가 모드에서 제목을 표시한다', () => {
     render(<RecurringModal {...defaultProps} />)
-    expect(screen.getByText('반복 거래 추가')).toBeInTheDocument()
+    expect(screen.getByText('정기거래 추가')).toBeInTheDocument()
   })
 
   it('수정 모드에서 제목을 표시한다', () => {
     render(<RecurringModal {...defaultProps} editingId={1} />)
-    expect(screen.getByText('반복 거래 수정')).toBeInTheDocument()
+    expect(screen.getByText('정기거래 수정')).toBeInTheDocument()
   })
 
   it('추가 모드에서 유형 선택 버튼을 표시한다', () => {
