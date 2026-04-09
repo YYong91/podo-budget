@@ -188,7 +188,7 @@ export function useMonthlyTransactions({ activeHouseholdId }: UseMonthlyTransact
     [queryClient, activeHouseholdId, currentYear, currentMonth],
   )
 
-  // setPendingRecurring — ScheduledTransactions execute/skip 후 UI 즉시 반영용
+  // setPendingRecurring — TodayRecurringCard execute/skip 후 UI 즉시 반영용
   // React Query 전환 후에도 인터페이스 유지 (호출 측 변경 없음)
   const setPendingRecurring = useCallback(
     (updater: RecurringTransaction[] | ((prev: RecurringTransaction[]) => RecurringTransaction[])) => {
