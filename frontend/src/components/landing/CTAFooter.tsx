@@ -36,13 +36,13 @@ export function CTAFooter() {
           </span>
 
           <h2 className="text-2xl font-bold leading-snug text-white sm:text-3xl md:text-4xl">
-            <span className="block">포도알처럼 하나씩,</span>
-            <span className="block">오늘부터 시작해볼까요?</span>
+            <span className="block">오늘부터</span>
+            <span className="block">편하게 기록해볼까요?</span>
           </h2>
 
           <p className="mt-4 max-w-md text-base leading-relaxed text-white/80 md:text-lg">
-            <span className="block">복잡한 가입 절차 없이</span>
-            <span className="block">메신저 하나로 바로 시작하세요.</span>
+            <span className="block">복잡한 가입 없이,</span>
+            <span className="block">구글 계정으로 바로 시작하세요.</span>
           </p>
 
           {/* CTA 버튼 */}
