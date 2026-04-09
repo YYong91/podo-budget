@@ -223,6 +223,7 @@ export default function TransactionList() {
           onWelcomeDismiss={handleWelcomeDismiss}
           botNudgeDismissed={botNudgeDismissed}
           onBotNudgeDismiss={handleBotNudgeDismiss}
+          pendingRecurringExpense={monthly.pendingRecurringExpense}
           memberMap={memberMap}
           totalBudget={totalBudget}
           showHouseholdSwitcher={households.length > 1}

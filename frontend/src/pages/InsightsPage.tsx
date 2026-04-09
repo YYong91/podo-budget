@@ -17,11 +17,13 @@ import EmptyState from '../components/EmptyState'
 
 // API
 import { statsApi, insightsApi } from '../api/insights'
+import { expenseApi } from '../api/expenses'
 import { incomeApi } from '../api/income'
 import { getMonthlyStats } from '../api/budgets'
 import { assetApi } from '../api/assets'
 import { categoryApi } from '../api/categories'
 import { paymentMethodApi } from '../api/paymentMethods'
+import { recurringApi } from '../api/recurring'
 import { useHouseholdStore } from '../stores/useHouseholdStore'
 import { FEATURES } from '../config/features'
 
@@ -32,6 +34,7 @@ import UnifiedSummaryCards from '../components/stats/UnifiedSummaryCards'
 // CategoryPieChart는 CategoryTopList에 탭으로 통합됨
 import CategoryTopList from '../components/stats/CategoryTopList'
 import BudgetVsActual from '../components/stats/BudgetVsActual'
+import RecurringManageSection from '../components/stats/RecurringManageSection'
 import CardUsageSummary from '../components/stats/CardUsageSummary'
 import AssetChangeSummary from '../components/stats/AssetChangeSummary'
 import MonthlyHighlights from '../components/stats/MonthlyHighlights'
@@ -197,6 +200,42 @@ export default function InsightsPage() {
     enabled: !!activeHouseholdId,
   })
 
+  // ── Group 7: 정기거래 — 활성 목록 + 당월 실행/건너뜀 구분 ──
+
+  const { data: recurringData = [] } = useQuery({
+    queryKey: ['insights-recurring', activeHouseholdId],
+    queryFn: () => recurringApi.getAll({ household_id: activeHouseholdId! }).then(res => res.data),
+    staleTime: 5 * 60 * 1000,
+    enabled: !!activeHouseholdId,
+  })
+
+  // 당월 지출/수입 중 recurring_transaction_id가 있는 것 조회 → 실제 실행 금액 매핑
+  const [recurringYear, recurringMonth] = monthStr.split('-').map(Number)
+  const recurringMonthStart = `${monthStr}-01`
+  const recurringMonthEnd = new Date(recurringYear, recurringMonth, 0).toISOString().slice(0, 10)
+
+  const { data: monthlyExpenseList = [] } = useQuery({
+    queryKey: ['insights-expense-list', monthStr, activeHouseholdId],
+    queryFn: () => expenseApi.getAll({
+      start_date: recurringMonthStart,
+      end_date: recurringMonthEnd,
+      household_id: activeHouseholdId!,
+      limit: 500,
+    }).then(r => r.data),
+    enabled: !!activeHouseholdId && sectionVisibility.recurring,
+  })
+
+  const { data: monthlyIncomeList = [] } = useQuery({
+    queryKey: ['insights-income-list', monthStr, activeHouseholdId],
+    queryFn: () => incomeApi.getAll({
+      start_date: recurringMonthStart,
+      end_date: recurringMonthEnd,
+      household_id: activeHouseholdId!,
+      limit: 500,
+    }).then(r => r.data),
+    enabled: !!activeHouseholdId && sectionVisibility.recurring,
+  })
+
   // ── 파생 상태 (useMemo — 쿼리 결과 변경 시 재계산) ──
 
   // 스냅샷에서 자산 데이터 파생 — getSummary 대체 (Yahoo Finance 실시간 호출 제거)
@@ -229,6 +268,24 @@ export default function InsightsPage() {
       .filter(c => savingsCatNames.has(c.category))
       .reduce((sum, c) => sum + c.amount, 0)
   }, [expenseCategories, expenseStats])
+
+  // 정기거래 — 활성 항목만 필터링
+  const activeRecurringItems = useMemo(
+    () => recurringData.filter(r => r.is_active),
+    [recurringData],
+  )
+
+  // recurring_transaction_id → 실제 실행 금액 맵 (없으면 건너뜀)
+  const executedAmountMap = useMemo(() => {
+    const map = new Map<number, number>()
+    monthlyExpenseList
+      .filter(e => e.recurring_transaction_id != null)
+      .forEach(e => map.set(e.recurring_transaction_id!, e.amount))
+    monthlyIncomeList
+      .filter(i => i.recurring_transaction_id != null)
+      .forEach(i => map.set(i.recurring_transaction_id!, i.amount))
+    return map
+  }, [monthlyExpenseList, monthlyIncomeList])
 
   const healthScore = useMemo((): HealthScore | null => {
     if (!expenseStats && !incomeStats) return null
@@ -436,17 +493,26 @@ export default function InsightsPage() {
             <BudgetVsActual budgetStats={budgetStats ?? null} monthStr={monthStr} />
           )}
 
-          {/* 6. 카드 실적 */}
+          {/* 6. 정기거래 관리 */}
+          {sectionVisibility.recurring && (
+            <RecurringManageSection
+              items={activeRecurringItems}
+              monthStr={monthStr}
+              executedAmountMap={executedAmountMap}
+            />
+          )}
+
+          {/* 7. 카드 실적 */}
           {sectionVisibility.cardUsage && cardUsage.length > 0 && (
             <CardUsageSummary usage={cardUsage} />
           )}
 
-          {/* 7. 자산 변화 — 플래그 비활성 시 섹션 전체 미표시 */}
+          {/* 8. 자산 변화 — 플래그 비활성 시 섹션 전체 미표시 */}
           {FEATURES.assets && sectionVisibility.assets && (
             <AssetChangeSummary summary={assetSummary ?? null} previousSnapshot={prevSnapshot} />
           )}
 
-          {/* 8. AI 상세 분석 */}
+          {/* 9. AI 상세 분석 */}
           {sectionVisibility.ai && (
             <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)]/60 p-4">
               <div className="flex items-center justify-between mb-4">

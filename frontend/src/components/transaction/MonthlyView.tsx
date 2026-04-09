@@ -5,12 +5,14 @@
  */
 
 import { useRef, useMemo, useCallback, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Skeleton } from '../skeleton/Skeleton'
 import PeriodNavigator from '../stats/PeriodNavigator'
 import HeroSummary from '../stats/HeroSummary'
 import MiniCalendar from '../MiniCalendar'
 import TransactionItem from '../TransactionItem'
-import ScheduledTransactions from '../ScheduledTransactions'
+import TodayRecurringCard from './TodayRecurringCard'
+import ScheduledPopover from './ScheduledPopover'
 import EmptyState from '../EmptyState'
 import WelcomeCard from '../WelcomeCard'
 import BotNudgeCard from '../BotNudgeCard'
@@ -36,6 +38,8 @@ interface MonthlyViewProps {
   onBotNudgeDismiss: () => void
   /** 멀티멤버 가구의 user_id → username 매핑 (단독 가구는 null) */
   memberMap: Map<number, string> | null
+  /** 이번 달 대기 중인 정기 지출 합계 */
+  pendingRecurringExpense: number
   /** 월 총 예산 (undefined = 로딩 중, null = 미설정, number = 설정됨) */
   totalBudget: number | null | undefined
   /** 복수 가구 소속일 때 true — 가구 전환 아이콘 노출 */
@@ -53,12 +57,14 @@ export default function MonthlyView({
   onWelcomeDismiss,
   botNudgeDismissed,
   onBotNudgeDismiss,
+  pendingRecurringExpense,
   memberMap,
   totalBudget,
   showHouseholdSwitcher,
   onOpenHouseholdSheet,
 }: MonthlyViewProps) {
   const { addToast } = useToast()
+  const navigate = useNavigate()
 
   // 달력 접기/펼치기 (최초 방문: 펼침, 이후: 사용자 선호 유지)
   const CALENDAR_COLLAPSE_KEY = 'podo-calendar-collapsed'
@@ -84,13 +90,31 @@ export default function MonthlyView({
     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
   }, [])
 
-  // 캘린더 날짜 클릭 -> 스크롤
+  // 예정 정기거래 팝오버 상태
+  const [popoverDate, setPopoverDate] = useState<string | null>(null)
+  const handlePopoverClose = useCallback(() => setPopoverDate(null), [])
+  const popoverItems = useMemo(() => {
+    if (!popoverDate) return []
+    return monthly.scheduledItems.get(popoverDate) ?? []
+  }, [popoverDate, monthly.scheduledItems])
+
+  // 캘린더 날짜 클릭 → 기존 거래가 있으면 스크롤, 예정 정기거래만 있으면 팝오버
   const handleDateClick = useCallback((dateString: string) => {
+    // 기존 거래가 있으면 해당 날짜로 스크롤
     const ref = dateRefs.current.get(dateString)
     if (ref) {
+      setPopoverDate(null)
       ref.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      return
     }
-  }, [])
+    // 예정 정기거래가 있으면 팝오버 토글
+    const scheduled = monthly.scheduledItems.get(dateString)
+    if (scheduled && scheduled.length > 0) {
+      setPopoverDate(prev => prev === dateString ? null : dateString)
+    } else {
+      setPopoverDate(null)
+    }
+  }, [monthly.scheduledItems])
 
   return (
     <>
@@ -123,30 +147,37 @@ export default function MonthlyView({
       </div>
 
       {/* 월간 지출 히어로 요약 — currentMonth는 0-indexed이므로 +1 */}
-      {(() => {
-        const budgetRatio = totalBudget != null && totalBudget > 0
-          ? monthly.totalExpense / totalBudget
-          : undefined
+      <HeroSummary
+        label="지출"
+        totalExpense={monthly.totalExpense}
+        totalBudget={totalBudget}
+        pendingRecurringExpense={pendingRecurringExpense}
+        totalIncome={monthly.totalIncome}
+        onProgressClick={() => navigate('/insights')}
+      />
 
-        const remainingBudget = totalBudget != null && totalBudget > 0
-          ? totalBudget - monthly.totalExpense
-          : undefined
-
-        const sublabel = budgetRatio == null && monthly.totalIncome > 0
-          ? `수입 대비 ${Math.round((monthly.totalExpense / monthly.totalIncome) * 100)}%`
-          : undefined
-
-        return (
-          <HeroSummary
-            label={`${monthly.currentMonth + 1}월 지출`}
-            amount={monthly.totalExpense}
-            sublabel={sublabel}
-            sublabelLoading={totalBudget === undefined}
-            budgetRatio={budgetRatio}
-            remainingBudget={remainingBudget}
-          />
-        )
-      })()}
+      {/* 오늘 처리 대기 중인 정기거래 카드 */}
+      <TodayRecurringCard
+        items={monthly.allRecurring}
+        onExecute={async (id, amount) => {
+          try {
+            await recurringApi.execute(id, amount)
+            addToast('success', TOAST.RECURRING_EXECUTED)
+            monthly.fetchData()
+          } catch {
+            addToast('error', TOAST.RECURRING_EXECUTE_FAILED)
+          }
+        }}
+        onSkip={async (id) => {
+          try {
+            await recurringApi.skip(id)
+            addToast('success', TOAST.RECURRING_SKIPPED)
+            monthly.fetchData()
+          } catch {
+            addToast('error', TOAST.RECURRING_SKIP_FAILED)
+          }
+        }}
+      />
 
       {/* 온보딩 웰컴 카드 */}
       {!welcomeDismissed && !monthly.loading && (
@@ -202,30 +233,14 @@ export default function MonthlyView({
         </div>
       )}
 
-      {/* 예정 거래 섹션 — 캘린더 바로 아래 */}
-      <ScheduledTransactions
-        items={monthly.allRecurring}
-        currentYear={monthly.currentYear}
-        currentMonth={monthly.currentMonth}
-        onExecute={async (id) => {
-          try {
-            await recurringApi.execute(id)
-            addToast('success', TOAST.RECURRING_EXECUTED)
-            monthly.fetchData()
-          } catch {
-            addToast('error', TOAST.RECURRING_EXECUTE_FAILED)
-          }
-        }}
-        onSkip={async (id) => {
-          try {
-            await recurringApi.skip(id)
-            addToast('success', TOAST.RECURRING_SKIPPED)
-            monthly.fetchData()
-          } catch {
-            addToast('error', TOAST.RECURRING_SKIP_FAILED)
-          }
-        }}
-      />
+      {/* 예정 정기거래 팝오버 — 달력 아래에 표시 */}
+      {popoverDate && popoverItems.length > 0 && (
+        <ScheduledPopover
+          date={popoverDate}
+          items={popoverItems}
+          onClose={handlePopoverClose}
+        />
+      )}
 
       {/* 거래 리스트 */}
       {monthly.loading ? (

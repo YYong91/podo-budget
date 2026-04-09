@@ -293,6 +293,7 @@ export const mockRecurringTransactions: RecurringTransaction[] = [
     next_due_date: '2026-02-15',
     is_active: true,
     created_at: '2026-01-15T00:00:00Z', updated_at: '2026-01-15T00:00:00Z',
+    category_emoji: null,
   },
   {
     id: 2, user_id: 1, household_id: 1, type: 'income',
@@ -303,6 +304,7 @@ export const mockRecurringTransactions: RecurringTransaction[] = [
     next_due_date: '2026-02-25',
     is_active: true,
     created_at: '2026-01-25T00:00:00Z', updated_at: '2026-01-25T00:00:00Z',
+    category_emoji: null,
   },
   {
     id: 3, user_id: 1, household_id: 1, type: 'expense',
@@ -313,6 +315,7 @@ export const mockRecurringTransactions: RecurringTransaction[] = [
     next_due_date: '2026-02-28',
     is_active: true,
     created_at: '2026-01-28T00:00:00Z', updated_at: '2026-01-28T00:00:00Z',
+    category_emoji: null,
   },
   {
     id: 4, user_id: 1, household_id: 1, type: 'expense',
@@ -323,6 +326,7 @@ export const mockRecurringTransactions: RecurringTransaction[] = [
     next_due_date: '2026-02-10',
     is_active: false,
     created_at: '2026-01-10T00:00:00Z', updated_at: '2026-01-10T00:00:00Z',
+    category_emoji: null,
   },
 ]
 

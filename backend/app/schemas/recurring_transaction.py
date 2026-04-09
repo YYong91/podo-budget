@@ -53,8 +53,23 @@ class RecurringTransactionResponse(RecurringTransactionBase):
     is_active: bool
     created_at: datetime
     updated_at: datetime
+    category_emoji: str | None = None  # 카테고리 이모지 (category relationship에서 추출)
 
     model_config = {"from_attributes": True}
+
+    @classmethod
+    def from_orm_with_emoji(cls, obj: object) -> "RecurringTransactionResponse":
+        """ORM 객체에서 category.emoji를 추출하여 category_emoji 필드에 매핑"""
+        data = cls.model_validate(obj)
+        category = getattr(obj, "category", None)
+        data.category_emoji = getattr(category, "emoji", None) if category else None
+        return data
+
+
+class ExecuteRequest(BaseModel):
+    """정기거래 실행 시 선택적으로 금액을 재정의할 수 있는 요청 스키마"""
+
+    amount: float | None = Field(None, gt=0, description="재정의 금액 (None이면 정기거래의 기본 금액 사용)")
 
 
 class ExecuteResponse(BaseModel):
