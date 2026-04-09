@@ -2,6 +2,9 @@ import { useState, useMemo, useEffect } from 'react'
 import { formatAmount, getLocalDateString } from '../../utils/format'
 import type { RecurringTransaction } from '../../types'
 
+// sessionStorage 키: 현재 세션에서 "나중에" 처리된 정기거래 ID 목록
+const SNOOZE_KEY = 'podo-snoozed-recurring'
+
 interface TodayRecurringCardProps {
   items: RecurringTransaction[]
   onExecute: (id: number) => Promise<void>
@@ -11,9 +14,19 @@ interface TodayRecurringCardProps {
 /** 오늘 기준 처리 대기 중인 정기거래를 카드 스택으로 보여주는 컴포넌트.
  *  한 번에 하나씩 표시하고, 등록/건너뛰기 후 다음 항목으로 이동한다.
  *  processedIds로 처리 상태를 추적하여 items 참조가 바뀌어도 안전하게 동작한다.
+ *  snoozedIds는 sessionStorage 기반 — 탭 닫으면 초기화되어 다음 방문 시 재표시된다.
  */
 export default function TodayRecurringCard({ items, onExecute, onSkip }: TodayRecurringCardProps) {
   const [processedIds, setProcessedIds] = useState<Set<number>>(new Set())
+  const [snoozedIds, setSnoozedIds] = useState<Set<number>>(() => {
+    // 마운트 시 sessionStorage에서 스누즈 목록 복원
+    try {
+      const raw = sessionStorage.getItem(SNOOZE_KEY)
+      return raw ? new Set<number>(JSON.parse(raw)) : new Set<number>()
+    } catch {
+      return new Set<number>()
+    }
+  })
   const [isLoading, setIsLoading] = useState(false)
 
   // items 참조가 바뀌면 (refetch 후) processedIds 클리어 — 실행된 건은 이미 next_due_date가 다음 달로 이동해 pendingItems에서 제외됨
@@ -23,10 +36,10 @@ export default function TodayRecurringCard({ items, onExecute, onSkip }: TodayRe
 
   const today = getLocalDateString()
 
-  // 오늘 또는 이전 날짜가 due_date이고 아직 처리하지 않은 정기거래만 필터링
+  // 오늘 또는 이전 날짜가 due_date이고, 처리/스누즈되지 않은 정기거래만 필터링
   const visibleItems = useMemo(
-    () => items.filter(r => r.next_due_date <= today && !processedIds.has(r.id)),
-    [items, today, processedIds],
+    () => items.filter(r => r.next_due_date <= today && !processedIds.has(r.id) && !snoozedIds.has(r.id)),
+    [items, today, processedIds, snoozedIds],
   )
 
   // 처리할 항목이 없으면 렌더링하지 않음
@@ -51,6 +64,16 @@ export default function TodayRecurringCard({ items, onExecute, onSkip }: TodayRe
     } finally {
       setIsLoading(false)
     }
+  }
+
+  /** "나중에" 클릭: 이번 세션에서만 숨김. API 호출 없이 즉시 처리 */
+  const handleSnooze = (id: number) => {
+    setSnoozedIds(prev => {
+      const next = new Set(prev).add(id)
+      // sessionStorage에 직렬화하여 저장 — 탭 닫으면 자동 초기화
+      sessionStorage.setItem(SNOOZE_KEY, JSON.stringify([...next]))
+      return next
+    })
   }
 
   return (
@@ -79,7 +102,7 @@ export default function TodayRecurringCard({ items, onExecute, onSkip }: TodayRe
         </span>
       </div>
 
-      {/* 액션 버튼 */}
+      {/* 액션 버튼: [등록하기(flex-1)] [나중에(subtle)] [건너뛰기(flex-1)] */}
       <div className="flex gap-2">
         <button
           onClick={() => handleAction('execute')}
@@ -91,6 +114,14 @@ export default function TodayRecurringCard({ items, onExecute, onSkip }: TodayRe
           }`}
         >
           등록하기
+        </button>
+        {/* 나중에: 세션 스누즈. 배경 없는 텍스트 버튼으로 시각적 우선순위 낮춤 */}
+        <button
+          onClick={() => handleSnooze(current.id)}
+          disabled={isLoading}
+          className="px-3 py-2 text-xs text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          나중에
         </button>
         <button
           onClick={() => handleAction('skip')}

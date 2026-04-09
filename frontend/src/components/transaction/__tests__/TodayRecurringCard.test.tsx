@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import TodayRecurringCard from '../TodayRecurringCard'
@@ -16,6 +16,7 @@ const makeItem = (overrides: Partial<RecurringTransaction>): RecurringTransactio
 })
 
 describe('TodayRecurringCard', () => {
+  beforeEach(() => sessionStorage.clear())
   it('빈 배열이면 아무것도 렌더링하지 않는다', () => {
     const { container } = render(
       <TodayRecurringCard items={[]} onExecute={vi.fn()} onSkip={vi.fn()} />
@@ -90,5 +91,24 @@ describe('TodayRecurringCard', () => {
     await waitFor(() => {
       expect(screen.getByText('등록하기').closest('button')).not.toBeDisabled()
     })
+  })
+
+  it('나중에 버튼 클릭 시 카드가 사라진다', async () => {
+    render(
+      <TodayRecurringCard items={[makeItem({ id: 1, next_due_date: '2026-01-01' })]} onExecute={vi.fn()} onSkip={vi.fn()} />
+    )
+    await userEvent.click(screen.getByText('나중에'))
+    expect(screen.queryByText('넷플릭스')).toBeNull()
+  })
+
+  it('나중에 클릭해도 onExecute/onSkip이 호출되지 않는다', async () => {
+    const onExecute = vi.fn()
+    const onSkip = vi.fn()
+    render(
+      <TodayRecurringCard items={[makeItem({ id: 1, next_due_date: '2026-01-01' })]} onExecute={onExecute} onSkip={onSkip} />
+    )
+    await userEvent.click(screen.getByText('나중에'))
+    expect(onExecute).not.toHaveBeenCalled()
+    expect(onSkip).not.toHaveBeenCalled()
   })
 })
