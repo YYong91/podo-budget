@@ -78,7 +78,7 @@ function MiniCalendar({
               <button
                 key={colIdx}
                 data-date={day.dateString}
-                onClick={() => onDateClick(day.dateString)}
+                onClick={(e) => { e.stopPropagation(); onDateClick(day.dateString) }}
                 className="flex flex-col items-center py-1 px-1 rounded-lg hover:bg-[var(--surface-hover)] transition-colors min-h-[40px]"
               >
                 <span
