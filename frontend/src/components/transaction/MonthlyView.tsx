@@ -12,6 +12,7 @@ import HeroSummary from '../stats/HeroSummary'
 import MiniCalendar from '../MiniCalendar'
 import TransactionItem from '../TransactionItem'
 import TodayRecurringCard from './TodayRecurringCard'
+import ScheduledPopover from './ScheduledPopover'
 import EmptyState from '../EmptyState'
 import WelcomeCard from '../WelcomeCard'
 import BotNudgeCard from '../BotNudgeCard'
@@ -89,13 +90,31 @@ export default function MonthlyView({
     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
   }, [])
 
-  // 캘린더 날짜 클릭 -> 스크롤
+  // 예정 정기거래 팝오버 상태
+  const [popoverDate, setPopoverDate] = useState<string | null>(null)
+  const handlePopoverClose = useCallback(() => setPopoverDate(null), [])
+  const popoverItems = useMemo(() => {
+    if (!popoverDate) return []
+    return monthly.scheduledItems.get(popoverDate) ?? []
+  }, [popoverDate, monthly.scheduledItems])
+
+  // 캘린더 날짜 클릭 → 기존 거래가 있으면 스크롤, 예정 정기거래만 있으면 팝오버
   const handleDateClick = useCallback((dateString: string) => {
+    // 기존 거래가 있으면 해당 날짜로 스크롤
     const ref = dateRefs.current.get(dateString)
     if (ref) {
+      setPopoverDate(null)
       ref.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      return
     }
-  }, [])
+    // 예정 정기거래가 있으면 팝오버 토글
+    const scheduled = monthly.scheduledItems.get(dateString)
+    if (scheduled && scheduled.length > 0) {
+      setPopoverDate(prev => prev === dateString ? null : dateString)
+    } else {
+      setPopoverDate(null)
+    }
+  }, [monthly.scheduledItems])
 
   return (
     <>
@@ -140,9 +159,9 @@ export default function MonthlyView({
       {/* 오늘 처리 대기 중인 정기거래 카드 */}
       <TodayRecurringCard
         items={monthly.allRecurring}
-        onExecute={async (id) => {
+        onExecute={async (id, amount) => {
           try {
-            await recurringApi.execute(id)
+            await recurringApi.execute(id, amount)
             addToast('success', TOAST.RECURRING_EXECUTED)
             monthly.fetchData()
           } catch {
@@ -212,6 +231,15 @@ export default function MonthlyView({
             <ChevronUp className="w-3.5 h-3.5 text-[var(--text-tertiary)]" />
           </button>
         </div>
+      )}
+
+      {/* 예정 정기거래 팝오버 — 달력 아래에 표시 */}
+      {popoverDate && popoverItems.length > 0 && (
+        <ScheduledPopover
+          date={popoverDate}
+          items={popoverItems}
+          onClose={handlePopoverClose}
+        />
       )}
 
       {/* 거래 리스트 */}

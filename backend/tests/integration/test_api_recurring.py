@@ -646,3 +646,83 @@ async def test_create_recurring_without_source_id_keeps_existing_behavior(authen
     )
     assert response.status_code == 201
     assert response.json()["next_due_date"] == today.isoformat()
+
+
+# --- 금액 재정의 실행 (#596) ---
+
+
+@pytest.mark.asyncio
+async def test_execute_with_override_amount(authenticated_client, db_session, test_user: User, test_household: Household):
+    """금액 재정의로 실행하면 재정의된 금액으로 거래가 생성된다"""
+    from sqlalchemy import select
+
+    from app.models.expense import Expense
+
+    recurring = RecurringTransaction(
+        user_id=test_user.id,
+        household_id=test_household.id,
+        type="expense",
+        amount=17000,
+        description="넷플릭스",
+        frequency="monthly",
+        day_of_month=25,
+        start_date=date(2026, 1, 1),
+        next_due_date=date(2026, 2, 25),
+        is_active=True,
+    )
+    db_session.add(recurring)
+    await db_session.commit()
+    await db_session.refresh(recurring)
+
+    # 기본 금액(17000) 대신 19000으로 재정의하여 실행
+    response = await authenticated_client.post(
+        f"/api/recurring/{recurring.id}/execute",
+        json={"amount": 19000},
+    )
+    assert response.status_code == 201
+
+    data = response.json()
+    assert data["type"] == "expense"
+    assert data["created_id"] > 0
+
+    # 실제 생성된 Expense의 금액이 재정의된 금액인지 확인
+    result = await db_session.execute(select(Expense).where(Expense.id == data["created_id"]))
+    created_expense = result.scalar_one()
+    assert float(created_expense.amount) == 19000
+
+
+@pytest.mark.asyncio
+async def test_execute_without_body_uses_default_amount(authenticated_client, db_session, test_user: User, test_household: Household):
+    """바디 없이 실행하면 기본 금액으로 거래가 생성된다"""
+    from sqlalchemy import select
+
+    from app.models.expense import Expense
+
+    recurring = RecurringTransaction(
+        user_id=test_user.id,
+        household_id=test_household.id,
+        type="expense",
+        amount=17000,
+        description="넷플릭스",
+        frequency="monthly",
+        day_of_month=25,
+        start_date=date(2026, 1, 1),
+        next_due_date=date(2026, 2, 25),
+        is_active=True,
+    )
+    db_session.add(recurring)
+    await db_session.commit()
+    await db_session.refresh(recurring)
+
+    # 바디 없이 실행 (기존 동작 유지)
+    response = await authenticated_client.post(f"/api/recurring/{recurring.id}/execute")
+    assert response.status_code == 201
+
+    data = response.json()
+    assert data["type"] == "expense"
+    assert data["created_id"] > 0
+
+    # 실제 생성된 Expense의 금액이 정기거래 기본 금액인지 확인
+    result = await db_session.execute(select(Expense).where(Expense.id == data["created_id"]))
+    created_expense = result.scalar_one()
+    assert float(created_expense.amount) == 17000

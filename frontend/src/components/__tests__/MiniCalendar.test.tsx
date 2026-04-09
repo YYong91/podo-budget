@@ -100,4 +100,60 @@ describe('MiniCalendar', () => {
     const dots = cell?.querySelectorAll('[data-testid="dot"]')
     expect(dots?.length ?? 0).toBe(0)
   })
+
+  describe('예정 정기거래 ring 인디케이터', () => {
+    it('예정 정기지출이 있는 날에 grape ring이 표시된다', () => {
+      const summaries = new Map([
+        ['2026-03-20', { expense: 0, income: 0, scheduledExpense: 14900 }],
+      ])
+      renderCalendar({ daySummaries: summaries })
+      const cell = document.querySelector('[data-date="2026-03-20"]')
+      const rings = cell?.querySelectorAll('[data-testid="ring"]')
+      expect(rings?.length).toBe(1)
+      expect(rings?.[0]?.className).toContain('border-grape-300')
+    })
+
+    it('예정 정기수입이 있는 날에 leaf ring이 표시된다', () => {
+      const summaries = new Map([
+        ['2026-03-25', { expense: 0, income: 0, scheduledIncome: 3500000 }],
+      ])
+      renderCalendar({ daySummaries: summaries })
+      const cell = document.querySelector('[data-date="2026-03-25"]')
+      const rings = cell?.querySelectorAll('[data-testid="ring"]')
+      expect(rings?.length).toBe(1)
+      expect(rings?.[0]?.className).toContain('border-leaf-300')
+    })
+
+    it('실제 거래와 예정이 같은 날에 있으면 dot과 ring 모두 표시된다', () => {
+      const summaries = new Map([
+        ['2026-03-14', { expense: 8000, income: 0, scheduledExpense: 14900 }],
+      ])
+      renderCalendar({ daySummaries: summaries })
+      const cell = document.querySelector('[data-date="2026-03-14"]')
+      const dots = cell?.querySelectorAll('[data-testid="dot"]')
+      const rings = cell?.querySelectorAll('[data-testid="ring"]')
+      expect(dots?.length).toBe(1)
+      expect(rings?.length).toBe(1)
+    })
+
+    it('예정 정기지출+수입 둘 다 있으면 ring 2개 표시된다', () => {
+      const summaries = new Map([
+        ['2026-03-15', { expense: 0, income: 0, scheduledExpense: 14900, scheduledIncome: 500000 }],
+      ])
+      renderCalendar({ daySummaries: summaries })
+      const cell = document.querySelector('[data-date="2026-03-15"]')
+      const rings = cell?.querySelectorAll('[data-testid="ring"]')
+      expect(rings?.length).toBe(2)
+    })
+
+    it('예정 금액이 0이면 ring이 표시되지 않는다', () => {
+      const summaries = new Map([
+        ['2026-03-20', { expense: 0, income: 0, scheduledExpense: 0, scheduledIncome: 0 }],
+      ])
+      renderCalendar({ daySummaries: summaries })
+      const cell = document.querySelector('[data-date="2026-03-20"]')
+      const rings = cell?.querySelectorAll('[data-testid="ring"]')
+      expect(rings?.length ?? 0).toBe(0)
+    })
+  })
 })

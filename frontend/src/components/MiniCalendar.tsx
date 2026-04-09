@@ -9,6 +9,8 @@ import { getCalendarGrid } from '../utils/calendar'
 interface DaySummary {
   expense: number
   income: number
+  scheduledExpense?: number  // 예정 정기 지출 합계
+  scheduledIncome?: number   // 예정 정기 수입 합계
 }
 
 interface MiniCalendarProps {
@@ -90,13 +92,22 @@ function MiniCalendar({
                 >
                   {day.date}
                 </span>
-                {summary && (summary.expense > 0 || summary.income > 0) && (
+                {summary && (summary.expense > 0 || summary.income > 0
+                  || (summary.scheduledExpense ?? 0) > 0 || (summary.scheduledIncome ?? 0) > 0) && (
                   <div className="flex items-center justify-center gap-0.5 mt-0.5">
+                    {/* 실제 거래 채워진 점 */}
                     {summary.expense > 0 && (
                       <div data-testid="dot" className="w-1.5 h-1.5 rounded-full bg-grape-400" />
                     )}
                     {summary.income > 0 && (
                       <div data-testid="dot" className="w-1.5 h-1.5 rounded-full bg-leaf-400" />
+                    )}
+                    {/* 예정 정기거래 빈 원 — 채워진 점과 시각적 구분 */}
+                    {(summary.scheduledExpense ?? 0) > 0 && (
+                      <div data-testid="ring" className="w-1.5 h-1.5 rounded-full border border-grape-300 dark:border-grape-400" />
+                    )}
+                    {(summary.scheduledIncome ?? 0) > 0 && (
+                      <div data-testid="ring" className="w-1.5 h-1.5 rounded-full border border-leaf-300 dark:border-leaf-400" />
                     )}
                   </div>
                 )}

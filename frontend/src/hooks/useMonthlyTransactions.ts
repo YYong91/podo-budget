@@ -206,7 +206,7 @@ export function useMonthlyTransactions({ activeHouseholdId }: UseMonthlyTransact
   const categoryMap = useMemo(() => new Map(categories.map(c => [c.id, c])), [categories])
 
   // 통합 + 정렬 + 그룹핑
-  const { grouped, totalExpense, totalIncome, daySummaries } = useMemo(() => {
+  const { grouped, totalExpense, totalIncome, daySummaries, scheduledItems } = useMemo(() => {
     const all: UnifiedTransaction[] = [
       ...expenses.map(e => ({ ...e, type: 'expense' as const })),
       ...incomes.map(i => ({ ...i, type: 'income' as const })),
@@ -245,9 +245,8 @@ export function useMonthlyTransactions({ activeHouseholdId }: UseMonthlyTransact
     for (const i of incomes) totalIncome += i.amount
 
     // 캘린더 날짜별 요약 (타입+카테고리 필터 반영)
-    const daySummaries = new Map<string, { expense: number; income: number }>()
-    const calendarSource = filtered
-    for (const tx of calendarSource) {
+    const daySummaries = new Map<string, { expense: number; income: number; scheduledExpense?: number; scheduledIncome?: number }>()
+    for (const tx of filtered) {
       const key = tx.date.slice(0, 10)
       const s = daySummaries.get(key) ?? { expense: 0, income: 0 }
       if (tx.type === 'expense') s.expense += tx.amount
@@ -255,8 +254,29 @@ export function useMonthlyTransactions({ activeHouseholdId }: UseMonthlyTransact
       daySummaries.set(key, s)
     }
 
-    return { grouped, totalExpense, totalIncome, daySummaries }
-  }, [expenses, incomes, categoryFilter, categoryMap])
+    // 정기거래 예정일을 daySummaries + scheduledItemsMap에 동시 추가 (달력 빈 원 표시 + 팝오버용)
+    const scheduledItemsMap = new Map<string, { id: number; description: string; amount: number; type: 'expense' | 'income' }[]>()
+    for (const r of allRecurring) {
+      const key = r.next_due_date.slice(0, 10)
+      if (key >= start && key < end) {
+        // daySummaries 업데이트
+        const s = daySummaries.get(key) ?? { expense: 0, income: 0 }
+        if (r.type === 'expense') {
+          s.scheduledExpense = (s.scheduledExpense ?? 0) + r.amount
+        } else {
+          s.scheduledIncome = (s.scheduledIncome ?? 0) + r.amount
+        }
+        daySummaries.set(key, s)
+
+        // scheduledItemsMap 업데이트
+        const items = scheduledItemsMap.get(key) ?? []
+        items.push({ id: r.id, description: r.description, amount: r.amount, type: r.type })
+        scheduledItemsMap.set(key, items)
+      }
+    }
+
+    return { grouped, totalExpense, totalIncome, daySummaries, scheduledItems: scheduledItemsMap }
+  }, [expenses, incomes, categoryFilter, categoryMap, allRecurring, start, end])
 
   const monthLabel = `${currentMonth + 1}월`
 
@@ -276,6 +296,7 @@ export function useMonthlyTransactions({ activeHouseholdId }: UseMonthlyTransact
     allRecurring,
     pendingRecurring,
     pendingRecurringExpense,
+    scheduledItems,
     setPendingRecurring,
 
     // 상태 업데이터 (카테고리 변경 등에서 사용 — 캐시 직접 업데이트)

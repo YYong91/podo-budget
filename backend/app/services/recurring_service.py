@@ -97,7 +97,8 @@ async def execute_recurring(
     Returns:
         생성된 Expense/Income의 ID
     """
-    amount = amount_override or float(recurring.amount)
+    # amount_override가 None이면 정기거래의 기본 금액 사용
+    amount = amount_override if amount_override is not None else float(recurring.amount)
 
     if recurring.type == "expense":
         record = Expense(

@@ -57,6 +57,12 @@ class RecurringTransactionResponse(RecurringTransactionBase):
     model_config = {"from_attributes": True}
 
 
+class ExecuteRequest(BaseModel):
+    """정기거래 실행 시 선택적으로 금액을 재정의할 수 있는 요청 스키마"""
+
+    amount: float | None = Field(None, gt=0, description="재정의 금액 (None이면 정기거래의 기본 금액 사용)")
+
+
 class ExecuteResponse(BaseModel):
     """정기 거래 실행 결과"""
 

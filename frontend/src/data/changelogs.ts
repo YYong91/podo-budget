@@ -18,6 +18,17 @@ export interface Changelog {
 
 export const changelogs: Changelog[] = [
   {
+    version: '0.20.0',
+    date: '2026-04-09',
+    title: '정기거래 UX 개선',
+    items: [
+      { tag: '신규', text: '달력에 정기거래 예정일이 빈 원(○)으로 미리 표시됩니다' },
+      { tag: '신규', text: '정기거래 카드에서 "나중에" 버튼으로 세션 동안 숨길 수 있습니다' },
+      { tag: '신규', text: '정기거래 등록 시 금액을 수정하여 등록할 수 있습니다' },
+      { tag: '신규', text: '달력에서 예정일을 클릭하면 예정 내역을 확인할 수 있습니다' },
+    ],
+  },
+  {
     version: '0.19.0',
     date: '2026-04-09',
     title: '예산 현황 한눈에 보기',
