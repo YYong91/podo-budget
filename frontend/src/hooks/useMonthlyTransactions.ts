@@ -142,6 +142,19 @@ export function useMonthlyTransactions({ activeHouseholdId }: UseMonthlyTransact
     [allRecurring],
   )
 
+  // 이번 달 납부 예정 정기 지출 합계 — 히어로 프로그레스바의 "남은 고정 지출" 표시용
+  // 수입 타입은 제외하고, next_due_date가 현재 월 범위 내인 것만 집계
+  const pendingRecurringExpense = useMemo(() => {
+    const monthStart = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-01`
+    const nextMonthDate = new Date(currentYear, currentMonth + 1, 1)
+    const nextMonth = `${nextMonthDate.getFullYear()}-${String(nextMonthDate.getMonth() + 1).padStart(2, '0')}-01`
+    return allRecurring
+      .filter(r => r.type === 'expense'
+        && r.next_due_date >= monthStart
+        && r.next_due_date < nextMonth)
+      .reduce((sum, r) => sum + r.amount, 0)
+  }, [allRecurring, currentYear, currentMonth])
+
   // PullToRefresh / 에러 재시도 시 호출하는 공개 인터페이스
   const fetchData = useCallback(async () => {
     await refetch()
@@ -262,6 +275,7 @@ export function useMonthlyTransactions({ activeHouseholdId }: UseMonthlyTransact
     categoryMap,
     allRecurring,
     pendingRecurring,
+    pendingRecurringExpense,
     setPendingRecurring,
 
     // 상태 업데이터 (카테고리 변경 등에서 사용 — 캐시 직접 업데이트)
