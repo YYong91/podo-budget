@@ -111,7 +111,7 @@ export default function TodayRecurringCard({ items, onExecute, onSkip }: TodayRe
       </div>
 
       {/* 카드 본문 */}
-      <div className="flex items-center justify-between mb-1">
+      <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2 min-w-0">
           {/* 카테고리 이모지 — 없으면 타입별 기본값 */}
           <span className="text-lg">{current.category_emoji ?? (isExpense ? '💸' : '💰')}</span>
@@ -121,23 +121,20 @@ export default function TodayRecurringCard({ items, onExecute, onSkip }: TodayRe
           <span className={`text-sm font-semibold shrink-0 ${isExpense ? 'text-[var(--text-secondary)]' : 'text-leaf-600'}`}>
             {formatAmount(current.amount)}
           </span>
+          {/* 금액 수정 토글 — 금액 바로 옆 */}
+          <button
+            onClick={handleToggleEditing}
+            disabled={isLoading}
+            className="shrink-0 text-xs text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] underline underline-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isEditing ? '취소' : '수정'}
+          </button>
         </div>
 
         {/* 순번 표시 (N/M) */}
         <span className="text-xs text-[var(--text-tertiary)] shrink-0 ml-2">
           1/{total}
         </span>
-      </div>
-
-      {/* 금액 수정 토글 버튼 */}
-      <div className="mb-3">
-        <button
-          onClick={handleToggleEditing}
-          disabled={isLoading}
-          className="text-xs text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] underline underline-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {isEditing ? '수정 취소' : '금액 수정'}
-        </button>
       </div>
 
       {/* 금액 수정 입력 필드 (수정 모드일 때만 표시) */}
@@ -151,9 +148,9 @@ export default function TodayRecurringCard({ items, onExecute, onSkip }: TodayRe
               type="number"
               value={editingAmount ?? ''}
               onChange={e => {
-              const val = Number(e.target.value)
-              setEditingAmount(e.target.value === '' || isNaN(val) ? null : val)
-            }}
+                const val = Number(e.target.value)
+                setEditingAmount(e.target.value === '' || isNaN(val) ? null : val)
+              }}
               aria-label="변경할 금액"
               className="flex-1 px-3 py-2 text-sm bg-transparent text-[var(--text-primary)] outline-none"
               placeholder={String(current.amount)}
@@ -163,33 +160,31 @@ export default function TodayRecurringCard({ items, onExecute, onSkip }: TodayRe
         </div>
       )}
 
-      {/* 액션 버튼: 1행 [등록하기 건너뛰기], 2행 [나중에] — 위계 명확화 */}
-      <div className="flex flex-col gap-1.5">
-        <div className="flex gap-2">
-          <button
-            onClick={() => handleAction('execute')}
-            disabled={isLoading || (isEditing && (editingAmount == null || editingAmount <= 0))}
-            className={`flex-1 py-2 rounded-xl text-sm font-medium text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-              isExpense
-                ? 'bg-grape-600 hover:bg-grape-700'
-                : 'bg-leaf-600 hover:bg-leaf-700'
-            }`}
-          >
-            등록하기
-          </button>
-          <button
-            onClick={() => handleAction('skip')}
-            disabled={isLoading}
-            className="flex-1 py-2 rounded-xl text-sm font-medium bg-[var(--surface-elevated)] text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            건너뛰기
-          </button>
-        </div>
-        {/* 나중에: 세션 스누즈. 전체 너비 텍스트 버튼으로 시각적 우선순위 명확히 낮춤 */}
+      {/* 액션 버튼: [등록하기] [건너뛰기] 나중에 — 위계 순으로 1행 배치 */}
+      <div className="flex items-center gap-2">
+        <button
+          onClick={() => handleAction('execute')}
+          disabled={isLoading || (isEditing && (editingAmount == null || editingAmount <= 0))}
+          className={`flex-1 py-1.5 rounded-xl text-sm font-medium text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+            isExpense
+              ? 'bg-grape-600 hover:bg-grape-700'
+              : 'bg-leaf-600 hover:bg-leaf-700'
+          }`}
+        >
+          등록하기
+        </button>
+        <button
+          onClick={() => handleAction('skip')}
+          disabled={isLoading}
+          className="shrink-0 py-1.5 px-3 rounded-xl text-sm font-medium bg-[var(--surface-elevated)] text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          건너뛰기
+        </button>
+        {/* 나중에: 세션 스누즈. 텍스트 버튼으로 시각적 우선순위 명확히 낮춤 */}
         <button
           onClick={() => handleSnooze(current.id)}
           disabled={isLoading}
-          className="w-full py-2 text-xs text-[var(--text-muted)] hover:text-[var(--text-tertiary)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="shrink-0 py-1.5 px-1 text-xs text-[var(--text-muted)] hover:text-[var(--text-tertiary)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           나중에
         </button>

@@ -133,11 +133,11 @@ describe('TodayRecurringCard', () => {
     expect(onSkip).not.toHaveBeenCalled()
   })
 
-  it('금액 수정 버튼을 클릭하면 입력 필드가 표시된다', async () => {
+  it('수정 버튼을 클릭하면 입력 필드가 표시된다', async () => {
     render(
       <TodayRecurringCard items={[makeItem({ id: 1, amount: 17000, next_due_date: '2026-01-01' })]} onExecute={vi.fn()} onSkip={vi.fn()} />
     )
-    await userEvent.click(screen.getByText('금액 수정'))
+    await userEvent.click(screen.getByText('수정'))
     expect(screen.getByRole('spinbutton')).toBeInTheDocument()
   })
 
@@ -146,7 +146,7 @@ describe('TodayRecurringCard', () => {
     render(
       <TodayRecurringCard items={[makeItem({ id: 5, amount: 17000, next_due_date: '2026-01-01' })]} onExecute={onExecute} onSkip={vi.fn()} />
     )
-    await userEvent.click(screen.getByText('금액 수정'))
+    await userEvent.click(screen.getByText('수정'))
     const input = screen.getByRole('spinbutton')
     await userEvent.clear(input)
     await userEvent.type(input, '19000')
