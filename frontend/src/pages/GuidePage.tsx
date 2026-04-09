@@ -160,7 +160,16 @@ export default function GuidePage() {
             <strong>주기:</strong> 매일 / 매주 / 매월 / 매년 선택 가능
           </p>
           <p>
-            <strong>관리:</strong> 실행 예정인 거래를 가계부 상단에서 확인하고 건너뛰기 가능
+            <strong>금액 수정:</strong> 정기거래 등록 시 기본 금액을 수정하여 등록할 수 있습니다
+          </p>
+          <p>
+            <strong>달력 표시:</strong> 정기거래 예정일은 달력에 빈 원(○)으로 미리 표시되어 예정을 한눈에 파악할 수 있어요
+          </p>
+          <p>
+            <strong>달력 조회:</strong> 달력의 예정일을 탭하면 예정된 정기거래 내역을 확인할 수 있습니다
+          </p>
+          <p>
+            <strong>카드 관리:</strong> 가계부 상단의 정기거래 카드에서 실행/건너뛰기 또는 "나중에" 버튼으로 세션 동안 숨길 수 있어요
           </p>
         </ExampleBox>
       </SectionCard>
