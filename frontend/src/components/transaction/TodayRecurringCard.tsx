@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { formatAmount, getLocalDateString } from '../../utils/format'
 import type { RecurringTransaction } from '../../types'
 
@@ -10,24 +10,30 @@ interface TodayRecurringCardProps {
 
 /** 오늘 기준 처리 대기 중인 정기거래를 카드 스택으로 보여주는 컴포넌트.
  *  한 번에 하나씩 표시하고, 등록/건너뛰기 후 다음 항목으로 이동한다.
+ *  processedIds로 처리 상태를 추적하여 items 참조가 바뀌어도 안전하게 동작한다.
  */
 export default function TodayRecurringCard({ items, onExecute, onSkip }: TodayRecurringCardProps) {
-  const [currentIndex, setCurrentIndex] = useState(0)
+  const [processedIds, setProcessedIds] = useState<Set<number>>(new Set())
   const [isLoading, setIsLoading] = useState(false)
 
-  const today = useMemo(() => getLocalDateString(), [])
+  // items 참조가 바뀌면 (refetch 후) processedIds 클리어 — 실행된 건은 이미 next_due_date가 다음 달로 이동해 pendingItems에서 제외됨
+  useEffect(() => {
+    setProcessedIds(new Set())
+  }, [items])
 
-  // 오늘 또는 이전 날짜가 due_date인 정기거래만 필터링
-  const pendingItems = useMemo(
-    () => items.filter(r => r.next_due_date <= today),
-    [items, today],
+  const today = getLocalDateString()
+
+  // 오늘 또는 이전 날짜가 due_date이고 아직 처리하지 않은 정기거래만 필터링
+  const visibleItems = useMemo(
+    () => items.filter(r => r.next_due_date <= today && !processedIds.has(r.id)),
+    [items, today, processedIds],
   )
 
-  // 모든 항목을 처리했거나 대기 항목이 없으면 렌더링하지 않음
-  if (pendingItems.length === 0 || currentIndex >= pendingItems.length) return null
+  // 처리할 항목이 없으면 렌더링하지 않음
+  if (visibleItems.length === 0) return null
 
-  const current = pendingItems[currentIndex]
-  const total = pendingItems.length
+  const current = visibleItems[0]
+  const total = visibleItems.length
   const isExpense = current.type === 'expense'
 
   const handleAction = async (action: 'execute' | 'skip') => {
@@ -38,10 +44,10 @@ export default function TodayRecurringCard({ items, onExecute, onSkip }: TodayRe
       } else {
         await onSkip(current.id)
       }
-      // 성공 시 다음 항목으로 이동
-      setCurrentIndex(prev => prev + 1)
+      // 성공 시 처리된 ID 추가 → visibleItems에서 자동으로 제외
+      setProcessedIds(prev => new Set(prev).add(current.id))
     } catch {
-      // 실패 시 버튼 복원 (다음 항목으로 넘어가지 않음)
+      // 실패 시 버튼 복원 (처리 상태 변경 없음)
     } finally {
       setIsLoading(false)
     }
@@ -69,7 +75,7 @@ export default function TodayRecurringCard({ items, onExecute, onSkip }: TodayRe
 
         {/* 순번 표시 (N/M) */}
         <span className="text-xs text-[var(--text-tertiary)] shrink-0 ml-2">
-          {currentIndex + 1}/{total}
+          1/{total}
         </span>
       </div>
 
