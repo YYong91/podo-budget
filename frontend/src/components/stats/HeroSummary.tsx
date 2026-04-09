@@ -178,10 +178,14 @@ function ProgressBar({
       }
     }
 
+    // 지출 바 먼저 차오른 뒤 예정 바가 이어서 차오르도록 딜레이 분리
     requestAnimationFrame(() => {
       setAnimActual(actualWidth)
-      setAnimProjected(projectedWidth)
     })
+    const timer = setTimeout(() => {
+      setAnimProjected(projectedWidth)
+    }, 700)
+    return () => clearTimeout(timer)
   }, [state, isLoading, budget, totalExpense, pendingRecurringExpense])
 
   // 초과 상태에서 예산 마커 라인 표시 여부
