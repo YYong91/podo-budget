@@ -176,7 +176,7 @@ export default function TodayRecurringCard({ items, onExecute, onSkip }: TodayRe
         <button
           onClick={() => handleAction('skip')}
           disabled={isLoading}
-          className="shrink-0 py-1.5 px-3 rounded-xl text-sm font-medium bg-[var(--surface-elevated)] text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex-1 py-1.5 rounded-xl text-sm font-medium bg-[var(--surface-elevated)] text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           건너뛰기
         </button>
