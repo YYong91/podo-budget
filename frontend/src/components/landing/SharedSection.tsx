@@ -7,9 +7,9 @@ const members = [
 ]
 
 const transactions = [
-  { member: "엄마", color: "bg-grape-100 text-grape-700", text: "김치찌개 8,000원", time: "방금 전",   rotate: "-rotate-2", pos: "left-0 -top-6" },
-  { member: "아빠", color: "bg-leaf-100 text-leaf-700", text: "지하철 50,000원",  time: "3분 전",   rotate: "rotate-2",  pos: "right-0 top-4" },
-  { member: "나",   color: "bg-yellow-100 text-yellow-700", text: "문구류 12,000원",  time: "10분 전",  rotate: "-rotate-1", pos: "left-4 bottom-0" },
+  { member: "엄마", color: "bg-grape-100 text-grape-700", text: "저녁 파스타 32,000원", time: "방금 전",   rotate: "-rotate-2", pos: "left-0 -top-6" },
+  { member: "아빠", color: "bg-leaf-100 text-leaf-700", text: "아이 학원비 150,000원",  time: "3분 전",   rotate: "rotate-2",  pos: "right-0 top-4" },
+  { member: "나",   color: "bg-yellow-100 text-yellow-700", text: "주말 장보기 48,000원",  time: "10분 전",  rotate: "-rotate-1", pos: "left-4 bottom-0" },
 ]
 
 export function SharedSection() {
@@ -33,9 +33,9 @@ export function SharedSection() {
             <span className="block">하나의 가계부</span>
           </h2>
           <p className="mx-auto mt-5 max-w-md text-base leading-relaxed text-warm-500">
-            가족을 초대하고 함께 써요.
+            초대 한 번이면 같이 써요.
             <br />
-            누가 어떻게 썼는지 한눈에 볼 수 있어요.
+            누가, 언제, 얼마 썼는지 한눈에.
           </p>
         </div>
 
