@@ -241,17 +241,11 @@ export default function InsightsPage() {
       .reduce((sum, c) => sum + c.amount, 0)
   }, [expenseCategories, expenseStats])
 
-  // 정기거래 — 활성 건수 + 이번 달 지출 합계 계산
-  const { recurringActiveCount, recurringMonthlyTotal } = useMemo(() => {
-    const activeItems = recurringData.filter(r => r.is_active)
-    const expenseTotal = activeItems
-      .filter(r => r.type === 'expense')
-      .reduce((sum, r) => sum + r.amount, 0)
-    return {
-      recurringActiveCount: activeItems.length,
-      recurringMonthlyTotal: expenseTotal,
-    }
-  }, [recurringData])
+  // 정기거래 — 활성 항목만 필터링
+  const activeRecurringItems = useMemo(
+    () => recurringData.filter(r => r.is_active),
+    [recurringData],
+  )
 
   const healthScore = useMemo((): HealthScore | null => {
     if (!expenseStats && !incomeStats) return null
@@ -462,8 +456,8 @@ export default function InsightsPage() {
           {/* 6. 정기거래 관리 */}
           {sectionVisibility.recurring && (
             <RecurringManageSection
-              activeCount={recurringActiveCount}
-              monthlyExpenseTotal={recurringMonthlyTotal}
+              items={activeRecurringItems}
+              monthStr={monthStr}
             />
           )}
 
