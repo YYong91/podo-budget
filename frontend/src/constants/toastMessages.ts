@@ -107,8 +107,8 @@ export const TOAST = {
   // 계좌
   BANK_ACCOUNT_ADDED: '계좌를 등록했어요',
 
-  // 반복거래 (추가 메시지)
-  RECURRING_EXECUTE_FAILED: '반복 거래 등록에 실패했어요',
+  // 정기거래 (추가 메시지)
+  RECURRING_EXECUTE_FAILED: '정기거래 등록에 실패했어요',
   RECURRING_SKIP_FAILED: '건너뛰기에 실패했어요',
   RECURRING_TOGGLE_FAILED: '변경에 실패했어요',
 

@@ -294,41 +294,41 @@ describe('IncomeDetail', () => {
     })
   })
 
-  describe('반복 거래 등록', () => {
-    it('반복 거래 등록 버튼을 표시한다', async () => {
+  describe('정기거래 등록', () => {
+    it('정기거래 등록 버튼을 표시한다', async () => {
       renderIncomeDetail()
       await waitFor(() => {
-        expect(screen.getByRole('button', { name: '반복 거래 등록' })).toBeInTheDocument()
+        expect(screen.getByRole('button', { name: '정기거래 등록' })).toBeInTheDocument()
       })
     })
 
-    it('반복 거래 등록 버튼 클릭 시 모달이 열린다', async () => {
+    it('정기거래 등록 버튼 클릭 시 모달이 열린다', async () => {
       const user = userEvent.setup()
       renderIncomeDetail()
 
       await waitFor(() => {
-        expect(screen.getByRole('button', { name: '반복 거래 등록' })).toBeInTheDocument()
+        expect(screen.getByRole('button', { name: '정기거래 등록' })).toBeInTheDocument()
       })
 
-      await user.click(screen.getByRole('button', { name: '반복 거래 등록' }))
+      await user.click(screen.getByRole('button', { name: '정기거래 등록' }))
 
       await waitFor(() => {
-        expect(screen.getByRole('heading', { name: '반복 거래 등록' })).toBeInTheDocument()
+        expect(screen.getByRole('heading', { name: '정기거래 등록' })).toBeInTheDocument()
       })
     })
 
-    it('반복 거래 등록 시 성공 토스트를 표시한다', async () => {
+    it('정기거래 등록 시 성공 토스트를 표시한다', async () => {
       const user = userEvent.setup()
       renderIncomeDetail()
 
       await waitFor(() => {
-        expect(screen.getByRole('button', { name: '반복 거래 등록' })).toBeInTheDocument()
+        expect(screen.getByRole('button', { name: '정기거래 등록' })).toBeInTheDocument()
       })
 
-      await user.click(screen.getByRole('button', { name: '반복 거래 등록' }))
+      await user.click(screen.getByRole('button', { name: '정기거래 등록' }))
 
       await waitFor(() => {
-        expect(screen.getByRole('heading', { name: '반복 거래 등록' })).toBeInTheDocument()
+        expect(screen.getByRole('heading', { name: '정기거래 등록' })).toBeInTheDocument()
       })
 
       // 모달 내의 submit 버튼 (type="submit") 클릭
