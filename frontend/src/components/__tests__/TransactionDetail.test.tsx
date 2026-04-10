@@ -546,6 +546,42 @@ describe('TransactionDetail — 빠른 수정', () => {
       expect(liveRegion.textContent).toContain('교통')
     })
   })
+
+  it('카테고리 select에서 선택 없이 blur 시 select가 닫히고 칩이 복귀한다', async () => {
+    renderWithRouter('expense', 1)
+
+    await waitFor(() => {
+      expect(screen.getByText('₩8,000')).toBeInTheDocument()
+    })
+
+    // 카테고리 칩 클릭 → select 열림
+    await userEvent.click(screen.getByTestId('chip-category'))
+    expect(screen.getByTestId('quick-select-category')).toBeInTheDocument()
+
+    // select에서 blur (선택 없이)
+    await userEvent.tab()
+
+    // select가 닫히고 칩이 복귀해야 함
+    await waitFor(() => {
+      expect(screen.queryByTestId('quick-select-category')).not.toBeInTheDocument()
+      expect(screen.getByTestId('chip-category')).toBeInTheDocument()
+    })
+  })
+
+  it('카테고리 quick-select options에 이모지가 포함된다', async () => {
+    renderWithRouter('expense', 1)
+
+    await waitFor(() => {
+      expect(screen.getByText('₩8,000')).toBeInTheDocument()
+    })
+
+    await userEvent.click(screen.getByTestId('chip-category'))
+
+    const select = screen.getByTestId('quick-select-category') as HTMLSelectElement
+    const optionTexts = Array.from(select.options).map((o) => o.textContent ?? '')
+    // 식비 옵션에 이모지가 있어야 함
+    expect(optionTexts.some((t) => t.includes('📌') && t.includes('식비'))).toBe(true)
+  })
 })
 
 describe('TransactionDetail — 편집 모드', () => {

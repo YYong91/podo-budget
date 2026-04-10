@@ -441,10 +441,11 @@ export default function TransactionDetail({ type }: TransactionDetailProps) {
                     const val = e.target.value === '' ? null : Number(e.target.value)
                     handleQuickSave('category_id', val)
                   }}
+                  onBlur={() => setQuickEditField(null)}
                 >
                   <option value="">분류 안 됨</option>
                   {categories.map((c) => (
-                    <option key={c.id} value={c.id}>{c.name}</option>
+                    <option key={c.id} value={c.id}>{c.emoji ? `${c.emoji} ${c.name}` : c.name}</option>
                   ))}
                 </select>
               ) : (
@@ -477,10 +478,11 @@ export default function TransactionDetail({ type }: TransactionDetailProps) {
                       const val = e.target.value === '' ? null : Number(e.target.value)
                       handleQuickSave('payment_method_id', val)
                     }}
+                    onBlur={() => setQuickEditField(null)}
                   >
                     <option value="">미지정</option>
                     {paymentMethods.map((pm) => (
-                      <option key={pm.id} value={pm.id}>{pm.name}</option>
+                      <option key={pm.id} value={pm.id}>{PM_ICON[pm.type] ? `${PM_ICON[pm.type]} ${pm.name}` : pm.name}</option>
                     ))}
                   </select>
                 ) : (
