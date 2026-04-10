@@ -51,6 +51,13 @@ beforeEach(() => {
 
 describe('CategoryManager', () => {
   describe('기본 렌더링', () => {
+    it('페이지 헤더에 카테고리 관리 타이틀을 표시한다', async () => {
+      renderCategoryManager()
+      await waitFor(() => {
+        expect(screen.getByRole('heading', { name: '카테고리 관리' })).toBeInTheDocument()
+      })
+    })
+
     it('추가 버튼과 테이블을 포함한 페이지를 표시한다', async () => {
       renderCategoryManager()
       await waitFor(() => {

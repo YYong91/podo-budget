@@ -226,7 +226,17 @@ export default function BudgetManager() {
   }
 
   if (error) {
-    return <ErrorState message={error} onRetry={loadData} />
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center gap-3">
+          <button onClick={() => goBack()} className="p-2.5 -ml-2.5 rounded-lg hover:bg-[var(--surface-hover)] transition-colors">
+            <ArrowLeft className="w-5 h-5 text-[var(--text-secondary)]" />
+          </button>
+          <h1 className="text-lg font-semibold text-[var(--text-primary)]">예산 관리</h1>
+        </div>
+        <ErrorState message={error} onRetry={loadData} />
+      </div>
+    )
   }
 
   const totalNum = Number(localTotalBudget)
@@ -235,9 +245,12 @@ export default function BudgetManager() {
 
   return (
     <div className="space-y-6 animate-page-in">
-      <button onClick={() => goBack()} className="p-2.5 -ml-2.5 rounded-lg hover:bg-[var(--surface-hover)] transition-colors">
-        <ArrowLeft className="w-5 h-5 text-[var(--text-secondary)]" />
-      </button>
+      <div className="flex items-center gap-3">
+        <button onClick={() => goBack()} className="p-2.5 -ml-2.5 rounded-lg hover:bg-[var(--surface-hover)] transition-colors">
+          <ArrowLeft className="w-5 h-5 text-[var(--text-secondary)]" />
+        </button>
+        <h1 className="text-lg font-semibold text-[var(--text-primary)]">예산 관리</h1>
+      </div>
 
       {/* 월 총 예산 카드 */}
       <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)]/60 p-5">

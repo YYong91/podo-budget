@@ -191,9 +191,12 @@ export default function CategoryManager() {
   if (error) {
     return (
       <div className="space-y-6">
-        <button onClick={() => goBack()} className="p-2.5 -ml-2.5 rounded-lg hover:bg-[var(--surface-hover)] transition-colors">
-          <ArrowLeft className="w-5 h-5 text-[var(--text-secondary)]" />
-        </button>
+        <div className="flex items-center gap-3">
+          <button onClick={() => goBack()} className="p-2.5 -ml-2.5 rounded-lg hover:bg-[var(--surface-hover)] transition-colors">
+            <ArrowLeft className="w-5 h-5 text-[var(--text-secondary)]" />
+          </button>
+          <h1 className="text-lg font-semibold text-[var(--text-primary)]">카테고리 관리</h1>
+        </div>
         <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)]">
           <ErrorState onRetry={fetchCategories} />
         </div>
@@ -204,9 +207,12 @@ export default function CategoryManager() {
   return (
     <div className="space-y-6 animate-page-in">
       <div className="flex items-center justify-between">
-        <button onClick={() => goBack()} className="p-2.5 -ml-2.5 rounded-lg hover:bg-[var(--surface-hover)] transition-colors">
-          <ArrowLeft className="w-5 h-5 text-[var(--text-secondary)]" />
-        </button>
+        <div className="flex items-center gap-3">
+          <button onClick={() => goBack()} className="p-2.5 -ml-2.5 rounded-lg hover:bg-[var(--surface-hover)] transition-colors">
+            <ArrowLeft className="w-5 h-5 text-[var(--text-secondary)]" />
+          </button>
+          <h1 className="text-lg font-semibold text-[var(--text-primary)]">카테고리 관리</h1>
+        </div>
         <button
           onClick={() => setIsAdding(true)}
           className="flex items-center gap-1.5 px-4 py-2 bg-grape-600 text-white rounded-xl text-sm font-medium shadow-sm hover:bg-grape-700 transition-colors"

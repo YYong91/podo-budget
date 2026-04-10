@@ -141,6 +141,16 @@ beforeEach(() => {
 })
 
 describe('BudgetManager', () => {
+  describe('기본 렌더링', () => {
+    it('데이터 로드 후 페이지 헤더에 예산 관리 타이틀을 표시한다', async () => {
+      setupSuccessHandlers()
+      renderBudgetManager()
+      await waitFor(() => {
+        expect(screen.getByRole('heading', { level: 1, name: '예산 관리' })).toBeInTheDocument()
+      })
+    })
+  })
+
   describe('로딩 상태', () => {
     it('데이터 로드 중에는 로딩 스피너를 표시한다', () => {
       setupSuccessHandlers()
