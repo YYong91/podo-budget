@@ -749,6 +749,9 @@ describe('TransactionDetail — 편집 모드', () => {
     expect(amountInput.getAttribute('inputmode')).toBe('numeric')
     // 금액 8000이 쉼표 포맷으로 표시되어야 함
     expect(amountInput.value).toBe('8,000')
+
+    // ₩ prefix span이 DOM에 존재해야 함
+    expect(screen.getByText('₩')).toBeInTheDocument()
   })
 
   it('금액 입력 시 숫자만 저장하고 쉼표 포맷으로 표시한다', async () => {
@@ -767,6 +770,11 @@ describe('TransactionDetail — 편집 모드', () => {
     const amountInput = screen.getByLabelText('금액')
     await userEvent.clear(amountInput)
     await userEvent.type(amountInput, '12000')
+
+    // 쉼표 포맷으로 표시되는지 확인
+    await waitFor(() => {
+      expect((amountInput as HTMLInputElement).value).toBe('12,000')
+    })
 
     // 저장 후 서버 응답에서 12000이 반영되어야 함
     await userEvent.click(screen.getByRole('button', { name: '저장' }))
