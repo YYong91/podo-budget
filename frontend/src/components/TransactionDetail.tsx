@@ -244,7 +244,7 @@ export default function TransactionDetail({ type }: TransactionDetailProps) {
 
   /** 편집 모드 저장 */
   const handleSave = useCallback(async () => {
-    if (!transaction) return
+    if (!transaction || isSaving) return
 
     if (!editForm.description.trim()) {
       addToast('error', '설명을 입력해주세요')
@@ -255,19 +255,20 @@ export default function TransactionDetail({ type }: TransactionDetailProps) {
       return
     }
 
+    setIsSaving(true)
     try {
       const api = type === 'expense' ? expenseApi : incomeApi
-      const payload: Record<string, unknown> = {
+      const base = {
         amount: editForm.amount,
         description: editForm.description.trim(),
         category_id: editForm.category_id,
         date: editForm.date.includes('T') ? editForm.date : `${editForm.date}T00:00:00`,
-        memo: editForm.memo.trim() || undefined,
+        memo: editForm.memo.trim() || null,
         exclude_from_stats: editForm.exclude_from_stats,
       }
-      if (cfg.hasPaymentMethod) {
-        payload.payment_method_id = editForm.payment_method_id
-      }
+      const payload = cfg.hasPaymentMethod
+        ? { ...base, payment_method_id: editForm.payment_method_id }
+        : base
       const res = await api.update(transaction.id, payload)
       if (!isMountedRef.current) return
       setTransaction(res.data)
@@ -282,8 +283,10 @@ export default function TransactionDetail({ type }: TransactionDetailProps) {
       } else {
         addToast('error', TOAST.SAVE_FAILED)
       }
+    } finally {
+      if (isMountedRef.current) setIsSaving(false)
     }
-  }, [transaction, editForm, type, cfg.hasPaymentMethod, addToast])
+  }, [transaction, editForm, type, cfg.hasPaymentMethod, addToast, isSaving])
 
   // ── 로딩 스켈레톤 ──
 
@@ -626,7 +629,7 @@ export default function TransactionDetail({ type }: TransactionDetailProps) {
                 aria-checked={editForm.exclude_from_stats}
                 onClick={() => setEditForm((f) => ({ ...f, exclude_from_stats: !f.exclude_from_stats }))}
                 className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                  editForm.exclude_from_stats ? 'bg-grape-500' : 'bg-gray-300'
+                  editForm.exclude_from_stats ? (cfg.color === 'grape' ? 'bg-grape-500' : 'bg-leaf-500') : 'bg-gray-300'
                 }`}
               >
                 <span
@@ -648,13 +651,14 @@ export default function TransactionDetail({ type }: TransactionDetailProps) {
             </Link>
             <button
               onClick={handleSave}
+              disabled={isSaving}
               className={`flex-1 py-3 text-sm font-semibold text-white rounded-xl transition-colors ${
                 cfg.color === 'grape'
                   ? 'bg-grape-600 hover:bg-grape-700'
                   : 'bg-leaf-600 hover:bg-leaf-700'
-              }`}
+              } ${isSaving ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
-              저장
+              {isSaving ? '저장 중…' : '저장'}
             </button>
           </div>
         </>
