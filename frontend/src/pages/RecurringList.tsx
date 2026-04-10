@@ -6,7 +6,7 @@
 
 import { useState, useEffect } from 'react'
 import { useGoBack } from '../hooks/useGoBack'
-import { ArrowLeft, Plus, Pencil, Trash2, Pause, Play, Zap } from 'lucide-react'
+import { ArrowLeft, Plus, Pencil, Trash2, Pause, Play, Zap, Repeat } from 'lucide-react'
 import { useToast } from '../hooks/useToast'
 import { TOAST } from '../constants/toastMessages'
 import { recurringApi } from '../api/recurring'
@@ -225,6 +225,7 @@ export default function RecurringList() {
           <button onClick={() => goBack()} className="p-2.5 -ml-2.5 rounded-lg hover:bg-[var(--surface-hover)] transition-colors">
             <ArrowLeft className="w-5 h-5 text-[var(--text-secondary)]" />
           </button>
+          <Repeat className="w-5 h-5 text-grape-500 flex-shrink-0" />
           <h1 className="text-lg font-semibold text-[var(--text-primary)]">반복 거래</h1>
         </div>
         <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)]/60">
@@ -242,6 +243,7 @@ export default function RecurringList() {
           <button onClick={() => goBack()} className="p-2.5 -ml-2.5 rounded-lg hover:bg-[var(--surface-hover)] transition-colors">
             <ArrowLeft className="w-5 h-5 text-[var(--text-secondary)]" />
           </button>
+          <Repeat className="w-5 h-5 text-grape-500 flex-shrink-0" />
           <h1 className="text-lg font-semibold text-[var(--text-primary)]">반복 거래</h1>
         </div>
         <button

@@ -114,6 +114,7 @@ export default function HouseholdListPage() {
           <button onClick={() => goBack()} className="p-2.5 -ml-2.5 rounded-lg hover:bg-[var(--surface-hover)] transition-colors">
             <ArrowLeft className="w-5 h-5 text-[var(--text-secondary)]" />
           </button>
+          <Users className="w-5 h-5 text-grape-500 flex-shrink-0" />
           <h1 className="text-lg font-semibold text-[var(--text-primary)]">공유 가계부</h1>
         </div>
         <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)]">
@@ -131,6 +132,7 @@ export default function HouseholdListPage() {
           <button onClick={() => goBack()} className="p-2.5 -ml-2.5 rounded-lg hover:bg-[var(--surface-hover)] transition-colors">
             <ArrowLeft className="w-5 h-5 text-[var(--text-secondary)]" />
           </button>
+          <Users className="w-5 h-5 text-grape-500 flex-shrink-0" />
           <h1 className="text-lg font-semibold text-[var(--text-primary)]">공유 가계부</h1>
         </div>
         <button
