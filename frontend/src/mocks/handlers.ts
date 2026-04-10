@@ -375,8 +375,13 @@ export const handlers = [
   /**
    * GET /api/categories - 카테고리 목록 조회
    */
-  http.get(`${BASE_URL}/categories`, () => {
-    return HttpResponse.json(mockCategories)
+  http.get(`${BASE_URL}/categories`, ({ request }) => {
+    const url = new URL(request.url)
+    const type = url.searchParams.get('type')
+    const filtered = type
+      ? mockCategories.filter((c) => c.type === type || c.type === 'both')
+      : mockCategories
+    return HttpResponse.json(filtered)
   }),
 
   /**

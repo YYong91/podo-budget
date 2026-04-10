@@ -73,11 +73,14 @@ describe('CategoryManager', () => {
     })
   })
 
+  // 기본 탭은 expense → expense + both 타입만 표시됨
+  const expenseCategories = mockCategories.filter((c) => c.type === 'expense' || c.type === 'both')
+
   describe('카테고리 목록 표시', () => {
-    it('모든 카테고리를 표시한다', async () => {
+    it('expense 탭 카테고리를 표시한다', async () => {
       renderCategoryManager()
       await waitFor(() => {
-        mockCategories.forEach((category) => {
+        expenseCategories.forEach((category) => {
           expect(screen.getByText(category.name)).toBeInTheDocument()
         })
       })
@@ -88,7 +91,7 @@ describe('CategoryManager', () => {
       await waitFor(() => {
         // 데스크탑에서는 설명 컬럼에, 모바일에서는 이름 아래에 표시됨
         // description이 있는 카테고리가 있으면 텍스트로 확인
-        const categoryWithDesc = mockCategories.find((c) => c.description)
+        const categoryWithDesc = expenseCategories.find((c) => c.description)
         if (categoryWithDesc) {
           // 설명이 있는 경우 또는 "-" 표시
           const description = categoryWithDesc.description || '-'
@@ -110,8 +113,8 @@ describe('CategoryManager', () => {
     it('시스템 카테고리에는 잠금 뱃지를 표시하고 수정/삭제 버튼을 숨긴다', async () => {
       renderCategoryManager()
 
-      const systemCategories = mockCategories.filter((c) => c.is_system)
-      const nonSystemCategories = mockCategories.filter((c) => !c.is_system)
+      const systemCategories = expenseCategories.filter((c) => c.is_system)
+      const nonSystemCategories = expenseCategories.filter((c) => !c.is_system)
 
       await waitFor(() => {
         // 시스템 카테고리 수만큼 '기본' 뱃지 표시
