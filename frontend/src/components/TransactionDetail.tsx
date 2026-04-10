@@ -413,21 +413,21 @@ export default function TransactionDetail({ type }: TransactionDetailProps) {
 
       {mode === 'view' ? (
         <>
-          {/* 히어로 섹션 */}
-          <div className="space-y-3">
-            {/* 금액 */}
+          {/* 히어로 섹션: 금액 + 설명 */}
+          <div className="space-y-1">
             <p className={`text-4xl font-bold ${cfg.amountColor}`}>
               {cfg.amountPrefix}{formatAmount(transaction.amount)}
             </p>
-
-            {/* 설명 */}
             <p className="text-lg font-medium text-[var(--text-primary)]">
               {transaction.description}
             </p>
+          </div>
 
-            {/* 칩 영역 */}
-            <div className="flex flex-wrap gap-2">
-              {/* 카테고리 칩 / 드롭다운 */}
+          {/* 통합 정보 카드 */}
+          <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)]/60 p-4 sm:p-6">
+
+            {/* 1행: 카테고리 칩 + 날짜 */}
+            <div className="flex items-center justify-between gap-2">
               {quickEditField === 'category' ? (
                 <select
                   data-testid="quick-select-category"
@@ -462,10 +462,15 @@ export default function TransactionDetail({ type }: TransactionDetailProps) {
                   <span className="text-[var(--text-muted)] text-xs ml-0.5">▾</span>
                 </button>
               )}
+              <span className="text-sm text-[var(--text-muted)] shrink-0">
+                {formatDate(transaction.date)}
+              </span>
+            </div>
 
-              {/* 결제수단 칩 / 드롭다운 (지출 타입이면 항상 표시 — 미지정 포함) */}
-              {cfg.hasPaymentMethod && (
-                quickEditField === 'payment_method' ? (
+            {/* 2행: 결제수단 칩 (지출 타입이면 항상 표시 — 미지정 포함) */}
+            {cfg.hasPaymentMethod && (
+              <div className="mt-3">
+                {quickEditField === 'payment_method' ? (
                   <select
                     data-testid="quick-select-payment_method"
                     aria-label="결제수단 변경"
@@ -508,61 +513,59 @@ export default function TransactionDetail({ type }: TransactionDetailProps) {
                     )}
                     <span className="text-[var(--text-muted)] text-xs ml-0.5">▾</span>
                   </button>
-                )
+                )}
+              </div>
+            )}
+
+            {/* 구분선 */}
+            <div className="border-t border-[var(--border-subtle)] my-4" />
+
+            {/* 부가 정보 */}
+            <div className="space-y-4">
+              {/* 메모 (있을 때만) */}
+              {transaction.memo && (
+                <div>
+                  <span className="block text-sm font-medium text-[var(--text-tertiary)] mb-1">메모</span>
+                  <p className="text-sm text-[var(--text-primary)]">{transaction.memo}</p>
+                </div>
               )}
-            </div>
 
-            {/* 날짜 */}
-            <p className="text-xs text-[var(--text-muted)] mt-2">
-              {formatDate(transaction.date)}
-            </p>
-          </div>
+              {/* 원본 입력 (있을 때만) */}
+              {transaction.raw_input && (
+                <div>
+                  <span className="block text-sm font-medium text-[var(--text-tertiary)] mb-1">원본 입력</span>
+                  <p className="text-sm text-[var(--text-secondary)] bg-[var(--surface-elevated)] rounded-lg p-3 font-mono">
+                    {transaction.raw_input}
+                  </p>
+                </div>
+              )}
 
-          {/* 부가 정보 카드 */}
-          <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)]/60 p-4 sm:p-6 space-y-4">
-            {/* 메모 (있을 때만) */}
-            {transaction.memo && (
-              <div>
-                <span className="block text-sm font-medium text-[var(--text-tertiary)] mb-1">메모</span>
-                <p className="text-sm text-[var(--text-primary)]">{transaction.memo}</p>
+              {/* 통계 제외 뱃지 */}
+              {transaction.exclude_from_stats && (
+                <span className="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium bg-warm-100 text-warm-700">
+                  통계 제외
+                </span>
+              )}
+
+              {/* 정기거래 뱃지 / 등록 버튼 */}
+              {transaction.recurring_transaction_id ? (
+                <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium bg-grape-50 text-grape-700">
+                  🔁 정기거래 연결됨
+                </span>
+              ) : (
+                <button
+                  onClick={() => setShowRecurringModal(true)}
+                  className={`text-sm font-medium transition-colors ${type === 'expense' ? 'text-grape-600 hover:text-grape-700' : 'text-leaf-600 hover:text-leaf-700'}`}
+                >
+                  + 정기거래 등록
+                </button>
+              )}
+
+              {/* 메타 정보 */}
+              <div className="pt-4 border-t border-[var(--border-subtle)] flex gap-4 text-xs text-[var(--text-muted)]">
+                <span>생성: {formatDate(transaction.created_at)}</span>
+                <span>수정: {formatDate(transaction.updated_at)}</span>
               </div>
-            )}
-
-            {/* 원본 입력 (있을 때만) */}
-            {transaction.raw_input && (
-              <div>
-                <span className="block text-sm font-medium text-[var(--text-tertiary)] mb-1">원본 입력</span>
-                <p className="text-sm text-[var(--text-secondary)] bg-[var(--surface-elevated)] rounded-lg p-3 font-mono">
-                  {transaction.raw_input}
-                </p>
-              </div>
-            )}
-
-            {/* 통계 제외 뱃지 */}
-            {transaction.exclude_from_stats && (
-              <span className="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium bg-warm-100 text-warm-700">
-                통계 제외
-              </span>
-            )}
-
-            {/* 정기거래 뱃지 / 등록 버튼 */}
-            {transaction.recurring_transaction_id ? (
-              <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium bg-grape-50 text-grape-700">
-                🔁 정기거래 연결됨
-              </span>
-            ) : (
-              <button
-                onClick={() => setShowRecurringModal(true)}
-                className={`text-sm font-medium transition-colors ${type === 'expense' ? 'text-grape-600 hover:text-grape-700' : 'text-leaf-600 hover:text-leaf-700'}`}
-              >
-                + 정기거래 등록
-              </button>
-            )}
-
-            {/* 메타 정보 */}
-            <div className="pt-4 border-t border-[var(--border-subtle)] flex gap-4 text-xs text-[var(--text-muted)]">
-              <span>생성: {formatDate(transaction.created_at)}</span>
-              <span>수정: {formatDate(transaction.updated_at)}</span>
             </div>
           </div>
 
