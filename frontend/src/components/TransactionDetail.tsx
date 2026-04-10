@@ -6,13 +6,15 @@
  */
 
 import { useEffect, useState, useCallback, useRef } from 'react'
-import { useParams, useSearchParams, Link } from 'react-router-dom'
+import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
 import { expenseApi } from '../api/expenses'
 import { incomeApi } from '../api/income'
 import { categoryApi } from '../api/categories'
 import { paymentMethodApi } from '../api/paymentMethods'
 import { useHouseholdStore } from '../stores/useHouseholdStore'
+import { useToast } from '../hooks/useToast'
+import { TOAST } from '../constants/toastMessages'
 import ErrorState from './ErrorState'
 import { Skeleton } from './skeleton/Skeleton'
 import type { Expense, Income, Category, PaymentMethod } from '../types'
@@ -68,8 +70,10 @@ function formatDate(dateStr: string): string {
 export default function TransactionDetail({ type }: TransactionDetailProps) {
   const cfg = TYPE_CONFIG[type]
   const { id } = useParams<{ id: string }>()
+  const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const activeHouseholdId = useHouseholdStore((s) => s.activeHouseholdId)
+  const { addToast } = useToast()
 
   // isMountedRef — 비동기 작업 완료 후 언마운트된 컴포넌트에 setState 호출 방지
   const isMountedRef = useRef(true)
@@ -82,14 +86,11 @@ export default function TransactionDetail({ type }: TransactionDetailProps) {
   const [loading, setLoading] = useState(true)
   const [errorState, setErrorState] = useState<PageErrorState>('none')
   // mode/showDeleteModal/showRecurringModal — 현재는 뷰 모드만 구현, Task 3/5에서 활성화
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [mode, setMode] = useState<DetailMode>(() =>
+  const [, setMode] = useState<DetailMode>(() =>
     searchParams.get('edit') === 'true' ? 'edit' : 'view',
   )
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [showDeleteModal, setShowDeleteModal] = useState(false)
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [showRecurringModal, setShowRecurringModal] = useState(false)
+  const [, setShowDeleteModal] = useState(false)
+  const [, setShowRecurringModal] = useState(false)
 
   // ── 데이터 로딩 ──
 
@@ -129,7 +130,10 @@ export default function TransactionDetail({ type }: TransactionDetailProps) {
     } catch (err: unknown) {
       if (!isMountedRef.current) return
       const status = (err as { response?: { status?: number } })?.response?.status
-      if (status === 404) {
+      if (status === 403) {
+        addToast('error', TOAST.NO_PERMISSION)
+        navigate(cfg.listRoute)
+      } else if (status === 404) {
         setErrorState('notFound')
       } else {
         setErrorState('error')
@@ -139,7 +143,7 @@ export default function TransactionDetail({ type }: TransactionDetailProps) {
         setLoading(false)
       }
     }
-  }, [id, type, cfg.categoryApiType, cfg.hasPaymentMethod, activeHouseholdId])
+  }, [id, type, cfg.categoryApiType, cfg.hasPaymentMethod, cfg.listRoute, activeHouseholdId, navigate, addToast])
 
   useEffect(() => {
     fetchData()
@@ -180,7 +184,7 @@ export default function TransactionDetail({ type }: TransactionDetailProps) {
     return (
       <div className="text-center py-12">
         <p className="text-[var(--text-tertiary)] mb-4">내역을 찾을 수 없습니다</p>
-        <Link to={cfg.listRoute} className={`text-${cfg.color}-600 hover:text-${cfg.color}-700`}>
+        <Link to={cfg.listRoute} className={type === 'expense' ? 'text-grape-600 hover:text-grape-700' : 'text-leaf-600 hover:text-leaf-700'}>
           목록으로 돌아가기
         </Link>
       </div>
@@ -231,7 +235,7 @@ export default function TransactionDetail({ type }: TransactionDetailProps) {
         {/* 칩 영역 */}
         <div className="flex flex-wrap gap-2">
           {/* 카테고리 칩 */}
-          <span className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm bg-[var(--surface-elevated)] text-[var(--text-primary)]">
+          <span className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm min-h-[44px] bg-[var(--surface-elevated)] text-[var(--text-secondary)]">
             {categoryEmoji && <span>{categoryEmoji}</span>}
             {categoryName}
             <span className="text-[var(--text-muted)] text-xs ml-0.5">▾</span>
@@ -239,7 +243,7 @@ export default function TransactionDetail({ type }: TransactionDetailProps) {
 
           {/* 결제수단 칩 (지출 타입이고 결제수단이 있을 때만) */}
           {cfg.hasPaymentMethod && paymentMethod && (
-            <span className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm bg-[var(--surface-elevated)] text-[var(--text-primary)]">
+            <span className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm min-h-[44px] bg-[var(--surface-elevated)] text-[var(--text-secondary)]">
               <span>{PM_ICON[paymentMethod.type] ?? '💳'}</span>
               {paymentMethod.name}
               <span className="text-[var(--text-muted)] text-xs ml-0.5">▾</span>
@@ -283,14 +287,14 @@ export default function TransactionDetail({ type }: TransactionDetailProps) {
         {/* 정기거래 뱃지 / 등록 버튼 */}
         {transaction.recurring_transaction_id ? (
           <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium bg-grape-50 text-grape-700">
-            🔁 정기거래
+            🔁 정기거래 연결됨
           </span>
         ) : (
           <button
             onClick={() => setShowRecurringModal(true)}
-            className={`text-sm font-medium text-${cfg.color}-600 hover:text-${cfg.color}-700 transition-colors`}
+            className={`text-sm font-medium transition-colors ${type === 'expense' ? 'text-grape-600 hover:text-grape-700' : 'text-leaf-600 hover:text-leaf-700'}`}
           >
-            정기거래 등록
+            + 정기거래 등록
           </button>
         )}
 
@@ -302,10 +306,10 @@ export default function TransactionDetail({ type }: TransactionDetailProps) {
       </div>
 
       {/* 하단 액션 */}
-      <div className="space-y-2">
+      <div className="space-y-4">
         <button
           onClick={() => setMode('edit')}
-          className={`w-full py-3 text-sm font-semibold text-white rounded-2xl transition-colors ${
+          className={`w-full py-3 text-sm font-semibold text-white rounded-xl transition-colors ${
             cfg.color === 'grape'
               ? 'bg-grape-600 hover:bg-grape-700'
               : 'bg-leaf-600 hover:bg-leaf-700'
@@ -317,7 +321,7 @@ export default function TransactionDetail({ type }: TransactionDetailProps) {
           onClick={() => setShowDeleteModal(true)}
           className="text-sm text-rose-500 py-4 w-full text-center"
         >
-          삭제
+          삭제하기
         </button>
       </div>
     </div>

@@ -149,10 +149,10 @@ describe('TransactionDetail — 뷰 모드', () => {
     })
 
     // 🔁 뱃지 표시
-    expect(screen.getByText(/정기거래/)).toBeInTheDocument()
+    expect(screen.getByText(/정기거래 연결됨/)).toBeInTheDocument()
 
     // 등록 버튼 없어야 함
-    expect(screen.queryByText('정기거래 등록')).not.toBeInTheDocument()
+    expect(screen.queryByText('+ 정기거래 등록')).not.toBeInTheDocument()
   })
 
   it('정기거래 미연결 시 등록 버튼을 표시한다', async () => {
@@ -163,7 +163,7 @@ describe('TransactionDetail — 뷰 모드', () => {
       expect(screen.getByText('₩8,000')).toBeInTheDocument()
     })
 
-    expect(screen.getByText('정기거래 등록')).toBeInTheDocument()
+    expect(screen.getByText('+ 정기거래 등록')).toBeInTheDocument()
   })
 
   it('exclude_from_stats=true이면 통계 제외 뱃지를 표시한다', async () => {
@@ -191,5 +191,38 @@ describe('TransactionDetail — 뷰 모드', () => {
     })
 
     expect(screen.getByText('오늘 점심에 김치찌개 8000원 먹었어')).toBeInTheDocument()
+  })
+})
+
+describe('TransactionDetail — 에러/로딩', () => {
+  it('로딩 중 Skeleton을 렌더링한다', () => {
+    renderWithRouter('expense', 1)
+    // Skeleton(animate-pulse)이 즉시 표시되어야 함
+    const skeletons = document.querySelectorAll('.animate-pulse')
+    expect(skeletons.length).toBeGreaterThan(0)
+  })
+
+  it('네트워크 에러 시 ErrorState를 렌더링한다', async () => {
+    server.use(
+      http.get(`${BASE_URL}/expenses/:id`, () => {
+        return HttpResponse.error()
+      }),
+    )
+    renderWithRouter('expense', 1)
+    await waitFor(() => {
+      expect(screen.getByText('다시 시도')).toBeInTheDocument()
+    })
+  })
+
+  it('404 시 "찾을 수 없습니다" 메시지를 표시한다', async () => {
+    server.use(
+      http.get(`${BASE_URL}/expenses/:id`, () => {
+        return new HttpResponse(null, { status: 404 })
+      }),
+    )
+    renderWithRouter('expense', 1)
+    await waitFor(() => {
+      expect(screen.getByText('내역을 찾을 수 없습니다')).toBeInTheDocument()
+    })
   })
 })
