@@ -34,57 +34,65 @@ const SECTION_REDIRECTS: Record<string, SettingsSection | string> = {
 interface MenuItem {
   to: string
   label: string
-  description: string
+  description?: string
   icon: LucideIcon
   badge?: React.ReactNode
-  section?: SettingsSection
   external?: boolean
 }
 
+interface MenuSection {
+  label: string
+  items: MenuItem[]
+}
+
+/* ─── 단일 메뉴 아이템 렌더링 ─── */
+function SettingsMenuItem({ item, isLast }: { item: MenuItem; isLast: boolean }) {
+  const Icon = item.icon
+  const className = `flex items-center gap-4 px-5 py-4 hover:bg-grape-50 transition-colors ${
+    !isLast ? 'border-b border-[var(--border-subtle)]' : ''
+  }`
+  const content = (
+    <>
+      <div className="relative flex-shrink-0">
+        <Icon className="w-5 h-5 text-grape-500" />
+        {item.badge}
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium text-[var(--text-primary)]">{item.label}</p>
+        {item.description && (
+          <p className="text-xs text-[var(--text-tertiary)] truncate">{item.description}</p>
+        )}
+      </div>
+      <ChevronRight className="w-4 h-4 text-[var(--text-muted)] flex-shrink-0" />
+    </>
+  )
+  return item.external ? (
+    <a href={item.to} target="_blank" rel="noopener noreferrer" className={className}>
+      {content}
+    </a>
+  ) : (
+    <Link to={item.to} className={className}>
+      {content}
+    </Link>
+  )
+}
+
 /* ─── 메뉴 목록 (설정 메인) ─── */
-function SettingsMenu({ menuItems }: { menuItems: MenuItem[] }) {
+function SettingsMenu({ sections }: { sections: MenuSection[] }) {
   return (
     <div className="space-y-6 animate-page-in">
-      <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] overflow-hidden">
-        {menuItems.map((item, idx) => {
-          const Icon = item.icon
-          const className = `flex items-center gap-4 px-5 py-4 hover:bg-grape-50 transition-colors ${
-            idx < menuItems.length - 1 ? 'border-b border-[var(--border-subtle)]' : ''
-          }`
-          const content = (
-            <>
-              <div className="relative flex-shrink-0">
-                <Icon className="w-5 h-5 text-grape-500" />
-                {item.badge}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-[var(--text-primary)]">{item.label}</p>
-                <p className="text-xs text-[var(--text-tertiary)] truncate">{item.description}</p>
-              </div>
-              <ChevronRight className="w-4 h-4 text-[var(--text-muted)] flex-shrink-0" />
-            </>
-          )
-          return item.external ? (
-            <a
-              key={item.to}
-              href={item.to}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={className}
-            >
-              {content}
-            </a>
-          ) : (
-            <Link
-              key={item.to}
-              to={item.to}
-              className={className}
-            >
-              {content}
-            </Link>
-          )
-        })}
-      </div>
+      {sections.map((section) => (
+        <div key={section.label}>
+          <p className="text-xs font-semibold text-[var(--text-tertiary)] uppercase tracking-wide px-1 mb-2">
+            {section.label}
+          </p>
+          <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] overflow-hidden">
+            {section.items.map((item, idx) => (
+              <SettingsMenuItem key={item.to} item={item} isLast={idx === section.items.length - 1} />
+            ))}
+          </div>
+        </div>
+      ))}
     </div>
   )
 }
@@ -104,79 +112,49 @@ export default function SettingsPage() {
   const { section } = useParams<{ section: string }>()
   const navigate = useNavigate()
 
-  const menuItems: MenuItem[] = [
+  const menuSections: MenuSection[] = [
     {
-      to: '/categories',
-      label: '카테고리',
-      description: '지출/수입 분류 카테고리 관리',
-      icon: Tags,
+      label: '가계부',
+      items: [
+        { to: '/categories', label: '카테고리', icon: Tags },
+        { to: '/budgets', label: '예산 관리', icon: PiggyBank },
+        { to: '/payment-methods', label: '결제수단', icon: CreditCard },
+        { to: '/recurring', label: '반복 거래', icon: Repeat },
+        { to: '/households', label: '공유 가계부', icon: Users },
+      ],
     },
     {
-      to: '/budgets',
-      label: '예산 관리',
-      description: '카테고리별/월 총 예산 설정',
-      icon: PiggyBank,
+      label: '설정',
+      items: [
+        {
+          to: '/settings/appearance',
+          label: '화면 모드',
+          description: resolvedTheme === 'dark' ? '다크 모드' : '라이트 모드',
+          icon: resolvedTheme === 'dark' ? Moon : Sun,
+        },
+        {
+          to: '/settings/my-account',
+          label: '내 계정',
+          icon: User,
+        },
+      ],
     },
     {
-      to: '/payment-methods',
-      label: '결제수단',
-      description: '카드/현금 태깅 + 실적 추적',
-      icon: CreditCard,
+      label: '지원',
+      items: [
+        {
+          to: '/settings/changelog',
+          label: '새소식',
+          icon: Megaphone,
+          badge: hasUnread ? (
+            <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-[var(--surface-card)]" />
+          ) : undefined,
+        },
+        { to: '/guide', label: '사용 가이드', icon: BookOpen },
+        { to: '/feedback', label: '피드백', description: '기능 요청 · 버그 신고', icon: MessageSquarePlus },
+        ...(user?.is_admin ? [{ to: '/admin', label: '관리자', icon: ShieldCheck }] : []),
+      ],
     },
-    {
-      to: '/recurring',
-      label: '반복 거래',
-      description: '정기 지출/수입 관리',
-      icon: Repeat,
-    },
-    {
-      to: '/households',
-      label: '공유 가계부',
-      description: '가구 생성, 초대, 멤버 관리',
-      icon: Users,
-    },
-    {
-      to: '/settings/appearance',
-      label: '화면 모드',
-      description: resolvedTheme === 'dark' ? '다크 모드' : '라이트 모드',
-      icon: resolvedTheme === 'dark' ? Moon : Sun,
-      section: 'appearance',
-    },
-    {
-      to: '/settings/my-account',
-      label: '내 계정',
-      description: '프로필, 텔레그램/카카오톡 연동, 로그아웃',
-      icon: User,
-      section: 'my-account',
-    },
-    {
-      to: '/settings/changelog',
-      label: '새소식',
-      description: '앱 업데이트 내역',
-      icon: Megaphone,
-      section: 'changelog',
-      badge: hasUnread ? (
-        <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-[var(--surface-card)]" />
-      ) : undefined,
-    },
-    {
-      to: '/guide',
-      label: '사용 가이드',
-      description: '앱 기능별 상세 사용법',
-      icon: BookOpen,
-    },
-    {
-      to: '/feedback',
-      label: '피드백',
-      description: '기능 요청/버그 신고',
-      icon: MessageSquarePlus,
-    },
-    ...(user?.is_admin ? [{
-      to: '/admin',
-      label: '관리자',
-      description: '운영 현황, 피드백 관리, 사용자 관리',
-      icon: ShieldCheck,
-    }] : []),
   ]
 
   if (!user) return null
@@ -216,7 +194,7 @@ export default function SettingsPage() {
             <ChevronRight className="w-4 h-4 text-white/50" />
           </button>
         )}
-        <SettingsMenu menuItems={menuItems} />
+        <SettingsMenu sections={menuSections} />
         {showIosGuide && <IosInstallGuide onClose={() => setShowIosGuide(false)} />}
       </div>
     )
@@ -230,6 +208,6 @@ export default function SettingsPage() {
     case 'my-account':
       return <MyAccountSection />
     default:
-      return <SettingsMenu menuItems={menuItems} />
+      return <SettingsMenu sections={menuSections} />
   }
 }

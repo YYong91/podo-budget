@@ -96,10 +96,11 @@ describe('SettingsPage', () => {
       expect(screen.getByText('카테고리')).toBeInTheDocument()
     })
 
-    it('9개 메뉴 항목을 표시한다 (약관/개인정보는 독립 메뉴에서 제거됨)', () => {
+    it('10개 메뉴 항목을 표시한다 (약관/개인정보는 독립 메뉴에서 제거됨)', () => {
       renderSettingsPage()
       expect(screen.getByText('카테고리')).toBeInTheDocument()
       expect(screen.getByText('예산 관리')).toBeInTheDocument()
+      expect(screen.getByText('결제수단')).toBeInTheDocument()
       expect(screen.getByText('반복 거래')).toBeInTheDocument()
       expect(screen.getByText('공유 가계부')).toBeInTheDocument()
       expect(screen.getByText('화면 모드')).toBeInTheDocument()
@@ -112,11 +113,37 @@ describe('SettingsPage', () => {
       expect(screen.queryByText('서비스 이용약관')).not.toBeInTheDocument()
     })
 
-    it('메뉴 설명을 표시한다', () => {
+    it('3개 섹션 헤더(가계부, 설정, 지원)를 표시한다', () => {
       renderSettingsPage()
-      expect(screen.getByText('앱 업데이트 내역')).toBeInTheDocument()
-      expect(screen.getByText('프로필, 텔레그램/카카오톡 연동, 로그아웃')).toBeInTheDocument()
-      expect(screen.getByText('지출/수입 분류 카테고리 관리')).toBeInTheDocument()
+      expect(screen.getByText('가계부')).toBeInTheDocument()
+      expect(screen.getByText('설정')).toBeInTheDocument()
+      expect(screen.getByText('지원')).toBeInTheDocument()
+    })
+
+    it('불필요한 메뉴 설명은 표시하지 않는다', () => {
+      renderSettingsPage()
+      // 자명한 메뉴는 description 없음
+      expect(screen.queryByText('지출/수입 분류 카테고리 관리')).not.toBeInTheDocument()
+      expect(screen.queryByText('카테고리별/월 총 예산 설정')).not.toBeInTheDocument()
+      expect(screen.queryByText('정기 지출/수입 관리')).not.toBeInTheDocument()
+      expect(screen.queryByText('가구 생성, 초대, 멤버 관리')).not.toBeInTheDocument()
+      expect(screen.queryByText('앱 업데이트 내역')).not.toBeInTheDocument()
+      expect(screen.queryByText('앱 기능별 상세 사용법')).not.toBeInTheDocument()
+      expect(screen.queryByText('프로필, 텔레그램/카카오톡 연동, 로그아웃')).not.toBeInTheDocument()
+    })
+
+    it('화면 모드 description은 현재 테마 상태를 표시한다', () => {
+      renderSettingsPage()
+      // 라이트/다크 모드 상태 중 하나가 표시되어야 한다
+      const hasModeText =
+        screen.queryByText('라이트 모드') !== null ||
+        screen.queryByText('다크 모드') !== null
+      expect(hasModeText).toBe(true)
+    })
+
+    it('피드백 description은 기능 요청/버그 신고 범위를 표시한다', () => {
+      renderSettingsPage()
+      expect(screen.getByText('기능 요청 · 버그 신고')).toBeInTheDocument()
     })
 
     it('더보기 메뉴에 외부 auth.podonest.com 링크가 없어야 한다', () => {
@@ -248,13 +275,6 @@ describe('SettingsPage', () => {
       expect(codeBtns.length).toBeGreaterThanOrEqual(1)
       // 연동 해제 버튼은 없어야 한다 (is_linked=false 상태이므로)
       expect(screen.queryByRole('button', { name: '연동 해제' })).not.toBeInTheDocument()
-    })
-  })
-
-  describe('화면 모드 서브 페이지', () => {
-    it('화면 모드 설정을 표시한다', () => {
-      renderSettingsPage('/settings/appearance')
-      expect(screen.getByText('화면 모드')).toBeInTheDocument()
     })
   })
 

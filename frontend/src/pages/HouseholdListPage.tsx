@@ -110,9 +110,12 @@ export default function HouseholdListPage() {
   if (error && households.length === 0) {
     return (
       <div className="space-y-6">
-        <button onClick={() => goBack()} className="p-2.5 -ml-2.5 rounded-lg hover:bg-[var(--surface-hover)] transition-colors">
-          <ArrowLeft className="w-5 h-5 text-[var(--text-secondary)]" />
-        </button>
+        <div className="flex items-center gap-3">
+          <button onClick={() => goBack()} className="p-2.5 -ml-2.5 rounded-lg hover:bg-[var(--surface-hover)] transition-colors">
+            <ArrowLeft className="w-5 h-5 text-[var(--text-secondary)]" />
+          </button>
+          <h1 className="text-lg font-semibold text-[var(--text-primary)]">공유 가계부</h1>
+        </div>
         <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)]">
           <ErrorState onRetry={fetchHouseholds} />
         </div>
@@ -124,13 +127,11 @@ export default function HouseholdListPage() {
     <div className="space-y-6">
       {/* 헤더 */}
       <div className="flex items-center justify-between">
-        <div>
+        <div className="flex items-center gap-3">
           <button onClick={() => goBack()} className="p-2.5 -ml-2.5 rounded-lg hover:bg-[var(--surface-hover)] transition-colors">
-          <ArrowLeft className="w-5 h-5 text-[var(--text-secondary)]" />
-        </button>
-          <p className="text-sm text-[var(--text-tertiary)] mt-1">
-            가족이나 친구들과 함께 지출을 관리하세요
-          </p>
+            <ArrowLeft className="w-5 h-5 text-[var(--text-secondary)]" />
+          </button>
+          <h1 className="text-lg font-semibold text-[var(--text-primary)]">공유 가계부</h1>
         </div>
         <button
           onClick={() => setShowCreateModal(true)}
