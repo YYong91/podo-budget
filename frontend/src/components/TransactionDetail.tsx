@@ -2,7 +2,7 @@
  * @file TransactionDetail.tsx
  * @description 지출/수입 상세 정보 통합 컴포넌트
  * type prop으로 지출/수입을 구분하며, 뷰 모드와 편집 모드를 제공한다.
- * ExpenseDetail과 IncomeDetail을 통합한 컴포넌트로, 추후 삭제/정기거래 기능이 추가된다.
+ * 지출/수입 상세 정보 통합 컴포넌트 — 뷰/편집 모드, 빠른 수정, 삭제, 정기거래 등록
  */
 
 import { useEffect, useState, useCallback, useRef } from 'react'
@@ -300,7 +300,8 @@ export default function TransactionDetail({ type }: TransactionDetailProps) {
 
   /** 삭제 처리 */
   const handleDelete = useCallback(async () => {
-    if (!transaction) return
+    if (!transaction || isSaving) return
+    setIsSaving(true)
     try {
       const api = type === 'expense' ? expenseApi : incomeApi
       await api.delete(transaction.id)
@@ -311,8 +312,11 @@ export default function TransactionDetail({ type }: TransactionDetailProps) {
       if (!isMountedRef.current) return
       const status = (err as { response?: { status?: number } })?.response?.status
       addToast('error', status === 403 ? TOAST.NO_PERMISSION : TOAST.DELETE_FAILED)
+      setShowDeleteModal(false)
+    } finally {
+      if (isMountedRef.current) setIsSaving(false)
     }
-  }, [transaction, type, navigate, cfg.listRoute, addToast])
+  }, [transaction, type, navigate, cfg.listRoute, addToast, isSaving])
 
   /** 목록으로 이동 — 변경사항이 있으면 다이얼로그 표시 */
   const handleNavigateAway = useCallback(() => {
@@ -586,12 +590,14 @@ export default function TransactionDetail({ type }: TransactionDetailProps) {
                 </p>
                 <div className="flex gap-3 justify-end">
                   <button
+                    type="button"
                     onClick={() => setShowDeleteModal(false)}
                     className="px-4 py-2 text-sm font-medium text-[var(--text-secondary)] bg-[var(--surface-hover)] rounded-xl hover:bg-[var(--border-default)] transition-colors"
                   >
                     취소
                   </button>
                   <button
+                    type="button"
                     onClick={handleDelete}
                     className="px-4 py-2 text-sm font-medium text-white bg-rose-600 rounded-xl hover:bg-rose-700 transition-colors"
                   >

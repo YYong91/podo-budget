@@ -698,11 +698,19 @@ describe('TransactionDetail — 삭제', () => {
   })
 
   it('확인 후 DELETE 호출하고 목록으로 navigate한다', async () => {
+    let deleteCalled = false
+    server.use(
+      http.delete(`${BASE_URL}/expenses/:id`, () => {
+        deleteCalled = true
+        return new HttpResponse(null, { status: 204 })
+      }),
+    )
     renderWithRouter('expense', 1)
     await waitFor(() => expect(screen.getByText('₩8,000')).toBeInTheDocument())
     await userEvent.click(screen.getByText('삭제하기'))
     await userEvent.click(screen.getByRole('button', { name: '삭제' }))
     await waitFor(() => {
+      expect(deleteCalled).toBe(true)
       expect(mockNavigate).toHaveBeenCalledWith('/expenses')
     })
   })
