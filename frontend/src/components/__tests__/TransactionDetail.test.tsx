@@ -526,3 +526,151 @@ describe('TransactionDetail — 빠른 수정', () => {
     })
   })
 })
+
+describe('TransactionDetail — 편집 모드', () => {
+  it('수정 버튼 클릭 시 편집 모드로 전환한다', async () => {
+    renderWithRouter('expense', 1)
+
+    await waitFor(() => {
+      expect(screen.getByText('₩8,000')).toBeInTheDocument()
+    })
+
+    // 수정 버튼 클릭
+    await userEvent.click(screen.getByRole('button', { name: '수정' }))
+
+    // 편집 모드 폼 필드가 렌더링되어야 함
+    await waitFor(() => {
+      expect(screen.getByLabelText('금액')).toBeInTheDocument()
+      expect(screen.getByLabelText('설명')).toBeInTheDocument()
+      expect(screen.getByLabelText('카테고리')).toBeInTheDocument()
+      expect(screen.getByLabelText('날짜')).toBeInTheDocument()
+    })
+
+    // 뷰 모드의 히어로 섹션(금액 텍스트)이 숨겨져야 함
+    expect(screen.queryByText('₩8,000')).not.toBeInTheDocument()
+  })
+
+  it('?edit=true URL로 초기 렌더링부터 편집 모드이다', async () => {
+    renderWithRouter('expense', 1, '?edit=true')
+
+    // 편집 모드 폼 필드가 렌더링되어야 함
+    await waitFor(() => {
+      expect(screen.getByLabelText('금액')).toBeInTheDocument()
+      expect(screen.getByLabelText('설명')).toBeInTheDocument()
+    })
+
+    // 뷰 모드의 수정 버튼이 없어야 함
+    expect(screen.queryByRole('button', { name: '수정' })).not.toBeInTheDocument()
+  })
+
+  it('저장 성공 시 뷰 모드로 복귀하고 데이터가 반영된다', async () => {
+    renderWithRouter('expense', 1)
+
+    await waitFor(() => {
+      expect(screen.getByText('₩8,000')).toBeInTheDocument()
+    })
+
+    // 편집 모드 진입
+    await userEvent.click(screen.getByRole('button', { name: '수정' }))
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('설명')).toBeInTheDocument()
+    })
+
+    // 설명 변경
+    const descInput = screen.getByLabelText('설명')
+    await userEvent.clear(descInput)
+    await userEvent.type(descInput, '된장찌개')
+
+    // 저장 클릭
+    await userEvent.click(screen.getByRole('button', { name: '저장' }))
+
+    // 뷰 모드로 복귀 + 변경된 데이터 표시
+    await waitFor(() => {
+      expect(screen.getByText('된장찌개')).toBeInTheDocument()
+      // 뷰 모드의 수정 버튼이 다시 표시되어야 함
+      expect(screen.getByRole('button', { name: '수정' })).toBeInTheDocument()
+    })
+  })
+
+  it('저장 실패 시 편집 모드를 유지하고 error toast를 표시한다', async () => {
+    renderWithRouter('expense', 1)
+
+    await waitFor(() => {
+      expect(screen.getByText('₩8,000')).toBeInTheDocument()
+    })
+
+    await userEvent.click(screen.getByRole('button', { name: '수정' }))
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('설명')).toBeInTheDocument()
+    })
+
+    // PUT 실패 설정
+    server.use(
+      http.put(`${BASE_URL}/expenses/:id`, () => {
+        return HttpResponse.error()
+      }),
+    )
+
+    await userEvent.click(screen.getByRole('button', { name: '저장' }))
+
+    // 에러 토스트 + 편집 모드 유지
+    await waitFor(() => {
+      expect(mockAddToast).toHaveBeenCalledWith('error', expect.any(String))
+    })
+
+    // 편집 폼이 여전히 존재
+    expect(screen.getByLabelText('설명')).toBeInTheDocument()
+  })
+
+  it('편집 모드에서 삭제 버튼과 정기거래 섹션이 숨겨진다', async () => {
+    renderWithRouter('expense', 1)
+
+    await waitFor(() => {
+      expect(screen.getByText('₩8,000')).toBeInTheDocument()
+    })
+
+    // 뷰 모드에서 삭제 버튼과 정기거래 등록 존재 확인
+    expect(screen.getByText('삭제하기')).toBeInTheDocument()
+    expect(screen.getByText('+ 정기거래 등록')).toBeInTheDocument()
+
+    // 편집 모드 진입
+    await userEvent.click(screen.getByRole('button', { name: '수정' }))
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('금액')).toBeInTheDocument()
+    })
+
+    // 삭제 버튼, 정기거래 등록이 없어야 함
+    expect(screen.queryByText('삭제하기')).not.toBeInTheDocument()
+    expect(screen.queryByText('+ 정기거래 등록')).not.toBeInTheDocument()
+  })
+
+  it('편집 모드 재진입 시 editForm이 최신 transaction으로 초기화된다', async () => {
+    renderWithRouter('expense', 1)
+
+    await waitFor(() => {
+      expect(screen.getByText('₩8,000')).toBeInTheDocument()
+    })
+
+    // 빠른 수정으로 카테고리 변경 (교통으로)
+    await userEvent.click(screen.getByTestId('chip-category'))
+    await userEvent.selectOptions(screen.getByTestId('quick-select-category'), '2')
+
+    await waitFor(() => {
+      expect(screen.getByTestId('chip-category').textContent).toContain('교통')
+    })
+
+    // 편집 모드 진입
+    await userEvent.click(screen.getByRole('button', { name: '수정' }))
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('카테고리')).toBeInTheDocument()
+    })
+
+    // 카테고리 select의 값이 빠른 수정 후의 값(교통=2)이어야 함
+    const categorySelect = screen.getByLabelText('카테고리') as HTMLSelectElement
+    expect(categorySelect.value).toBe('2')
+  })
+})
