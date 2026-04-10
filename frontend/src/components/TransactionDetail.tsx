@@ -367,13 +367,24 @@ export default function TransactionDetail({ type }: TransactionDetailProps) {
     <div className="space-y-6 animate-page-in">
       {/* 헤더: 뒤로가기 + 페이지 제목 */}
       <div className="flex items-center gap-3">
-        <Link
-          to={cfg.listRoute}
-          aria-label="목록으로"
-          className="p-2 -ml-2 rounded-lg hover:bg-[var(--surface-hover)] transition-colors"
-        >
-          <ArrowLeft className="w-5 h-5 text-[var(--text-secondary)]" />
-        </Link>
+        {mode === 'edit' ? (
+          <button
+            type="button"
+            aria-label="뒤로가기"
+            onClick={handleNavigateAway}
+            className="p-2 -ml-2 rounded-lg hover:bg-[var(--surface-hover)] transition-colors"
+          >
+            <ArrowLeft className="w-5 h-5 text-[var(--text-secondary)]" />
+          </button>
+        ) : (
+          <Link
+            to={cfg.listRoute}
+            aria-label="뒤로가기"
+            className="p-2 -ml-2 rounded-lg hover:bg-[var(--surface-hover)] transition-colors"
+          >
+            <ArrowLeft className="w-5 h-5 text-[var(--text-secondary)]" />
+          </Link>
+        )}
         <h1 className="text-lg font-semibold text-[var(--text-primary)]">{cfg.pageTitle}</h1>
       </div>
 
@@ -693,7 +704,9 @@ export default function TransactionDetail({ type }: TransactionDetailProps) {
                   변경사항이 저장되지 않았습니다. 이동하시겠습니까?
                 </p>
                 <div className="flex gap-3 justify-end">
+                  {/* eslint-disable-next-line jsx-a11y/no-autofocus */}
                   <button
+                    autoFocus
                     onClick={() => setShowDirtyDialog(false)}
                     className="px-4 py-2 text-sm font-medium text-[var(--text-secondary)] bg-[var(--surface-hover)] rounded-xl hover:bg-[var(--border-default)] transition-colors"
                   >
