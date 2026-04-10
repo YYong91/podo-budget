@@ -556,7 +556,9 @@ describe('TransactionDetail — 빠른 수정', () => {
 
     // 카테고리 칩 클릭 → select 열림
     await userEvent.click(screen.getByTestId('chip-category'))
-    expect(screen.getByTestId('quick-select-category')).toBeInTheDocument()
+    await waitFor(() => {
+      expect(screen.getByTestId('quick-select-category')).toBeInTheDocument()
+    })
 
     // select에서 blur (선택 없이)
     await userEvent.tab()

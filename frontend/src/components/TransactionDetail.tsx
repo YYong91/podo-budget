@@ -454,7 +454,7 @@ export default function TransactionDetail({ type }: TransactionDetailProps) {
                   data-testid="chip-category"
                   onClick={() => handleChipTap('category')}
                   className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm min-h-[44px] bg-[var(--surface-elevated)] text-[var(--text-secondary)] transition-colors duration-400 ${
-                    quickEditField !== null ? 'opacity-50 pointer-events-none' : ''
+                    quickEditField !== null || isSaving ? 'opacity-50 pointer-events-none' : ''
                   } ${flashField === 'category' ? (cfg.color === 'grape' ? 'bg-grape-200' : 'bg-leaf-200') : ''}`}
                 >
                   {categoryEmoji && <span>{categoryEmoji}</span>}
@@ -491,7 +491,7 @@ export default function TransactionDetail({ type }: TransactionDetailProps) {
                     data-testid="chip-payment_method"
                     onClick={() => handleChipTap('payment_method')}
                     className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm min-h-[44px] bg-[var(--surface-elevated)] text-[var(--text-secondary)] transition-colors duration-400 ${
-                      quickEditField !== null ? 'opacity-50 pointer-events-none' : ''
+                      quickEditField !== null || isSaving ? 'opacity-50 pointer-events-none' : ''
                     } ${flashField === 'payment_method' ? 'bg-grape-200' : ''}`}
                   >
                     <span>{PM_ICON[paymentMethod.type] ?? '💳'}</span>
