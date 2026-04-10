@@ -13,7 +13,7 @@ export function ScreenshotImage({ src, alt, caption, className = '' }: Screensho
   if (failed) {
     return (
       <div
-        className={`flex items-center justify-center rounded-2xl bg-gradient-to-br from-grape-200 to-grape-400 dark:from-grape-700 dark:to-grape-900 ${className}`}
+        className={`flex items-center justify-center rounded-2xl bg-gradient-to-br from-grape-200 to-grape-400 ${className}`}
         role="img"
         aria-label={alt}
       >
