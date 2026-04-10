@@ -17,6 +17,13 @@ const BASE_URL = '/api'
 // addToast를 테스트에서 접근 가능하도록 모듈 레벨에서 선언
 const mockAddToast = vi.fn()
 
+// navigate 모킹 — dirty form guard 테스트에서 navigate 호출 검증
+const mockNavigate = vi.fn()
+vi.mock('react-router-dom', async () => ({
+  ...(await vi.importActual('react-router-dom')),
+  useNavigate: () => mockNavigate,
+}))
+
 // Mock stores and hooks
 vi.mock('../../stores/useHouseholdStore', () => ({
   // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
@@ -47,6 +54,7 @@ function renderWithRouter(type: 'expense' | 'income', id: number = 1, search: st
 
 beforeEach(() => {
   mockAddToast.mockClear()
+  mockNavigate.mockClear()
 })
 
 describe('TransactionDetail — 뷰 모드', () => {
@@ -672,5 +680,120 @@ describe('TransactionDetail — 편집 모드', () => {
     // 카테고리 select의 값이 빠른 수정 후의 값(교통=2)이어야 함
     const categorySelect = screen.getByLabelText('카테고리') as HTMLSelectElement
     expect(categorySelect.value).toBe('2')
+  })
+})
+
+describe('TransactionDetail — dirty form guard', () => {
+  it('변경 없이 "목록으로" 탭 시 바로 navigate한다', async () => {
+    renderWithRouter('expense', 1)
+
+    await waitFor(() => {
+      expect(screen.getByText('₩8,000')).toBeInTheDocument()
+    })
+
+    // 편집 모드 진입
+    await userEvent.click(screen.getByRole('button', { name: '수정' }))
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('금액')).toBeInTheDocument()
+    })
+
+    // 변경 없이 목록으로 클릭
+    await userEvent.click(screen.getByRole('button', { name: '목록으로' }))
+
+    // 다이얼로그 없이 바로 navigate
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(mockNavigate).toHaveBeenCalledWith('/expenses')
+  })
+
+  it('변경 후 "목록으로" 탭 시 확인 다이얼로그를 표시한다', async () => {
+    renderWithRouter('expense', 1)
+
+    await waitFor(() => {
+      expect(screen.getByText('₩8,000')).toBeInTheDocument()
+    })
+
+    // 편집 모드 진입
+    await userEvent.click(screen.getByRole('button', { name: '수정' }))
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('금액')).toBeInTheDocument()
+    })
+
+    // 금액 변경
+    const amountInput = screen.getByLabelText('금액')
+    await userEvent.clear(amountInput)
+    await userEvent.type(amountInput, '12000')
+
+    // 목록으로 클릭
+    await userEvent.click(screen.getByRole('button', { name: '목록으로' }))
+
+    // 확인 다이얼로그 표시
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+    expect(screen.getByText('변경사항이 저장되지 않았습니다. 이동하시겠습니까?')).toBeInTheDocument()
+    // navigate가 호출되지 않아야 함
+    expect(mockNavigate).not.toHaveBeenCalled()
+  })
+
+  it('다이얼로그에서 "머무르기" 클릭 시 편집 모드를 유지한다', async () => {
+    renderWithRouter('expense', 1)
+
+    await waitFor(() => {
+      expect(screen.getByText('₩8,000')).toBeInTheDocument()
+    })
+
+    // 편집 모드 진입
+    await userEvent.click(screen.getByRole('button', { name: '수정' }))
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('설명')).toBeInTheDocument()
+    })
+
+    // 설명 변경
+    const descInput = screen.getByLabelText('설명')
+    await userEvent.clear(descInput)
+    await userEvent.type(descInput, '새로운 설명')
+
+    // 목록으로 → 다이얼로그 열림
+    await userEvent.click(screen.getByRole('button', { name: '목록으로' }))
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+
+    // 머무르기 클릭
+    await userEvent.click(screen.getByRole('button', { name: '머무르기' }))
+
+    // 다이얼로그 닫힘 + 편집 모드 유지
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(screen.getByLabelText('설명')).toBeInTheDocument()
+    expect(mockNavigate).not.toHaveBeenCalled()
+  })
+
+  it('다이얼로그에서 "이동하기" 클릭 시 목록으로 navigate한다', async () => {
+    renderWithRouter('expense', 1)
+
+    await waitFor(() => {
+      expect(screen.getByText('₩8,000')).toBeInTheDocument()
+    })
+
+    // 편집 모드 진입
+    await userEvent.click(screen.getByRole('button', { name: '수정' }))
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('설명')).toBeInTheDocument()
+    })
+
+    // 설명 변경
+    const descInput = screen.getByLabelText('설명')
+    await userEvent.clear(descInput)
+    await userEvent.type(descInput, '변경된 설명')
+
+    // 목록으로 → 다이얼로그 열림
+    await userEvent.click(screen.getByRole('button', { name: '목록으로' }))
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+
+    // 이동하기 클릭
+    await userEvent.click(screen.getByRole('button', { name: '이동하기' }))
+
+    // navigate 호출
+    expect(mockNavigate).toHaveBeenCalledWith('/expenses')
   })
 })

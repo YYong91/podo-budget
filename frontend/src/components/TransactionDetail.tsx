@@ -122,6 +122,9 @@ export default function TransactionDetail({ type }: TransactionDetailProps) {
   const [flashField, setFlashField] = useState<string | null>(null)
   const [announcement, setAnnouncement] = useState('')
 
+  // ── dirty form guard 상태 ──
+  const [showDirtyDialog, setShowDirtyDialog] = useState(false)
+
   // ── 편집 모드 상태 ──
   const [editForm, setEditForm] = useState<EditFormState>(() =>
     transaction ? toEditForm(transaction) : {
@@ -287,6 +290,21 @@ export default function TransactionDetail({ type }: TransactionDetailProps) {
       if (isMountedRef.current) setIsSaving(false)
     }
   }, [transaction, editForm, type, cfg.hasPaymentMethod, addToast, isSaving])
+
+  /** 편집 폼이 원본 대비 변경되었는지 확인 */
+  const isDirty = useCallback(() => {
+    if (!transaction) return false
+    return JSON.stringify(editForm) !== JSON.stringify(toEditForm(transaction))
+  }, [editForm, transaction])
+
+  /** 목록으로 이동 — 변경사항이 있으면 다이얼로그 표시 */
+  const handleNavigateAway = useCallback(() => {
+    if (isDirty()) {
+      setShowDirtyDialog(true)
+    } else {
+      navigate(cfg.listRoute)
+    }
+  }, [isDirty, navigate, cfg.listRoute])
 
   // ── 로딩 스켈레톤 ──
 
@@ -643,12 +661,13 @@ export default function TransactionDetail({ type }: TransactionDetailProps) {
 
           {/* 하단 sticky CTA */}
           <div className="flex gap-3 sticky bottom-4">
-            <Link
-              to={cfg.listRoute}
+            <button
+              type="button"
+              onClick={handleNavigateAway}
               className="flex-1 py-3 text-sm font-semibold text-center text-[var(--text-secondary)] bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl transition-colors hover:bg-[var(--surface-hover)]"
             >
               목록으로
-            </Link>
+            </button>
             <button
               onClick={handleSave}
               disabled={isSaving}
@@ -661,6 +680,35 @@ export default function TransactionDetail({ type }: TransactionDetailProps) {
               {isSaving ? '저장 중…' : '저장'}
             </button>
           </div>
+
+          {/* Dirty form guard 다이얼로그 */}
+          {showDirtyDialog && (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+                 role="dialog" aria-modal="true" aria-labelledby="dirty-dialog-title">
+              <div className="bg-[var(--surface-card)] rounded-2xl shadow-xl max-w-sm w-full p-6">
+                <h3 id="dirty-dialog-title" className="text-lg font-semibold text-[var(--text-primary)] mb-2">
+                  저장하지 않고 이동
+                </h3>
+                <p className="text-[var(--text-secondary)] mb-6">
+                  변경사항이 저장되지 않았습니다. 이동하시겠습니까?
+                </p>
+                <div className="flex gap-3 justify-end">
+                  <button
+                    onClick={() => setShowDirtyDialog(false)}
+                    className="px-4 py-2 text-sm font-medium text-[var(--text-secondary)] bg-[var(--surface-hover)] rounded-xl hover:bg-[var(--border-default)] transition-colors"
+                  >
+                    머무르기
+                  </button>
+                  <button
+                    onClick={() => navigate(cfg.listRoute)}
+                    className="px-4 py-2 text-sm font-medium text-white bg-rose-600 rounded-xl hover:bg-rose-700 transition-colors"
+                  >
+                    이동하기
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </>
       )}
     </div>
