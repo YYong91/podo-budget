@@ -96,7 +96,6 @@ export function MessengerSection() {
                 </div>
               </div>
             </div>
-            <p className="mt-3 text-sm font-medium text-warm-500 text-center">메신저로 보내기</p>
           </div>
 
           {/* 오른쪽 카드: 앱 스크린샷 */}
@@ -109,7 +108,6 @@ export function MessengerSection() {
                 className="h-full w-full object-cover"
               />
             </div>
-            <p className="mt-3 text-sm font-medium text-warm-500 text-center">앱에서 바로 입력</p>
           </div>
         </div>
       </div>
