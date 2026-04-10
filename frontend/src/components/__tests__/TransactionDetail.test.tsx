@@ -297,11 +297,11 @@ describe('TransactionDetail — 빠른 수정', () => {
 
   it('카테고리 빠른 수정 저장 중 select가 disabled된다', async () => {
     // API 응답을 지연시켜 saving 상태를 관찰
-    let resolveUpdate: ((value: unknown) => void) | null = null
+    const deferred = { resolve: null as null | (() => void) }
     server.use(
       http.put(`${BASE_URL}/expenses/:id`, () => {
-        return new Promise((resolve) => {
-          resolveUpdate = resolve
+        return new Promise<ReturnType<typeof HttpResponse.json>>((resolve) => {
+          deferred.resolve = () => resolve(HttpResponse.json({ ...mockExpenses[0], category_id: 2 }))
         })
       }),
     )
@@ -325,7 +325,7 @@ describe('TransactionDetail — 빠른 수정', () => {
     })
 
     // 응답 완료
-    resolveUpdate?.(HttpResponse.json({ ...mockExpenses[0], category_id: 2 }))
+    deferred.resolve?.()
   })
 
   it('카테고리 빠른 수정 실패 시 원래 값으로 복귀한다', async () => {
@@ -381,11 +381,11 @@ describe('TransactionDetail — 빠른 수정', () => {
 
   it('isSaving 중에는 칩 탭이 무시된다', async () => {
     // API 응답을 지연시켜 saving 상태 유지
-    let resolveUpdate: ((value: unknown) => void) | null = null
+    const deferred = { resolve: null as null | (() => void) }
     server.use(
       http.put(`${BASE_URL}/expenses/:id`, () => {
-        return new Promise((resolve) => {
-          resolveUpdate = resolve
+        return new Promise<ReturnType<typeof HttpResponse.json>>((resolve) => {
+          deferred.resolve = () => resolve(HttpResponse.json({ ...mockExpenses[0], category_id: 2 }))
         })
       }),
       http.get(`${BASE_URL}/expenses/:id`, () => {
@@ -416,7 +416,7 @@ describe('TransactionDetail — 빠른 수정', () => {
     }
 
     // 정리: 응답 완료
-    resolveUpdate?.(HttpResponse.json({ ...mockExpenses[0], category_id: 2 }))
+    deferred.resolve?.()
   })
 
   it('빠른 수정 열린 상태에서 수정 버튼 클릭 시 편집 모드로 전환한다', async () => {

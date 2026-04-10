@@ -4,6 +4,7 @@ import { describe, it, expect, vi } from 'vitest'
 import ExpenseDetail from '../ExpenseDetail'
 
 vi.mock('../../stores/useHouseholdStore', () => ({
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
   useHouseholdStore: (selector?: Function) => {
     const state = { activeHouseholdId: 1, households: [{ id: 1 }], isLoading: false }
     return selector ? selector(state) : state

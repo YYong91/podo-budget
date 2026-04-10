@@ -453,7 +453,7 @@ export default function TransactionDetail({ type }: TransactionDetailProps) {
                   data-testid="chip-category"
                   onClick={() => handleChipTap('category')}
                   className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm min-h-[44px] bg-[var(--surface-elevated)] text-[var(--text-secondary)] transition-colors duration-400 ${
-                    quickEditField !== null && quickEditField !== 'category' ? 'opacity-50 pointer-events-none' : ''
+                    quickEditField !== null ? 'opacity-50 pointer-events-none' : ''
                   } ${flashField === 'category' ? (cfg.color === 'grape' ? 'bg-grape-200' : 'bg-leaf-200') : ''}`}
                 >
                   {categoryEmoji && <span>{categoryEmoji}</span>}
@@ -489,7 +489,7 @@ export default function TransactionDetail({ type }: TransactionDetailProps) {
                     data-testid="chip-payment_method"
                     onClick={() => handleChipTap('payment_method')}
                     className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm min-h-[44px] bg-[var(--surface-elevated)] text-[var(--text-secondary)] transition-colors duration-400 ${
-                      quickEditField !== null && quickEditField !== 'payment_method' ? 'opacity-50 pointer-events-none' : ''
+                      quickEditField !== null ? 'opacity-50 pointer-events-none' : ''
                     } ${flashField === 'payment_method' ? 'bg-grape-200' : ''}`}
                   >
                     <span>{PM_ICON[paymentMethod.type] ?? '💳'}</span>
@@ -771,8 +771,8 @@ export default function TransactionDetail({ type }: TransactionDetailProps) {
                   변경사항이 저장되지 않았습니다. 이동하시겠습니까?
                 </p>
                 <div className="flex gap-3 justify-end">
-                  {/* eslint-disable-next-line jsx-a11y/no-autofocus */}
                   <button
+                    // eslint-disable-next-line jsx-a11y/no-autofocus
                     autoFocus
                     onClick={() => setShowDirtyDialog(false)}
                     className="px-4 py-2 text-sm font-medium text-[var(--text-secondary)] bg-[var(--surface-hover)] rounded-xl hover:bg-[var(--border-default)] transition-colors"
