@@ -320,14 +320,14 @@ export default function TransactionDetail({ type }: TransactionDetailProps) {
     }
   }, [transaction, type, navigate, cfg.listRoute, addToast, isSaving])
 
-  /** 목록으로 이동 — 변경사항이 있으면 다이얼로그 표시 */
-  const handleNavigateAway = useCallback(() => {
+  /** 편집 취소 — 변경사항이 있으면 다이얼로그, 없으면 뷰 모드로 복귀 */
+  const handleCancelEdit = useCallback(() => {
     if (isDirty()) {
       setShowDirtyDialog(true)
     } else {
-      navigate(cfg.listRoute)
+      setMode('view')
     }
-  }, [isDirty, navigate, cfg.listRoute])
+  }, [isDirty])
 
   // ── 로딩 스켈레톤 ──
 
@@ -394,7 +394,7 @@ export default function TransactionDetail({ type }: TransactionDetailProps) {
           <button
             type="button"
             aria-label="뒤로가기"
-            onClick={handleNavigateAway}
+            onClick={handleCancelEdit}
             className="p-2 -ml-2 rounded-lg hover:bg-[var(--surface-hover)] transition-colors"
           >
             <ArrowLeft className="w-5 h-5 text-[var(--text-secondary)]" />
@@ -441,10 +441,11 @@ export default function TransactionDetail({ type }: TransactionDetailProps) {
                     const val = e.target.value === '' ? null : Number(e.target.value)
                     handleQuickSave('category_id', val)
                   }}
+                  onBlur={() => setQuickEditField(null)}
                 >
                   <option value="">분류 안 됨</option>
                   {categories.map((c) => (
-                    <option key={c.id} value={c.id}>{c.name}</option>
+                    <option key={c.id} value={c.id}>{c.emoji ? `${c.emoji} ${c.name}` : c.name}</option>
                   ))}
                 </select>
               ) : (
@@ -453,7 +454,7 @@ export default function TransactionDetail({ type }: TransactionDetailProps) {
                   data-testid="chip-category"
                   onClick={() => handleChipTap('category')}
                   className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm min-h-[44px] bg-[var(--surface-elevated)] text-[var(--text-secondary)] transition-colors duration-400 ${
-                    quickEditField !== null ? 'opacity-50 pointer-events-none' : ''
+                    quickEditField !== null || isSaving ? 'opacity-50 pointer-events-none' : ''
                   } ${flashField === 'category' ? (cfg.color === 'grape' ? 'bg-grape-200' : 'bg-leaf-200') : ''}`}
                 >
                   {categoryEmoji && <span>{categoryEmoji}</span>}
@@ -462,8 +463,8 @@ export default function TransactionDetail({ type }: TransactionDetailProps) {
                 </button>
               )}
 
-              {/* 결제수단 칩 / 드롭다운 (지출 타입이고 결제수단이 있을 때만) */}
-              {cfg.hasPaymentMethod && paymentMethod && (
+              {/* 결제수단 칩 / 드롭다운 (지출 타입이면 항상 표시 — 미지정 포함) */}
+              {cfg.hasPaymentMethod && (
                 quickEditField === 'payment_method' ? (
                   <select
                     data-testid="quick-select-payment_method"
@@ -477,10 +478,11 @@ export default function TransactionDetail({ type }: TransactionDetailProps) {
                       const val = e.target.value === '' ? null : Number(e.target.value)
                       handleQuickSave('payment_method_id', val)
                     }}
+                    onBlur={() => setQuickEditField(null)}
                   >
                     <option value="">미지정</option>
                     {paymentMethods.map((pm) => (
-                      <option key={pm.id} value={pm.id}>{pm.name}</option>
+                      <option key={pm.id} value={pm.id}>{PM_ICON[pm.type] ? `${PM_ICON[pm.type]} ${pm.name}` : pm.name}</option>
                     ))}
                   </select>
                 ) : (
@@ -488,12 +490,22 @@ export default function TransactionDetail({ type }: TransactionDetailProps) {
                     type="button"
                     data-testid="chip-payment_method"
                     onClick={() => handleChipTap('payment_method')}
-                    className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm min-h-[44px] bg-[var(--surface-elevated)] text-[var(--text-secondary)] transition-colors duration-400 ${
-                      quickEditField !== null ? 'opacity-50 pointer-events-none' : ''
+                    className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm min-h-[44px] ${
+                      paymentMethod
+                        ? 'bg-[var(--surface-elevated)] text-[var(--text-secondary)]'
+                        : 'bg-[var(--surface-elevated)] text-[var(--text-muted)] border border-dashed border-[var(--border-default)]'
+                    } transition-colors duration-400 ${
+                      quickEditField !== null || isSaving ? 'opacity-50 pointer-events-none' : ''
                     } ${flashField === 'payment_method' ? 'bg-grape-200' : ''}`}
                   >
-                    <span>{PM_ICON[paymentMethod.type] ?? '💳'}</span>
-                    {paymentMethod.name}
+                    {paymentMethod ? (
+                      <>
+                        <span>{PM_ICON[paymentMethod.type] ?? '💳'}</span>
+                        {paymentMethod.name}
+                      </>
+                    ) : (
+                      '미지정'
+                    )}
                     <span className="text-[var(--text-muted)] text-xs ml-0.5">▾</span>
                   </button>
                 )
@@ -634,14 +646,23 @@ export default function TransactionDetail({ type }: TransactionDetailProps) {
             {/* 금액 */}
             <div>
               <label htmlFor="edit-amount" className="block text-sm font-medium text-[var(--text-tertiary)] mb-2">금액</label>
-              <input
-                id="edit-amount"
-                type="number"
-                className="input-base"
-                value={editForm.amount || ''}
-                onChange={(e) => setEditForm((f) => ({ ...f, amount: Number(e.target.value) || 0 }))}
-                min={0}
-              />
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-secondary)] text-sm pointer-events-none">
+                  ₩
+                </span>
+                <input
+                  id="edit-amount"
+                  type="text"
+                  inputMode="numeric"
+                  className="input-base pl-7"
+                  value={editForm.amount === 0 ? '' : editForm.amount.toLocaleString('ko-KR')}
+                  onChange={(e) => {
+                    const raw = e.target.value.replace(/[^0-9]/g, '')
+                    setEditForm((f) => ({ ...f, amount: raw === '' ? 0 : Number(raw) }))
+                  }}
+                  placeholder="0"
+                />
+              </div>
             </div>
 
             {/* 설명 */}
@@ -650,6 +671,7 @@ export default function TransactionDetail({ type }: TransactionDetailProps) {
               <input
                 id="edit-description"
                 type="text"
+                inputMode="text"
                 className="input-base"
                 value={editForm.description}
                 onChange={(e) => setEditForm((f) => ({ ...f, description: e.target.value }))}
@@ -708,6 +730,7 @@ export default function TransactionDetail({ type }: TransactionDetailProps) {
               <input
                 id="edit-memo"
                 type="text"
+                inputMode="text"
                 className="input-base"
                 value={editForm.memo}
                 onChange={(e) => setEditForm((f) => ({ ...f, memo: e.target.value }))}
@@ -741,10 +764,10 @@ export default function TransactionDetail({ type }: TransactionDetailProps) {
           <div className="flex gap-3 sticky bottom-4">
             <button
               type="button"
-              onClick={handleNavigateAway}
+              onClick={handleCancelEdit}
               className="flex-1 py-3 text-sm font-semibold text-center text-[var(--text-secondary)] bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl transition-colors hover:bg-[var(--surface-hover)]"
             >
-              목록으로
+              취소
             </button>
             <button
               onClick={handleSave}
@@ -780,7 +803,7 @@ export default function TransactionDetail({ type }: TransactionDetailProps) {
                     머무르기
                   </button>
                   <button
-                    onClick={() => navigate(cfg.listRoute)}
+                    onClick={() => { setShowDirtyDialog(false); setMode('view') }}
                     className="px-4 py-2 text-sm font-medium text-white bg-rose-600 rounded-xl hover:bg-rose-700 transition-colors"
                   >
                     이동하기

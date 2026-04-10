@@ -123,7 +123,7 @@ describe('TransactionDetail — 뷰 모드', () => {
     })
   })
 
-  it('빈 필드를 숨긴다 (메모 없음, 결제수단 없음)', async () => {
+  it('결제수단 미지정 시 미지정 칩이 표시된다 (메모 없음)', async () => {
     // mockExpenses[0] has memo=null, payment_method_id=null
     renderWithRouter('expense', 1)
 
@@ -134,9 +134,35 @@ describe('TransactionDetail — 뷰 모드', () => {
     // 메모 섹션이 없어야 함
     expect(screen.queryByText('메모')).not.toBeInTheDocument()
 
-    // 결제수단 칩이 없어야 함 (payment_method_id=null)
+    // 결제수단 미지정 칩이 표시되어야 함
+    await waitFor(() => {
+      expect(screen.getByTestId('chip-payment_method')).toBeInTheDocument()
+      expect(screen.getByTestId('chip-payment_method').textContent).toContain('미지정')
+    })
+
+    // 아이콘 칩은 없어야 함 (payment_method_id=null)
     const allChips = screen.queryAllByText(/💳|💵|🏦/)
     expect(allChips).toHaveLength(0)
+  })
+
+  it('결제수단 미지정 칩 클릭 시 드롭다운이 열린다', async () => {
+    // mockExpenses[0] has payment_method_id=null
+    renderWithRouter('expense', 1)
+
+    await waitFor(() => {
+      expect(screen.getByText('₩8,000')).toBeInTheDocument()
+    })
+
+    // 미지정 칩이 표시될 때까지 대기
+    await waitFor(() => {
+      expect(screen.getByTestId('chip-payment_method')).toBeInTheDocument()
+    })
+
+    // 미지정 칩 클릭
+    await userEvent.click(screen.getByTestId('chip-payment_method'))
+
+    // 드롭다운이 열려야 함
+    expect(screen.getByTestId('quick-select-payment_method')).toBeInTheDocument()
   })
 
   it('수입 타입은 결제수단 칩을 렌더링하지 않는다', async () => {
@@ -546,6 +572,44 @@ describe('TransactionDetail — 빠른 수정', () => {
       expect(liveRegion.textContent).toContain('교통')
     })
   })
+
+  it('카테고리 select에서 선택 없이 blur 시 select가 닫히고 칩이 복귀한다', async () => {
+    renderWithRouter('expense', 1)
+
+    await waitFor(() => {
+      expect(screen.getByText('₩8,000')).toBeInTheDocument()
+    })
+
+    // 카테고리 칩 클릭 → select 열림
+    await userEvent.click(screen.getByTestId('chip-category'))
+    await waitFor(() => {
+      expect(screen.getByTestId('quick-select-category')).toBeInTheDocument()
+    })
+
+    // select에서 blur (선택 없이)
+    await userEvent.tab()
+
+    // select가 닫히고 칩이 복귀해야 함
+    await waitFor(() => {
+      expect(screen.queryByTestId('quick-select-category')).not.toBeInTheDocument()
+      expect(screen.getByTestId('chip-category')).toBeInTheDocument()
+    })
+  })
+
+  it('카테고리 quick-select options에 이모지가 포함된다', async () => {
+    renderWithRouter('expense', 1)
+
+    await waitFor(() => {
+      expect(screen.getByText('₩8,000')).toBeInTheDocument()
+    })
+
+    await userEvent.click(screen.getByTestId('chip-category'))
+
+    const select = screen.getByTestId('quick-select-category') as HTMLSelectElement
+    const optionTexts = Array.from(select.options).map((o) => o.textContent ?? '')
+    // 식비 옵션에 이모지가 있어야 함
+    expect(optionTexts.some((t) => t.includes('📌') && t.includes('식비'))).toBe(true)
+  })
 })
 
 describe('TransactionDetail — 편집 모드', () => {
@@ -668,6 +732,58 @@ describe('TransactionDetail — 편집 모드', () => {
     expect(screen.queryByText('+ 정기거래 등록')).not.toBeInTheDocument()
   })
 
+  it('금액 입력 필드는 inputMode=numeric이고 ₩ prefix가 표시된다', async () => {
+    renderWithRouter('expense', 1)
+
+    await waitFor(() => {
+      expect(screen.getByText('₩8,000')).toBeInTheDocument()
+    })
+
+    await userEvent.click(screen.getByRole('button', { name: '수정' }))
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('금액')).toBeInTheDocument()
+    })
+
+    const amountInput = screen.getByLabelText('금액') as HTMLInputElement
+    expect(amountInput.getAttribute('inputmode')).toBe('numeric')
+    // 금액 8000이 쉼표 포맷으로 표시되어야 함
+    expect(amountInput.value).toBe('8,000')
+
+    // ₩ prefix span이 DOM에 존재해야 함
+    expect(screen.getByText('₩')).toBeInTheDocument()
+  })
+
+  it('금액 입력 시 숫자만 저장하고 쉼표 포맷으로 표시한다', async () => {
+    renderWithRouter('expense', 1)
+
+    await waitFor(() => {
+      expect(screen.getByText('₩8,000')).toBeInTheDocument()
+    })
+
+    await userEvent.click(screen.getByRole('button', { name: '수정' }))
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('금액')).toBeInTheDocument()
+    })
+
+    const amountInput = screen.getByLabelText('금액')
+    await userEvent.clear(amountInput)
+    await userEvent.type(amountInput, '12000')
+
+    // 쉼표 포맷으로 표시되는지 확인
+    await waitFor(() => {
+      expect((amountInput as HTMLInputElement).value).toBe('12,000')
+    })
+
+    // 저장 후 서버 응답에서 12000이 반영되어야 함
+    await userEvent.click(screen.getByRole('button', { name: '저장' }))
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: '수정' })).toBeInTheDocument()
+    })
+  })
+
   it('편집 모드 재진입 시 editForm이 최신 transaction으로 초기화된다', async () => {
     renderWithRouter('expense', 1)
 
@@ -770,7 +886,7 @@ describe('TransactionDetail — 정기거래 등록', () => {
 })
 
 describe('TransactionDetail — dirty form guard', () => {
-  it('변경 없이 "목록으로" 탭 시 바로 navigate한다', async () => {
+  it('변경 없이 "취소" 탭 시 뷰 모드로 복귀한다', async () => {
     renderWithRouter('expense', 1)
 
     await waitFor(() => {
@@ -784,15 +900,17 @@ describe('TransactionDetail — dirty form guard', () => {
       expect(screen.getByLabelText('금액')).toBeInTheDocument()
     })
 
-    // 변경 없이 목록으로 클릭
-    await userEvent.click(screen.getByRole('button', { name: '목록으로' }))
+    // 변경 없이 취소 클릭
+    await userEvent.click(screen.getByRole('button', { name: '취소' }))
 
-    // 다이얼로그 없이 바로 navigate
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
-    expect(mockNavigate).toHaveBeenCalledWith('/expenses')
+    // navigate 호출 없이 뷰 모드로 복귀
+    expect(mockNavigate).not.toHaveBeenCalled()
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: '수정' })).toBeInTheDocument()
+    })
   })
 
-  it('변경 후 "목록으로" 탭 시 확인 다이얼로그를 표시한다', async () => {
+  it('변경 후 "취소" 탭 시 확인 다이얼로그를 표시한다', async () => {
     renderWithRouter('expense', 1)
 
     await waitFor(() => {
@@ -811,8 +929,8 @@ describe('TransactionDetail — dirty form guard', () => {
     await userEvent.clear(amountInput)
     await userEvent.type(amountInput, '12000')
 
-    // 목록으로 클릭
-    await userEvent.click(screen.getByRole('button', { name: '목록으로' }))
+    // 취소 클릭
+    await userEvent.click(screen.getByRole('button', { name: '취소' }))
 
     // 확인 다이얼로그 표시
     expect(screen.getByRole('dialog')).toBeInTheDocument()
@@ -840,8 +958,8 @@ describe('TransactionDetail — dirty form guard', () => {
     await userEvent.clear(descInput)
     await userEvent.type(descInput, '새로운 설명')
 
-    // 목록으로 → 다이얼로그 열림
-    await userEvent.click(screen.getByRole('button', { name: '목록으로' }))
+    // 취소 → 다이얼로그 열림
+    await userEvent.click(screen.getByRole('button', { name: '취소' }))
     expect(screen.getByRole('dialog')).toBeInTheDocument()
 
     // 머무르기 클릭
@@ -853,7 +971,7 @@ describe('TransactionDetail — dirty form guard', () => {
     expect(mockNavigate).not.toHaveBeenCalled()
   })
 
-  it('다이얼로그에서 "이동하기" 클릭 시 목록으로 navigate한다', async () => {
+  it('다이얼로그에서 "이동하기" 클릭 시 뷰 모드로 복귀한다', async () => {
     renderWithRouter('expense', 1)
 
     await waitFor(() => {
@@ -872,15 +990,19 @@ describe('TransactionDetail — dirty form guard', () => {
     await userEvent.clear(descInput)
     await userEvent.type(descInput, '변경된 설명')
 
-    // 목록으로 → 다이얼로그 열림
-    await userEvent.click(screen.getByRole('button', { name: '목록으로' }))
+    // 취소 → 다이얼로그 열림
+    await userEvent.click(screen.getByRole('button', { name: '취소' }))
     expect(screen.getByRole('dialog')).toBeInTheDocument()
 
-    // 이동하기 클릭
+    // 이동하기 클릭 → 뷰 모드로 복귀 (navigate 호출 없음)
     await userEvent.click(screen.getByRole('button', { name: '이동하기' }))
 
-    // navigate 호출
-    expect(mockNavigate).toHaveBeenCalledWith('/expenses')
+    // navigate가 호출되지 않아야 함
+    expect(mockNavigate).not.toHaveBeenCalled()
+    // 뷰 모드의 수정 버튼이 다시 표시되어야 함
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: '수정' })).toBeInTheDocument()
+    })
   })
 })
 
