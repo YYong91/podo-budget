@@ -146,6 +146,9 @@ function ProgressBar({
   const [animActual, setAnimActual] = useState(0)
   const [animProjected, setAnimProjected] = useState(0)
 
+  // 예정 바 렌더링 여부 — state에서 파생 (effect 안에서 setState 불필요)
+  const hasProjected = state.type === 'normal' || state.type === 'projectedExceed'
+
   useEffect(() => {
     if (isLoading) return
 
@@ -217,8 +220,8 @@ function ProgressBar({
           className={`absolute top-0 left-0 h-full rounded-l-full ${animProjected === 0 ? 'rounded-r-full' : ''} ${getActualColor()} transition-all duration-700 ease-out`}
           style={{ width: `${(animActual / totalBarMax) * 100}%` }}
         />
-        {/* 예정 지출 구간 */}
-        {animProjected > 0 && (
+        {/* 예정 지출 구간 — 처음부터 렌더링(width 0)하여 transition으로 자연스럽게 이어짐 */}
+        {hasProjected && (
           <div
             className={`absolute top-0 h-full rounded-r-full ${
               state.type === 'projectedExceed' ? 'bg-warm-300 dark:bg-warm-400' : 'bg-grape-200 dark:bg-grape-300'
