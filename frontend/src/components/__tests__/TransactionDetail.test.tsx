@@ -683,6 +683,71 @@ describe('TransactionDetail — 편집 모드', () => {
   })
 })
 
+describe('TransactionDetail — 삭제', () => {
+  it('삭제하기 텍스트 버튼이 뷰 모드에 표시된다', async () => {
+    renderWithRouter('expense', 1)
+    await waitFor(() => expect(screen.getByText('₩8,000')).toBeInTheDocument())
+    expect(screen.getByText('삭제하기')).toBeInTheDocument()
+  })
+
+  it('삭제하기 클릭 시 확인 모달이 열린다', async () => {
+    renderWithRouter('expense', 1)
+    await waitFor(() => expect(screen.getByText('₩8,000')).toBeInTheDocument())
+    await userEvent.click(screen.getByText('삭제하기'))
+    expect(screen.getByText('정말로 이 내역을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')).toBeInTheDocument()
+  })
+
+  it('확인 후 DELETE 호출하고 목록으로 navigate한다', async () => {
+    renderWithRouter('expense', 1)
+    await waitFor(() => expect(screen.getByText('₩8,000')).toBeInTheDocument())
+    await userEvent.click(screen.getByText('삭제하기'))
+    await userEvent.click(screen.getByRole('button', { name: '삭제' }))
+    await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledWith('/expenses')
+    })
+  })
+
+  it('삭제 403 에러 시 권한 없음 toast를 표시한다', async () => {
+    server.use(
+      http.delete(`${BASE_URL}/expenses/:id`, () => {
+        return new HttpResponse(null, { status: 403 })
+      }),
+    )
+    renderWithRouter('expense', 1)
+    await waitFor(() => expect(screen.getByText('₩8,000')).toBeInTheDocument())
+    await userEvent.click(screen.getByText('삭제하기'))
+    await userEvent.click(screen.getByRole('button', { name: '삭제' }))
+    await waitFor(() => {
+      expect(mockAddToast).toHaveBeenCalledWith('error', '권한이 없어요')
+    })
+  })
+})
+
+describe('TransactionDetail — 정기거래 등록', () => {
+  it('미연결 시 등록 버튼 클릭으로 RegisterRecurringModal이 열린다', async () => {
+    renderWithRouter('expense', 1)
+    await waitFor(() => expect(screen.getByText('₩8,000')).toBeInTheDocument())
+    await userEvent.click(screen.getByText('+ 정기거래 등록'))
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: '정기거래 등록' })).toBeInTheDocument()
+    })
+  })
+
+  it('모달 닫기 시 모달이 사라진다', async () => {
+    renderWithRouter('expense', 1)
+    await waitFor(() => expect(screen.getByText('₩8,000')).toBeInTheDocument())
+    await userEvent.click(screen.getByText('+ 정기거래 등록'))
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: '정기거래 등록' })).toBeInTheDocument()
+    })
+    const closeButton = screen.getByLabelText('닫기')
+    await userEvent.click(closeButton)
+    await waitFor(() => {
+      expect(screen.queryByRole('heading', { name: '정기거래 등록' })).not.toBeInTheDocument()
+    })
+  })
+})
+
 describe('TransactionDetail — dirty form guard', () => {
   it('변경 없이 "목록으로" 탭 시 바로 navigate한다', async () => {
     renderWithRouter('expense', 1)

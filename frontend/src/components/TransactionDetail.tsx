@@ -15,6 +15,7 @@ import { paymentMethodApi } from '../api/paymentMethods'
 import { useHouseholdStore } from '../stores/useHouseholdStore'
 import { useToast } from '../hooks/useToast'
 import { TOAST } from '../constants/toastMessages'
+import RegisterRecurringModal from './RegisterRecurringModal'
 import ErrorState from './ErrorState'
 import { Skeleton } from './skeleton/Skeleton'
 import type { Expense, Income, Category, PaymentMethod } from '../types'
@@ -113,8 +114,8 @@ export default function TransactionDetail({ type }: TransactionDetailProps) {
   const [mode, setMode] = useState<DetailMode>(() =>
     searchParams.get('edit') === 'true' ? 'edit' : 'view',
   )
-  const [, setShowDeleteModal] = useState(false)
-  const [, setShowRecurringModal] = useState(false)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [showRecurringModal, setShowRecurringModal] = useState(false)
 
   // ── 빠른 수정 상태 ──
   const [quickEditField, setQuickEditField] = useState<QuickEditField>(null)
@@ -296,6 +297,22 @@ export default function TransactionDetail({ type }: TransactionDetailProps) {
     if (!transaction) return false
     return JSON.stringify(editForm) !== JSON.stringify(toEditForm(transaction))
   }, [editForm, transaction])
+
+  /** 삭제 처리 */
+  const handleDelete = useCallback(async () => {
+    if (!transaction) return
+    try {
+      const api = type === 'expense' ? expenseApi : incomeApi
+      await api.delete(transaction.id)
+      if (!isMountedRef.current) return
+      addToast('success', TOAST.DELETED)
+      navigate(cfg.listRoute)
+    } catch (err: unknown) {
+      if (!isMountedRef.current) return
+      const status = (err as { response?: { status?: number } })?.response?.status
+      addToast('error', status === 403 ? TOAST.NO_PERMISSION : TOAST.DELETE_FAILED)
+    }
+  }, [transaction, type, navigate, cfg.listRoute, addToast])
 
   /** 목록으로 이동 — 변경사항이 있으면 다이얼로그 표시 */
   const handleNavigateAway = useCallback(() => {
@@ -555,6 +572,53 @@ export default function TransactionDetail({ type }: TransactionDetailProps) {
               삭제하기
             </button>
           </div>
+
+          {/* 삭제 확인 모달 */}
+          {showDeleteModal && (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+                 role="dialog" aria-modal="true" aria-labelledby="delete-dialog-title">
+              <div className="bg-[var(--surface-card)] rounded-2xl shadow-xl max-w-sm w-full p-6">
+                <h3 id="delete-dialog-title" className="text-lg font-semibold text-[var(--text-primary)] mb-2">
+                  내역 삭제
+                </h3>
+                <p className="text-[var(--text-secondary)] mb-6">
+                  정말로 이 내역을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.
+                </p>
+                <div className="flex gap-3 justify-end">
+                  <button
+                    onClick={() => setShowDeleteModal(false)}
+                    className="px-4 py-2 text-sm font-medium text-[var(--text-secondary)] bg-[var(--surface-hover)] rounded-xl hover:bg-[var(--border-default)] transition-colors"
+                  >
+                    취소
+                  </button>
+                  <button
+                    onClick={handleDelete}
+                    className="px-4 py-2 text-sm font-medium text-white bg-rose-600 rounded-xl hover:bg-rose-700 transition-colors"
+                  >
+                    삭제
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* 정기거래 등록 모달 */}
+          {showRecurringModal && transaction && (
+            <RegisterRecurringModal
+              type={type}
+              amount={transaction.amount}
+              description={transaction.description}
+              category_id={transaction.category_id}
+              categories={categories}
+              initialDate={transaction.date}
+              sourceId={transaction.id}
+              onClose={() => setShowRecurringModal(false)}
+              onSuccess={() => {
+                setShowRecurringModal(false)
+                fetchData()
+              }}
+            />
+          )}
         </>
       ) : (
         <>
