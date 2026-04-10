@@ -298,6 +298,7 @@ export default function TransactionDetail({ type }: TransactionDetailProps) {
           {quickEditField === 'category' ? (
             <select
               data-testid="quick-select-category"
+              aria-label="카테고리 변경"
               className="rounded-full px-3 py-1.5 text-sm min-h-[44px] bg-[var(--surface-elevated)] text-[var(--text-secondary)] border border-[var(--border-default)] focus:outline-none focus:ring-2 focus:ring-grape-400"
               value={transaction.category_id ?? ''}
               disabled={isSaving}
@@ -320,7 +321,7 @@ export default function TransactionDetail({ type }: TransactionDetailProps) {
               onClick={() => handleChipTap('category')}
               className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm min-h-[44px] bg-[var(--surface-elevated)] text-[var(--text-secondary)] transition-colors duration-400 ${
                 quickEditField !== null && quickEditField !== 'category' ? 'opacity-50 pointer-events-none' : ''
-              } ${flashField === 'category' ? 'bg-leaf-100' : ''}`}
+              } ${flashField === 'category' ? (cfg.color === 'grape' ? 'bg-grape-200' : 'bg-leaf-200') : ''}`}
             >
               {categoryEmoji && <span>{categoryEmoji}</span>}
               {categoryName}
@@ -333,6 +334,7 @@ export default function TransactionDetail({ type }: TransactionDetailProps) {
             quickEditField === 'payment_method' ? (
               <select
                 data-testid="quick-select-payment_method"
+                aria-label="결제수단 변경"
                 className="rounded-full px-3 py-1.5 text-sm min-h-[44px] bg-[var(--surface-elevated)] text-[var(--text-secondary)] border border-[var(--border-default)] focus:outline-none focus:ring-2 focus:ring-grape-400"
                 value={paymentMethodId ?? ''}
                 disabled={isSaving}
@@ -355,7 +357,7 @@ export default function TransactionDetail({ type }: TransactionDetailProps) {
                 onClick={() => handleChipTap('payment_method')}
                 className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm min-h-[44px] bg-[var(--surface-elevated)] text-[var(--text-secondary)] transition-colors duration-400 ${
                   quickEditField !== null && quickEditField !== 'payment_method' ? 'opacity-50 pointer-events-none' : ''
-                } ${flashField === 'payment_method' ? 'bg-leaf-100' : ''}`}
+                } ${flashField === 'payment_method' ? 'bg-grape-200' : ''}`}
               >
                 <span>{PM_ICON[paymentMethod.type] ?? '💳'}</span>
                 {paymentMethod.name}
