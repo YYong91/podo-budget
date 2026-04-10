@@ -27,24 +27,6 @@ export function MessengerSection() {
           <p className="mt-4 max-w-lg text-base leading-relaxed text-warm-500 md:mt-6 md:text-lg">
             사용하던 메신저로 보내도 되고, 앱에서 바로 입력해도 돼요. 카테고리, 날짜, 결제수단은 AI가 알아서 분류해줘요.
           </p>
-
-          {/* Input Method Icons */}
-          <div className="mt-8 flex items-center gap-3">
-            {/* 메신저 아이콘 */}
-            <div className="flex items-center gap-2 rounded-full bg-warm-100 px-4 py-2">
-              <svg viewBox="0 0 24 24" className="h-5 w-5 text-warm-700" fill="none" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-              </svg>
-              <span className="text-sm font-medium text-warm-700">메신저</span>
-            </div>
-            {/* 앱 아이콘 */}
-            <div className="flex items-center gap-2 rounded-full bg-warm-100 px-4 py-2">
-              <svg viewBox="0 0 24 24" className="h-5 w-5 text-warm-700" fill="none" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
-              </svg>
-              <span className="text-sm font-medium text-warm-700">앱에서 바로</span>
-            </div>
-          </div>
         </div>
 
         {/* Visual Area — 두 가지 입력 방식 나란히 */}
