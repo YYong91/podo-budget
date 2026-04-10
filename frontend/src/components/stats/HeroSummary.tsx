@@ -145,8 +145,9 @@ function ProgressBar({
   // 애니메이션용 상태
   const [animActual, setAnimActual] = useState(0)
   const [animProjected, setAnimProjected] = useState(0)
-  // 예정 바를 항상 렌더링하되 width 0으로 시작하기 위한 플래그
-  const [showProjected, setShowProjected] = useState(false)
+
+  // 예정 바 렌더링 여부 — state에서 파생 (effect 안에서 setState 불필요)
+  const hasProjected = state.type === 'normal' || state.type === 'projectedExceed'
 
   useEffect(() => {
     if (isLoading) return
@@ -179,9 +180,6 @@ function ProgressBar({
         break
       }
     }
-
-    // 예정 바가 있으면 미리 width 0으로 렌더링
-    setShowProjected(projectedWidth > 0)
 
     // 지출 바 먼저 차오른 뒤 예정 바가 이어서 차오르도록 딜레이 분리
     requestAnimationFrame(() => {
@@ -223,7 +221,7 @@ function ProgressBar({
           style={{ width: `${(animActual / totalBarMax) * 100}%` }}
         />
         {/* 예정 지출 구간 — 처음부터 렌더링(width 0)하여 transition으로 자연스럽게 이어짐 */}
-        {showProjected && (
+        {hasProjected && (
           <div
             className={`absolute top-0 h-full rounded-r-full ${
               state.type === 'projectedExceed' ? 'bg-warm-300 dark:bg-warm-400' : 'bg-grape-200 dark:bg-grape-300'
