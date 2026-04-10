@@ -28,6 +28,7 @@ interface TransactionDetailProps {
 
 type DetailMode = 'view' | 'edit'
 type PageErrorState = 'none' | 'error' | 'notFound'
+type QuickEditField = 'category' | 'payment_method' | null
 
 // ── 설정 ──
 
@@ -86,11 +87,18 @@ export default function TransactionDetail({ type }: TransactionDetailProps) {
   const [loading, setLoading] = useState(true)
   const [errorState, setErrorState] = useState<PageErrorState>('none')
   // mode/showDeleteModal/showRecurringModal — 현재는 뷰 모드만 구현, Task 3/5에서 활성화
-  const [, setMode] = useState<DetailMode>(() =>
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [mode, setMode] = useState<DetailMode>(() =>
     searchParams.get('edit') === 'true' ? 'edit' : 'view',
   )
   const [, setShowDeleteModal] = useState(false)
   const [, setShowRecurringModal] = useState(false)
+
+  // ── 빠른 수정 상태 ──
+  const [quickEditField, setQuickEditField] = useState<QuickEditField>(null)
+  const [isSaving, setIsSaving] = useState(false)
+  const [flashField, setFlashField] = useState<string | null>(null)
+  const [announcement, setAnnouncement] = useState('')
 
   // ── 데이터 로딩 ──
 
@@ -148,6 +156,58 @@ export default function TransactionDetail({ type }: TransactionDetailProps) {
   useEffect(() => {
     fetchData()
   }, [fetchData])
+
+  // ── 빠른 수정 핸들러 ──
+
+  /** 칩 탭 → 드롭다운 열기 */
+  const handleChipTap = useCallback((field: QuickEditField) => {
+    if (quickEditField !== null || isSaving) return // 동시 탭 방지
+    setQuickEditField(field)
+  }, [quickEditField, isSaving])
+
+  /** 드롭다운 선택 → API PUT → 칩 복귀 */
+  const handleQuickSave = useCallback(async (field: 'category_id' | 'payment_method_id', value: number | null) => {
+    if (!transaction) return
+    setIsSaving(true)
+    try {
+      const api = type === 'expense' ? expenseApi : incomeApi
+      const res = await api.update(transaction.id, { [field]: value })
+      if (!isMountedRef.current) return
+      setTransaction(res.data)
+      setQuickEditField(null)
+
+      // 성공 피드백: 칩 color flash
+      const chipName = field === 'category_id' ? 'category' : 'payment_method'
+      setFlashField(chipName)
+      setTimeout(() => { if (isMountedRef.current) setFlashField(null) }, 400)
+
+      // aria-live 안내 메시지
+      const newLabel = field === 'category_id'
+        ? (categories.find((c) => c.id === value)?.name ?? '분류 안 됨')
+        : (paymentMethods.find((pm) => pm.id === value)?.name ?? '미지정')
+      const fieldLabel = field === 'category_id' ? '카테고리' : '결제수단'
+      setAnnouncement(`${fieldLabel}를 ${newLabel}(으)로 변경했습니다`)
+    } catch (err: unknown) {
+      if (!isMountedRef.current) return
+      const status = (err as { response?: { status?: number } })?.response?.status
+      if (status === 403) {
+        addToast('error', TOAST.NO_PERMISSION)
+      } else {
+        addToast('error', TOAST.SAVE_FAILED)
+      }
+    } finally {
+      if (isMountedRef.current) {
+        setIsSaving(false)
+        setQuickEditField(null)
+      }
+    }
+  }, [transaction, type, categories, paymentMethods, addToast])
+
+  /** 수정 버튼 클릭 시 빠른 수정 닫고 편집 모드로 전환 */
+  const handleEditClick = useCallback(() => {
+    setQuickEditField(null)
+    setMode('edit')
+  }, [])
 
   // ── 로딩 스켈레톤 ──
 
@@ -234,21 +294,80 @@ export default function TransactionDetail({ type }: TransactionDetailProps) {
 
         {/* 칩 영역 */}
         <div className="flex flex-wrap gap-2">
-          {/* 카테고리 칩 */}
-          <span className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm min-h-[44px] bg-[var(--surface-elevated)] text-[var(--text-secondary)]">
-            {categoryEmoji && <span>{categoryEmoji}</span>}
-            {categoryName}
-            <span className="text-[var(--text-muted)] text-xs ml-0.5">▾</span>
-          </span>
-
-          {/* 결제수단 칩 (지출 타입이고 결제수단이 있을 때만) */}
-          {cfg.hasPaymentMethod && paymentMethod && (
-            <span className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm min-h-[44px] bg-[var(--surface-elevated)] text-[var(--text-secondary)]">
-              <span>{PM_ICON[paymentMethod.type] ?? '💳'}</span>
-              {paymentMethod.name}
+          {/* 카테고리 칩 / 드롭다운 */}
+          {quickEditField === 'category' ? (
+            <select
+              data-testid="quick-select-category"
+              className="rounded-full px-3 py-1.5 text-sm min-h-[44px] bg-[var(--surface-elevated)] text-[var(--text-secondary)] border border-[var(--border-default)] focus:outline-none focus:ring-2 focus:ring-grape-400"
+              value={transaction.category_id ?? ''}
+              disabled={isSaving}
+              // eslint-disable-next-line jsx-a11y/no-autofocus
+              autoFocus
+              onChange={(e) => {
+                const val = e.target.value === '' ? null : Number(e.target.value)
+                handleQuickSave('category_id', val)
+              }}
+            >
+              <option value="">분류 안 됨</option>
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+          ) : (
+            <button
+              type="button"
+              data-testid="chip-category"
+              onClick={() => handleChipTap('category')}
+              className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm min-h-[44px] bg-[var(--surface-elevated)] text-[var(--text-secondary)] transition-colors duration-400 ${
+                quickEditField !== null && quickEditField !== 'category' ? 'opacity-50 pointer-events-none' : ''
+              } ${flashField === 'category' ? 'bg-leaf-100' : ''}`}
+            >
+              {categoryEmoji && <span>{categoryEmoji}</span>}
+              {categoryName}
               <span className="text-[var(--text-muted)] text-xs ml-0.5">▾</span>
-            </span>
+            </button>
           )}
+
+          {/* 결제수단 칩 / 드롭다운 (지출 타입이고 결제수단이 있을 때만) */}
+          {cfg.hasPaymentMethod && paymentMethod && (
+            quickEditField === 'payment_method' ? (
+              <select
+                data-testid="quick-select-payment_method"
+                className="rounded-full px-3 py-1.5 text-sm min-h-[44px] bg-[var(--surface-elevated)] text-[var(--text-secondary)] border border-[var(--border-default)] focus:outline-none focus:ring-2 focus:ring-grape-400"
+                value={paymentMethodId ?? ''}
+                disabled={isSaving}
+                // eslint-disable-next-line jsx-a11y/no-autofocus
+              autoFocus
+                onChange={(e) => {
+                  const val = e.target.value === '' ? null : Number(e.target.value)
+                  handleQuickSave('payment_method_id', val)
+                }}
+              >
+                <option value="">미지정</option>
+                {paymentMethods.map((pm) => (
+                  <option key={pm.id} value={pm.id}>{pm.name}</option>
+                ))}
+              </select>
+            ) : (
+              <button
+                type="button"
+                data-testid="chip-payment_method"
+                onClick={() => handleChipTap('payment_method')}
+                className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm min-h-[44px] bg-[var(--surface-elevated)] text-[var(--text-secondary)] transition-colors duration-400 ${
+                  quickEditField !== null && quickEditField !== 'payment_method' ? 'opacity-50 pointer-events-none' : ''
+                } ${flashField === 'payment_method' ? 'bg-leaf-100' : ''}`}
+              >
+                <span>{PM_ICON[paymentMethod.type] ?? '💳'}</span>
+                {paymentMethod.name}
+                <span className="text-[var(--text-muted)] text-xs ml-0.5">▾</span>
+              </button>
+            )
+          )}
+        </div>
+
+        {/* 접근성: 빠른 수정 결과 안내 */}
+        <div aria-live="polite" className="sr-only" data-testid="live-region">
+          {announcement}
         </div>
 
         {/* 날짜 */}
@@ -308,7 +427,7 @@ export default function TransactionDetail({ type }: TransactionDetailProps) {
       {/* 하단 액션 */}
       <div className="space-y-4">
         <button
-          onClick={() => setMode('edit')}
+          onClick={handleEditClick}
           className={`w-full py-3 text-sm font-semibold text-white rounded-xl transition-colors ${
             cfg.color === 'grape'
               ? 'bg-grape-600 hover:bg-grape-700'
