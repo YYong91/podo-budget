@@ -6,10 +6,10 @@ export function MessengerSection() {
   const { ref, isInView } = useInView()
 
   return (
-    <section className="relative min-h-screen bg-cream py-20">
+    <section className="relative bg-cream py-16 md:min-h-screen md:py-20">
       <div
         ref={ref}
-        className="mx-auto flex min-h-[calc(100vh-10rem)] max-w-7xl flex-col items-center justify-center gap-12 px-4 sm:px-6 md:flex-row lg:px-8"
+        className="mx-auto flex max-w-7xl flex-col items-center justify-center gap-8 px-4 sm:px-6 md:min-h-[calc(100vh-10rem)] md:flex-row md:gap-12 lg:px-8"
       >
         {/* Text Content */}
         <div
@@ -98,8 +98,8 @@ export function MessengerSection() {
             </div>
           </div>
 
-          {/* 오른쪽 카드: 앱 스크린샷 */}
-          <div className="flex flex-col items-center flex-1">
+          {/* 오른쪽 카드: 앱 스크린샷 — 데스크톱만 표시 */}
+          <div className="hidden flex-1 flex-col items-center sm:flex">
             <div className="w-full rounded-2xl border border-warm-200 overflow-hidden">
               <ScreenshotImage
                 src={landingScreenshots.input.app.path}
