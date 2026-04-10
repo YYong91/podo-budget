@@ -123,7 +123,7 @@ describe('TransactionDetail — 뷰 모드', () => {
     })
   })
 
-  it('빈 필드를 숨긴다 (메모 없음, 결제수단 없음)', async () => {
+  it('결제수단 미지정 시 미지정 칩이 표시된다 (메모 없음)', async () => {
     // mockExpenses[0] has memo=null, payment_method_id=null
     renderWithRouter('expense', 1)
 
@@ -134,9 +134,35 @@ describe('TransactionDetail — 뷰 모드', () => {
     // 메모 섹션이 없어야 함
     expect(screen.queryByText('메모')).not.toBeInTheDocument()
 
-    // 결제수단 칩이 없어야 함 (payment_method_id=null)
+    // 결제수단 미지정 칩이 표시되어야 함
+    await waitFor(() => {
+      expect(screen.getByTestId('chip-payment_method')).toBeInTheDocument()
+      expect(screen.getByTestId('chip-payment_method').textContent).toContain('미지정')
+    })
+
+    // 아이콘 칩은 없어야 함 (payment_method_id=null)
     const allChips = screen.queryAllByText(/💳|💵|🏦/)
     expect(allChips).toHaveLength(0)
+  })
+
+  it('결제수단 미지정 칩 클릭 시 드롭다운이 열린다', async () => {
+    // mockExpenses[0] has payment_method_id=null
+    renderWithRouter('expense', 1)
+
+    await waitFor(() => {
+      expect(screen.getByText('₩8,000')).toBeInTheDocument()
+    })
+
+    // 미지정 칩이 표시될 때까지 대기
+    await waitFor(() => {
+      expect(screen.getByTestId('chip-payment_method')).toBeInTheDocument()
+    })
+
+    // 미지정 칩 클릭
+    await userEvent.click(screen.getByTestId('chip-payment_method'))
+
+    // 드롭다운이 열려야 함
+    expect(screen.getByTestId('quick-select-payment_method')).toBeInTheDocument()
   })
 
   it('수입 타입은 결제수단 칩을 렌더링하지 않는다', async () => {

@@ -463,8 +463,8 @@ export default function TransactionDetail({ type }: TransactionDetailProps) {
                 </button>
               )}
 
-              {/* 결제수단 칩 / 드롭다운 (지출 타입이고 결제수단이 있을 때만) */}
-              {cfg.hasPaymentMethod && paymentMethod && (
+              {/* 결제수단 칩 / 드롭다운 (지출 타입이면 항상 표시 — 미지정 포함) */}
+              {cfg.hasPaymentMethod && (
                 quickEditField === 'payment_method' ? (
                   <select
                     data-testid="quick-select-payment_method"
@@ -490,12 +490,22 @@ export default function TransactionDetail({ type }: TransactionDetailProps) {
                     type="button"
                     data-testid="chip-payment_method"
                     onClick={() => handleChipTap('payment_method')}
-                    className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm min-h-[44px] bg-[var(--surface-elevated)] text-[var(--text-secondary)] transition-colors duration-400 ${
+                    className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm min-h-[44px] ${
+                      paymentMethod
+                        ? 'bg-[var(--surface-elevated)] text-[var(--text-secondary)]'
+                        : 'bg-[var(--surface-elevated)] text-[var(--text-muted)] border border-dashed border-[var(--border-default)]'
+                    } transition-colors duration-400 ${
                       quickEditField !== null || isSaving ? 'opacity-50 pointer-events-none' : ''
                     } ${flashField === 'payment_method' ? 'bg-grape-200' : ''}`}
                   >
-                    <span>{PM_ICON[paymentMethod.type] ?? '💳'}</span>
-                    {paymentMethod.name}
+                    {paymentMethod ? (
+                      <>
+                        <span>{PM_ICON[paymentMethod.type] ?? '💳'}</span>
+                        {paymentMethod.name}
+                      </>
+                    ) : (
+                      '미지정'
+                    )}
                     <span className="text-[var(--text-muted)] text-xs ml-0.5">▾</span>
                   </button>
                 )
