@@ -646,14 +646,23 @@ export default function TransactionDetail({ type }: TransactionDetailProps) {
             {/* 금액 */}
             <div>
               <label htmlFor="edit-amount" className="block text-sm font-medium text-[var(--text-tertiary)] mb-2">금액</label>
-              <input
-                id="edit-amount"
-                type="number"
-                className="input-base"
-                value={editForm.amount || ''}
-                onChange={(e) => setEditForm((f) => ({ ...f, amount: Number(e.target.value) || 0 }))}
-                min={0}
-              />
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-secondary)] text-sm pointer-events-none">
+                  ₩
+                </span>
+                <input
+                  id="edit-amount"
+                  type="text"
+                  inputMode="numeric"
+                  className="input-base pl-7"
+                  value={editForm.amount === 0 ? '' : editForm.amount.toLocaleString('ko-KR')}
+                  onChange={(e) => {
+                    const raw = e.target.value.replace(/[^0-9]/g, '')
+                    setEditForm((f) => ({ ...f, amount: raw === '' ? 0 : Number(raw) }))
+                  }}
+                  placeholder="0"
+                />
+              </div>
             </div>
 
             {/* 설명 */}
@@ -662,6 +671,7 @@ export default function TransactionDetail({ type }: TransactionDetailProps) {
               <input
                 id="edit-description"
                 type="text"
+                inputMode="text"
                 className="input-base"
                 value={editForm.description}
                 onChange={(e) => setEditForm((f) => ({ ...f, description: e.target.value }))}
@@ -720,6 +730,7 @@ export default function TransactionDetail({ type }: TransactionDetailProps) {
               <input
                 id="edit-memo"
                 type="text"
+                inputMode="text"
                 className="input-base"
                 value={editForm.memo}
                 onChange={(e) => setEditForm((f) => ({ ...f, memo: e.target.value }))}

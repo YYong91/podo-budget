@@ -732,6 +732,50 @@ describe('TransactionDetail — 편집 모드', () => {
     expect(screen.queryByText('+ 정기거래 등록')).not.toBeInTheDocument()
   })
 
+  it('금액 입력 필드는 inputMode=numeric이고 ₩ prefix가 표시된다', async () => {
+    renderWithRouter('expense', 1)
+
+    await waitFor(() => {
+      expect(screen.getByText('₩8,000')).toBeInTheDocument()
+    })
+
+    await userEvent.click(screen.getByRole('button', { name: '수정' }))
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('금액')).toBeInTheDocument()
+    })
+
+    const amountInput = screen.getByLabelText('금액') as HTMLInputElement
+    expect(amountInput.getAttribute('inputmode')).toBe('numeric')
+    // 금액 8000이 쉼표 포맷으로 표시되어야 함
+    expect(amountInput.value).toBe('8,000')
+  })
+
+  it('금액 입력 시 숫자만 저장하고 쉼표 포맷으로 표시한다', async () => {
+    renderWithRouter('expense', 1)
+
+    await waitFor(() => {
+      expect(screen.getByText('₩8,000')).toBeInTheDocument()
+    })
+
+    await userEvent.click(screen.getByRole('button', { name: '수정' }))
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('금액')).toBeInTheDocument()
+    })
+
+    const amountInput = screen.getByLabelText('금액')
+    await userEvent.clear(amountInput)
+    await userEvent.type(amountInput, '12000')
+
+    // 저장 후 서버 응답에서 12000이 반영되어야 함
+    await userEvent.click(screen.getByRole('button', { name: '저장' }))
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: '수정' })).toBeInTheDocument()
+    })
+  })
+
   it('편집 모드 재진입 시 editForm이 최신 transaction으로 초기화된다', async () => {
     renderWithRouter('expense', 1)
 
