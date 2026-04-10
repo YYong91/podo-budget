@@ -244,6 +244,7 @@ export default function TransactionDetail({ type }: TransactionDetailProps) {
     setQuickEditField(null)
     setEditForm(toEditForm(transaction))
     setMode('edit')
+    setAnnouncement('편집 모드로 전환했습니다')
   }, [transaction])
 
   /** 편집 모드 저장 */
@@ -278,6 +279,7 @@ export default function TransactionDetail({ type }: TransactionDetailProps) {
       setTransaction(res.data)
       setEditForm(toEditForm(res.data))
       setMode('view')
+      setAnnouncement('저장 완료')
       addToast('success', TOAST.SAVED)
     } catch (err: unknown) {
       if (!isMountedRef.current) return
@@ -385,7 +387,7 @@ export default function TransactionDetail({ type }: TransactionDetailProps) {
   // ── 렌더링 ──
 
   return (
-    <div className="space-y-6 animate-page-in">
+    <div className="space-y-6 motion-safe:animate-page-in">
       {/* 헤더: 뒤로가기 + 페이지 제목 */}
       <div className="flex items-center gap-3">
         {mode === 'edit' ? (
@@ -496,11 +498,6 @@ export default function TransactionDetail({ type }: TransactionDetailProps) {
                   </button>
                 )
               )}
-            </div>
-
-            {/* 접근성: 빠른 수정 결과 안내 */}
-            <div aria-live="polite" className="sr-only" data-testid="live-region">
-              {announcement}
             </div>
 
             {/* 날짜 */}
@@ -794,6 +791,11 @@ export default function TransactionDetail({ type }: TransactionDetailProps) {
           )}
         </>
       )}
+
+      {/* 접근성: 모드 전환 및 빠른 수정 결과 안내 */}
+      <div aria-live="polite" className="sr-only" data-testid="live-region">
+        {announcement}
+      </div>
     </div>
   )
 }

@@ -241,6 +241,19 @@ describe('TransactionDetail — 에러/로딩', () => {
       expect(screen.getByText('내역을 찾을 수 없습니다')).toBeInTheDocument()
     })
   })
+
+  it('403 시 권한 없음 toast를 표시하고 목록으로 이동한다', async () => {
+    server.use(
+      http.get(`${BASE_URL}/expenses/:id`, () => {
+        return new HttpResponse(null, { status: 403 })
+      }),
+    )
+    renderWithRouter('expense', 1)
+    await waitFor(() => {
+      expect(mockAddToast).toHaveBeenCalledWith('error', '권한이 없어요')
+      expect(mockNavigate).toHaveBeenCalledWith('/expenses')
+    })
+  })
 })
 
 describe('TransactionDetail — 빠른 수정', () => {
@@ -868,5 +881,19 @@ describe('TransactionDetail — dirty form guard', () => {
 
     // navigate 호출
     expect(mockNavigate).toHaveBeenCalledWith('/expenses')
+  })
+})
+
+describe('TransactionDetail — 접근성', () => {
+  it('모드 전환 시 aria-live로 announce한다', async () => {
+    renderWithRouter('expense', 1)
+    await waitFor(() => expect(screen.getByText('₩8,000')).toBeInTheDocument())
+
+    // 편집 모드 전환
+    await userEvent.click(screen.getByRole('button', { name: '수정' }))
+    await waitFor(() => {
+      const liveRegion = screen.getByTestId('live-region')
+      expect(liveRegion.textContent).toContain('편집 모드')
+    })
   })
 })
