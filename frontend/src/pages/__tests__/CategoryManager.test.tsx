@@ -49,6 +49,9 @@ beforeEach(() => {
   mockAddToast = vi.fn()
 })
 
+// 기본 탭은 expense → expense + both 타입만 표시됨
+const expenseCategories = mockCategories.filter((c) => c.type === 'expense' || c.type === 'both')
+
 describe('CategoryManager', () => {
   describe('기본 렌더링', () => {
     it('페이지 헤더에 카테고리 관리 타이틀을 표시한다', async () => {
@@ -72,16 +75,14 @@ describe('CategoryManager', () => {
       })
     })
 
-    it('카테고리 테이블을 표시한다', async () => {
+    it('카테고리 목록을 카드 형태로 표시한다 (테이블 없음)', async () => {
       renderCategoryManager()
       await waitFor(() => {
-        expect(screen.getByRole('table')).toBeInTheDocument()
+        expect(screen.queryByRole('table')).not.toBeInTheDocument()
+        expect(screen.getByText(expenseCategories[0].name)).toBeInTheDocument()
       })
     })
   })
-
-  // 기본 탭은 expense → expense + both 타입만 표시됨
-  const expenseCategories = mockCategories.filter((c) => c.type === 'expense' || c.type === 'both')
 
   describe('카테고리 목록 표시', () => {
     it('expense 탭 카테고리를 표시한다', async () => {
