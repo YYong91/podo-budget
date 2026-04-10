@@ -119,7 +119,7 @@ const QuickInput = forwardRef<QuickInputHandle, QuickInputProps>(function QuickI
       // 다중 저장 시 스펙: 가계부 홈으로 이동
       const editPath = totalItems.length > 1
         ? '/home'
-        : isExpense ? `/expenses/${firstItem.id}` : `/income/${firstItem.id}`
+        : isExpense ? `/expenses/${firstItem.id}?edit=true` : `/income/${firstItem.id}?edit=true`
 
       if (!isMountedRef.current) return
       // 성공 시 로딩/입력 상태 초기화 후 닫기
