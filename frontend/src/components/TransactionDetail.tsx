@@ -320,14 +320,14 @@ export default function TransactionDetail({ type }: TransactionDetailProps) {
     }
   }, [transaction, type, navigate, cfg.listRoute, addToast, isSaving])
 
-  /** 목록으로 이동 — 변경사항이 있으면 다이얼로그 표시 */
-  const handleNavigateAway = useCallback(() => {
+  /** 편집 취소 — 변경사항이 있으면 다이얼로그, 없으면 뷰 모드로 복귀 */
+  const handleCancelEdit = useCallback(() => {
     if (isDirty()) {
       setShowDirtyDialog(true)
     } else {
-      navigate(cfg.listRoute)
+      setMode('view')
     }
-  }, [isDirty, navigate, cfg.listRoute])
+  }, [isDirty])
 
   // ── 로딩 스켈레톤 ──
 
@@ -394,7 +394,7 @@ export default function TransactionDetail({ type }: TransactionDetailProps) {
           <button
             type="button"
             aria-label="뒤로가기"
-            onClick={handleNavigateAway}
+            onClick={handleCancelEdit}
             className="p-2 -ml-2 rounded-lg hover:bg-[var(--surface-hover)] transition-colors"
           >
             <ArrowLeft className="w-5 h-5 text-[var(--text-secondary)]" />
@@ -753,10 +753,10 @@ export default function TransactionDetail({ type }: TransactionDetailProps) {
           <div className="flex gap-3 sticky bottom-4">
             <button
               type="button"
-              onClick={handleNavigateAway}
+              onClick={handleCancelEdit}
               className="flex-1 py-3 text-sm font-semibold text-center text-[var(--text-secondary)] bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl transition-colors hover:bg-[var(--surface-hover)]"
             >
-              목록으로
+              취소
             </button>
             <button
               onClick={handleSave}
@@ -792,7 +792,7 @@ export default function TransactionDetail({ type }: TransactionDetailProps) {
                     머무르기
                   </button>
                   <button
-                    onClick={() => navigate(cfg.listRoute)}
+                    onClick={() => { setShowDirtyDialog(false); setMode('view') }}
                     className="px-4 py-2 text-sm font-medium text-white bg-rose-600 rounded-xl hover:bg-rose-700 transition-colors"
                   >
                     이동하기

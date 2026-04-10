@@ -834,7 +834,7 @@ describe('TransactionDetail — 정기거래 등록', () => {
 })
 
 describe('TransactionDetail — dirty form guard', () => {
-  it('변경 없이 "목록으로" 탭 시 바로 navigate한다', async () => {
+  it('변경 없이 "취소" 탭 시 뷰 모드로 복귀한다', async () => {
     renderWithRouter('expense', 1)
 
     await waitFor(() => {
@@ -848,15 +848,17 @@ describe('TransactionDetail — dirty form guard', () => {
       expect(screen.getByLabelText('금액')).toBeInTheDocument()
     })
 
-    // 변경 없이 목록으로 클릭
-    await userEvent.click(screen.getByRole('button', { name: '목록으로' }))
+    // 변경 없이 취소 클릭
+    await userEvent.click(screen.getByRole('button', { name: '취소' }))
 
-    // 다이얼로그 없이 바로 navigate
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
-    expect(mockNavigate).toHaveBeenCalledWith('/expenses')
+    // navigate 호출 없이 뷰 모드로 복귀
+    expect(mockNavigate).not.toHaveBeenCalled()
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: '수정' })).toBeInTheDocument()
+    })
   })
 
-  it('변경 후 "목록으로" 탭 시 확인 다이얼로그를 표시한다', async () => {
+  it('변경 후 "취소" 탭 시 확인 다이얼로그를 표시한다', async () => {
     renderWithRouter('expense', 1)
 
     await waitFor(() => {
@@ -875,8 +877,8 @@ describe('TransactionDetail — dirty form guard', () => {
     await userEvent.clear(amountInput)
     await userEvent.type(amountInput, '12000')
 
-    // 목록으로 클릭
-    await userEvent.click(screen.getByRole('button', { name: '목록으로' }))
+    // 취소 클릭
+    await userEvent.click(screen.getByRole('button', { name: '취소' }))
 
     // 확인 다이얼로그 표시
     expect(screen.getByRole('dialog')).toBeInTheDocument()
@@ -904,8 +906,8 @@ describe('TransactionDetail — dirty form guard', () => {
     await userEvent.clear(descInput)
     await userEvent.type(descInput, '새로운 설명')
 
-    // 목록으로 → 다이얼로그 열림
-    await userEvent.click(screen.getByRole('button', { name: '목록으로' }))
+    // 취소 → 다이얼로그 열림
+    await userEvent.click(screen.getByRole('button', { name: '취소' }))
     expect(screen.getByRole('dialog')).toBeInTheDocument()
 
     // 머무르기 클릭
@@ -917,7 +919,7 @@ describe('TransactionDetail — dirty form guard', () => {
     expect(mockNavigate).not.toHaveBeenCalled()
   })
 
-  it('다이얼로그에서 "이동하기" 클릭 시 목록으로 navigate한다', async () => {
+  it('다이얼로그에서 "이동하기" 클릭 시 뷰 모드로 복귀한다', async () => {
     renderWithRouter('expense', 1)
 
     await waitFor(() => {
@@ -936,15 +938,19 @@ describe('TransactionDetail — dirty form guard', () => {
     await userEvent.clear(descInput)
     await userEvent.type(descInput, '변경된 설명')
 
-    // 목록으로 → 다이얼로그 열림
-    await userEvent.click(screen.getByRole('button', { name: '목록으로' }))
+    // 취소 → 다이얼로그 열림
+    await userEvent.click(screen.getByRole('button', { name: '취소' }))
     expect(screen.getByRole('dialog')).toBeInTheDocument()
 
-    // 이동하기 클릭
+    // 이동하기 클릭 → 뷰 모드로 복귀 (navigate 호출 없음)
     await userEvent.click(screen.getByRole('button', { name: '이동하기' }))
 
-    // navigate 호출
-    expect(mockNavigate).toHaveBeenCalledWith('/expenses')
+    // navigate가 호출되지 않아야 함
+    expect(mockNavigate).not.toHaveBeenCalled()
+    // 뷰 모드의 수정 버튼이 다시 표시되어야 함
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: '수정' })).toBeInTheDocument()
+    })
   })
 })
 
