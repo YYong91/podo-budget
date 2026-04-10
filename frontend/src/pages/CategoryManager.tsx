@@ -6,7 +6,7 @@
 
 import { useEffect, useState } from 'react'
 import { useGoBack } from '../hooks/useGoBack'
-import { ArrowLeft, Lock, Plus } from 'lucide-react'
+import { ArrowLeft, Lock, Plus, Tags } from 'lucide-react'
 import { useToast } from '../hooks/useToast'
 import { TOAST } from '../constants/toastMessages'
 import { categoryApi } from '../api/categories'
@@ -232,6 +232,7 @@ export default function CategoryManager() {
           <button onClick={() => goBack()} className="p-2.5 -ml-2.5 rounded-lg hover:bg-[var(--surface-hover)] transition-colors">
             <ArrowLeft className="w-5 h-5 text-[var(--text-secondary)]" />
           </button>
+          <Tags className="w-5 h-5 text-grape-500 flex-shrink-0" />
           <h1 className="text-lg font-semibold text-[var(--text-primary)]">카테고리 관리</h1>
         </div>
         <CategoryManagerSkeleton />
@@ -247,6 +248,7 @@ export default function CategoryManager() {
           <button onClick={() => goBack()} className="p-2.5 -ml-2.5 rounded-lg hover:bg-[var(--surface-hover)] transition-colors">
             <ArrowLeft className="w-5 h-5 text-[var(--text-secondary)]" />
           </button>
+          <Tags className="w-5 h-5 text-grape-500 flex-shrink-0" />
           <h1 className="text-lg font-semibold text-[var(--text-primary)]">카테고리 관리</h1>
         </div>
         <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)]">
@@ -263,6 +265,7 @@ export default function CategoryManager() {
           <button onClick={() => goBack()} className="p-2.5 -ml-2.5 rounded-lg hover:bg-[var(--surface-hover)] transition-colors">
             <ArrowLeft className="w-5 h-5 text-[var(--text-secondary)]" />
           </button>
+          <Tags className="w-5 h-5 text-grape-500 flex-shrink-0" />
           <h1 className="text-lg font-semibold text-[var(--text-primary)]">카테고리 관리</h1>
         </div>
         <button
@@ -366,7 +369,7 @@ export default function CategoryManager() {
       )}
 
       {/* 카테고리 목록 */}
-      {categories.length === 0 && !isAdding ? (
+      {categories.length === 0 && !isAdding && (
         <EmptyState
           variant="section"
           title="아직 카테고리가 없습니다"
@@ -376,7 +379,8 @@ export default function CategoryManager() {
             onClick: () => setIsAdding(true),
           }}
         />
-      ) : (
+      )}
+      {categories.length > 0 && (
         <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)]/60 divide-y divide-[var(--border-subtle)]">
           {categories.map((category, index) => {
             const isEditing = editingId === category.id
