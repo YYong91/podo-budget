@@ -91,6 +91,13 @@ describe('HouseholdListPage', () => {
     }
   })
 
+  describe('기본 렌더링', () => {
+    it('페이지 헤더에 공유 가계부 타이틀을 표시한다', () => {
+      renderHouseholdList()
+      expect(screen.getByRole('heading', { name: '공유 가계부' })).toBeInTheDocument()
+    })
+  })
+
   describe('로딩 상태', () => {
     it('로딩 중에는 스피너를 표시한다', () => {
       storeState = {
@@ -146,17 +153,7 @@ describe('HouseholdListPage', () => {
   })
 
   describe('가구 목록 표시', () => {
-    it('가구 설명 안내 문구를 표시한다', () => {
-      storeState = {
-        households: mockHouseholds,
-        isLoading: false,
-        error: null,
-      }
 
-      renderHouseholdList()
-
-      expect(screen.getByText('가족이나 친구들과 함께 지출을 관리하세요')).toBeInTheDocument()
-    })
 
     it('가구 목록을 카드 형태로 표시한다', () => {
       storeState = {
