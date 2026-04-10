@@ -646,15 +646,14 @@ export default function TransactionDetail({ type }: TransactionDetailProps) {
             {/* 금액 */}
             <div>
               <label htmlFor="edit-amount" className="block text-sm font-medium text-[var(--text-tertiary)] mb-2">금액</label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-secondary)] text-sm pointer-events-none">
-                  ₩
-                </span>
+              {/* flex wrapper로 ₩ prefix와 input을 나란히 배치 — absolute 방식은 Tailwind v4 cascade 이슈로 겹침 발생 */}
+              <div className="input-base flex items-center gap-1">
+                <span className="text-[var(--text-secondary)] text-sm pointer-events-none shrink-0">₩</span>
                 <input
                   id="edit-amount"
                   type="text"
                   inputMode="numeric"
-                  className="input-base pl-7"
+                  className="flex-1 bg-transparent outline-none text-[var(--text-primary)] text-sm placeholder:text-[var(--text-muted)]"
                   value={editForm.amount === 0 ? '' : editForm.amount.toLocaleString('ko-KR')}
                   onChange={(e) => {
                     const raw = e.target.value.replace(/[^0-9]/g, '')
