@@ -60,8 +60,6 @@ describe('UnifiedSummaryCards', () => {
         <UnifiedSummaryCards
           incomeTotal={3_500_000}
           expenseTotal={1_200_000}
-          prevIncome={3_000_000}
-          prevExpense={1_000_000}
           savingsTotal={500_000}
         />
       </MemoryRouter>
