@@ -136,6 +136,18 @@ describe('InsightsPage', () => {
   })
 
   it('주목할 점이 카테고리 TOP보다 먼저 표시된다', async () => {
+    // 지출 10% 이상 감소 시 하이라이트 노출 — comparison 핸들러를 오버라이드
+    server.use(
+      http.get('*/expenses/stats/comparison', () =>
+        HttpResponse.json({
+          current: { label: '2024년 1월', total: 50000 },
+          previous: { label: '2023년 12월', total: 60000 },
+          change: { amount: -10000, percentage: -16.7 },
+          trend: [],
+          by_category_comparison: [],
+        })
+      )
+    )
     renderWithQuery(<InsightsPage />)
     await waitFor(() => {
       expect(screen.getByText(/이번 달 주목할 점/)).toBeInTheDocument()
