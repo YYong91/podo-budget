@@ -37,7 +37,7 @@ export default function UnifiedSummaryCards({
   expenseTotal,
   savingsTotal,
   netWorth,
-  prevNetWorth,
+  prevNetWorth: _prevNetWorth,
   prevIncome: _prevIncome,
   prevExpense: _prevExpense,
   monthStr,
