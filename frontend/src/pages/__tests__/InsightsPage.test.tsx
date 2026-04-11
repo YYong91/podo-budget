@@ -160,21 +160,13 @@ describe('InsightsPage', () => {
     expect(highlights.compareDocumentPosition(categoryTop) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   })
 
-  it('총 수입 카드에 전월 대비 변화율이 표시된다', async () => {
+  it('총 수입 카드에 전월 대비 변화율(ChangeIndicator)을 표시하지 않는다', async () => {
+    // ChangeIndicator 제거 — 수입/지출 카드에 "지난달 %" 텍스트 없음
     renderWithQuery(<InsightsPage />)
     await waitFor(() => {
       expect(screen.getByText('총 수입')).toBeInTheDocument()
     })
-    // mockIncomeComparison의 previous.total = 3500000, mockIncomeStats.total = 4000000
-    // ChangeIndicator: ((4000000 - 3500000) / 3500000) * 100 = 14%
-    await waitFor(() => {
-      const incomeCard = screen.getByText('총 수입').closest('a')
-      expect(incomeCard).toBeInTheDocument()
-      // 전월 대비 % 텍스트가 카드 내에 존재
-      const changeText = incomeCard?.querySelector('p.text-\\[10px\\]')
-      expect(changeText).toBeInTheDocument()
-      expect(changeText?.textContent).toMatch(/지난달/)
-    })
+    expect(screen.queryByText(/지난달/)).not.toBeInTheDocument()
   })
 
   it('예산 상황 섹션에 편집 링크가 표시된다', async () => {
