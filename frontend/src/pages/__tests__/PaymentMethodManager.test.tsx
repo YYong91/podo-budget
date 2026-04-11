@@ -362,7 +362,7 @@ describe('PaymentMethodManager', () => {
   })
 
   describe('빈 상태', () => {
-    it('결제수단이 없으면 안내 메시지를 표시한다', async () => {
+    it('결제수단이 없으면 EmptyState 컴포넌트로 등록 안내를 표시한다', async () => {
       server.use(
         http.get('/api/payment-methods', () => {
           return HttpResponse.json([])
@@ -375,8 +375,35 @@ describe('PaymentMethodManager', () => {
       renderPage()
 
       await waitFor(() => {
-        expect(screen.getByText('결제수단을 추가하면 지출에 태깅할 수 있어요')).toBeInTheDocument()
+        expect(screen.getByText('등록된 결제수단이 없습니다')).toBeInTheDocument()
       })
+      expect(screen.getByText('결제수단을 추가하면 지출 입력 시 태깅할 수 있어요')).toBeInTheDocument()
+    })
+
+    it('빈 상태에서 결제수단 추가 버튼 클릭 시 추가 폼이 열린다', async () => {
+      const user = userEvent.setup()
+      server.use(
+        http.get('/api/payment-methods', () => {
+          return HttpResponse.json([])
+        }),
+        http.get('/api/payment-methods/stats/monthly', () => {
+          return HttpResponse.json([])
+        })
+      )
+
+      renderPage()
+
+      await waitFor(() => {
+        expect(screen.getByText('등록된 결제수단이 없습니다')).toBeInTheDocument()
+      })
+
+      // EmptyState action 버튼은 여러 "결제수단 추가" 버튼 중 첫 번째 (EmptyState 내부)
+      const addButtons = screen.getAllByRole('button', { name: '결제수단 추가' })
+      expect(addButtons.length).toBeGreaterThanOrEqual(1)
+      await user.click(addButtons[0])
+
+      // 추가 폼이 열린다
+      expect(screen.getByPlaceholderText('결제수단 이름')).toBeInTheDocument()
     })
   })
 })

@@ -14,6 +14,7 @@ import { paymentMethodApi } from '../api/paymentMethods'
 import { formatAmount } from '../utils/format'
 import type { PaymentMethod, PaymentMethodUsage, PaymentMethodType } from '../types'
 import { Skeleton } from '../components/skeleton/Skeleton'
+import EmptyState from '../components/EmptyState'
 
 const TYPE_LABELS: Record<PaymentMethodType, string> = {
   credit_card: '신용카드',
@@ -249,9 +250,13 @@ export default function PaymentMethodManager() {
 
       {/* 빈 상태 */}
       {!loading && methods.length === 0 && (
-        <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] p-8 text-center">
-          <CreditCard className="w-10 h-10 text-[var(--text-muted)] mx-auto mb-3" />
-          <p className="text-sm font-medium text-[var(--text-secondary)]">결제수단을 추가하면 지출에 태깅할 수 있어요</p>
+        <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] ">
+          <EmptyState
+            variant="section"
+            title="등록된 결제수단이 없습니다"
+            description="결제수단을 추가하면 지출 입력 시 태깅할 수 있어요"
+            action={{ label: '결제수단 추가', onClick: () => setShowForm(true) }}
+          />
         </div>
       )}
 
