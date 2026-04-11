@@ -14,12 +14,17 @@ import PaymentMethodManager from '../PaymentMethodManager'
 import { mockPaymentMethods } from '../../mocks/fixtures'
 
 let mockAddToast: ReturnType<typeof vi.fn>
+const mockGoBack = vi.fn()
 
 vi.mock('../../hooks/useToast', () => ({
   useToast: () => ({
     addToast: mockAddToast,
     removeToast: vi.fn(),
   }),
+}))
+
+vi.mock('../../hooks/useGoBack', () => ({
+  useGoBack: () => mockGoBack,
 }))
 
 vi.mock('../../stores/useHouseholdStore', () => ({
@@ -37,9 +42,22 @@ function renderPage() {
 
 beforeEach(() => {
   mockAddToast = vi.fn()
+  mockGoBack.mockReset()
 })
 
 describe('PaymentMethodManager', () => {
+  describe('뒤로가기', () => {
+    it('뒤로가기 버튼 클릭 시 useGoBack을 호출한다', async () => {
+      const user = userEvent.setup()
+      renderPage()
+
+      const backBtn = screen.getByRole('button', { name: '뒤로가기' })
+      await user.click(backBtn)
+
+      expect(mockGoBack).toHaveBeenCalledTimes(1)
+    })
+  })
+
   describe('기본 렌더링', () => {
     it('결제수단 목록을 표시한다', async () => {
       renderPage()

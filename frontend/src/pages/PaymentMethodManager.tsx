@@ -5,9 +5,9 @@
  */
 
 import { useState, useEffect, useCallback } from 'react'
-import { Link } from 'react-router-dom'
 import { ArrowLeft, CreditCard, Plus, Trash2, Pencil, ChevronUp, ChevronDown } from 'lucide-react'
 import { useToast } from '../hooks/useToast'
+import { useGoBack } from '../hooks/useGoBack'
 import { TOAST } from '../constants/toastMessages'
 import { useHouseholdStore } from '../stores/useHouseholdStore'
 import { paymentMethodApi } from '../api/paymentMethods'
@@ -36,6 +36,7 @@ function getCurrentMonth(): string {
 
 export default function PaymentMethodManager() {
   const { addToast } = useToast()
+  const goBack = useGoBack('/settings')
   const activeHouseholdId = useHouseholdStore((s) => s.activeHouseholdId)
 
   const [methods, setMethods] = useState<PaymentMethod[]>([])
@@ -209,13 +210,13 @@ export default function PaymentMethodManager() {
       {/* 헤더 */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Link
-            to="/settings"
+          <button
+            onClick={() => goBack()}
             aria-label="뒤로가기"
-            className="p-2 -ml-2 rounded-lg hover:bg-[var(--surface-hover)] transition-colors"
+            className="p-2.5 -ml-2.5 rounded-lg hover:bg-[var(--surface-hover)] transition-colors"
           >
             <ArrowLeft className="w-5 h-5 text-[var(--text-secondary)]" />
-          </Link>
+          </button>
           <div className="flex items-center gap-2">
             <CreditCard className="w-5 h-5 text-grape-500" />
             <h1 className="text-lg font-semibold text-[var(--text-primary)]">결제수단</h1>
