@@ -68,13 +68,18 @@ function ComparisonRow({
           </span>
           <span className={`text-xs tabular-nums ${changeColor}`}>{changeLabel}</span>
         </div>
-        <div className={`mt-0.5 ${changeColor} opacity-70`}>
-          <Sparkline data={trend} />
-        </div>
+        {trend.length >= 2 && (
+          <div className={`mt-0.5 ${changeColor} opacity-70`}>
+            <Sparkline data={trend} />
+          </div>
+        )}
       </div>
     </div>
   )
 }
+
+// 카테고리 변화 상위 표시 개수
+const TOP_CATEGORY_COUNT = 3
 
 export default function MonthlyComparison({
   expenseComparison,
@@ -86,7 +91,7 @@ export default function MonthlyComparison({
   const topCategoryChanges = (expenseComparison?.by_category_comparison ?? [])
     .filter(c => c.change_percentage !== null && c.previous > 0)
     .sort((a, b) => Math.abs(b.change_percentage ?? 0) - Math.abs(a.change_percentage ?? 0))
-    .slice(0, 3)
+    .slice(0, TOP_CATEGORY_COUNT)
 
   const savingsRateChange =
     savingsRateCurrent !== undefined && savingsRatePrevious !== undefined
