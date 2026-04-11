@@ -59,7 +59,7 @@ export default function CategoryTopList({ categories, maxItems = 5, monthStr }: 
   })()
 
   return (
-    <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] p-4">
+    <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] p-4 sm:p-6">
       {/* 헤더: 제목 + 탭 전환 */}
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-sm font-semibold text-[var(--text-secondary)]">지출 카테고리</h3>
