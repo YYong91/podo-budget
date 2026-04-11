@@ -295,10 +295,10 @@ export default function BudgetManager() {
             </div>
             <div className="flex justify-between text-xs text-[var(--text-secondary)]">
               <span>
-                배정: {formatAmount(allocatedTotal)} / {formatAmount(totalNum)} ({allocationPercent.toFixed(1)}%)
+                배정: <span className="tabular-nums">{formatAmount(allocatedTotal)}</span> / <span className="tabular-nums">{formatAmount(totalNum)}</span> ({allocationPercent.toFixed(1)}%)
               </span>
               <span className={remainingBudget != null && remainingBudget < 0 ? 'text-rose-600 font-semibold' : ''}>
-                남은 예산: {remainingBudget != null ? formatAmount(remainingBudget) : '-'}
+                남은 예산: <span className="tabular-nums">{remainingBudget != null ? formatAmount(remainingBudget) : '-'}</span>
               </span>
             </div>
           </div>
@@ -346,9 +346,9 @@ export default function BudgetManager() {
                 </div>
                 <div className="flex justify-between text-xs text-[var(--text-secondary)]">
                   <span>
-                    사용: {formatAmount(alert.spent_amount)} / {formatAmount(alert.budget_amount)}
+                    사용: <span className="tabular-nums">{formatAmount(alert.spent_amount)}</span> / <span className="tabular-nums">{formatAmount(alert.budget_amount)}</span>
                   </span>
-                  <span>남은 금액: {formatAmount(alert.remaining_amount)}</span>
+                  <span>남은 금액: <span className="tabular-nums">{formatAmount(alert.remaining_amount)}</span></span>
                 </div>
                 {alert.is_exceeded && (
                   <div className="flex items-center gap-1 mt-2">
@@ -405,7 +405,7 @@ export default function BudgetManager() {
                     <p className="text-xs text-[var(--text-muted)]">
                       {item.monthly_spending
                         .slice(0, 2)
-                        .map((s) => `${s.month}월 ${s.amount.toLocaleString('ko-KR')}원`)
+                        .map((s) => `${s.month}월 ${formatAmount(s.amount)}`)
                         .join(' / ')}
                     </p>
                   ) : (
