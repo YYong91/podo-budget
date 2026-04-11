@@ -196,35 +196,35 @@ describe('InsightsPage', () => {
     await user.click(screen.getByLabelText('섹션 설정'))
 
     expect(screen.getByText('섹션 표시 설정')).toBeInTheDocument()
-    // 종합 요약은 비활성 토글로 표시
+    // 히어로 + 요약 카드는 비활성 토글로 표시
     // 모달 내부에서 섹션 라벨 확인 (페이지 본문에도 같은 텍스트가 있으므로 모달 기준으로 검색)
     const modal = screen.getByText('섹션 표시 설정').closest('div.relative')!
-    expect(modal).toHaveTextContent('종합 요약 카드')
+    expect(modal).toHaveTextContent('히어로 + 요약 카드')
     expect(modal).toHaveTextContent('이달의 주목할 점')
-    expect(modal).toHaveTextContent('지출 카테고리')
-    expect(modal).toHaveTextContent('예산 상황')
+    expect(modal).toHaveTextContent('변동 지출 (카테고리)')
+    expect(modal).toHaveTextContent('변동 지출 (예산)')
     // 자산 섹션은 FEATURES.assets 플래그에 따라 조건부 표시
     if (FEATURES.assets) {
       expect(modal).toHaveTextContent('자산 변화')
     } else {
       expect(modal).not.toHaveTextContent('자산 변화')
     }
-    expect(modal).toHaveTextContent('AI 상세 분석')
+    expect(modal).toHaveTextContent('AI 종합 분석')
   })
 
   it('섹션 토글을 끄면 해당 섹션이 숨겨진다', async () => {
     const user = userEvent.setup()
     renderWithQuery(<InsightsPage />)
     await waitFor(() => {
-      expect(screen.getByText('지출 카테고리')).toBeInTheDocument()
+      expect(screen.getByLabelText('섹션 설정')).toBeInTheDocument()
     })
 
     // 설정 모달 열기
     await user.click(screen.getByLabelText('섹션 설정'))
     expect(screen.getByText('섹션 표시 설정')).toBeInTheDocument()
 
-    // '지출 카테고리' 토글 끄기
-    const categoryToggle = screen.getByRole('checkbox', { name: '지출 카테고리' })
+    // '변동 지출 (카테고리)' 토글 끄기
+    const categoryToggle = screen.getByRole('checkbox', { name: '변동 지출 (카테고리)' })
     await user.click(categoryToggle)
 
     // 모달 닫기
@@ -232,7 +232,7 @@ describe('InsightsPage', () => {
 
     // 해당 섹션이 더 이상 표시되지 않는다
     await waitFor(() => {
-      expect(screen.queryByText('지출 카테고리')).not.toBeInTheDocument()
+      expect(screen.queryByText('변동 지출 (카테고리)')).not.toBeInTheDocument()
     })
   })
 
@@ -246,8 +246,8 @@ describe('InsightsPage', () => {
     // 설정 모달 열기
     await user.click(screen.getByLabelText('섹션 설정'))
 
-    // '예산 상황' 토글 끄기
-    const budgetToggle = screen.getByRole('checkbox', { name: '예산 상황' })
+    // '변동 지출 (예산)' 토글 끄기
+    const budgetToggle = screen.getByRole('checkbox', { name: '변동 지출 (예산)' })
     await user.click(budgetToggle)
 
     // 모달 닫기
