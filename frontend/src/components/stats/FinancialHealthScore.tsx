@@ -1,7 +1,9 @@
+import { useState } from 'react'
 import type { HealthScore } from '../../types'
 
 interface FinancialHealthScoreProps {
   score: HealthScore | null
+  variant?: 'full' | 'badge'
 }
 
 function getGradeColor(grade: string): string {
@@ -24,9 +26,8 @@ const LABELS = [
   { key: 'debt' as const, label: '부채' },
 ]
 
-export default function FinancialHealthScore({ score }: FinancialHealthScoreProps) {
-  if (!score) return null
-
+/** 전체 점수 카드 */
+function FullScoreCard({ score }: { score: HealthScore }) {
   return (
     <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] p-4">
       <h3 className="text-sm font-semibold text-[var(--text-secondary)] mb-3">가계 건강 점수</h3>
@@ -74,4 +75,42 @@ export default function FinancialHealthScore({ score }: FinancialHealthScoreProp
       </div>
     </div>
   )
+}
+
+/** 소형 배지 + 클릭 시 바텀시트로 전체 점수 표시 */
+function BadgeMode({ score }: { score: HealthScore }) {
+  const [open, setOpen] = useState(false)
+
+  return (
+    <>
+      <button
+        onClick={() => setOpen(true)}
+        className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-sm font-semibold border ${getGradeColor(score.grade)} border-current bg-white/80 dark:bg-black/20 hover:opacity-80 transition-opacity`}
+      >
+        <span>{score.grade}</span>
+        <span className="text-xs font-normal opacity-70">{score.overall}</span>
+      </button>
+
+      {open && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+          {/* 오버레이 */}
+          <button
+            aria-label="닫기"
+            onClick={() => setOpen(false)}
+            className="absolute inset-0 bg-black/40 cursor-default"
+          />
+          {/* 바텀시트 카드 */}
+          <div className="relative w-full sm:max-w-sm mx-auto p-4 pb-8">
+            <FullScoreCard score={score} />
+          </div>
+        </div>
+      )}
+    </>
+  )
+}
+
+export default function FinancialHealthScore({ score, variant = 'full' }: FinancialHealthScoreProps) {
+  if (!score) return null
+  if (variant === 'badge') return <BadgeMode score={score} />
+  return <FullScoreCard score={score} />
 }
