@@ -4,7 +4,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { server } from '../../mocks/server'
@@ -67,7 +67,6 @@ function renderRecurringList() {
 describe('RecurringList', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    vi.spyOn(window, 'confirm').mockReturnValue(true)
   })
 
   // ==================== 기본 렌더링 ====================
@@ -289,7 +288,52 @@ describe('RecurringList', () => {
 
   // ==================== 삭제 ====================
 
-  it('삭제 버튼 클릭 시 항목이 삭제된다', async () => {
+  it('삭제 버튼 클릭 시 확인 모달이 표시된다', async () => {
+    server.use(
+      http.get('/api/recurring', () => HttpResponse.json([mockItems[0]])),
+      http.get('/api/categories', () => HttpResponse.json([])),
+    )
+
+    const user = userEvent.setup()
+    renderRecurringList()
+
+    await waitFor(() => {
+      expect(screen.getAllByText('넷플릭스').length).toBeGreaterThan(0)
+    })
+
+    const deleteBtns = screen.getAllByTitle('삭제')
+    await user.click(deleteBtns[0])
+
+    // window.confirm이 아닌 모달이 표시되어야 함
+    expect(screen.getByText('정기거래 삭제')).toBeInTheDocument()
+    expect(screen.getByText('정말로 이 정기거래를 삭제하시겠습니까?')).toBeInTheDocument()
+  })
+
+  it('삭제 확인 모달에서 취소 클릭 시 모달이 닫히고 삭제되지 않는다', async () => {
+    server.use(
+      http.get('/api/recurring', () => HttpResponse.json([mockItems[0]])),
+      http.get('/api/categories', () => HttpResponse.json([])),
+    )
+
+    const user = userEvent.setup()
+    renderRecurringList()
+
+    await waitFor(() => {
+      expect(screen.getAllByText('넷플릭스').length).toBeGreaterThan(0)
+    })
+
+    const deleteBtns = screen.getAllByTitle('삭제')
+    await user.click(deleteBtns[0])
+
+    const deleteModal = screen.getByText('정기거래 삭제').closest('div')!
+    expect(deleteModal).toBeInTheDocument()
+    await user.click(within(deleteModal).getByRole('button', { name: '취소' }))
+
+    expect(screen.queryByText('정기거래 삭제')).not.toBeInTheDocument()
+    expect(mockAddToast).not.toHaveBeenCalledWith('success', '정기 거래를 삭제했어요')
+  })
+
+  it('삭제 확인 모달에서 삭제 버튼 클릭 시 항목이 삭제된다', async () => {
     server.use(
       http.get('/api/recurring', () => HttpResponse.json([mockItems[0]])),
       http.get('/api/categories', () => HttpResponse.json([])),
@@ -306,30 +350,13 @@ describe('RecurringList', () => {
     const deleteBtns = screen.getAllByTitle('삭제')
     await user.click(deleteBtns[0])
 
+    const deleteModal = screen.getByText('정기거래 삭제').closest('div')!
+    expect(deleteModal).toBeInTheDocument()
+    await user.click(within(deleteModal).getByRole('button', { name: '삭제' }))
+
     await waitFor(() => {
       expect(mockAddToast).toHaveBeenCalledWith('success', '정기 거래를 삭제했어요')
     })
-  })
-
-  it('삭제 확인을 취소하면 삭제되지 않는다', async () => {
-    vi.spyOn(window, 'confirm').mockReturnValue(false)
-    server.use(
-      http.get('/api/recurring', () => HttpResponse.json([mockItems[0]])),
-      http.get('/api/categories', () => HttpResponse.json([])),
-    )
-
-    const user = userEvent.setup()
-    renderRecurringList()
-
-    await waitFor(() => {
-      expect(screen.getAllByText('넷플릭스').length).toBeGreaterThan(0)
-    })
-
-    const deleteBtns = screen.getAllByTitle('삭제')
-    await user.click(deleteBtns[0])
-
-    // 삭제 토스트가 호출되지 않아야 함
-    expect(mockAddToast).not.toHaveBeenCalledWith('success', '정기 거래를 삭제했어요')
   })
 
   // ==================== 수정 ====================
@@ -536,6 +563,10 @@ describe('RecurringList', () => {
 
     const deleteBtns = screen.getAllByTitle('삭제')
     await user.click(deleteBtns[0])
+
+    const deleteModal = screen.getByText('정기거래 삭제').closest('div')!
+    expect(deleteModal).toBeInTheDocument()
+    await user.click(within(deleteModal).getByRole('button', { name: '삭제' }))
 
     await waitFor(() => {
       expect(mockAddToast).toHaveBeenCalledWith('error', '삭제에 실패했어요')

@@ -72,6 +72,9 @@ export default function RecurringList() {
   const [formData, setFormData] = useState<RecurringFormData>(emptyForm)
   const [submitting, setSubmitting] = useState(false)
 
+  /* 삭제 확인 모달 */
+  const [deleteTargetId, setDeleteTargetId] = useState<number | null>(null)
+
   /* 데이터 로드 */
   const loadData = async () => {
     try {
@@ -184,12 +187,18 @@ export default function RecurringList() {
     }
   }
 
-  /* 삭제 */
-  const handleDelete = async (id: number) => {
-    if (!confirm('정말 삭제하시겠습니까?')) return
+  /* 삭제: 확인 모달 표시 */
+  const requestDelete = (id: number) => {
+    setDeleteTargetId(id)
+  }
+
+  /* 삭제: 실제 삭제 실행 */
+  const handleDelete = async () => {
+    if (deleteTargetId === null) return
     try {
-      await recurringApi.delete(id)
+      await recurringApi.delete(deleteTargetId)
       addToast('success', TOAST.RECURRING_DELETED)
+      setDeleteTargetId(null)
       loadData()
     } catch {
       addToast('error', TOAST.DELETE_FAILED)
@@ -333,7 +342,7 @@ export default function RecurringList() {
                         <button onClick={() => openEdit(r)} className="p-2 rounded-md hover:bg-[var(--surface-hover)] text-[var(--text-tertiary)]" title="수정">
                           <Pencil className="w-4 h-4" />
                         </button>
-                        <button onClick={() => handleDelete(r.id)} className="p-2 rounded-md hover:bg-red-50 text-[var(--text-tertiary)] hover:text-red-600" title="삭제">
+                        <button onClick={() => requestDelete(r.id)} className="p-2 rounded-md hover:bg-red-50 text-[var(--text-tertiary)] hover:text-red-600" title="삭제">
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
@@ -374,7 +383,7 @@ export default function RecurringList() {
                     <button onClick={() => openEdit(r)} className="p-1 text-[var(--text-muted)]">
                       <Pencil className="w-4 h-4" />
                     </button>
-                    <button onClick={() => handleDelete(r.id)} className="p-1 text-[var(--text-muted)]">
+                    <button onClick={() => requestDelete(r.id)} className="p-1 text-[var(--text-muted)]">
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
@@ -396,6 +405,34 @@ export default function RecurringList() {
           onSubmit={handleSubmit}
           onClose={() => setShowModal(false)}
         />
+      )}
+
+      {/* 삭제 확인 모달 */}
+      {deleteTargetId !== null && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-[var(--surface-card)] rounded-2xl shadow-xl max-w-md w-full p-6">
+            <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-2">
+              정기거래 삭제
+            </h3>
+            <p className="text-[var(--text-secondary)] mb-6">
+              정말로 이 정기거래를 삭제하시겠습니까?
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setDeleteTargetId(null)}
+                className="px-4 py-2 text-sm font-medium text-[var(--text-secondary)] bg-[var(--surface-hover)] rounded-lg transition-colors"
+              >
+                취소
+              </button>
+              <button
+                onClick={handleDelete}
+                className="px-4 py-2 text-sm font-medium text-white bg-rose-600 rounded-lg hover:bg-rose-700 transition-colors"
+              >
+                삭제
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )
