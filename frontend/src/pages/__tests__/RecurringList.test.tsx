@@ -72,10 +72,17 @@ describe('RecurringList', () => {
 
   // ==================== 기본 렌더링 ====================
 
-  it('페이지 헤더에 반복 거래 타이틀을 표시한다', async () => {
+  it('페이지 헤더에 정기거래 타이틀을 표시한다', async () => {
     renderRecurringList()
     await waitFor(() => {
-      expect(screen.getByRole('heading', { name: '반복 거래' })).toBeInTheDocument()
+      expect(screen.getByRole('heading', { name: '정기거래' })).toBeInTheDocument()
+    })
+  })
+
+  it('페이지 헤더에 반복 거래 라는 구 용어가 없다', async () => {
+    renderRecurringList()
+    await waitFor(() => {
+      expect(screen.queryByRole('heading', { name: '반복 거래' })).not.toBeInTheDocument()
     })
   })
 

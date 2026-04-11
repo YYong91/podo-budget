@@ -226,7 +226,7 @@ export default function RecurringList() {
             <ArrowLeft className="w-5 h-5 text-[var(--text-secondary)]" />
           </button>
           <Repeat className="w-5 h-5 text-grape-500 flex-shrink-0" />
-          <h1 className="text-lg font-semibold text-[var(--text-primary)]">반복 거래</h1>
+          <h1 className="text-lg font-semibold text-[var(--text-primary)]">정기거래</h1>
         </div>
         <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)]/60">
           <ErrorState onRetry={loadData} />
@@ -244,7 +244,7 @@ export default function RecurringList() {
             <ArrowLeft className="w-5 h-5 text-[var(--text-secondary)]" />
           </button>
           <Repeat className="w-5 h-5 text-grape-500 flex-shrink-0" />
-          <h1 className="text-lg font-semibold text-[var(--text-primary)]">반복 거래</h1>
+          <h1 className="text-lg font-semibold text-[var(--text-primary)]">정기거래</h1>
         </div>
         <button
           onClick={openAdd}
