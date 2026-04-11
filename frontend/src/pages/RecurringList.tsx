@@ -308,7 +308,7 @@ export default function RecurringList() {
                         <span className="font-medium text-[var(--text-primary)]">{r.description}</span>
                       </div>
                     </td>
-                    <td className={`px-5 py-3 text-right font-semibold ${r.type === 'expense' ? 'text-[var(--text-primary)]' : 'text-leaf-600'}`}>
+                    <td className={`px-5 py-3 text-right font-semibold tabular-nums ${r.type === 'expense' ? 'text-[var(--text-primary)]' : 'text-leaf-600'}`}>
                       {r.type === 'income' ? '+' : ''}{formatAmount(r.amount)}
                     </td>
                     <td className="px-5 py-3 text-[var(--text-secondary)]">{formatFrequency(r)}</td>
@@ -353,7 +353,7 @@ export default function RecurringList() {
                     <span className={`w-2 h-2 rounded-full flex-shrink-0 ${r.type === 'expense' ? 'bg-grape-500' : 'bg-leaf-500'}`} />
                     <span className="font-medium text-[var(--text-primary)] truncate">{r.description}</span>
                   </div>
-                  <span className={`font-semibold whitespace-nowrap ml-2 ${r.type === 'expense' ? 'text-[var(--text-primary)]' : 'text-leaf-600'}`}>
+                  <span className={`font-semibold whitespace-nowrap ml-2 tabular-nums ${r.type === 'expense' ? 'text-[var(--text-primary)]' : 'text-leaf-600'}`}>
                     {r.type === 'income' ? '+' : ''}{formatAmount(r.amount)}
                   </span>
                 </div>

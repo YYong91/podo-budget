@@ -560,4 +560,38 @@ describe('RecurringList', () => {
       expect(mockAddToast).toHaveBeenCalledWith('error', '저장에 실패했어요')
     })
   })
+
+  // ==================== tabular-nums ====================
+
+  it('데스크톱 테이블 금액 셀에 tabular-nums 클래스가 있다', async () => {
+    server.use(
+      http.get('/api/recurring', () => HttpResponse.json([mockItems[0]])),
+      http.get('/api/categories', () => HttpResponse.json([])),
+    )
+    renderRecurringList()
+
+    await waitFor(() => {
+      expect(screen.getAllByText('넷플릭스').length).toBeGreaterThan(0)
+    })
+
+    // 금액이 포함된 요소 중 tabular-nums 클래스를 가진 것이 있어야 함
+    const amountCells = document.querySelectorAll('td.tabular-nums')
+    expect(amountCells.length).toBeGreaterThan(0)
+  })
+
+  it('모바일 카드 금액 span에 tabular-nums 클래스가 있다', async () => {
+    server.use(
+      http.get('/api/recurring', () => HttpResponse.json([mockItems[0]])),
+      http.get('/api/categories', () => HttpResponse.json([])),
+    )
+    renderRecurringList()
+
+    await waitFor(() => {
+      expect(screen.getAllByText('넷플릭스').length).toBeGreaterThan(0)
+    })
+
+    // 금액 텍스트를 가진 span 중 tabular-nums 클래스를 가진 것이 있어야 함
+    const amountSpans = document.querySelectorAll('span.tabular-nums')
+    expect(amountSpans.length).toBeGreaterThan(0)
+  })
 })
