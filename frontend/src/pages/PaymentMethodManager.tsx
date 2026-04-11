@@ -13,6 +13,7 @@ import { useHouseholdStore } from '../stores/useHouseholdStore'
 import { paymentMethodApi } from '../api/paymentMethods'
 import { formatAmount } from '../utils/format'
 import type { PaymentMethod, PaymentMethodUsage, PaymentMethodType } from '../types'
+import { Skeleton } from '../components/skeleton/Skeleton'
 
 const TYPE_LABELS: Record<PaymentMethodType, string> = {
   credit_card: '신용카드',
@@ -235,10 +236,12 @@ export default function PaymentMethodManager() {
       {/* 로딩 */}
       {loading && (
         <div className="space-y-3">
-          {[...Array(2)].map((_, i) => (
-            <div key={i} className="bg-[var(--surface-card)] rounded-2xl p-4 animate-pulse">
-              <div className="h-4 w-24 bg-warm-200 rounded mb-2" />
-              <div className="h-3 w-16 bg-warm-200 rounded" />
+          {[1, 2, 3].map(i => (
+            <div key={i} className="bg-[var(--surface-card)] rounded-2xl p-4">
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-28" />
+                <Skeleton className="h-3 w-20" />
+              </div>
             </div>
           ))}
         </div>

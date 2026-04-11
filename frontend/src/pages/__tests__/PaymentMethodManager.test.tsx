@@ -336,6 +336,31 @@ describe('PaymentMethodManager', () => {
     })
   })
 
+  describe('로딩 스켈레톤', () => {
+    it('로딩 중에 bg-warm-200 없이 Skeleton 컴포넌트 카드를 3개 렌더링한다', () => {
+      // 응답을 영구 지연시켜 로딩 상태를 유지한다
+      server.use(
+        http.get('/api/payment-methods', async () => {
+          await new Promise(() => {}) // 절대 resolve 안 함
+          return HttpResponse.json([])
+        })
+      )
+
+      const { container } = renderPage()
+
+      // 로딩 중: 구 방식의 bg-warm-200 클래스가 없어야 한다
+      expect(container.querySelector('.bg-warm-200')).toBeNull()
+
+      // Skeleton 컴포넌트(bg-[var(--skeleton-base)])가 렌더링된다
+      const skeletonElements = container.querySelectorAll('[class*="skeleton-base"]')
+      expect(skeletonElements.length).toBeGreaterThan(0)
+
+      // 로딩 스켈레톤 카드 래퍼 3개가 렌더링된다
+      const skeletonCards = container.querySelectorAll('.space-y-3 > div')
+      expect(skeletonCards.length).toBe(3)
+    })
+  })
+
   describe('빈 상태', () => {
     it('결제수단이 없으면 안내 메시지를 표시한다', async () => {
       server.use(
