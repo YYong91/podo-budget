@@ -48,24 +48,8 @@ function StatusBadge({ status }: { status: ItemStatus }) {
 }
 
 export default function RecurringManageSection({ items, monthStr, executedAmountMap }: Props) {
-  const [expanded, setExpanded] = useState(true)
-
-  if (items.length === 0) {
-    return (
-      <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] p-4 sm:p-6">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <RefreshCw className="w-4 h-4 text-grape-600" />
-            <h2 className="text-base font-semibold text-[var(--text-primary)]">정기거래</h2>
-          </div>
-          <Link to="/recurring" className="text-xs text-grape-600 hover:text-grape-700 transition-colors">
-            관리 →
-          </Link>
-        </div>
-        <p className="text-sm text-[var(--text-muted)] text-center py-2">등록된 정기거래가 없습니다</p>
-      </div>
-    )
-  }
+  // 기본 접힌 상태 — 헤더에서 고정비 총액을 확인하고 필요 시 펼치는 패턴
+  const [expanded, setExpanded] = useState(false)
 
   const monthlyExpenseTotal = items
     .filter(r => r.type === 'expense')
@@ -75,13 +59,49 @@ export default function RecurringManageSection({ items, monthStr, executedAmount
       return sum + (actual ?? r.amount)
     }, 0)
 
+  if (items.length === 0) {
+    return (
+      <div id="section-recurring" className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] p-4 sm:p-6">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <RefreshCw className="w-4 h-4 text-grape-600" />
+            <h2 className="text-base font-semibold text-[var(--text-primary)]">정기거래</h2>
+          </div>
+          <Link to="/recurring" className="text-xs text-grape-600 hover:text-grape-700 transition-colors">
+            관리 →
+          </Link>
+        </div>
+        {/* 빈 상태: 고정비 등록 유도 CTA */}
+        <p className="text-sm text-[var(--text-muted)] text-center py-2">
+          정기거래를 등록하면 고정비 현황을 볼 수 있어요
+        </p>
+        <div className="text-center mt-2">
+          <Link
+            to="/recurring"
+            className="text-xs text-grape-600 hover:text-grape-700 font-medium transition-colors"
+          >
+            등록하기 →
+          </Link>
+        </div>
+      </div>
+    )
+  }
+
   return (
-    <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] p-4 sm:p-6">
-      {/* 헤더 */}
+    <div id="section-recurring" className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] p-4 sm:p-6">
+      {/* 헤더: 타이틀 + 고정비 총액 강조 */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <RefreshCw className="w-4 h-4 text-grape-600" />
-          <h2 className="text-base font-semibold text-[var(--text-primary)]">정기거래</h2>
+          <div>
+            <h2 className="text-base font-semibold text-[var(--text-primary)]">정기거래</h2>
+            {monthlyExpenseTotal > 0 && (
+              <p className="text-xs text-[var(--text-muted)] leading-tight">
+                이번 달 고정비{' '}
+                <span className="font-medium text-[var(--text-secondary)]">{formatAmount(monthlyExpenseTotal)}</span>
+              </p>
+            )}
+          </div>
         </div>
         <Link to="/recurring" className="text-xs text-grape-600 hover:text-grape-700 transition-colors">
           관리 →

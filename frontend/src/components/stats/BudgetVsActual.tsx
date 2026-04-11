@@ -54,9 +54,9 @@ export default function BudgetVsActual({ budgetStats, maxItems = 5, monthStr }: 
           </div>
           {totalUsage != null && (
             <div>
-              <div className="w-full bg-[var(--border-default)] rounded-full h-2 overflow-hidden">
+              <div className="w-full h-1.5 rounded-full overflow-hidden bg-[var(--border-default)]">
                 <div
-                  className={`h-2 rounded-full transition-all ${totalUsage > 100 ? 'bg-red-500' : totalUsage >= 80 ? 'bg-amber-500' : 'bg-grape-500'}`}
+                  className={`h-1.5 rounded-full transition-all ${totalUsage > 100 ? 'bg-red-500' : totalUsage >= 80 ? 'bg-amber-500' : 'bg-grape-500'}`}
                   style={{ width: `${Math.min(totalUsage, 100)}%` }}
                 />
               </div>

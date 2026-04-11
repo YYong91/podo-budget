@@ -1,9 +1,13 @@
 /**
  * @file InsightsPage.tsx
- * @description 이달의 리포트 페이지 (월간)
- * 종합 요약 → 지출 카테고리 TOP → 예산 상황 → 자산 변화 → 이달의 인사이트 → AI 상세 분석
+ * @description 이달의 리포트 페이지 (월간) — 3-Layer 구조
  *
- * React Query로 9개 API를 그룹별 독립 쿼리로 전환 — 핵심 데이터부터 섹션별 점진적 렌더링
+ * Layer 0: 히어로 — 이달 지출 총액 + 예산 프로그레스바 + 건강점수 배지
+ * Layer 1: 한눈에 — MonthlyHighlights(주목할 점) → UnifiedSummaryCards
+ * Layer 2: 뜯어보기 — 카테고리/예산/정기거래/카드/저축
+ * Layer 3: 돌아보기 — MonthlyComparison + AI 분석
+ *
+ * 온보딩 모드: 거래 5건 미만이면 InsightsOnboarding 표시 (풀 리포트 대신)
  */
 
 import { useState, useCallback, useMemo } from 'react'
@@ -20,25 +24,20 @@ import { statsApi, insightsApi } from '../api/insights'
 import { expenseApi } from '../api/expenses'
 import { incomeApi } from '../api/income'
 import { getMonthlyStats } from '../api/budgets'
-import { assetApi } from '../api/assets'
 import { categoryApi } from '../api/categories'
 import { paymentMethodApi } from '../api/paymentMethods'
 import { recurringApi } from '../api/recurring'
 import { useHouseholdStore } from '../stores/useHouseholdStore'
-import { FEATURES } from '../config/features'
 
 // 컴포넌트
 import PeriodNavigator from '../components/stats/PeriodNavigator'
 import HeroSummary from '../components/stats/HeroSummary'
 import UnifiedSummaryCards from '../components/stats/UnifiedSummaryCards'
-// CategoryPieChart는 CategoryTopList에 탭으로 통합됨
 import CategoryTopList from '../components/stats/CategoryTopList'
 import BudgetVsActual from '../components/stats/BudgetVsActual'
 import RecurringManageSection from '../components/stats/RecurringManageSection'
 import CardUsageSummary from '../components/stats/CardUsageSummary'
-import AssetChangeSummary from '../components/stats/AssetChangeSummary'
 import MonthlyHighlights from '../components/stats/MonthlyHighlights'
-import FinancialHealthScore from '../components/stats/FinancialHealthScore'
 import StructuredInsightsView from '../components/stats/StructuredInsightsView'
 import SectionToggleModal, {
   loadSectionSettings,
@@ -46,15 +45,18 @@ import SectionToggleModal, {
   type SectionVisibility,
 } from '../components/stats/SectionToggleModal'
 import { Skeleton } from '../components/skeleton/Skeleton'
+import LayerDivider from '../components/stats/LayerDivider'
+import InsightsOnboarding from '../components/stats/InsightsOnboarding'
+import SavingsSection from '../components/stats/SavingsSection'
+import MonthlyComparison from '../components/stats/MonthlyComparison'
 
 // 유틸
 import { calculateHealthScore } from '../utils/healthScore'
 import { trackEvent } from '../utils/analytics'
-import { formatAmount } from '../utils/format'
 
 // 타입
 import type {
-  AssetSummary, StructuredInsights, HealthScore,
+  StructuredInsights, HealthScore,
 } from '../types'
 
 // ── 날짜 유틸 ──
@@ -113,6 +115,11 @@ function InsightsPageSkeleton() {
     </div>
   )
 }
+
+// ── 상수 ──
+
+/** 풀 리포트 생성을 위한 최소 거래 건수 */
+const FULL_REPORT_THRESHOLD = 5
 
 // ── 메인 페이지 ──
 
@@ -174,16 +181,7 @@ export default function InsightsPage() {
     enabled: !!activeHouseholdId,
   })
 
-  // ── Group 4: 자산 — 스냅샷만 사용 (getSummary는 Yahoo Finance 호출로 30초+ 걸림) ──
-  // FEATURES.assets가 false면 쿼리 자체를 실행하지 않아 불필요한 API 호출을 방지한다
-
-  const { data: snapshots = [] } = useQuery({
-    queryKey: ['insights-snapshots', activeHouseholdId],
-    queryFn: () => assetApi.getSnapshots(activeHouseholdId!, 2).then(r => r.data),
-    enabled: !!activeHouseholdId && FEATURES.assets,
-  })
-
-  // ── Group 5: 카테고리 — is_savings 계산용 (staleTime 연장으로 중복 요청 방지) ──
+  // ── Group 4: 카테고리 — is_savings 계산용 (staleTime 연장으로 중복 요청 방지) ──
 
   const { data: expenseCategories = [] } = useQuery({
     queryKey: ['categories-expense', activeHouseholdId],
@@ -192,7 +190,7 @@ export default function InsightsPage() {
     enabled: !!activeHouseholdId,
   })
 
-  // ── Group 6: 카드 실적 ──
+  // ── Group 5: 카드 실적 ──
 
   const { data: cardUsage = [] } = useQuery({
     queryKey: ['insights-card-usage', monthStr, activeHouseholdId],
@@ -200,7 +198,7 @@ export default function InsightsPage() {
     enabled: !!activeHouseholdId,
   })
 
-  // ── Group 7: 정기거래 — 활성 목록 + 당월 실행/건너뜀 구분 ──
+  // ── Group 6: 정기거래 — 활성 목록 + 당월 실행/건너뜀 구분 ──
 
   const { data: recurringData = [] } = useQuery({
     queryKey: ['insights-recurring', activeHouseholdId],
@@ -237,24 +235,6 @@ export default function InsightsPage() {
   })
 
   // ── 파생 상태 (useMemo — 쿼리 결과 변경 시 재계산) ──
-
-  // 스냅샷에서 자산 데이터 파생 — getSummary 대체 (Yahoo Finance 실시간 호출 제거)
-  // FEATURES.assets가 false면 빈 값 반환 (쿼리도 비활성화되어 snapshots는 항상 [])
-  const { prevSnapshot, assetSummary } = useMemo(() => {
-    if (!FEATURES.assets) return { prevSnapshot: null, assetSummary: null }
-    const sorted = [...snapshots].sort((a, b) => a.snapshot_date.localeCompare(b.snapshot_date))
-    const latest = sorted.length > 0 ? sorted[sorted.length - 1] : null
-    const prev = sorted.length >= 2 ? sorted[0] : null
-    const summary: AssetSummary | null = latest ? {
-      net_worth: latest.net_worth,
-      total_assets: latest.total_assets,
-      total_liabilities: latest.total_liabilities,
-      breakdown: latest.breakdown ?? {},
-      total_profit_loss: 0,       // 스냅샷에는 수익률 없음 — 돌아보기에서 미사용
-      total_profit_loss_pct: null,
-    } : null
-    return { prevSnapshot: prev, assetSummary: summary }
-  }, [snapshots])
 
   // 저축성 지출 합계 (is_savings=true 카테고리만 집계)
   const savingsTotal = useMemo(() => {
@@ -295,11 +275,85 @@ export default function InsightsPage() {
       savingsTotal,
       budgetTotal: budgetStats?.total_budget ?? undefined,
       budgetSpent: budgetStats?.total_spent ?? undefined,
-      totalLiabilities: assetSummary?.total_liabilities ?? 0,
-      totalAssets: assetSummary?.total_assets ?? 0,
+      totalLiabilities: 0,
+      totalAssets: 0,
       avgLoanRate: 0,
     })
-  }, [expenseStats, incomeStats, savingsTotal, budgetStats, assetSummary])
+  }, [expenseStats, incomeStats, savingsTotal, budgetStats])
+
+  // 거래 건수 (온보딩 분기용) — count 필드는 StatsResponse에 있음
+  const transactionCount = (expenseStats?.count ?? 0) + (incomeStats?.count ?? 0)
+
+  // 미실행 정기지출 합계 (HeroSummary 예산 프로그레스바용)
+  const pendingRecurringExpense = useMemo(() => {
+    return activeRecurringItems
+      .filter(r => r.type === 'expense')
+      .filter(r => r.next_due_date.slice(0, 7) === monthStr && !executedAmountMap.has(r.id))
+      .reduce((sum, r) => sum + r.amount, 0)
+  }, [activeRecurringItems, monthStr, executedAmountMap])
+
+  // 전월 대비 비교 문장 (HeroSummary 서브텍스트용)
+  const comparisonText = useMemo(() => {
+    if (!comparison?.change?.amount || comparison.change.percentage === null) return undefined
+    const pct = Math.abs(comparison.change.percentage)
+    if (pct < 1) return '지난달과 비슷한 수준이에요'
+    const amt = Math.abs(comparison.change.amount).toLocaleString('ko-KR')
+    return comparison.change.amount < 0
+      ? `지난달 이맘때보다 ${amt}원 줄었어요 ↓`
+      : `지난달 이맘때보다 ${amt}원 늘었어요 ↑`
+  }, [comparison])
+
+  const comparisonColor = useMemo(() => {
+    if (!comparison?.change?.amount) return undefined
+    return comparison.change.amount < 0 ? 'text-leaf-600' : 'text-red-600'
+  }, [comparison])
+
+  // 저축 카테고리 필터링 (SavingsSection용)
+  const savingsCategories = useMemo(() => {
+    const savingsCatNames = new Set(
+      expenseCategories.filter(c => c.is_savings).map(c => c.name)
+    )
+    if (savingsCatNames.size === 0) return []
+    return (expenseStats?.by_category ?? []).filter(c => savingsCatNames.has(c.category))
+  }, [expenseCategories, expenseStats])
+
+  // 고정비 총액 (MonthlyHighlights 규칙 #5 — 고정비 비율 40% 이상 경고용)
+  // activeRecurringItems는 이미 is_active === true 필터 적용됨 → r.is_active 중복 체크 불필요
+  const recurringTotal = useMemo(() => {
+    return activeRecurringItems
+      .filter(r => r.type === 'expense')
+      .reduce((sum, r) => sum + r.amount, 0)
+  }, [activeRecurringItems])
+
+  // 전월 저축 합계 (MonthlyHighlights 규칙 #6 — 저축 감소 감지용)
+  const prevSavingsTotal = useMemo(() => {
+    const savingsCatNames = new Set(
+      expenseCategories.filter(c => c.is_savings).map(c => c.name)
+    )
+    if (savingsCatNames.size === 0) return undefined
+    return comparison?.by_category_comparison
+      .filter(c => savingsCatNames.has(c.category))
+      .reduce((sum, c) => sum + c.previous, 0)
+  }, [expenseCategories, comparison])
+
+  // 전월 저축률 (MonthlyComparison 저축률 행용)
+  const savingsRatePrevious = useMemo(() => {
+    if (savingsTotal === undefined) return undefined
+    if (!incomeComparison?.previous?.total) return undefined
+    const savingsCatNames = new Set(
+      expenseCategories.filter(c => c.is_savings).map(c => c.name)
+    )
+    const prevSavings = comparison?.by_category_comparison
+      .filter(c => savingsCatNames.has(c.category))
+      .reduce((sum, c) => sum + c.previous, 0) ?? 0
+    const prevIncome = incomeComparison.previous.total
+    return prevIncome > 0 ? (prevSavings / prevIncome) * 100 : undefined
+  }, [savingsTotal, incomeComparison, comparison, expenseCategories])
+
+  // 딥링크 핸들러 — MonthlyHighlights 항목 클릭 시 해당 섹션으로 스크롤
+  const handleDeepLink = useCallback((sectionId: string) => {
+    document.getElementById(sectionId)?.scrollIntoView({ behavior: 'smooth' })
+  }, [])
 
   // ── 로딩 / 에러 판단 ──
 
@@ -348,22 +402,6 @@ export default function InsightsPage() {
         }
       }
 
-      // 자산 데이터 (플래그 비활성 시 AI 분석 요청에서 제외)
-      if (FEATURES.assets && assetSummary) {
-        requestData.assets = {
-          total_assets: assetSummary.total_assets,
-          total_liabilities: assetSummary.total_liabilities,
-          net_worth: assetSummary.net_worth,
-          breakdown: assetSummary.breakdown,
-          monthly_change_amount: prevSnapshot
-            ? assetSummary.net_worth - prevSnapshot.net_worth
-            : 0,
-          monthly_change_rate: prevSnapshot && prevSnapshot.net_worth !== 0
-            ? ((assetSummary.net_worth - prevSnapshot.net_worth) / Math.abs(prevSnapshot.net_worth)) * 100
-            : 0,
-        }
-      }
-
       const result = await insightsApi.generateComprehensive(requestData)
       setStructuredInsights(result.insights)
       trackEvent('ai_analysis_requested')
@@ -373,7 +411,7 @@ export default function InsightsPage() {
     } finally {
       setAiLoading(false)
     }
-  }, [monthStr, expenseStats, incomeStats, budgetStats, assetSummary, prevSnapshot, healthScore, comparison, incomeComparison, savingsTotal, addToast])
+  }, [monthStr, expenseStats, incomeStats, budgetStats, healthScore, comparison, incomeComparison, savingsTotal, addToast])
 
   // monthStr에서 파생된 연/월 (PeriodNavigator + HeroSummary에서 공유)
   const { currentYear, currentMonth } = useMemo(() => {
@@ -440,8 +478,8 @@ export default function InsightsPage() {
         />
       )}
 
-      {/* 빈 상태 */}
-      {!loading && !error && !!(expenseStats !== undefined || incomeStats !== undefined) && !expenseStats?.total && !incomeStats?.total && (
+      {/* 빈 상태 — 데이터 로드됐지만 거래 0건 */}
+      {!loading && !error && transactionCount === 0 && expenseStats !== undefined && (
         <EmptyState
           variant="primary"
           title="이번 달 거래 내역이 없습니다"
@@ -450,50 +488,67 @@ export default function InsightsPage() {
         />
       )}
 
-      {!loading && !error && !!(expenseStats?.total || incomeStats?.total) && (
+      {/* 온보딩 모드 — 거래 1~4건: 풀 리포트 대신 셋업 가이드 표시 */}
+      {!loading && !error && transactionCount > 0 && transactionCount < FULL_REPORT_THRESHOLD && (
+        <InsightsOnboarding
+          hasTransactions={false}
+          hasBudget={!!budgetStats?.total_budget}
+          hasRecurring={activeRecurringItems.length > 0}
+          hasSavingsCategory={expenseCategories.some(c => c.is_savings)}
+        />
+      )}
+
+      {/* 풀 리포트 — 거래 5건 이상 */}
+      {!loading && !error && transactionCount >= FULL_REPORT_THRESHOLD && (
         <>
-          {/* 0. 히어로 — 이달 지출 총액 강조 */}
+          {/* Layer 0: 히어로 — 이달 지출 총액 + 예산 프로그레스바 */}
           <HeroSummary
             label={`${currentMonth + 1}월 지출`}
-            amount={expenseStats?.total ?? 0}
-            sublabel={`수입 ${formatAmount(incomeStats?.total ?? 0)}`}
+            totalExpense={expenseStats?.total ?? 0}
+            totalBudget={budgetStats?.total_budget ?? null}
+            pendingRecurringExpense={pendingRecurringExpense}
+            totalIncome={incomeStats?.total}
+            comparisonText={comparisonText}
+            comparisonColor={comparisonColor}
+            healthScore={healthScore}
           />
 
-          {/* 1. 종합 요약 */}
-          {(expenseStats || incomeStats) && (
-            <UnifiedSummaryCards
+          {/* Layer 1: 한눈에 — 주목할 점 → 요약 카드 */}
+          {sectionVisibility.highlights && (
+            <MonthlyHighlights
               incomeTotal={incomeStats?.total ?? 0}
               expenseTotal={expenseStats?.total ?? 0}
               savingsTotal={savingsTotal}
-              netWorth={assetSummary?.net_worth ?? null}
-              prevNetWorth={prevSnapshot?.net_worth ?? null}
-              prevIncome={incomeComparison?.previous?.total ?? null}
-              prevExpense={comparison?.previous?.total ?? null}
-              monthStr={monthStr}
-            />
-          )}
-
-          {/* 2. 이달의 주목할 점 */}
-          {sectionVisibility.highlights && expenseStats && incomeStats && (
-            <MonthlyHighlights
-              incomeTotal={incomeStats.total}
-              expenseTotal={expenseStats.total}
+              recurringTotal={recurringTotal}
+              prevSavingsTotal={prevSavingsTotal}
               budgetStats={budgetStats ?? null}
               comparison={comparison ?? null}
+              onHighlightClick={handleDeepLink}
             />
           )}
 
-          {/* 3. 지출 카테고리 (리스트/그래프 탭 통합) */}
+          <UnifiedSummaryCards
+            incomeTotal={incomeStats?.total ?? 0}
+            expenseTotal={expenseStats?.total ?? 0}
+            savingsTotal={savingsTotal}
+            monthStr={monthStr}
+          />
+
+          {/* Layer 2: 뜯어보기 */}
+          <LayerDivider label="뜯어보기" />
+
           {sectionVisibility.categoryTop && (
-            <CategoryTopList categories={expenseStats?.by_category ?? []} monthStr={monthStr} />
+            <div id="section-category">
+              <CategoryTopList categories={expenseStats?.by_category ?? []} monthStr={monthStr} />
+            </div>
           )}
 
-          {/* 5. 예산 상황 */}
           {sectionVisibility.budget && (
-            <BudgetVsActual budgetStats={budgetStats ?? null} monthStr={monthStr} />
+            <div id="section-budget">
+              <BudgetVsActual budgetStats={budgetStats ?? null} monthStr={monthStr} />
+            </div>
           )}
 
-          {/* 6. 정기거래 관리 */}
           {sectionVisibility.recurring && (
             <RecurringManageSection
               items={activeRecurringItems}
@@ -502,17 +557,37 @@ export default function InsightsPage() {
             />
           )}
 
-          {/* 7. 카드 실적 */}
           {sectionVisibility.cardUsage && cardUsage.length > 0 && (
             <CardUsageSummary usage={cardUsage} />
           )}
 
-          {/* 8. 자산 변화 — 플래그 비활성 시 섹션 전체 미표시 */}
-          {FEATURES.assets && sectionVisibility.assets && (
-            <AssetChangeSummary summary={assetSummary ?? null} previousSnapshot={prevSnapshot} />
+          {sectionVisibility.savings && (
+            <SavingsSection
+              savingsTotal={savingsTotal}
+              incomeTotal={incomeStats?.total ?? 0}
+              savingsCategories={savingsCategories}
+            />
           )}
 
-          {/* 9. AI 상세 분석 */}
+          {/* Layer 3: 돌아보기 */}
+          <LayerDivider label="돌아보기" />
+
+          {sectionVisibility.comparison && (
+            <div id="section-comparison">
+              <MonthlyComparison
+                expenseComparison={comparison ?? null}
+                incomeComparison={incomeComparison ?? null}
+                savingsRateCurrent={
+                  savingsTotal !== undefined && incomeStats?.total
+                    ? (savingsTotal / incomeStats.total) * 100
+                    : undefined
+                }
+                savingsRatePrevious={savingsRatePrevious}
+              />
+            </div>
+          )}
+
+          {/* AI 상세 분석 */}
           {sectionVisibility.ai && (
             <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)]/60 p-4">
               <div className="flex items-center justify-between mb-4">
@@ -530,9 +605,6 @@ export default function InsightsPage() {
                   </button>
                 )}
               </div>
-
-              {/* 건강 점수 (항상 표시) */}
-              <FinancialHealthScore score={healthScore} />
 
               {/* AI 로딩 */}
               {aiLoading && (

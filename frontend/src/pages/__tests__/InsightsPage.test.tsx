@@ -136,6 +136,18 @@ describe('InsightsPage', () => {
   })
 
   it('주목할 점이 카테고리 TOP보다 먼저 표시된다', async () => {
+    // 지출 10% 이상 감소 시 하이라이트 노출 — comparison 핸들러를 오버라이드
+    server.use(
+      http.get('*/expenses/stats/comparison', () =>
+        HttpResponse.json({
+          current: { label: '2024년 1월', total: 50000 },
+          previous: { label: '2023년 12월', total: 60000 },
+          change: { amount: -10000, percentage: -16.7 },
+          trend: [],
+          by_category_comparison: [],
+        })
+      )
+    )
     renderWithQuery(<InsightsPage />)
     await waitFor(() => {
       expect(screen.getByText(/이번 달 주목할 점/)).toBeInTheDocument()
@@ -148,21 +160,16 @@ describe('InsightsPage', () => {
     expect(highlights.compareDocumentPosition(categoryTop) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   })
 
-  it('총 수입 카드에 전월 대비 변화율이 표시된다', async () => {
+  it('총 수입 카드에 전월 대비 변화율(ChangeIndicator)을 표시하지 않는다', async () => {
+    // ChangeIndicator 제거 — 수입/지출 카드 내부에 "지난달 %" 텍스트 없음
+    // (HeroSummary의 comparisonText는 별개 — "지난달 이맘때보다" 형태로 히어로에만 표시)
     renderWithQuery(<InsightsPage />)
     await waitFor(() => {
       expect(screen.getByText('총 수입')).toBeInTheDocument()
     })
-    // mockIncomeComparison의 previous.total = 3500000, mockIncomeStats.total = 4000000
-    // ChangeIndicator: ((4000000 - 3500000) / 3500000) * 100 = 14%
-    await waitFor(() => {
-      const incomeCard = screen.getByText('총 수입').closest('a')
-      expect(incomeCard).toBeInTheDocument()
-      // 전월 대비 % 텍스트가 카드 내에 존재
-      const changeText = incomeCard?.querySelector('p.text-\\[10px\\]')
-      expect(changeText).toBeInTheDocument()
-      expect(changeText?.textContent).toMatch(/지난달/)
-    })
+    // 요약 카드(UnifiedSummaryCards) 내부에 변화율 텍스트가 없음을 확인
+    const summarySection = document.querySelector('.grid.grid-cols-2')
+    expect(summarySection?.textContent ?? '').not.toMatch(/지난달\s*\d/)
   })
 
   it('예산 상황 섹션에 편집 링크가 표시된다', async () => {
@@ -196,35 +203,35 @@ describe('InsightsPage', () => {
     await user.click(screen.getByLabelText('섹션 설정'))
 
     expect(screen.getByText('섹션 표시 설정')).toBeInTheDocument()
-    // 종합 요약은 비활성 토글로 표시
+    // 히어로 + 요약 카드는 비활성 토글로 표시
     // 모달 내부에서 섹션 라벨 확인 (페이지 본문에도 같은 텍스트가 있으므로 모달 기준으로 검색)
     const modal = screen.getByText('섹션 표시 설정').closest('div.relative')!
-    expect(modal).toHaveTextContent('종합 요약 카드')
+    expect(modal).toHaveTextContent('히어로 + 요약 카드')
     expect(modal).toHaveTextContent('이달의 주목할 점')
-    expect(modal).toHaveTextContent('지출 카테고리')
-    expect(modal).toHaveTextContent('예산 상황')
+    expect(modal).toHaveTextContent('변동 지출 (카테고리)')
+    expect(modal).toHaveTextContent('변동 지출 (예산)')
     // 자산 섹션은 FEATURES.assets 플래그에 따라 조건부 표시
     if (FEATURES.assets) {
       expect(modal).toHaveTextContent('자산 변화')
     } else {
       expect(modal).not.toHaveTextContent('자산 변화')
     }
-    expect(modal).toHaveTextContent('AI 상세 분석')
+    expect(modal).toHaveTextContent('AI 종합 분석')
   })
 
   it('섹션 토글을 끄면 해당 섹션이 숨겨진다', async () => {
     const user = userEvent.setup()
     renderWithQuery(<InsightsPage />)
     await waitFor(() => {
-      expect(screen.getByText('지출 카테고리')).toBeInTheDocument()
+      expect(screen.getByLabelText('섹션 설정')).toBeInTheDocument()
     })
 
     // 설정 모달 열기
     await user.click(screen.getByLabelText('섹션 설정'))
     expect(screen.getByText('섹션 표시 설정')).toBeInTheDocument()
 
-    // '지출 카테고리' 토글 끄기
-    const categoryToggle = screen.getByRole('checkbox', { name: '지출 카테고리' })
+    // '변동 지출 (카테고리)' 토글 끄기
+    const categoryToggle = screen.getByRole('checkbox', { name: '변동 지출 (카테고리)' })
     await user.click(categoryToggle)
 
     // 모달 닫기
@@ -232,7 +239,7 @@ describe('InsightsPage', () => {
 
     // 해당 섹션이 더 이상 표시되지 않는다
     await waitFor(() => {
-      expect(screen.queryByText('지출 카테고리')).not.toBeInTheDocument()
+      expect(screen.queryByText('변동 지출 (카테고리)')).not.toBeInTheDocument()
     })
   })
 
@@ -246,8 +253,8 @@ describe('InsightsPage', () => {
     // 설정 모달 열기
     await user.click(screen.getByLabelText('섹션 설정'))
 
-    // '예산 상황' 토글 끄기
-    const budgetToggle = screen.getByRole('checkbox', { name: '예산 상황' })
+    // '변동 지출 (예산)' 토글 끄기
+    const budgetToggle = screen.getByRole('checkbox', { name: '변동 지출 (예산)' })
     await user.click(budgetToggle)
 
     // 모달 닫기
@@ -280,5 +287,50 @@ describe('InsightsPage', () => {
     expect(screen.queryByText(/이번 달 주목할 점/)).not.toBeInTheDocument()
     // 다른 섹션은 정상 표시
     expect(screen.getByText('지출 카테고리')).toBeInTheDocument()
+  })
+
+  it('거래 건수 5건 미만이면 InsightsOnboarding을 표시한다', async () => {
+    server.use(
+      http.get('/api/expenses/stats', () =>
+        HttpResponse.json({ ...{ total: 8000, count: 2, by_category: [], daily_trend: [] }, count: 2 })
+      ),
+      http.get('/api/income/stats', () =>
+        HttpResponse.json({ ...{ total: 0, count: 0, by_category: [], daily_trend: [] }, count: 0 })
+      ),
+    )
+    renderWithQuery(<InsightsPage />)
+    await waitFor(() => {
+      expect(screen.getByText('아직 데이터가 모이는 중이에요')).toBeInTheDocument()
+    })
+  })
+
+  it('Layer 구분자 "뜯어보기"가 표시된다', async () => {
+    renderWithQuery(<InsightsPage />)
+    await waitFor(() => {
+      expect(screen.getByText('뜯어보기')).toBeInTheDocument()
+    })
+  })
+
+  it('주목할 점이 요약 카드(총 수입)보다 먼저 렌더된다', async () => {
+    // 지출 10% 이상 감소로 MonthlyHighlights 표시 유도
+    server.use(
+      http.get('*/expenses/stats/comparison', () =>
+        HttpResponse.json({
+          current: { label: '2024년 1월', total: 50000 },
+          previous: { label: '2023년 12월', total: 60000 },
+          change: { amount: -10000, percentage: -16.7 },
+          trend: [],
+          by_category_comparison: [],
+        })
+      )
+    )
+    renderWithQuery(<InsightsPage />)
+    await waitFor(() => {
+      expect(screen.getByText(/이번 달 주목할 점/)).toBeInTheDocument()
+    })
+    const allText = document.body.textContent ?? ''
+    const highlightsIdx = allText.indexOf('이번 달 주목할 점')
+    const summaryIdx = allText.indexOf('총 수입')
+    expect(highlightsIdx).toBeLessThan(summaryIdx)
   })
 })

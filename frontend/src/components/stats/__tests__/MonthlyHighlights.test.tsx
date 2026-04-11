@@ -1,83 +1,113 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
-import MonthlyHighlights, { generateHighlights } from '../MonthlyHighlights'
-import type { BudgetMonthlyStatsResponse, ComparisonResponse } from '../../../types'
+import userEvent from '@testing-library/user-event'
+import { generateHighlights } from '../MonthlyHighlights'
+import MonthlyHighlights from '../MonthlyHighlights'
 
-const baseBudget: BudgetMonthlyStatsResponse = {
-  month: '2026-03',
-  total_budget: 500000,
-  total_spent: 400000,
-  categories: [
-    { category_name: '식비', budget_amount: 300000, spent_amount: 240000, remaining_amount: 60000, usage_percentage: 80, is_exceeded: false },
-  ],
-}
-
-const exceededBudget: BudgetMonthlyStatsResponse = {
-  ...baseBudget,
-  categories: [
-    { category_name: '구독', budget_amount: 50000, spent_amount: 55000, remaining_amount: -5000, usage_percentage: 110, is_exceeded: true },
-  ],
-}
-
-const comparison: ComparisonResponse = {
-  current: { label: '3월', total: 400000 },
-  previous: { label: '2월', total: 480000 },
-  change: { amount: -80000, percentage: -16.7 },
-  trend: [],
-  by_category_comparison: [
-    { category: '식비', current: 240000, previous: 180000, change_amount: 60000, change_percentage: 33.3 },
-  ],
+const baseInput = {
+  incomeTotal: 3_500_000,
+  expenseTotal: 1_200_000,
+  savingsTotal: undefined as number | undefined,
+  recurringTotal: undefined as number | undefined,
+  prevSavingsTotal: undefined as number | undefined,
+  budgetStats: null,
+  comparison: null,
 }
 
 describe('generateHighlights', () => {
-  it('적자일 때 경고를 생성한다', () => {
-    const result = generateHighlights({ incomeTotal: 200000, expenseTotal: 250000, budgetStats: null, comparison: null })
-    expect(result.some(h => h.type === 'warning' && h.message.includes('초과'))).toBe(true)
+  it('지출 > 수입이면 적자 경고를 생성한다', () => {
+    const result = generateHighlights({ ...baseInput, incomeTotal: 1_000_000, expenseTotal: 1_200_000 })
+    expect(result[0].type).toBe('warning')
+    expect(result[0].message).toContain('수입을 초과')
   })
 
-  it('예산 초과 카테고리 경고를 생성한다', () => {
-    const result = generateHighlights({ incomeTotal: 500000, expenseTotal: 400000, budgetStats: exceededBudget, comparison: null })
-    expect(result.some(h => h.message.includes('구독'))).toBe(true)
+  it('savingsTotal 기반으로 저축률 달성을 판단한다 (fallback 계산 사용 안 함)', () => {
+    // savingsTotal=700_000 / income=3_500_000 = 20% → 달성
+    const result = generateHighlights({ ...baseInput, savingsTotal: 700_000 })
+    expect(result.some(h => h.message.includes('저축률') && h.type === 'positive')).toBe(true)
   })
 
-  it('저축률 20% 이상일 때 성취 하이라이트를 생성한다', () => {
-    const result = generateHighlights({ incomeTotal: 3200000, expenseTotal: 2400000, budgetStats: null, comparison: null })
-    expect(result.some(h => h.type === 'positive' && h.message.includes('저축률'))).toBe(true)
+  it('savingsTotal 미제공 시 저축률 규칙(#3)을 스킵한다', () => {
+    // net > 0이어도 savingsTotal 없으면 저축률 하이라이트 없음
+    const result = generateHighlights({ ...baseInput, savingsTotal: undefined })
+    expect(result.some(h => h.message.includes('저축률'))).toBe(false)
   })
 
-  it('전월 대비 지출 감소 시 성취 하이라이트를 생성한다', () => {
-    const result = generateHighlights({ incomeTotal: 500000, expenseTotal: 400000, budgetStats: null, comparison })
-    expect(result.some(h => h.type === 'positive' && h.message.includes('줄였'))).toBe(true)
+  it('고정비/수입 >= 40% 시 info 하이라이트를 생성한다 (규칙 #5)', () => {
+    // recurringTotal=1_400_000 / income=3_500_000 = 40%
+    const result = generateHighlights({ ...baseInput, recurringTotal: 1_400_000 })
+    expect(result.some(h => h.message.includes('고정비') && h.type === 'info')).toBe(true)
   })
 
-  it('카테고리 급증 시 일반 하이라이트를 생성한다', () => {
-    const result = generateHighlights({ incomeTotal: 500000, expenseTotal: 400000, budgetStats: null, comparison })
-    expect(result.some(h => h.message.includes('식비') && h.message.includes('33'))).toBe(true)
+  it('전월 대비 저축 감소 시 info 하이라이트를 생성한다 (규칙 #6)', () => {
+    const result = generateHighlights({ ...baseInput, savingsTotal: 300_000, prevSavingsTotal: 500_000 })
+    expect(result.some(h => h.message.includes('저축이 줄었') && h.type === 'info')).toBe(true)
   })
 
-  it('최대 4개만 반환한다', () => {
-    const result = generateHighlights({ incomeTotal: 200000, expenseTotal: 250000, budgetStats: exceededBudget, comparison })
+  it('최대 4개 하이라이트만 반환한다', () => {
+    const result = generateHighlights({
+      incomeTotal: 1_000_000,
+      expenseTotal: 1_200_000,
+      savingsTotal: 0,
+      recurringTotal: 600_000,
+      prevSavingsTotal: 500_000,
+      budgetStats: {
+        month: '2026-04',
+        total_budget: 800_000,
+        total_spent: 1_200_000,
+        categories: [
+          { category_name: '식비', budget_amount: 300_000, spent_amount: 400_000, remaining_amount: -100_000, usage_percentage: 133, is_exceeded: true },
+          { category_name: '교통', budget_amount: 100_000, spent_amount: 150_000, remaining_amount: -50_000, usage_percentage: 150, is_exceeded: true },
+          { category_name: '쇼핑', budget_amount: 200_000, spent_amount: 300_000, remaining_amount: -100_000, usage_percentage: 150, is_exceeded: true },
+        ],
+      },
+      comparison: null,
+    })
     expect(result.length).toBeLessThanOrEqual(4)
-  })
-
-  it('해당 없으면 빈 배열을 반환한다', () => {
-    const result = generateHighlights({ incomeTotal: 0, expenseTotal: 0, budgetStats: null, comparison: null })
-    expect(result).toHaveLength(0)
   })
 })
 
-describe('MonthlyHighlights', () => {
-  it('하이라이트가 없으면 섹션을 렌더링하지 않는다', () => {
-    const { container } = render(
-      <MonthlyHighlights incomeTotal={0} expenseTotal={0} budgetStats={null} comparison={null} />
+describe('MonthlyHighlights 컴포넌트', () => {
+  it('하이라이트 클릭 시 onHighlightClick 콜백이 호출된다', async () => {
+    const user = userEvent.setup()
+    const onHighlightClick = vi.fn()
+    render(
+      <MonthlyHighlights
+        incomeTotal={1_000_000}
+        expenseTotal={1_200_000}
+        budgetStats={null}
+        comparison={null}
+        onHighlightClick={onHighlightClick}
+      />
     )
-    expect(container.firstChild).toBeNull()
+    // 적자 경고가 표시됨
+    const item = screen.getByText(/수입을 초과/)
+    await user.click(item.closest('li')!)
+    // 적자 경고 #1은 딥링크 없음 → 콜백 호출 안 됨
+    expect(onHighlightClick).not.toHaveBeenCalled()
   })
 
-  it('하이라이트가 있으면 섹션 제목을 표시한다', () => {
+  it('예산 초과 하이라이트 클릭 시 section-budget으로 딥링크한다', async () => {
+    const user = userEvent.setup()
+    const onHighlightClick = vi.fn()
     render(
-      <MonthlyHighlights incomeTotal={3200000} expenseTotal={2400000} budgetStats={null} comparison={null} />
+      <MonthlyHighlights
+        incomeTotal={3_500_000}
+        expenseTotal={1_200_000}
+        budgetStats={{
+          month: '2026-04',
+          total_budget: 1_000_000,
+          total_spent: 1_200_000,
+          categories: [
+            { category_name: '식비', budget_amount: 300_000, spent_amount: 400_000, remaining_amount: -100_000, usage_percentage: 133, is_exceeded: true },
+          ],
+        }}
+        comparison={null}
+        onHighlightClick={onHighlightClick}
+      />
     )
-    expect(screen.getByText('💡 이번 달 주목할 점')).toBeInTheDocument()
+    const budgetItem = screen.getByText(/예산을 .* 초과/)
+    await user.click(budgetItem.closest('button')!)
+    expect(onHighlightClick).toHaveBeenCalledWith('section-budget')
   })
 })

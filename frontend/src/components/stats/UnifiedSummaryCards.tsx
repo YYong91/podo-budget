@@ -7,15 +7,12 @@
 import { Link } from 'react-router-dom'
 import { FEATURES } from '../../config/features'
 
-interface UnifiedSummaryCardsProps {
+type UnifiedSummaryCardsProps = {
   incomeTotal: number
   expenseTotal: number
   /** 저축성 지출 합계 (적금, 투자, 보험 등). 제공 시 저축률 = savingsTotal / incomeTotal */
   savingsTotal?: number
   netWorth?: number | null
-  prevNetWorth?: number | null
-  prevIncome?: number | null
-  prevExpense?: number | null
   monthStr?: string
 }
 
@@ -32,40 +29,29 @@ function formatLargeAmount(amount: number): string {
   return formatAmount(amount)
 }
 
-function ChangeIndicator({ current, previous }: { current: number; previous: number }) {
-  const pct = ((current - previous) / Math.abs(previous)) * 100
-  const color = pct >= 0 ? 'text-leaf-600' : 'text-red-600'
-  return (
-    <p className={`text-[10px] mt-0.5 ${color}`}>
-      지난달 {pct >= 0 ? '+' : ''}
-      {pct.toFixed(0)}%
-    </p>
-  )
-}
-
 export default function UnifiedSummaryCards({
   incomeTotal,
   expenseTotal,
   savingsTotal,
   netWorth,
-  prevNetWorth,
-  prevIncome,
-  prevExpense,
   monthStr,
 }: UnifiedSummaryCardsProps) {
   const net = incomeTotal - expenseTotal
-  // savingsTotal이 제공되면 저축성 지출 기반, 아니면 기존 (수입-지출)/수입 방식
-  const savingsRate = incomeTotal > 0
-    ? (savingsTotal !== undefined ? (savingsTotal / incomeTotal) * 100 : (net / incomeTotal) * 100)
+  // savingsTotal이 제공된 경우에만 저축성 지출 기반 저축률 계산 (미제공 시 null → "설정 필요" 안내)
+  const savingsRate = (savingsTotal !== undefined && incomeTotal > 0)
+    ? (savingsTotal / incomeTotal) * 100
     : null
+
+  const SAVINGS_RATE_GOOD_THRESHOLD = 20
+  const SAVINGS_RATE_FAIR_THRESHOLD = 10
 
   const netColor = net >= 0 ? 'text-leaf-600' : 'text-red-600'
   const rateColor =
     savingsRate === null
       ? 'text-[var(--text-muted)]'
-      : savingsRate >= 20
+      : savingsRate >= SAVINGS_RATE_GOOD_THRESHOLD
         ? 'text-leaf-600'
-        : savingsRate >= 10
+        : savingsRate >= SAVINGS_RATE_FAIR_THRESHOLD
           ? 'text-amber-600'
           : 'text-red-600'
 
@@ -78,9 +64,6 @@ export default function UnifiedSummaryCards({
         <Link to="/assets" className={`col-span-2 lg:col-span-4 bg-gradient-to-br from-warm-50 to-warm-100 border border-[var(--border-default)] ${cardBase} text-center`}>
           <p className="text-sm text-[var(--text-tertiary)] mb-0.5">순자산</p>
           <p className="text-xl sm:text-2xl font-bold text-[var(--text-primary)]">{formatLargeAmount(netWorth)}</p>
-          {prevNetWorth != null && prevNetWorth !== 0 && (
-            <ChangeIndicator current={netWorth} previous={prevNetWorth} />
-          )}
         </Link>
       )}
 
@@ -90,9 +73,6 @@ export default function UnifiedSummaryCards({
         <p className="text-xl sm:text-2xl font-bold tracking-tight text-[var(--text-primary)] mt-1">
           {formatAmount(incomeTotal)}
         </p>
-        {prevIncome != null && prevIncome > 0 && (
-          <ChangeIndicator current={incomeTotal} previous={prevIncome} />
-        )}
       </Link>
 
       {/* 총 지출 → 홈 목록 */}
@@ -101,9 +81,6 @@ export default function UnifiedSummaryCards({
         <p className="text-xl sm:text-2xl font-bold tracking-tight text-[var(--text-primary)] mt-1">
           {formatAmount(expenseTotal)}
         </p>
-        {prevExpense != null && prevExpense > 0 && (
-          <ChangeIndicator current={expenseTotal} previous={prevExpense} />
-        )}
       </Link>
 
       {/* 남은 돈 (네비게이션 없음) */}
@@ -114,12 +91,21 @@ export default function UnifiedSummaryCards({
         </p>
       </div>
 
-      {/* 저축률 (네비게이션 없음) */}
+      {/* 저축률 — savingsTotal 미제공 시 카테고리 설정 안내 링크 표시 */}
       <div className={`bg-[var(--surface-card)] border border-[var(--border-default)] rounded-2xl shadow-sm p-4 sm:p-5`}>
         <p className="text-sm text-[var(--text-tertiary)]">저축률</p>
-        <p data-testid="savings-rate-value" className={`text-xl sm:text-2xl font-bold mt-1 ${rateColor}`}>
-          {savingsRate !== null ? `${savingsRate.toFixed(1)}%` : '-'}
-        </p>
+        {savingsRate !== null ? (
+          <p data-testid="savings-rate-value" className={`text-xl sm:text-2xl font-bold mt-1 ${rateColor}`}>
+            {savingsRate.toFixed(1)}%
+          </p>
+        ) : (
+          <Link
+            to="/settings/categories"
+            className="text-sm font-medium text-grape-600 hover:text-grape-700 mt-1 inline-block"
+          >
+            설정 필요
+          </Link>
+        )}
       </div>
     </div>
   )
