@@ -7,7 +7,7 @@
 import { Link } from 'react-router-dom'
 import { FEATURES } from '../../config/features'
 
-interface UnifiedSummaryCardsProps {
+type UnifiedSummaryCardsProps = {
   incomeTotal: number
   expenseTotal: number
   /** 저축성 지출 합계 (적금, 투자, 보험 등). 제공 시 저축률 = savingsTotal / incomeTotal */
@@ -48,13 +48,16 @@ export default function UnifiedSummaryCards({
     ? (savingsTotal / incomeTotal) * 100
     : null
 
+  const SAVINGS_RATE_GOOD_THRESHOLD = 20
+  const SAVINGS_RATE_FAIR_THRESHOLD = 10
+
   const netColor = net >= 0 ? 'text-leaf-600' : 'text-red-600'
   const rateColor =
     savingsRate === null
       ? 'text-[var(--text-muted)]'
-      : savingsRate >= 20
+      : savingsRate >= SAVINGS_RATE_GOOD_THRESHOLD
         ? 'text-leaf-600'
-        : savingsRate >= 10
+        : savingsRate >= SAVINGS_RATE_FAIR_THRESHOLD
           ? 'text-amber-600'
           : 'text-red-600'
 
