@@ -14,12 +14,17 @@ import PaymentMethodManager from '../PaymentMethodManager'
 import { mockPaymentMethods } from '../../mocks/fixtures'
 
 let mockAddToast: ReturnType<typeof vi.fn>
+const mockGoBack = vi.fn()
 
 vi.mock('../../hooks/useToast', () => ({
   useToast: () => ({
     addToast: mockAddToast,
     removeToast: vi.fn(),
   }),
+}))
+
+vi.mock('../../hooks/useGoBack', () => ({
+  useGoBack: () => mockGoBack,
 }))
 
 vi.mock('../../stores/useHouseholdStore', () => ({
@@ -37,9 +42,22 @@ function renderPage() {
 
 beforeEach(() => {
   mockAddToast = vi.fn()
+  mockGoBack.mockReset()
 })
 
 describe('PaymentMethodManager', () => {
+  describe('뒤로가기', () => {
+    it('뒤로가기 버튼 클릭 시 useGoBack을 호출한다', async () => {
+      const user = userEvent.setup()
+      renderPage()
+
+      const backBtn = screen.getByRole('button', { name: '뒤로가기' })
+      await user.click(backBtn)
+
+      expect(mockGoBack).toHaveBeenCalledTimes(1)
+    })
+  })
+
   describe('기본 렌더링', () => {
     it('결제수단 목록을 표시한다', async () => {
       renderPage()
@@ -230,6 +248,47 @@ describe('PaymentMethodManager', () => {
     })
   })
 
+  describe('tabular-nums 스타일', () => {
+    it('실적/목표 금액 span에 tabular-nums 클래스가 있다', async () => {
+      renderPage()
+
+      await waitFor(() => {
+        expect(screen.getByTestId('usage-bar-1')).toBeInTheDocument()
+      })
+
+      // usage-bar-1 안의 첫 번째 span: "22만원 / 30만원" 형태
+      const usageBar = screen.getByTestId('usage-bar-1')
+      const amountSpan = usageBar.querySelector('span')
+      expect(amountSpan).not.toBeNull()
+      expect(amountSpan!.className).toContain('tabular-nums')
+    })
+
+    it('잔여/달성 span에 tabular-nums 클래스가 있다', async () => {
+      renderPage()
+
+      await waitFor(() => {
+        expect(screen.getByTestId('usage-bar-1')).toBeInTheDocument()
+      })
+
+      // usage-bar-1 안의 두 번째 span: "잔여 N원" 또는 "실적 달성"
+      const usageBar = screen.getByTestId('usage-bar-1')
+      const spans = usageBar.querySelectorAll('span')
+      expect(spans.length).toBeGreaterThanOrEqual(2)
+      expect(spans[1].className).toContain('tabular-nums')
+    })
+
+    it('넛지 p 태그에 tabular-nums 클래스가 있다', async () => {
+      renderPage()
+
+      await waitFor(() => {
+        expect(screen.getByTestId('nudge-1')).toBeInTheDocument()
+      })
+
+      const nudge = screen.getByTestId('nudge-1')
+      expect(nudge.className).toContain('tabular-nums')
+    })
+  })
+
   describe('결제수단 추가', () => {
     it('추가 폼을 열고 새 결제수단을 생성한다', async () => {
       const user = userEvent.setup()
@@ -277,8 +336,33 @@ describe('PaymentMethodManager', () => {
     })
   })
 
+  describe('로딩 스켈레톤', () => {
+    it('로딩 중에 bg-warm-200 없이 Skeleton 컴포넌트 카드를 3개 렌더링한다', () => {
+      // 응답을 영구 지연시켜 로딩 상태를 유지한다
+      server.use(
+        http.get('/api/payment-methods', async () => {
+          await new Promise(() => {}) // 절대 resolve 안 함
+          return HttpResponse.json([])
+        })
+      )
+
+      const { container } = renderPage()
+
+      // 로딩 중: 구 방식의 bg-warm-200 클래스가 없어야 한다
+      expect(container.querySelector('.bg-warm-200')).toBeNull()
+
+      // Skeleton 컴포넌트(bg-[var(--skeleton-base)])가 렌더링된다
+      const skeletonElements = container.querySelectorAll('[class*="skeleton-base"]')
+      expect(skeletonElements.length).toBeGreaterThan(0)
+
+      // 로딩 스켈레톤 카드 래퍼 3개가 렌더링된다
+      const skeletonCards = container.querySelectorAll('.space-y-3 > div')
+      expect(skeletonCards.length).toBe(3)
+    })
+  })
+
   describe('빈 상태', () => {
-    it('결제수단이 없으면 안내 메시지를 표시한다', async () => {
+    it('결제수단이 없으면 EmptyState 컴포넌트로 등록 안내를 표시한다', async () => {
       server.use(
         http.get('/api/payment-methods', () => {
           return HttpResponse.json([])
@@ -291,8 +375,35 @@ describe('PaymentMethodManager', () => {
       renderPage()
 
       await waitFor(() => {
-        expect(screen.getByText('결제수단을 추가하면 지출에 태깅할 수 있어요')).toBeInTheDocument()
+        expect(screen.getByText('등록된 결제수단이 없습니다')).toBeInTheDocument()
       })
+      expect(screen.getByText('결제수단을 추가하면 지출 입력 시 태깅할 수 있어요')).toBeInTheDocument()
+    })
+
+    it('빈 상태에서 결제수단 추가 버튼 클릭 시 추가 폼이 열린다', async () => {
+      const user = userEvent.setup()
+      server.use(
+        http.get('/api/payment-methods', () => {
+          return HttpResponse.json([])
+        }),
+        http.get('/api/payment-methods/stats/monthly', () => {
+          return HttpResponse.json([])
+        })
+      )
+
+      renderPage()
+
+      await waitFor(() => {
+        expect(screen.getByText('등록된 결제수단이 없습니다')).toBeInTheDocument()
+      })
+
+      // EmptyState action 버튼은 여러 "결제수단 추가" 버튼 중 첫 번째 (EmptyState 내부)
+      const addButtons = screen.getAllByRole('button', { name: '결제수단 추가' })
+      expect(addButtons.length).toBeGreaterThanOrEqual(1)
+      await user.click(addButtons[0])
+
+      // 추가 폼이 열린다
+      expect(screen.getByPlaceholderText('결제수단 이름')).toBeInTheDocument()
     })
   })
 })

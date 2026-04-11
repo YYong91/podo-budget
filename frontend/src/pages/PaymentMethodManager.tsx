@@ -5,14 +5,16 @@
  */
 
 import { useState, useEffect, useCallback } from 'react'
-import { Link } from 'react-router-dom'
 import { ArrowLeft, CreditCard, Plus, Trash2, Pencil, ChevronUp, ChevronDown } from 'lucide-react'
 import { useToast } from '../hooks/useToast'
+import { useGoBack } from '../hooks/useGoBack'
 import { TOAST } from '../constants/toastMessages'
 import { useHouseholdStore } from '../stores/useHouseholdStore'
 import { paymentMethodApi } from '../api/paymentMethods'
 import { formatAmount } from '../utils/format'
 import type { PaymentMethod, PaymentMethodUsage, PaymentMethodType } from '../types'
+import { Skeleton } from '../components/skeleton/Skeleton'
+import EmptyState from '../components/EmptyState'
 
 const TYPE_LABELS: Record<PaymentMethodType, string> = {
   credit_card: '신용카드',
@@ -36,6 +38,7 @@ function getCurrentMonth(): string {
 
 export default function PaymentMethodManager() {
   const { addToast } = useToast()
+  const goBack = useGoBack('/settings')
   const activeHouseholdId = useHouseholdStore((s) => s.activeHouseholdId)
 
   const [methods, setMethods] = useState<PaymentMethod[]>([])
@@ -209,13 +212,13 @@ export default function PaymentMethodManager() {
       {/* 헤더 */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Link
-            to="/settings"
+          <button
+            onClick={() => goBack()}
             aria-label="뒤로가기"
-            className="p-2 -ml-2 rounded-lg hover:bg-[var(--surface-hover)] transition-colors"
+            className="p-2.5 -ml-2.5 rounded-lg hover:bg-[var(--surface-hover)] transition-colors"
           >
             <ArrowLeft className="w-5 h-5 text-[var(--text-secondary)]" />
-          </Link>
+          </button>
           <div className="flex items-center gap-2">
             <CreditCard className="w-5 h-5 text-grape-500" />
             <h1 className="text-lg font-semibold text-[var(--text-primary)]">결제수단</h1>
@@ -234,10 +237,12 @@ export default function PaymentMethodManager() {
       {/* 로딩 */}
       {loading && (
         <div className="space-y-3">
-          {[...Array(2)].map((_, i) => (
-            <div key={i} className="bg-[var(--surface-card)] rounded-2xl p-4 animate-pulse">
-              <div className="h-4 w-24 bg-warm-200 rounded mb-2" />
-              <div className="h-3 w-16 bg-warm-200 rounded" />
+          {[1, 2, 3].map(i => (
+            <div key={i} className="bg-[var(--surface-card)] rounded-2xl p-4">
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-28" />
+                <Skeleton className="h-3 w-20" />
+              </div>
             </div>
           ))}
         </div>
@@ -245,9 +250,13 @@ export default function PaymentMethodManager() {
 
       {/* 빈 상태 */}
       {!loading && methods.length === 0 && (
-        <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] p-8 text-center">
-          <CreditCard className="w-10 h-10 text-[var(--text-muted)] mx-auto mb-3" />
-          <p className="text-sm font-medium text-[var(--text-secondary)]">결제수단을 추가하면 지출에 태깅할 수 있어요</p>
+        <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)]/60">
+          <EmptyState
+            variant="section"
+            title="등록된 결제수단이 없습니다"
+            description="결제수단을 추가하면 지출 입력 시 태깅할 수 있어요"
+            action={{ label: '결제수단 추가', onClick: () => setShowForm(true) }}
+          />
         </div>
       )}
 
@@ -255,7 +264,7 @@ export default function PaymentMethodManager() {
       {!loading && methods.length > 0 && !editMode && (
         <div className="space-y-4">
           {/* 주 결제수단 드롭다운 */}
-          <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] p-5">
+          <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)]/60 p-5">
             <label htmlFor="primary-payment" className="block text-sm font-semibold text-[var(--text-primary)] mb-2">
               주 결제수단
             </label>
@@ -291,7 +300,7 @@ export default function PaymentMethodManager() {
                   <div
                     key={method.id}
                     data-testid={`payment-method-${method.id}`}
-                    className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] p-4"
+                    className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)]/60 p-4"
                   >
                     <div className="flex items-center justify-between mb-1">
                       <div className="flex items-center gap-2">
@@ -307,10 +316,10 @@ export default function PaymentMethodManager() {
                     {hasTarget && usage && (
                       <div className="mt-2" data-testid={`usage-bar-${method.id}`}>
                         <div className="flex justify-between items-center mb-1">
-                          <span className="text-xs text-[var(--text-secondary)]">
+                          <span className="text-xs text-[var(--text-secondary)] tabular-nums">
                             {formatAmount(usage.spent_amount)} / {formatAmount(method.monthly_target!)}
                           </span>
-                          <span className={`text-xs ${isAchieved ? 'text-leaf-600 font-medium' : 'text-[var(--text-muted)]'}`}>
+                          <span className={`text-xs tabular-nums ${isAchieved ? 'text-leaf-600 font-medium' : 'text-[var(--text-muted)]'}`}>
                             {isAchieved ? '실적 달성' : `잔여 ${formatAmount(usage.remaining ?? 0)}`}
                           </span>
                         </div>
@@ -328,7 +337,7 @@ export default function PaymentMethodManager() {
                         </div>
                         {/* 실적 넛지 */}
                         {!isAchieved && remaining !== null && remaining > 0 && (
-                          <p className="text-xs text-grape-600 mt-1" data-testid={`nudge-${method.id}`}>
+                          <p className="text-xs text-grape-600 mt-1 tabular-nums" data-testid={`nudge-${method.id}`}>
                             실적까지 {formatAmount(remaining)} 남음
                           </p>
                         )}
@@ -349,7 +358,7 @@ export default function PaymentMethodManager() {
             <div
               key={method.id}
               data-testid={`payment-method-${method.id}`}
-              className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] p-4"
+              className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)]/60 p-4"
             >
               {/* 편집 중인 항목 */}
               {editingMethod?.id === method.id ? (
@@ -448,7 +457,7 @@ export default function PaymentMethodManager() {
 
       {/* 추가 폼 */}
       {showForm && (
-        <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] p-5 space-y-4">
+        <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)]/60 p-5 space-y-4">
           <h2 className="text-sm font-semibold text-[var(--text-primary)]">새 결제수단</h2>
 
           <div>

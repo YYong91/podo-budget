@@ -96,12 +96,18 @@ describe('SettingsPage', () => {
       expect(screen.getByText('카테고리')).toBeInTheDocument()
     })
 
+    it('정기거래 메뉴 항목이 있고 반복 거래 라는 구 용어는 없다', () => {
+      renderSettingsPage()
+      expect(screen.getByText('정기거래')).toBeInTheDocument()
+      expect(screen.queryByText('반복 거래')).not.toBeInTheDocument()
+    })
+
     it('10개 메뉴 항목을 표시한다 (약관/개인정보는 독립 메뉴에서 제거됨)', () => {
       renderSettingsPage()
       expect(screen.getByText('카테고리')).toBeInTheDocument()
       expect(screen.getByText('예산 관리')).toBeInTheDocument()
       expect(screen.getByText('결제수단')).toBeInTheDocument()
-      expect(screen.getByText('반복 거래')).toBeInTheDocument()
+      expect(screen.getByText('정기거래')).toBeInTheDocument()
       expect(screen.getByText('공유 가계부')).toBeInTheDocument()
       expect(screen.getByText('화면 모드')).toBeInTheDocument()
       expect(screen.getByText('내 계정')).toBeInTheDocument()
