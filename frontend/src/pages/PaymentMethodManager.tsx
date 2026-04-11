@@ -307,10 +307,10 @@ export default function PaymentMethodManager() {
                     {hasTarget && usage && (
                       <div className="mt-2" data-testid={`usage-bar-${method.id}`}>
                         <div className="flex justify-between items-center mb-1">
-                          <span className="text-xs text-[var(--text-secondary)]">
+                          <span className="text-xs text-[var(--text-secondary)] tabular-nums">
                             {formatAmount(usage.spent_amount)} / {formatAmount(method.monthly_target!)}
                           </span>
-                          <span className={`text-xs ${isAchieved ? 'text-leaf-600 font-medium' : 'text-[var(--text-muted)]'}`}>
+                          <span className={`text-xs tabular-nums ${isAchieved ? 'text-leaf-600 font-medium' : 'text-[var(--text-muted)]'}`}>
                             {isAchieved ? '실적 달성' : `잔여 ${formatAmount(usage.remaining ?? 0)}`}
                           </span>
                         </div>
@@ -328,7 +328,7 @@ export default function PaymentMethodManager() {
                         </div>
                         {/* 실적 넛지 */}
                         {!isAchieved && remaining !== null && remaining > 0 && (
-                          <p className="text-xs text-grape-600 mt-1" data-testid={`nudge-${method.id}`}>
+                          <p className="text-xs text-grape-600 mt-1 tabular-nums" data-testid={`nudge-${method.id}`}>
                             실적까지 {formatAmount(remaining)} 남음
                           </p>
                         )}

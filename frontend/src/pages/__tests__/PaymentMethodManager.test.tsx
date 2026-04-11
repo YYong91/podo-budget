@@ -230,6 +230,47 @@ describe('PaymentMethodManager', () => {
     })
   })
 
+  describe('tabular-nums 스타일', () => {
+    it('실적/목표 금액 span에 tabular-nums 클래스가 있다', async () => {
+      renderPage()
+
+      await waitFor(() => {
+        expect(screen.getByTestId('usage-bar-1')).toBeInTheDocument()
+      })
+
+      // usage-bar-1 안의 첫 번째 span: "22만원 / 30만원" 형태
+      const usageBar = screen.getByTestId('usage-bar-1')
+      const amountSpan = usageBar.querySelector('span')
+      expect(amountSpan).not.toBeNull()
+      expect(amountSpan!.className).toContain('tabular-nums')
+    })
+
+    it('잔여/달성 span에 tabular-nums 클래스가 있다', async () => {
+      renderPage()
+
+      await waitFor(() => {
+        expect(screen.getByTestId('usage-bar-1')).toBeInTheDocument()
+      })
+
+      // usage-bar-1 안의 두 번째 span: "잔여 N원" 또는 "실적 달성"
+      const usageBar = screen.getByTestId('usage-bar-1')
+      const spans = usageBar.querySelectorAll('span')
+      expect(spans.length).toBeGreaterThanOrEqual(2)
+      expect(spans[1].className).toContain('tabular-nums')
+    })
+
+    it('넛지 p 태그에 tabular-nums 클래스가 있다', async () => {
+      renderPage()
+
+      await waitFor(() => {
+        expect(screen.getByTestId('nudge-1')).toBeInTheDocument()
+      })
+
+      const nudge = screen.getByTestId('nudge-1')
+      expect(nudge.className).toContain('tabular-nums')
+    })
+  })
+
   describe('결제수단 추가', () => {
     it('추가 폼을 열고 새 결제수단을 생성한다', async () => {
       const user = userEvent.setup()
