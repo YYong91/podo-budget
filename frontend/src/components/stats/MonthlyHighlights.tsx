@@ -141,14 +141,19 @@ export default function MonthlyHighlights({
       <h2 className="text-base font-semibold text-[var(--text-primary)] mb-3">💡 이번 달 주목할 점</h2>
       <ul className="space-y-2">
         {highlights.map((h, i) => (
-          <li
-            key={i}
-            className={`text-sm flex items-start gap-2 ${colorMap[h.type]} ${h.deeplink ? 'cursor-pointer hover:opacity-80' : ''}`}
-            onClick={() => h.deeplink && onHighlightClick?.(h.deeplink)}
-          >
+          <li key={i} className={`text-sm flex items-start gap-2 ${colorMap[h.type]}`}>
             <span className="mt-0.5 flex-shrink-0">{iconMap[h.type]}</span>
-            <span>{h.message}</span>
-            {h.deeplink && <span className="ml-auto text-xs opacity-50">→</span>}
+            {h.deeplink ? (
+              <button
+                onClick={() => onHighlightClick?.(h.deeplink!)}
+                className="flex-1 flex items-center gap-1 text-left hover:opacity-80 cursor-pointer"
+              >
+                <span>{h.message}</span>
+                <span className="ml-auto text-xs opacity-50">→</span>
+              </button>
+            ) : (
+              <span>{h.message}</span>
+            )}
           </li>
         ))}
       </ul>

@@ -531,8 +531,6 @@ export default function InsightsPage() {
             incomeTotal={incomeStats?.total ?? 0}
             expenseTotal={expenseStats?.total ?? 0}
             savingsTotal={savingsTotal}
-            prevIncome={incomeComparison?.previous?.total ?? null}
-            prevExpense={comparison?.previous?.total ?? null}
             monthStr={monthStr}
           />
 

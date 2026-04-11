@@ -107,7 +107,7 @@ describe('MonthlyHighlights 컴포넌트', () => {
       />
     )
     const budgetItem = screen.getByText(/예산을 .* 초과/)
-    await user.click(budgetItem.closest('li')!)
+    await user.click(budgetItem.closest('button')!)
     expect(onHighlightClick).toHaveBeenCalledWith('section-budget')
   })
 })

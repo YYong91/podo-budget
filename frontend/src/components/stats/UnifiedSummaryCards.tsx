@@ -13,9 +13,6 @@ type UnifiedSummaryCardsProps = {
   /** 저축성 지출 합계 (적금, 투자, 보험 등). 제공 시 저축률 = savingsTotal / incomeTotal */
   savingsTotal?: number
   netWorth?: number | null
-  prevNetWorth?: number | null
-  prevIncome?: number | null
-  prevExpense?: number | null
   monthStr?: string
 }
 
@@ -37,9 +34,6 @@ export default function UnifiedSummaryCards({
   expenseTotal,
   savingsTotal,
   netWorth,
-  prevNetWorth: _prevNetWorth,
-  prevIncome: _prevIncome,
-  prevExpense: _prevExpense,
   monthStr,
 }: UnifiedSummaryCardsProps) {
   const net = incomeTotal - expenseTotal
