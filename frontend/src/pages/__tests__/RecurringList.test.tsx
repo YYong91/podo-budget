@@ -325,7 +325,7 @@ describe('RecurringList', () => {
     const deleteBtns = screen.getAllByTitle('삭제')
     await user.click(deleteBtns[0])
 
-    const deleteModal = screen.getByText('정기거래 삭제').closest('div')!
+    const deleteModal = screen.getByRole('dialog')
     expect(deleteModal).toBeInTheDocument()
     await user.click(within(deleteModal).getByRole('button', { name: '취소' }))
 
@@ -350,7 +350,7 @@ describe('RecurringList', () => {
     const deleteBtns = screen.getAllByTitle('삭제')
     await user.click(deleteBtns[0])
 
-    const deleteModal = screen.getByText('정기거래 삭제').closest('div')!
+    const deleteModal = screen.getByRole('dialog')
     expect(deleteModal).toBeInTheDocument()
     await user.click(within(deleteModal).getByRole('button', { name: '삭제' }))
 
@@ -564,7 +564,7 @@ describe('RecurringList', () => {
     const deleteBtns = screen.getAllByTitle('삭제')
     await user.click(deleteBtns[0])
 
-    const deleteModal = screen.getByText('정기거래 삭제').closest('div')!
+    const deleteModal = screen.getByRole('dialog')
     expect(deleteModal).toBeInTheDocument()
     await user.click(within(deleteModal).getByRole('button', { name: '삭제' }))
 

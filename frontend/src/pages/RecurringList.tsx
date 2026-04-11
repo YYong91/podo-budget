@@ -410,8 +410,16 @@ export default function RecurringList() {
       {/* 삭제 확인 모달 */}
       {deleteTargetId !== null && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-[var(--surface-card)] rounded-2xl shadow-xl max-w-md w-full p-6">
-            <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-2">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="delete-recurring-modal-title"
+            className="bg-[var(--surface-card)] rounded-2xl shadow-xl max-w-md w-full p-6"
+          >
+            <h3
+              id="delete-recurring-modal-title"
+              className="text-lg font-semibold text-[var(--text-primary)] mb-2"
+            >
               정기거래 삭제
             </h3>
             <p className="text-[var(--text-secondary)] mb-6">
