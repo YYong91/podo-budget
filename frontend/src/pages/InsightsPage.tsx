@@ -28,7 +28,6 @@ import { categoryApi } from '../api/categories'
 import { paymentMethodApi } from '../api/paymentMethods'
 import { recurringApi } from '../api/recurring'
 import { useHouseholdStore } from '../stores/useHouseholdStore'
-import { FEATURES } from '../config/features'
 
 // 컴포넌트
 import PeriodNavigator from '../components/stats/PeriodNavigator'
@@ -38,7 +37,6 @@ import CategoryTopList from '../components/stats/CategoryTopList'
 import BudgetVsActual from '../components/stats/BudgetVsActual'
 import RecurringManageSection from '../components/stats/RecurringManageSection'
 import CardUsageSummary from '../components/stats/CardUsageSummary'
-import AssetChangeSummary from '../components/stats/AssetChangeSummary'
 import MonthlyHighlights from '../components/stats/MonthlyHighlights'
 import StructuredInsightsView from '../components/stats/StructuredInsightsView'
 import SectionToggleModal, {
@@ -117,6 +115,11 @@ function InsightsPageSkeleton() {
     </div>
   )
 }
+
+// ── 상수 ──
+
+/** 풀 리포트 생성을 위한 최소 거래 건수 */
+const FULL_REPORT_THRESHOLD = 5
 
 // ── 메인 페이지 ──
 
@@ -315,9 +318,10 @@ export default function InsightsPage() {
   }, [expenseCategories, expenseStats])
 
   // 고정비 총액 (MonthlyHighlights 규칙 #5 — 고정비 비율 40% 이상 경고용)
+  // activeRecurringItems는 이미 is_active === true 필터 적용됨 → r.is_active 중복 체크 불필요
   const recurringTotal = useMemo(() => {
     return activeRecurringItems
-      .filter(r => r.type === 'expense' && r.is_active)
+      .filter(r => r.type === 'expense')
       .reduce((sum, r) => sum + r.amount, 0)
   }, [activeRecurringItems])
 
@@ -485,7 +489,7 @@ export default function InsightsPage() {
       )}
 
       {/* 온보딩 모드 — 거래 1~4건: 풀 리포트 대신 셋업 가이드 표시 */}
-      {!loading && !error && transactionCount > 0 && transactionCount < 5 && (
+      {!loading && !error && transactionCount > 0 && transactionCount < FULL_REPORT_THRESHOLD && (
         <InsightsOnboarding
           hasTransactions={false}
           hasBudget={!!budgetStats?.total_budget}
@@ -495,7 +499,7 @@ export default function InsightsPage() {
       )}
 
       {/* 풀 리포트 — 거래 5건 이상 */}
-      {!loading && !error && transactionCount >= 5 && (
+      {!loading && !error && transactionCount >= FULL_REPORT_THRESHOLD && (
         <>
           {/* Layer 0: 히어로 — 이달 지출 총액 + 예산 프로그레스바 */}
           <HeroSummary
@@ -565,11 +569,6 @@ export default function InsightsPage() {
               incomeTotal={incomeStats?.total ?? 0}
               savingsCategories={savingsCategories}
             />
-          )}
-
-          {/* 자산 변화 — 플래그 비활성 시 섹션 전체 미표시 */}
-          {FEATURES.assets && sectionVisibility.assets && (
-            <AssetChangeSummary summary={null} previousSnapshot={null} />
           )}
 
           {/* Layer 3: 돌아보기 */}
