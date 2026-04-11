@@ -8,13 +8,13 @@
 
 import type { BudgetMonthlyStatsResponse, ComparisonResponse } from '../../types'
 
-interface Highlight {
+type Highlight = {
   type: 'warning' | 'positive' | 'info'
   message: string
   deeplink: string | null
 }
 
-interface HighlightInput {
+type HighlightInput = {
   incomeTotal: number
   expenseTotal: number
   savingsTotal?: number       // 실제 저축액 (수입 - 지출 - 정기지출 등 정확한 값)
@@ -115,7 +115,7 @@ export function generateHighlights({
   ].slice(0, 4)
 }
 
-interface MonthlyHighlightsProps {
+type MonthlyHighlightsProps = {
   incomeTotal: number
   expenseTotal: number
   savingsTotal?: number
