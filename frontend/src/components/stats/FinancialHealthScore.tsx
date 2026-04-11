@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import type { HealthScore } from '../../types'
 
-interface FinancialHealthScoreProps {
+type FinancialHealthScoreProps = {
   score: HealthScore | null
   variant?: 'full' | 'badge'
 }

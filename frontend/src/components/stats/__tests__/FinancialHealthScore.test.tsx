@@ -56,6 +56,9 @@ describe('FinancialHealthScore', () => {
       // savings=35 → red, spending=55 → amber, debt=75 → grape
       const bars = container.querySelectorAll('.rounded-full.transition-all')
       expect(bars.length).toBe(3)
+      expect(bars[0]).toHaveClass('bg-red-500')    // savings=35
+      expect(bars[1]).toHaveClass('bg-amber-500')  // spending=55
+      expect(bars[2]).toHaveClass('bg-grape-500')  // debt=75
     })
   })
 
