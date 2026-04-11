@@ -159,13 +159,15 @@
 
 **딥링크 기능 (신규):**
 - 각 하이라이트 항목 탭 시 관련 섹션으로 스크롤 점프
+- 구현 방식: `id` 기반 (`document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' })`)
+  - `id="section-category"`, `id="section-budget"`, `id="section-savings"`, `id="section-recurring"`, `id="section-comparison"` 각 섹션 루트에 부여
 - 적자 경고 (#1) → 클릭 불가 (딥링크 없음)
-- 예산 초과 (#2) → 예산 대비 현황 섹션
-- 저축률 달성 (#3) → 저축 섹션
-- 지출 감소 (#4) → Layer 3 전월 대비 섹션
-- 고정비 비율 (#5) → 고정 지출 섹션
-- 저축 감소 (#6) → 저축 섹션
-- 카테고리 급증 (#7) → 지출 카테고리 섹션
+- 예산 초과 (#2) → `section-budget`
+- 저축률 달성 (#3) → `section-savings`
+- 지출 감소 (#4) → `section-comparison`
+- 고정비 비율 (#5) → `section-recurring`
+- 저축 감소 (#6) → `section-savings`
+- 카테고리 급증 (#7) → `section-category`
 
 ### 1-3. 종합 요약 카드
 
@@ -182,6 +184,7 @@
 - ChangeIndicator 제거 (Layer 3 전월 대비 섹션으로 이동)
 - 저축률: is_savings 카테고리 미설정 시 "-" 대신 "설정 필요" 표시 + 탭하면 카테고리 설정으로 이동
 - fallback 계산 `(수입-지출)/수입` 제거, is_savings 기반만 사용
+- **의도적 UX 변경**: is_savings 미설정 사용자는 기존에 보이던 저축률이 사라짐. 올바른 데이터 기반 수치만 표시하는 정책으로 전환 (잘못된 fallback 제거 목적)
 - 순자산 카드: FEATURES.assets=true일 때만 5번째 카드로 표시 (기존 유지)
 - 5카드 모바일 레이아웃: 순자산 full-width(col-span-2) + 나머지 2x2 → 3행 구성
 
@@ -396,8 +399,8 @@ type SectionVisibility = {
 
 | 컴포넌트 | 변경 유형 | 설명 |
 |----------|----------|------|
-| InsightsPage.tsx | **대폭 수정** | 렌더 순서 변경, Layer 구분, 온보딩 분기, 스크롤 ref 추가 |
-| HeroSummary.tsx | **수정** | 건강 점수 배지 추가, 전월 비교 문장, 예산 유도 카드 |
+| InsightsPage.tsx | **대폭 수정** | 렌더 순서 변경, Layer 구분, 온보딩 분기, `id` 기반 딥링크, HeroSummary 호출을 레거시→신규 props로 마이그레이션 (`totalBudget` + `pendingRecurringExpense` 파생 추가) |
+| HeroSummary.tsx | **수정** | 건강 점수 배지 추가, 전월 비교 문장, 예산 유도 카드. 레거시 모드(`LegacyHeroSummaryProps`) 삭제 및 신규 모드 단일화 |
 | MonthlyHighlights.tsx | **수정** | savingsTotal props 추가, 신규 규칙 2개, 딥링크 콜백 |
 | UnifiedSummaryCards.tsx | **수정** | ChangeIndicator 제거, 저축률 fallback 제거, 스크롤 콜백 |
 | CategoryTopList.tsx | **스타일만** | 카드 스타일 통일 |
@@ -405,7 +408,7 @@ type SectionVisibility = {
 | RecurringManageSection.tsx | **수정** | 리프레이밍 (고정비 총액 헤더), 기본 접힘, 빈 상태 유도 |
 | CardUsageSummary.tsx | **스타일만** | 프로그레스 바 통일 |
 | AssetChangeSummary.tsx | **스타일만** | 카드 스타일 통일 |
-| FinancialHealthScore.tsx | **수정** | 소형 배지 모드 추가 (히어로용), 바텀시트 트리거 |
+| FinancialHealthScore.tsx | **수정** | 소형 배지 모드 추가 (히어로용), 바텀시트 트리거. AI 섹션 카드에서 제거 (히어로로 이동) |
 | StructuredInsightsView.tsx | **스타일만** | 카드 스타일 통일 |
 | SectionToggleModal.tsx | **수정** | Layer 그룹핑, comparison/savings 항목 추가 |
 | **SavingsSection.tsx** | **신규** | 저축 섹션 컴포넌트 |
@@ -433,7 +436,7 @@ type SectionVisibility = {
 ### 신규 데이터 필요
 - **trend 데이터 활용**: comparison API의 `trend` 필드 — 이미 반환되고 있으나 프론트에서 미사용. 스파크라인에 활용.
 - **저축 전월 대비**: is_savings 카테고리 지출의 전월 비교 — 기존 by_category_comparison에서 필터링 가능.
-- **온보딩 판단**: 당월 거래 건수 — expenseStats.count + incomeStats.count로 판단 가능.
+- **온보딩 판단**: 당월 거래 건수 — `expenseStats.count + incomeStats.count`로 판단 가능. `StatsResponse` 타입에 `count` 필드 존재 확인됨.
 
 ### 백엔드 변경 불필요
 모든 신규 기능이 기존 API 데이터의 재조합으로 구현 가능.
