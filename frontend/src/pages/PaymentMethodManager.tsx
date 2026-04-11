@@ -250,7 +250,7 @@ export default function PaymentMethodManager() {
 
       {/* 빈 상태 */}
       {!loading && methods.length === 0 && (
-        <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] ">
+        <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)]/60">
           <EmptyState
             variant="section"
             title="등록된 결제수단이 없습니다"
@@ -264,7 +264,7 @@ export default function PaymentMethodManager() {
       {!loading && methods.length > 0 && !editMode && (
         <div className="space-y-4">
           {/* 주 결제수단 드롭다운 */}
-          <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] p-5">
+          <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)]/60 p-5">
             <label htmlFor="primary-payment" className="block text-sm font-semibold text-[var(--text-primary)] mb-2">
               주 결제수단
             </label>
@@ -300,7 +300,7 @@ export default function PaymentMethodManager() {
                   <div
                     key={method.id}
                     data-testid={`payment-method-${method.id}`}
-                    className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] p-4"
+                    className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)]/60 p-4"
                   >
                     <div className="flex items-center justify-between mb-1">
                       <div className="flex items-center gap-2">
@@ -358,7 +358,7 @@ export default function PaymentMethodManager() {
             <div
               key={method.id}
               data-testid={`payment-method-${method.id}`}
-              className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] p-4"
+              className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)]/60 p-4"
             >
               {/* 편집 중인 항목 */}
               {editingMethod?.id === method.id ? (
@@ -457,7 +457,7 @@ export default function PaymentMethodManager() {
 
       {/* 추가 폼 */}
       {showForm && (
-        <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] p-5 space-y-4">
+        <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)]/60 p-5 space-y-4">
           <h2 className="text-sm font-semibold text-[var(--text-primary)]">새 결제수단</h2>
 
           <div>
