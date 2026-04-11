@@ -136,7 +136,9 @@ describe('HouseholdListPage', () => {
 
       renderHouseholdList()
 
-      expect(screen.getByRole('button', { name: '가구 만들기' })).toBeInTheDocument()
+      // 헤더 버튼 + EmptyState 버튼 두 곳에 표시됨
+      const buttons = screen.getAllByRole('button', { name: '가구 만들기' })
+      expect(buttons.length).toBeGreaterThanOrEqual(1)
     })
 
     it('빈 상태에서 받은 초대 확인 버튼을 표시한다', () => {
@@ -206,7 +208,7 @@ describe('HouseholdListPage', () => {
       expect(screen.getByText('멤버')).toBeInTheDocument()
     })
 
-    it('+ 가구 만들기 버튼을 표시한다', () => {
+    it('헤더에 가구 만들기 버튼을 표시한다', () => {
       storeState = {
         households: mockHouseholds,
         isLoading: false,
@@ -215,12 +217,39 @@ describe('HouseholdListPage', () => {
 
       renderHouseholdList()
 
-      expect(screen.getByRole('button', { name: '+ 가구 만들기' })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: '가구 만들기' })).toBeInTheDocument()
+    })
+
+    it('가구 만들기 버튼이 Plus 아이콘 SVG를 포함한다', () => {
+      storeState = {
+        households: mockHouseholds,
+        isLoading: false,
+        error: null,
+      }
+
+      renderHouseholdList()
+
+      const btn = screen.getByRole('button', { name: '가구 만들기' })
+      expect(btn.querySelector('svg')).toBeInTheDocument()
+    })
+
+    it('가구 만들기 버튼에 텍스트 + 문자가 없다', () => {
+      storeState = {
+        households: mockHouseholds,
+        isLoading: false,
+        error: null,
+      }
+
+      renderHouseholdList()
+
+      // textContent에 '+ 가구 만들기'가 아니라 '가구 만들기'만 있어야 함
+      const btn = screen.getByRole('button', { name: '가구 만들기' })
+      expect(btn.textContent?.trim()).toBe('가구 만들기')
     })
   })
 
   describe('가구 만들기 모달', () => {
-    it('+ 가구 만들기 버튼 클릭 시 모달을 표시한다', async () => {
+    it('가구 만들기 버튼 클릭 시 모달을 표시한다', async () => {
       const user = userEvent.setup()
       storeState = {
         households: mockHouseholds,
@@ -230,7 +259,7 @@ describe('HouseholdListPage', () => {
 
       renderHouseholdList()
 
-      await user.click(screen.getByRole('button', { name: '+ 가구 만들기' }))
+      await user.click(screen.getByRole('button', { name: '가구 만들기' }))
 
       expect(screen.getByText('새 가구 만들기')).toBeInTheDocument()
     })
@@ -320,7 +349,7 @@ describe('HouseholdListPage', () => {
 
       renderHouseholdList()
 
-      await user.click(screen.getByRole('button', { name: '+ 가구 만들기' }))
+      await user.click(screen.getByRole('button', { name: '가구 만들기' }))
 
       // 모달에서 가구 이름 입력
       const nameInput = screen.getByLabelText(/가구 이름/)
@@ -348,7 +377,7 @@ describe('HouseholdListPage', () => {
 
       renderHouseholdList()
 
-      await user.click(screen.getByRole('button', { name: '+ 가구 만들기' }))
+      await user.click(screen.getByRole('button', { name: '가구 만들기' }))
 
       const nameInput = screen.getByLabelText(/가구 이름/)
       await user.type(nameInput, '실패 가구')
