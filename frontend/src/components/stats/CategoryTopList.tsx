@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ChevronDown, ChevronUp, BarChart3, PieChart as PieChartIcon } from 'lucide-react'
-
-const SINGLE_CATEGORY_THRESHOLD = 1
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts'
 import type { CategoryStats } from '../../types'
 import { formatAmount } from '../../utils/format'
+
+// 카테고리가 이 수 이하이면 분석이 의미없어 추가 유도 메시지를 표시한다
+const MIN_CATEGORIES_FOR_ANALYSIS = 2
 
 interface CategoryTopListProps {
   categories: CategoryStats[]
@@ -127,8 +128,8 @@ export default function CategoryTopList({ categories, maxItems = 5, monthStr }: 
         </>
       )}
 
-      {/* 카테고리 1개일 때 추가 유도 — 분석이 의미 없는 상태 */}
-      {categories.length <= SINGLE_CATEGORY_THRESHOLD && (
+      {/* 카테고리가 1개 이하이면 분석이 의미없어 추가 유도 메시지 표시 */}
+      {categories.length < MIN_CATEGORIES_FOR_ANALYSIS && (
         <p className="text-xs text-[var(--text-tertiary)] mt-2">
           카테고리를 더 추가하면 지출 패턴을 파악하기 쉬워요.{' '}
           <Link to="/settings/categories" className="text-grape-600 hover:text-grape-700">
