@@ -5,6 +5,9 @@ import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts'
 import type { CategoryStats } from '../../types'
 import { formatAmount } from '../../utils/format'
 
+// 카테고리가 이 수 이하이면 분석이 의미없어 추가 유도 메시지를 표시한다
+const MIN_CATEGORIES_FOR_ANALYSIS = 2
+
 interface CategoryTopListProps {
   categories: CategoryStats[]
   maxItems?: number
@@ -62,7 +65,7 @@ export default function CategoryTopList({ categories, maxItems = 5, monthStr }: 
     <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] p-4 sm:p-6">
       {/* 헤더: 제목 + 탭 전환 */}
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-semibold text-[var(--text-secondary)]">지출 카테고리</h3>
+        <h2 className="text-base font-semibold text-[var(--text-primary)]">📋 지출 카테고리</h2>
         <div className="flex items-center gap-1 bg-[var(--surface-elevated)] rounded-lg p-0.5">
           <button
             onClick={() => setViewMode('list')}
@@ -123,6 +126,16 @@ export default function CategoryTopList({ categories, maxItems = 5, monthStr }: 
             </button>
           )}
         </>
+      )}
+
+      {/* 카테고리가 1개 이하이면 분석이 의미없어 추가 유도 메시지 표시 */}
+      {categories.length < MIN_CATEGORIES_FOR_ANALYSIS && (
+        <p className="text-xs text-[var(--text-tertiary)] mt-2">
+          카테고리를 더 추가하면 지출 패턴을 파악하기 쉬워요.{' '}
+          <Link to="/settings/categories" className="text-grape-600 hover:text-grape-700">
+            카테고리 설정
+          </Link>
+        </p>
       )}
 
       {/* 그래프 뷰 */}

@@ -26,7 +26,7 @@ describe('SectionToggleModal', () => {
         onClose={vi.fn()}
       />
     )
-    expect(screen.getByText('뜯어보기')).toBeInTheDocument()
+    expect(screen.getByText('들여다보기')).toBeInTheDocument()
     expect(screen.getByText('돌아보기')).toBeInTheDocument()
   })
 

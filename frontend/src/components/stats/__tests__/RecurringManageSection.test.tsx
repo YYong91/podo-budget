@@ -134,6 +134,12 @@ describe('RecurringManageSection', () => {
 
   it('관리 링크가 /recurring으로 연결된다', () => {
     wrap(<RecurringManageSection items={[makeItem({})]} monthStr={MONTH_STR} executedAmountMap={EMPTY_MAP} />)
-    expect(screen.getByText('관리 →').closest('a')).toHaveAttribute('href', '/recurring')
+    expect(screen.getByRole('link', { name: '관리' }).closest('a')).toHaveAttribute('href', '/recurring')
+  })
+
+  it('헤더에 이모지가 포함된다', () => {
+    wrap(<RecurringManageSection items={[makeItem({})]} monthStr={MONTH_STR} executedAmountMap={EMPTY_MAP} />)
+    const heading = screen.getByRole('heading', { name: /정기거래/ })
+    expect(heading.textContent).toMatch(/🔄/)
   })
 })

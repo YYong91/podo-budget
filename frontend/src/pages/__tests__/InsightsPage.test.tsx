@@ -61,7 +61,7 @@ describe('InsightsPage', () => {
   it('지출 카테고리가 표시된다', async () => {
     renderWithQuery(<InsightsPage />)
     await waitFor(() => {
-      expect(screen.getByText('지출 카테고리')).toBeInTheDocument()
+      expect(screen.getByRole('heading', { name: /지출 카테고리/ })).toBeInTheDocument()
     })
   })
 
@@ -154,7 +154,7 @@ describe('InsightsPage', () => {
     })
 
     const highlights = screen.getByText(/이번 달 주목할 점/)
-    const categoryTop = screen.getByText('지출 카테고리')
+    const categoryTop = screen.getByRole('heading', { name: /지출 카테고리/ })
 
     // 주목할 점이 카테고리 TOP보다 DOM에서 먼저 나온다
     expect(highlights.compareDocumentPosition(categoryTop) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
@@ -286,7 +286,7 @@ describe('InsightsPage', () => {
     // 주목할 점 섹션이 숨겨져 있다
     expect(screen.queryByText(/이번 달 주목할 점/)).not.toBeInTheDocument()
     // 다른 섹션은 정상 표시
-    expect(screen.getByText('지출 카테고리')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: /지출 카테고리/ })).toBeInTheDocument()
   })
 
   it('거래 건수 5건 미만이면 InsightsOnboarding을 표시한다', async () => {
@@ -304,10 +304,48 @@ describe('InsightsPage', () => {
     })
   })
 
-  it('Layer 구분자 "뜯어보기"가 표시된다', async () => {
+  it('Layer 구분자 "들여다보기"가 표시된다', async () => {
     renderWithQuery(<InsightsPage />)
     await waitFor(() => {
-      expect(screen.getByText('뜯어보기')).toBeInTheDocument()
+      expect(screen.getByText('들여다보기')).toBeInTheDocument()
+    })
+  })
+
+  it('주목할 점이 요약 카드(총 수입)보다 먼저 렌더된다', async () => {
+    // 지출 10% 이상 감소로 MonthlyHighlights 표시 유도
+    server.use(
+      http.get('*/expenses/stats/comparison', () =>
+        HttpResponse.json({
+          current: { label: '2024년 1월', total: 50000 },
+          previous: { label: '2023년 12월', total: 60000 },
+          change: { amount: -10000, percentage: -16.7 },
+          trend: [],
+          by_category_comparison: [],
+        })
+      )
+    )
+    renderWithQuery(<InsightsPage />)
+    await waitFor(() => {
+      expect(screen.getByText(/이번 달 주목할 점/)).toBeInTheDocument()
+    })
+    const allText = document.body.textContent ?? ''
+    const highlightsIdx = allText.indexOf('이번 달 주목할 점')
+    const summaryIdx = allText.indexOf('총 수입')
+    expect(highlightsIdx).toBeLessThan(summaryIdx)
+  })
+
+  it('거래 건수 5건 미만이면 InsightsOnboarding을 표시한다', async () => {
+    server.use(
+      http.get('/api/expenses/stats', () =>
+        HttpResponse.json({ ...{ total: 8000, count: 2, by_category: [], daily_trend: [] }, count: 2 })
+      ),
+      http.get('/api/income/stats', () =>
+        HttpResponse.json({ ...{ total: 0, count: 0, by_category: [], daily_trend: [] }, count: 0 })
+      ),
+    )
+    renderWithQuery(<InsightsPage />)
+    await waitFor(() => {
+      expect(screen.getByText('아직 데이터가 모이는 중이에요')).toBeInTheDocument()
     })
   })
 

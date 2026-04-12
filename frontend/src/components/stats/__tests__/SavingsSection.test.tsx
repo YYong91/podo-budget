@@ -46,4 +46,19 @@ describe('SavingsSection', () => {
     expect(screen.getByText(/저축 카테고리를 설정하면/)).toBeInTheDocument()
     expect(screen.getByRole('link', { name: /카테고리 설정/ })).toBeInTheDocument()
   })
+
+  it('관리 링크를 표시한다', () => {
+    renderSection()
+    expect(screen.getByRole('link', { name: '관리' })).toBeInTheDocument()
+  })
+
+  it('저축 카테고리가 1개이면 카테고리 목록 없이 총액만 표시한다', () => {
+    renderSection({
+      savingsCategories: [{ category: '저축/투자', amount: 300_000 }],
+      savingsTotal: 300_000,
+    })
+    expect(screen.getByText('₩300,000')).toBeInTheDocument()
+    // 카테고리 breakdown 목록이 없어야 함
+    expect(screen.queryByText('저축/투자')).not.toBeInTheDocument()
+  })
 })

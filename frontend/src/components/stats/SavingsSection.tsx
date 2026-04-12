@@ -16,8 +16,8 @@ export default function SavingsSection({ savingsTotal, incomeTotal, savingsCateg
     <div id="section-savings" className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] p-4 sm:p-6">
       <div className="flex items-center justify-between mb-3">
         <h2 className="text-base font-semibold text-[var(--text-primary)]">🏦 저축</h2>
-        <Link to="/settings/categories" className="text-sm text-grape-600 hover:text-grape-700 transition-colors">
-          편집 →
+        <Link to="/settings/categories" className="text-xs text-grape-600 hover:text-grape-700 transition-colors">
+          관리
         </Link>
       </div>
 
@@ -31,14 +31,17 @@ export default function SavingsSection({ savingsTotal, incomeTotal, savingsCateg
               수입의 {((savingsTotal! / incomeTotal) * 100).toFixed(1)}%
             </p>
           )}
-          <div className="mt-3 space-y-1.5">
-            {savingsCategories.map(c => (
-              <div key={c.category} className="flex items-center justify-between">
-                <span className="text-sm text-[var(--text-secondary)]">{c.category}</span>
-                <span className="text-sm tabular-nums text-[var(--text-primary)]">{formatAmount(c.amount)}</span>
-              </div>
-            ))}
-          </div>
+          {/* 카테고리 2개 이상일 때만 breakdown 표시 — 1개면 총액으로 충분 */}
+          {savingsCategories.length >= 2 && (
+            <div className="mt-3 space-y-1.5">
+              {savingsCategories.map(c => (
+                <div key={c.category} className="flex items-center justify-between">
+                  <span className="text-sm text-[var(--text-secondary)]">{c.category}</span>
+                  <span className="text-sm tabular-nums text-[var(--text-primary)]">{formatAmount(c.amount)}</span>
+                </div>
+              ))}
+            </div>
+          )}
         </>
       ) : (
         <div className="text-center py-4">

@@ -42,7 +42,18 @@ function renderComponent(usage: PaymentMethodUsage[] = mockUsage) {
 describe('CardUsageSummary', () => {
   it('결제수단 실적 섹션을 표시한다', () => {
     renderComponent()
-    expect(screen.getByText('카드 실적')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: /카드 실적/ })).toBeInTheDocument()
+  })
+
+  it('헤더에 이모지가 포함된다', () => {
+    renderComponent()
+    const heading = screen.getByRole('heading', { name: /카드 실적/ })
+    expect(heading.textContent).toMatch(/💳/)
+  })
+
+  it('관리 링크를 표시한다', () => {
+    renderComponent()
+    expect(screen.getByRole('link', { name: '관리' })).toBeInTheDocument()
   })
 
   it('각 결제수단의 이름과 사용액을 표시한다', () => {
