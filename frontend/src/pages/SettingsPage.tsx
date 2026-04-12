@@ -119,7 +119,7 @@ export default function SettingsPage() {
         { to: '/categories', label: '카테고리', icon: Tags },
         { to: '/budgets', label: '예산 관리', icon: PiggyBank },
         { to: '/payment-methods', label: '결제수단', icon: CreditCard },
-        { to: '/recurring', label: '반복 거래', icon: Repeat },
+        { to: '/recurring', label: '정기거래', icon: Repeat },
         { to: '/households', label: '공유 가계부', icon: Users },
       ],
     },

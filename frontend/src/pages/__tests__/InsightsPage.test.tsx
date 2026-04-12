@@ -333,4 +333,42 @@ describe('InsightsPage', () => {
     const summaryIdx = allText.indexOf('총 수입')
     expect(highlightsIdx).toBeLessThan(summaryIdx)
   })
+
+  it('거래 건수 5건 미만이면 InsightsOnboarding을 표시한다', async () => {
+    server.use(
+      http.get('/api/expenses/stats', () =>
+        HttpResponse.json({ ...{ total: 8000, count: 2, by_category: [], daily_trend: [] }, count: 2 })
+      ),
+      http.get('/api/income/stats', () =>
+        HttpResponse.json({ ...{ total: 0, count: 0, by_category: [], daily_trend: [] }, count: 0 })
+      ),
+    )
+    renderWithQuery(<InsightsPage />)
+    await waitFor(() => {
+      expect(screen.getByText('아직 데이터가 모이는 중이에요')).toBeInTheDocument()
+    })
+  })
+
+  it('주목할 점이 요약 카드(총 수입)보다 먼저 렌더된다', async () => {
+    // 지출 10% 이상 감소로 MonthlyHighlights 표시 유도
+    server.use(
+      http.get('*/expenses/stats/comparison', () =>
+        HttpResponse.json({
+          current: { label: '2024년 1월', total: 50000 },
+          previous: { label: '2023년 12월', total: 60000 },
+          change: { amount: -10000, percentage: -16.7 },
+          trend: [],
+          by_category_comparison: [],
+        })
+      )
+    )
+    renderWithQuery(<InsightsPage />)
+    await waitFor(() => {
+      expect(screen.getByText(/이번 달 주목할 점/)).toBeInTheDocument()
+    })
+    const allText = document.body.textContent ?? ''
+    const highlightsIdx = allText.indexOf('이번 달 주목할 점')
+    const summaryIdx = allText.indexOf('총 수입')
+    expect(highlightsIdx).toBeLessThan(summaryIdx)
+  })
 })
