@@ -7,7 +7,7 @@
 
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { RefreshCw, ChevronDown, ChevronUp } from 'lucide-react'
+import { ChevronDown, ChevronUp } from 'lucide-react'
 import { formatAmount } from '../../utils/format'
 import type { RecurringTransaction } from '../../types'
 
@@ -63,12 +63,9 @@ export default function RecurringManageSection({ items, monthStr, executedAmount
     return (
       <div id="section-recurring" className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] p-4 sm:p-6">
         <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <RefreshCw className="w-4 h-4 text-grape-600" />
-            <h2 className="text-base font-semibold text-[var(--text-primary)]">정기거래</h2>
-          </div>
+          <h2 className="text-base font-semibold text-[var(--text-primary)]">🔄 정기거래</h2>
           <Link to="/recurring" className="text-xs text-grape-600 hover:text-grape-700 transition-colors">
-            관리 →
+            관리
           </Link>
         </div>
         {/* 빈 상태: 고정비 등록 유도 CTA */}
@@ -91,20 +88,17 @@ export default function RecurringManageSection({ items, monthStr, executedAmount
     <div id="section-recurring" className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] p-4 sm:p-6">
       {/* 헤더: 타이틀 + 고정비 총액 강조 */}
       <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <RefreshCw className="w-4 h-4 text-grape-600" />
-          <div>
-            <h2 className="text-base font-semibold text-[var(--text-primary)]">정기거래</h2>
-            {monthlyExpenseTotal > 0 && (
-              <p className="text-xs text-[var(--text-muted)] leading-tight">
-                이번 달 고정비{' '}
-                <span className="font-medium text-[var(--text-secondary)]">{formatAmount(monthlyExpenseTotal)}</span>
-              </p>
-            )}
-          </div>
+        <div>
+          <h2 className="text-base font-semibold text-[var(--text-primary)]">🔄 정기거래</h2>
+          {monthlyExpenseTotal > 0 && (
+            <p className="text-xs text-[var(--text-muted)] leading-tight">
+              이번 달 고정비{' '}
+              <span className="font-medium text-[var(--text-secondary)]">{formatAmount(monthlyExpenseTotal)}</span>
+            </p>
+          )}
         </div>
         <Link to="/recurring" className="text-xs text-grape-600 hover:text-grape-700 transition-colors">
-          관리 →
+          관리
         </Link>
       </div>
 

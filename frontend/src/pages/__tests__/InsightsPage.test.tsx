@@ -61,7 +61,7 @@ describe('InsightsPage', () => {
   it('지출 카테고리가 표시된다', async () => {
     renderWithQuery(<InsightsPage />)
     await waitFor(() => {
-      expect(screen.getByText('지출 카테고리')).toBeInTheDocument()
+      expect(screen.getByRole('heading', { name: /지출 카테고리/ })).toBeInTheDocument()
     })
   })
 
@@ -154,7 +154,7 @@ describe('InsightsPage', () => {
     })
 
     const highlights = screen.getByText(/이번 달 주목할 점/)
-    const categoryTop = screen.getByText('지출 카테고리')
+    const categoryTop = screen.getByRole('heading', { name: /지출 카테고리/ })
 
     // 주목할 점이 카테고리 TOP보다 DOM에서 먼저 나온다
     expect(highlights.compareDocumentPosition(categoryTop) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
@@ -286,7 +286,7 @@ describe('InsightsPage', () => {
     // 주목할 점 섹션이 숨겨져 있다
     expect(screen.queryByText(/이번 달 주목할 점/)).not.toBeInTheDocument()
     // 다른 섹션은 정상 표시
-    expect(screen.getByText('지출 카테고리')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: /지출 카테고리/ })).toBeInTheDocument()
   })
 
   it('거래 건수 5건 미만이면 InsightsOnboarding을 표시한다', async () => {

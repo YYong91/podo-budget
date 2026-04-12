@@ -46,4 +46,9 @@ describe('SavingsSection', () => {
     expect(screen.getByText(/저축 카테고리를 설정하면/)).toBeInTheDocument()
     expect(screen.getByRole('link', { name: /카테고리 설정/ })).toBeInTheDocument()
   })
+
+  it('관리 링크를 표시한다', () => {
+    renderSection()
+    expect(screen.getByRole('link', { name: '관리' })).toBeInTheDocument()
+  })
 })

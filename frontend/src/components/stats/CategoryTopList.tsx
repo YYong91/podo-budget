@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ChevronDown, ChevronUp, BarChart3, PieChart as PieChartIcon } from 'lucide-react'
+
+const SINGLE_CATEGORY_THRESHOLD = 1
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts'
 import type { CategoryStats } from '../../types'
 import { formatAmount } from '../../utils/format'
@@ -62,7 +64,7 @@ export default function CategoryTopList({ categories, maxItems = 5, monthStr }: 
     <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] p-4 sm:p-6">
       {/* 헤더: 제목 + 탭 전환 */}
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-semibold text-[var(--text-secondary)]">지출 카테고리</h3>
+        <h2 className="text-base font-semibold text-[var(--text-primary)]">📋 지출 카테고리</h2>
         <div className="flex items-center gap-1 bg-[var(--surface-elevated)] rounded-lg p-0.5">
           <button
             onClick={() => setViewMode('list')}
@@ -123,6 +125,16 @@ export default function CategoryTopList({ categories, maxItems = 5, monthStr }: 
             </button>
           )}
         </>
+      )}
+
+      {/* 카테고리 1개일 때 추가 유도 — 분석이 의미 없는 상태 */}
+      {categories.length <= SINGLE_CATEGORY_THRESHOLD && (
+        <p className="text-xs text-[var(--text-tertiary)] mt-2">
+          카테고리를 더 추가하면 지출 패턴을 파악하기 쉬워요.{' '}
+          <Link to="/settings/categories" className="text-grape-600 hover:text-grape-700">
+            카테고리 설정
+          </Link>
+        </p>
       )}
 
       {/* 그래프 뷰 */}
