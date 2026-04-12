@@ -304,10 +304,10 @@ describe('InsightsPage', () => {
     })
   })
 
-  it('Layer 구분자 "뜯어보기"가 표시된다', async () => {
+  it('Layer 구분자 "들여다보기"가 표시된다', async () => {
     renderWithQuery(<InsightsPage />)
     await waitFor(() => {
-      expect(screen.getByText('뜯어보기')).toBeInTheDocument()
+      expect(screen.getByText('들여다보기')).toBeInTheDocument()
     })
   })
 

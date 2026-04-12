@@ -4,7 +4,7 @@
  *
  * Layer 0: 히어로 — 이달 지출 총액 + 예산 프로그레스바 + 건강점수 배지
  * Layer 1: 한눈에 — MonthlyHighlights(주목할 점) → UnifiedSummaryCards
- * Layer 2: 뜯어보기 — 카테고리/예산/정기거래/카드/저축
+ * Layer 2: 들여다보기 — 카테고리/예산/정기거래/카드/저축
  * Layer 3: 돌아보기 — MonthlyComparison + AI 분석
  *
  * 온보딩 모드: 거래 5건 미만이면 InsightsOnboarding 표시 (풀 리포트 대신)
@@ -534,8 +534,8 @@ export default function InsightsPage() {
             monthStr={monthStr}
           />
 
-          {/* Layer 2: 뜯어보기 */}
-          <LayerDivider label="뜯어보기" />
+          {/* Layer 2: 들여다보기 */}
+          <LayerDivider label="들여다보기" />
 
           {sectionVisibility.categoryTop && (
             <div id="section-category">
