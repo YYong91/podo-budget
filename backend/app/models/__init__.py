@@ -10,6 +10,7 @@ from app.models.feedback import Feedback
 from app.models.household import Household
 from app.models.household_invitation import HouseholdInvitation
 from app.models.household_member import HouseholdMember
+from app.models.household_profile import HouseholdProfile
 from app.models.income import Income
 from app.models.payment_method import PaymentMethod
 from app.models.recurring_transaction import RecurringTransaction
@@ -29,6 +30,7 @@ __all__ = [
     "Household",
     "HouseholdInvitation",
     "HouseholdMember",
+    "HouseholdProfile",
     "Income",
     "PaymentMethod",
     "RecurringTransaction",

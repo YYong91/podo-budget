@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react"
+import { socialStats, socialScenarios } from '../../data/landingData'
 
 function useCountUp(target: number, duration = 2000, started = false) {
   const [value, setValue] = useState(0)
@@ -28,77 +29,22 @@ function useCountUp(target: number, duration = 2000, started = false) {
   return value
 }
 
-const stats = [
-  {
-    value: 5,
-    unit: "초",
-    suffix: "만에 입력",
-    desc: "길게 쓸 필요 없이\n한 줄이면 충분해요",
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-6 w-6">
-        <circle cx="12" cy="12" r="9" />
-        <polyline points="12 6 12 12 15.5 14" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-    ),
-  },
-  {
-    value: 100,
-    unit: "%",
-    suffix: "자동 카테고리",
-    desc: "식비·교통·쇼핑\nAI가 알아서 분류해요",
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-6 w-6">
-        <path d="M12 2L2 7l10 5 10-5-10-5z" strokeLinejoin="round" />
-        <path d="M2 17l10 5 10-5" strokeLinejoin="round" />
-        <path d="M2 12l10 5 10-5" strokeLinejoin="round" />
-      </svg>
-    ),
-  },
-  {
-    value: 0,
-    unit: "원",
-    suffix: "완전 무료",
-    desc: "모든 기능을\n무료로 사용하세요",
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-6 w-6">
-        <path d="M12 2a10 10 0 1 0 0 20A10 10 0 0 0 12 2z" strokeLinejoin="round" />
-        <path d="M12 6v2m0 8v2M8 12h8" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-    ),
-  },
+// 인덱스별 SVG 아이콘 (0: 시계, 1: 레이어, 2: 쉴드체크)
+const statIcons = [
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-6 w-6">
+    <circle cx="12" cy="12" r="9" />
+    <polyline points="12 6 12 12 15.5 14" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>,
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-6 w-6">
+    <path d="M12 2L2 7l10 5 10-5-10-5z" strokeLinejoin="round" />
+    <path d="M2 17l10 5 10-5" strokeLinejoin="round" />
+    <path d="M2 12l10 5 10-5" strokeLinejoin="round" />
+  </svg>,
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-6 w-6">
+    <path d="M12 2a10 10 0 1 0 0 20A10 10 0 0 0 12 2z" strokeLinejoin="round" />
+    <path d="M12 6v2m0 8v2M8 12h8" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>,
 ]
-
-const scenarios = [
-  {
-    tag: "맞벌이 부부",
-    tagColor: "bg-grape-100 text-grape-700",
-    quote: "매달 가계부 정리에 30분 쓰던 시간이 사라졌어요.",
-    initial: "김",
-    avatarBg: "bg-grape-200 text-grape-700",
-  },
-  {
-    tag: "자취 3년차",
-    tagColor: "bg-leaf-100 text-leaf-700",
-    quote: "카톡으로 보내면 끝이라 까먹을 일이 없어요.",
-    initial: "이",
-    avatarBg: "bg-leaf-200 text-leaf-700",
-  },
-  {
-    tag: "육아맘",
-    tagColor: "bg-amber-100 text-amber-700",
-    quote: "남편이랑 같이 쓰니까 누가 뭘 썼는지 한눈에.",
-    initial: "박",
-    avatarBg: "bg-amber-200 text-amber-700",
-  },
-]
-
-function StarIcon() {
-  return (
-    <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4 text-amber-400">
-      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-    </svg>
-  )
-}
 
 export function SocialProofSection() {
   const sectionRef = useRef<HTMLDivElement>(null)
@@ -120,9 +66,9 @@ export function SocialProofSection() {
     return () => observer.disconnect()
   }, [])
 
-  const count0 = useCountUp(stats[0].value, 1800, inView)
-  const count1 = useCountUp(stats[1].value, 2000, inView)
-  const count2 = useCountUp(stats[2].value, 1400, inView)
+  const count0 = useCountUp(socialStats[0].value, 1800, inView)
+  const count1 = useCountUp(socialStats[1].value, 2000, inView)
+  const count2 = useCountUp(socialStats[2].value, 1400, inView)
   const counts = [count0, count1, count2]
 
   return (
@@ -139,16 +85,16 @@ export function SocialProofSection() {
           }}
         >
           <p className="mb-3 text-xs font-bold uppercase tracking-widest text-grape-400">
-            이런 분들이 쓰고 있어요
+            사용자 시나리오
           </p>
           <h2 className="text-balance text-3xl font-bold text-warm-800 sm:text-4xl">
-            기록이 습관이 되는<br className="sm:hidden" /> 가장 쉬운 방법
+            이런 분께 딱 맞아요
           </h2>
         </div>
 
         {/* 스탯 행 */}
         <div className="mb-20 grid grid-cols-3 gap-3 sm:gap-6">
-          {stats.map((stat, i) => (
+          {socialStats.map((stat, i) => (
             <div
               key={i}
               className="flex flex-col items-center gap-3 rounded-3xl bg-white p-5 text-center shadow-sm sm:p-8"
@@ -159,19 +105,19 @@ export function SocialProofSection() {
               }}
             >
               <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-grape-100 text-grape-600">
-                {stat.icon}
+                {statIcons[i]}
               </div>
               <div>
                 <div className="flex items-baseline justify-center gap-0.5">
                   <span className="text-3xl font-extrabold tabular-nums text-grape-600 sm:text-4xl">
                     {counts[i]}
                   </span>
-                  <span className="text-lg font-bold text-grape-500 sm:text-xl">{stat.unit}</span>
+                  <span className="text-lg font-bold text-grape-500 sm:text-xl">{stat.suffix}</span>
                 </div>
-                <p className="mt-0.5 text-sm font-semibold text-warm-700">{stat.suffix}</p>
+                <p className="mt-0.5 text-sm font-semibold text-warm-700">{stat.label}</p>
               </div>
               <p className="hidden whitespace-pre-line text-xs leading-relaxed text-warm-400 sm:block">
-                {stat.desc}
+                {stat.description}
               </p>
             </div>
           ))}
@@ -190,40 +136,27 @@ export function SocialProofSection() {
           <div className="h-px flex-1 bg-grape-200" />
         </div>
 
-        {/* 시나리오 카드 */}
+        {/* 시나리오 카드 — 문제→해결 구조 */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          {scenarios.map((s, i) => (
+          {socialScenarios.map((s, i) => (
             <div
               key={i}
-              className="flex flex-col gap-5 rounded-3xl bg-white p-6 shadow-sm"
+              className="rounded-2xl border border-warm-200 bg-white p-6 shadow-sm"
               style={{
                 opacity: inView ? 1 : 0,
                 transform: inView ? "translateY(0)" : "translateY(28px)",
                 transition: `opacity 0.6s ease-out ${0.45 + i * 0.12}s, transform 0.6s ease-out ${0.45 + i * 0.12}s`,
               }}
             >
-              {/* 태그 + 별점 */}
-              <div className="flex items-center justify-between">
-                <span className={`rounded-full px-3 py-1 text-xs font-bold ${s.tagColor}`}>
-                  {s.tag}
-                </span>
-                <div className="flex gap-0.5">
-                  {Array.from({ length: 5 }).map((_, j) => <StarIcon key={j} />)}
-                </div>
-              </div>
-
-              {/* 인용문 */}
-              <p className="flex-1 text-[15px] leading-relaxed text-warm-600">
-                &ldquo;{s.quote}&rdquo;
+              <span className="inline-block rounded-full bg-grape-100 px-3 py-1 text-sm font-medium text-grape-700">
+                {s.persona}
+              </span>
+              <p className="mt-4 text-base italic text-warm-600">
+                &ldquo;{s.problem}&rdquo;
               </p>
-
-              {/* 아바타 */}
-              <div className="flex items-center gap-2.5">
-                <div className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold ${s.avatarBg}`}>
-                  {s.initial}
-                </div>
-                <span className="text-xs text-warm-400">포도 사용자</span>
-              </div>
+              <p className="mt-3 text-sm font-semibold text-grape-700">
+                → {s.solution}
+              </p>
             </div>
           ))}
         </div>

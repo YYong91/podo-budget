@@ -8,7 +8,7 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { useGoBack } from '../hooks/useGoBack'
-import { ArrowLeft, BarChart3, AlertTriangle, Wallet } from 'lucide-react'
+import { ArrowLeft, BarChart3, AlertTriangle, Wallet, PiggyBank } from 'lucide-react'
 import { useToast } from '../hooks/useToast'
 import { TOAST } from '../constants/toastMessages'
 import budgetApi from '../api/budgets'
@@ -226,7 +226,18 @@ export default function BudgetManager() {
   }
 
   if (error) {
-    return <ErrorState message={error} onRetry={loadData} />
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center gap-3">
+          <button onClick={() => goBack()} className="p-2.5 -ml-2.5 rounded-lg hover:bg-[var(--surface-hover)] transition-colors">
+            <ArrowLeft className="w-5 h-5 text-[var(--text-secondary)]" />
+          </button>
+          <PiggyBank className="w-5 h-5 text-grape-500 flex-shrink-0" />
+          <h1 className="text-lg font-semibold text-[var(--text-primary)]">예산 관리</h1>
+        </div>
+        <ErrorState message={error} onRetry={loadData} />
+      </div>
+    )
   }
 
   const totalNum = Number(localTotalBudget)
@@ -235,9 +246,12 @@ export default function BudgetManager() {
 
   return (
     <div className="space-y-6 animate-page-in">
-      <button onClick={() => goBack()} className="p-2.5 -ml-2.5 rounded-lg hover:bg-[var(--surface-hover)] transition-colors">
-        <ArrowLeft className="w-5 h-5 text-[var(--text-secondary)]" />
-      </button>
+      <div className="flex items-center gap-3">
+        <button onClick={() => goBack()} className="p-2.5 -ml-2.5 rounded-lg hover:bg-[var(--surface-hover)] transition-colors">
+          <ArrowLeft className="w-5 h-5 text-[var(--text-secondary)]" />
+        </button>
+        <h1 className="text-lg font-semibold text-[var(--text-primary)]">예산 관리</h1>
+      </div>
 
       {/* 월 총 예산 카드 */}
       <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)]/60 p-5">
@@ -281,10 +295,10 @@ export default function BudgetManager() {
             </div>
             <div className="flex justify-between text-xs text-[var(--text-secondary)]">
               <span>
-                배정: {formatAmount(allocatedTotal)} / {formatAmount(totalNum)} ({allocationPercent.toFixed(1)}%)
+                배정: <span className="tabular-nums">{formatAmount(allocatedTotal)}</span> / <span className="tabular-nums">{formatAmount(totalNum)}</span> ({allocationPercent.toFixed(1)}%)
               </span>
               <span className={remainingBudget != null && remainingBudget < 0 ? 'text-rose-600 font-semibold' : ''}>
-                남은 예산: {remainingBudget != null ? formatAmount(remainingBudget) : '-'}
+                남은 예산: <span className="tabular-nums">{remainingBudget != null ? formatAmount(remainingBudget) : '-'}</span>
               </span>
             </div>
           </div>
@@ -332,9 +346,9 @@ export default function BudgetManager() {
                 </div>
                 <div className="flex justify-between text-xs text-[var(--text-secondary)]">
                   <span>
-                    사용: {formatAmount(alert.spent_amount)} / {formatAmount(alert.budget_amount)}
+                    사용: <span className="tabular-nums">{formatAmount(alert.spent_amount)}</span> / <span className="tabular-nums">{formatAmount(alert.budget_amount)}</span>
                   </span>
-                  <span>남은 금액: {formatAmount(alert.remaining_amount)}</span>
+                  <span>남은 금액: <span className="tabular-nums">{formatAmount(alert.remaining_amount)}</span></span>
                 </div>
                 {alert.is_exceeded && (
                   <div className="flex items-center gap-1 mt-2">
@@ -373,36 +387,34 @@ export default function BudgetManager() {
             {overview.map((item) => {
               const pct = getCategoryPercent(item.category_id)
               return (
-                <div key={item.category_id} className="px-5 py-4">
-                  <div className="flex items-center gap-3">
-                    {/* 카테고리 이름 */}
-                    <span className="w-14 font-medium text-[var(--text-primary)] shrink-0 text-sm truncate">
+                <div key={item.category_id} className="px-4 py-3.5 space-y-2">
+                  {/* 카테고리 이름 + 비율 */}
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-medium text-sm text-[var(--text-primary)] truncate">
                       {item.category_name}
                     </span>
-
-                    {/* 최근 3개월 지출 — 데스크톱 */}
-                    <div className="flex-1 text-xs text-[var(--text-muted)] min-w-0">
-                      {item.monthly_spending.length > 0 ? (
-                        <span>
-                          {item.monthly_spending
-                            .slice(0, 3)
-                            .map((s) => `${s.month}월 ${s.amount.toLocaleString('ko-KR')}원`)
-                            .join(' / ')}
-                        </span>
-                      ) : (
-                        <span className="text-warm-300">지출 내역 없음</span>
-                      )}
-                    </div>
-
-                    {/* 비율 표시 */}
                     {pct != null && (
-                      <span className="text-xs text-grape-500 font-medium shrink-0 w-12 text-right">
+                      <span className="text-xs text-grape-500 font-medium shrink-0">
                         {pct.toFixed(1)}%
                       </span>
                     )}
+                  </div>
 
-                    {/* 예산 입력 + 저장 버튼 */}
-                    <div className="flex items-center gap-1.5 shrink-0">
+                  {/* 최근 지출 참고 */}
+                  {item.monthly_spending.length > 0 ? (
+                    <p className="text-xs text-[var(--text-muted)]">
+                      {item.monthly_spending
+                        .slice(0, 2)
+                        .map((s) => `${s.month}월 ${formatAmount(s.amount)}`)
+                        .join(' / ')}
+                    </p>
+                  ) : (
+                    <p className="text-xs text-[var(--text-muted)]">최근 지출 내역 없음</p>
+                  )}
+
+                  {/* 예산 입력 + 저장 */}
+                  <div className="flex items-center gap-2">
+                    <div className="flex flex-1 items-center gap-1">
                       <input
                         type="number"
                         inputMode="numeric"
@@ -410,21 +422,21 @@ export default function BudgetManager() {
                         step="1000"
                         value={localAmounts[item.category_id] ?? ''}
                         onChange={(e) => handleAmountChange(item.category_id, e.target.value)}
-                        className="input-base w-28 text-right"
+                        className="input-base flex-1 text-right"
                         placeholder="예산 없음"
                         aria-label={`${item.category_name} 예산`}
                       />
                       <span className="text-xs text-[var(--text-tertiary)] shrink-0">원</span>
-                      {isDirty(item) && (
-                        <button
-                          onClick={() => handleSave(item)}
-                          disabled={savingIds.has(item.category_id)}
-                          className="px-3 py-1.5 text-xs font-medium text-white bg-grape-600 rounded-lg hover:bg-grape-700 disabled:opacity-50 transition-colors whitespace-nowrap"
-                        >
-                          {savingIds.has(item.category_id) ? '저장 중...' : '저장'}
-                        </button>
-                      )}
                     </div>
+                    {isDirty(item) && (
+                      <button
+                        onClick={() => handleSave(item)}
+                        disabled={savingIds.has(item.category_id)}
+                        className="px-3 py-1.5 text-xs font-medium text-white bg-grape-600 rounded-lg hover:bg-grape-700 disabled:opacity-50 transition-colors whitespace-nowrap shrink-0"
+                      >
+                        {savingIds.has(item.category_id) ? '저장 중...' : '저장'}
+                      </button>
+                    )}
                   </div>
                 </div>
               )

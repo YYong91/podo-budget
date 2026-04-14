@@ -7,11 +7,12 @@
 import { useState, useEffect } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
 import {
-  Tags, PiggyBank, Repeat, Users, BookOpen, MessageSquarePlus,
-  Megaphone, ChevronRight, User, Sun, Moon,
-  ShieldCheck, Download, CreditCard,
+  Tags, PiggyBank, Repeat, Users, MessageSquarePlus,
+  Sparkles, ChevronRight, User, Sun, Moon,
+  ShieldCheck, Download, CreditCard, BrainCircuit,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../contexts/AuthContext'
 import { useChangelog } from '../hooks/useChangelog'
 import { useInstallPrompt } from '../hooks/useInstallPrompt'
@@ -20,8 +21,14 @@ import { useTheme } from '../contexts/ThemeContext'
 import AppearanceSection from '../components/settings/AppearanceSection'
 import ChangelogSection from '../components/settings/ChangelogSection'
 import MyAccountSection from '../components/settings/MyAccountSection'
+import ProfileEditSection from '../components/settings/ProfileEditSection'
+import ProfileCollectionFlow from '../components/stats/ProfileCollectionFlow'
+import SubPageWrapper from '../components/settings/SubPageWrapper'
+import { useHouseholdStore } from '../stores/useHouseholdStore'
+import { getHouseholdProfile, upsertHouseholdProfile } from '../api/householdProfiles'
+import type { HouseholdProfileInput } from '../types'
 
-type SettingsSection = 'changelog' | 'my-account' | 'appearance'
+type SettingsSection = 'changelog' | 'my-account' | 'appearance' | 'ai-profile'
 
 /* 이전 URL 호환용 리디렉션 맵 */
 const SECTION_REDIRECTS: Record<string, SettingsSection | string> = {
@@ -34,57 +41,65 @@ const SECTION_REDIRECTS: Record<string, SettingsSection | string> = {
 interface MenuItem {
   to: string
   label: string
-  description: string
+  description?: string
   icon: LucideIcon
   badge?: React.ReactNode
-  section?: SettingsSection
   external?: boolean
 }
 
+interface MenuSection {
+  label: string
+  items: MenuItem[]
+}
+
+/* ─── 단일 메뉴 아이템 렌더링 ─── */
+function SettingsMenuItem({ item, isLast }: { item: MenuItem; isLast: boolean }) {
+  const Icon = item.icon
+  const className = `flex items-center gap-4 px-5 py-4 hover:bg-grape-50 transition-colors ${
+    !isLast ? 'border-b border-[var(--border-subtle)]' : ''
+  }`
+  const content = (
+    <>
+      <div className="relative flex-shrink-0">
+        <Icon className="w-5 h-5 text-grape-500" />
+        {item.badge}
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium text-[var(--text-primary)]">{item.label}</p>
+        {item.description && (
+          <p className="text-xs text-[var(--text-tertiary)] truncate">{item.description}</p>
+        )}
+      </div>
+      <ChevronRight className="w-4 h-4 text-[var(--text-muted)] flex-shrink-0" />
+    </>
+  )
+  return item.external ? (
+    <a href={item.to} target="_blank" rel="noopener noreferrer" className={className}>
+      {content}
+    </a>
+  ) : (
+    <Link to={item.to} className={className}>
+      {content}
+    </Link>
+  )
+}
+
 /* ─── 메뉴 목록 (설정 메인) ─── */
-function SettingsMenu({ menuItems }: { menuItems: MenuItem[] }) {
+function SettingsMenu({ sections }: { sections: MenuSection[] }) {
   return (
     <div className="space-y-6 animate-page-in">
-      <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] overflow-hidden">
-        {menuItems.map((item, idx) => {
-          const Icon = item.icon
-          const className = `flex items-center gap-4 px-5 py-4 hover:bg-grape-50 transition-colors ${
-            idx < menuItems.length - 1 ? 'border-b border-[var(--border-subtle)]' : ''
-          }`
-          const content = (
-            <>
-              <div className="relative flex-shrink-0">
-                <Icon className="w-5 h-5 text-grape-500" />
-                {item.badge}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-[var(--text-primary)]">{item.label}</p>
-                <p className="text-xs text-[var(--text-tertiary)] truncate">{item.description}</p>
-              </div>
-              <ChevronRight className="w-4 h-4 text-[var(--text-muted)] flex-shrink-0" />
-            </>
-          )
-          return item.external ? (
-            <a
-              key={item.to}
-              href={item.to}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={className}
-            >
-              {content}
-            </a>
-          ) : (
-            <Link
-              key={item.to}
-              to={item.to}
-              className={className}
-            >
-              {content}
-            </Link>
-          )
-        })}
-      </div>
+      {sections.map((section) => (
+        <div key={section.label}>
+          <p className="text-xs font-semibold text-[var(--text-tertiary)] uppercase tracking-wide px-1 mb-2">
+            {section.label}
+          </p>
+          <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] overflow-hidden">
+            {section.items.map((item, idx) => (
+              <SettingsMenuItem key={item.to} item={item} isLast={idx === section.items.length - 1} />
+            ))}
+          </div>
+        </div>
+      ))}
     </div>
   )
 }
@@ -104,79 +119,74 @@ export default function SettingsPage() {
   const { section } = useParams<{ section: string }>()
   const navigate = useNavigate()
 
-  const menuItems: MenuItem[] = [
+  // AI 분석 설정 — 프로필 조회/저장
+  const activeHouseholdId = useHouseholdStore((s) => s.activeHouseholdId)
+  const queryClient = useQueryClient()
+  const [showProfileFlow, setShowProfileFlow] = useState(false)
+
+  const { data: householdProfile, refetch: refetchProfile } = useQuery({
+    queryKey: ['householdProfile', activeHouseholdId],
+    queryFn: () => getHouseholdProfile(activeHouseholdId!),
+    enabled: !!activeHouseholdId,
+    retry: false,
+  })
+
+  const saveProfile = useMutation({
+    mutationFn: (input: HouseholdProfileInput) =>
+      upsertHouseholdProfile(activeHouseholdId!, input),
+    onSuccess: () => {
+      void refetchProfile()
+      void queryClient.invalidateQueries({ queryKey: ['householdProfile'] })
+    },
+  })
+
+  const menuSections: MenuSection[] = [
     {
-      to: '/categories',
-      label: '카테고리',
-      description: '지출/수입 분류 카테고리 관리',
-      icon: Tags,
+      label: '가계부',
+      items: [
+        { to: '/categories', label: '카테고리', icon: Tags },
+        { to: '/budgets', label: '예산 관리', icon: PiggyBank },
+        { to: '/payment-methods', label: '결제수단', icon: CreditCard },
+        { to: '/recurring', label: '정기거래', icon: Repeat },
+        { to: '/households', label: '공유 가계부', icon: Users },
+      ],
     },
     {
-      to: '/budgets',
-      label: '예산 관리',
-      description: '카테고리별/월 총 예산 설정',
-      icon: PiggyBank,
+      label: '설정',
+      items: [
+        {
+          to: '/settings/appearance',
+          label: '화면 모드',
+          description: resolvedTheme === 'dark' ? '다크 모드' : '라이트 모드',
+          icon: resolvedTheme === 'dark' ? Moon : Sun,
+        },
+        {
+          to: '/settings/my-account',
+          label: '내 계정',
+          icon: User,
+        },
+        {
+          to: '/settings/ai-profile',
+          label: 'AI 분석 설정',
+          description: householdProfile ? '가구 정보 설정됨' : '가구 정보를 입력하면 AI 분석이 더 정확해져요',
+          icon: BrainCircuit,
+        },
+      ],
     },
     {
-      to: '/payment-methods',
-      label: '결제수단',
-      description: '카드/현금 태깅 + 실적 추적',
-      icon: CreditCard,
+      label: '앱 정보',
+      items: [
+        {
+          to: '/settings/changelog',
+          label: '새소식',
+          icon: Sparkles,
+          badge: hasUnread ? (
+            <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-[var(--surface-card)]" />
+          ) : undefined,
+        },
+        ...(user?.is_admin ? [{ to: '/admin', label: '관리자', icon: ShieldCheck }] : []),
+      ],
     },
-    {
-      to: '/recurring',
-      label: '반복 거래',
-      description: '정기 지출/수입 관리',
-      icon: Repeat,
-    },
-    {
-      to: '/households',
-      label: '공유 가계부',
-      description: '가구 생성, 초대, 멤버 관리',
-      icon: Users,
-    },
-    {
-      to: '/settings/appearance',
-      label: '화면 모드',
-      description: resolvedTheme === 'dark' ? '다크 모드' : '라이트 모드',
-      icon: resolvedTheme === 'dark' ? Moon : Sun,
-      section: 'appearance',
-    },
-    {
-      to: '/settings/my-account',
-      label: '내 계정',
-      description: '프로필, 텔레그램/카카오톡 연동, 로그아웃',
-      icon: User,
-      section: 'my-account',
-    },
-    {
-      to: '/settings/changelog',
-      label: '새소식',
-      description: '앱 업데이트 내역',
-      icon: Megaphone,
-      section: 'changelog',
-      badge: hasUnread ? (
-        <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-[var(--surface-card)]" />
-      ) : undefined,
-    },
-    {
-      to: '/guide',
-      label: '사용 가이드',
-      description: '앱 기능별 상세 사용법',
-      icon: BookOpen,
-    },
-    {
-      to: '/feedback',
-      label: '피드백',
-      description: '기능 요청/버그 신고',
-      icon: MessageSquarePlus,
-    },
-    ...(user?.is_admin ? [{
-      to: '/admin',
-      label: '관리자',
-      description: '운영 현황, 피드백 관리, 사용자 관리',
-      icon: ShieldCheck,
-    }] : []),
   ]
 
   if (!user) return null
@@ -189,7 +199,7 @@ export default function SettingsPage() {
   }
 
   // 잘못된 섹션이면 설정 메인으로 리디렉션
-  const validSections: SettingsSection[] = ['changelog', 'my-account', 'appearance']
+  const validSections: SettingsSection[] = ['changelog', 'my-account', 'appearance', 'ai-profile']
   if (section && !validSections.includes(section as SettingsSection)) {
     navigate('/settings', { replace: true })
     return null
@@ -198,6 +208,19 @@ export default function SettingsPage() {
   if (!section) {
     return (
       <div className="space-y-4">
+        {/* 페이지 헤더 */}
+        <div className="flex items-center justify-between">
+          <h1 className="text-xl font-bold text-[var(--text-primary)]">더보기</h1>
+          <Link
+            to="/feedback"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] hover:text-grape-600 transition-colors"
+            aria-label="피드백 보내기"
+          >
+            <MessageSquarePlus className="w-4 h-4" />
+            피드백
+          </Link>
+        </div>
+
         {/* PWA 설치 안내 (미설치 시에만) */}
         {!isInstalled && (
           <button
@@ -216,7 +239,7 @@ export default function SettingsPage() {
             <ChevronRight className="w-4 h-4 text-white/50" />
           </button>
         )}
-        <SettingsMenu menuItems={menuItems} />
+        <SettingsMenu sections={menuSections} />
         {showIosGuide && <IosInstallGuide onClose={() => setShowIosGuide(false)} />}
       </div>
     )
@@ -229,7 +252,39 @@ export default function SettingsPage() {
       return <ChangelogSection />
     case 'my-account':
       return <MyAccountSection />
+    case 'ai-profile':
+      return (
+        <SubPageWrapper>
+          <div className="space-y-4">
+            <h1 className="text-xl font-bold text-[var(--text-primary)]">AI 분석 설정</h1>
+            <p className="text-sm text-warm-500">
+              가구 정보를 입력하면 AI가 상황에 맞는 분석과 조언을 제공합니다.
+            </p>
+            <ProfileEditSection
+              profile={householdProfile}
+              onEditClick={() => setShowProfileFlow(true)}
+            />
+          </div>
+
+          {/* 프로필 수집 모달 */}
+          {showProfileFlow && (
+            <div className="fixed inset-0 z-50 bg-black/40 flex items-end">
+              <div className="w-full bg-[var(--surface-card)] rounded-t-2xl p-5 max-h-[90vh] overflow-y-auto">
+                <h2 className="text-base font-semibold text-warm-900 mb-4">가구 정보 설정</h2>
+                <ProfileCollectionFlow
+                  onComplete={async (input) => {
+                    await saveProfile.mutateAsync(input)
+                  }}
+                  onAnalysisReady={() => setShowProfileFlow(false)}
+                  onCancel={() => setShowProfileFlow(false)}
+                  isLoading={saveProfile.isPending}
+                />
+              </div>
+            </div>
+          )}
+        </SubPageWrapper>
+      )
     default:
-      return <SettingsMenu menuItems={menuItems} />
+      return <SettingsMenu sections={menuSections} />
   }
 }

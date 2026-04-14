@@ -33,6 +33,12 @@ vi.mock('../../utils/analytics', () => ({
   trackEvent: vi.fn(),
 }))
 
+const mockInvalidateQueries = vi.fn()
+vi.mock('@tanstack/react-query', async () => ({
+  ...(await vi.importActual('@tanstack/react-query')),
+  useQueryClient: () => ({ invalidateQueries: mockInvalidateQueries }),
+}))
+
 import { useNaturalInput } from '../useNaturalInput'
 import type { Category } from '../../types'
 
@@ -412,6 +418,26 @@ describe('useNaturalInput', () => {
       expect(mockAddToast).toHaveBeenCalledWith('success', '저장했어요')
       expect(result.current.previewItems).toBeNull()
       expect(result.current.naturalInput).toBe('')
+    })
+
+    it('저장 성공 후 insights 쿼리를 invalidate한다', async () => {
+      setupChatHandler([
+        { amount: 8000, description: '점심', category: '식비', date: '2026-03-25', memo: '', type: 'expense' },
+      ])
+      server.use(http.post('/api/expenses', () => HttpResponse.json({ id: 1, amount: 8000 })))
+
+      const { result } = renderHook(() => useNaturalInput('expense'))
+      await waitFor(() => expect(result.current.categories.length).toBeGreaterThan(0))
+      act(() => result.current.setNaturalInput('점심 8000원'))
+      await act(async () => {
+        await result.current.handlePreview({ preventDefault: vi.fn() } as unknown as React.FormEvent)
+      })
+      await act(async () => {
+        await result.current.handleConfirmSave()
+      })
+
+      expect(mockInvalidateQueries).toHaveBeenCalledWith({ queryKey: ['insights-expense'] })
+      expect(mockInvalidateQueries).toHaveBeenCalledWith({ queryKey: ['insights-income'] })
     })
 
     it('income 타입 항목은 incomeApi로 저장한다 (expense 모드 혼합)', async () => {

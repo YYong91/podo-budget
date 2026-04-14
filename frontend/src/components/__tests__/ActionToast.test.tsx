@@ -18,7 +18,7 @@ const successData: ActionToastData = {
   categoryName: '식비',
   totalAmount: 8000,
   count: 1,
-  editPath: '/expenses/10',
+  editPath: '/expenses/10?edit=true',
 }
 
 function renderToast(data: ActionToastData, onClose = vi.fn()) {
@@ -43,7 +43,7 @@ describe('ActionToast', () => {
     renderToast(successData)
     const editBtn = screen.getByText(/수정/)
     await user.click(editBtn)
-    expect(mockNavigate).toHaveBeenCalledWith('/expenses/10')
+    expect(mockNavigate).toHaveBeenCalledWith('/expenses/10?edit=true')
   })
 
   it('다중 저장 시 "N건 저장" 형태로 표시한다', () => {

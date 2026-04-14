@@ -1,6 +1,7 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import { useTheme } from '../contexts/ThemeContext'
 import { Header } from '../components/landing/Header'
 import { HeroSection } from '../components/landing/HeroSection'
 import { MessengerSection } from '../components/landing/MessengerSection'
@@ -13,6 +14,15 @@ import { CTAFooter } from '../components/landing/CTAFooter'
 export default function LandingPage() {
   const { isAuthenticated, loading } = useAuth()
   const navigate = useNavigate()
+  const { mode, setMode } = useTheme()
+  const prevMode = useRef(mode)
+
+  // 랜딩페이지는 항상 라이트 모드로 표시, 이탈 시 원래 테마 복원
+  useEffect(() => {
+    prevMode.current = mode
+    setMode('light')
+    return () => setMode(prevMode.current)
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!loading && isAuthenticated) {

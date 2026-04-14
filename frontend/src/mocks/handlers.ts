@@ -375,8 +375,13 @@ export const handlers = [
   /**
    * GET /api/categories - 카테고리 목록 조회
    */
-  http.get(`${BASE_URL}/categories`, () => {
-    return HttpResponse.json(mockCategories)
+  http.get(`${BASE_URL}/categories`, ({ request }) => {
+    const url = new URL(request.url)
+    const type = url.searchParams.get('type')
+    const filtered = type
+      ? mockCategories.filter((c) => c.type === type || c.type === 'both')
+      : mockCategories
+    return HttpResponse.json(filtered)
   }),
 
   /**
@@ -653,6 +658,29 @@ export const handlers = [
     const method = mockPaymentMethods.find((m) => m.id === Number(params.id))
     if (!method) return HttpResponse.json({ detail: 'Not found' }, { status: 404 })
     return HttpResponse.json(null, { status: 204 })
+  }),
+
+  // ==================== 가구 프로필 API ====================
+
+  /**
+   * GET /api/household-profiles/:householdId - 가구 프로필 조회
+   */
+  http.get(`${BASE_URL}/household-profiles/:householdId`, () => {
+    return HttpResponse.json(null, { status: 404 })
+  }),
+
+  /**
+   * PUT /api/household-profiles/:householdId - 가구 프로필 저장/수정
+   */
+  http.put(`${BASE_URL}/household-profiles/:householdId`, async ({ request }) => {
+    const body = (await request.json()) as Record<string, unknown>
+    return HttpResponse.json({
+      id: 1,
+      household_id: 1,
+      ...body,
+      created_at: '2026-04-14T00:00:00',
+      updated_at: '2026-04-14T00:00:00',
+    })
   }),
 
   // ==================== 인사이트 API ====================

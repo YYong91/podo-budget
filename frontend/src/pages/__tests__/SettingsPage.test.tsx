@@ -8,6 +8,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Routes, Route } from 'react-router-dom'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { http, HttpResponse } from 'msw'
 import { server } from '../../mocks/server'
 import SettingsPage from '../SettingsPage'
@@ -59,6 +60,12 @@ vi.mock('../../contexts/AuthContext', () => ({
   }),
 }))
 
+// useHouseholdStore 모킹
+vi.mock('../../stores/useHouseholdStore', () => ({
+  useHouseholdStore: (selector: (s: { activeHouseholdId: number }) => unknown) =>
+    selector({ activeHouseholdId: 1 }),
+}))
+
 // IntersectionObserver 모킹
 const mockObserve = vi.fn()
 const mockDisconnect = vi.fn()
@@ -69,16 +76,27 @@ globalThis.IntersectionObserver = class IntersectionObserver {
   unobserve = vi.fn()
 } as unknown as typeof globalThis.IntersectionObserver
 
+function createTestQueryClient() {
+  return new QueryClient({
+    defaultOptions: {
+      queries: { retry: false, gcTime: 0 },
+    },
+  })
+}
+
 function renderSettingsPage(path = '/settings') {
+  const queryClient = createTestQueryClient()
   return render(
-    <ThemeProvider>
-      <MemoryRouter initialEntries={[path]}>
-        <Routes>
-          <Route path="/settings" element={<SettingsPage />} />
-          <Route path="/settings/:section" element={<SettingsPage />} />
-        </Routes>
-      </MemoryRouter>
-    </ThemeProvider>
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider>
+        <MemoryRouter initialEntries={[path]}>
+          <Routes>
+            <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/settings/:section" element={<SettingsPage />} />
+          </Routes>
+        </MemoryRouter>
+      </ThemeProvider>
+    </QueryClientProvider>
   )
 }
 
@@ -96,27 +114,64 @@ describe('SettingsPage', () => {
       expect(screen.getByText('카테고리')).toBeInTheDocument()
     })
 
-    it('9개 메뉴 항목을 표시한다 (약관/개인정보는 독립 메뉴에서 제거됨)', () => {
+    it('정기거래 메뉴 항목이 있고 반복 거래 라는 구 용어는 없다', () => {
+      renderSettingsPage()
+      expect(screen.getByText('정기거래')).toBeInTheDocument()
+      expect(screen.queryByText('반복 거래')).not.toBeInTheDocument()
+    })
+
+    it('10개 메뉴 항목을 표시한다 (약관/개인정보는 독립 메뉴에서 제거됨)', () => {
       renderSettingsPage()
       expect(screen.getByText('카테고리')).toBeInTheDocument()
       expect(screen.getByText('예산 관리')).toBeInTheDocument()
-      expect(screen.getByText('반복 거래')).toBeInTheDocument()
+      expect(screen.getByText('결제수단')).toBeInTheDocument()
+      expect(screen.getByText('정기거래')).toBeInTheDocument()
       expect(screen.getByText('공유 가계부')).toBeInTheDocument()
       expect(screen.getByText('화면 모드')).toBeInTheDocument()
       expect(screen.getByText('내 계정')).toBeInTheDocument()
       expect(screen.getByText('새소식')).toBeInTheDocument()
-      expect(screen.getByText('사용 가이드')).toBeInTheDocument()
-      expect(screen.getByText('피드백')).toBeInTheDocument()
+      // 사용 가이드는 메뉴에서 제거됨 (각 페이지 빈 상태에 인라인 안내로 대체)
+      expect(screen.queryByText('사용 가이드')).not.toBeInTheDocument()
+      // 피드백은 헤더 아이콘으로 이동
+      expect(screen.queryByText('기능 요청 · 버그 신고')).not.toBeInTheDocument()
       // 개인정보/약관은 더보기 메뉴에서 독립 항목으로 존재하지 않아야 한다
       expect(screen.queryByText('개인정보 처리방침')).not.toBeInTheDocument()
       expect(screen.queryByText('서비스 이용약관')).not.toBeInTheDocument()
     })
 
-    it('메뉴 설명을 표시한다', () => {
+    it('3개 섹션 헤더(가계부, 설정, 앱 정보)를 표시한다', () => {
       renderSettingsPage()
-      expect(screen.getByText('앱 업데이트 내역')).toBeInTheDocument()
-      expect(screen.getByText('프로필, 텔레그램/카카오톡 연동, 로그아웃')).toBeInTheDocument()
-      expect(screen.getByText('지출/수입 분류 카테고리 관리')).toBeInTheDocument()
+      expect(screen.getByText('가계부')).toBeInTheDocument()
+      expect(screen.getByText('설정')).toBeInTheDocument()
+      expect(screen.getByText('앱 정보')).toBeInTheDocument()
+    })
+
+    it('불필요한 메뉴 설명은 표시하지 않는다', () => {
+      renderSettingsPage()
+      // 자명한 메뉴는 description 없음
+      expect(screen.queryByText('지출/수입 분류 카테고리 관리')).not.toBeInTheDocument()
+      expect(screen.queryByText('카테고리별/월 총 예산 설정')).not.toBeInTheDocument()
+      expect(screen.queryByText('정기 지출/수입 관리')).not.toBeInTheDocument()
+      expect(screen.queryByText('가구 생성, 초대, 멤버 관리')).not.toBeInTheDocument()
+      expect(screen.queryByText('앱 업데이트 내역')).not.toBeInTheDocument()
+      expect(screen.queryByText('앱 기능별 상세 사용법')).not.toBeInTheDocument()
+      expect(screen.queryByText('프로필, 텔레그램/카카오톡 연동, 로그아웃')).not.toBeInTheDocument()
+    })
+
+    it('화면 모드 description은 현재 테마 상태를 표시한다', () => {
+      renderSettingsPage()
+      // 라이트/다크 모드 상태 중 하나가 표시되어야 한다
+      const hasModeText =
+        screen.queryByText('라이트 모드') !== null ||
+        screen.queryByText('다크 모드') !== null
+      expect(hasModeText).toBe(true)
+    })
+
+    it('피드백 링크가 헤더에 존재한다', () => {
+      renderSettingsPage()
+      // 피드백은 메뉴 항목이 아닌 헤더 아이콘 링크로 제공됨
+      const feedbackLink = document.querySelector('a[href="/feedback"]')
+      expect(feedbackLink).toBeInTheDocument()
     })
 
     it('더보기 메뉴에 외부 auth.podonest.com 링크가 없어야 한다', () => {
@@ -248,13 +303,6 @@ describe('SettingsPage', () => {
       expect(codeBtns.length).toBeGreaterThanOrEqual(1)
       // 연동 해제 버튼은 없어야 한다 (is_linked=false 상태이므로)
       expect(screen.queryByRole('button', { name: '연동 해제' })).not.toBeInTheDocument()
-    })
-  })
-
-  describe('화면 모드 서브 페이지', () => {
-    it('화면 모드 설정을 표시한다', () => {
-      renderSettingsPage('/settings/appearance')
-      expect(screen.getByText('화면 모드')).toBeInTheDocument()
     })
   })
 

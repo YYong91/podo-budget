@@ -407,6 +407,23 @@ def _disable_telegram_webhook_auth():
 
 
 @pytest.fixture
+def mock_llm_comprehensive():
+    """
+    LLM generate_comprehensive_insights_v2 메서드를 Mock으로 대체하는 fixture
+
+    종합 재무 인사이트 V2 API 테스트에 사용합니다.
+    """
+    mock_response = {
+        "findings": [{"what": "지출이 안정적입니다", "so_what": "예산 내 지출 유지", "now_what": "저축을 늘려보세요"}],
+        "action_items": [{"title": "저축 목표 설정", "description": "월 소득의 20%를 저축해보세요"}],
+        "encouragement": "꾸준히 관리하고 있군요!",
+    }
+    with patch("app.services.llm_service.AnthropicProvider.generate_comprehensive_insights_v2", new_callable=AsyncMock) as mock:
+        mock.return_value = mock_response
+        yield mock
+
+
+@pytest.fixture
 def mock_telegram_send():
     """
     Telegram 메시지 전송을 Mock으로 대체하는 fixture

@@ -25,6 +25,8 @@ interface EmptyStateProps {
     label: string
     onClick: () => void
   }
+  /** 액션 버튼 아래에 렌더링할 추가 콘텐츠 (primary/section 전용) */
+  children?: ReactNode
 }
 
 /**
@@ -43,6 +45,7 @@ export default function EmptyState({
   description,
   action,
   secondaryAction,
+  children,
 }: EmptyStateProps) {
   // inline: 아이콘/버튼 없이 텍스트만 표시하는 최소 레이아웃
   if (variant === 'inline') {
@@ -101,7 +104,7 @@ export default function EmptyState({
   const defaultIcon = <Inbox className="w-8 h-8 text-grape-400" />
 
   return (
-    <div className="flex flex-col items-center justify-center py-12 px-4">
+    <div className={`flex flex-col items-center justify-center px-4 ${children ? 'pt-12 pb-4' : 'py-12'}`}>
       <div
         data-testid="empty-state-icon"
         className="w-16 h-16 rounded-full bg-grape-50 flex items-center justify-center mb-4"
@@ -117,7 +120,7 @@ export default function EmptyState({
         </p>
       )}
       {(action || secondaryAction) && (
-        <div className="flex flex-col sm:flex-row gap-3">
+        <div className={`flex flex-col sm:flex-row gap-3 ${children ? 'mb-6' : ''}`}>
           {action && (
             <button
               onClick={action.onClick}
@@ -136,6 +139,7 @@ export default function EmptyState({
           )}
         </div>
       )}
+      {children}
     </div>
   )
 }

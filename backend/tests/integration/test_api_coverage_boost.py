@@ -2202,7 +2202,8 @@ async def test_insights_comprehensive(authenticated_client, test_user, test_hous
     today = date.today()
     month_str = f"{today.year}-{today.month:02d}"
 
-    with patch("app.services.llm_service.AnthropicProvider.generate_comprehensive_insights", new_callable=AsyncMock) as mock_comp:
+    # API는 generate_comprehensive_insights_v2를 호출한다 (V2 전환 후)
+    with patch("app.services.llm_service.AnthropicProvider.generate_comprehensive_insights_v2", new_callable=AsyncMock) as mock_comp:
         mock_comp.return_value = {
             "findings": [{"what": "테스트", "so_what": "의미", "now_what": "행동"}],
             "asset_analysis": None,

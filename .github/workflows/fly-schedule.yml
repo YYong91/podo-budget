@@ -1,0 +1,36 @@
+# 운영 백엔드 야간 절전 스케줄
+# 새벽 1시 KST(16:00 UTC) 머신 종료 → 아침 7시 KST(22:00 UTC) 머신 시작
+name: Fly.io 야간 절전
+
+on:
+  schedule:
+    - cron: '0 16 * * *'   # 새벽 1시 KST — 종료
+    - cron: '0 22 * * *'   # 아침 7시 KST — 시작
+  workflow_dispatch:
+    inputs:
+      action:
+        description: '실행할 작업'
+        required: true
+        type: choice
+        options:
+          - start
+          - stop
+
+env:
+  FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
+jobs:
+  schedule:
+    name: 머신 ${{ github.event.schedule == '0 16 * * *' && '종료' || github.event.inputs.action == 'stop' && '종료' || '시작' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: flyctl 설치
+        uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: 머신 종료 (새벽 1시 KST)
+        if: github.event.schedule == '0 16 * * *' || github.event.inputs.action == 'stop'
+        run: fly scale count 0 -a podo-budget-backend --yes
+
+      - name: 머신 시작 (아침 7시 KST)
+        if: github.event.schedule == '0 22 * * *' || github.event.inputs.action == 'start'
+        run: fly scale count 1 -a podo-budget-backend --yes

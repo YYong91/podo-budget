@@ -46,6 +46,18 @@ export const mockCategories: Category[] = [
     exclude_auto_payment: false,
     created_at: '2024-01-01T00:00:00Z',
   },
+  {
+    id: 6,
+    name: '용돈',
+    type: 'income',
+    description: '기타 수입',
+    emoji: '💰',
+    sort_order: 6,
+    is_savings: false,
+    is_system: false,
+    exclude_auto_payment: false,
+    created_at: '2024-01-01T00:00:00Z',
+  },
 ]
 
 /**

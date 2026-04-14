@@ -141,6 +141,16 @@ beforeEach(() => {
 })
 
 describe('BudgetManager', () => {
+  describe('기본 렌더링', () => {
+    it('데이터 로드 후 페이지 헤더에 예산 관리 타이틀을 표시한다', async () => {
+      setupSuccessHandlers()
+      renderBudgetManager()
+      await waitFor(() => {
+        expect(screen.getByRole('heading', { level: 1, name: '예산 관리' })).toBeInTheDocument()
+      })
+    })
+  })
+
   describe('로딩 상태', () => {
     it('데이터 로드 중에는 로딩 스피너를 표시한다', () => {
       setupSuccessHandlers()
@@ -171,13 +181,22 @@ describe('BudgetManager', () => {
       })
     })
 
-    it('카테고리별 최근 지출 내역을 표시한다', async () => {
+    it('카테고리별 최근 지출 내역을 ₩ 접두사 포맷으로 표시한다', async () => {
       setupSuccessHandlers()
       renderBudgetManager()
 
       await waitFor(() => {
-        // 식비 최근 1월 195,000원
-        expect(screen.getByText(/1월.*195,000원/)).toBeInTheDocument()
+        // 식비 최근 1월 ₩195,000 (formatAmount 사용, 원 접미사 아님)
+        expect(screen.getByText(/1월.*₩195,000/)).toBeInTheDocument()
+      })
+    })
+
+    it('최근 지출 표시에 원 접미사를 사용하지 않는다', async () => {
+      setupSuccessHandlers()
+      renderBudgetManager()
+
+      await waitFor(() => {
+        expect(screen.queryByText(/195,000원/)).not.toBeInTheDocument()
       })
     })
 
@@ -479,6 +498,72 @@ describe('BudgetManager', () => {
       await waitFor(() => {
         expect(screen.getByText('등록된 카테고리가 없습니다')).toBeInTheDocument()
       })
+    })
+  })
+
+  describe('금액 표시 스타일', () => {
+    it('배분 현황의 배정/총 예산 금액에 tabular-nums 스타일 span이 있다', async () => {
+      setupSuccessHandlers(3000000)
+      renderBudgetManager()
+
+      await waitFor(() => {
+        expect(screen.getByText(/배정:/)).toBeInTheDocument()
+      })
+
+      // 배정 현황 행: 금액 표시 span들에 tabular-nums 적용
+      const allSpans = document.querySelectorAll('span.tabular-nums')
+      const allocationSpans = Array.from(allSpans).filter(
+        (el) => el.textContent && (el.textContent.includes('₩300,000') || el.textContent.includes('₩3,000,000'))
+      )
+      expect(allocationSpans.length).toBeGreaterThan(0)
+    })
+
+    it('배분 현황의 남은 예산 금액에 tabular-nums 스타일 span이 있다', async () => {
+      setupSuccessHandlers(3000000)
+      renderBudgetManager()
+
+      await waitFor(() => {
+        expect(screen.getByText(/남은 예산:/)).toBeInTheDocument()
+      })
+
+      // 남은 예산: ₩2,700,000
+      const allSpans = document.querySelectorAll('span.tabular-nums')
+      const remainingSpans = Array.from(allSpans).filter(
+        (el) => el.textContent && el.textContent.includes('₩2,700,000')
+      )
+      expect(remainingSpans.length).toBeGreaterThan(0)
+    })
+
+    it('예산 상황 카드의 사용/예산 금액에 tabular-nums 스타일 span이 있다', async () => {
+      setupSuccessHandlers()
+      renderBudgetManager()
+
+      await waitFor(() => {
+        expect(screen.getAllByText(/사용:/).length).toBeGreaterThan(0)
+      })
+
+      // 사용: ₩250,000 / ₩300,000 (식비 카드)
+      const allSpans = document.querySelectorAll('span.tabular-nums')
+      const usageSpans = Array.from(allSpans).filter(
+        (el) => el.textContent && el.textContent.includes('₩250,000')
+      )
+      expect(usageSpans.length).toBeGreaterThan(0)
+    })
+
+    it('예산 상황 카드의 남은 금액에 tabular-nums 스타일 span이 있다', async () => {
+      setupSuccessHandlers()
+      renderBudgetManager()
+
+      await waitFor(() => {
+        expect(screen.getAllByText(/남은 금액:/).length).toBeGreaterThan(0)
+      })
+
+      // 남은 금액: ₩50,000 (식비 카드)
+      const allSpans = document.querySelectorAll('span.tabular-nums')
+      const remainingSpans = Array.from(allSpans).filter(
+        (el) => el.textContent && el.textContent.includes('₩50,000')
+      )
+      expect(remainingSpans.length).toBeGreaterThan(0)
     })
   })
 

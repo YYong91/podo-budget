@@ -114,7 +114,8 @@ describe('TransactionList', () => {
 
   it('월간 지출 히어로 라벨을 표시한다', async () => {
     renderPage()
-    expect(screen.getByText('지출')).toBeInTheDocument()
+    // 예산 로딩 중(undefined) 또는 미설정(null) → 현재 달이므로 "이번 달 지출"
+    expect(screen.getByText('이번 달 지출')).toBeInTheDocument()
   })
 
   it('데이터 로드 후 거래 목록을 표시한다', async () => {

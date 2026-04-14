@@ -71,10 +71,32 @@ describe('CategoryTopList', () => {
     expect(screen.queryByText(/더보기/)).not.toBeInTheDocument()
   })
 
-  it('리스트 뷰에서 카테고리 클릭 시 해당 카테고리 필터 목록으로 이동한다', async () => {
-    render(<MemoryRouter><CategoryTopList categories={mockCategories} monthStr="2026-03" /></MemoryRouter>)
+  it('리스트 뷰에서 카테고리 항목은 링크가 아니다', async () => {
+    render(<MemoryRouter><CategoryTopList categories={mockCategories} /></MemoryRouter>)
     await switchToListView()
-    const link = screen.getByText('식비').closest('a')
-    expect(link).toHaveAttribute('href', '/?month=2026-03&category=식비')
+    expect(screen.getByText('식비').closest('a')).toBeNull()
+  })
+
+  it('그래프 뷰에서 초기 도넛 중앙 텍스트는 "총 지출"이다', () => {
+    render(<MemoryRouter><CategoryTopList categories={mockCategories} /></MemoryRouter>)
+    expect(screen.getByText('총 지출')).toBeInTheDocument()
+  })
+
+  it('헤더가 text-base 크기로 표시된다', () => {
+    render(<MemoryRouter><CategoryTopList categories={mockCategories} /></MemoryRouter>)
+    const heading = screen.getByRole('heading', { name: /지출 카테고리/ })
+    expect(heading).toHaveClass('text-base')
+  })
+
+  it('헤더에 이모지가 포함된다', () => {
+    render(<MemoryRouter><CategoryTopList categories={mockCategories} /></MemoryRouter>)
+    expect(screen.getByRole('heading', { name: /지출 카테고리/ }).textContent).toMatch(/📋/)
+  })
+
+  it('카테고리가 1개일 때 추가 유도 메시지를 표시한다', () => {
+    const single = [{ category: '기타', amount: 50000, count: 3, percentage: 100 }]
+    render(<MemoryRouter><CategoryTopList categories={single} /></MemoryRouter>)
+    expect(screen.getByText(/카테고리를 더 추가하면/)).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /카테고리 설정/ })).toBeInTheDocument()
   })
 })

@@ -8,7 +8,7 @@ import type { } from 'react'
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useGoBack } from '../hooks/useGoBack'
-import { ArrowLeft, Users, Calendar } from 'lucide-react'
+import { ArrowLeft, Users, Calendar, Plus } from 'lucide-react'
 import { useHouseholdStore } from '../stores/useHouseholdStore'
 import { useToast } from '../hooks/useToast'
 import { TOAST } from '../constants/toastMessages'
@@ -110,9 +110,13 @@ export default function HouseholdListPage() {
   if (error && households.length === 0) {
     return (
       <div className="space-y-6">
-        <button onClick={() => goBack()} className="p-2.5 -ml-2.5 rounded-lg hover:bg-[var(--surface-hover)] transition-colors">
-          <ArrowLeft className="w-5 h-5 text-[var(--text-secondary)]" />
-        </button>
+        <div className="flex items-center gap-3">
+          <button onClick={() => goBack()} className="p-2.5 -ml-2.5 rounded-lg hover:bg-[var(--surface-hover)] transition-colors">
+            <ArrowLeft className="w-5 h-5 text-[var(--text-secondary)]" />
+          </button>
+          <Users className="w-5 h-5 text-grape-500 flex-shrink-0" />
+          <h1 className="text-lg font-semibold text-[var(--text-primary)]">공유 가계부</h1>
+        </div>
         <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)]">
           <ErrorState onRetry={fetchHouseholds} />
         </div>
@@ -124,19 +128,19 @@ export default function HouseholdListPage() {
     <div className="space-y-6">
       {/* 헤더 */}
       <div className="flex items-center justify-between">
-        <div>
+        <div className="flex items-center gap-3">
           <button onClick={() => goBack()} className="p-2.5 -ml-2.5 rounded-lg hover:bg-[var(--surface-hover)] transition-colors">
-          <ArrowLeft className="w-5 h-5 text-[var(--text-secondary)]" />
-        </button>
-          <p className="text-sm text-[var(--text-tertiary)] mt-1">
-            가족이나 친구들과 함께 지출을 관리하세요
-          </p>
+            <ArrowLeft className="w-5 h-5 text-[var(--text-secondary)]" />
+          </button>
+          <Users className="w-5 h-5 text-grape-500 flex-shrink-0" />
+          <h1 className="text-lg font-semibold text-[var(--text-primary)]">공유 가계부</h1>
         </div>
         <button
           onClick={() => setShowCreateModal(true)}
-          className="px-4 py-2 text-sm font-medium text-white bg-grape-600 rounded-lg hover:bg-grape-700 transition-colors"
+          className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-grape-600 rounded-xl shadow-sm hover:bg-grape-700 transition-colors"
         >
-          + 가구 만들기
+          <Plus className="w-4 h-4" />
+          가구 만들기
         </button>
       </div>
 

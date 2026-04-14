@@ -1,12 +1,12 @@
 /**
  * @file RecurringList.tsx
- * @description 반복 거래 관리 페이지
+ * @description 정기거래 관리 페이지
  * 목록 표시 + 필터만 담당하며, 모달은 RecurringModal로 분리되어 있다.
  */
 
 import { useState, useEffect } from 'react'
 import { useGoBack } from '../hooks/useGoBack'
-import { ArrowLeft, Plus, Pencil, Trash2, Pause, Play, Zap } from 'lucide-react'
+import { ArrowLeft, Plus, Pencil, Trash2, Pause, Play, Zap, Repeat } from 'lucide-react'
 import { useToast } from '../hooks/useToast'
 import { TOAST } from '../constants/toastMessages'
 import { recurringApi } from '../api/recurring'
@@ -71,6 +71,9 @@ export default function RecurringList() {
   const [editingId, setEditingId] = useState<number | null>(null)
   const [formData, setFormData] = useState<RecurringFormData>(emptyForm)
   const [submitting, setSubmitting] = useState(false)
+
+  /* 삭제 확인 모달 */
+  const [deleteTargetId, setDeleteTargetId] = useState<number | null>(null)
 
   /* 데이터 로드 */
   const loadData = async () => {
@@ -184,12 +187,18 @@ export default function RecurringList() {
     }
   }
 
-  /* 삭제 */
-  const handleDelete = async (id: number) => {
-    if (!confirm('정말 삭제하시겠습니까?')) return
+  /* 삭제: 확인 모달 표시 */
+  const requestDelete = (id: number) => {
+    setDeleteTargetId(id)
+  }
+
+  /* 삭제: 실제 삭제 실행 */
+  const handleDelete = async () => {
+    if (deleteTargetId === null) return
     try {
-      await recurringApi.delete(id)
+      await recurringApi.delete(deleteTargetId)
       addToast('success', TOAST.RECURRING_DELETED)
+      setDeleteTargetId(null)
       loadData()
     } catch {
       addToast('error', TOAST.DELETE_FAILED)
@@ -221,9 +230,13 @@ export default function RecurringList() {
   if (error) {
     return (
       <div className="space-y-6">
-        <button onClick={() => goBack()} className="p-2.5 -ml-2.5 rounded-lg hover:bg-[var(--surface-hover)] transition-colors">
-          <ArrowLeft className="w-5 h-5 text-[var(--text-secondary)]" />
-        </button>
+        <div className="flex items-center gap-3">
+          <button onClick={() => goBack()} className="p-2.5 -ml-2.5 rounded-lg hover:bg-[var(--surface-hover)] transition-colors">
+            <ArrowLeft className="w-5 h-5 text-[var(--text-secondary)]" />
+          </button>
+          <Repeat className="w-5 h-5 text-grape-500 flex-shrink-0" />
+          <h1 className="text-lg font-semibold text-[var(--text-primary)]">정기거래</h1>
+        </div>
         <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)]/60">
           <ErrorState onRetry={loadData} />
         </div>
@@ -235,9 +248,13 @@ export default function RecurringList() {
     <div className="space-y-6 animate-page-in">
       {/* 헤더 */}
       <div className="flex items-center justify-between">
-        <button onClick={() => goBack()} className="p-2.5 -ml-2.5 rounded-lg hover:bg-[var(--surface-hover)] transition-colors">
-          <ArrowLeft className="w-5 h-5 text-[var(--text-secondary)]" />
-        </button>
+        <div className="flex items-center gap-3">
+          <button onClick={() => goBack()} className="p-2.5 -ml-2.5 rounded-lg hover:bg-[var(--surface-hover)] transition-colors">
+            <ArrowLeft className="w-5 h-5 text-[var(--text-secondary)]" />
+          </button>
+          <Repeat className="w-5 h-5 text-grape-500 flex-shrink-0" />
+          <h1 className="text-lg font-semibold text-[var(--text-primary)]">정기거래</h1>
+        </div>
         <button
           onClick={openAdd}
           className="flex items-center gap-1.5 px-4 py-2 bg-grape-600 text-white rounded-xl text-sm font-medium shadow-sm hover:bg-grape-700 transition-colors"
@@ -271,10 +288,24 @@ export default function RecurringList() {
         <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)]/60">
           <EmptyState
             variant="primary"
-            title="등록된 반복 거래가 없습니다"
-            description="매월 반복되는 지출이나 수입을 등록하면 자동으로 알려드립니다."
-            action={{ label: '반복 거래 추가', onClick: openAdd }}
-          />
+            icon={<Repeat className="w-8 h-8 text-grape-400" />}
+            title="등록된 정기거래가 없습니다"
+            description="월세, 구독료, 월급처럼 반복되는 거래를 등록하면 달력에 예정일이 표시되고 예산 예측에도 자동으로 반영됩니다."
+            action={{ label: '정기거래 추가', onClick: openAdd }}
+          >
+            <div className="w-full px-2 pb-2 grid grid-cols-3 gap-2 text-center">
+              {[
+                { emoji: '🏠', text: '월세·관리비' },
+                { emoji: '📺', text: '넷플릭스·구독' },
+                { emoji: '💰', text: '월급·부수입' },
+              ].map(({ emoji, text }) => (
+                <div key={text} className="bg-[var(--surface-elevated)] rounded-xl py-2.5 px-2">
+                  <span className="text-lg block mb-0.5">{emoji}</span>
+                  <span className="text-[10px] text-[var(--text-muted)]">{text}</span>
+                </div>
+              ))}
+            </div>
+          </EmptyState>
         </div>
       ) : (
         <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)]/60 overflow-hidden">
@@ -300,7 +331,7 @@ export default function RecurringList() {
                         <span className="font-medium text-[var(--text-primary)]">{r.description}</span>
                       </div>
                     </td>
-                    <td className={`px-5 py-3 text-right font-semibold ${r.type === 'expense' ? 'text-[var(--text-primary)]' : 'text-leaf-600'}`}>
+                    <td className={`px-5 py-3 text-right font-semibold tabular-nums ${r.type === 'expense' ? 'text-[var(--text-primary)]' : 'text-leaf-600'}`}>
                       {r.type === 'income' ? '+' : ''}{formatAmount(r.amount)}
                     </td>
                     <td className="px-5 py-3 text-[var(--text-secondary)]">{formatFrequency(r)}</td>
@@ -325,7 +356,7 @@ export default function RecurringList() {
                         <button onClick={() => openEdit(r)} className="p-2 rounded-md hover:bg-[var(--surface-hover)] text-[var(--text-tertiary)]" title="수정">
                           <Pencil className="w-4 h-4" />
                         </button>
-                        <button onClick={() => handleDelete(r.id)} className="p-2 rounded-md hover:bg-red-50 text-[var(--text-tertiary)] hover:text-red-600" title="삭제">
+                        <button onClick={() => requestDelete(r.id)} className="p-2 rounded-md hover:bg-red-50 text-[var(--text-tertiary)] hover:text-red-600" title="삭제">
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
@@ -345,7 +376,7 @@ export default function RecurringList() {
                     <span className={`w-2 h-2 rounded-full flex-shrink-0 ${r.type === 'expense' ? 'bg-grape-500' : 'bg-leaf-500'}`} />
                     <span className="font-medium text-[var(--text-primary)] truncate">{r.description}</span>
                   </div>
-                  <span className={`font-semibold whitespace-nowrap ml-2 ${r.type === 'expense' ? 'text-[var(--text-primary)]' : 'text-leaf-600'}`}>
+                  <span className={`font-semibold whitespace-nowrap ml-2 tabular-nums ${r.type === 'expense' ? 'text-[var(--text-primary)]' : 'text-leaf-600'}`}>
                     {r.type === 'income' ? '+' : ''}{formatAmount(r.amount)}
                   </span>
                 </div>
@@ -366,7 +397,7 @@ export default function RecurringList() {
                     <button onClick={() => openEdit(r)} className="p-1 text-[var(--text-muted)]">
                       <Pencil className="w-4 h-4" />
                     </button>
-                    <button onClick={() => handleDelete(r.id)} className="p-1 text-[var(--text-muted)]">
+                    <button onClick={() => requestDelete(r.id)} className="p-1 text-[var(--text-muted)]">
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
@@ -388,6 +419,42 @@ export default function RecurringList() {
           onSubmit={handleSubmit}
           onClose={() => setShowModal(false)}
         />
+      )}
+
+      {/* 삭제 확인 모달 */}
+      {deleteTargetId !== null && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="delete-recurring-modal-title"
+            className="bg-[var(--surface-card)] rounded-2xl shadow-xl max-w-md w-full p-6"
+          >
+            <h3
+              id="delete-recurring-modal-title"
+              className="text-lg font-semibold text-[var(--text-primary)] mb-2"
+            >
+              정기거래 삭제
+            </h3>
+            <p className="text-[var(--text-secondary)] mb-6">
+              정말로 이 정기거래를 삭제하시겠습니까?
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setDeleteTargetId(null)}
+                className="px-4 py-2 text-sm font-medium text-[var(--text-secondary)] bg-[var(--surface-hover)] rounded-lg transition-colors"
+              >
+                취소
+              </button>
+              <button
+                onClick={handleDelete}
+                className="px-4 py-2 text-sm font-medium text-white bg-rose-600 rounded-lg hover:bg-rose-700 transition-colors"
+              >
+                삭제
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )

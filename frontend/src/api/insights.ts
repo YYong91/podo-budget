@@ -11,10 +11,14 @@ export const insightsApi = {
       timeout: 60000,
     }),
 
-  /** 종합 재무 인사이트 생성 */
-  generateComprehensive: (data: Record<string, unknown>) =>
+  /** 종합 재무 인사이트 생성 — householdId 전달 시 가구 프로필 기반 개인화 분석 */
+  generateComprehensive: (data: Record<string, unknown>, householdId?: number) =>
     apiClient
-      .post<ComprehensiveInsightsResponse>('/insights/generate-comprehensive', data, { timeout: 60000 })
+      .post<ComprehensiveInsightsResponse>(
+        `/insights/generate-comprehensive${householdId ? `?household_id=${householdId}` : ''}`,
+        data,
+        { timeout: 60000 },
+      )
       .then((res) => res.data),
 }
 

@@ -47,7 +47,8 @@ async def test_generate_comprehensive_insights(authenticated_client: AsyncClient
     """종합 인사이트 생성 성공"""
     with patch("app.api.insights.get_llm_provider") as mock_get_provider:
         mock_provider = AsyncMock()
-        mock_provider.generate_comprehensive_insights.return_value = MOCK_LLM_RESPONSE
+        # API는 generate_comprehensive_insights_v2를 호출한다 (V2 전환 후)
+        mock_provider.generate_comprehensive_insights_v2.return_value = MOCK_LLM_RESPONSE
         mock_get_provider.return_value = mock_provider
 
         response = await authenticated_client.post(
@@ -79,7 +80,8 @@ async def test_generate_comprehensive_minimal_request(authenticated_client: Asyn
     """최소한의 데이터만으로도 동작"""
     with patch("app.api.insights.get_llm_provider") as mock_get_provider:
         mock_provider = AsyncMock()
-        mock_provider.generate_comprehensive_insights.return_value = MOCK_LLM_RESPONSE
+        # API는 generate_comprehensive_insights_v2를 호출한다 (V2 전환 후)
+        mock_provider.generate_comprehensive_insights_v2.return_value = MOCK_LLM_RESPONSE
         mock_get_provider.return_value = mock_provider
 
         response = await authenticated_client.post(

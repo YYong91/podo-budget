@@ -37,7 +37,7 @@ primary_region = "nrt"  # 도쿄 (Tokyo Narita)
 [[vm]]
   cpu_kind = "shared"
   cpus = 1
-  memory_mb = 256
+  memory_mb = 512
 
 # 유료 플랜 전환 시 (고성능 필요하면)
 # [[vm]]

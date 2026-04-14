@@ -1,6 +1,6 @@
 /**
  * @file RegisterRecurringModal.tsx
- * @description 지출/수입 항목에서 정기거래로 등록하는 모달
+ * @description 지출/수입 항목을 정기거래로 등록하는 모달
  * 기존 거래의 금액, 설명, 카테고리를 미리 채우고 주기만 추가로 설정한다.
  */
 
@@ -99,7 +99,7 @@ export default function RegisterRecurringModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" role="dialog" aria-modal="true" aria-labelledby="register-recurring-title">
       <div className="bg-[var(--surface-card)] rounded-2xl shadow-xl w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-5 border-b border-[var(--border-subtle)]">
-          <h2 id="register-recurring-title" className="text-lg font-semibold text-[var(--text-primary)]">반복 거래 등록</h2>
+          <h2 id="register-recurring-title" className="text-lg font-semibold text-[var(--text-primary)]">정기거래 등록</h2>
           <button onClick={onClose} className="p-1 rounded-md hover:bg-[var(--surface-hover)]" aria-label="닫기">
             <X className="w-5 h-5 text-[var(--text-tertiary)]" />
           </button>
@@ -249,7 +249,7 @@ export default function RegisterRecurringModal({
             disabled={submitting}
             className="w-full py-3 bg-grape-600 text-white rounded-xl text-sm font-medium shadow-sm hover:bg-grape-700 transition-colors disabled:opacity-50"
           >
-            {submitting ? '등록 중...' : '반복 거래 등록'}
+            {submitting ? '등록 중...' : '정기거래 등록'}
           </button>
         </form>
       </div>

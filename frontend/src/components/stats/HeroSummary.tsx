@@ -1,36 +1,26 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { formatAmount, formatCompactAmount } from '../../utils/format'
+import type { FinancialScore } from '../../types'
+import FinancialHealthScore from './FinancialHealthScore'
 
-// --- 새로운 3구간 프로그레스바 props ---
-type NewHeroSummaryProps = {
+// ─── Props ───
+
+type HeroSummaryProps = {
   label: string
   totalExpense: number
   totalBudget: number | null | undefined // null=미설정, undefined=로딩
   pendingRecurringExpense: number
   totalIncome?: number
+  /** 전월 대비 비교 문장. 예: "지난달 이맘때보다 3만원 줄었어요 ↓" */
+  comparisonText?: string
+  /** comparisonText에 적용할 Tailwind 색상 클래스. 예: "text-leaf-600" | "text-red-600" */
+  comparisonColor?: string
+  /** 배지 모드로 우측 상단에 표시할 가계부 점수 */
+  healthScore?: FinancialScore | null
   onProgressClick?: () => void
   children?: ReactNode
   className?: string
-}
-
-// --- 레거시 props (InsightsPage 호환) ---
-type LegacyHeroSummaryProps = {
-  label: string
-  amount: number
-  sublabel?: string
-  sublabelLoading?: boolean
-  budgetRatio?: number
-  remainingBudget?: number
-  children?: ReactNode
-  className?: string
-}
-
-type HeroSummaryProps = NewHeroSummaryProps | LegacyHeroSummaryProps
-
-/** 새 props인지 판별 */
-function isNewProps(props: HeroSummaryProps): props is NewHeroSummaryProps {
-  return 'totalExpense' in props
 }
 
 /** 금액 축약 포맷 (₩ 접두사 포함) */
@@ -146,6 +136,9 @@ function ProgressBar({
   const [animActual, setAnimActual] = useState(0)
   const [animProjected, setAnimProjected] = useState(0)
 
+  // 예정 바 렌더링 여부 — state에서 파생 (effect 안에서 setState 불필요)
+  const hasProjected = state.type === 'normal' || state.type === 'projectedExceed'
+
   useEffect(() => {
     if (isLoading) return
 
@@ -178,10 +171,14 @@ function ProgressBar({
       }
     }
 
+    // 지출 바 먼저 차오른 뒤 예정 바가 이어서 차오르도록 딜레이 분리
     requestAnimationFrame(() => {
       setAnimActual(actualWidth)
-      setAnimProjected(projectedWidth)
     })
+    const timer = setTimeout(() => {
+      setAnimProjected(projectedWidth)
+    }, 700)
+    return () => clearTimeout(timer)
   }, [state, isLoading, budget, totalExpense, pendingRecurringExpense])
 
   // 초과 상태에서 예산 마커 라인 표시 여부
@@ -213,8 +210,8 @@ function ProgressBar({
           className={`absolute top-0 left-0 h-full rounded-l-full ${animProjected === 0 ? 'rounded-r-full' : ''} ${getActualColor()} transition-all duration-700 ease-out`}
           style={{ width: `${(animActual / totalBarMax) * 100}%` }}
         />
-        {/* 예정 지출 구간 */}
-        {animProjected > 0 && (
+        {/* 예정 지출 구간 — 처음부터 렌더링(width 0)하여 transition으로 자연스럽게 이어짐 */}
+        {hasProjected && (
           <div
             className={`absolute top-0 h-full rounded-r-full ${
               state.type === 'projectedExceed' ? 'bg-warm-300 dark:bg-warm-400' : 'bg-grape-200 dark:bg-grape-300'
@@ -317,88 +314,21 @@ function NoBudgetCta({ hasRecurring }: { hasRecurring: boolean }) {
   )
 }
 
-// ─── 레거시 렌더러 (InsightsPage 호환) ───
-
-/** 예산 비율에 따른 프로그레스 바 색상 결정 */
-function getBudgetFillColor(percentage: number): string {
-  if (percentage > 100) return 'bg-red-400'
-  if (percentage >= 80) return 'bg-amber-400'
-  return 'bg-grape-400'
-}
-
-function LegacyHeroSummary({ label, amount, sublabel, sublabelLoading, budgetRatio, remainingBudget, children, className = '' }: LegacyHeroSummaryProps) {
-  const percentage = budgetRatio != null ? Math.round(budgetRatio * 100) : null
-
-  const [animatedWidth, setAnimatedWidth] = useState(0)
-  useEffect(() => {
-    if (percentage != null) {
-      requestAnimationFrame(() => setAnimatedWidth(Math.min(percentage, 100)))
-    }
-  }, [percentage])
-
-  return (
-    <div className={`card-surface p-6 bg-gradient-to-b from-grape-50/60 to-transparent dark:from-grape-900/30 dark:to-transparent ${className}`}>
-      <p className="text-sm text-[var(--text-tertiary)] mb-1">{label}</p>
-      <p className="text-display text-[var(--text-primary)]">{formatAmount(amount)}</p>
-      {(sublabel || sublabelLoading) && (
-        <p className={`text-xs mt-2 ${sublabel ? 'text-[var(--text-muted)]' : 'invisible'}`}>
-          {sublabel ?? '\u00A0'}
-        </p>
-      )}
-      {percentage != null && (
-        <div
-          role="progressbar"
-          aria-valuenow={percentage}
-          className={`mt-3 ${sublabelLoading ? 'invisible' : ''}`}
-        >
-          <div className="h-1.5 bg-[var(--surface-hover)] rounded-full overflow-hidden">
-            <div
-              className={`h-full rounded-full ${getBudgetFillColor(percentage)} transition-all duration-700 ease-out`}
-              style={{ width: `${animatedWidth}%` }}
-            />
-          </div>
-          {remainingBudget != null && (
-            <div className="flex justify-between mt-1.5">
-              <span className="text-[10px] text-[var(--text-muted)] tabular-nums">
-                예산 {percentage}% 사용
-              </span>
-              {remainingBudget >= 0 ? (
-                <span className="text-[10px] text-grape-500 dark:text-grape-300 font-medium tabular-nums">
-                  {formatAmount(remainingBudget)} 남음
-                </span>
-              ) : (
-                <span className="text-[10px] text-red-500 font-medium tabular-nums">
-                  {formatAmount(Math.abs(remainingBudget))} 초과
-                </span>
-              )}
-            </div>
-          )}
-        </div>
-      )}
-      {children}
-    </div>
-  )
-}
-
 // ─── 메인 컴포넌트 ───
 
-export default function HeroSummary(props: HeroSummaryProps) {
-  // 레거시 props 분기
-  if (!isNewProps(props)) {
-    return <LegacyHeroSummary {...props} />
-  }
-
-  const {
-    label,
-    totalExpense,
-    totalBudget,
-    pendingRecurringExpense,
-    totalIncome,
-    onProgressClick,
-    children,
-    className = '',
-  } = props
-
+export default function HeroSummary({
+  label,
+  totalExpense,
+  totalBudget,
+  pendingRecurringExpense,
+  totalIncome,
+  comparisonText,
+  comparisonColor,
+  healthScore,
+  onProgressClick,
+  children,
+  className = '',
+}: HeroSummaryProps) {
   const state = classifyBudgetState(totalExpense, totalBudget, pendingRecurringExpense)
 
   // 카드 전체를 클릭할 때 이동: 프로그레스바만 특정하지 않고 히어로 영역 전체 클릭 가능
@@ -414,16 +344,47 @@ export default function HeroSummary(props: HeroSummaryProps) {
 
   return (
     <div {...cardClickProps}>
-      <div className="flex justify-between items-baseline">
-        {/* "이번 달 지출"로 명확히 표기 — 예산 금액이 큰 숫자처럼 보이는 혼동 방지 */}
+      {/* 헤더: 라벨 + 건강점수 배지 (우측) */}
+      <div className="flex justify-between items-start">
         <p className="text-sm text-[var(--text-tertiary)] mb-1">{label}</p>
-        {totalBudget != null && totalBudget > 0 && (
-          <p className="text-xs text-[var(--text-muted)] tabular-nums">예산 {formatAmount(totalBudget)}</p>
+        {healthScore && (
+          <FinancialHealthScore score={healthScore} variant="badge" />
         )}
       </div>
-      <p className="text-display text-[var(--text-primary)]">{formatAmount(totalExpense)}</p>
 
-      {/* 예산 설정됨 또는 로딩 → 프로그레스바 (클릭 핸들러는 카드 레벨로 이동) */}
+      {/* 지출 금액 + 예산 인라인 (CLS 방지: 로딩·설정·미설정 모두 동일 행 차지) */}
+      <div className="flex items-baseline gap-1.5">
+        <p className="text-display text-[var(--text-primary)]">{formatAmount(totalExpense)}</p>
+        {/* 로딩 중: skeleton으로 공간 예약 → 레이아웃 밀림 없음 */}
+        {totalBudget === undefined && (
+          <div
+            data-testid="budget-skeleton"
+            className="w-14 h-3.5 bg-[var(--surface-hover)] rounded animate-pulse self-center"
+            aria-hidden
+          />
+        )}
+        {/* 예산 설정됨: / 예산금액 인라인 — 보조 정보로 존재감 최소화 */}
+        {totalBudget != null && totalBudget > 0 && (
+          <>
+            <span className="text-xs text-[var(--text-muted)] font-light leading-none">/</span>
+            <span
+              data-testid="budget-inline"
+              className="text-sm text-[var(--text-muted)] tabular-nums font-normal"
+            >
+              {formatAmount(totalBudget)}
+            </span>
+          </>
+        )}
+      </div>
+
+      {/* 전월 비교 문장 */}
+      {comparisonText && (
+        <p className={`text-xs mt-1.5 ${comparisonColor ?? 'text-[var(--text-secondary)]'}`}>
+          {comparisonText}
+        </p>
+      )}
+
+      {/* 예산 설정됨 또는 로딩 → 프로그레스바 */}
       {state.type !== 'noBudget' && (
         <ProgressBar
           state={state}

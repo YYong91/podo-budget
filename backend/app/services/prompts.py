@@ -1,7 +1,13 @@
 """LLM 프롬프트 템플릿 모듈"""
 
+from __future__ import annotations
+
 from datetime import datetime, timedelta
+from typing import TYPE_CHECKING, Any
 from zoneinfo import ZoneInfo
+
+if TYPE_CHECKING:
+    from app.models.household_profile import HouseholdProfile
 
 # 지출 파싱용 시스템 프롬프트
 EXPENSE_PARSER_SYSTEM_PROMPT = """당신은 한국어 가계부 입력을 분석하는 전문가입니다.
@@ -378,3 +384,273 @@ COMPREHENSIVE_INSIGHTS_JSON_SCHEMA = {
     },
     "required": ["findings", "action_items", "encouragement"],
 }
+
+
+# format_insights_data_for_llm 헬퍼 함수들
+def _fmt_profile(profile: HouseholdProfile | None) -> str:
+    """가구 프로필을 텍스트로 포맷"""
+    if not profile:
+        return ""
+    lines = ["## 가구 정보"]
+    lines.append(f"- 유형: {HOUSEHOLD_TYPE_LABELS.get(profile.household_type, profile.household_type)}")
+    lines.append(f"- 주거: {HOUSING_TYPE_LABELS.get(profile.housing_type, profile.housing_type)}")
+    income_labels = ", ".join(INCOME_TYPE_LABELS.get(t, t) for t in profile.income_types)
+    lines.append(f"- 소득: {income_labels}")
+    lines.append(f"- 연령대: {AGE_RANGE_LABELS.get(profile.age_range, profile.age_range)}")
+    if profile.financial_goal and profile.financial_goal != "none":
+        goal_text = GOAL_LABELS.get(profile.financial_goal, profile.financial_goal)
+        if profile.goal_amount:
+            goal_text += f" (목표 {profile.goal_amount:,}원"
+            if profile.goal_deadline:
+                goal_text += f", {profile.goal_deadline.strftime('%Y년 %m월')}까지"
+            goal_text += ")"
+        lines.append(f"- 재무 목표: {goal_text}")
+    if profile.primary_concern and profile.primary_concern != "none":
+        lines.append(f"- 주요 고민: {CONCERN_LABELS.get(profile.primary_concern, profile.primary_concern)}")
+    return "\n".join(lines)
+
+
+def _fmt_monthly_summary(data: dict[str, Any]) -> str:
+    """월간 요약을 텍스트로 포맷"""
+    lines = [f"## {data['month']} 재무 요약"]
+    lines.append(f"- 총 수입: {data['income_total']:,.0f}원")
+    lines.append(f"- 총 지출: {data['expense_total']:,.0f}원")
+    if data.get("savings_total") is not None:
+        savings_rate = data.get("savings_rate", 0)
+        lines.append(f"- 저축성 지출: {data['savings_total']:,.0f}원 (저축률 {savings_rate:.1f}%)")
+    lines.append(f"- 잔액: {data['income_total'] - data['expense_total']:,.0f}원")
+    return "\n".join(lines)
+
+
+def _fmt_categories(data: dict[str, Any]) -> str:
+    """카테고리별 지출을 텍스트로 포맷"""
+    cats = data.get("top_expense_categories")
+    if not cats:
+        return ""
+    lines = ["## 지출 카테고리 (상위)"]
+    for cat in cats:
+        lines.append(f"- {cat['name']}: {cat['amount']:,.0f}원 ({cat['percentage']:.1f}%)")
+    return "\n".join(lines)
+
+
+def _fmt_budget(data: dict[str, Any]) -> str:
+    """예산 현황을 텍스트로 포맷"""
+    b = data.get("budget")
+    if not b:
+        return ""
+    usage = b["total_spent"] / b["total_budget"] * 100 if b["total_budget"] > 0 else 0
+    lines = ["## 예산 현황"]
+    lines.append(f"- 총 예산: {b['total_budget']:,.0f}원")
+    lines.append(f"- 사용: {b['total_spent']:,.0f}원 ({usage:.0f}%)")
+    if b.get("over_categories"):
+        lines.append(f"- 초과 카테고리: {', '.join(b['over_categories'])}")
+    return "\n".join(lines)
+
+
+def _fmt_recurring(data: dict[str, Any]) -> str:
+    """고정비를 텍스트로 포맷"""
+    recurring = data.get("recurring_total")
+    if not recurring:
+        return ""
+    income = data.get("income_total", 0)
+    ratio = recurring / income * 100 if income > 0 else 0
+    lines = ["## 고정비"]
+    lines.append(f"- 정기거래 합계: {recurring:,.0f}원 (수입의 {ratio:.1f}%)")
+    return "\n".join(lines)
+
+
+def _fmt_trend(data: dict[str, Any]) -> str:
+    """3개월 추이를 텍스트로 포맷
+
+    수입 데이터가 없는 달(income=0)은 지출만 표시한다.
+    수입 API가 연동되기 전까지는 income이 0으로 전달되므로 불필요한 '수입 0원' 출력을 방지.
+    """
+    trend = data.get("trend")
+    if not trend:
+        return ""
+    lines = ["## 3개월 추이"]
+    for m in trend:
+        if m.get("income", 0) > 0:
+            lines.append(f"- {m['month']}: 수입 {m['income']:,.0f}원, 지출 {m['expense']:,.0f}원")
+        else:
+            lines.append(f"- {m['month']}: 지출 {m['expense']:,.0f}원")
+    return "\n".join(lines)
+
+
+def _fmt_comparison(data: dict[str, Any]) -> str:
+    """전월 대비를 텍스트로 포맷"""
+    if data.get("previous_month_expense") is None:
+        return ""
+    lines = ["## 전월 대비"]
+    exp_change = data["expense_total"] - data["previous_month_expense"]
+    lines.append(f"- 지출: {data['previous_month_expense']:,.0f}원 → {data['expense_total']:,.0f}원 ({exp_change:+,.0f}원)")
+    if data.get("previous_month_income") is not None:
+        inc_change = data["income_total"] - data["previous_month_income"]
+        lines.append(f"- 수입: {data['previous_month_income']:,.0f}원 → {data['income_total']:,.0f}원 ({inc_change:+,.0f}원)")
+    return "\n".join(lines)
+
+
+def _fmt_financial_score(data: dict[str, Any]) -> str:
+    """가계부 점수를 텍스트로 포맷"""
+    fs = data.get("financial_score")
+    if not fs:
+        return ""
+    lines = [f"## 가계부 점수: {fs['overall']}점 ({fs['grade']})"]
+    if fs.get("savings_rate") is not None:
+        lines.append(f"- 저축률: {fs['savings_rate']}점")
+    if fs.get("budget_adherence") is not None:
+        lines.append(f"- 예산 준수율: {fs['budget_adherence']}점")
+    if fs.get("fixed_expense_ratio") is not None:
+        lines.append(f"- 고정비 비율: {fs['fixed_expense_ratio']}점")
+    if fs.get("spending_stability") is not None:
+        lines.append(f"- 소비 안정성: {fs['spending_stability']}점")
+    return "\n".join(lines)
+
+
+def _fmt_assets(data: dict[str, Any]) -> str:
+    """자산 현황을 텍스트로 포맷"""
+    a = data.get("assets")
+    if not a:
+        return ""
+    lines = ["## 자산 현황"]
+    lines.append(f"- 총 자산: {a['total_assets']:,.0f}원")
+    lines.append(f"- 총 부채: {a['total_liabilities']:,.0f}원")
+    lines.append(f"- 순자산: {a['net_worth']:,.0f}원")
+    if a.get("monthly_change_amount"):
+        lines.append(f"- 전월 대비: {a['monthly_change_amount']:+,.0f}원 ({a['monthly_change_rate']:+.1f}%)")
+    return "\n".join(lines)
+
+
+def format_insights_data_for_llm(data: dict[str, Any], profile: HouseholdProfile | None) -> str:
+    """ComprehensiveInsightsRequest 데이터를 LLM이 읽기 쉬운 구조화 텍스트로 변환.
+
+    JSON dump 대비 약 30% 토큰 절약. 가구 프로필과 재무 데이터를 마크다운 형식으로
+    포맷하여 LLM이 쉽게 처리할 수 있도록 합니다.
+
+    Args:
+        data: ComprehensiveInsightsRequest 데이터 딕셔너리
+        profile: HouseholdProfile 인스턴스 (선택사항)
+
+    Returns:
+        마크다운 형식의 텍스트
+    """
+    sections = [
+        _fmt_profile(profile),
+        _fmt_monthly_summary(data),
+        _fmt_categories(data),
+        _fmt_budget(data),
+        _fmt_recurring(data),
+        _fmt_trend(data),
+        _fmt_comparison(data),
+        _fmt_financial_score(data),
+        _fmt_assets(data),
+    ]
+    return "\n\n".join(s for s in sections if s)
+
+
+# 가구 프로필 라벨 매핑 (format_insights_data_for_llm에서 사용)
+HOUSEHOLD_TYPE_LABELS = {
+    "single": "1인 가구",
+    "dual_income": "맞벌이",
+    "single_income": "외벌이",
+    "retired": "은퇴/연금",
+}
+
+HOUSING_TYPE_LABELS = {
+    "own_no_loan": "자가(대출 없음)",
+    "own_with_loan": "자가(대출 있음)",
+    "jeonse": "전세",
+    "monthly_rent": "월세",
+    "with_parents": "부모님 동거",
+}
+
+INCOME_TYPE_LABELS = {
+    "salary": "급여",
+    "freelance": "프리랜서",
+    "business": "사업소득",
+    "pension": "연금",
+    "investment": "투자/배당",
+    "side_job": "부업",
+}
+
+AGE_RANGE_LABELS = {
+    "20s": "20대",
+    "30s": "30대",
+    "40s": "40대",
+    "50s_plus": "50대 이상",
+}
+
+GOAL_LABELS = {
+    "emergency_fund": "비상금 마련",
+    "debt_payoff": "대출 상환",
+    "home_purchase": "내 집 마련",
+    "investment": "투자/자산 증식",
+    "retirement": "노후 준비",
+    "travel": "여행/큰 지출 준비",
+    "none": "특별한 목표 없음",
+}
+
+CONCERN_LABELS = {
+    "overspending": "지출 통제",
+    "no_savings": "저축 부족",
+    "too_much_debt": "부채 걱정",
+    "irregular_income": "수입 불규칙",
+    "none": "특별한 고민 없음",
+}
+
+# 종합 인사이트 V2 시스템 프롬프트
+COMPREHENSIVE_INSIGHTS_SYSTEM_PROMPT_V2 = """당신은 한국 가정의 재무 분석 전문가입니다.
+가계부 데이터와 가구 프로필을 바탕으로, 실질적이고 개인화된 재무 인사이트를 제공합니다.
+
+## 한국 가계 맥락
+
+한국 가정의 재무 특성을 고려하여 분석합니다:
+- **주거비**: 전세 보증금은 자산이자 부채. 월세는 고정 지출. 주택 대출 상환은 장기 재무 계획의 핵심
+- **고정비 구조**: 관리비, 통신비, 보험료, 구독 서비스 등 한국 가계의 고정비 항목 이해
+- **저축 문화**: 적금, 청약, 연금저축 등 한국 특유의 저축 상품 맥락
+- **생애주기**: 20대(사회초년생), 30대(결혼/주택), 40대(교육비), 50대+(은퇴 준비) 각 시기의 재무 과제
+- **경조사비**: 축의금, 부의금 등 한국 특유의 사회적 지출
+
+## 분석 원칙
+
+1. **데이터만 말한다**: 제공된 수치에서만 인사이트를 도출합니다. 추측하지 않습니다.
+2. **맥락이 판단을 바꾼다**: 같은 저축률 15%도 20대 사회초년생에겐 좋은 시작이고, 맞벌이 40대에겐 개선이 필요합니다. 가구 프로필을 반드시 반영합니다.
+3. **실천 가능해야 의미 있다**: "절약하세요" 대신 "식비에서 매주 1회 도시락을 싸면 월 8만원 절약"처럼 구체적이고 측정 가능한 조언을 합니다.
+
+## 어조
+
+- 친근하지만 전문적인 톤 (존댓말 사용)
+- 판단하지 않고 관찰합니다 ("낭비가 심하네요" ❌ → "외식비가 지난달보다 30% 증가했어요" ✅)
+- 긍정적 발견을 먼저, 개선점은 그 다음에
+- 금액은 한국식 표기 (만원/억원 단위)
+
+## 하지 말 것 (Anti-patterns)
+
+- ❌ 구체적인 금융 상품, 종목, 매수/매도 시점 추천 (투자 자문 금지)
+- ❌ 데이터에 없는 내용 추측 ("아마 외식을 자주 하시는 것 같습니다" — 데이터로 확인되지 않으면 언급 금지)
+- ❌ 뻔한 조언 ("저축을 늘리세요", "지출을 줄이세요" 등 일반론)
+- ❌ 과도한 칭찬이나 과도한 경고 (균형 잡힌 톤 유지)
+- ❌ 이전 달 데이터가 없을 때 "지난달 대비" 언급
+- ❌ 재무 목표가 없는 사용자에게 목표 기반 분석 강요
+
+## 출력 구조
+
+아래 JSON 구조에 맞춰 응답하세요:
+
+### findings (1~3개)
+각 발견은 "What → So What → Now What" 프레임워크를 따릅니다:
+- what: 데이터에서 발견한 패턴이나 사실 (구체적 수치 포함, 1~2문장)
+- so_what: 가구 프로필 맥락에서 왜 이것이 중요한지 (1~2문장)
+- now_what: 구체적이고 측정 가능한 행동 제안 (1~2문장)
+
+### asset_analysis (자산 데이터가 있을 때만)
+- summary: 자산 현황 한 줄 요약
+- allocation_analysis: 자산 배분 분석 (2~3문장)
+- diversification_tip: 일반적인 분산 가이드 (투자 자문 아닌 정보 제공)
+
+### action_items (1~3개)
+- title: 한 줄 제목 (동사로 시작)
+- description: 실행 방법 + 기대 효과 (구체적 금액/기간 포함, 1~2문장)
+
+### encouragement
+- 가구 프로필 맥락을 반영한 1~2문장 격려 (재무 목표 있으면 목표 달성 관점에서)"""
