@@ -8,6 +8,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Routes, Route } from 'react-router-dom'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { http, HttpResponse } from 'msw'
 import { server } from '../../mocks/server'
 import SettingsPage from '../SettingsPage'
@@ -59,6 +60,12 @@ vi.mock('../../contexts/AuthContext', () => ({
   }),
 }))
 
+// useHouseholdStore 모킹
+vi.mock('../../stores/useHouseholdStore', () => ({
+  useHouseholdStore: (selector: (s: { activeHouseholdId: number }) => unknown) =>
+    selector({ activeHouseholdId: 1 }),
+}))
+
 // IntersectionObserver 모킹
 const mockObserve = vi.fn()
 const mockDisconnect = vi.fn()
@@ -69,16 +76,27 @@ globalThis.IntersectionObserver = class IntersectionObserver {
   unobserve = vi.fn()
 } as unknown as typeof globalThis.IntersectionObserver
 
+function createTestQueryClient() {
+  return new QueryClient({
+    defaultOptions: {
+      queries: { retry: false, gcTime: 0 },
+    },
+  })
+}
+
 function renderSettingsPage(path = '/settings') {
+  const queryClient = createTestQueryClient()
   return render(
-    <ThemeProvider>
-      <MemoryRouter initialEntries={[path]}>
-        <Routes>
-          <Route path="/settings" element={<SettingsPage />} />
-          <Route path="/settings/:section" element={<SettingsPage />} />
-        </Routes>
-      </MemoryRouter>
-    </ThemeProvider>
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider>
+        <MemoryRouter initialEntries={[path]}>
+          <Routes>
+            <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/settings/:section" element={<SettingsPage />} />
+          </Routes>
+        </MemoryRouter>
+      </ThemeProvider>
+    </QueryClientProvider>
   )
 }
 

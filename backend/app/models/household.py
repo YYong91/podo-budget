@@ -52,6 +52,13 @@ class Household(Base):  # type: ignore[misc]
     invitations = relationship("HouseholdInvitation", back_populates="household", cascade="all, delete-orphan")
     expenses = relationship("Expense", back_populates="household")
     incomes = relationship("Income", back_populates="household")
+    # 가구 프로필 — 1:1 관계 (가구당 1개, 삭제 시 함께 삭제)
+    profile = relationship(
+        "HouseholdProfile",
+        back_populates="household",
+        uselist=False,
+        cascade="all, delete-orphan",
+    )
 
     def __repr__(self) -> str:
         return f"<Household(id={self.id}, name={self.name}, currency={self.currency})>"

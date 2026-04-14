@@ -54,6 +54,23 @@ class HealthScoreBreakdown(BaseModel):
     grade: str
 
 
+class TrendMonth(BaseModel):
+    month: str
+    income: float = Field(ge=0)
+    expense: float = Field(ge=0)
+
+
+class FinancialScoreBreakdown(BaseModel):
+    """4개 지표 기반 가계부 점수 (기존 HealthScoreBreakdown 대체)"""
+
+    savings_rate: int | None = None
+    budget_adherence: int | None = None
+    fixed_expense_ratio: int | None = None
+    spending_stability: int | None = None
+    overall: int
+    grade: str
+
+
 class ComprehensiveInsightsRequest(BaseModel):
     """프론트엔드가 사전 계산한 종합 재무 데이터
 
@@ -68,7 +85,16 @@ class ComprehensiveInsightsRequest(BaseModel):
     assets: AssetBreakdown | None = None
     debt: DebtSummary | None = None
     savings_rate: float = Field(0, ge=0, le=100)
-    health_score: HealthScoreBreakdown | None = None
+
+    # ── 하위 호환 유지 ──
+    health_score: HealthScoreBreakdown | None = None  # deprecated, 하위 호환 유지
+
+    # ── 신규 필드 (모두 optional) ──
+    trend: list[TrendMonth] = []
+    savings_total: float | None = Field(None, ge=0)
+    recurring_total: float | None = Field(None, ge=0)
+    financial_score: FinancialScoreBreakdown | None = None
+
     previous_month_expense: float | None = Field(None, ge=0)
     previous_month_income: float | None = Field(None, ge=0)
 

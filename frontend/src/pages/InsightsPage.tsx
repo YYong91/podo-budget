@@ -13,7 +13,7 @@
 import { useState, useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Sparkles, Settings } from 'lucide-react'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueries, useQueryClient, useMutation } from '@tanstack/react-query'
 import ErrorState from '../components/ErrorState'
 import { useToast } from '../hooks/useToast'
 import { TOAST } from '../constants/toastMessages'
@@ -27,6 +27,7 @@ import { getMonthlyStats } from '../api/budgets'
 import { categoryApi } from '../api/categories'
 import { paymentMethodApi } from '../api/paymentMethods'
 import { recurringApi } from '../api/recurring'
+import { getHouseholdProfile, upsertHouseholdProfile } from '../api/householdProfiles'
 import { useHouseholdStore } from '../stores/useHouseholdStore'
 
 // 컴포넌트
@@ -49,14 +50,16 @@ import LayerDivider from '../components/stats/LayerDivider'
 import InsightsOnboarding from '../components/stats/InsightsOnboarding'
 import SavingsSection from '../components/stats/SavingsSection'
 import MonthlyComparison from '../components/stats/MonthlyComparison'
+import ProfileCollectionFlow from '../components/stats/ProfileCollectionFlow'
 
 // 유틸
-import { calculateHealthScore } from '../utils/healthScore'
+import { calculateFinancialScore } from '../utils/financialScore'
 import { trackEvent } from '../utils/analytics'
 
 // 타입
 import type {
-  StructuredInsights, HealthScore,
+  StructuredInsights,
+  HouseholdProfileInput,
 } from '../types'
 
 // ── 날짜 유틸 ──
@@ -74,6 +77,15 @@ function shiftMonth(monthStr: string, delta: number): string {
 function getNavLabel(monthStr: string): string {
   const [, m] = monthStr.split('-').map(Number)
   return `${m}월`
+}
+
+// selectedMonth 기준 직전 3개월 목록 반환 (오름차순)
+function getPrev3Months(selectedMonth: string): string[] {
+  const [year, month] = selectedMonth.split('-').map(Number)
+  return [-3, -2, -1].map((offset) => {
+    const d = new Date(year, month - 1 + offset, 1)
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+  })
 }
 
 // ── 로딩 스켈레톤 ──
@@ -142,6 +154,9 @@ export default function InsightsPage() {
   // AI 분석 상태 (사용자 트리거 — 캐시 불필요)
   const [structuredInsights, setStructuredInsights] = useState<StructuredInsights | null>(null)
   const [aiLoading, setAiLoading] = useState(false)
+
+  // 프로필 수집 모달 표시 상태
+  const [showProfileFlow, setShowProfileFlow] = useState(false)
 
   const dateStr = `${monthStr}-15`
 
@@ -234,6 +249,35 @@ export default function InsightsPage() {
     enabled: !!activeHouseholdId && sectionVisibility.recurring,
   })
 
+  // ── Group 7: 가구 프로필 — AI 분석 개인화용 (404는 정상, 프로필 미설정 상태) ──
+
+  const { data: householdProfile, refetch: refetchProfile } = useQuery({
+    queryKey: ['householdProfile', activeHouseholdId],
+    queryFn: () => getHouseholdProfile(activeHouseholdId!),
+    enabled: !!activeHouseholdId,
+    retry: false,
+  })
+
+  // 프로필 저장 mutation
+  const saveProfile = useMutation({
+    mutationFn: (input: HouseholdProfileInput) =>
+      upsertHouseholdProfile(activeHouseholdId!, input),
+    onSuccess: () => refetchProfile(),
+  })
+
+  // ── Group 8: 직전 3개월 지출 통계 — 지출 안정성(spendingStability) 지표용 ──
+
+  const prev3Months = useMemo(() => getPrev3Months(monthStr), [monthStr])
+
+  const prev3MonthsStats = useQueries({
+    queries: prev3Months.map((m) => ({
+      queryKey: ['expenseStats', m, activeHouseholdId],
+      queryFn: () => expenseApi.getMonthlyStats(m, activeHouseholdId!).then(r => r.data),
+      enabled: !!activeHouseholdId,
+      staleTime: 5 * 60 * 1000,
+    })),
+  })
+
   // ── 파생 상태 (useMemo — 쿼리 결과 변경 시 재계산) ──
 
   // 저축성 지출 합계 (is_savings=true 카테고리만 집계)
@@ -267,19 +311,60 @@ export default function InsightsPage() {
     return map
   }, [monthlyExpenseList, monthlyIncomeList])
 
-  const healthScore = useMemo((): HealthScore | null => {
+  // 비저축성 활성 정기지출 합계 (고정비 비율 지표용)
+  // category_id 기반으로 필터링 — description(거래명)은 카테고리명과 다름
+  const recurringNonSavingsTotal = useMemo(() => {
+    const savingsCategoryIds = new Set(
+      expenseCategories.filter(c => c.is_savings).map(c => c.id)
+    )
+    // 저축 카테고리 미설정 시 측정 불가
+    if (savingsCategoryIds.size === 0) return undefined
+    const nonSavingsExpenses = activeRecurringItems
+      .filter(r => r.type === 'expense' && !savingsCategoryIds.has(r.category_id!))
+    if (nonSavingsExpenses.length === 0) return undefined
+    return nonSavingsExpenses.reduce((sum, r) => sum + r.amount, 0)
+  }, [expenseCategories, activeRecurringItems])
+
+  // 직전 3개월 변동지출 배열 — spendingStability 지표 계산용
+  // 변동지출 = 해당월 총지출 - 비저축 정기지출 - 저축성 지출
+  const monthlyVariableExpenses = useMemo(() => {
+    const allLoaded = prev3MonthsStats.every((q) => q.isSuccess)
+    if (!allLoaded) return []
+
+    const savingsCatNames = new Set(
+      expenseCategories.filter(c => c.is_savings).map(c => c.name)
+    )
+
+    return prev3MonthsStats.map((q) => {
+      const stats = q.data
+      if (!stats) return 0
+      const totalExpense = stats.total ?? 0
+      const savingsExpense = stats.by_category
+        .filter(cb => savingsCatNames.has(cb.category))
+        .reduce((sum, cb) => sum + cb.amount, 0)
+      return Math.max(0, totalExpense - (recurringNonSavingsTotal ?? 0) - savingsExpense)
+    })
+  }, [prev3MonthsStats, expenseCategories, recurringNonSavingsTotal])
+
+  const financialScore = useMemo(() => {
     if (!expenseStats && !incomeStats) return null
-    return calculateHealthScore({
+
+    const [year, month] = monthStr.split('-').map(Number)
+
+    return calculateFinancialScore({
       incomeTotal: incomeStats?.total ?? 0,
-      expenseTotal: expenseStats?.total ?? 0,
       savingsTotal,
       budgetTotal: budgetStats?.total_budget ?? undefined,
       budgetSpent: budgetStats?.total_spent ?? undefined,
-      totalLiabilities: 0,
-      totalAssets: 0,
-      avgLoanRate: 0,
+      budgetCategories: budgetStats?.categories?.length ?? 0,
+      expenseCategories: expenseStats?.by_category?.length ?? 0,
+      recurringNonSavings: recurringNonSavingsTotal,
+      monthlyVariableExpenses,
+      targetYear: year,
+      targetMonth: month,
+      today: new Date(),
     })
-  }, [expenseStats, incomeStats, savingsTotal, budgetStats])
+  }, [expenseStats, incomeStats, savingsTotal, budgetStats, recurringNonSavingsTotal, monthlyVariableExpenses, monthStr])
 
   // 거래 건수 (온보딩 분기용) — count 필드는 StatsResponse에 있음
   const transactionCount = (expenseStats?.count ?? 0) + (incomeStats?.count ?? 0)
@@ -363,6 +448,26 @@ export default function InsightsPage() {
   // 핵심 데이터가 모두 undefined이고 로딩도 끝났으면 에러 (네트워크/서버 오류)
   const error = !expenseStats && !incomeStats && !expLoading && !incLoading && !!activeHouseholdId
 
+  // 프로필 저장 핸들러 (ProfileCollectionFlow → Step 완료 시 호출)
+  async function handleProfileComplete(input: HouseholdProfileInput) {
+    await saveProfile.mutateAsync(input)
+  }
+
+  // 프로필 수집 완료 후 AI 분석 시작
+  function handleProfileFlowDone() {
+    setShowProfileFlow(false)
+    void handleGenerateAI()
+  }
+
+  // AI 분석 버튼 클릭 — 프로필 없으면 수집 플로우, 있으면 바로 분석
+  function handleAIAnalysisClick() {
+    if (!householdProfile) {
+      setShowProfileFlow(true)
+    } else {
+      void handleGenerateAI()
+    }
+  }
+
   // AI 분석 생성 (사용자 트리거 — React Query 불필요)
   const handleGenerateAI = useCallback(async () => {
     if (!expenseStats && !incomeStats) {
@@ -386,9 +491,29 @@ export default function InsightsPage() {
               ? (savingsTotal / incomeStats.total) * 100
               : ((incomeStats.total - (expenseStats?.total ?? 0)) / incomeStats.total) * 100)
           : 0,
-        health_score: healthScore,
+        health_score: financialScore,
         previous_month_expense: comparison?.previous?.total ?? null,
         previous_month_income: incomeComparison?.previous?.total ?? null,
+        // 직전 3개월 트렌드 (income은 현재 expense stats만 있어 0 — TODO: income API 연결)
+        trend: prev3MonthsStats
+          .filter((q) => q.isSuccess && q.data)
+          .map((q, i) => ({
+            month: prev3Months[i],
+            income: 0,
+            expense: q.data?.total ?? 0,
+          })),
+        savings_total: savingsTotal ?? undefined,
+        recurring_total: recurringNonSavingsTotal ?? undefined,
+        financial_score: financialScore
+          ? {
+              savings_rate: financialScore.savingsRate,
+              budget_adherence: financialScore.budgetAdherence,
+              fixed_expense_ratio: financialScore.fixedExpenseRatio,
+              spending_stability: financialScore.spendingStability,
+              overall: financialScore.overall,
+              grade: financialScore.grade,
+            }
+          : undefined,
       }
 
       // 예산 데이터
@@ -402,7 +527,7 @@ export default function InsightsPage() {
         }
       }
 
-      const result = await insightsApi.generateComprehensive(requestData)
+      const result = await insightsApi.generateComprehensive(requestData, activeHouseholdId ?? undefined)
       setStructuredInsights(result.insights)
       trackEvent('ai_analysis_requested')
       addToast('success', TOAST.AI_ANALYSIS_COMPLETE)
@@ -411,7 +536,7 @@ export default function InsightsPage() {
     } finally {
       setAiLoading(false)
     }
-  }, [monthStr, expenseStats, incomeStats, budgetStats, healthScore, comparison, incomeComparison, savingsTotal, addToast])
+  }, [monthStr, expenseStats, incomeStats, budgetStats, financialScore, comparison, incomeComparison, savingsTotal, recurringNonSavingsTotal, prev3MonthsStats, prev3Months, activeHouseholdId, addToast])
 
   // monthStr에서 파생된 연/월 (PeriodNavigator + HeroSummary에서 공유)
   const { currentYear, currentMonth } = useMemo(() => {
@@ -498,6 +623,21 @@ export default function InsightsPage() {
         />
       )}
 
+      {/* 프로필 수집 모달 — AI 분석 전 가구 프로필 미설정 시 표시 */}
+      {showProfileFlow && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-end">
+          <div className="bg-white rounded-t-2xl p-6 w-full max-h-[85vh] overflow-y-auto">
+            <h3 className="text-base font-semibold text-warm-900 mb-4">AI 분석을 위한 정보</h3>
+            <ProfileCollectionFlow
+              onComplete={handleProfileComplete}
+              onAnalysisReady={handleProfileFlowDone}
+              onCancel={() => setShowProfileFlow(false)}
+              isLoading={saveProfile.isPending}
+            />
+          </div>
+        </div>
+      )}
+
       {/* 풀 리포트 — 거래 5건 이상 */}
       {!loading && !error && transactionCount >= FULL_REPORT_THRESHOLD && (
         <>
@@ -510,7 +650,7 @@ export default function InsightsPage() {
             totalIncome={incomeStats?.total}
             comparisonText={comparisonText}
             comparisonColor={comparisonColor}
-            healthScore={healthScore}
+            healthScore={financialScore}
           />
 
           {/* Layer 1: 한눈에 — 주목할 점 → 요약 카드 */}
@@ -596,7 +736,7 @@ export default function InsightsPage() {
                 </div>
                 {!structuredInsights && (
                   <button
-                    onClick={handleGenerateAI}
+                    onClick={handleAIAnalysisClick}
                     disabled={aiLoading}
                     className="px-4 py-1.5 text-sm font-medium text-white bg-grape-600 rounded-lg hover:bg-grape-700 disabled:bg-warm-400 disabled:cursor-not-allowed transition-colors"
                   >

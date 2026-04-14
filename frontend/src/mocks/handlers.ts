@@ -660,6 +660,29 @@ export const handlers = [
     return HttpResponse.json(null, { status: 204 })
   }),
 
+  // ==================== 가구 프로필 API ====================
+
+  /**
+   * GET /api/household-profiles/:householdId - 가구 프로필 조회
+   */
+  http.get(`${BASE_URL}/household-profiles/:householdId`, () => {
+    return HttpResponse.json(null, { status: 404 })
+  }),
+
+  /**
+   * PUT /api/household-profiles/:householdId - 가구 프로필 저장/수정
+   */
+  http.put(`${BASE_URL}/household-profiles/:householdId`, async ({ request }) => {
+    const body = (await request.json()) as Record<string, unknown>
+    return HttpResponse.json({
+      id: 1,
+      household_id: 1,
+      ...body,
+      created_at: '2026-04-14T00:00:00',
+      updated_at: '2026-04-14T00:00:00',
+    })
+  }),
+
   // ==================== 인사이트 API ====================
 
   /**

@@ -69,7 +69,6 @@ import type {
   RecurringTransaction,
   ExecuteResponse,
   Feedback,
-  HealthScore,
   Finding,
   AssetAnalysisResult,
   ActionItem,
@@ -136,7 +135,6 @@ const _ExecuteResp: VerifyRequiredFields<S['ExecuteResponse'], ExecuteResponse, 
 const _Feedback: VerifyRequiredFields<S['FeedbackResponse'], Feedback, 'Feedback'> = true
 
 // 인사이트
-const _HealthScore: VerifyRequiredFields<S['HealthScoreBreakdown'], HealthScore, 'HealthScore'> = true
 const _Finding: VerifyRequiredFields<S['Finding'], Finding, 'Finding'> = true
 const _AssetAnalysis: VerifyRequiredFields<S['AssetAnalysis'], AssetAnalysisResult, 'AssetAnalysis'> = true
 const _ActionItem: VerifyRequiredFields<S['ActionItem'], ActionItem, 'ActionItem'> = true
@@ -162,7 +160,7 @@ export {
   _BudgetMonthlyCat, _BudgetMonthlyStats,
   _CategoryStats, _TrendPoint, _StatsResp, _PeriodTotal, _CategoryChange,
   _Recurring, _ExecuteResp, _Feedback,
-  _HealthScore, _Finding, _AssetAnalysis, _ActionItem,
+  _Finding, _AssetAnalysis, _ActionItem,
   _RecentActivity, _InactiveUser, _AdminUserItem, _AdminUserList, _AdminUserDetail,
   _Household, _HouseholdMember, _HouseholdInvitation,
 }

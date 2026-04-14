@@ -20,6 +20,7 @@ from app.api import (
     e2e,
     expenses,
     feedback,
+    household_profiles,
     households,
     income,
     insights,
@@ -278,6 +279,7 @@ app.include_router(insights.router, prefix="/api/insights", tags=["insights"])
 app.include_router(telegram.router, prefix="/api/telegram", tags=["telegram"])
 app.include_router(kakao.router, prefix="/api/kakao", tags=["kakao"])
 app.include_router(households.router, prefix="/api/households", tags=["households"])
+app.include_router(household_profiles.router, prefix="/api/household-profiles", tags=["household-profiles"])
 app.include_router(income.router, prefix="/api/income", tags=["income"])
 app.include_router(invitations.router, prefix="/api/invitations", tags=["invitations"])
 app.include_router(recurring.router, prefix="/api/recurring", tags=["recurring"])

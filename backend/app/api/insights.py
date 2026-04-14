@@ -18,6 +18,7 @@ from app.core.database import get_db
 from app.core.rate_limit import limiter
 from app.models.category import Category
 from app.models.expense import Expense
+from app.models.household_profile import HouseholdProfile
 from app.models.user import User
 from app.schemas.insights import (
     ComprehensiveInsightsRequest,
@@ -25,6 +26,7 @@ from app.schemas.insights import (
     InsightsGenerateResponse,
 )
 from app.services.llm_service import get_llm_provider
+from app.services.prompts import format_insights_data_for_llm
 
 router = APIRouter()
 
@@ -128,20 +130,31 @@ async def generate_insights(
 async def generate_comprehensive_insights(
     request: Request,
     body: ComprehensiveInsightsRequest,
+    household_id: int | None = Query(None, description="가구 ID (없으면 활성 가구)"),
     current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ) -> object:
-    """종합 재무 인사이트 생성
+    """종합 재무 인사이트 생성 (V2)
 
     프론트엔드가 사전 계산한 재무 데이터를 받아 LLM에게 구조화된 분석을 요청합니다.
-    건강 점수, 자산/부채 현황 등은 프론트엔드에서 계산하여 전송합니다.
+    가구 프로필이 있으면 개인화된 분석을 제공합니다.
 
     Rate Limiting:
     - 사용자당 분당 5회 제한
     """
+    # household_id 미지정 시 활성 가구 자동 감지
+    if household_id is None:
+        household_id = await get_user_active_household_id(current_user, db)
+    await get_household_member(household_id, current_user, db)
+
+    # 가구 프로필 조회 (없어도 분석 가능 — 프로필 섹션만 생략됨)
+    profile = await db.scalar(select(HouseholdProfile).where(HouseholdProfile.household_id == household_id))
+
     report_data = body.model_dump(exclude_none=True)
+    formatted_text = format_insights_data_for_llm(report_data, profile)
 
     llm = get_llm_provider("insights")
-    structured = await llm.generate_comprehensive_insights(report_data)
+    structured = await llm.generate_comprehensive_insights_v2(formatted_text)
 
     return ComprehensiveInsightsResponse(
         month=body.month,

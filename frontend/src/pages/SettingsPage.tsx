@@ -9,9 +9,10 @@ import { Link, useParams, useNavigate } from 'react-router-dom'
 import {
   Tags, PiggyBank, Repeat, Users, MessageSquarePlus,
   Sparkles, ChevronRight, User, Sun, Moon,
-  ShieldCheck, Download, CreditCard,
+  ShieldCheck, Download, CreditCard, BrainCircuit,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../contexts/AuthContext'
 import { useChangelog } from '../hooks/useChangelog'
 import { useInstallPrompt } from '../hooks/useInstallPrompt'
@@ -20,8 +21,14 @@ import { useTheme } from '../contexts/ThemeContext'
 import AppearanceSection from '../components/settings/AppearanceSection'
 import ChangelogSection from '../components/settings/ChangelogSection'
 import MyAccountSection from '../components/settings/MyAccountSection'
+import ProfileEditSection from '../components/settings/ProfileEditSection'
+import ProfileCollectionFlow from '../components/stats/ProfileCollectionFlow'
+import SubPageWrapper from '../components/settings/SubPageWrapper'
+import { useHouseholdStore } from '../stores/useHouseholdStore'
+import { getHouseholdProfile, upsertHouseholdProfile } from '../api/householdProfiles'
+import type { HouseholdProfileInput } from '../types'
 
-type SettingsSection = 'changelog' | 'my-account' | 'appearance'
+type SettingsSection = 'changelog' | 'my-account' | 'appearance' | 'ai-profile'
 
 /* 이전 URL 호환용 리디렉션 맵 */
 const SECTION_REDIRECTS: Record<string, SettingsSection | string> = {
@@ -112,6 +119,27 @@ export default function SettingsPage() {
   const { section } = useParams<{ section: string }>()
   const navigate = useNavigate()
 
+  // AI 분석 설정 — 프로필 조회/저장
+  const activeHouseholdId = useHouseholdStore((s) => s.activeHouseholdId)
+  const queryClient = useQueryClient()
+  const [showProfileFlow, setShowProfileFlow] = useState(false)
+
+  const { data: householdProfile, refetch: refetchProfile } = useQuery({
+    queryKey: ['householdProfile', activeHouseholdId],
+    queryFn: () => getHouseholdProfile(activeHouseholdId!),
+    enabled: !!activeHouseholdId,
+    retry: false,
+  })
+
+  const saveProfile = useMutation({
+    mutationFn: (input: HouseholdProfileInput) =>
+      upsertHouseholdProfile(activeHouseholdId!, input),
+    onSuccess: () => {
+      void refetchProfile()
+      void queryClient.invalidateQueries({ queryKey: ['householdProfile'] })
+    },
+  })
+
   const menuSections: MenuSection[] = [
     {
       label: '가계부',
@@ -136,6 +164,12 @@ export default function SettingsPage() {
           to: '/settings/my-account',
           label: '내 계정',
           icon: User,
+        },
+        {
+          to: '/settings/ai-profile',
+          label: 'AI 분석 설정',
+          description: householdProfile ? '가구 정보 설정됨' : '가구 정보를 입력하면 AI 분석이 더 정확해져요',
+          icon: BrainCircuit,
         },
       ],
     },
@@ -165,7 +199,7 @@ export default function SettingsPage() {
   }
 
   // 잘못된 섹션이면 설정 메인으로 리디렉션
-  const validSections: SettingsSection[] = ['changelog', 'my-account', 'appearance']
+  const validSections: SettingsSection[] = ['changelog', 'my-account', 'appearance', 'ai-profile']
   if (section && !validSections.includes(section as SettingsSection)) {
     navigate('/settings', { replace: true })
     return null
@@ -218,6 +252,38 @@ export default function SettingsPage() {
       return <ChangelogSection />
     case 'my-account':
       return <MyAccountSection />
+    case 'ai-profile':
+      return (
+        <SubPageWrapper>
+          <div className="space-y-4">
+            <h1 className="text-xl font-bold text-[var(--text-primary)]">AI 분석 설정</h1>
+            <p className="text-sm text-warm-500">
+              가구 정보를 입력하면 AI가 상황에 맞는 분석과 조언을 제공합니다.
+            </p>
+            <ProfileEditSection
+              profile={householdProfile}
+              onEditClick={() => setShowProfileFlow(true)}
+            />
+          </div>
+
+          {/* 프로필 수집 모달 */}
+          {showProfileFlow && (
+            <div className="fixed inset-0 z-50 bg-black/40 flex items-end">
+              <div className="w-full bg-[var(--surface-card)] rounded-t-2xl p-5 max-h-[90vh] overflow-y-auto">
+                <h2 className="text-base font-semibold text-warm-900 mb-4">가구 정보 설정</h2>
+                <ProfileCollectionFlow
+                  onComplete={async (input) => {
+                    await saveProfile.mutateAsync(input)
+                  }}
+                  onAnalysisReady={() => setShowProfileFlow(false)}
+                  onCancel={() => setShowProfileFlow(false)}
+                  isLoading={saveProfile.isPending}
+                />
+              </div>
+            </div>
+          )}
+        </SubPageWrapper>
+      )
     default:
       return <SettingsMenu sections={menuSections} />
   }

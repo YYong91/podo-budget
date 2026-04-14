@@ -66,7 +66,8 @@ async def test_generate_comprehensive_insights(authenticated_client, test_user, 
 
     with patch("app.services.llm_service._create_provider") as mock_create:
         mock_llm = AsyncMock()
-        mock_llm.generate_comprehensive_insights.return_value = mock_result
+        # API는 generate_comprehensive_insights_v2를 호출한다 (V2 전환 후)
+        mock_llm.generate_comprehensive_insights_v2.return_value = mock_result
         mock_create.return_value = mock_llm
 
         resp = await authenticated_client.post(

@@ -93,6 +93,11 @@ class LLMProvider(ABC):
         """종합 재무 데이터를 분석하여 구조화된 인사이트 생성"""
         pass
 
+    @abstractmethod
+    async def generate_comprehensive_insights_v2(self, formatted_text: str) -> dict[str, Any]:
+        """구조화 텍스트를 받아 종합 인사이트 생성 (V2: prompt caching 지원)"""
+        pass
+
 
 class AnthropicProvider(LLMProvider):
     def __init__(self, model: str = ""):
@@ -315,6 +320,47 @@ class AnthropicProvider(LLMProvider):
 
             raise ValueError("LLM이 구조화된 응답을 반환하지 않았습니다")
 
+    async def generate_comprehensive_insights_v2(self, formatted_text: str) -> dict[str, Any]:
+        """V2: 구조화 텍스트 입력 + Prompt Caching으로 토큰 절약"""
+        from app.services.prompts import (
+            COMPREHENSIVE_INSIGHTS_JSON_SCHEMA,
+            COMPREHENSIVE_INSIGHTS_SYSTEM_PROMPT_V2,
+        )
+
+        async with track_llm_call("anthropic"):
+            response = await self.client.messages.create(  # type: ignore[call-overload]
+                model=self.model,
+                max_tokens=2000,
+                system=[
+                    {
+                        "type": "text",
+                        "text": COMPREHENSIVE_INSIGHTS_SYSTEM_PROMPT_V2,
+                        "cache_control": {"type": "ephemeral"},  # 5분 prompt caching
+                    }
+                ],
+                messages=[
+                    {
+                        "role": "user",
+                        "content": f"다음 재무 데이터를 분석해주세요:\n\n{formatted_text}\n\n반드시 JSON으로 응답하세요.",
+                    }
+                ],
+                tools=[
+                    {
+                        "name": "structured_insights",
+                        "description": "구조화된 재무 인사이트",
+                        "input_schema": COMPREHENSIVE_INSIGHTS_JSON_SCHEMA,
+                    }
+                ],
+                tool_choice={"type": "tool", "name": "structured_insights"},
+            )
+
+            # tool_use 응답에서 JSON 추출
+            for block in response.content:
+                if block.type == "tool_use":
+                    return block.input  # type: ignore[no-any-return]
+
+            raise ValueError("LLM이 structured_insights tool을 호출하지 않았습니다")
+
 
 class OpenAIProvider(LLMProvider):
     def __init__(self, model: str = ""):
@@ -475,6 +521,32 @@ class OpenAIProvider(LLMProvider):
             )
             return json.loads(response.choices[0].message.content)  # type: ignore[no-any-return]
 
+    async def generate_comprehensive_insights_v2(self, formatted_text: str) -> dict[str, Any]:
+        """V2: 구조화 텍스트 입력 (OpenAI는 prompt caching 불필요)"""
+        from app.services.prompts import (
+            COMPREHENSIVE_INSIGHTS_JSON_SCHEMA,
+            COMPREHENSIVE_INSIGHTS_SYSTEM_PROMPT_V2,
+        )
+
+        async with track_llm_call("openai"):
+            response = await self.client.chat.completions.create(
+                model=self.model,
+                max_tokens=2000,
+                messages=[
+                    {"role": "system", "content": COMPREHENSIVE_INSIGHTS_SYSTEM_PROMPT_V2},
+                    {"role": "user", "content": f"다음 재무 데이터를 분석해주세요:\n\n{formatted_text}"},
+                ],
+                response_format={
+                    "type": "json_schema",
+                    "json_schema": {
+                        "name": "structured_insights",
+                        "schema": COMPREHENSIVE_INSIGHTS_JSON_SCHEMA,
+                        "strict": True,
+                    },
+                },
+            )
+            return json.loads(response.choices[0].message.content)  # type: ignore[no-any-return]
+
 
 class GoogleProvider(LLMProvider):
     def __init__(self, model: str = ""):
@@ -502,6 +574,9 @@ class GoogleProvider(LLMProvider):
 
     async def generate_comprehensive_insights(self, report_data: dict[str, Any]) -> dict[str, Any]:
         raise NotImplementedError("종합 인사이트는 아직 이 프로바이더를 지원하지 않습니다")
+
+    async def generate_comprehensive_insights_v2(self, formatted_text: str) -> dict[str, Any]:
+        raise NotImplementedError("종합 인사이트 V2는 아직 이 프로바이더를 지원하지 않습니다")
 
 
 class MockLLMProvider(LLMProvider):
@@ -574,6 +649,14 @@ class MockLLMProvider(LLMProvider):
             "health_grade": "양호",
         }
 
+    async def generate_comprehensive_insights_v2(self, formatted_text: str) -> dict[str, Any]:
+        """종합 인사이트 V2 모킹 — 고정 구조 반환"""
+        return {
+            "findings": [{"what": "테스트 발견", "so_what": "테스트 의미", "now_what": "테스트 액션"}],
+            "action_items": [{"title": "테스트 액션", "description": "테스트 설명"}],
+            "encouragement": "테스트 격려 메시지입니다.",
+        }
+
 
 class LocalLLMProvider(LLMProvider):
     def __init__(self, model: str = ""):
@@ -598,6 +681,9 @@ class LocalLLMProvider(LLMProvider):
 
     async def generate_comprehensive_insights(self, report_data: dict[str, Any]) -> dict[str, Any]:
         raise NotImplementedError("종합 인사이트는 아직 이 프로바이더를 지원하지 않습니다")
+
+    async def generate_comprehensive_insights_v2(self, formatted_text: str) -> dict[str, Any]:
+        raise NotImplementedError("로컬 LLM 프로바이더는 V2를 지원하지 않습니다")
 
 
 def _resolve_provider_and_model(feature: LLMFeature | None = None) -> tuple[str, str]:
