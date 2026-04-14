@@ -93,11 +93,11 @@ function BadgeMode({ score }: { score: HealthScore }) {
 
       {open && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
-          {/* 오버레이 — 카드 외부 탭 시 닫기. 스크린 리더는 X 버튼으로 닫도록 aria-hidden */}
+          {/* 오버레이 — 카드 외부 탭 시 닫기. stopPropagation으로 HeroSummary 카드 onClick 버블링 차단 */}
           <button
             aria-hidden="true"
             tabIndex={-1}
-            onClick={() => setOpen(false)}
+            onClick={(e) => { e.stopPropagation(); setOpen(false) }}
             className="absolute inset-0 bg-black/40 cursor-default"
           />
           {/* stopPropagation: 카드 탭이 오버레이 닫기로 전파되는 것 방지 */}
