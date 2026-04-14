@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 from zoneinfo import ZoneInfo
 
 if TYPE_CHECKING:
@@ -410,7 +410,7 @@ def _fmt_profile(profile: HouseholdProfile | None) -> str:
     return "\n".join(lines)
 
 
-def _fmt_monthly_summary(data: dict) -> str:
+def _fmt_monthly_summary(data: dict[str, Any]) -> str:
     """월간 요약을 텍스트로 포맷"""
     lines = [f"## {data['month']} 재무 요약"]
     lines.append(f"- 총 수입: {data['income_total']:,.0f}원")
@@ -422,7 +422,7 @@ def _fmt_monthly_summary(data: dict) -> str:
     return "\n".join(lines)
 
 
-def _fmt_categories(data: dict) -> str:
+def _fmt_categories(data: dict[str, Any]) -> str:
     """카테고리별 지출을 텍스트로 포맷"""
     cats = data.get("top_expense_categories")
     if not cats:
@@ -433,7 +433,7 @@ def _fmt_categories(data: dict) -> str:
     return "\n".join(lines)
 
 
-def _fmt_budget(data: dict) -> str:
+def _fmt_budget(data: dict[str, Any]) -> str:
     """예산 현황을 텍스트로 포맷"""
     b = data.get("budget")
     if not b:
@@ -447,7 +447,7 @@ def _fmt_budget(data: dict) -> str:
     return "\n".join(lines)
 
 
-def _fmt_recurring(data: dict) -> str:
+def _fmt_recurring(data: dict[str, Any]) -> str:
     """고정비를 텍스트로 포맷"""
     recurring = data.get("recurring_total")
     if not recurring:
@@ -459,7 +459,7 @@ def _fmt_recurring(data: dict) -> str:
     return "\n".join(lines)
 
 
-def _fmt_trend(data: dict) -> str:
+def _fmt_trend(data: dict[str, Any]) -> str:
     """3개월 추이를 텍스트로 포맷
 
     수입 데이터가 없는 달(income=0)은 지출만 표시한다.
@@ -477,7 +477,7 @@ def _fmt_trend(data: dict) -> str:
     return "\n".join(lines)
 
 
-def _fmt_comparison(data: dict) -> str:
+def _fmt_comparison(data: dict[str, Any]) -> str:
     """전월 대비를 텍스트로 포맷"""
     if data.get("previous_month_expense") is None:
         return ""
@@ -490,7 +490,7 @@ def _fmt_comparison(data: dict) -> str:
     return "\n".join(lines)
 
 
-def _fmt_financial_score(data: dict) -> str:
+def _fmt_financial_score(data: dict[str, Any]) -> str:
     """가계부 점수를 텍스트로 포맷"""
     fs = data.get("financial_score")
     if not fs:
@@ -507,7 +507,7 @@ def _fmt_financial_score(data: dict) -> str:
     return "\n".join(lines)
 
 
-def _fmt_assets(data: dict) -> str:
+def _fmt_assets(data: dict[str, Any]) -> str:
     """자산 현황을 텍스트로 포맷"""
     a = data.get("assets")
     if not a:
@@ -521,7 +521,7 @@ def _fmt_assets(data: dict) -> str:
     return "\n".join(lines)
 
 
-def format_insights_data_for_llm(data: dict, profile: HouseholdProfile | None) -> str:
+def format_insights_data_for_llm(data: dict[str, Any], profile: HouseholdProfile | None) -> str:
     """ComprehensiveInsightsRequest 데이터를 LLM이 읽기 쉬운 구조화 텍스트로 변환.
 
     JSON dump 대비 약 30% 토큰 절약. 가구 프로필과 재무 데이터를 마크다운 형식으로
