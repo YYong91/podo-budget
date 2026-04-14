@@ -66,16 +66,15 @@ describe('RecurringManageSection', () => {
 
   // ── 항목 상태 표시 ──────────────────────────────────────────────
 
-  it('활성 건수와 이번 달 지출 합계를 표시한다', () => {
+  it('이번 달 고정비 합계를 헤더에 표시한다', () => {
     const executedMap = new Map([[1, 17000], [2, 14900]])
     const items = [
       makeItem({ id: 1, amount: 17000, type: 'expense', next_due_date: '2026-05-15' }),
       makeItem({ id: 2, amount: 14900, type: 'expense', next_due_date: '2026-05-28' }),
     ]
     wrap(<RecurringManageSection items={items} monthStr={MONTH_STR} executedAmountMap={executedMap} />)
-    expect(screen.getByText(/활성 2건/)).toBeInTheDocument()
-    // 헤더 + 푸터 양쪽에 표시될 수 있으므로 getAllByText 사용
-    expect(screen.getAllByText(/31,900/).length).toBeGreaterThan(0)
+    // 하단 푸터 없음, 헤더 서브텍스트에만 고정비 총액 표시
+    expect(screen.getByText(/31,900/)).toBeInTheDocument()
   })
 
   it('실행된 항목은 실제 금액과 완료를 표시한다', async () => {
