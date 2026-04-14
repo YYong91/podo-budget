@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import type { FinancialScore } from '../../types'
 
 type FinancialHealthScoreProps = {
@@ -96,6 +97,14 @@ function FullScoreCard({ score }: { score: FinancialScore }) {
 function BadgeMode({ score }: { score: FinancialScore }) {
   const [open, setOpen] = useState(false)
 
+  // ESC 키로 모달 닫기
+  useEffect(() => {
+    if (!open) return
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false) }
+    document.addEventListener('keydown', handler)
+    return () => document.removeEventListener('keydown', handler)
+  }, [open])
+
   return (
     <>
       <button
@@ -106,20 +115,19 @@ function BadgeMode({ score }: { score: FinancialScore }) {
         <span className="text-xs font-normal opacity-70">{score.overall}</span>
       </button>
 
-      {open && (
+      {open && createPortal(
         <>
-          {/* 배경 버튼: fixed inset-0으로 전체 화면 커버. 클릭 시 닫기 + HeroSummary 버블링 차단 */}
+          {/* 배경 오버레이: document.body에 Portal로 렌더링 → HeroSummary 버블링 완전 차단 */}
           <button
-            onClick={(e) => { e.stopPropagation(); setOpen(false) }}
-            className="fixed inset-0 z-50 bg-black/40 w-full cursor-default"
+            onClick={() => setOpen(false)}
+            className="fixed inset-0 z-50 bg-black/40 cursor-default w-full h-full"
             aria-label="모달 닫기"
           />
-          {/* 카드 컨테이너: pointer-events-none → 카드 외부 클릭은 backdrop 버튼에 전달 */}
+          {/* 카드 컨테이너: 스크롤 가능, 화면 90% 높이 제한 */}
           <div className="fixed inset-0 z-[51] flex items-end sm:items-center justify-center pointer-events-none">
-            {/* role="presentation" + onClick: 카드 클릭이 HeroSummary로 버블링되지 않도록 차단 */}
             <div
               role="presentation"
-              className="pointer-events-auto relative w-full sm:max-w-sm mx-auto p-4 pb-8"
+              className="pointer-events-auto relative w-full sm:max-w-sm mx-auto p-4 pb-8 max-h-[90vh] overflow-y-auto"
               onClick={e => e.stopPropagation()}
             >
               <div role="dialog" aria-modal="true" aria-label="가계 건강점수">
@@ -157,7 +165,8 @@ function BadgeMode({ score }: { score: FinancialScore }) {
               </div>
             </div>
           </div>
-        </>
+        </>,
+        document.body,
       )}
     </>
   )

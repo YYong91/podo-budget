@@ -123,6 +123,15 @@ describe('FinancialHealthScore', () => {
       expect(screen.queryByText('가계 건강 점수')).not.toBeInTheDocument()
     })
 
+    it('ESC 키 누르면 바텀시트가 닫힌다', async () => {
+      const user = userEvent.setup()
+      render(<FinancialHealthScore score={mockScore} variant="badge" />)
+      await user.click(screen.getByRole('button'))
+      expect(screen.getByText('가계 건강 점수')).toBeInTheDocument()
+      await user.keyboard('{Escape}')
+      expect(screen.queryByText('가계 건강 점수')).not.toBeInTheDocument()
+    })
+
     it('score가 null이면 아무것도 표시하지 않는다', () => {
       const { container } = render(<FinancialHealthScore score={null} variant="badge" />)
       expect(container.firstChild).toBeNull()
