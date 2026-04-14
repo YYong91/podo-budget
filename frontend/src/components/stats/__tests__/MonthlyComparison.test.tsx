@@ -71,14 +71,29 @@ describe('MonthlyComparison', () => {
     expect(screen.getByText('식비')).toBeInTheDocument()
   })
 
-  it('trend 데이터가 2개 미만이면 스파크라인을 렌더하지 않는다', () => {
+  it('trend 데이터가 2개 이상이면 TrendBarChart를 렌더한다', async () => {
+    const user = userEvent.setup()
+    render(
+      <MonthlyComparison
+        expenseComparison={mockComparison}
+        incomeComparison={mockIncomeComparison}
+      />
+    )
+    await user.click(screen.getByRole('button', { name: /펼치기/ }))
+    expect(screen.getByTestId('trend-bar-chart')).toBeInTheDocument()
+  })
+
+  it('trend 데이터가 2개 미만이면 TrendBarChart를 렌더하지 않는다', async () => {
+    const user = userEvent.setup()
     render(
       <MonthlyComparison
         expenseComparison={{ ...mockComparison, trend: [{ label: '4월', total: 1_200_000 }] }}
         incomeComparison={{ ...mockIncomeComparison, trend: [{ label: '4월', total: 3_500_000 }] }}
       />
     )
-    expect(screen.queryAllByTestId('sparkline')).toHaveLength(0)
+    await user.click(screen.getByRole('button', { name: /펼치기/ }))
+    expect(screen.queryByTestId('trend-bar-chart')).not.toBeInTheDocument()
+    expect(screen.getByText(/비교할 이전 데이터가 없습니다/)).toBeInTheDocument()
   })
 
   it('savingsRateCurrent 미제공 시 저축률 행을 표시하지 않는다', () => {

@@ -1,7 +1,7 @@
 import { useState } from 'react'
-import { ChevronDown, ChevronUp } from 'lucide-react'
-import { LineChart, Line } from 'recharts'
+import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts'
 import type { ComparisonResponse, PeriodTotal } from '../../types'
+import SectionHeader from './SectionHeader'
 
 type MonthlyComparisonProps = {
   expenseComparison: ComparisonResponse | null
@@ -11,15 +11,59 @@ type MonthlyComparisonProps = {
   savingsRatePrevious?: number
 }
 
-/** 스파크라인 — 높이 24px, 너비 64px, 축 없음 */
-function Sparkline({ data }: { data: PeriodTotal[] }) {
-  if (data.length < 2) return null
-  const chartData = data.map(d => ({ value: d.total }))
+/** 3개월 트렌드 BarChart — 수입/지출 비교 막대 */
+function TrendBarChart({
+  expenseTrend,
+  incomeTrend,
+}: {
+  expenseTrend: PeriodTotal[]
+  incomeTrend: PeriodTotal[]
+}) {
+  if (expenseTrend.length < 2) {
+    return (
+      <p className="text-sm text-[var(--text-tertiary)] py-4 text-center">
+        비교할 이전 데이터가 없습니다
+      </p>
+    )
+  }
+
+  const incomeMap = new Map(incomeTrend.map(d => [d.label, d.total]))
+  const chartData = expenseTrend.map(d => ({
+    name: d.label,
+    수입: incomeMap.get(d.label) ?? 0,
+    지출: d.total,
+  }))
+
   return (
-    <div data-testid="sparkline">
-      <LineChart width={64} height={24} data={chartData}>
-        <Line type="monotone" dataKey="value" stroke="currentColor" strokeWidth={1.5} dot={false} />
-      </LineChart>
+    <div data-testid="trend-bar-chart">
+      <ResponsiveContainer width="100%" height={120}>
+        <BarChart data={chartData} barCategoryGap="30%">
+          <XAxis dataKey="name" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
+          <YAxis
+            tickFormatter={(v) => `${Math.round(v / 10000)}만`}
+            tick={{ fontSize: 10 }}
+            width={32}
+            axisLine={false}
+            tickLine={false}
+          />
+          <Tooltip
+            formatter={(value: number, name: string) => [
+              `${Math.round(value / 10000).toLocaleString()}만원`,
+              name,
+            ]}
+          />
+          <Bar dataKey="수입" fill="#4ade80" radius={[2, 2, 0, 0]} />
+          <Bar dataKey="지출" fill="#a855f7" radius={[2, 2, 0, 0]} />
+        </BarChart>
+      </ResponsiveContainer>
+      <div className="flex justify-center gap-4 mt-1">
+        <span className="flex items-center gap-1 text-xs text-[var(--text-muted)]">
+          <span className="w-2 h-2 rounded-full bg-leaf-400" /> 수입
+        </span>
+        <span className="flex items-center gap-1 text-xs text-[var(--text-muted)]">
+          <span className="w-2 h-2 rounded-full bg-grape-500" /> 지출
+        </span>
+      </div>
     </div>
   )
 }
@@ -43,11 +87,9 @@ type ComparisonRowProps = {
   changeAmount: number
   /** true = 증가가 긍정(수입/저축률), false = 감소가 긍정(지출) */
   positiveIsGreen: boolean
-  trend: PeriodTotal[]
-  showTrend: boolean
 }
 
-function ComparisonRow({ label, current, previous, changeAmount, positiveIsGreen, trend, showTrend }: ComparisonRowProps) {
+function ComparisonRow({ label, current, previous, changeAmount, positiveIsGreen }: ComparisonRowProps) {
   const isPositive = changeAmount > 0
   const isGood = positiveIsGreen ? isPositive : !isPositive
   const changeColor =
@@ -67,12 +109,6 @@ function ComparisonRow({ label, current, previous, changeAmount, positiveIsGreen
         <span className="text-sm font-semibold tabular-nums text-[var(--text-primary)]">{formatCompact(current)}</span>
         <span className={`text-xs tabular-nums ml-1 ${changeColor}`}>{formatChange(changeAmount)}</span>
       </div>
-      {/* 스파크라인: 펼쳐진 상태에서만 */}
-      {showTrend && trend.length >= 2 && (
-        <div className={`${changeColor} opacity-70 shrink-0`}>
-          <Sparkline data={trend} />
-        </div>
-      )}
     </div>
   )
 }
@@ -127,18 +163,13 @@ export default function MonthlyComparison({
       className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] p-4 sm:p-6"
     >
       {/* 헤더 */}
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-base font-semibold text-[var(--text-primary)]">📊 지난달과 비교</h2>
-        <button
-          onClick={() => setExpanded(prev => !prev)}
-          className="flex items-center gap-0.5 text-xs text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] transition-colors"
-          aria-label={expanded ? '접기' : '펼치기'}
-        >
-          {expanded
-            ? <><ChevronUp className="w-3.5 h-3.5" /> 접기</>
-            : <><ChevronDown className="w-3.5 h-3.5" /> 펼치기</>
-          }
-        </button>
+      <div className="mb-4">
+        <SectionHeader
+          icon="📊"
+          title="지난달과 비교"
+          expanded={expanded}
+          onToggle={() => setExpanded(prev => !prev)}
+        />
       </div>
 
       {/* 2열 비교 행 */}
@@ -150,8 +181,6 @@ export default function MonthlyComparison({
             previous={incomeComparison.previous.total}
             changeAmount={incomeComparison.change.amount}
             positiveIsGreen={true}
-            trend={incomeComparison.trend}
-            showTrend={expanded}
           />
         )}
         {expenseComparison && (
@@ -161,8 +190,6 @@ export default function MonthlyComparison({
             previous={expenseComparison.previous.total}
             changeAmount={expenseComparison.change.amount}
             positiveIsGreen={false}
-            trend={expenseComparison.trend}
-            showTrend={expanded}
           />
         )}
         {savingsRateCurrent !== undefined && savingsRateChange !== null && savingsRatePrevious !== undefined && (
@@ -174,35 +201,58 @@ export default function MonthlyComparison({
         )}
       </div>
 
-      {/* 펼친 상태: 카테고리 변화 TOP3 + 스파크라인 */}
-      {expanded && topCategoryChanges.length > 0 && (
-        <div className="mt-4 pt-3 border-t border-[var(--border-default)]">
-          <p className="text-xs font-medium text-[var(--text-tertiary)] mb-2">
-            카테고리 변화 TOP {topCategoryChanges.length}
-          </p>
-          <div className="space-y-1.5">
-            {topCategoryChanges.map(c => {
-              const isIncrease = (c.change_percentage ?? 0) > 0
-              return (
-                <div key={c.category} className="flex items-center justify-between text-sm">
-                  <div className="flex items-center gap-1.5">
-                    <span>{isIncrease ? '🔺' : '🔻'}</span>
-                    <span className="text-[var(--text-primary)]">{c.category}</span>
-                  </div>
-                  <div className="flex items-center gap-2 tabular-nums">
-                    <span className={isIncrease ? 'text-red-600' : 'text-leaf-600'}>
-                      {isIncrease ? '+' : ''}
-                      {c.change_percentage?.toFixed(0)}%
-                    </span>
-                    <span className="text-xs text-[var(--text-tertiary)]">
-                      ({formatChange(c.change_amount)})
-                    </span>
-                  </div>
-                </div>
-              )
-            })}
+      {/* 펼친 상태: TrendBarChart + 카테고리 변화 TOP3 */}
+      {expanded && (
+        <>
+          {/* 3개월 트렌드 BarChart */}
+          <div className="mt-4 pt-3 border-t border-[var(--border-default)]">
+            <TrendBarChart
+              expenseTrend={expenseComparison?.trend ?? []}
+              incomeTrend={incomeComparison?.trend ?? []}
+            />
           </div>
-        </div>
+
+          {/* 카테고리 변화 TOP3 with 미니 horizontal bar */}
+          {topCategoryChanges.length > 0 && (
+            <div className="mt-4 pt-3 border-t border-[var(--border-default)]">
+              <p className="text-xs font-medium text-[var(--text-tertiary)] mb-2">
+                카테고리 변화 TOP {topCategoryChanges.length}
+              </p>
+              <div className="space-y-2">
+                {topCategoryChanges.map(c => {
+                  const isIncrease = (c.change_percentage ?? 0) > 0
+                  const maxPct = Math.max(...topCategoryChanges.map(x => Math.abs(x.change_percentage ?? 0)))
+                  const barWidth = maxPct > 0 ? (Math.abs(c.change_percentage ?? 0) / maxPct) * 100 : 0
+                  return (
+                    <div key={c.category} className="space-y-1">
+                      <div className="flex items-center justify-between text-sm">
+                        <div className="flex items-center gap-1.5">
+                          <span>{isIncrease ? '🔺' : '🔻'}</span>
+                          <span className="text-[var(--text-primary)]">{c.category}</span>
+                        </div>
+                        <div className="flex items-center gap-2 tabular-nums">
+                          <span className={isIncrease ? 'text-red-600' : 'text-leaf-600'}>
+                            {isIncrease ? '+' : ''}{c.change_percentage?.toFixed(0)}%
+                          </span>
+                          <span className="text-xs text-[var(--text-tertiary)]">
+                            ({formatChange(c.change_amount)})
+                          </span>
+                        </div>
+                      </div>
+                      {/* 미니 horizontal bar */}
+                      <div className="h-1 rounded-full bg-[var(--border-default)] overflow-hidden">
+                        <div
+                          className={`h-full rounded-full ${isIncrease ? 'bg-red-400' : 'bg-leaf-400'} transition-all`}
+                          style={{ width: `${barWidth}%` }}
+                        />
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   )
