@@ -575,6 +575,33 @@ export interface PaymentMethodUsage {
   remaining: number | null
 }
 
+/* HouseholdProfile 타입 */
+export interface HouseholdProfile {
+  id: number
+  householdId: number
+  householdType: 'single' | 'dual_income' | 'single_income' | 'retired'
+  housingType: 'own_no_loan' | 'own_with_loan' | 'jeonse' | 'monthly_rent' | 'with_parents'
+  incomeTypes: ('salary' | 'freelance' | 'business' | 'pension' | 'investment' | 'side_job')[]
+  ageRange: '20s' | '30s' | '40s' | '50s_plus'
+  financialGoal?: 'emergency_fund' | 'debt_payoff' | 'home_purchase' | 'investment' | 'retirement' | 'travel' | 'none' | null
+  goalAmount?: number | null
+  goalDeadline?: string | null
+  primaryConcern?: 'overspending' | 'no_savings' | 'too_much_debt' | 'irregular_income' | 'none' | null
+  createdAt: string
+  updatedAt: string
+}
+
+export interface HouseholdProfileInput {
+  householdType: HouseholdProfile['householdType']
+  housingType: HouseholdProfile['housingType']
+  incomeTypes: HouseholdProfile['incomeTypes']
+  ageRange: HouseholdProfile['ageRange']
+  financialGoal?: HouseholdProfile['financialGoal']
+  goalAmount?: number | null
+  goalDeadline?: string | null
+  primaryConcern?: HouseholdProfile['primaryConcern']
+}
+
 /* Household 관련 타입 */
 export type {
   Household,
