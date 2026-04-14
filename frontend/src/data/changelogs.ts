@@ -18,6 +18,16 @@ export interface Changelog {
 
 export const changelogs: Changelog[] = [
   {
+    version: '0.24.0',
+    date: '2026-04-14',
+    title: '모아보기 카드 UX 개선',
+    items: [
+      { tag: '개선', text: '예산/정기거래/카드실적/지난달 비교 카드에 접기/펼치기 통일' },
+      { tag: '신규', text: '저축 카드 → 수입 구성으로 업그레이드 (수입 배분 구조 시각화)' },
+      { tag: '개선', text: '지난달과 비교 그래프를 3개월 트렌드 차트로 교체' },
+    ],
+  },
+  {
     version: '0.23.0',
     date: '2026-04-14',
     title: 'AI 분석 개인화 + 가계부 점수 리디자인',
