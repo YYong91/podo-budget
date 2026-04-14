@@ -8,11 +8,16 @@ DDD 관점:
 - 도메인 불변식: 가구는 반드시 한 명 이상의 owner를 가져야 합니다.
 """
 
+from typing import TYPE_CHECKING
+
 from sqlalchemy import Column, DateTime, Integer, Numeric, String
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
 from app.core.database import Base
+
+if TYPE_CHECKING:
+    pass
 
 
 class Household(Base):  # type: ignore[misc]
@@ -52,6 +57,13 @@ class Household(Base):  # type: ignore[misc]
     invitations = relationship("HouseholdInvitation", back_populates="household", cascade="all, delete-orphan")
     expenses = relationship("Expense", back_populates="household")
     incomes = relationship("Income", back_populates="household")
+    # 가구 프로필 — 1:1 관계 (가구당 1개, 삭제 시 함께 삭제)
+    profile = relationship(
+        "HouseholdProfile",
+        back_populates="household",
+        uselist=False,
+        cascade="all, delete-orphan",
+    )
 
     def __repr__(self) -> str:
         return f"<Household(id={self.id}, name={self.name}, currency={self.currency})>"

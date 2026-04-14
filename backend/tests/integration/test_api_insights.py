@@ -196,3 +196,74 @@ async def test_generate_insights_category_by_category(authenticated_client, test
     assert by_category["문화생활"] == 20000.0
     assert by_category["식비"] == 15000.0
     assert by_category["교통비"] == 5000.0
+
+
+# ── 종합 재무 인사이트 V2 테스트 ──
+
+MINIMAL_PAYLOAD = {
+    "month": "2026-04",
+    "income_total": 3500000,
+    "expense_total": 2800000,
+}
+
+
+@pytest.mark.asyncio
+async def test_generate_comprehensive_v2_without_profile(
+    authenticated_client,
+    test_household,
+    mock_llm_comprehensive,
+):
+    """profile=None이어도 분석 가능 (가구 정보 섹션 생략)"""
+    response = await authenticated_client.post(
+        f"/api/insights/generate-comprehensive?household_id={test_household.id}",
+        json=MINIMAL_PAYLOAD,
+    )
+    assert response.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_generate_comprehensive_v2_with_trend(
+    authenticated_client,
+    test_household,
+    mock_llm_comprehensive,
+):
+    """trend 필드 포함 시 정상 처리"""
+    payload = {
+        **MINIMAL_PAYLOAD,
+        "trend": [
+            {"month": "2026-01", "income": 3200000, "expense": 2600000},
+            {"month": "2026-02", "income": 3400000, "expense": 2700000},
+            {"month": "2026-03", "income": 3500000, "expense": 2750000},
+        ],
+        "savings_total": 530000,
+        "recurring_total": 420000,
+    }
+    response = await authenticated_client.post(
+        f"/api/insights/generate-comprehensive?household_id={test_household.id}",
+        json=payload,
+    )
+    assert response.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_generate_comprehensive_v2_with_profile(
+    authenticated_client,
+    test_household,
+    mock_llm_comprehensive,
+):
+    """프로필 등록 후 AI 분석 시 프로필 데이터 활용"""
+    # 프로필 먼저 저장
+    await authenticated_client.put(
+        f"/api/household-profiles/{test_household.id}",
+        json={
+            "household_type": "dual_income",
+            "housing_type": "jeonse",
+            "income_types": ["salary"],
+            "age_range": "30s",
+        },
+    )
+    response = await authenticated_client.post(
+        f"/api/insights/generate-comprehensive?household_id={test_household.id}",
+        json=MINIMAL_PAYLOAD,
+    )
+    assert response.status_code == 200
