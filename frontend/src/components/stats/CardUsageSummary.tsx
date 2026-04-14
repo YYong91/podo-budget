@@ -29,7 +29,7 @@ function UsageOverview({ targetUsage }: { targetUsage: PaymentMethodUsage[] }) {
         {item.name}{' '}
         <span className={achieved ? 'text-leaf-600 font-medium' : ''}>{pct.toFixed(1)}%</span>
         {achieved
-          ? <span className="text-leaf-600"> · 달성 1개</span>
+          ? ' · ✅ 실적 달성'
           : item.remaining != null
             ? ` · 잔여 ${formatAmount(item.remaining)}`
             : null}

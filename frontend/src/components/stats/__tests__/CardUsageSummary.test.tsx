@@ -87,9 +87,21 @@ describe('CardUsageSummary', () => {
     const achievedUsage: PaymentMethodUsage[] = [
       { id: 1, name: '삼성카드', type: 'credit_card', monthly_target: 300000,
         spent_amount: 310000, usage_percentage: 103.3, remaining: 0 },
+      { id: 2, name: '국민카드', type: 'credit_card', monthly_target: 200000,
+        spent_amount: 60000, usage_percentage: 30.0, remaining: 140000 },
     ]
     renderComponent(achievedUsage)
     expect(screen.getByText(/달성 1개/)).toBeInTheDocument()
+    expect(screen.getByText(/진행 중 1개/)).toBeInTheDocument()
+  })
+
+  it('카드 1개 달성 시 "✅ 실적 달성"을 오버뷰에 표시한다', () => {
+    const achievedUsage: PaymentMethodUsage[] = [
+      { id: 1, name: '삼성카드', type: 'credit_card', monthly_target: 300000,
+        spent_amount: 310000, usage_percentage: 103.3, remaining: 0 },
+    ]
+    renderComponent(achievedUsage)
+    expect(screen.getByText(/실적 달성/)).toBeInTheDocument()
   })
 
   it('펼치기 클릭 시 카드별 상세 프로그레스가 표시된다', async () => {
