@@ -106,6 +106,27 @@ export default function ProfileCollectionFlow({ onComplete, onAnalysisReady, onC
   const [goalDeadline, setGoalDeadline] = useState<string>('')
   const [primaryConcern, setPrimaryConcern] = useState<string | null>(null)
 
+  // 목표 금액 콤마 포맷 처리
+  function handleGoalAmountChange(raw: string) {
+    const digits = raw.replace(/[^0-9]/g, '')
+    setGoalAmount(digits ? Number(digits).toLocaleString('ko-KR') : '')
+  }
+
+  // 날짜 드롭다운: 연도/월 별도 state → 둘 다 선택된 경우에만 "YYYY-MM" 합성
+  const [deadlineYearInput, setDeadlineYearInput] = useState<string>('')
+  const [deadlineMonthInput, setDeadlineMonthInput] = useState<string>('')
+  const currentYear = new Date().getFullYear()
+  const yearOptions = Array.from({ length: 11 }, (_, i) => currentYear + i)
+
+  function handleDeadlineYearChange(year: string) {
+    setDeadlineYearInput(year)
+    setGoalDeadline(year && deadlineMonthInput ? `${year}-${deadlineMonthInput}` : '')
+  }
+  function handleDeadlineMonthChange(month: string) {
+    setDeadlineMonthInput(month)
+    setGoalDeadline(deadlineYearInput && month ? `${deadlineYearInput}-${month}` : '')
+  }
+
   const step1Complete = householdType && housingType && incomeTypes.length > 0 && ageRange
 
   function toggleIncomeType(value: string) {
@@ -203,19 +224,43 @@ export default function ProfileCollectionFlow({ onComplete, onAnalysisReady, onC
         </div>
         {financialGoal && financialGoal !== 'none' && (
           <div className="space-y-2 pl-2">
-            <input
-              type="text"
-              placeholder="목표 금액 (만원)"
-              value={goalAmount}
-              onChange={(e) => setGoalAmount(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg border border-warm-300 text-sm"
-            />
-            <input
-              type="month"
-              value={goalDeadline}
-              onChange={(e) => setGoalDeadline(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg border border-warm-300 text-sm"
-            />
+            {/* 목표 금액: 콤마 포맷 + 원 단위 표시 */}
+            <div className="flex items-center gap-1.5">
+              <input
+                type="text"
+                inputMode="numeric"
+                placeholder="목표 금액"
+                value={goalAmount}
+                onChange={(e) => handleGoalAmountChange(e.target.value)}
+                className="flex-1 px-3 py-2 rounded-lg border border-warm-300 text-sm"
+              />
+              <span className="text-sm text-warm-600 shrink-0">원</span>
+            </div>
+            {/* 날짜: 연도 + 월 드롭다운 */}
+            <div className="flex gap-2">
+              <select
+                aria-label="목표 연도"
+                value={deadlineYearInput}
+                onChange={(e) => handleDeadlineYearChange(e.target.value)}
+                className="flex-1 px-3 py-2 rounded-lg border border-warm-300 text-sm bg-white"
+              >
+                <option value="">연도</option>
+                {yearOptions.map((y) => (
+                  <option key={y} value={String(y)}>{y}년</option>
+                ))}
+              </select>
+              <select
+                aria-label="목표 월"
+                value={deadlineMonthInput}
+                onChange={(e) => handleDeadlineMonthChange(e.target.value)}
+                className="flex-1 px-3 py-2 rounded-lg border border-warm-300 text-sm bg-white"
+              >
+                <option value="">월</option>
+                {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
+                  <option key={m} value={String(m).padStart(2, '0')}>{m}월</option>
+                ))}
+              </select>
+            </div>
           </div>
         )}
         <div>
