@@ -142,4 +142,28 @@ describe('RecurringManageSection', () => {
     const heading = screen.getByRole('heading', { name: /정기거래/ })
     expect(heading.textContent).toMatch(/🔄/)
   })
+
+  describe('접힌 상태 오버뷰 칩', () => {
+    it('완료 건수 칩을 표시한다', () => {
+      const executedMap = new Map([[1, 17000]])
+      const items = [makeItem({ id: 1, next_due_date: '2026-05-15' })]
+      wrap(<RecurringManageSection items={items} monthStr={MONTH_STR} executedAmountMap={executedMap} />)
+      expect(screen.getByText(/완료/)).toBeInTheDocument()
+    })
+
+    it('예정 건수 칩을 표시한다', () => {
+      const items = [makeItem({ next_due_date: '2026-04-28' })]
+      wrap(<RecurringManageSection items={items} monthStr={MONTH_STR} executedAmountMap={EMPTY_MAP} />)
+      expect(screen.getByText(/예정/)).toBeInTheDocument()
+    })
+
+    it('정기 수입이 있으면 수입 합계를 오버뷰에 표시한다', () => {
+      const items = [
+        makeItem({ id: 1, type: 'income', amount: 3000000, next_due_date: '2026-05-25', description: '월급' }),
+      ]
+      const executedMap = new Map([[1, 3000000]])
+      wrap(<RecurringManageSection items={items} monthStr={MONTH_STR} executedAmountMap={executedMap} />)
+      expect(screen.getByText(/수입/)).toBeInTheDocument()
+    })
+  })
 })

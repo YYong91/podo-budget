@@ -1,7 +1,7 @@
 /**
  * @file UnifiedSummaryCards.tsx
  * @description 이달의 리포트 핵심 지표 카드 — (순자산) + 총수입/총지출/남은 돈/저축률
- * 각 카드 클릭 시 관련 상세 페이지로 이동
+ * 총수입/총지출 카드는 탐색 없이 정보만 표시. 저축률 "설정 필요" 링크는 카테고리 설정으로 이동.
  */
 
 import { Link } from 'react-router-dom'
@@ -13,7 +13,6 @@ type UnifiedSummaryCardsProps = {
   /** 저축성 지출 합계 (적금, 투자, 보험 등). 제공 시 저축률 = savingsTotal / incomeTotal */
   savingsTotal?: number
   netWorth?: number | null
-  monthStr?: string
 }
 
 function formatAmount(amount: number): string {
@@ -34,7 +33,6 @@ export default function UnifiedSummaryCards({
   expenseTotal,
   savingsTotal,
   netWorth,
-  monthStr,
 }: UnifiedSummaryCardsProps) {
   const net = incomeTotal - expenseTotal
   // savingsTotal이 제공된 경우에만 저축성 지출 기반 저축률 계산 (미제공 시 null → "설정 필요" 안내)
@@ -55,7 +53,7 @@ export default function UnifiedSummaryCards({
           ? 'text-amber-600'
           : 'text-red-600'
 
-  const cardBase = "rounded-2xl shadow-sm p-4 sm:p-5 block hover:ring-2 hover:ring-grape-200 transition-shadow"
+  const cardBase = "rounded-2xl shadow-sm p-4 sm:p-5"
 
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
@@ -67,21 +65,21 @@ export default function UnifiedSummaryCards({
         </Link>
       )}
 
-      {/* 총 수입 → 홈 목록 */}
-      <Link to={monthStr ? `/?month=${monthStr}` : '/'} className={`bg-gradient-to-br from-leaf-50 to-leaf-100 border border-leaf-200/60 ${cardBase}`}>
+      {/* 총 수입 */}
+      <div className={`bg-gradient-to-br from-leaf-50 to-leaf-100 border border-leaf-200/60 ${cardBase}`}>
         <p className="text-sm text-leaf-600/70">총 수입</p>
         <p className="text-xl sm:text-2xl font-bold tracking-tight text-[var(--text-primary)] mt-1">
           {formatAmount(incomeTotal)}
         </p>
-      </Link>
+      </div>
 
-      {/* 총 지출 → 홈 목록 */}
-      <Link to={monthStr ? `/?month=${monthStr}` : '/'} className={`bg-gradient-to-br from-grape-50 to-grape-100 border border-grape-200/60 ${cardBase}`}>
+      {/* 총 지출 */}
+      <div className={`bg-gradient-to-br from-grape-50 to-grape-100 border border-grape-200/60 ${cardBase}`}>
         <p className="text-sm text-grape-600/70">총 지출</p>
         <p className="text-xl sm:text-2xl font-bold tracking-tight text-[var(--text-primary)] mt-1">
           {formatAmount(expenseTotal)}
         </p>
-      </Link>
+      </div>
 
       {/* 남은 돈 (네비게이션 없음) */}
       <div className={`bg-[var(--surface-card)] border border-[var(--border-default)] rounded-2xl shadow-sm p-4 sm:p-5`}>
@@ -100,7 +98,7 @@ export default function UnifiedSummaryCards({
           </p>
         ) : (
           <Link
-            to="/settings/categories"
+            to="/categories"
             className="text-sm font-medium text-grape-600 hover:text-grape-700 mt-1 inline-block"
           >
             설정 필요

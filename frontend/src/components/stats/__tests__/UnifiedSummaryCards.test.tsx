@@ -5,7 +5,7 @@ import UnifiedSummaryCards from '../UnifiedSummaryCards'
 
 const renderCards = (props = {}) => render(
   <MemoryRouter>
-    <UnifiedSummaryCards incomeTotal={3200000} expenseTotal={2400000} monthStr="2026-03" {...props} />
+    <UnifiedSummaryCards incomeTotal={3200000} expenseTotal={2400000} {...props} />
   </MemoryRouter>
 )
 
@@ -67,14 +67,14 @@ describe('UnifiedSummaryCards', () => {
     expect(screen.queryByText(/지난달/)).not.toBeInTheDocument()
   })
 
-  it('저축률 "설정 필요" 클릭 시 /settings/categories로 이동한다', async () => {
+  it('저축률 "설정 필요" 클릭 시 /categories로 이동한다', async () => {
     render(
       <MemoryRouter>
         <UnifiedSummaryCards incomeTotal={3_500_000} expenseTotal={1_200_000} savingsTotal={undefined} />
       </MemoryRouter>
     )
     const link = screen.getByRole('link', { name: /설정 필요/ })
-    expect(link).toHaveAttribute('href', '/settings/categories')
+    expect(link).toHaveAttribute('href', '/categories')
   })
 
   it('적자일 때 남은 돈 카드에 음수 금액을 표시한다', () => {
@@ -83,7 +83,7 @@ describe('UnifiedSummaryCards', () => {
   })
 
   it('수입이 0이고 savingsTotal 미제공 시 저축률 카드에 "설정 필요"를 표시한다', () => {
-    render(<MemoryRouter><UnifiedSummaryCards incomeTotal={0} expenseTotal={100000} monthStr="2026-03" /></MemoryRouter>)
+    render(<MemoryRouter><UnifiedSummaryCards incomeTotal={0} expenseTotal={100000} /></MemoryRouter>)
     expect(screen.getByText('설정 필요')).toBeInTheDocument()
   })
 
@@ -94,16 +94,18 @@ describe('UnifiedSummaryCards', () => {
       expect(screen.queryByText('순자산')).not.toBeInTheDocument()
     })
 
-    it('총 수입 카드 클릭 시 홈 목록으로 이동한다', () => {
+    it('총 수입 카드는 링크가 아닌 div이다', () => {
       renderCards()
-      const link = screen.getByText('총 수입').closest('a')
-      expect(link).toHaveAttribute('href', '/?month=2026-03')
+      const card = screen.getByText('총 수입').closest('div')
+      expect(card?.tagName).toBe('DIV')
+      expect(screen.getByText('총 수입').closest('a')).toBeNull()
     })
 
-    it('총 지출 카드 클릭 시 홈 목록으로 이동한다', () => {
+    it('총 지출 카드는 링크가 아닌 div이다', () => {
       renderCards()
-      const link = screen.getByText('총 지출').closest('a')
-      expect(link).toHaveAttribute('href', '/?month=2026-03')
+      const card = screen.getByText('총 지출').closest('div')
+      expect(card?.tagName).toBe('DIV')
+      expect(screen.getByText('총 지출').closest('a')).toBeNull()
     })
   })
 })

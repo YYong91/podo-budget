@@ -16,7 +16,7 @@ export default function SavingsSection({ savingsTotal, incomeTotal, savingsCateg
     <div id="section-savings" className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] p-4 sm:p-6">
       <div className="flex items-center justify-between mb-3">
         <h2 className="text-base font-semibold text-[var(--text-primary)]">🏦 저축</h2>
-        <Link to="/settings/categories" className="text-xs text-grape-600 hover:text-grape-700 transition-colors">
+        <Link to="/categories" className="text-xs text-grape-600 hover:text-grape-700 transition-colors">
           관리
         </Link>
       </div>
@@ -46,7 +46,7 @@ export default function SavingsSection({ savingsTotal, incomeTotal, savingsCateg
       ) : (
         <div className="text-center py-4">
           <p className="text-sm text-[var(--text-tertiary)]">저축 카테고리를 설정하면 저축 현황을 볼 수 있어요</p>
-          <Link to="/settings/categories" className="text-sm font-medium text-grape-600 hover:text-grape-700 mt-1 inline-block">
+          <Link to="/categories" className="text-sm font-medium text-grape-600 hover:text-grape-700 mt-1 inline-block">
             카테고리 설정 →
           </Link>
         </div>

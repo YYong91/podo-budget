@@ -531,7 +531,6 @@ export default function InsightsPage() {
             incomeTotal={incomeStats?.total ?? 0}
             expenseTotal={expenseStats?.total ?? 0}
             savingsTotal={savingsTotal}
-            monthStr={monthStr}
           />
 
           {/* Layer 2: 들여다보기 */}
@@ -539,7 +538,7 @@ export default function InsightsPage() {
 
           {sectionVisibility.categoryTop && (
             <div id="section-category">
-              <CategoryTopList categories={expenseStats?.by_category ?? []} monthStr={monthStr} />
+              <CategoryTopList categories={expenseStats?.by_category ?? []} />
             </div>
           )}
 

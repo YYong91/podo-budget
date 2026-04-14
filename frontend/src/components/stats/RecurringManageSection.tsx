@@ -3,6 +3,8 @@
  * @description 모아보기 > 정기거래 섹션
  * 활성 정기거래 목록과 이번 달 상태(완료/건너뜀/예정/대기)를 표시한다.
  * 완료된 항목은 실제 실행 금액을 표시하고, 건너뜀 여부도 구분한다.
+ * 접힌 상태: 완료/예정/수입 칩 오버뷰
+ * 펼친 상태: 항목별 상세 목록
  */
 
 import { useState } from 'react'
@@ -29,7 +31,6 @@ function getItemStatus(item: RecurringTransaction, monthStr: string, executedAmo
     const dueMonth = item.next_due_date.slice(0, 7)
     return dueMonth < monthStr ? 'overdue' : 'upcoming'
   }
-  // next_due_date가 다음 달 이후 = 이번 달 통과
   return executedAmountMap.has(item.id) ? 'executed' : 'skipped'
 }
 
@@ -41,20 +42,69 @@ function StatusBadge({ status }: { status: ItemStatus }) {
       return <span className="text-xs text-[var(--text-muted)]">건너뜀</span>
     case 'overdue':
       return <span className="text-xs text-[var(--text-muted)]">대기 중</span>
-    case 'upcoming': {
-      return null // 날짜는 금액 영역 아래에 별도 표시
-    }
+    case 'upcoming':
+      return null
   }
 }
 
+/** 접힌 상태 오버뷰 칩 — 완료/예정/수입 요약 */
+function OverviewChips({
+  items,
+  monthStr,
+  executedAmountMap,
+}: {
+  items: RecurringTransaction[]
+  monthStr: string
+  executedAmountMap: Map<number, number>
+}) {
+  const statusCounts = { executed: 0, upcoming: 0, overdue: 0 }
+  items.forEach(item => {
+    const s = getItemStatus(item, monthStr, executedAmountMap)
+    if (s === 'executed') statusCounts.executed++
+    else if (s === 'upcoming') statusCounts.upcoming++
+    else if (s === 'overdue') statusCounts.overdue++
+  })
+
+  // 정기 수입 합계 (지출과 분리해서 표시)
+  const incomeTotal = items
+    .filter(r => r.type === 'income')
+    .reduce((sum, r) => {
+      const actual = executedAmountMap.get(r.id)
+      return sum + (actual ?? r.amount)
+    }, 0)
+
+  return (
+    <div className="flex flex-wrap gap-1.5 mt-2">
+      {statusCounts.executed > 0 && (
+        <span className="inline-flex items-center gap-0.5 text-xs px-2 py-0.5 rounded-full bg-leaf-50 text-leaf-700 border border-leaf-200">
+          ✓ 완료 {statusCounts.executed}건
+        </span>
+      )}
+      {statusCounts.overdue > 0 && (
+        <span className="inline-flex items-center gap-0.5 text-xs px-2 py-0.5 rounded-full bg-warm-50 text-warm-700 border border-warm-200">
+          ⚠️ 미처리 {statusCounts.overdue}건
+        </span>
+      )}
+      {statusCounts.upcoming > 0 && (
+        <span className="inline-flex items-center gap-0.5 text-xs px-2 py-0.5 rounded-full bg-[var(--surface-elevated)] text-[var(--text-secondary)] border border-[var(--border-default)]">
+          📅 예정 {statusCounts.upcoming}건
+        </span>
+      )}
+      {incomeTotal > 0 && (
+        <span className="inline-flex items-center gap-0.5 text-xs px-2 py-0.5 rounded-full bg-leaf-50 text-leaf-700 border border-leaf-200">
+          수입 {formatAmount(incomeTotal)}
+        </span>
+      )}
+    </div>
+  )
+}
+
 export default function RecurringManageSection({ items, monthStr, executedAmountMap }: Props) {
-  // 기본 접힌 상태 — 헤더에서 고정비 총액을 확인하고 필요 시 펼치는 패턴
   const [expanded, setExpanded] = useState(false)
 
   const monthlyExpenseTotal = items
     .filter(r => r.type === 'expense')
     .reduce((sum, r) => {
-      // 실제 실행 금액이 있으면 그걸 합산, 없으면 기본 금액
       const actual = executedAmountMap.get(r.id)
       return sum + (actual ?? r.amount)
     }, 0)
@@ -68,7 +118,6 @@ export default function RecurringManageSection({ items, monthStr, executedAmount
             관리
           </Link>
         </div>
-        {/* 빈 상태: 고정비 등록 유도 CTA */}
         <p className="text-sm text-[var(--text-muted)] text-center py-2">
           정기거래를 등록하면 고정비 현황을 볼 수 있어요
         </p>
@@ -87,7 +136,7 @@ export default function RecurringManageSection({ items, monthStr, executedAmount
   return (
     <div id="section-recurring" className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] p-4 sm:p-6">
       {/* 헤더: 타이틀 + 고정비 총액 강조 */}
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center justify-between">
         <div>
           <h2 className="text-base font-semibold text-[var(--text-primary)]">🔄 정기거래</h2>
           {monthlyExpenseTotal > 0 && (
@@ -102,21 +151,21 @@ export default function RecurringManageSection({ items, monthStr, executedAmount
         </Link>
       </div>
 
+      {/* 접힌 상태: 상태 칩 오버뷰 */}
+      {!expanded && (
+        <OverviewChips items={items} monthStr={monthStr} executedAmountMap={executedAmountMap} />
+      )}
+
       {/* 목록 (아코디언) */}
       {expanded && (
-        <div className="mb-3">
+        <div className="mt-3">
           {items.map((item, idx) => {
             const isExpense = item.type === 'expense'
             const status = getItemStatus(item, monthStr, executedAmountMap)
             const executedAmount = executedAmountMap.get(item.id)
-            // 완료된 항목은 실제 금액, 나머지는 기본 금액
             const displayAmount = executedAmount ?? item.amount
             const amountChanged = executedAmount != null && executedAmount !== item.amount
-
-            // 예정일 표시 (upcoming일 때만)
             const [, month, day] = item.next_due_date.split('-').map(Number)
-
-            // 건너뜀/대기는 흐리게
             const dimmed = status === 'skipped' || status === 'overdue'
 
             return (
@@ -126,7 +175,6 @@ export default function RecurringManageSection({ items, monthStr, executedAmount
                   idx < items.length - 1 ? 'border-b border-[var(--border-default)]' : ''
                 } ${dimmed ? 'opacity-50' : ''}`}
               >
-                {/* 이모지 + 설명 */}
                 <div className="flex items-center gap-2 min-w-0">
                   <span className="text-base shrink-0">
                     {item.category_emoji ?? (isExpense ? '💸' : '💰')}
@@ -134,19 +182,16 @@ export default function RecurringManageSection({ items, monthStr, executedAmount
                   <span className="text-sm text-[var(--text-primary)] truncate">{item.description}</span>
                 </div>
 
-                {/* 금액 + 상태 */}
                 <div className="flex items-center gap-3 shrink-0 ml-2 text-right">
                   <div>
                     <span className={`text-sm font-medium ${isExpense ? 'text-[var(--text-secondary)]' : 'text-leaf-600'}`}>
                       {formatAmount(displayAmount)}
                     </span>
-                    {/* 금액이 수정된 경우 기본 금액을 작게 표시 */}
                     {amountChanged && (
                       <p className="text-xs text-[var(--text-muted)] line-through leading-none mt-0.5">
                         {formatAmount(item.amount)}
                       </p>
                     )}
-                    {/* 예정일 */}
                     {status === 'upcoming' && (
                       <p className="text-xs text-[var(--text-tertiary)] leading-none mt-0.5">{month}/{day} 예정</p>
                     )}
@@ -160,7 +205,7 @@ export default function RecurringManageSection({ items, monthStr, executedAmount
       )}
 
       {/* 요약 푸터 + 접기/펼치기 */}
-      <div className={`flex items-center justify-between pt-2 ${expanded ? 'border-t border-[var(--border-default)]' : ''}`}>
+      <div className={`flex items-center justify-between pt-2 mt-2 ${expanded ? 'border-t border-[var(--border-default)]' : ''}`}>
         <p className="text-xs text-[var(--text-muted)]">
           활성 {items.length}건
           {monthlyExpenseTotal > 0 && (

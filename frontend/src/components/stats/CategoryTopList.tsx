@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ChevronDown, ChevronUp, BarChart3, PieChart as PieChartIcon } from 'lucide-react'
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts'
+import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts'
 import type { CategoryStats } from '../../types'
 import { formatAmount } from '../../utils/format'
 
@@ -11,7 +11,6 @@ const MIN_CATEGORIES_FOR_ANALYSIS = 2
 interface CategoryTopListProps {
   categories: CategoryStats[]
   maxItems?: number
-  monthStr?: string
 }
 
 type ViewMode = 'list' | 'chart'
@@ -28,22 +27,12 @@ function formatCompactAmount(amount: number): string {
   return `${Math.round(amount).toLocaleString('ko-KR')}원`
 }
 
-function ChartTooltip({ active, payload }: { active?: boolean; payload?: Array<{ name: string; value: number; payload: { percentage: number } }> }) {
-  if (!active || !payload?.length) return null
-  const item = payload[0]
-  return (
-    <div className="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-lg px-3 py-2 shadow-lg text-xs">
-      <p className="font-medium text-[var(--text-primary)]">{item.name}</p>
-      <p className="text-[var(--text-secondary)]">
-        {`₩${Math.round(item.value).toLocaleString('ko-KR')}`} ({item.payload.percentage.toFixed(1)}%)
-      </p>
-    </div>
-  )
-}
 
-export default function CategoryTopList({ categories, maxItems = 5, monthStr }: CategoryTopListProps) {
+export default function CategoryTopList({ categories, maxItems = 5 }: CategoryTopListProps) {
   const [expanded, setExpanded] = useState(false)
   const [viewMode, setViewMode] = useState<ViewMode>('chart')
+  // 파이 차트에서 선택된 카테고리 (null = 선택 없음, 도넛 중앙에 총액 표시)
+  const [selectedCategory, setSelectedCategory] = useState<{ name: string; amount: number; percentage: number } | null>(null)
 
   if (categories.length === 0) return null
 
@@ -89,12 +78,8 @@ export default function CategoryTopList({ categories, maxItems = 5, monthStr }: 
         <>
           <div className="space-y-2.5">
             {visible.map((cat, i) => {
-              const href = monthStr
-                ? `/?month=${monthStr}&category=${cat.category}`
-                : `/?category=${cat.category}`
-
               return (
-                <Link key={cat.category} to={href} className="block hover:bg-[var(--surface-hover)] -mx-2 px-2 py-1 rounded-lg transition-colors">
+                <div key={cat.category} className="-mx-2 px-2 py-1 rounded-lg">
                   <div className="flex items-center justify-between mb-1">
                     <div className="flex items-center gap-2">
                       <span className="text-xs font-medium text-[var(--text-muted)] w-4">{i + 1}</span>
@@ -108,7 +93,7 @@ export default function CategoryTopList({ categories, maxItems = 5, monthStr }: 
                   <div className="h-1.5 bg-[var(--surface-hover)] rounded-full overflow-hidden ml-6">
                     <div className="h-full rounded-full bg-grape-500" style={{ width: `${cat.percentage}%` }} />
                   </div>
-                </Link>
+                </div>
               )
             })}
           </div>
@@ -132,7 +117,7 @@ export default function CategoryTopList({ categories, maxItems = 5, monthStr }: 
       {categories.length < MIN_CATEGORIES_FOR_ANALYSIS && (
         <p className="text-xs text-[var(--text-tertiary)] mt-2">
           카테고리를 더 추가하면 지출 패턴을 파악하기 쉬워요.{' '}
-          <Link to="/settings/categories" className="text-grape-600 hover:text-grape-700">
+          <Link to="/categories" className="text-grape-600 hover:text-grape-700">
             카테고리 설정
           </Link>
         </p>
@@ -155,19 +140,40 @@ export default function CategoryTopList({ categories, maxItems = 5, monthStr }: 
                   paddingAngle={2}
                   strokeWidth={0}
                   isAnimationActive={false}
+                  onClick={(_data, index) => {
+                    const cat = chartData[index]
+                    if (!cat) return
+                    const isSame = selectedCategory?.name === cat.category
+                    setSelectedCategory(isSame ? null : { name: cat.category, amount: cat.amount, percentage: cat.percentage })
+                  }}
+                  style={{ cursor: 'pointer' }}
                 >
-                  {chartData.map((_, index) => (
-                    <Cell key={index} fill={CATEGORY_COLORS[index % CATEGORY_COLORS.length]} />
+                  {chartData.map((cat, index) => (
+                    <Cell
+                      key={index}
+                      fill={CATEGORY_COLORS[index % CATEGORY_COLORS.length]}
+                      opacity={selectedCategory && selectedCategory.name !== cat.category ? 0.4 : 1}
+                    />
                   ))}
                 </Pie>
-                <Tooltip content={<ChartTooltip />} />
               </PieChart>
             </ResponsiveContainer>
 
+            {/* 도넛 중앙: 선택 카테고리 or 총 지출 */}
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
               <div className="text-center">
-                <p className="text-xs text-[var(--text-tertiary)]">총 지출</p>
-                <p className="text-base font-bold text-[var(--text-primary)]">{formatCompactAmount(totalAmount)}</p>
+                {selectedCategory ? (
+                  <>
+                    <p className="text-xs text-[var(--text-tertiary)] truncate max-w-[80px]">{selectedCategory.name}</p>
+                    <p className="text-base font-bold text-[var(--text-primary)]">{formatCompactAmount(selectedCategory.amount)}</p>
+                    <p className="text-xs text-[var(--text-muted)]">{selectedCategory.percentage.toFixed(1)}%</p>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-xs text-[var(--text-tertiary)]">총 지출</p>
+                    <p className="text-base font-bold text-[var(--text-primary)]">{formatCompactAmount(totalAmount)}</p>
+                  </>
+                )}
               </div>
             </div>
           </div>

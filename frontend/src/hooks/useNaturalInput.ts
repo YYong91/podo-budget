@@ -7,6 +7,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
 import { useToast } from './useToast'
 import { TOAST } from '../constants/toastMessages'
 import { expenseApi } from '../api/expenses'
@@ -46,6 +47,7 @@ const CONFIG = {
 export function useNaturalInput(type: TransactionType) {
   const navigate = useNavigate()
   const { addToast } = useToast()
+  const queryClient = useQueryClient()
   const activeHouseholdId = useHouseholdStore((s) => s.activeHouseholdId)
   const config = CONFIG[type]
 
@@ -173,6 +175,9 @@ export function useNaturalInput(type: TransactionType) {
         savedCount++
       }
       trackEvent(`${config.eventPrefix}_saved`, { mode: 'natural', item_count: savedCount })
+      // 거래 저장 후 모아보기 쿼리 무효화 — 탭 전환 시 즉시 최신 데이터 반영
+      queryClient.invalidateQueries({ queryKey: ['insights-expense'] })
+      queryClient.invalidateQueries({ queryKey: ['insights-income'] })
       addToast('success', config.successMessage)
       setPreviewItems(null)
       setNaturalInput('')
@@ -182,7 +187,7 @@ export function useNaturalInput(type: TransactionType) {
     } finally {
       setLoading(false)
     }
-  }, [previewItems, activeHouseholdId, rawInput, type, navigate]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [previewItems, activeHouseholdId, rawInput, type, navigate, queryClient])
 
   /** 프리뷰 항목 수정 */
   const updatePreviewItem = useCallback((index: number, field: string, value: string | number | null) => {

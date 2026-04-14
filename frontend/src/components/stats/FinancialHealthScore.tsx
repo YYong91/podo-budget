@@ -93,14 +93,27 @@ function BadgeMode({ score }: { score: HealthScore }) {
 
       {open && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
-          {/* 오버레이 */}
+          {/* 오버레이 — 카드 외부 탭 시 닫기. 스크린 리더는 X 버튼으로 닫도록 aria-hidden */}
           <button
-            aria-label="닫기"
+            aria-hidden="true"
+            tabIndex={-1}
             onClick={() => setOpen(false)}
             className="absolute inset-0 bg-black/40 cursor-default"
           />
-          {/* 바텀시트 카드 */}
-          <div className="relative w-full sm:max-w-sm mx-auto p-4 pb-8">
+          {/* stopPropagation: 카드 탭이 오버레이 닫기로 전파되는 것 방지 */}
+          {/* role=presentation: 이 div는 인터랙티브 요소가 아니라 이벤트 버블링 차단용 컨테이너 */}
+          <div role="presentation" className="relative w-full sm:max-w-sm mx-auto p-4 pb-8" onClick={e => e.stopPropagation()}>
+            <div className="flex justify-end mb-1">
+              <button
+                aria-label="건강점수 닫기"
+                onClick={() => setOpen(false)}
+                className="p-1.5 rounded-full hover:bg-[var(--surface-hover)] transition-colors text-[var(--text-tertiary)]"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
             <FullScoreCard score={score} />
           </div>
         </div>

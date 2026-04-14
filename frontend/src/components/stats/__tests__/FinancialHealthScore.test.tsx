@@ -80,13 +80,29 @@ describe('FinancialHealthScore', () => {
       expect(screen.getByText('저축')).toBeInTheDocument()
     })
 
-    it('바텀시트 오버레이 클릭 시 닫힌다', async () => {
+    it('바텀시트에 X 닫기 버튼이 있다', async () => {
       const user = userEvent.setup()
       render(<FinancialHealthScore score={mockScore} variant="badge" />)
       await user.click(screen.getByRole('button'))
+      expect(screen.getByLabelText('건강점수 닫기')).toBeInTheDocument()
+    })
+
+    it('바텀시트 X 닫기 버튼 클릭 시 닫힌다', async () => {
+      const user = userEvent.setup()
+      render(<FinancialHealthScore score={mockScore} variant="badge" />)
+      await user.click(screen.getByRole('button'))
+      await user.click(screen.getByLabelText('건강점수 닫기'))
+      expect(screen.queryByText('가계 건강 점수')).not.toBeInTheDocument()
+    })
+
+    it('바텀시트 오버레이(배경) 클릭 시 닫힌다', async () => {
+      const user = userEvent.setup()
+      const { container } = render(<FinancialHealthScore score={mockScore} variant="badge" />)
+      await user.click(screen.getByRole('button'))
       expect(screen.getByText('가계 건강 점수')).toBeInTheDocument()
-      // 오버레이(배경) 클릭
-      await user.click(screen.getByLabelText('닫기'))
+      // 오버레이는 aria-hidden(스크린 리더 제외)이므로 DOM으로 직접 접근
+      const overlay = container.querySelector('.absolute.inset-0') as HTMLElement
+      await user.click(overlay)
       expect(screen.queryByText('저축')).not.toBeInTheDocument()
     })
 

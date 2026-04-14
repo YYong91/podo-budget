@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import MonthlyComparison from '../MonthlyComparison'
 
 // ComparisonResponse 구조에 맞는 목 데이터
@@ -43,7 +44,7 @@ describe('MonthlyComparison', () => {
       />
     )
     expect(screen.getByText('수입')).toBeInTheDocument()
-    expect(screen.getByText('+200,000')).toBeInTheDocument()
+    expect(screen.getByText('+20만원')).toBeInTheDocument()
   })
 
   it('지출 감소는 text-leaf-600으로 표시한다', () => {
@@ -53,17 +54,19 @@ describe('MonthlyComparison', () => {
         incomeComparison={mockIncomeComparison}
       />
     )
-    const changeEl = screen.getByText(/-100,000/)
+    const changeEl = screen.getByText('-10만원')
     expect(changeEl).toHaveClass('text-leaf-600')
   })
 
-  it('카테고리 변화 TOP3를 표시한다', () => {
+  it('펼쳤을 때 카테고리 변화 TOP3를 표시한다', async () => {
+    const user = userEvent.setup()
     render(
       <MonthlyComparison
         expenseComparison={mockComparison}
         incomeComparison={mockIncomeComparison}
       />
     )
+    await user.click(screen.getByRole('button', { name: /펼치기/ }))
     expect(screen.getByText('교통')).toBeInTheDocument()
     expect(screen.getByText('식비')).toBeInTheDocument()
   })
@@ -86,5 +89,42 @@ describe('MonthlyComparison', () => {
       />
     )
     expect(screen.queryByText('저축률')).not.toBeInTheDocument()
+  })
+
+  describe('접기/펼치기', () => {
+    it('기본 상태(접힌)에서 지난달 수치를 표시한다', () => {
+      render(
+        <MonthlyComparison
+          expenseComparison={mockComparison}
+          incomeComparison={mockIncomeComparison}
+        />
+      )
+      // 이전달 지출 130만원
+      expect(screen.getByText('130만원')).toBeInTheDocument()
+      // 이번달 지출 120만원
+      expect(screen.getByText('120만원')).toBeInTheDocument()
+    })
+
+    it('기본 상태(접힌)에서 카테고리 변화 TOP3를 표시하지 않는다', () => {
+      render(
+        <MonthlyComparison
+          expenseComparison={mockComparison}
+          incomeComparison={mockIncomeComparison}
+        />
+      )
+      expect(screen.queryByText('카테고리 변화')).not.toBeInTheDocument()
+    })
+
+    it('펼치기 버튼 클릭 시 카테고리 변화 TOP3를 표시한다', async () => {
+      const user = userEvent.setup()
+      render(
+        <MonthlyComparison
+          expenseComparison={mockComparison}
+          incomeComparison={mockIncomeComparison}
+        />
+      )
+      await user.click(screen.getByRole('button', { name: /펼치기/ }))
+      expect(screen.getByText(/카테고리 변화/)).toBeInTheDocument()
+    })
   })
 })

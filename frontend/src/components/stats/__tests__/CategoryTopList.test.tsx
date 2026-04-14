@@ -71,11 +71,15 @@ describe('CategoryTopList', () => {
     expect(screen.queryByText(/더보기/)).not.toBeInTheDocument()
   })
 
-  it('리스트 뷰에서 카테고리 클릭 시 해당 카테고리 필터 목록으로 이동한다', async () => {
-    render(<MemoryRouter><CategoryTopList categories={mockCategories} monthStr="2026-03" /></MemoryRouter>)
+  it('리스트 뷰에서 카테고리 항목은 링크가 아니다', async () => {
+    render(<MemoryRouter><CategoryTopList categories={mockCategories} /></MemoryRouter>)
     await switchToListView()
-    const link = screen.getByText('식비').closest('a')
-    expect(link).toHaveAttribute('href', '/?month=2026-03&category=식비')
+    expect(screen.getByText('식비').closest('a')).toBeNull()
+  })
+
+  it('그래프 뷰에서 초기 도넛 중앙 텍스트는 "총 지출"이다', () => {
+    render(<MemoryRouter><CategoryTopList categories={mockCategories} /></MemoryRouter>)
+    expect(screen.getByText('총 지출')).toBeInTheDocument()
   })
 
   it('헤더가 text-base 크기로 표시된다', () => {
