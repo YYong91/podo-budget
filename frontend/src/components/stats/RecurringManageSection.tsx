@@ -9,7 +9,7 @@
 
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ChevronDown, ChevronUp } from 'lucide-react'
+import SectionHeader from './SectionHeader'
 import { formatAmount } from '../../utils/format'
 import type { RecurringTransaction } from '../../types'
 
@@ -112,13 +112,8 @@ export default function RecurringManageSection({ items, monthStr, executedAmount
   if (items.length === 0) {
     return (
       <div id="section-recurring" className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] p-4 sm:p-6">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-base font-semibold text-[var(--text-primary)]">🔄 정기거래</h2>
-          <Link to="/recurring" className="text-xs text-grape-600 hover:text-grape-700 transition-colors">
-            관리
-          </Link>
-        </div>
-        <p className="text-sm text-[var(--text-muted)] text-center py-2">
+        <SectionHeader icon="🔄" title="정기거래" manageTo="/recurring" expanded={false} collapsible={false} />
+        <p className="text-sm text-[var(--text-muted)] text-center py-2 mt-3">
           정기거래를 등록하면 고정비 현황을 볼 수 있어요
         </p>
         <div className="text-center mt-2">
@@ -135,28 +130,30 @@ export default function RecurringManageSection({ items, monthStr, executedAmount
 
   return (
     <div id="section-recurring" className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] p-4 sm:p-6">
-      {/* 헤더: 타이틀 + 고정비 총액 강조 */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-base font-semibold text-[var(--text-primary)]">🔄 정기거래</h2>
-          {monthlyExpenseTotal > 0 && (
-            <p className="text-xs text-[var(--text-muted)] leading-tight">
-              이번 달 고정비{' '}
-              <span className="font-medium text-[var(--text-secondary)]">{formatAmount(monthlyExpenseTotal)}</span>
-            </p>
-          )}
-        </div>
-        <Link to="/recurring" className="text-xs text-grape-600 hover:text-grape-700 transition-colors">
-          관리
-        </Link>
-      </div>
+      {/* 헤더: 타이틀 + chevron 토글 + 고정비 총액 서브텍스트 */}
+      <SectionHeader
+        icon="🔄"
+        title="정기거래"
+        manageTo="/recurring"
+        expanded={expanded}
+        onToggle={() => setExpanded(prev => !prev)}
+      >
+        {monthlyExpenseTotal > 0 && (
+          <p className="text-xs text-[var(--text-muted)] mt-0.5 leading-tight">
+            이번 달 고정비{' '}
+            <span className="font-medium text-[var(--text-secondary)]">{formatAmount(monthlyExpenseTotal)}</span>
+          </p>
+        )}
+      </SectionHeader>
 
       {/* 접힌 상태: 상태 칩 오버뷰 */}
       {!expanded && (
-        <OverviewChips items={items} monthStr={monthStr} executedAmountMap={executedAmountMap} />
+        <div className="mt-2">
+          <OverviewChips items={items} monthStr={monthStr} executedAmountMap={executedAmountMap} />
+        </div>
       )}
 
-      {/* 목록 (아코디언) */}
+      {/* 펼침: 항목별 상세 목록 (기존 렌더 로직 유지) */}
       {expanded && (
         <div className="mt-3">
           {items.map((item, idx) => {
@@ -203,26 +200,6 @@ export default function RecurringManageSection({ items, monthStr, executedAmount
           })}
         </div>
       )}
-
-      {/* 요약 푸터 + 접기/펼치기 */}
-      <div className={`flex items-center justify-between pt-2 mt-2 ${expanded ? 'border-t border-[var(--border-default)]' : ''}`}>
-        <p className="text-xs text-[var(--text-muted)]">
-          활성 {items.length}건
-          {monthlyExpenseTotal > 0 && (
-            <> · 이번 달 지출 <span className="font-medium text-[var(--text-secondary)]">{formatAmount(monthlyExpenseTotal)}</span></>
-          )}
-        </p>
-        <button
-          onClick={() => setExpanded(prev => !prev)}
-          className="flex items-center gap-0.5 text-xs text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] transition-colors"
-          aria-label={expanded ? '접기' : '펼치기'}
-        >
-          {expanded
-            ? <><ChevronUp className="w-3.5 h-3.5" /> 접기</>
-            : <><ChevronDown className="w-3.5 h-3.5" /> 펼치기</>
-          }
-        </button>
-      </div>
     </div>
   )
 }
