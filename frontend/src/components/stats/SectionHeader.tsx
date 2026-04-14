@@ -7,7 +7,7 @@ type SectionHeaderProps = {
   title: string
   manageTo?: string
   expanded: boolean
-  onToggle: () => void
+  onToggle?: () => void
   collapsible?: boolean
   children?: ReactNode
 }
@@ -28,7 +28,7 @@ export default function SectionHeader({
           <button
             type="button"
             className="flex items-center gap-2 flex-1 text-left"
-            onClick={onToggle}
+            onClick={() => onToggle?.()}
             aria-label={expanded ? '접기' : '펼치기'}
           >
             <h2 className="text-base font-semibold text-[var(--text-primary)]">
