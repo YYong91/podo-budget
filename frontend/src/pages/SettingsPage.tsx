@@ -7,7 +7,7 @@
 import { useState, useEffect } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
 import {
-  Tags, PiggyBank, Repeat, Users, BookOpen, MessageSquarePlus,
+  Tags, PiggyBank, Repeat, Users, MessageSquarePlus,
   Megaphone, ChevronRight, User, Sun, Moon,
   ShieldCheck, Download, CreditCard,
 } from 'lucide-react'
@@ -140,7 +140,7 @@ export default function SettingsPage() {
       ],
     },
     {
-      label: '지원',
+      label: '앱 정보',
       items: [
         {
           to: '/settings/changelog',
@@ -150,8 +150,6 @@ export default function SettingsPage() {
             <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-[var(--surface-card)]" />
           ) : undefined,
         },
-        { to: '/guide', label: '사용 가이드', icon: BookOpen },
-        { to: '/feedback', label: '피드백', description: '기능 요청 · 버그 신고', icon: MessageSquarePlus },
         ...(user?.is_admin ? [{ to: '/admin', label: '관리자', icon: ShieldCheck }] : []),
       ],
     },
@@ -176,6 +174,19 @@ export default function SettingsPage() {
   if (!section) {
     return (
       <div className="space-y-4">
+        {/* 페이지 헤더 */}
+        <div className="flex items-center justify-between">
+          <h1 className="text-xl font-bold text-[var(--text-primary)]">더보기</h1>
+          <Link
+            to="/feedback"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] hover:text-grape-600 transition-colors"
+            aria-label="피드백 보내기"
+          >
+            <MessageSquarePlus className="w-4 h-4" />
+            피드백
+          </Link>
+        </div>
+
         {/* PWA 설치 안내 (미설치 시에만) */}
         {!isInstalled && (
           <button

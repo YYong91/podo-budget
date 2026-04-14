@@ -112,18 +112,20 @@ describe('SettingsPage', () => {
       expect(screen.getByText('화면 모드')).toBeInTheDocument()
       expect(screen.getByText('내 계정')).toBeInTheDocument()
       expect(screen.getByText('새소식')).toBeInTheDocument()
-      expect(screen.getByText('사용 가이드')).toBeInTheDocument()
-      expect(screen.getByText('피드백')).toBeInTheDocument()
+      // 사용 가이드는 메뉴에서 제거됨 (각 페이지 빈 상태에 인라인 안내로 대체)
+      expect(screen.queryByText('사용 가이드')).not.toBeInTheDocument()
+      // 피드백은 헤더 아이콘으로 이동
+      expect(screen.queryByText('기능 요청 · 버그 신고')).not.toBeInTheDocument()
       // 개인정보/약관은 더보기 메뉴에서 독립 항목으로 존재하지 않아야 한다
       expect(screen.queryByText('개인정보 처리방침')).not.toBeInTheDocument()
       expect(screen.queryByText('서비스 이용약관')).not.toBeInTheDocument()
     })
 
-    it('3개 섹션 헤더(가계부, 설정, 지원)를 표시한다', () => {
+    it('3개 섹션 헤더(가계부, 설정, 앱 정보)를 표시한다', () => {
       renderSettingsPage()
       expect(screen.getByText('가계부')).toBeInTheDocument()
       expect(screen.getByText('설정')).toBeInTheDocument()
-      expect(screen.getByText('지원')).toBeInTheDocument()
+      expect(screen.getByText('앱 정보')).toBeInTheDocument()
     })
 
     it('불필요한 메뉴 설명은 표시하지 않는다', () => {
@@ -147,9 +149,11 @@ describe('SettingsPage', () => {
       expect(hasModeText).toBe(true)
     })
 
-    it('피드백 description은 기능 요청/버그 신고 범위를 표시한다', () => {
+    it('피드백 링크가 헤더에 존재한다', () => {
       renderSettingsPage()
-      expect(screen.getByText('기능 요청 · 버그 신고')).toBeInTheDocument()
+      // 피드백은 메뉴 항목이 아닌 헤더 아이콘 링크로 제공됨
+      const feedbackLink = document.querySelector('a[href="/feedback"]')
+      expect(feedbackLink).toBeInTheDocument()
     })
 
     it('더보기 메뉴에 외부 auth.podonest.com 링크가 없어야 한다', () => {

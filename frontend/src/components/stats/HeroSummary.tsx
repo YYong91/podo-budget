@@ -352,13 +352,30 @@ export default function HeroSummary({
         )}
       </div>
 
-      {/* 예산 금액 표시 (건강점수 배지 없을 때만) */}
-      {!healthScore && totalBudget != null && totalBudget > 0 && (
-        <p className="text-xs text-[var(--text-muted)] tabular-nums -mt-1 mb-1">예산 {formatAmount(totalBudget)}</p>
-      )}
-
-      {/* 지출 금액 */}
-      <p className="text-display text-[var(--text-primary)]">{formatAmount(totalExpense)}</p>
+      {/* 지출 금액 + 예산 인라인 (CLS 방지: 로딩·설정·미설정 모두 동일 행 차지) */}
+      <div className="flex items-baseline gap-2">
+        <p className="text-display text-[var(--text-primary)]">{formatAmount(totalExpense)}</p>
+        {/* 로딩 중: skeleton으로 공간 예약 → 레이아웃 밀림 없음 */}
+        {totalBudget === undefined && (
+          <div
+            data-testid="budget-skeleton"
+            className="w-20 h-5 bg-[var(--surface-hover)] rounded animate-pulse self-center"
+            aria-hidden
+          />
+        )}
+        {/* 예산 설정됨: / 예산금액 인라인 */}
+        {totalBudget != null && totalBudget > 0 && (
+          <>
+            <span className="text-lg text-[var(--text-muted)] font-light leading-none">/</span>
+            <span
+              data-testid="budget-inline"
+              className="text-xl text-[var(--text-tertiary)] tabular-nums font-normal"
+            >
+              {formatAmount(totalBudget)}
+            </span>
+          </>
+        )}
+      </div>
 
       {/* 전월 비교 문장 */}
       {comparisonText && (

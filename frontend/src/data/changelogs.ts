@@ -18,6 +18,16 @@ export interface Changelog {
 
 export const changelogs: Changelog[] = [
   {
+    version: '0.21.0',
+    date: '2026-04-14',
+    title: '더보기 UX 개선',
+    items: [
+      { tag: '개선', text: '가계부 홈 예산이 지출 금액 옆에 바로 표시됩니다 (예: ₩120만 / ₩200만)' },
+      { tag: '개선', text: '피드백 버튼이 더보기 헤더에 항상 표시됩니다' },
+      { tag: '개선', text: '정기거래 첫 등록 시 사용 팁을 바로 확인할 수 있습니다' },
+    ],
+  },
+  {
     version: '0.20.0',
     date: '2026-04-09',
     title: '정기거래 UX 개선',

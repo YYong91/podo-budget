@@ -46,4 +46,37 @@ describe('HeroSummary', () => {
     // 이 테스트는 런타임이 아닌 tsc로 검증. 빌드 단계에서 확인.
     expect(true).toBe(true)
   })
+
+  describe('예산 인라인 표시 (CLS 방지)', () => {
+    it('예산이 설정되면 "/" 구분자와 함께 예산 금액을 지출 옆에 표시한다', () => {
+      renderHero({ totalBudget: 2_000_000 })
+      expect(screen.getByText('/')).toBeInTheDocument()
+      // 예산 금액이 "예산 ₩X" 접두사 없이 단독으로 렌더링됨
+      expect(screen.getByTestId('budget-inline')).toHaveTextContent('₩2,000,000')
+    })
+
+    it('예산 로딩 중(undefined)에는 지출 금액 옆에 skeleton이 표시된다', () => {
+      renderHero({ totalBudget: undefined })
+      expect(screen.getByTestId('budget-skeleton')).toBeInTheDocument()
+    })
+
+    it('"예산 ₩X" 형태의 별도 텍스트 라인은 더 이상 표시되지 않는다', () => {
+      renderHero({ totalBudget: 2_000_000 })
+      expect(screen.queryByText(/^예산 ₩/)).not.toBeInTheDocument()
+    })
+
+    it('예산이 null(미설정)이면 "/" 구분자와 skeleton이 모두 표시되지 않는다', () => {
+      renderHero({ totalBudget: null })
+      expect(screen.queryByText('/')).not.toBeInTheDocument()
+      expect(screen.queryByTestId('budget-skeleton')).not.toBeInTheDocument()
+    })
+
+    it('healthScore가 있어도 예산 인라인이 함께 표시된다', () => {
+      // 기존 코드는 !healthScore 조건으로 예산 표시를 막았으나
+      // 인라인 방식은 건강점수 배지(우상단)와 시각적 충돌이 없으므로 함께 표시
+      renderHero({ totalBudget: 2_000_000, healthScore: mockScore })
+      expect(screen.getByTestId('budget-inline')).toBeInTheDocument()
+      expect(screen.getByText('B+')).toBeInTheDocument()
+    })
+  })
 })

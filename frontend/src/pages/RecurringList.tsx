@@ -288,10 +288,24 @@ export default function RecurringList() {
         <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)]/60">
           <EmptyState
             variant="primary"
+            icon={<Repeat className="w-8 h-8 text-grape-400" />}
             title="등록된 정기거래가 없습니다"
-            description="매월 반복되는 지출이나 수입을 등록하면 자동으로 알려드립니다."
+            description="월세, 구독료, 월급처럼 반복되는 거래를 등록하면 달력에 예정일이 표시되고 예산 예측에도 자동으로 반영됩니다."
             action={{ label: '정기거래 추가', onClick: openAdd }}
-          />
+          >
+            <div className="w-full px-2 pb-2 grid grid-cols-3 gap-2 text-center">
+              {[
+                { emoji: '🏠', text: '월세·관리비' },
+                { emoji: '📺', text: '넷플릭스·구독' },
+                { emoji: '💰', text: '월급·부수입' },
+              ].map(({ emoji, text }) => (
+                <div key={text} className="bg-[var(--surface-elevated)] rounded-xl py-2.5 px-2">
+                  <span className="text-lg block mb-0.5">{emoji}</span>
+                  <span className="text-[10px] text-[var(--text-muted)]">{text}</span>
+                </div>
+              ))}
+            </div>
+          </EmptyState>
         </div>
       ) : (
         <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)]/60 overflow-hidden">

@@ -29,7 +29,6 @@ const AccountManager = lazy(() => import('./pages/AccountManager'))
 const PaymentMethodManager = lazy(() => import('./pages/PaymentMethodManager'))
 const TransactionList = lazy(() => import('./pages/TransactionList'))
 const LandingPage = lazy(() => import('./pages/LandingPage'))
-const GuidePage = lazy(() => import('./pages/GuidePage'))
 const FeedbackPage = lazy(() => import('./pages/FeedbackPage'))
 const AdminPage = lazy(() => import('./pages/AdminPage'))
 const OnboardingPage = lazy(() => import('./pages/OnboardingPage'))
@@ -127,7 +126,6 @@ function App() {
               </>
             )}
             <Route path="/payment-methods" element={<PaymentMethodManager />} />
-            <Route path="/guide" element={<GuidePage />} />
             <Route path="/feedback" element={<FeedbackPage />} />
             <Route path="/admin" element={<AdminPage />} />
           </Route>
