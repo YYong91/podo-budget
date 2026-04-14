@@ -718,6 +718,8 @@ export default function InsightsPage() {
               savingsTotal={savingsTotal}
               incomeTotal={incomeStats?.total ?? 0}
               savingsCategories={savingsCategories}
+              recurringTotal={recurringTotal}
+              expenseTotal={expenseStats?.total ?? 0}
             />
           )}
 

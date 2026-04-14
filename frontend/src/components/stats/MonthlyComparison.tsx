@@ -47,9 +47,10 @@ function TrendBarChart({
             tickLine={false}
           />
           <Tooltip
-            formatter={(value: number, name: string) => [
-              `${Math.round(value / 10000).toLocaleString()}만원`,
-              name,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            formatter={(value: any, name: any) => [
+              `${Math.round(Number(value) / 10000).toLocaleString()}만원`,
+              name as string,
             ]}
           />
           <Bar dataKey="수입" fill="#4ade80" radius={[2, 2, 0, 0]} />
