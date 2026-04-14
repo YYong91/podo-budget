@@ -8,16 +8,11 @@ DDD 관점:
 - 도메인 불변식: 가구는 반드시 한 명 이상의 owner를 가져야 합니다.
 """
 
-from typing import TYPE_CHECKING
-
 from sqlalchemy import Column, DateTime, Integer, Numeric, String
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
 from app.core.database import Base
-
-if TYPE_CHECKING:
-    pass
 
 
 class Household(Base):  # type: ignore[misc]

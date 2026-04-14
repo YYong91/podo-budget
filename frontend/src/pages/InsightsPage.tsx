@@ -312,17 +312,17 @@ export default function InsightsPage() {
   }, [monthlyExpenseList, monthlyIncomeList])
 
   // 비저축성 활성 정기지출 합계 (고정비 비율 지표용)
-  // savingsCatNames가 없으면(저축 카테고리 미설정) undefined → 지표 비활성
+  // category_id 기반으로 필터링 — description(거래명)은 카테고리명과 다름
   const recurringNonSavingsTotal = useMemo(() => {
-    const savingsCatNames = new Set(
-      expenseCategories.filter(c => c.is_savings).map(c => c.name)
+    const savingsCategoryIds = new Set(
+      expenseCategories.filter(c => c.is_savings).map(c => c.id)
     )
     // 저축 카테고리 미설정 시 측정 불가
-    if (savingsCatNames.size === 0) return undefined
-    return activeRecurringItems
-      .filter(r => r.type === 'expense' && r.category_emoji !== undefined)
-      .filter(r => !savingsCatNames.has(r.description))
-      .reduce((sum, r) => sum + r.amount, 0)
+    if (savingsCategoryIds.size === 0) return undefined
+    const nonSavingsExpenses = activeRecurringItems
+      .filter(r => r.type === 'expense' && !savingsCategoryIds.has(r.category_id!))
+    if (nonSavingsExpenses.length === 0) return undefined
+    return nonSavingsExpenses.reduce((sum, r) => sum + r.amount, 0)
   }, [expenseCategories, activeRecurringItems])
 
   // 직전 3개월 변동지출 배열 — spendingStability 지표 계산용

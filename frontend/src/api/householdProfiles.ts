@@ -4,6 +4,8 @@
  * 가구의 프로필 정보(재정 목표, 주택 유형, 소득원 등)를 관리한다.
  */
 
+import type { AxiosError } from 'axios'
+
 import type { HouseholdProfile, HouseholdProfileInput } from '../types'
 import apiClient from './client'
 
@@ -56,10 +58,15 @@ function toCamelCase(data: Record<string, unknown>): HouseholdProfile {
  * @param householdId - Household ID
  * @returns HouseholdProfile
  */
-export const getHouseholdProfile = (householdId: number) =>
+export const getHouseholdProfile = (householdId: number): Promise<HouseholdProfile | null> =>
   apiClient
     .get<Record<string, unknown>>(`/household-profiles/${householdId}`)
     .then((res) => toCamelCase(res.data))
+    .catch((err: AxiosError) => {
+      // 프로필 미생성 상태는 404가 정상 — 에러 토스트 없이 null 반환
+      if (err.response?.status === 404) return null
+      throw err
+    })
 
 /**
  * HouseholdProfile 생성 또는 업데이트 API

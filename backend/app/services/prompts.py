@@ -460,13 +460,20 @@ def _fmt_recurring(data: dict) -> str:
 
 
 def _fmt_trend(data: dict) -> str:
-    """3개월 추이를 텍스트로 포맷"""
+    """3개월 추이를 텍스트로 포맷
+
+    수입 데이터가 없는 달(income=0)은 지출만 표시한다.
+    수입 API가 연동되기 전까지는 income이 0으로 전달되므로 불필요한 '수입 0원' 출력을 방지.
+    """
     trend = data.get("trend")
     if not trend:
         return ""
     lines = ["## 3개월 추이"]
     for m in trend:
-        lines.append(f"- {m['month']}: 수입 {m['income']:,.0f}원, 지출 {m['expense']:,.0f}원")
+        if m.get("income", 0) > 0:
+            lines.append(f"- {m['month']}: 수입 {m['income']:,.0f}원, 지출 {m['expense']:,.0f}원")
+        else:
+            lines.append(f"- {m['month']}: 지출 {m['expense']:,.0f}원")
     return "\n".join(lines)
 
 
