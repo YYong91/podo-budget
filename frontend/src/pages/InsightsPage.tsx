@@ -492,7 +492,6 @@ export default function InsightsPage() {
               ? (savingsTotal / incomeStats.total) * 100
               : ((incomeStats.total - (expenseStats?.total ?? 0)) / incomeStats.total) * 100)
           : 0,
-        health_score: financialScore,
         previous_month_expense: comparison?.previous?.total ?? null,
         previous_month_income: incomeComparison?.previous?.total ?? null,
         // 직전 3개월 트렌드 (income은 현재 expense stats만 있어 0 — TODO: income API 연결)
