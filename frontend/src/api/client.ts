@@ -41,9 +41,8 @@ apiClient.interceptors.response.use(
     const message = error.response?.data?.detail || '요청 처리 중 오류가 발생했습니다'
 
     // 401은 AuthContext에서 처리 (SSO 리디렉션)
-    // 403은 페이지 자체에서 처리 (의도적 접근 제한)
     // 나머지 에러는 글로벌 toast로 표시
-    if (status !== 401 && status !== 403) {
+    if (status !== 401) {
       const toastMsg = typeof message === 'string' ? message : '요청 처리 중 오류가 발생했습니다'
       toast.error(toastMsg)
     }

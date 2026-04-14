@@ -14,6 +14,11 @@ vi.mock('../../hooks/useToast', () => ({
   useToast: () => ({ addToast: vi.fn(), removeToast: vi.fn() }),
 }))
 
+// AuthContext 모킹 — 일반 유저 기본값
+vi.mock('../../contexts/AuthContext', () => ({
+  useAuth: () => ({ user: { id: 1, is_admin: false } }),
+}))
+
 // feedbackApi 모킹 — jsdom XHR/undici 비호환 회피
 vi.mock('../../api/feedback', () => {
   const feedbacks = [
