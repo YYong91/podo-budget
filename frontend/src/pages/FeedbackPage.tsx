@@ -13,6 +13,7 @@ import EmptyState from '../components/EmptyState'
 import ErrorState from '../components/ErrorState'
 import type { Feedback, FeedbackSource, FeedbackStatus, FeedbackType } from '../types'
 import { trackEvent } from '../utils/analytics'
+import { useAuth } from '../contexts/AuthContext'
 
 const SOURCE_LABELS: Record<FeedbackSource, { text: string; className: string }> = {
   web: { text: '웹', className: 'bg-blue-50 text-blue-600' },
@@ -28,6 +29,7 @@ const STATUS_LABELS: Record<FeedbackStatus, { text: string; className: string }>
 
 export default function FeedbackPage() {
   const { addToast } = useToast()
+  const { user } = useAuth()
   const goBack = useGoBack('/settings')
   const [type, setType] = useState<FeedbackType>('feature')
   const [title, setTitle] = useState('')
@@ -36,30 +38,29 @@ export default function FeedbackPage() {
 
   const [myFeedbacks, setMyFeedbacks] = useState<Feedback[]>([])
   const [adminFeedbacks, setAdminFeedbacks] = useState<Feedback[] | null>(null)
-  const [isAdmin, setIsAdmin] = useState(false)
   const [error, setError] = useState(false)
+
+  const isAdmin = user?.is_admin ?? false
 
   const loadData = useCallback(async () => {
     setError(false)
     try {
       const mine = await feedbackApi.getMine()
       setMyFeedbacks(mine.data)
-    } catch (err: unknown) {
-      const status = (err as { response?: { status?: number } })?.response?.status
-      if (status !== 403) {
-        setError(true)
-      }
+    } catch {
+      setError(true)
     }
 
-    try {
-      const all = await feedbackApi.getAll()
-      setAdminFeedbacks(all.data)
-      setIsAdmin(true)
-    } catch {
-      // 403이면 관리자가 아님 — 정상
-      setIsAdmin(false)
+    // 관리자만 전체 피드백 조회 — 불필요한 403 방지
+    if (user?.is_admin) {
+      try {
+        const all = await feedbackApi.getAll()
+        setAdminFeedbacks(all.data)
+      } catch {
+        setAdminFeedbacks(null)
+      }
     }
-  }, [])
+  }, [user?.is_admin])
 
   useEffect(() => {
     loadData()
