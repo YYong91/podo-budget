@@ -445,6 +445,7 @@ type SectionVisibility = {
 
 ## 스코프 제외 (후속 작업)
 
-- AI 분석 프롬프트 고도화
+- ~~AI 분석 프롬프트 고도화~~ → [인텔리전스 업그레이드 스펙](./2026-04-14-insights-intelligence-upgrade.md)에서 다룸
+- ~~가계부 점수 리디자인~~ → [인텔리전스 업그레이드 스펙](./2026-04-14-insights-intelligence-upgrade.md)에서 다룸
 - 건강 점수 포도 성숙도 캐릭터 (디자인 에셋 준비 후)
 - 다크 모드 세부 조정 (기존 CSS 변수 기반으로 자동 대응)

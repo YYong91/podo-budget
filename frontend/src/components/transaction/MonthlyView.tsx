@@ -19,6 +19,7 @@ import BotNudgeCard from '../BotNudgeCard'
 import { Search, ChevronDown, ChevronUp, NotebookTabs } from 'lucide-react'
 import { formatAmount } from '../../utils/format'
 import { formatDateHeader } from '../../utils/calendar'
+import { getHeroLabel } from '../../utils/heroLabel'
 import { recurringApi } from '../../api/recurring'
 import { useToast } from '../../hooks/useToast'
 import { TOAST } from '../../constants/toastMessages'
@@ -90,6 +91,12 @@ export default function MonthlyView({
     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
   }, [])
 
+  // 현재 달 여부 (히어로 라벨 컨텍스트 분기용)
+  const isCurrentMonth = useMemo(() => {
+    const today = new Date()
+    return monthly.currentYear === today.getFullYear() && monthly.currentMonth === today.getMonth()
+  }, [monthly.currentYear, monthly.currentMonth])
+
   // 예정 정기거래 팝오버 상태
   const [popoverDate, setPopoverDate] = useState<string | null>(null)
   const handlePopoverClose = useCallback(() => setPopoverDate(null), [])
@@ -148,7 +155,13 @@ export default function MonthlyView({
 
       {/* 월간 지출 히어로 요약 — currentMonth는 0-indexed이므로 +1 */}
       <HeroSummary
-        label="지출"
+        label={getHeroLabel(
+          monthly.totalExpense,
+          totalBudget,
+          pendingRecurringExpense,
+          monthly.currentMonth + 1,
+          isCurrentMonth,
+        )}
         totalExpense={monthly.totalExpense}
         totalBudget={totalBudget}
         pendingRecurringExpense={pendingRecurringExpense}

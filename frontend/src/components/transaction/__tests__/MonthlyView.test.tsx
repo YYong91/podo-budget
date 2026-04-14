@@ -117,7 +117,8 @@ describe('MonthlyView 컴포넌트', () => {
 
   it('월간 지출 히어로 라벨을 표시한다', () => {
     renderPage()
-    expect(screen.getByText('지출')).toBeInTheDocument()
+    // 예산 로딩 중(undefined) 또는 미설정(null) → 현재 달이므로 "이번 달 지출"
+    expect(screen.getByText('이번 달 지출')).toBeInTheDocument()
   })
 
   it('미니 캘린더(요일 헤더)를 표시한다', async () => {
@@ -260,7 +261,8 @@ describe('MonthlyView 컴포넌트', () => {
     setupCurrentMonthHandlers()
     renderPage()
     await waitFor(() => {
-      expect(screen.getByText('지출')).toBeInTheDocument()
+      // 예산 미설정(null) + 현재 달 → "이번 달 지출"
+      expect(screen.getByText('이번 달 지출')).toBeInTheDocument()
     })
   })
 

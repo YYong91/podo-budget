@@ -55,6 +55,7 @@ import ProfileCollectionFlow from '../components/stats/ProfileCollectionFlow'
 // 유틸
 import { calculateFinancialScore } from '../utils/financialScore'
 import { trackEvent } from '../utils/analytics'
+import { getHeroLabel } from '../utils/heroLabel'
 
 // 타입
 import type {
@@ -544,6 +545,12 @@ export default function InsightsPage() {
     return { currentYear: y, currentMonth: m - 1 } // currentMonth: 0-indexed
   }, [monthStr])
 
+  // 현재 달 여부 (히어로 라벨 컨텍스트 분기용)
+  const isCurrentMonth = useMemo(() => {
+    const today = new Date()
+    return currentYear === today.getFullYear() && currentMonth === today.getMonth()
+  }, [currentYear, currentMonth])
+
   const handlePrev = useCallback(() => {
     setMonthStr(m => shiftMonth(m, -1))
     setStructuredInsights(null) // 월 이동 시 AI 분석 초기화
@@ -643,7 +650,13 @@ export default function InsightsPage() {
         <>
           {/* Layer 0: 히어로 — 이달 지출 총액 + 예산 프로그레스바 */}
           <HeroSummary
-            label={`${currentMonth + 1}월 지출`}
+            label={getHeroLabel(
+              expenseStats?.total ?? 0,
+              budgetStats?.total_budget ?? null,
+              pendingRecurringExpense,
+              currentMonth + 1,
+              isCurrentMonth,
+            )}
             totalExpense={expenseStats?.total ?? 0}
             totalBudget={budgetStats?.total_budget ?? null}
             pendingRecurringExpense={pendingRecurringExpense}
