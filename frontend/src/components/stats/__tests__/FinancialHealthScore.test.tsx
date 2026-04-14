@@ -97,12 +97,11 @@ describe('FinancialHealthScore', () => {
 
     it('바텀시트 오버레이(배경) 클릭 시 닫힌다', async () => {
       const user = userEvent.setup()
-      const { container } = render(<FinancialHealthScore score={mockScore} variant="badge" />)
+      render(<FinancialHealthScore score={mockScore} variant="badge" />)
       await user.click(screen.getByRole('button'))
       expect(screen.getByText('가계 건강 점수')).toBeInTheDocument()
-      // 오버레이는 aria-hidden(스크린 리더 제외)이므로 DOM으로 직접 접근
-      const overlay = container.querySelector('.absolute.inset-0') as HTMLElement
-      await user.click(overlay)
+      // 배경 버튼은 aria-label="모달 닫기"로 접근
+      await user.click(screen.getByRole('button', { name: '모달 닫기' }))
       expect(screen.queryByText('저축')).not.toBeInTheDocument()
     })
 
