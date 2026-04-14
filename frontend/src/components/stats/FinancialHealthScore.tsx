@@ -92,31 +92,38 @@ function BadgeMode({ score }: { score: HealthScore }) {
       </button>
 
       {open && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
-          {/* 오버레이 — 카드 외부 탭 시 닫기. stopPropagation으로 HeroSummary 카드 onClick 버블링 차단 */}
+        <>
+          {/* 배경 버튼: fixed inset-0으로 전체 화면 커버. 클릭 시 닫기 + HeroSummary 버블링 차단 */}
           <button
-            aria-hidden="true"
-            tabIndex={-1}
             onClick={(e) => { e.stopPropagation(); setOpen(false) }}
-            className="absolute inset-0 bg-black/40 cursor-default"
+            className="fixed inset-0 z-50 bg-black/40 w-full cursor-default"
+            aria-label="모달 닫기"
           />
-          {/* stopPropagation: 카드 탭이 오버레이 닫기로 전파되는 것 방지 */}
-          {/* role=presentation: 이 div는 인터랙티브 요소가 아니라 이벤트 버블링 차단용 컨테이너 */}
-          <div role="presentation" className="relative w-full sm:max-w-sm mx-auto p-4 pb-8" onClick={e => e.stopPropagation()}>
-            <div className="flex justify-end mb-1">
-              <button
-                aria-label="건강점수 닫기"
-                onClick={() => setOpen(false)}
-                className="p-1.5 rounded-full hover:bg-[var(--surface-hover)] transition-colors text-[var(--text-tertiary)]"
-              >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
+          {/* 카드 컨테이너: pointer-events-none → 카드 외부 클릭은 backdrop 버튼에 전달 */}
+          <div className="fixed inset-0 z-[51] flex items-end sm:items-center justify-center pointer-events-none">
+            {/* role="presentation" + onClick: 카드 클릭이 HeroSummary로 버블링되지 않도록 차단 */}
+            <div
+              role="presentation"
+              className="pointer-events-auto relative w-full sm:max-w-sm mx-auto p-4 pb-8"
+              onClick={e => e.stopPropagation()}
+            >
+              <div role="dialog" aria-modal="true" aria-label="가계 건강점수">
+                <div className="flex justify-end mb-1">
+                  <button
+                    aria-label="건강점수 닫기"
+                    onClick={() => setOpen(false)}
+                    className="p-1.5 rounded-full hover:bg-[var(--surface-hover)] transition-colors text-[var(--text-tertiary)]"
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+                <FullScoreCard score={score} />
+              </div>
             </div>
-            <FullScoreCard score={score} />
           </div>
-        </div>
+        </>
       )}
     </>
   )

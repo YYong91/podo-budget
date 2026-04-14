@@ -8,7 +8,7 @@ import { useState, useEffect } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
 import {
   Tags, PiggyBank, Repeat, Users, MessageSquarePlus,
-  Megaphone, ChevronRight, User, Sun, Moon,
+  Sparkles, ChevronRight, User, Sun, Moon,
   ShieldCheck, Download, CreditCard,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
@@ -145,7 +145,7 @@ export default function SettingsPage() {
         {
           to: '/settings/changelog',
           label: '새소식',
-          icon: Megaphone,
+          icon: Sparkles,
           badge: hasUnread ? (
             <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-[var(--surface-card)]" />
           ) : undefined,
