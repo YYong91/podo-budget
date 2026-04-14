@@ -50,7 +50,7 @@ function calcSavingsRate(
   const incomeWan = Math.round(incomeTotal / 10000)
   return {
     score: Math.round(score),
-    summary: `저축 ${savingsWan}만원 / 수입 ${incomeWan}만원 = ${ratio.toFixed(1)}%`,
+    summary: `수입 ${incomeWan}만원 중 ${savingsWan}만원을 저축했어요 (${ratio.toFixed(1)}%)`,
   }
 }
 
@@ -115,18 +115,18 @@ function calcBudgetAdherence(
   const spentWan = Math.round(budgetSpent / 10000)
 
   let paceText: string
-  if (paceRatio <= 0.9) paceText = '여유'
-  else if (paceRatio <= 1.1) paceText = '적정'
-  else if (paceRatio <= 1.3) paceText = '다소 빠름'
-  else paceText = '주의 필요'
+  if (paceRatio <= 0.9) paceText = '여유로워요'
+  else if (paceRatio <= 1.1) paceText = '적당해요'
+  else if (paceRatio <= 1.3) paceText = '조금 빠른 편이에요'
+  else paceText = '주의가 필요해요'
 
   const detail = isCurrentMonth
-    ? `⏱ 월 ${dayOfMonth}일차 기준 페이스 ${paceText}`
-    : `⏱ ${targetMonth}월 전체 기준`
+    ? `${dayOfMonth}일 기준, 지출 속도가 ${paceText}`
+    : `${targetMonth}월 전체 기준`
 
   return {
     score: Math.round(finalScore),
-    summary: `예산 ${budgetWan}만원 중 ${spentWan}만원 사용 (${usagePct}%)`,
+    summary: `이번 달 예산의 ${usagePct}%를 썼어요 (${spentWan}만원 / ${budgetWan}만원)`,
     detail,
   }
 }
@@ -152,7 +152,7 @@ function calcFixedExpenseRatio(
   const incomeWan = Math.round(incomeTotal / 10000)
   return {
     score: Math.round(score),
-    summary: `고정비 ${recurringWan}만원 / 수입 ${incomeWan}만원 = ${ratio.toFixed(1)}%`,
+    summary: `매달 ${recurringWan}만원씩 고정 지출이 나가요 (수입 ${incomeWan}만원의 ${ratio.toFixed(1)}%)`,
   }
 }
 
@@ -183,9 +183,18 @@ function calcSpendingStability(
   else if (cv <= 50) score = 30 + ((50 - cv) / 20) * 30
   else score = Math.max(0, 30 - ((cv - 50) / 50) * 30)
 
+  let stabilityMsg: string
+  if (cv <= 15) {
+    stabilityMsg = '매달 지출이 고르게 유지되고 있어요'
+  } else if (cv <= 30) {
+    stabilityMsg = '지출이 매달 조금씩 다르게 나와요'
+  } else {
+    stabilityMsg = '지출 패턴이 들쭉날쭉한 편이에요'
+  }
+
   return {
     score: Math.round(score),
-    summary: `최근 3개월 변동 지출 변동계수 ${cv.toFixed(1)}%`,
+    summary: stabilityMsg,
   }
 }
 

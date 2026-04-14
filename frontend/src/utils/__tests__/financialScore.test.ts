@@ -269,6 +269,31 @@ describe('calculateFinancialScore — 소비 안정성', () => {
     })
     expect(result.spendingStability).toBeNull()
   })
+
+  it('summary에 "변동계수" 같은 통계 용어가 없어야 한다', () => {
+    const result = calculateFinancialScore({
+      ...BASE_INPUT,
+      monthlyVariableExpenses: [800_000, 900_000, 850_000],
+    })
+    expect(result.breakdown.spendingStability.summary).not.toContain('변동계수')
+  })
+
+  it('변동 없음(CV≈0) → "매달 지출이 고르게 유지" 포함', () => {
+    const result = calculateFinancialScore({
+      ...BASE_INPUT,
+      monthlyVariableExpenses: [1_000_000, 1_000_000, 1_000_000],
+    })
+    expect(result.breakdown.spendingStability.summary).toContain('고르게')
+  })
+
+  it('변동 큼(CV>30%) → "들쭉날쭉" 포함', () => {
+    // 1,000,000 / 2,000,000 / 500,000 → 평균 약 1,166,666, 표준편차 큼
+    const result = calculateFinancialScore({
+      ...BASE_INPUT,
+      monthlyVariableExpenses: [500_000, 2_000_000, 500_000],
+    })
+    expect(result.breakdown.spendingStability.summary).toContain('들쭉날쭉')
+  })
 })
 
 // ── 가중치 재분배 테스트 ──
