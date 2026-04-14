@@ -72,8 +72,6 @@ export default function SavingsSection({
 }: SavingsSectionProps) {
   // 카테고리와 총액이 모두 있어야 유효한 데이터로 판단
   const hasData = savingsCategories.length > 0 && savingsTotal !== undefined
-  // 카테고리 2개 이상이면 접기/펼치기 가능, 1개 이하면 항상 펼침
-  const collapsible = savingsCategories.length >= 2
   const [expanded, setExpanded] = useState(false)
 
   const showBar = incomeTotal > 0 && savingsTotal !== undefined
@@ -90,11 +88,11 @@ export default function SavingsSection({
     <div id="section-savings" className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] p-4 sm:p-6">
       <SectionHeader
         icon="📊"
-        title="수입 구성"
+        title="지출 구성"
         manageTo="/categories"
         expanded={expanded}
         onToggle={() => setExpanded(p => !p)}
-        collapsible={collapsible}
+        collapsible={hasData}
       />
 
       {hasData ? (
@@ -105,7 +103,7 @@ export default function SavingsSection({
             </span>
             {savingsRate !== undefined && (
               <span className="text-sm text-[var(--text-muted)]">
-                수입의 {savingsRate.toFixed(1)}%
+                저축률 {savingsRate.toFixed(1)}%
               </span>
             )}
           </div>
@@ -128,7 +126,7 @@ export default function SavingsSection({
             </>
           )}
 
-          {(expanded || !collapsible) && (
+          {expanded && (
             <div className="mt-3 space-y-2 pt-3 border-t border-[var(--border-default)]">
               {savingsCategories.map(c => (
                 <div key={c.category} className="flex items-center justify-between">

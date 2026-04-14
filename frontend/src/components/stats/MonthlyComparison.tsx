@@ -167,7 +167,7 @@ export default function MonthlyComparison({
       <div className="mb-4">
         <SectionHeader
           icon="📊"
-          title="지난달과 비교"
+          title="지난달 비교"
           expanded={expanded}
           onToggle={() => setExpanded(prev => !prev)}
         />
