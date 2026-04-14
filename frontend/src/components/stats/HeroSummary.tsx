@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { formatAmount, formatCompactAmount } from '../../utils/format'
-import type { HealthScore } from '../../types'
+import type { FinancialScore } from '../../types'
 import FinancialHealthScore from './FinancialHealthScore'
 
 // ─── Props ───
@@ -16,8 +16,8 @@ type HeroSummaryProps = {
   comparisonText?: string
   /** comparisonText에 적용할 Tailwind 색상 클래스. 예: "text-leaf-600" | "text-red-600" */
   comparisonColor?: string
-  /** 배지 모드로 우측 상단에 표시할 건강점수 */
-  healthScore?: HealthScore | null
+  /** 배지 모드로 우측 상단에 표시할 가계부 점수 */
+  healthScore?: FinancialScore | null
   onProgressClick?: () => void
   children?: ReactNode
   className?: string

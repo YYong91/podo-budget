@@ -1,8 +1,8 @@
 import { useState } from 'react'
-import type { HealthScore } from '../../types'
+import type { FinancialScore } from '../../types'
 
 type FinancialHealthScoreProps = {
-  score: HealthScore | null
+  score: FinancialScore | null
   variant?: 'full' | 'badge'
 }
 
@@ -21,13 +21,14 @@ function getBarColor(value: number): string {
 }
 
 const LABELS = [
-  { key: 'savings' as const, label: '저축' },
-  { key: 'spending' as const, label: '지출 관리' },
-  { key: 'debt' as const, label: '부채' },
+  { key: 'savingsRate' as const, label: '저축률', weight: 35 },
+  { key: 'budgetAdherence' as const, label: '예산 준수율', weight: 25 },
+  { key: 'fixedExpenseRatio' as const, label: '고정비 비율', weight: 20 },
+  { key: 'spendingStability' as const, label: '소비 안정성', weight: 20 },
 ]
 
 /** 전체 점수 카드 */
-function FullScoreCard({ score }: { score: HealthScore }) {
+function FullScoreCard({ score }: { score: FinancialScore }) {
   return (
     <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] p-4">
       <h3 className="text-sm font-semibold text-[var(--text-secondary)] mb-3">가계 건강 점수</h3>
@@ -55,30 +56,44 @@ function FullScoreCard({ score }: { score: HealthScore }) {
         <div>
           <span className={`text-2xl font-bold ${getGradeColor(score.grade)}`}>{score.grade}</span>
           <p className="text-xs text-[var(--text-tertiary)] mt-0.5">100점 만점</p>
+          {/* 활성 지표 수가 4개 미만이면 안내 텍스트 표시 */}
+          {score.activeIndicators < 4 && (
+            <p className="text-xs text-warm-400 mt-1">4개 지표 중 {score.activeIndicators}개 기반</p>
+          )}
         </div>
       </div>
 
-      {/* 세부 항목 */}
+      {/* 세부 항목: null인 지표는 바 숨기고 detail 텍스트 표시 */}
       <div className="space-y-2">
-        {LABELS.map(({ key, label }) => (
-          <div key={key} className="flex items-center gap-2">
-            <span className="text-xs text-[var(--text-secondary)] w-14 shrink-0">{label}</span>
-            <div className="flex-1 h-2 bg-[var(--surface-hover)] rounded-full overflow-hidden">
-              <div
-                className={`h-full rounded-full transition-all ${getBarColor(score[key])}`}
-                style={{ width: `${score[key]}%` }}
-              />
+        {LABELS.map(({ key, label }) => {
+          const indicatorScore = score[key]
+          const breakdown = score.breakdown[key]
+          return (
+            <div key={key}>
+              <div className="flex justify-between text-sm mb-1">
+                <span className="text-xs text-[var(--text-secondary)] shrink-0">{label}</span>
+                {indicatorScore !== null
+                  ? <span className="text-xs font-medium text-[var(--text-secondary)]">{indicatorScore}점</span>
+                  : <span className="text-warm-400 text-xs">{breakdown.detail ?? '데이터 없음'}</span>}
+              </div>
+              {indicatorScore !== null && (
+                <div className="h-2 bg-[var(--surface-hover)] rounded-full overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all ${getBarColor(indicatorScore)}`}
+                    style={{ width: `${indicatorScore}%` }}
+                  />
+                </div>
+              )}
             </div>
-            <span className="text-xs font-medium text-[var(--text-secondary)] w-8 text-right">{score[key]}</span>
-          </div>
-        ))}
+          )
+        })}
       </div>
     </div>
   )
 }
 
 /** 소형 배지 + 클릭 시 바텀시트로 전체 점수 표시 */
-function BadgeMode({ score }: { score: HealthScore }) {
+function BadgeMode({ score }: { score: FinancialScore }) {
   const [open, setOpen] = useState(false)
 
   return (
@@ -119,7 +134,26 @@ function BadgeMode({ score }: { score: HealthScore }) {
                     </svg>
                   </button>
                 </div>
+
+                {/* 전체 점수 카드 */}
                 <FullScoreCard score={score} />
+
+                {/* 지표별 요약 */}
+                <div className="mt-3 bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)] p-4 space-y-3">
+                  <h4 className="text-xs font-semibold text-[var(--text-secondary)]">지표별 분석</h4>
+                  {LABELS.map(({ key, label }) => {
+                    const breakdown = score.breakdown[key]
+                    return (
+                      <div key={key} className="space-y-0.5">
+                        <p className="text-xs font-medium text-[var(--text-primary)]">{label}</p>
+                        <p className="text-xs text-[var(--text-secondary)]">{breakdown.summary}</p>
+                        {breakdown.detail && (
+                          <p className="text-xs text-warm-400">{breakdown.detail}</p>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
               </div>
             </div>
           </div>

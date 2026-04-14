@@ -51,12 +51,12 @@ import SavingsSection from '../components/stats/SavingsSection'
 import MonthlyComparison from '../components/stats/MonthlyComparison'
 
 // 유틸
-import { calculateHealthScore } from '../utils/healthScore'
+import { calculateFinancialScore } from '../utils/financialScore'
 import { trackEvent } from '../utils/analytics'
 
 // 타입
 import type {
-  StructuredInsights, HealthScore,
+  StructuredInsights,
 } from '../types'
 
 // ── 날짜 유틸 ──
@@ -267,19 +267,42 @@ export default function InsightsPage() {
     return map
   }, [monthlyExpenseList, monthlyIncomeList])
 
-  const healthScore = useMemo((): HealthScore | null => {
+  // 비저축성 활성 정기지출 합계 (고정비 비율 지표용)
+  // savingsCatNames가 없으면(저축 카테고리 미설정) undefined → 지표 비활성
+  const recurringNonSavingsTotal = useMemo(() => {
+    const savingsCatNames = new Set(
+      expenseCategories.filter(c => c.is_savings).map(c => c.name)
+    )
+    // 저축 카테고리 미설정 시 측정 불가
+    if (savingsCatNames.size === 0) return undefined
+    return activeRecurringItems
+      .filter(r => r.type === 'expense' && r.category_emoji !== undefined)
+      .filter(r => !savingsCatNames.has(r.description))
+      .reduce((sum, r) => sum + r.amount, 0)
+  }, [expenseCategories, activeRecurringItems])
+
+  const financialScore = useMemo(() => {
     if (!expenseStats && !incomeStats) return null
-    return calculateHealthScore({
+
+    const [year, month] = monthStr.split('-').map(Number)
+
+    // TODO(Phase C): 3개월 이전 데이터 쿼리 추가
+    const monthlyVariableExpenses: number[] = []
+
+    return calculateFinancialScore({
       incomeTotal: incomeStats?.total ?? 0,
-      expenseTotal: expenseStats?.total ?? 0,
       savingsTotal,
       budgetTotal: budgetStats?.total_budget ?? undefined,
       budgetSpent: budgetStats?.total_spent ?? undefined,
-      totalLiabilities: 0,
-      totalAssets: 0,
-      avgLoanRate: 0,
+      budgetCategories: budgetStats?.categories?.length ?? 0,
+      expenseCategories: expenseStats?.by_category?.length ?? 0,
+      recurringNonSavings: recurringNonSavingsTotal,
+      monthlyVariableExpenses,
+      targetYear: year,
+      targetMonth: month,
+      today: new Date(),
     })
-  }, [expenseStats, incomeStats, savingsTotal, budgetStats])
+  }, [expenseStats, incomeStats, savingsTotal, budgetStats, recurringNonSavingsTotal, monthStr])
 
   // 거래 건수 (온보딩 분기용) — count 필드는 StatsResponse에 있음
   const transactionCount = (expenseStats?.count ?? 0) + (incomeStats?.count ?? 0)
@@ -386,7 +409,7 @@ export default function InsightsPage() {
               ? (savingsTotal / incomeStats.total) * 100
               : ((incomeStats.total - (expenseStats?.total ?? 0)) / incomeStats.total) * 100)
           : 0,
-        health_score: healthScore,
+        health_score: financialScore,
         previous_month_expense: comparison?.previous?.total ?? null,
         previous_month_income: incomeComparison?.previous?.total ?? null,
       }
@@ -411,7 +434,7 @@ export default function InsightsPage() {
     } finally {
       setAiLoading(false)
     }
-  }, [monthStr, expenseStats, incomeStats, budgetStats, healthScore, comparison, incomeComparison, savingsTotal, addToast])
+  }, [monthStr, expenseStats, incomeStats, budgetStats, financialScore, comparison, incomeComparison, savingsTotal, addToast])
 
   // monthStr에서 파생된 연/월 (PeriodNavigator + HeroSummary에서 공유)
   const { currentYear, currentMonth } = useMemo(() => {
@@ -510,7 +533,7 @@ export default function InsightsPage() {
             totalIncome={incomeStats?.total}
             comparisonText={comparisonText}
             comparisonColor={comparisonColor}
-            healthScore={healthScore}
+            healthScore={financialScore}
           />
 
           {/* Layer 1: 한눈에 — 주목할 점 → 요약 카드 */}

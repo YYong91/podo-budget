@@ -428,12 +428,29 @@ export interface FeedbackCreateRequest {
 
 // ── 종합 재무 인사이트 ──
 
-export interface HealthScore {
-  savings: number
-  spending: number
-  debt: number
+// 가계부 점수 (4개 지표 기반)
+export interface IndicatorBreakdown {
+  score: number | null
+  summary: string
+  detail?: string
+}
+
+export interface FinancialScoreBreakdown {
+  savingsRate: IndicatorBreakdown
+  budgetAdherence: IndicatorBreakdown
+  fixedExpenseRatio: IndicatorBreakdown
+  spendingStability: IndicatorBreakdown
+}
+
+export interface FinancialScore {
+  savingsRate: number | null
+  budgetAdherence: number | null
+  fixedExpenseRatio: number | null
+  spendingStability: number | null
   overall: number
   grade: string
+  activeIndicators: number
+  breakdown: FinancialScoreBreakdown
 }
 
 export interface Finding {

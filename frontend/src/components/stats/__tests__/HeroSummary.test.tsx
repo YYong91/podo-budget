@@ -2,9 +2,23 @@ import { describe, it, expect } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import HeroSummary from '../HeroSummary'
-import type { HealthScore } from '../../../types'
+import type { FinancialScore } from '../../../types'
 
-const mockScore: HealthScore = { overall: 78, grade: 'B+', savings: 65, spending: 80, debt: 90 }
+const mockScore: FinancialScore = {
+  overall: 78,
+  grade: 'B+',
+  savingsRate: 65,
+  budgetAdherence: 80,
+  fixedExpenseRatio: 90,
+  spendingStability: null,
+  activeIndicators: 3,
+  breakdown: {
+    savingsRate: { score: 65, summary: '저축 30만원 / 수입 150만원 = 20.0%' },
+    budgetAdherence: { score: 80, summary: '예산 200만원 중 150만원 사용 (75%)' },
+    fixedExpenseRatio: { score: 90, summary: '고정비 40만원 / 수입 150만원 = 26.7%' },
+    spendingStability: { score: null, summary: '', detail: '3개월 이상 기록되면 측정돼요' },
+  },
+}
 
 function renderHero(props = {}) {
   return render(

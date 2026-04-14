@@ -2,14 +2,22 @@ import { describe, it, expect } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import FinancialHealthScore from '../FinancialHealthScore'
-import type { HealthScore } from '../../../types'
+import type { FinancialScore } from '../../../types'
 
-const mockScore: HealthScore = {
+const mockScore: FinancialScore = {
   overall: 78,
   grade: 'B+',
-  savings: 65,
-  spending: 80,
-  debt: 90,
+  savingsRate: 65,
+  budgetAdherence: 80,
+  fixedExpenseRatio: 90,
+  spendingStability: null,
+  activeIndicators: 3,
+  breakdown: {
+    savingsRate: { score: 65, summary: '저축 30만원 / 수입 150만원 = 20.0%' },
+    budgetAdherence: { score: 80, summary: '예산 200만원 중 150만원 사용 (75%)' },
+    fixedExpenseRatio: { score: 90, summary: '고정비 40만원 / 수입 150만원 = 26.7%' },
+    spendingStability: { score: null, summary: '', detail: '3개월 이상 기록되면 측정돼요' },
+  },
 }
 
 describe('FinancialHealthScore', () => {
@@ -21,11 +29,12 @@ describe('FinancialHealthScore', () => {
       expect(screen.getByText('B+')).toBeInTheDocument()
     })
 
-    it('세부 항목(저축, 지출, 부채)을 표시한다', () => {
+    it('세부 항목(저축률, 예산 준수율, 고정비 비율, 소비 안정성)을 표시한다', () => {
       render(<FinancialHealthScore score={mockScore} />)
-      expect(screen.getByText('저축')).toBeInTheDocument()
-      expect(screen.getByText('지출 관리')).toBeInTheDocument()
-      expect(screen.getByText('부채')).toBeInTheDocument()
+      expect(screen.getByText('저축률')).toBeInTheDocument()
+      expect(screen.getByText('예산 준수율')).toBeInTheDocument()
+      expect(screen.getByText('고정비 비율')).toBeInTheDocument()
+      expect(screen.getByText('소비 안정성')).toBeInTheDocument()
     })
 
     it('score가 null이면 null을 반환한다', () => {
@@ -39,26 +48,34 @@ describe('FinancialHealthScore', () => {
     })
 
     it('C등급이면 amber 색상을 사용한다', () => {
-      const cScore: HealthScore = { savings: 50, spending: 45, debt: 55, overall: 50, grade: 'C' }
+      const cScore: FinancialScore = {
+        ...mockScore,
+        overall: 50,
+        grade: 'C',
+      }
       const { container } = render(<FinancialHealthScore score={cScore} />)
       expect(container.querySelector('.text-amber-600')).toBeInTheDocument()
     })
 
     it('D등급이면 red 색상을 사용한다', () => {
-      const dScore: HealthScore = { savings: 30, spending: 25, debt: 35, overall: 30, grade: 'D' }
+      const dScore: FinancialScore = {
+        ...mockScore,
+        overall: 30,
+        grade: 'D',
+      }
       const { container } = render(<FinancialHealthScore score={dScore} />)
       expect(container.querySelector('.text-red-600')).toBeInTheDocument()
     })
 
-    it('낮은 세부 점수에 적절한 바 색상을 사용한다', () => {
-      const lowScore: HealthScore = { savings: 35, spending: 55, debt: 75, overall: 55, grade: 'C' }
-      const { container } = render(<FinancialHealthScore score={lowScore} />)
-      // savings=35 → red, spending=55 → amber, debt=75 → grape
-      const bars = container.querySelectorAll('.rounded-full.transition-all')
-      expect(bars.length).toBe(3)
-      expect(bars[0]).toHaveClass('bg-red-500')    // savings=35
-      expect(bars[1]).toHaveClass('bg-amber-500')  // spending=55
-      expect(bars[2]).toHaveClass('bg-grape-500')  // debt=75
+    it('activeIndicators가 4 미만이면 안내 텍스트를 표시한다', () => {
+      render(<FinancialHealthScore score={mockScore} />)
+      // mockScore.activeIndicators = 3
+      expect(screen.getByText('4개 지표 중 3개 기반')).toBeInTheDocument()
+    })
+
+    it('null인 지표는 detail 텍스트를 표시한다', () => {
+      render(<FinancialHealthScore score={mockScore} />)
+      expect(screen.getByText('3개월 이상 기록되면 측정돼요')).toBeInTheDocument()
     })
   })
 
@@ -69,7 +86,7 @@ describe('FinancialHealthScore', () => {
       expect(screen.getByText('78')).toBeInTheDocument()
       // 전체 카드 요소 없음
       expect(screen.queryByText('가계 건강 점수')).not.toBeInTheDocument()
-      expect(screen.queryByText('저축')).not.toBeInTheDocument()
+      expect(screen.queryByText('저축률')).not.toBeInTheDocument()
     })
 
     it('배지 클릭 시 전체 점수 바텀시트가 열린다', async () => {
@@ -77,7 +94,8 @@ describe('FinancialHealthScore', () => {
       render(<FinancialHealthScore score={mockScore} variant="badge" />)
       await user.click(screen.getByRole('button'))
       expect(screen.getByText('가계 건강 점수')).toBeInTheDocument()
-      expect(screen.getByText('저축')).toBeInTheDocument()
+      // 저축률은 FullScoreCard와 지표별 분석 섹션에 각각 표시될 수 있음
+      expect(screen.getAllByText('저축률').length).toBeGreaterThanOrEqual(1)
     })
 
     it('바텀시트에 X 닫기 버튼이 있다', async () => {
@@ -102,7 +120,7 @@ describe('FinancialHealthScore', () => {
       expect(screen.getByText('가계 건강 점수')).toBeInTheDocument()
       // 배경 버튼은 aria-label="모달 닫기"로 접근
       await user.click(screen.getByRole('button', { name: '모달 닫기' }))
-      expect(screen.queryByText('저축')).not.toBeInTheDocument()
+      expect(screen.queryByText('가계 건강 점수')).not.toBeInTheDocument()
     })
 
     it('score가 null이면 아무것도 표시하지 않는다', () => {
