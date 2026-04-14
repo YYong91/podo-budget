@@ -342,19 +342,17 @@ async def get_stats_comparison(
         prev_m = cur_m - 1 if cur_m > 1 else 12
         prev_y = cur_y if cur_m > 1 else cur_y - 1
 
-        # 진행 중인 달이면 오늘까지만 비교 (전기 대비 동일 경과일 기준)
+        # 진행 중인 달이면 오늘까지만 집계 (전달은 전체 월 기준으로 비교)
         today = date_type.today()
         is_current_month = cur_y == today.year and cur_m == today.month
         end_day = today.day if is_current_month else None
 
         current_total = await _month_total(cur_y, cur_m, end_day)
-        previous_total = await _month_total(prev_y, prev_m, end_day)
+        previous_total = await _month_total(prev_y, prev_m)  # 전달은 전체 월
 
         if is_current_month:
-            _, prev_last = monthrange(prev_y, prev_m)
-            prev_end_day = min(today.day, prev_last)
             current_label = f"{cur_y}년 {cur_m}월 ({today.day}일까지)"
-            previous_label = f"{prev_y}년 {prev_m}월 ({prev_end_day}일까지)"
+            previous_label = f"{prev_y}년 {prev_m}월"
         else:
             current_label = f"{cur_y}년 {cur_m}월"
             previous_label = f"{prev_y}년 {prev_m}월"

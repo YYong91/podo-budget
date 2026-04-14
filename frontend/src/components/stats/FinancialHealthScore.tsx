@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import type { FinancialScore } from '../../types'
+import { useScrollLock } from '../../hooks/useScrollLock'
 
 type FinancialHealthScoreProps = {
   score: FinancialScore | null
@@ -22,10 +23,30 @@ function getBarColor(value: number): string {
 }
 
 const LABELS = [
-  { key: 'savingsRate' as const, label: '저축률', weight: 35 },
-  { key: 'budgetAdherence' as const, label: '예산 준수율', weight: 25 },
-  { key: 'fixedExpenseRatio' as const, label: '고정비 비율', weight: 20 },
-  { key: 'spendingStability' as const, label: '소비 안정성', weight: 20 },
+  {
+    key: 'savingsRate' as const,
+    label: '저축률',
+    weight: 35,
+    tip: '수입 대비 저축·투자 비중이 높을수록 점수가 올라요. 카테고리에서 저축성 항목을 설정해 보세요.',
+  },
+  {
+    key: 'budgetAdherence' as const,
+    label: '예산 준수율',
+    weight: 25,
+    tip: '카테고리별 예산을 설정하고 초과 없이 사용하면 점수가 올라요.',
+  },
+  {
+    key: 'fixedExpenseRatio' as const,
+    label: '고정비 비율',
+    weight: 20,
+    tip: '월세·구독료 등 고정비를 수입의 50% 미만으로 유지하면 점수가 올라요.',
+  },
+  {
+    key: 'spendingStability' as const,
+    label: '소비 안정성',
+    weight: 20,
+    tip: '매달 비슷한 소비 패턴을 유지할수록 점수가 높아져요.',
+  },
 ]
 
 /** 전체 점수 카드 */
@@ -97,6 +118,9 @@ function FullScoreCard({ score }: { score: FinancialScore }) {
 function BadgeMode({ score }: { score: FinancialScore }) {
   const [open, setOpen] = useState(false)
 
+  // 모달 오픈 시 배경 스크롤 잠금
+  useScrollLock(open)
+
   // ESC 키로 모달 닫기
   useEffect(() => {
     if (!open) return
@@ -147,9 +171,9 @@ function BadgeMode({ score }: { score: FinancialScore }) {
                 <FullScoreCard score={score} />
 
                 {/* 지표별 요약 */}
-                <div className="mt-3 bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)] p-4 space-y-3">
+                <div className="mt-3 bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)] p-4 space-y-4">
                   <h4 className="text-xs font-semibold text-[var(--text-secondary)]">지표별 분석</h4>
-                  {LABELS.map(({ key, label }) => {
+                  {LABELS.map(({ key, label, tip }) => {
                     const breakdown = score.breakdown[key]
                     return (
                       <div key={key} className="space-y-0.5">
@@ -158,6 +182,7 @@ function BadgeMode({ score }: { score: FinancialScore }) {
                         {breakdown.detail && (
                           <p className="text-xs text-warm-400">{breakdown.detail}</p>
                         )}
+                        <p className="text-xs text-[var(--text-muted)] pt-0.5">💡 {tip}</p>
                       </div>
                     )
                   })}

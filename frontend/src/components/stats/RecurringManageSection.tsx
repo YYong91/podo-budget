@@ -153,11 +153,17 @@ export default function RecurringManageSection({ items, monthStr, executedAmount
         </div>
       )}
 
-      {/* 펼침: 항목별 상세 목록 (기존 렌더 로직 유지) */}
+      {/* 펼침: 항목별 상세 목록 — 지출 먼저, 수입 나중 정렬 */}
       {expanded && (
         <div className="mt-3">
-          {items.map((item, idx) => {
+          {[...items]
+            .sort((a, b) => {
+              if (a.type === b.type) return 0
+              return a.type === 'expense' ? -1 : 1
+            })
+            .map((item, idx, sorted) => {
             const isExpense = item.type === 'expense'
+            const isFirstIncome = item.type === 'income' && sorted[idx - 1]?.type === 'expense'
             const status = getItemStatus(item, monthStr, executedAmountMap)
             const executedAmount = executedAmountMap.get(item.id)
             const displayAmount = executedAmount ?? item.amount
@@ -166,10 +172,20 @@ export default function RecurringManageSection({ items, monthStr, executedAmount
             const dimmed = status === 'skipped' || status === 'overdue'
 
             return (
+              <div key={item.id}>
+                {/* 수입 그룹 구분선 */}
+                {isFirstIncome && (
+                  <div className="flex items-center gap-2 py-2 mt-1">
+                    <div className="flex-1 h-px bg-[var(--border-default)]" />
+                    <span className="text-xs text-[var(--text-muted)]">수입</span>
+                    <div className="flex-1 h-px bg-[var(--border-default)]" />
+                  </div>
+                )}
               <div
-                key={item.id}
                 className={`flex items-center justify-between py-2.5 ${
-                  idx < items.length - 1 ? 'border-b border-[var(--border-default)]' : ''
+                  idx < sorted.length - 1 && !(sorted[idx + 1]?.type === 'income' && isExpense)
+                    ? 'border-b border-[var(--border-default)]'
+                    : ''
                 } ${dimmed ? 'opacity-50' : ''}`}
               >
                 <div className="flex items-center gap-2 min-w-0">
@@ -195,6 +211,7 @@ export default function RecurringManageSection({ items, monthStr, executedAmount
                   </div>
                   <StatusBadge status={status} />
                 </div>
+              </div>
               </div>
             )
           })}

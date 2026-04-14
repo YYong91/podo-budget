@@ -30,6 +30,22 @@ export default function LandingPage() {
     }
   }, [isAuthenticated, loading, navigate])
 
+  // 랜딩페이지는 항상 라이트 모드
+  useEffect(() => {
+    const html = document.documentElement
+    const wasDark = html.classList.contains('dark')
+    if (wasDark) {
+      html.classList.remove('dark')
+      html.style.backgroundColor = '#fefce8'
+    }
+    return () => {
+      if (wasDark) {
+        html.classList.add('dark')
+        html.style.backgroundColor = '#1a1625'
+      }
+    }
+  }, [])
+
   if (loading || isAuthenticated) {
     return null
   }

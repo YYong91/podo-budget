@@ -46,21 +46,21 @@ describe('SavingsSection', () => {
     expect(screen.getByRole('link', { name: '관리' })).toBeInTheDocument()
   })
 
-  it('저축 카테고리가 1개이면 breakdown을 항상 표시한다 (chevron 없음)', () => {
+  it('저축 카테고리가 1개여도 접기/펼치기 버튼을 표시한다', () => {
     renderSection({
       savingsCategories: [{ category: '적금', amount: 300000 }],
       savingsTotal: 300000,
     })
-    // collapsible=false → 접기/펼치기 버튼 없음
-    expect(screen.queryByRole('button', { name: /펼치기|접기/ })).not.toBeInTheDocument()
-    // breakdown은 항상 표시
-    expect(screen.getByText('적금')).toBeInTheDocument()
+    // 항상 collapsible → 1개여도 펼치기 버튼 표시
+    expect(screen.getByRole('button', { name: '펼치기' })).toBeInTheDocument()
+    // 기본 접힌 상태 → breakdown 미표시
+    expect(screen.queryByText('적금')).not.toBeInTheDocument()
   })
 
   // 카드명 변경 확인
-  it('카드 제목이 "수입 구성"이다', () => {
+  it('카드 제목이 "지출 구성"이다', () => {
     renderSection()
-    expect(screen.getByRole('heading', { name: /수입 구성/ })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: /지출 구성/ })).toBeInTheDocument()
   })
 
   // stacked bar 렌더 확인
@@ -81,13 +81,13 @@ describe('SavingsSection', () => {
     expect(screen.getByRole('button', { name: '펼치기' })).toBeInTheDocument()
   })
 
-  // 카테고리 1개: 항상 펼침, 버튼 없음
-  it('카테고리 1개이면 펼치기 버튼을 표시하지 않는다', () => {
+  // 카테고리 1개: 항상 collapsible, 버튼 있음
+  it('카테고리 1개이면 펼치기 버튼을 표시한다', () => {
     renderSection({
       savingsCategories: [{ category: '적금', amount: 300000 }],
       savingsTotal: 300000,
     })
-    expect(screen.queryByRole('button', { name: /펼치기|접기/ })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '펼치기' })).toBeInTheDocument()
   })
 
   // 기본 접힘 상태 (2개 이상인 경우)

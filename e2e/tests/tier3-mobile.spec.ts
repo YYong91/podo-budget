@@ -21,26 +21,22 @@ test.describe('모바일 뷰포트', () => {
     const bottomNav = page.locator('nav[aria-label="하단 탭 메뉴"]')
     await expect(bottomNav).toBeVisible({ timeout: 15000 })
 
-    // 하단 탭 바에 4개 탭이 모두 존재하는지 확인
-    for (const label of ['가계부', '자산', '돌아보기', '더보기']) {
+    // 하단 탭 바에 3개 탭이 모두 존재하는지 확인 (자산 탭은 피처 플래그 비활성화)
+    for (const label of ['가계부', '모아보기', '더보기']) {
       await expect(bottomNav.getByText(label)).toBeVisible()
     }
   })
 
-  test('홈 → 돌아보기 → 자산 → 더보기 탭 이동', async ({ authedPage: page }) => {
+  test('홈 → 모아보기 → 더보기 탭 이동', async ({ authedPage: page }) => {
     await page.goto('/home')
     await page.waitForLoadState('networkidle')
 
     const bottomNav = page.locator('nav[aria-label="하단 탭 메뉴"]')
     await expect(bottomNav).toBeVisible({ timeout: 15000 })
 
-    // 돌아보기 탭
-    await bottomNav.getByText('돌아보기').click()
+    // 모아보기 탭
+    await bottomNav.getByText('모아보기').click()
     await expect(page).toHaveURL('/insights')
-
-    // 자산 탭
-    await bottomNav.getByText('자산').click()
-    await expect(page).toHaveURL('/assets')
 
     // 더보기(설정) 탭
     await bottomNav.getByText('더보기').click()

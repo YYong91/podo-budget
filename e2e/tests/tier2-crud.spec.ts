@@ -62,8 +62,8 @@ test.describe('지출 수정/삭제', () => {
     // 수정 모드 진입
     await page.getByRole('button', { name: '수정' }).click()
 
-    // 금액 필드 수정 (placeholder: "10000")
-    const amountInput = page.getByPlaceholder('10000')
+    // 금액 필드 수정 (TransactionDetail 편집 모드 — id="edit-amount")
+    const amountInput = page.locator('#edit-amount')
     await expect(amountInput).toBeVisible()
     await amountInput.fill('25000')
 
@@ -114,8 +114,8 @@ test.describe('수입 수정/삭제', () => {
     // 수정 모드 진입
     await page.getByRole('button', { name: '수정' }).click()
 
-    // 금액 필드 수정 (id: "income-edit-amount")
-    const amountInput = page.locator('#income-edit-amount')
+    // 금액 필드 수정 (TransactionDetail 통합 편집 모드 — id="edit-amount")
+    const amountInput = page.locator('#edit-amount')
     await expect(amountInput).toBeVisible()
     await amountInput.fill('750000')
 

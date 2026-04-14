@@ -30,12 +30,14 @@ async function createExpense(
 
 test.describe('Tier 1: 리포트', () => {
   test('지출 데이터 준비 → 리포트 페이지 → 통계 표시 확인', async ({ authedPage: page }) => {
-    // 1. 데이터 준비 — API로 지출 3건 생성
+    // 1. 데이터 준비 — API로 지출 5건 생성 (InsightsPage FULL_REPORT_THRESHOLD=5 충족)
     await createExpense(page, { amount: 8000, description: '리포트 테스트 점심' })
     await createExpense(page, { amount: 15000, description: '리포트 테스트 저녁' })
     await createExpense(page, { amount: 3500, description: '리포트 테스트 커피' })
+    await createExpense(page, { amount: 5000, description: '리포트 테스트 간식' })
+    await createExpense(page, { amount: 2000, description: '리포트 테스트 음료' })
 
-    // 2. 리포트 페이지 이동 (돌아보기 = /insights)
+    // 2. 리포트 페이지 이동 (모아보기 = /insights)
     await page.goto('/insights')
     await page.waitForLoadState('networkidle')
 
@@ -50,7 +52,7 @@ test.describe('Tier 1: 리포트', () => {
 
     // 지출 합계 또는 개별 항목이 리포트에 표시되는지 확인
     // InsightsPage는 월간 요약 카드를 보여줌
-    const hasAmount = await page.getByText(/26,500|8,000|15,000|3,500/).first().isVisible({ timeout: 10000 }).catch(() => false)
+    const hasAmount = await page.getByText(/34,000|8,000|15,000|3,500|5,000/).first().isVisible({ timeout: 10000 }).catch(() => false)
     const hasLabel = await page.getByText(/지출|총|이번 달/).first().isVisible({ timeout: 5000 }).catch(() => false)
 
     // 둘 중 하나라도 보이면 리포트가 정상 동작

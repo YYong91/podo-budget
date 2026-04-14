@@ -84,8 +84,8 @@ test.describe('지출 CRUD', () => {
     // 수정 모드 진입
     await page.getByRole('button', { name: '수정' }).click()
 
-    // 설명 필드 수정 (ExpenseDetail의 편집 모드 placeholder: "김치찌개")
-    const descInput = page.getByPlaceholder('김치찌개')
+    // 설명 필드 수정 (TransactionDetail 편집 모드 — id="edit-description")
+    const descInput = page.locator('#edit-description')
     await expect(descInput).toBeVisible()
     await descInput.fill('E2E 수정 후')
 
