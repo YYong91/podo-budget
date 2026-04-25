@@ -200,13 +200,14 @@ describe('BudgetManager', () => {
       })
     })
 
-    it('예산이 있는 카테고리의 입력 필드에 금액이 표시된다', async () => {
+    it('예산이 있는 카테고리의 입력 필드에 금액이 포맷되어 표시된다', async () => {
       setupSuccessHandlers()
       renderBudgetManager()
 
       await waitFor(() => {
-        const input = screen.getByLabelText('식비 예산')
-        expect(input).toHaveValue(300000)
+        const input = screen.getByLabelText('식비 예산') as HTMLInputElement
+        // blur 상태에서 ₩ 포맷으로 표시
+        expect(input.value).toBe('₩300,000')
       })
     })
 
@@ -215,8 +216,8 @@ describe('BudgetManager', () => {
       renderBudgetManager()
 
       await waitFor(() => {
-        const input = screen.getByLabelText('교통 예산')
-        expect(input).toHaveValue(null)
+        const input = screen.getByLabelText('교통 예산') as HTMLInputElement
+        expect(input.value).toBe('')
       })
     })
 
@@ -458,13 +459,14 @@ describe('BudgetManager', () => {
       })
     })
 
-    it('저장된 월 총 예산 금액을 표시한다', async () => {
+    it('저장된 월 총 예산 금액을 포맷되어 표시한다', async () => {
       setupSuccessHandlers(3000000)
       renderBudgetManager()
 
       await waitFor(() => {
-        const input = screen.getByLabelText('월 총 예산')
-        expect(input).toHaveValue(3000000)
+        const input = screen.getByLabelText('월 총 예산') as HTMLInputElement
+        // blur 상태에서 ₩ 포맷으로 표시
+        expect(input.value).toBe('₩3,000,000')
       })
     })
 
@@ -564,6 +566,46 @@ describe('BudgetManager', () => {
         (el) => el.textContent && el.textContent.includes('₩50,000')
       )
       expect(remainingSpans.length).toBeGreaterThan(0)
+    })
+  })
+
+  describe('금액 입력 포맷', () => {
+    it('월 총 예산 입력란 — blur 시 ₩ 포맷으로 표시된다', async () => {
+      const user = userEvent.setup()
+      setupSuccessHandlers()
+      renderBudgetManager()
+      await waitFor(() => screen.getByLabelText('월 총 예산'))
+
+      const input = screen.getByLabelText('월 총 예산') as HTMLInputElement
+      await user.clear(input)
+      await user.type(input, '200000')
+      await user.tab()
+      expect(input.value).toBe('₩200,000')
+    })
+
+    it('월 총 예산 입력란 — focus 시 raw 숫자로 표시된다', async () => {
+      const user = userEvent.setup()
+      setupSuccessHandlers(500000)
+      renderBudgetManager()
+      await waitFor(() => screen.getByLabelText('월 총 예산'))
+
+      const input = screen.getByLabelText('월 총 예산') as HTMLInputElement
+      await user.click(input)
+      // 포커스 상태에서는 raw 숫자만 표시
+      expect(input.value).toMatch(/^\d+$/)
+    })
+
+    it('카테고리 예산 입력란 — blur 시 ₩ 포맷으로 표시된다', async () => {
+      const user = userEvent.setup()
+      setupSuccessHandlers()
+      renderBudgetManager()
+      await waitFor(() => screen.getByLabelText('식비 예산'))
+
+      const input = screen.getByLabelText('식비 예산') as HTMLInputElement
+      await user.clear(input)
+      await user.type(input, '300000')
+      await user.tab()
+      expect(input.value).toBe('₩300,000')
     })
   })
 

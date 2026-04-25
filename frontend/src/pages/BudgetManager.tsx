@@ -18,6 +18,18 @@ import { Skeleton } from '../components/skeleton/Skeleton'
 import type { BudgetAlert, CategoryBudgetOverview } from '../types'
 import { formatAmount } from '../utils/format'
 
+/** 숫자 문자열을 ₩0,000 형식으로 표시. 빈 값이면 빈 문자열 반환 */
+function displayBudgetValue(raw: string): string {
+  const num = Number(raw)
+  if (!raw || isNaN(num) || num <= 0) return ''
+  return formatAmount(num)
+}
+
+/** 입력값에서 숫자만 추출 */
+function extractNumber(value: string): string {
+  return value.replace(/[^0-9]/g, '')
+}
+
 function BudgetManagerSkeleton() {
   return (
     <div className="space-y-3">
@@ -52,6 +64,10 @@ export default function BudgetManager() {
   const [totalBudget, setTotalBudget] = useState<number | null>(null)
   const [localTotalBudget, setLocalTotalBudget] = useState<string>('')
   const [savingTotal, setSavingTotal] = useState(false)
+
+  // 입력 포커스 상태 — 포커스 시 raw 숫자, blur 시 ₩ 포맷 표시
+  const [totalBudgetFocused, setTotalBudgetFocused] = useState(false)
+  const [focusedCategoryId, setFocusedCategoryId] = useState<number | null>(null)
 
   /**
    * 데이터 로드 — 카테고리 개요, 알림, 월 총 예산을 동시에 가져온다
@@ -261,17 +277,16 @@ export default function BudgetManager() {
         </div>
         <div className="flex items-center gap-2">
           <input
-            type="number"
+            type="text"
             inputMode="numeric"
-            min="0"
-            step="10000"
-            value={localTotalBudget}
-            onChange={(e) => setLocalTotalBudget(e.target.value)}
-            className="input-base w-44 text-right"
+            value={totalBudgetFocused ? localTotalBudget : displayBudgetValue(localTotalBudget)}
+            onChange={(e) => setLocalTotalBudget(extractNumber(e.target.value))}
+            onFocus={() => setTotalBudgetFocused(true)}
+            onBlur={() => setTotalBudgetFocused(false)}
+            className="input-base w-44 text-right tabular-nums"
             placeholder="미설정"
             aria-label="월 총 예산"
           />
-          <span className="text-sm text-[var(--text-tertiary)]">원</span>
           {isTotalDirty() && (
             <button
               onClick={handleSaveTotal}
@@ -416,17 +431,20 @@ export default function BudgetManager() {
                   <div className="flex items-center gap-2">
                     <div className="flex flex-1 items-center gap-1">
                       <input
-                        type="number"
+                        type="text"
                         inputMode="numeric"
-                        min="0"
-                        step="1000"
-                        value={localAmounts[item.category_id] ?? ''}
-                        onChange={(e) => handleAmountChange(item.category_id, e.target.value)}
-                        className="input-base flex-1 text-right"
+                        value={
+                          focusedCategoryId === item.category_id
+                            ? (localAmounts[item.category_id] ?? '')
+                            : displayBudgetValue(localAmounts[item.category_id] ?? '')
+                        }
+                        onChange={(e) => handleAmountChange(item.category_id, extractNumber(e.target.value))}
+                        onFocus={() => setFocusedCategoryId(item.category_id)}
+                        onBlur={() => setFocusedCategoryId(null)}
+                        className="input-base flex-1 text-right tabular-nums"
                         placeholder="예산 없음"
                         aria-label={`${item.category_name} 예산`}
                       />
-                      <span className="text-xs text-[var(--text-tertiary)] shrink-0">원</span>
                     </div>
                     {isDirty(item) && (
                       <button
