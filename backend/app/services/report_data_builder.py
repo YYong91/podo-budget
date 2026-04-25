@@ -96,7 +96,7 @@ async def _top_expense_categories(
 ) -> list[dict]:
     """카테고리별 지출 집계 TOP N
 
-    각 항목: {category_id, category_name, amount, ratio}
+    각 항목: {category_id, name, amount, percentage}
     """
     dt_start, dt_end = _date_to_datetime_range(start, end)
     rows = await db.execute(
@@ -121,13 +121,13 @@ async def _top_expense_categories(
     items = []
     for row in rows:
         amount = float(row.total)
-        ratio = round(amount / expense_total * 100, 1) if expense_total > 0 else 0.0
+        percentage = round(amount / expense_total * 100, 1) if expense_total > 0 else 0.0
         items.append(
             {
                 "category_id": row.category_id,
-                "category_name": row.name or "미분류",
+                "name": row.name or "미분류",
                 "amount": amount,
-                "ratio": ratio,
+                "percentage": percentage,
             }
         )
     return items
