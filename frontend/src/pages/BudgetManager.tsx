@@ -234,7 +234,7 @@ export default function BudgetManager() {
    * - 정상: leaf-500
    */
   const getProgressColor = (usagePct: number, isExceeded: boolean): string => {
-    if (isExceeded) return 'bg-rose-500'
+    if (isExceeded || usagePct >= 100) return 'bg-rose-500'
     if (usagePct >= 80) return 'bg-yellow-500'
     return 'bg-leaf-500'
   }
