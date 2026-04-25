@@ -10,10 +10,10 @@ dependencies = [
     "alembic==1.13.1",
     "pydantic>=2.7.0,<3.0.0",  # fastapi 0.130+이 pydantic>=2.7.0 요구 (#237)
     "pydantic-settings>=2.1.0,<3.0.0",
-    "python-dotenv==1.0.1",
+    "python-dotenv>=1.2.2",  # CVE-2026-28684 픽스 버전 (#237)
     "asyncpg>=0.29.0",
     "aiosqlite>=0.20.0",
-    "python-multipart>=0.0.7",
+    "python-multipart>=0.0.26",  # CVE-2026-40347 픽스 버전 (#237)
     "httpx==0.26.0",
     "anthropic>=0.40.0",
     "python-jose[cryptography]>=3.3.0",
@@ -85,4 +85,3 @@ module = [
     "openai.*",
 ]
 ignore_missing_imports = true
-
