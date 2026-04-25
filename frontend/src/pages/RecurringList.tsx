@@ -144,7 +144,8 @@ function RecurringCard({
           <div className="relative">
             <button
               onClick={() => onMenuOpen(openMenuId === r.id ? null : r.id)}
-              className="p-1.5 rounded-lg hover:bg-[var(--surface-hover)] transition-colors"
+              disabled={executingIds.has(r.id)}
+              className="p-1.5 rounded-lg hover:bg-[var(--surface-hover)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               data-testid={`menu-${r.id}`}
               aria-label="더보기"
             >
@@ -236,9 +237,8 @@ export default function RecurringList() {
   const [executingIds, setExecutingIds] = useState<Set<number>>(new Set())
   const [executedIds, setExecutedIds] = useState<Set<number>>(new Set())
   const [showInactive, setShowInactive] = useState(false)
-  // Task 5에서 RecurringModal에 전달 예정
-  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([])
-  void paymentMethods  // suppress unused warning until Task 5 wires this into modal
+  // Task 5에서 RecurringModal에 전달 예정 (_prefix: 아직 JSX에서 미사용)
+  const [_paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([])
 
   /* 데이터 로드 */
   const loadData = async () => {
@@ -417,10 +417,10 @@ export default function RecurringList() {
   /* 렌더링 직전 활성/비활성 분리 + 날짜 기준 정렬 */
   const activeItems = items
     .filter((r) => r.is_active)
-    .sort((a, b) => (a.day_of_month ?? 0) - (b.day_of_month ?? 0))
+    .sort((a, b) => a.next_due_date.localeCompare(b.next_due_date))
   const inactiveItems = items
     .filter((r) => !r.is_active)
-    .sort((a, b) => (a.day_of_month ?? 0) - (b.day_of_month ?? 0))
+    .sort((a, b) => a.next_due_date.localeCompare(b.next_due_date))
 
   if (error) {
     return (

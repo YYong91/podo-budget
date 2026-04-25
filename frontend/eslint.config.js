@@ -22,6 +22,10 @@ export default defineConfig([
       globals: globals.browser,
     },
     rules: {
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        { varsIgnorePattern: '^_', argsIgnorePattern: '^_', destructuredArrayIgnorePattern: '^_' },
+      ],
       'react-refresh/only-export-components': [
         'warn',
         { allowExportNames: ['useAuth', 'useToast'] },
