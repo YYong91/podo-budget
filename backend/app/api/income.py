@@ -35,6 +35,7 @@ from app.schemas.expense import (
     TrendPoint,
 )
 from app.schemas.income import IncomeCreate, IncomeResponse, IncomeUpdate
+from app.services.correction_service import save_correction
 from app.utils.date_utils import get_month_range, get_week_label, get_week_range, get_year_range
 
 logger = logging.getLogger(__name__)
@@ -482,12 +483,27 @@ async def update_income(
                 detail="이 항목을 수정할 권한이 없습니다",
             )
 
+    old_category_id = income.category_id
     update_data = income_update.model_dump(exclude_unset=True)
     for key, value in update_data.items():
         setattr(income, key, value)
 
     await db.commit()
     await db.refresh(income)
+
+    # 카테고리가 변경됐을 때 정정 신호 저장 (LLM 학습용)
+    new_category_id = update_data.get("category_id")
+    if new_category_id is not None and new_category_id != old_category_id and income.description:
+        await save_correction(
+            db,
+            input_text=income.description,
+            category_id=new_category_id,
+            household_id=income.household_id,
+            user_id=current_user.id,
+            source="edit",
+        )
+        await db.commit()
+
     return income
 
 
