@@ -8,13 +8,14 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import RecurringModal from '../RecurringModal'
 import type { RecurringFormData } from '../RecurringModal'
-import type { Category } from '../../../types'
+import type { Category, PaymentMethod } from '../../../types'
 
 const emptyForm: RecurringFormData = {
   type: 'expense',
   amount: '',
   description: '',
   category_id: '',
+  payment_method_id: '',
   frequency: 'monthly',
   day_of_month: '25',
   day_of_week: '0',
@@ -30,11 +31,17 @@ const mockCategories: Category[] = [
   { id: 3, name: '기타', type: 'both', description: null, sort_order: 3, is_savings: false, is_system: true, exclude_auto_payment: false, emoji: null, created_at: '2026-01-01T00:00:00Z' },
 ]
 
+const mockPaymentMethods: PaymentMethod[] = [
+  { id: 1, household_id: 1, created_by: 1, name: '신용카드', type: 'credit_card', monthly_target: null, is_default: true, is_system: false, is_active: true, display_order: 1, created_at: '2026-01-01T00:00:00Z', updated_at: '2026-01-01T00:00:00Z' },
+  { id: 2, household_id: 1, created_by: 1, name: '현금', type: 'cash', monthly_target: null, is_default: false, is_system: false, is_active: true, display_order: 2, created_at: '2026-01-01T00:00:00Z', updated_at: '2026-01-01T00:00:00Z' },
+]
+
 const defaultProps = {
   editingId: null,
   formData: emptyForm,
   onFormChange: vi.fn(),
   categories: mockCategories,
+  paymentMethods: mockPaymentMethods,
   submitting: false,
   onSubmit: vi.fn((e: React.FormEvent) => e.preventDefault()),
   onClose: vi.fn(),

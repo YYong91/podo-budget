@@ -31,6 +31,7 @@ const emptyForm: RecurringFormData = {
   amount: '',
   description: '',
   category_id: '',
+  payment_method_id: '',
   frequency: 'monthly',
   day_of_month: '25',
   day_of_week: '0',
@@ -237,8 +238,7 @@ export default function RecurringList() {
   const [executingIds, setExecutingIds] = useState<Set<number>>(new Set())
   const [executedIds, setExecutedIds] = useState<Set<number>>(new Set())
   const [showInactive, setShowInactive] = useState(false)
-  // Task 5에서 RecurringModal에 전달 예정 (_prefix: 아직 JSX에서 미사용)
-  const [_paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([])
+  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([])
 
   /* 데이터 로드 */
   const loadData = async () => {
@@ -298,6 +298,7 @@ export default function RecurringList() {
       amount: String(r.amount),
       description: r.description,
       category_id: r.category_id ? String(r.category_id) : '',
+      payment_method_id: r.payment_method_id ? String(r.payment_method_id) : '',
       frequency: r.frequency,
       day_of_month: String(r.day_of_month ?? 25),
       day_of_week: String(r.day_of_week ?? 0),
@@ -309,7 +310,7 @@ export default function RecurringList() {
     setShowModal(true)
   }
 
-  /* 저장 (추가 / 수정) */
+  /* 저장 (추가 / 수정) — API 응답으로 로컬 상태 업데이트 (재로드 없음) */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!formData.description.trim()) {
@@ -324,19 +325,23 @@ export default function RecurringList() {
     setSubmitting(true)
     try {
       if (editingId) {
-        await recurringApi.update(editingId, {
+        // 수정: API 응답 데이터로 해당 항목만 교체
+        const res = await recurringApi.update(editingId, {
           amount: Number(formData.amount),
           description: formData.description,
           category_id: formData.category_id ? Number(formData.category_id) : null,
+          payment_method_id: formData.payment_method_id ? Number(formData.payment_method_id) : null,
           end_date: formData.end_date || null,
         })
-        addToast('success', TOAST.RECURRING_UPDATED)
+        setItems((prev) => prev.map((item) => item.id === editingId ? res.data : item))
       } else {
+        // 생성: API 응답 데이터를 목록에 추가
         const payload: RecurringTransactionCreate = {
           type: formData.type,
           amount: Number(formData.amount),
           description: formData.description,
           category_id: formData.category_id ? Number(formData.category_id) : null,
+          payment_method_id: formData.payment_method_id ? Number(formData.payment_method_id) : null,
           frequency: formData.frequency,
           start_date: formData.start_date,
           end_date: formData.end_date || null,
@@ -354,12 +359,12 @@ export default function RecurringList() {
         if (formData.frequency === 'custom') {
           payload.interval = Number(formData.interval)
         }
-        await recurringApi.create(payload)
-        addToast('success', TOAST.RECURRING_ADDED)
+        const res = await recurringApi.create(payload)
+        setItems((prev) => [...prev, res.data])
         trackEvent('recurring_added')
       }
       setShowModal(false)
-      loadData()
+      addToast('success', editingId ? TOAST.RECURRING_UPDATED : TOAST.RECURRING_ADDED)
     } catch {
       addToast('error', TOAST.SAVE_FAILED)
     } finally {
@@ -561,6 +566,7 @@ export default function RecurringList() {
           formData={formData}
           onFormChange={setFormData}
           categories={categories}
+          paymentMethods={paymentMethods}
           submitting={submitting}
           onSubmit={handleSubmit}
           onClose={() => setShowModal(false)}
