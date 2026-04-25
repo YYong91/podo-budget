@@ -336,6 +336,10 @@ export const handlers = [
       is_active: true,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
+      category_emoji: null,
+      category_name: null,
+      payment_method_id: body.payment_method_id ?? null,
+      payment_method_name: null,
     }
     return HttpResponse.json(newItem, { status: 201 })
   }),

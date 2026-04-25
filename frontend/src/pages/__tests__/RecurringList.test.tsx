@@ -33,6 +33,9 @@ const mockItems: RecurringTransaction[] = [
     next_due_date: '2026-02-25', is_active: true,
     created_at: '2026-01-25T00:00:00Z', updated_at: '2026-01-25T00:00:00Z',
     category_emoji: null,
+    category_name: null,
+    payment_method_id: null,
+    payment_method_name: null,
   },
   {
     id: 2, user_id: 1, household_id: 1,
@@ -43,6 +46,9 @@ const mockItems: RecurringTransaction[] = [
     next_due_date: '2026-02-25', is_active: true,
     created_at: '2026-01-25T00:00:00Z', updated_at: '2026-01-25T00:00:00Z',
     category_emoji: null,
+    category_name: null,
+    payment_method_id: null,
+    payment_method_name: null,
   },
   {
     id: 3, user_id: 1, household_id: 1,
@@ -53,6 +59,9 @@ const mockItems: RecurringTransaction[] = [
     next_due_date: '2026-02-01', is_active: false,
     created_at: '2026-01-01T00:00:00Z', updated_at: '2026-01-01T00:00:00Z',
     category_emoji: null,
+    category_name: null,
+    payment_method_id: null,
+    payment_method_name: null,
   },
 ]
 
