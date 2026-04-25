@@ -2,13 +2,13 @@
  * @file BudgetManager.tsx
  * @description 예산 관리 페이지
  * 카테고리 전체 목록을 한 화면에 표시하고, 각 카테고리 옆에 예산 금액을 바로 입력할 수 있다.
- * 참고용으로 카테고리별 최근 3개월 실제 지출액을 표시한다.
- * 월 총 예산을 설정하면 카테고리별 배분 비율과 여유예산을 확인할 수 있다.
+ * 예산이 설정된 카테고리는 진행바와 지출 금액을 카테고리 행에 바로 표시한다.
+ * 월 총 예산을 설정하면 배분 비율과 여유예산을 확인할 수 있다.
  */
 
 import { useState, useEffect, useMemo } from 'react'
 import { useGoBack } from '../hooks/useGoBack'
-import { ArrowLeft, BarChart3, AlertTriangle, Wallet, PiggyBank } from 'lucide-react'
+import { ArrowLeft, Wallet, PiggyBank } from 'lucide-react'
 import { useToast } from '../hooks/useToast'
 import { TOAST } from '../constants/toastMessages'
 import budgetApi from '../api/budgets'
@@ -18,18 +18,45 @@ import { Skeleton } from '../components/skeleton/Skeleton'
 import type { BudgetAlert, CategoryBudgetOverview } from '../types'
 import { formatAmount } from '../utils/format'
 
+/** 숫자 문자열을 ₩0,000 형식으로 표시. 빈 값이면 빈 문자열 반환 */
+function displayBudgetValue(raw: string): string {
+  const num = Number(raw)
+  if (!raw || isNaN(num) || num <= 0) return ''
+  return formatAmount(num)
+}
+
+/** 입력값에서 숫자만 추출 */
+function extractNumber(value: string): string {
+  return value.replace(/[^0-9]/g, '')
+}
+
 function BudgetManagerSkeleton() {
   return (
-    <div className="space-y-3">
-      {[1, 2, 3, 4].map(i => (
-        <div key={i} className="card-surface p-4 flex items-center justify-between">
-          <div className="space-y-2">
-            <Skeleton className="h-4 w-28" />
-            <Skeleton className="h-3 w-36" />
+    <div className="space-y-6">
+      {/* 헤더 스켈레톤 */}
+      <div className="flex items-center gap-3">
+        <Skeleton className="h-9 w-9 rounded-lg" />
+        <Skeleton className="h-5 w-5 rounded" />
+        <Skeleton className="h-6 w-24" />
+      </div>
+      {/* 월 총 예산 카드 */}
+      <div className="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)]/60 p-5">
+        <Skeleton className="h-5 w-20 mb-4" />
+        <Skeleton className="h-10 w-44" />
+      </div>
+      {/* 카테고리 카드 */}
+      <div className="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)]/60 overflow-hidden">
+        {[1, 2, 3, 4].map(i => (
+          <div key={i} className="px-4 py-3.5 space-y-2 border-b border-[var(--border-subtle)] last:border-0">
+            <div className="flex justify-between">
+              <Skeleton className="h-4 w-16" />
+              <Skeleton className="h-4 w-8" />
+            </div>
+            <Skeleton className="h-1.5 w-full rounded-full" />
+            <Skeleton className="h-9 w-full" />
           </div>
-          <Skeleton className="h-8 w-24" />
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
   )
 }
@@ -52,6 +79,10 @@ export default function BudgetManager() {
   const [totalBudget, setTotalBudget] = useState<number | null>(null)
   const [localTotalBudget, setLocalTotalBudget] = useState<string>('')
   const [savingTotal, setSavingTotal] = useState(false)
+
+  // 입력 포커스 상태 — 포커스 시 raw 숫자, blur 시 ₩ 포맷 표시
+  const [totalBudgetFocused, setTotalBudgetFocused] = useState(false)
+  const [focusedCategoryId, setFocusedCategoryId] = useState<number | null>(null)
 
   /**
    * 데이터 로드 — 카테고리 개요, 알림, 월 총 예산을 동시에 가져온다
@@ -92,6 +123,16 @@ export default function BudgetManager() {
   useEffect(() => {
     loadData()
   }, [])
+
+  /**
+   * 카테고리 ID → BudgetAlert 빠른 조회용 맵
+   * alerts 배열이 변경될 때만 재계산
+   */
+  const alertsMap = useMemo(() => {
+    const map = new Map<number, BudgetAlert>()
+    alerts.forEach((a) => map.set(a.category_id, a))
+    return map
+  }, [alerts])
 
   /**
    * 카테고리별 예산 합계 (로컬 입력 기준)
@@ -203,22 +244,14 @@ export default function BudgetManager() {
 
   /**
    * 프로그레스바 색상 결정
+   * - 초과: rose-500
+   * - 경고 (80% 이상): yellow-500
+   * - 정상: leaf-500
    */
-  const getProgressColor = (alert: BudgetAlert): string => {
-    if (alert.is_exceeded) return 'bg-rose-500'
-    if (alert.is_warning) return 'bg-yellow-500'
+  const getProgressColor = (usagePct: number, isExceeded: boolean): string => {
+    if (isExceeded || usagePct >= 100) return 'bg-rose-500'
+    if (usagePct >= 80) return 'bg-yellow-500'
     return 'bg-leaf-500'
-  }
-
-  /**
-   * 카테고리별 총 예산 대비 비율 계산
-   */
-  const getCategoryPercent = (categoryId: number): number | null => {
-    const total = Number(localTotalBudget)
-    if (!total || total <= 0) return null
-    const amount = Number(localAmounts[categoryId] ?? 0)
-    if (amount <= 0) return null
-    return (amount / total) * 100
   }
 
   if (loading) {
@@ -232,7 +265,7 @@ export default function BudgetManager() {
           <button onClick={() => goBack()} className="p-2.5 -ml-2.5 rounded-lg hover:bg-[var(--surface-hover)] transition-colors">
             <ArrowLeft className="w-5 h-5 text-[var(--text-secondary)]" />
           </button>
-          <PiggyBank className="w-5 h-5 text-grape-500 flex-shrink-0" />
+          <PiggyBank data-testid="piggybank-icon" className="w-5 h-5 text-grape-500 flex-shrink-0" />
           <h1 className="text-lg font-semibold text-[var(--text-primary)]">예산 관리</h1>
         </div>
         <ErrorState message={error} onRetry={loadData} />
@@ -261,17 +294,16 @@ export default function BudgetManager() {
         </div>
         <div className="flex items-center gap-2">
           <input
-            type="number"
+            type="text"
             inputMode="numeric"
-            min="0"
-            step="10000"
-            value={localTotalBudget}
-            onChange={(e) => setLocalTotalBudget(e.target.value)}
-            className="input-base w-44 text-right"
+            value={totalBudgetFocused ? localTotalBudget : displayBudgetValue(localTotalBudget)}
+            onChange={(e) => setLocalTotalBudget(extractNumber(e.target.value))}
+            onFocus={() => setTotalBudgetFocused(true)}
+            onBlur={() => setTotalBudgetFocused(false)}
+            className="input-base w-44 text-right tabular-nums"
             placeholder="미설정"
             aria-label="월 총 예산"
           />
-          <span className="text-sm text-[var(--text-tertiary)]">원</span>
           {isTotalDirty() && (
             <button
               onClick={handleSaveTotal}
@@ -305,69 +337,6 @@ export default function BudgetManager() {
         )}
       </div>
 
-      {/* 예산 상황 카드 */}
-      {alerts.length > 0 && (
-        <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)]/60 p-5">
-          <div className="flex items-center gap-2 mb-4">
-            <BarChart3 className="w-5 h-5 text-grape-600" />
-            <h2 className="text-lg font-semibold text-[var(--text-primary)]">예산 상황</h2>
-          </div>
-          <div className="space-y-3">
-            {alerts.map((alert) => (
-              <div
-                key={alert.budget_id}
-                className={`p-4 rounded-lg border ${
-                  alert.is_exceeded
-                    ? 'bg-rose-50 border-rose-200'
-                    : alert.is_warning
-                    ? 'bg-yellow-50 border-yellow-200'
-                    : 'bg-leaf-50 border-leaf-200'
-                }`}
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <span className="font-medium text-[var(--text-primary)]">{alert.category_name}</span>
-                  <span
-                    className={`text-sm font-semibold ${
-                      alert.is_exceeded
-                        ? 'text-rose-600'
-                        : alert.is_warning
-                        ? 'text-yellow-600'
-                        : 'text-leaf-600'
-                    }`}
-                  >
-                    {alert.usage_percentage.toFixed(1)}%
-                  </span>
-                </div>
-                <div className="w-full bg-[var(--border-default)] rounded-full h-2 mb-2">
-                  <div
-                    className={`h-2 rounded-full ${getProgressColor(alert)}`}
-                    style={{ width: `${Math.min(alert.usage_percentage, 100)}%` }}
-                  />
-                </div>
-                <div className="flex justify-between text-xs text-[var(--text-secondary)]">
-                  <span>
-                    사용: <span className="tabular-nums">{formatAmount(alert.spent_amount)}</span> / <span className="tabular-nums">{formatAmount(alert.budget_amount)}</span>
-                  </span>
-                  <span>남은 금액: <span className="tabular-nums">{formatAmount(alert.remaining_amount)}</span></span>
-                </div>
-                {alert.is_exceeded && (
-                  <div className="flex items-center gap-1 mt-2">
-                    <AlertTriangle className="w-3 h-3 text-rose-600" />
-                    <p className="text-xs text-rose-600">예산을 초과했습니다!</p>
-                  </div>
-                )}
-                {alert.is_warning && !alert.is_exceeded && (
-                  <div className="flex items-center gap-1 mt-2">
-                    <AlertTriangle className="w-3 h-3 text-yellow-600" />
-                    <p className="text-xs text-yellow-600">예산의 80%를 사용했습니다</p>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
       {/* 카테고리별 예산 인라인 편집 */}
       {overview.length === 0 ? (
         <EmptyState
@@ -385,49 +354,67 @@ export default function BudgetManager() {
           </div>
           <div className="divide-y divide-[var(--border-subtle)]">
             {overview.map((item) => {
-              const pct = getCategoryPercent(item.category_id)
+              const alert = alertsMap.get(item.category_id)
               return (
-                <div key={item.category_id} className="px-4 py-3.5 space-y-2">
-                  {/* 카테고리 이름 + 비율 */}
+                <div key={item.category_id} className="px-4 py-3.5 space-y-2 border-b border-[var(--border-subtle)] last:border-0">
+                  {/* 1. 카테고리 이름 + 사용률 뱃지 */}
                   <div className="flex items-center justify-between gap-2">
                     <span className="font-medium text-sm text-[var(--text-primary)] truncate">
                       {item.category_name}
                     </span>
-                    {pct != null && (
-                      <span className="text-xs text-grape-500 font-medium shrink-0">
-                        {pct.toFixed(1)}%
+                    {alert && (
+                      <span className={`text-xs font-semibold tabular-nums shrink-0 ${
+                        alert.is_exceeded ? 'text-rose-600' : alert.is_warning ? 'text-yellow-600' : 'text-leaf-600'
+                      }`}>
+                        {alert.usage_percentage.toFixed(0)}%
                       </span>
                     )}
                   </div>
 
-                  {/* 최근 지출 참고 */}
-                  {item.monthly_spending.length > 0 ? (
-                    <p className="text-xs text-[var(--text-muted)]">
-                      {item.monthly_spending
-                        .slice(0, 2)
-                        .map((s) => `${s.month}월 ${formatAmount(s.amount)}`)
-                        .join(' / ')}
-                    </p>
-                  ) : (
-                    <p className="text-xs text-[var(--text-muted)]">최근 지출 내역 없음</p>
+                  {/* 2. 진행바 + 지출 정보 (예산 설정 + 알림 데이터 있는 경우만) */}
+                  {alert && (
+                    <div className="space-y-1">
+                      <div className="w-full bg-[var(--border-default)] rounded-full h-1.5 overflow-hidden">
+                        <div
+                          data-testid={`progress-${item.category_name}`}
+                          className={`h-1.5 rounded-full transition-all ${getProgressColor(alert.usage_percentage, alert.is_exceeded)}`}
+                          style={{ width: `${Math.min(alert.usage_percentage, 100)}%` }}
+                        />
+                      </div>
+                      <div className="flex justify-between text-xs text-[var(--text-muted)]">
+                        <span className="tabular-nums">
+                          {formatAmount(alert.spent_amount)} 사용
+                        </span>
+                        {alert.is_exceeded ? (
+                          <span className="text-rose-600 font-medium tabular-nums">
+                            {formatAmount(Math.abs(alert.remaining_amount))} 초과
+                          </span>
+                        ) : (
+                          <span className="tabular-nums">
+                            {formatAmount(alert.remaining_amount)} 남음
+                          </span>
+                        )}
+                      </div>
+                    </div>
                   )}
 
-                  {/* 예산 입력 + 저장 */}
+                  {/* 3. 예산 입력 + 저장 */}
                   <div className="flex items-center gap-2">
-                    <div className="flex flex-1 items-center gap-1">
-                      <input
-                        type="number"
-                        inputMode="numeric"
-                        min="0"
-                        step="1000"
-                        value={localAmounts[item.category_id] ?? ''}
-                        onChange={(e) => handleAmountChange(item.category_id, e.target.value)}
-                        className="input-base flex-1 text-right"
-                        placeholder="예산 없음"
-                        aria-label={`${item.category_name} 예산`}
-                      />
-                      <span className="text-xs text-[var(--text-tertiary)] shrink-0">원</span>
-                    </div>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      value={
+                        focusedCategoryId === item.category_id
+                          ? (localAmounts[item.category_id] ?? '')
+                          : displayBudgetValue(localAmounts[item.category_id] ?? '')
+                      }
+                      onChange={(e) => handleAmountChange(item.category_id, extractNumber(e.target.value))}
+                      onFocus={() => setFocusedCategoryId(item.category_id)}
+                      onBlur={() => setFocusedCategoryId(null)}
+                      className="input-base flex-1 text-right tabular-nums"
+                      placeholder="예산 없음"
+                      aria-label={`${item.category_name} 예산`}
+                    />
                     {isDirty(item) && (
                       <button
                         onClick={() => handleSave(item)}
