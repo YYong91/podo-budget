@@ -89,7 +89,7 @@ async def recover_stale_processing(db: AsyncSession, threshold_minutes: int = 15
     Returns:
         복구된 row 수
     """
-    cutoff = datetime.utcnow() - timedelta(minutes=threshold_minutes)
+    cutoff = datetime.now(UTC) - timedelta(minutes=threshold_minutes)
 
     result = await db.execute(
         update(MonthlyReport)

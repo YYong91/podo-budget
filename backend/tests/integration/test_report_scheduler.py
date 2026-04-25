@@ -1,6 +1,6 @@
 """report_scheduler 통합 테스트 (mock LLM)"""
 
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 
 import pytest
 from sqlalchemy import select
@@ -96,7 +96,7 @@ async def test_recover_stale_processing(db_session, test_household):
         status="processing",
         report_data={},
         attempt_count=1,
-        started_at=datetime.utcnow() - timedelta(minutes=30),
+        started_at=datetime.now(UTC) - timedelta(minutes=30),
     )
     db_session.add(stale)
     await db_session.commit()
