@@ -5,7 +5,7 @@
 향후 RAG 기반 카테고리 자동 분류 개선에 사용됩니다.
 
 Revision ID: a1b2c3d4e5f6g7
-Revises: z9a0b1c2d3e4
+Revises: b2c3d4e5f6a7
 Create Date: 2026-04-26
 """
 
@@ -15,7 +15,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "a1b2c3d4e5f6g7"  # pragma: allowlist secret
-down_revision = "z9a0b1c2d3e4"  # pragma: allowlist secret
+down_revision = "b2c3d4e5f6a7"  # pragma: allowlist secret
 branch_labels = None
 depends_on = None
 
@@ -48,6 +48,7 @@ def upgrade() -> None:
         sa.ForeignKeyConstraint(
             ["user_id"],
             ["users.id"],
+            ondelete="SET NULL",
         ),
         sa.PrimaryKeyConstraint("id"),
     )

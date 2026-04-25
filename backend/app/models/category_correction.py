@@ -32,7 +32,7 @@ class CategoryCorrection(Base):  # type: ignore[misc]
         nullable=False,
         index=True,
     )
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     input_text = Column(String, nullable=False)
     category_id = Column(
         Integer,
