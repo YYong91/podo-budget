@@ -18,6 +18,15 @@ export interface Changelog {
 
 export const changelogs: Changelog[] = [
   {
+    version: '0.25.0',
+    date: '2026-04-25',
+    title: '예산 관리 개선',
+    items: [
+      { tag: '개선', text: '예산 현황과 카테고리 편집을 한 화면에서 확인하고 수정할 수 있어요' },
+      { tag: '개선', text: '예산 입력란에 ₩ 기호와 쉼표 포맷이 표시돼요' },
+    ],
+  },
+  {
     version: '0.24.0',
     date: '2026-04-14',
     title: '모아보기 카드 UX 개선',
