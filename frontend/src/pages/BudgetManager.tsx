@@ -253,19 +253,40 @@ export default function BudgetManager() {
         if (item.current_budget_id) {
           await budgetApi.deleteBudget(item.current_budget_id)
         }
+        // 해당 row만 초기화 (전체 리프레시 없이)
+        setOverview((prev) =>
+          prev.map((o) =>
+            o.category_id === item.category_id
+              ? { ...o, current_budget_id: null, current_budget_amount: null }
+              : o,
+          ),
+        )
       } else if (item.current_budget_id) {
         // 기존 예산 수정
         await budgetApi.updateBudget(item.current_budget_id, { amount: numAmount })
+        // 금액만 갱신
+        setOverview((prev) =>
+          prev.map((o) =>
+            o.category_id === item.category_id ? { ...o, current_budget_amount: numAmount } : o,
+          ),
+        )
       } else {
         // 새 예산 생성 — 월간, 오늘부터
-        await budgetApi.createBudget({
+        const res = await budgetApi.createBudget({
           category_id: item.category_id,
           amount: numAmount,
           period: 'monthly',
           start_date: new Date().toISOString().split('T')[0],
         })
+        // 새 budget_id + 금액 반영
+        setOverview((prev) =>
+          prev.map((o) =>
+            o.category_id === item.category_id
+              ? { ...o, current_budget_id: res.data.id, current_budget_amount: numAmount }
+              : o,
+          ),
+        )
       }
-      await loadData()
       // 체크마크 0.8초 표시
       setSavedIds((prev) => new Set([...prev, item.category_id]))
       setTimeout(() => {
