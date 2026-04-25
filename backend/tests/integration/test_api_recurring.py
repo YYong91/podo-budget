@@ -692,6 +692,54 @@ async def test_execute_with_override_amount(authenticated_client, db_session, te
 
 
 @pytest.mark.asyncio
+async def test_create_with_payment_method(authenticated_client, test_household, db_session):
+    """payment_method_id 포함 정기거래 생성"""
+    from app.models.payment_method import PaymentMethod
+
+    pm = PaymentMethod(
+        household_id=test_household.id,
+        name="삼성카드",
+        type="credit_card",
+        is_active=True,
+    )
+    db_session.add(pm)
+    await db_session.commit()
+    await db_session.refresh(pm)
+
+    payload = _monthly_payload(payment_method_id=pm.id)
+    response = await authenticated_client.post("/api/recurring", json=payload)
+    assert response.status_code == 201
+    data = response.json()
+    assert data["payment_method_name"] == "삼성카드"
+
+
+@pytest.mark.asyncio
+async def test_list_includes_payment_method_name(authenticated_client, test_household, db_session):
+    """목록 응답에 payment_method_name 포함"""
+    from datetime import date
+
+    rt = RecurringTransaction(
+        user_id=1,
+        household_id=test_household.id,
+        type="expense",
+        amount=17000,
+        description="넷플릭스",
+        frequency="monthly",
+        day_of_month=25,
+        start_date=date(2026, 1, 1),
+        next_due_date=date(2026, 5, 25),
+    )
+    db_session.add(rt)
+    await db_session.commit()
+
+    response = await authenticated_client.get("/api/recurring")
+    assert response.status_code == 200
+    data = response.json()
+    assert "payment_method_name" in data[0]
+    assert "category_name" in data[0]
+
+
+@pytest.mark.asyncio
 async def test_execute_without_body_uses_default_amount(authenticated_client, db_session, test_user: User, test_household: Household):
     """바디 없이 실행하면 기본 금액으로 거래가 생성된다"""
     from sqlalchemy import select
