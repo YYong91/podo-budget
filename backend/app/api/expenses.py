@@ -41,6 +41,7 @@ from app.schemas.expense import (
     StatsResponse,
     TrendPoint,
 )
+from app.services.correction_service import save_correction
 from app.services.llm_service import get_llm_provider
 from app.utils.date_utils import get_month_range, get_week_label, get_week_range, get_year_range
 
@@ -714,8 +715,6 @@ async def update_expense(
     # 카테고리가 변경된 경우 정정 신호 캡처 (Phase 2 임베딩의 학습 데이터)
     new_category_id = update_data.get("category_id")
     if new_category_id is not None and new_category_id != old_category_id and expense.description:
-        from app.services.correction_service import save_correction
-
         await save_correction(
             db,
             input_text=expense.description,
