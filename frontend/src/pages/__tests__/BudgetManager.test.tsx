@@ -607,6 +607,23 @@ describe('BudgetManager', () => {
       await user.tab()
       expect(input.value).toBe('₩300,000')
     })
+
+    it('월 총 예산 입력란 — 인풋 옆에 "원" 텍스트가 없다', async () => {
+      setupSuccessHandlers()
+      renderBudgetManager()
+      await waitFor(() => screen.getByLabelText('월 총 예산'))
+      // 페이지 어디에도 단독 "원" 텍스트 노드가 없어야 함 (₩ 접두사 방식 사용)
+      expect(screen.queryByText('원')).not.toBeInTheDocument()
+    })
+
+    it('예산 미설정 카테고리 — 입력란 placeholder가 "예산 없음"이다', async () => {
+      setupSuccessHandlers()
+      renderBudgetManager()
+      await waitFor(() => screen.getByLabelText('식비 예산'))
+      // 카테고리 예산 입력 필드는 예산 유무와 관계없이 placeholder="예산 없음" 표시
+      const input = screen.getByLabelText('식비 예산') as HTMLInputElement
+      expect(input.placeholder).toBe('예산 없음')
+    })
   })
 
   describe('에러 상태 헤더', () => {
