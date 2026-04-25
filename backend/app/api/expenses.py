@@ -703,12 +703,29 @@ async def update_expense(
                 detail="이 항목을 수정할 권한이 없습니다",
             )
 
+    old_category_id = expense.category_id
     update_data = expense_update.model_dump(exclude_unset=True)
     for key, value in update_data.items():
         setattr(expense, key, value)
 
     await db.commit()
     await db.refresh(expense)
+
+    # 카테고리가 변경된 경우 정정 신호 캡처 (Phase 2 임베딩의 학습 데이터)
+    new_category_id = update_data.get("category_id")
+    if new_category_id is not None and new_category_id != old_category_id and expense.description:
+        from app.services.correction_service import save_correction
+
+        await save_correction(
+            db,
+            input_text=expense.description,
+            category_id=new_category_id,
+            household_id=expense.household_id,
+            user_id=current_user.id,
+            source="edit",
+        )
+        await db.commit()
+
     return expense
 
 
