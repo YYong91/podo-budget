@@ -570,14 +570,11 @@ describe('BudgetManager', () => {
   describe('에러 상태 헤더', () => {
     it('에러 상태에서도 PiggyBank 아이콘이 렌더링된다', async () => {
       setupErrorHandlers()
-      render(<MemoryRouter><BudgetManager /></MemoryRouter>)
+      renderBudgetManager()
       await waitFor(() => {
         expect(screen.getByRole('heading', { name: '예산 관리' })).toBeInTheDocument()
       })
-      const heading = screen.getByRole('heading', { name: '예산 관리' })
-      const headerDiv = heading.closest('div')!
-      const svgs = headerDiv.querySelectorAll('svg')
-      expect(svgs.length).toBeGreaterThanOrEqual(2)
+      expect(screen.getByTestId('piggybank-icon')).toBeInTheDocument()
     })
   })
 
