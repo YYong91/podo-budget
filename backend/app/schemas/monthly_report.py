@@ -40,14 +40,18 @@ class MonthlyReportEligibility(BaseModel):
     category_count: int
     total_spend: float
     is_eligible: bool
-    blocker: Literal[
-        "profile_missing",
-        "transactions_short",
-        "categories_short",
-        "spend_short",
-        "first_month",
-        None,
-    ]
+    blocker: (
+        Literal[
+            "profile_missing",
+            "transactions_short",
+            "categories_short",
+            "spend_short",
+            "first_month",
+        ]
+        | None
+    )
+
+    model_config = {"from_attributes": True}
 
 
 class MonthlyReportOrEligibility(BaseModel):
