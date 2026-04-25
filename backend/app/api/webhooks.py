@@ -1,6 +1,8 @@
 """외부 서비스 webhook 수신 엔드포인트
 
-현재: Sentry 에러 알림 → 텔레그램 전달
+현재:
+- Sentry 에러 알림 → 텔레그램 전달
+- Supabase pg_cron → 월간 결산 리포트 생성 트리거
 """
 
 import hashlib
@@ -9,9 +11,14 @@ import logging
 from typing import Any
 
 import httpx
-from fastapi import APIRouter, Header, HTTPException, Request, status
+from fastapi import APIRouter, BackgroundTasks, Depends, Header, HTTPException, Request, status
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
+from app.core.database import get_db
+from app.core.webhook_auth import verify_monthly_report_webhook
+from app.services.report_month_utils import previous_month_kst
+from app.services.report_scheduler import phase1_enqueue_pending, phase2_process_pending
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -105,3 +112,25 @@ async def sentry_webhook(
         logger.exception("Sentry 알림 텔레그램 전송 실패")
 
     return {"ok": True}
+
+
+@router.post("/monthly-reports")
+async def trigger_monthly_reports(
+    request: Request,
+    background_tasks: BackgroundTasks,
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Supabase pg_cron이 매월 1일 호출하는 월간 결산 리포트 생성 트리거"""
+    verify_monthly_report_webhook(request)
+
+    if not settings.MONTHLY_REPORT_AUTO_ENABLED:
+        logger.info("[monthly-reports] 자동 실행 비활성화 (MONTHLY_REPORT_AUTO_ENABLED=false)")
+        return {"skipped": True, "reason": "auto_disabled"}
+
+    target_month = previous_month_kst()
+    queued = await phase1_enqueue_pending(db, target_month)
+
+    background_tasks.add_task(phase2_process_pending, target_month)
+
+    logger.info("[monthly-reports] cron_started month=%s queued=%d", target_month, queued)
+    return {"queued": queued, "month": target_month}
