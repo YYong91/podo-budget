@@ -38,6 +38,7 @@ class CategoryCorrection(Base):  # type: ignore[misc]
         Integer,
         ForeignKey("categories.id", ondelete="SET NULL"),
         nullable=True,
+        index=True,
     )
     source = Column(String, nullable=False, default="edit")
     created_at = Column(DateTime, default=func.now(), server_default=func.now(), nullable=False)
