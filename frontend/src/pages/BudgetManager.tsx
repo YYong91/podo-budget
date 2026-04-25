@@ -4,14 +4,19 @@
  * 카테고리 전체 목록을 한 화면에 표시하고, 각 카테고리 옆에 예산 금액을 바로 입력할 수 있다.
  * 예산이 설정된 카테고리는 진행바와 지출 금액을 카테고리 행에 바로 표시한다.
  * 월 총 예산을 설정하면 배분 비율과 여유예산을 확인할 수 있다.
+ *
+ * UX 개선사항:
+ * - 카테고리 이름 앞에 이모지 표시 (categoriesApi 연동)
+ * - 저장 버튼 제거 → blur 시 dirty한 경우만 자동 저장
+ * - 인라인 피드백: 스피너 → 체크마크(0.8초) → 사라짐 / 에러 시 X 아이콘 + 빨간 테두리
+ * - 금액 입력 중 포커스 시 아래에 ₩ 포맷 미리보기 표시
  */
 
 import { useState, useEffect, useMemo } from 'react'
 import { useGoBack } from '../hooks/useGoBack'
-import { ArrowLeft, Wallet, PiggyBank } from 'lucide-react'
-import { useToast } from '../hooks/useToast'
-import { TOAST } from '../constants/toastMessages'
+import { ArrowLeft, Wallet, PiggyBank, Loader2, Check, X } from 'lucide-react'
 import budgetApi from '../api/budgets'
+import { categoryApi } from '../api/categories'
 import EmptyState from '../components/EmptyState'
 import ErrorState from '../components/ErrorState'
 import { Skeleton } from '../components/skeleton/Skeleton'
@@ -63,39 +68,48 @@ function BudgetManagerSkeleton() {
 
 export default function BudgetManager() {
   const goBack = useGoBack('/settings')
-  const { addToast } = useToast()
 
   const [overview, setOverview] = useState<CategoryBudgetOverview[]>([])
   const [alerts, setAlerts] = useState<BudgetAlert[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
+  // 카테고리 이모지 맵 { category_id → emoji }
+  const [emojiMap, setEmojiMap] = useState<Map<number, string>>(new Map())
+
   // 카테고리별 로컬 입력 상태 { [categoryId]: 금액 문자열 }
   const [localAmounts, setLocalAmounts] = useState<Record<number, string>>({})
   // 저장 중인 카테고리 ID 집합
   const [savingIds, setSavingIds] = useState<Set<number>>(new Set())
+  // 저장 완료된 카테고리 ID 집합 (체크마크 0.8초 표시)
+  const [savedIds, setSavedIds] = useState<Set<number>>(new Set())
+  // 에러 상태 카테고리 ID 집합 (빨간 테두리 + X 아이콘)
+  const [errorIds, setErrorIds] = useState<Set<number>>(new Set())
 
   // 월 총 예산
   const [totalBudget, setTotalBudget] = useState<number | null>(null)
   const [localTotalBudget, setLocalTotalBudget] = useState<string>('')
   const [savingTotal, setSavingTotal] = useState(false)
+  const [totalSaved, setTotalSaved] = useState(false)
+  const [totalError, setTotalError] = useState(false)
 
   // 입력 포커스 상태 — 포커스 시 raw 숫자, blur 시 ₩ 포맷 표시
   const [totalBudgetFocused, setTotalBudgetFocused] = useState(false)
   const [focusedCategoryId, setFocusedCategoryId] = useState<number | null>(null)
 
   /**
-   * 데이터 로드 — 카테고리 개요, 알림, 월 총 예산을 동시에 가져온다
+   * 데이터 로드 — 카테고리 개요, 알림, 월 총 예산, 카테고리 이모지를 동시에 가져온다
    */
   const loadData = async () => {
     try {
       setLoading(true)
       setError(null)
 
-      const [overviewRes, alertsRes, totalRes] = await Promise.all([
+      const [overviewRes, alertsRes, totalRes, categoriesRes] = await Promise.all([
         budgetApi.getCategoryOverview(),
         budgetApi.getBudgetAlerts(),
         budgetApi.getTotalBudget(),
+        categoryApi.getAll(),
       ])
 
       setOverview(overviewRes.data)
@@ -104,6 +118,13 @@ export default function BudgetManager() {
       setLocalTotalBudget(
         totalRes.data.total_monthly_budget != null ? String(totalRes.data.total_monthly_budget) : ''
       )
+
+      // 이모지 맵 구성: category_id → emoji (null/undefined이면 저장 안 함)
+      const map = new Map<number, string>()
+      categoriesRes.data.forEach((cat) => {
+        if (cat.emoji) map.set(cat.id, cat.emoji)
+      })
+      setEmojiMap(map)
 
       // 현재 예산 금액으로 로컬 상태 초기화
       const amounts: Record<number, string> = {}
@@ -179,60 +200,91 @@ export default function BudgetManager() {
   }
 
   /**
-   * 월 총 예산 저장
+   * 월 총 예산 자동 저장 (blur 시 호출)
+   * - dirty하지 않으면 스킵
+   * - 성공: 체크마크 0.8초 표시
+   * - 실패: X 아이콘 + 1.5초 후 원상복귀
    */
   const handleSaveTotal = async () => {
+    if (!isTotalDirty()) return
     setSavingTotal(true)
+    setTotalError(false)
     try {
       const num = Number(localTotalBudget)
       const amount = localTotalBudget && num > 0 ? num : null
       const res = await budgetApi.updateTotalBudget(amount)
       setTotalBudget(res.data.total_monthly_budget)
-      addToast('success', TOAST.BUDGET_SAVED)
+      setTotalSaved(true)
+      setTimeout(() => setTotalSaved(false), 800)
     } catch (err) {
       console.error('Failed to save total budget:', err)
-      addToast('error', TOAST.SAVE_FAILED)
+      setTotalError(true)
+      setTimeout(() => setTotalError(false), 1500)
     } finally {
       setSavingTotal(false)
     }
   }
 
   /**
-   * 예산 저장 핸들러
+   * 카테고리 예산 자동 저장 (blur 시 호출)
+   * - dirty하지 않으면 스킵
    * - 빈 값: 기존 예산 삭제
    * - 기존 예산 있음: 금액 수정
-   * - 기존 예산 없음: 새로 생성 (월간, 오늘부터, 알림 80% 기본값)
+   * - 기존 예산 없음: 새로 생성 (월간, 오늘부터)
+   * - 성공: 체크마크 0.8초 표시
+   * - 실패: X 아이콘 + 빨간 테두리 1.5초 후 원상복귀
    */
   const handleSave = async (item: CategoryBudgetOverview) => {
+    if (!isDirty(item)) return
+
     const amountStr = localAmounts[item.category_id] ?? ''
     const numAmount = Number(amountStr)
 
     setSavingIds((prev) => new Set([...prev, item.category_id]))
+    setErrorIds((prev) => {
+      const s = new Set(prev)
+      s.delete(item.category_id)
+      return s
+    })
+
     try {
       if (!amountStr || numAmount <= 0) {
         // 빈 값이면 기존 예산 삭제
         if (item.current_budget_id) {
           await budgetApi.deleteBudget(item.current_budget_id)
-          addToast('success', TOAST.BUDGET_DELETED)
         }
       } else if (item.current_budget_id) {
         // 기존 예산 수정
         await budgetApi.updateBudget(item.current_budget_id, { amount: numAmount })
-        addToast('success', TOAST.BUDGET_SAVED)
       } else {
-        // 새 예산 생성 — 월간, 오늘부터, 알림 80% 기본값
+        // 새 예산 생성 — 월간, 오늘부터
         await budgetApi.createBudget({
           category_id: item.category_id,
           amount: numAmount,
           period: 'monthly',
           start_date: new Date().toISOString().split('T')[0],
         })
-        addToast('success', TOAST.BUDGET_SAVED)
       }
       await loadData()
+      // 체크마크 0.8초 표시
+      setSavedIds((prev) => new Set([...prev, item.category_id]))
+      setTimeout(() => {
+        setSavedIds((prev) => {
+          const s = new Set(prev)
+          s.delete(item.category_id)
+          return s
+        })
+      }, 800)
     } catch (err) {
       console.error('Failed to save budget:', err)
-      addToast('error', TOAST.SAVE_FAILED)
+      setErrorIds((prev) => new Set([...prev, item.category_id]))
+      setTimeout(() => {
+        setErrorIds((prev) => {
+          const s = new Set(prev)
+          s.delete(item.category_id)
+          return s
+        })
+      }, 1500)
     } finally {
       setSavingIds((prev) => {
         const next = new Set(prev)
@@ -292,26 +344,38 @@ export default function BudgetManager() {
           <Wallet className="w-5 h-5 text-grape-600" />
           <h2 className="text-lg font-semibold text-[var(--text-primary)]">월 총 예산</h2>
         </div>
-        <div className="flex items-center gap-2">
-          <input
-            type="text"
-            inputMode="numeric"
-            value={totalBudgetFocused ? localTotalBudget : displayBudgetValue(localTotalBudget)}
-            onChange={(e) => setLocalTotalBudget(extractNumber(e.target.value))}
-            onFocus={() => setTotalBudgetFocused(true)}
-            onBlur={() => setTotalBudgetFocused(false)}
-            className="input-base w-44 text-right tabular-nums"
-            placeholder="미설정"
-            aria-label="월 총 예산"
-          />
-          {isTotalDirty() && (
-            <button
-              onClick={handleSaveTotal}
-              disabled={savingTotal}
-              className="px-3 py-2 text-xs font-medium text-white bg-grape-600 rounded-lg hover:bg-grape-700 disabled:opacity-50 transition-colors whitespace-nowrap"
-            >
-              {savingTotal ? '저장 중...' : '저장'}
-            </button>
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <input
+              type="text"
+              inputMode="numeric"
+              value={totalBudgetFocused ? localTotalBudget : displayBudgetValue(localTotalBudget)}
+              onChange={(e) => setLocalTotalBudget(extractNumber(e.target.value))}
+              onFocus={() => setTotalBudgetFocused(true)}
+              onBlur={() => {
+                setTotalBudgetFocused(false)
+                handleSaveTotal()
+              }}
+              className={`input-base w-44 text-right tabular-nums ${
+                totalError ? 'border-rose-500' : ''
+              }`}
+              placeholder="미설정"
+              aria-label="월 총 예산"
+            />
+            {/* 저장 상태 피드백 아이콘 */}
+            {savingTotal ? (
+              <Loader2 className="w-4 h-4 animate-spin text-[var(--text-muted)] shrink-0" />
+            ) : totalSaved ? (
+              <Check className="w-4 h-4 text-leaf-500 shrink-0" />
+            ) : totalError ? (
+              <X className="w-4 h-4 text-rose-500 shrink-0" />
+            ) : null}
+          </div>
+          {/* 포커스 중 ₩ 포맷 미리보기 */}
+          {totalBudgetFocused && localTotalBudget && (
+            <p className="text-xs text-[var(--text-muted)] text-right tabular-nums -mt-1 w-44">
+              {displayBudgetValue(localTotalBudget)}
+            </p>
           )}
         </div>
         {/* 배분 현황 */}
@@ -349,7 +413,7 @@ export default function BudgetManager() {
           <div className="px-5 py-4 border-b border-[var(--border-subtle)]">
             <h2 className="text-base font-semibold text-[var(--text-primary)]">카테고리별 예산</h2>
             <p className="text-xs text-[var(--text-muted)] mt-0.5">
-              금액을 입력 후 저장 버튼을 누르세요 · 비우면 예산 삭제
+              금액을 수정하면 자동으로 저장돼요 · 비우면 예산 삭제
             </p>
           </div>
           <div className="divide-y divide-[var(--border-subtle)]">
@@ -360,6 +424,9 @@ export default function BudgetManager() {
                   {/* 1. 카테고리 이름 + 사용률 뱃지 */}
                   <div className="flex items-center justify-between gap-2">
                     <span className="font-medium text-sm text-[var(--text-primary)] truncate">
+                      {emojiMap.get(item.category_id) && (
+                        <span className="mr-1.5">{emojiMap.get(item.category_id)}</span>
+                      )}
                       {item.category_name}
                     </span>
                     {alert && (
@@ -398,31 +465,43 @@ export default function BudgetManager() {
                     </div>
                   )}
 
-                  {/* 3. 예산 입력 + 저장 */}
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      value={
-                        focusedCategoryId === item.category_id
-                          ? (localAmounts[item.category_id] ?? '')
-                          : displayBudgetValue(localAmounts[item.category_id] ?? '')
-                      }
-                      onChange={(e) => handleAmountChange(item.category_id, extractNumber(e.target.value))}
-                      onFocus={() => setFocusedCategoryId(item.category_id)}
-                      onBlur={() => setFocusedCategoryId(null)}
-                      className="input-base flex-1 text-right tabular-nums"
-                      placeholder="예산 없음"
-                      aria-label={`${item.category_name} 예산`}
-                    />
-                    {isDirty(item) && (
-                      <button
-                        onClick={() => handleSave(item)}
-                        disabled={savingIds.has(item.category_id)}
-                        className="px-3 py-1.5 text-xs font-medium text-white bg-grape-600 rounded-lg hover:bg-grape-700 disabled:opacity-50 transition-colors whitespace-nowrap shrink-0"
-                      >
-                        {savingIds.has(item.category_id) ? '저장 중...' : '저장'}
-                      </button>
+                  {/* 3. 예산 입력 (blur 자동 저장) + 피드백 아이콘 */}
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        value={
+                          focusedCategoryId === item.category_id
+                            ? (localAmounts[item.category_id] ?? '')
+                            : displayBudgetValue(localAmounts[item.category_id] ?? '')
+                        }
+                        onChange={(e) => handleAmountChange(item.category_id, extractNumber(e.target.value))}
+                        onFocus={() => setFocusedCategoryId(item.category_id)}
+                        onBlur={() => {
+                          setFocusedCategoryId(null)
+                          handleSave(item)
+                        }}
+                        className={`input-base flex-1 text-right tabular-nums ${
+                          errorIds.has(item.category_id) ? 'border-rose-500' : ''
+                        }`}
+                        placeholder="예산 없음"
+                        aria-label={`${item.category_name} 예산`}
+                      />
+                      {/* 저장 상태 피드백 아이콘 */}
+                      {savingIds.has(item.category_id) ? (
+                        <Loader2 className="w-4 h-4 animate-spin text-[var(--text-muted)] shrink-0" />
+                      ) : savedIds.has(item.category_id) ? (
+                        <Check className="w-4 h-4 text-leaf-500 shrink-0" />
+                      ) : errorIds.has(item.category_id) ? (
+                        <X className="w-4 h-4 text-rose-500 shrink-0" />
+                      ) : null}
+                    </div>
+                    {/* 포커스 중 ₩ 포맷 미리보기 */}
+                    {focusedCategoryId === item.category_id && localAmounts[item.category_id] && (
+                      <p className="text-xs text-[var(--text-muted)] text-right tabular-nums -mt-1">
+                        {displayBudgetValue(localAmounts[item.category_id] ?? '')}
+                      </p>
                     )}
                   </div>
                 </div>
