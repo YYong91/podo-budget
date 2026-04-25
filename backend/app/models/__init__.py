@@ -4,6 +4,7 @@ from app.models.asset_goal import AssetGoal
 from app.models.asset_snapshot import AssetSnapshot
 from app.models.budget import Budget
 from app.models.category import Category
+from app.models.category_correction import CategoryCorrection  # noqa: F401
 from app.models.category_mapping import CategoryMapping
 from app.models.expense import Expense
 from app.models.feedback import Feedback
@@ -24,6 +25,7 @@ __all__ = [
     "AssetSnapshot",
     "Budget",
     "Category",
+    "CategoryCorrection",
     "CategoryMapping",
     "Expense",
     "Feedback",
