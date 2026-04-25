@@ -212,7 +212,16 @@ async def update_recurring(
         setattr(recurring, key, value)
 
     await db.commit()
-    await db.refresh(recurring)
+    # refresh 대신 relationship 포함해서 재조회 (db.refresh는 관계를 로드하지 않음)
+    result = await db.execute(
+        select(RecurringTransaction)
+        .options(
+            selectinload(RecurringTransaction.category),
+            selectinload(RecurringTransaction.payment_method),
+        )
+        .where(RecurringTransaction.id == recurring.id)
+    )
+    recurring = result.scalar_one()
     return RecurringTransactionResponse.from_orm_extended(recurring)
 
 

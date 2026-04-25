@@ -715,8 +715,19 @@ async def test_create_with_payment_method(authenticated_client, test_household, 
 
 @pytest.mark.asyncio
 async def test_list_includes_payment_method_name(authenticated_client, test_household, db_session):
-    """목록 응답에 payment_method_name 포함"""
+    """목록 응답에 payment_method_name이 실제로 포함되어 반환된다"""
     from datetime import date
+
+    from app.models.payment_method import PaymentMethod
+
+    pm = PaymentMethod(
+        household_id=test_household.id,
+        name="국민카드",
+        type="credit_card",
+        is_active=True,
+    )
+    db_session.add(pm)
+    await db_session.flush()
 
     rt = RecurringTransaction(
         user_id=1,
@@ -728,6 +739,7 @@ async def test_list_includes_payment_method_name(authenticated_client, test_hous
         day_of_month=25,
         start_date=date(2026, 1, 1),
         next_due_date=date(2026, 5, 25),
+        payment_method_id=pm.id,
     )
     db_session.add(rt)
     await db_session.commit()
@@ -735,8 +747,11 @@ async def test_list_includes_payment_method_name(authenticated_client, test_hous
     response = await authenticated_client.get("/api/recurring")
     assert response.status_code == 200
     data = response.json()
-    assert "payment_method_name" in data[0]
-    assert "category_name" in data[0]
+    # 실제 값 검증
+    netflix = next((item for item in data if item["description"] == "넷플릭스"), None)
+    assert netflix is not None
+    assert netflix["payment_method_name"] == "국민카드"
+    assert "category_name" in netflix
 
 
 @pytest.mark.asyncio

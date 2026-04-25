@@ -55,6 +55,7 @@ class RecurringTransactionResponse(RecurringTransactionBase):
     is_active: bool
     created_at: datetime
     updated_at: datetime
+    payment_method_id: int | None = None  # 모달 편집 시 pre-populate용
     category_emoji: str | None = None  # 카테고리 이모지
     category_name: str | None = None  # 카테고리명
     payment_method_name: str | None = None  # 결제수단명
