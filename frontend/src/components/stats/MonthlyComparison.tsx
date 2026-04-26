@@ -52,7 +52,11 @@ function TrendBarChart({
               position="top"
               style={{ fontSize: 9, fill: 'var(--text-muted)' }}
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              formatter={(v: any) => typeof v === 'number' && v > 0 ? `${Math.round(v / 10000)}만` : ''}
+              formatter={(v: any) => {
+                if (typeof v !== 'number' || v <= 0) return ''
+                const man = Math.round(v / 10000)
+                return man > 0 ? `${man}만` : ''
+              }}
             />
           </Bar>
           <Bar dataKey="지출" fill="#a855f7" radius={[2, 2, 0, 0]}>
@@ -61,7 +65,11 @@ function TrendBarChart({
               position="top"
               style={{ fontSize: 9, fill: 'var(--text-muted)' }}
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              formatter={(v: any) => typeof v === 'number' && v > 0 ? `${Math.round(v / 10000)}만` : ''}
+              formatter={(v: any) => {
+                if (typeof v !== 'number' || v <= 0) return ''
+                const man = Math.round(v / 10000)
+                return man > 0 ? `${man}만` : ''
+              }}
             />
           </Bar>
         </BarChart>
