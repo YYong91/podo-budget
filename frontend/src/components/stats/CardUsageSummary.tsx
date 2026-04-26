@@ -71,7 +71,7 @@ export default function CardUsageSummary({ usage }: CardUsageSummaryProps) {
 
       {/* 펼침: 카드별 상세 */}
       {expanded && (
-        <div className="mt-4 space-y-3">
+        <div className="mt-3 space-y-3">
           {targetUsage.map((item) => {
             const pct = item.usage_percentage ?? 0
             return (

@@ -148,7 +148,7 @@ export default function RecurringManageSection({ items, monthStr, executedAmount
 
       {/* 접힌 상태: 상태 칩 오버뷰 */}
       {!expanded && (
-        <div className="mt-2">
+        <div className="mt-3">
           <OverviewChips items={items} monthStr={monthStr} executedAmountMap={executedAmountMap} />
         </div>
       )}
@@ -197,7 +197,7 @@ export default function RecurringManageSection({ items, monthStr, executedAmount
 
                 <div className="flex items-center gap-3 shrink-0 ml-2 text-right">
                   <div>
-                    <span className={`text-sm font-medium ${isExpense ? 'text-[var(--text-secondary)]' : 'text-leaf-600'}`}>
+                    <span className={`text-sm font-medium tabular-nums ${isExpense ? 'text-[var(--text-secondary)]' : 'text-leaf-600'}`}>
                       {formatAmount(displayAmount)}
                     </span>
                     {amountChanged && (
