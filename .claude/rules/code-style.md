@@ -32,6 +32,6 @@
 ### 다크모드 색상 규칙
 - `text-warm-*`, `bg-warm-*` **직접 사용 금지** — 다크모드에서 색상이 깨짐
 - 텍스트: `text-primary` / `text-secondary` / `text-tertiary` / `text-muted`
-- 배경: `bg-surface` / `bg-elevated` / `bg-hover`
+- 배경: `bg-surface` (카드/컴포넌트 배경) / `bg-elevated` (섹션 배경) / `bg-hover` (호버 상태)
 - 보더: `border-default` / `border-subtle`
 - 위 유틸리티에 없는 경우: `text-[var(--text-primary)]` 형태의 arbitrary value 사용
