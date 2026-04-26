@@ -1,3 +1,4 @@
+import sys
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -10,10 +11,12 @@ async def test_get_embedding_returns_vector():
     """get_embedding이 1536차원 float 리스트를 반환한다"""
     mock_vector = [0.1] * 1536
 
-    with patch("app.services.embedding_service.AsyncOpenAI") as MockClient:
-        mock_client = MagicMock()
-        MockClient.return_value = mock_client
-        mock_client.embeddings.create = AsyncMock(return_value=MagicMock(data=[MagicMock(embedding=mock_vector)]))
+    # lazy import 패턴 — sys.modules에 mock을 주입해 openai 설치 여부에 무관하게 테스트
+    mock_openai = MagicMock()
+    mock_client = MagicMock()
+    mock_openai.AsyncOpenAI.return_value = mock_client
+    mock_client.embeddings.create = AsyncMock(return_value=MagicMock(data=[MagicMock(embedding=mock_vector)]))
+    with patch.dict(sys.modules, {"openai": mock_openai}):
         result = await get_embedding("쿠팡 우유")
 
     assert len(result) == 1536
@@ -22,7 +25,7 @@ async def test_get_embedding_returns_vector():
 
 @pytest.mark.asyncio
 async def test_get_embedding_empty_text_raises():
-    """빈 텍스트는 ValueError를 발생시킨다"""
+    """빈 텍스트는 ValueError를 발생시킨다 (openai 호출 전에 검증)"""
     with pytest.raises(ValueError, match="빈 텍스트"):
         await get_embedding("")
 

@@ -21,10 +21,10 @@ async def get_embedding(text: str) -> list[float]:
     Raises:
         ValueError: 빈 텍스트 입력 시
     """
-    import openai  # lazy import — openai는 선택적 의존성 (llm_service.py와 동일 패턴)
-
     if not text or not text.strip():
         raise ValueError("빈 텍스트는 임베딩할 수 없습니다")
+
+    import openai  # lazy import — openai는 선택적 의존성 (llm_service.py와 동일 패턴)
 
     client = openai.AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
     response = await client.embeddings.create(
