@@ -261,7 +261,7 @@ export default function PaymentMethodManager() {
       )}
 
       {/* 빈 상태 */}
-      {!loading && methods.length === 0 && (
+      {!loading && methods.length === 0 && !showForm && (
         <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)]/60">
           <EmptyState
             variant="section"
@@ -272,33 +272,104 @@ export default function PaymentMethodManager() {
         </div>
       )}
 
-      {/* 주 결제수단 + 목록 */}
-      {!loading && methods.length > 0 && !editMode && (
+      {/* 주 결제수단 + 인라인 추가 폼 + 목록 */}
+      {!loading && !editMode && (
         <div className="space-y-4">
-          {/* 주 결제수단 드롭다운 */}
-          <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)]/60 p-5">
-            <label htmlFor="primary-payment" className="block text-sm font-semibold text-[var(--text-primary)] mb-2">
-              주 결제수단
-            </label>
-            <select
-              id="primary-payment"
-              value={defaultMethodId}
-              onChange={(e) => handlePrimaryChange(e.target.value)}
-              className="w-full px-3 py-2 border border-[var(--input-border)] rounded-xl text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
-            >
-              <option value="">없음</option>
-              {methods.map((m) => (
-                <option key={m.id} value={m.id}>{m.name}</option>
-              ))}
-            </select>
-            {defaultMethodId && (
-              <p className="mt-2 text-xs text-[var(--text-muted)]">
-                입력 시 자동으로 이 결제수단이 선택돼요
-              </p>
-            )}
-          </div>
+          {/* 주 결제수단 드롭다운 — 결제수단 있을 때만 */}
+          {methods.length > 0 && (
+            <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)]/60 p-5">
+              <label htmlFor="primary-payment" className="block text-sm font-semibold text-[var(--text-primary)] mb-2">
+                주 결제수단
+              </label>
+              <select
+                id="primary-payment"
+                value={defaultMethodId}
+                onChange={(e) => handlePrimaryChange(e.target.value)}
+                className="w-full px-3 py-2 border border-[var(--input-border)] rounded-xl text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
+              >
+                <option value="">없음</option>
+                {methods.map((m) => (
+                  <option key={m.id} value={m.id}>{m.name}</option>
+                ))}
+              </select>
+              {defaultMethodId && (
+                <p className="mt-2 text-xs text-[var(--text-muted)]">
+                  입력 시 자동으로 이 결제수단이 선택돼요
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* 인라인 추가 폼 — 주 결제수단 드롭다운 아래, 목록 위 */}
+          {showForm && (
+            <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)]/60 p-4 space-y-3">
+              <h2 className="text-sm font-semibold text-[var(--text-primary)]">새 결제수단</h2>
+
+              <div>
+                <label htmlFor="pm-name" className="block text-xs text-[var(--text-tertiary)] mb-1">이름 <span className="text-rose-500">*</span></label>
+                <input
+                  id="pm-name"
+                  type="text"
+                  value={formName}
+                  onChange={(e) => setFormName(e.target.value)}
+                  placeholder="결제수단 이름"
+                  // eslint-disable-next-line jsx-a11y/no-autofocus
+                  autoFocus
+                  className="w-full px-3 py-2 border border-[var(--input-border)] rounded-xl text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="pm-type" className="block text-xs text-[var(--text-tertiary)] mb-1">유형</label>
+                <select
+                  id="pm-type"
+                  value={formType}
+                  onChange={(e) => setFormType(e.target.value as PaymentMethodType)}
+                  className="w-full px-3 py-2 border border-[var(--input-border)] rounded-xl text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
+                >
+                  {TYPE_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label htmlFor="pm-target" className="block text-xs text-[var(--text-tertiary)] mb-1">월 실적 목표</label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)] text-sm">₩</span>
+                  <input
+                    id="pm-target"
+                    type="number"
+                    inputMode="numeric"
+                    value={formTarget}
+                    onChange={(e) => setFormTarget(e.target.value)}
+                    placeholder="0"
+                    min="0"
+                    className="w-full pl-7 pr-3 py-2 border border-[var(--input-border)] rounded-xl text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => { setShowForm(false); setFormName(''); setFormType('credit_card'); setFormTarget('') }}
+                  className="flex-1 px-4 py-2.5 text-sm font-medium text-[var(--text-secondary)] bg-[var(--surface-hover)] rounded-xl transition-colors"
+                >
+                  취소
+                </button>
+                <button
+                  onClick={handleCreate}
+                  disabled={saving || !formName.trim()}
+                  className="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-grape-600 rounded-xl hover:bg-grape-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  {saving ? '저장 중...' : '저장'}
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* 내 결제수단 목록 — 일반 모드 */}
+          {methods.length > 0 && (
           <div>
             <h2 className="text-sm font-semibold text-[var(--text-primary)] mb-3">내 결제수단</h2>
             <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)]/60 overflow-hidden">
@@ -362,6 +433,7 @@ export default function PaymentMethodManager() {
               </div>
             </div>
           </div>
+          )}
         </div>
       )}
 
@@ -488,72 +560,6 @@ export default function PaymentMethodManager() {
               )}
             </div>
           ))}
-        </div>
-      )}
-
-      {/* 추가 폼 */}
-      {showForm && (
-        <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)]/60 p-5 space-y-4">
-          <h2 className="text-sm font-semibold text-[var(--text-primary)]">새 결제수단</h2>
-
-          <div>
-            <label htmlFor="pm-name" className="block text-xs text-[var(--text-tertiary)] mb-1">이름 <span className="text-rose-500">*</span></label>
-            <input
-              id="pm-name"
-              type="text"
-              value={formName}
-              onChange={(e) => setFormName(e.target.value)}
-              placeholder="결제수단 이름"
-              className="w-full px-3 py-2 border border-[var(--input-border)] rounded-xl text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
-            />
-          </div>
-
-          <div>
-            <label htmlFor="pm-type" className="block text-xs text-[var(--text-tertiary)] mb-1">유형</label>
-            <select
-              id="pm-type"
-              value={formType}
-              onChange={(e) => setFormType(e.target.value as PaymentMethodType)}
-              className="w-full px-3 py-2 border border-[var(--input-border)] rounded-xl text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
-            >
-              {TYPE_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>{opt.label}</option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label htmlFor="pm-target" className="block text-xs text-[var(--text-tertiary)] mb-1">월 실적 목표</label>
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)] text-sm">₩</span>
-              <input
-                id="pm-target"
-                type="number"
-                inputMode="numeric"
-                value={formTarget}
-                onChange={(e) => setFormTarget(e.target.value)}
-                placeholder="0"
-                min="0"
-                className="w-full pl-7 pr-3 py-2 border border-[var(--input-border)] rounded-xl text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
-              />
-            </div>
-          </div>
-
-          <div className="flex gap-3">
-            <button
-              onClick={() => { setShowForm(false); setFormName(''); setFormType('credit_card'); setFormTarget('') }}
-              className="flex-1 px-4 py-2.5 text-sm font-medium text-[var(--text-secondary)] bg-[var(--surface-hover)] rounded-xl hover:bg-[var(--surface-hover)] transition-colors"
-            >
-              취소
-            </button>
-            <button
-              onClick={handleCreate}
-              disabled={saving || !formName.trim()}
-              className="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-grape-600 rounded-xl hover:bg-grape-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              {saving ? '저장 중...' : '저장'}
-            </button>
-          </div>
         </div>
       )}
 
