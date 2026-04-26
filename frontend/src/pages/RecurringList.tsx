@@ -419,7 +419,8 @@ export default function RecurringList() {
     }
   }
 
-  /* 렌더링 직전 활성/비활성 분리 + 날짜 기준 정렬 */
+  /* 렌더링 직전 활성/비활성 분리 + 날짜 기준 정렬
+   * next_due_date(YYYY-MM-DD) 기준 정렬: day_of_month는 monthly 외 weekly/custom에서 null이므로 부정확 */
   const activeItems = items
     .filter((r) => r.is_active)
     .sort((a, b) => a.next_due_date.localeCompare(b.next_due_date))
