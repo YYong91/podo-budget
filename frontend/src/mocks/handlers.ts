@@ -906,4 +906,38 @@ export const handlers = [
       expires_at: new Date(Date.now() + 600000).toISOString(),
     })
   }),
+
+  // ==================== 결산 리포트 API ====================
+
+  /**
+   * GET /api/reports/monthly - 특정 월 결산 리포트 조회
+   */
+  http.get(`${BASE_URL}/reports/monthly`, () => {
+    return HttpResponse.json({
+      report: {
+        id: 1,
+        month: '2026-03',
+        status: 'completed',
+        insights: mockStructuredInsights,
+        completed_at: '2026-04-01T03:30:00Z',
+      },
+      eligibility: null,
+    })
+  }),
+
+  /**
+   * GET /api/reports/latest - 최근 결산 리포트 조회
+   */
+  http.get(`${BASE_URL}/reports/latest`, () => {
+    return HttpResponse.json({
+      report: {
+        id: 1,
+        month: '2026-03',
+        status: 'completed',
+        insights: mockStructuredInsights,
+        completed_at: '2026-04-01T03:30:00Z',
+      },
+      eligibility: null,
+    })
+  }),
 ]

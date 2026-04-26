@@ -29,6 +29,7 @@ from app.api import (
     onboarding,
     payment_methods,
     recurring,
+    reports,
     stocks,
     telegram,
     webhooks,
@@ -289,6 +290,7 @@ app.include_router(payment_methods.router, prefix="/api/payment-methods", tags=[
 app.include_router(admin.router, prefix="/api/admin", tags=["admin"])
 app.include_router(stocks.router, prefix="/api/stocks", tags=["stocks"])
 app.include_router(onboarding.router, prefix="/api/onboarding", tags=["onboarding"])
+app.include_router(reports.router, prefix="/api/reports", tags=["reports"])
 app.include_router(webhooks.router, prefix="/api/webhooks", tags=["webhooks"])
 
 # E2E 테스트 전용 — 라우터는 항상 등록하되, 각 엔드포인트에서 DEBUG 모드를 검사
