@@ -86,7 +86,7 @@ export default function CategoryTopList({ categories, maxItems = 5 }: CategoryTo
                       <span className="text-sm font-medium text-[var(--text-primary)]">{cat.category}</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-sm text-[var(--text-secondary)]">{formatAmount(cat.amount)}</span>
+                      <span className="text-sm font-medium tabular-nums text-[var(--text-secondary)]">{formatAmount(cat.amount)}</span>
                       <span className="text-xs text-[var(--text-tertiary)] w-12 text-right">{cat.percentage.toFixed(1)}%</span>
                     </div>
                   </div>
