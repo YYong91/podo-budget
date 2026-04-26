@@ -242,7 +242,7 @@ export default function ProfileCollectionFlow({ onComplete, onAnalysisReady, onC
                 aria-label="목표 연도"
                 value={deadlineYearInput}
                 onChange={(e) => handleDeadlineYearChange(e.target.value)}
-                className="flex-1 px-3 py-2 rounded-lg border border-default text-sm bg-white"
+                className="flex-1 px-3 py-2 rounded-lg border border-default text-sm bg-[var(--input-bg)] text-primary"
               >
                 <option value="">연도</option>
                 {yearOptions.map((y) => (
@@ -253,7 +253,7 @@ export default function ProfileCollectionFlow({ onComplete, onAnalysisReady, onC
                 aria-label="목표 월"
                 value={deadlineMonthInput}
                 onChange={(e) => handleDeadlineMonthChange(e.target.value)}
-                className="flex-1 px-3 py-2 rounded-lg border border-default text-sm bg-white"
+                className="flex-1 px-3 py-2 rounded-lg border border-default text-sm bg-[var(--input-bg)] text-primary"
               >
                 <option value="">월</option>
                 {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
