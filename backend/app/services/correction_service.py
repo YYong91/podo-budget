@@ -7,6 +7,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.category_correction import CategoryCorrection
+from app.services.embedding_service import get_embedding
 
 
 async def save_correction(
@@ -33,12 +34,20 @@ async def save_correction(
     if not input_text or not input_text.strip():
         return None
 
+    # 임베딩 생성 (실패해도 정정 신호는 저장)
+    embedding: list[float] | None = None
+    try:  # noqa: SIM105 — await 포함이라 contextlib.suppress 불가
+        embedding = await get_embedding(input_text.strip())
+    except Exception:
+        pass  # 임베딩 실패는 무시 — 정정 신호 저장이 더 중요
+
     correction = CategoryCorrection(
         household_id=household_id,
         user_id=user_id,
         input_text=input_text.strip(),
         category_id=category_id,
         source=source,
+        embedding=embedding,
     )
     db.add(correction)
     await db.flush()

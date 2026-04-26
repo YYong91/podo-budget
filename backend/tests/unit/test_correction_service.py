@@ -79,3 +79,49 @@ async def test_corrections_scoped_to_household(db_session: AsyncSession, test_ho
     corrections = await get_corrections_for_household(db_session, test_household.id, limit=10)
     assert len(corrections) == 1
     assert corrections[0].input_text == "우리 가구 데이터"
+
+
+@pytest.mark.asyncio
+async def test_save_correction_generates_embedding_when_api_key_set(db_session, test_household):
+    """OPENAI_API_KEY 설정 시 임베딩이 저장된다"""
+    from unittest.mock import AsyncMock, patch
+
+    mock_vector = [0.1] * 1536
+    category = Category(name="식비", household_id=None, user_id=None)
+    db_session.add(category)
+    await db_session.flush()
+
+    with patch("app.services.correction_service.get_embedding", new=AsyncMock(return_value=mock_vector)):
+        correction = await save_correction(
+            db_session,
+            input_text="쿠팡 두부",
+            category_id=category.id,
+            household_id=test_household.id,
+        )
+
+    assert correction is not None
+    assert correction.embedding == mock_vector
+
+
+@pytest.mark.asyncio
+async def test_save_correction_graceful_degradation_on_embedding_failure(db_session, test_household):
+    """임베딩 API 실패 시에도 정정 신호는 저장된다 (embedding=None)"""
+    from unittest.mock import AsyncMock, patch
+
+    category = Category(name="식비", household_id=None, user_id=None)
+    db_session.add(category)
+    await db_session.flush()
+
+    with patch(
+        "app.services.correction_service.get_embedding",
+        new=AsyncMock(side_effect=Exception("API 오류")),
+    ):
+        correction = await save_correction(
+            db_session,
+            input_text="쿠팡 우유",
+            category_id=category.id,
+            household_id=test_household.id,
+        )
+
+    assert correction is not None
+    assert correction.embedding is None  # 임베딩 실패해도 저장은 됨
