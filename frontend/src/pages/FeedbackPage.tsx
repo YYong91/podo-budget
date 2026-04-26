@@ -99,9 +99,13 @@ export default function FeedbackPage() {
   if (error) {
     return (
       <div className="space-y-6">
-        <button onClick={goBack} aria-label="뒤로가기" className="text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] inline-block">
-          <ArrowLeft className="w-5 h-5" />
-        </button>
+        <div className="flex items-center gap-3">
+          <button onClick={goBack} aria-label="뒤로가기" className="p-2.5 -ml-2.5 rounded-lg hover:bg-[var(--surface-hover)] transition-colors">
+            <ArrowLeft className="w-5 h-5 text-[var(--text-secondary)]" />
+          </button>
+          <MessageSquarePlus className="w-5 h-5 text-grape-500" />
+          <h1 className="text-lg font-semibold text-[var(--text-primary)]">피드백</h1>
+        </div>
         <ErrorState onRetry={loadData} />
       </div>
     )
@@ -109,9 +113,13 @@ export default function FeedbackPage() {
 
   return (
     <div className="space-y-6">
-      <button onClick={goBack} aria-label="뒤로가기" className="text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] inline-block">
-        <ArrowLeft className="w-5 h-5" />
-      </button>
+      <div className="flex items-center gap-3">
+        <button onClick={goBack} aria-label="뒤로가기" className="p-2.5 -ml-2.5 rounded-lg hover:bg-[var(--surface-hover)] transition-colors">
+          <ArrowLeft className="w-5 h-5 text-[var(--text-secondary)]" />
+        </button>
+        <MessageSquarePlus className="w-5 h-5 text-grape-500" />
+        <h1 className="text-lg font-semibold text-[var(--text-primary)]">피드백</h1>
+      </div>
 
       {/* 제출 폼 */}
       <form onSubmit={handleSubmit} className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] p-6 space-y-4">
