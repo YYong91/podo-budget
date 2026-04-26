@@ -8,7 +8,7 @@ import { useState, useEffect } from 'react'
 import { useGoBack } from '../hooks/useGoBack'
 import {
   ArrowLeft, Plus, Pencil, Trash2,
-  ToggleLeft, ToggleRight, PlusCircle,
+  PlusCircle, Pause, Play,
   MoreVertical, Loader2, Check, Repeat,
 } from 'lucide-react'
 import { useToast } from '../hooks/useToast'
@@ -72,10 +72,7 @@ function RecurringListSkeleton() {
             <div className="h-4 w-16 rounded bg-[var(--surface-elevated)] animate-pulse" />
             <div className="h-3 w-12 rounded bg-[var(--surface-elevated)] animate-pulse" />
           </div>
-          <div className="flex gap-1">
-            <div className="w-8 h-8 rounded-lg bg-[var(--surface-elevated)] animate-pulse" />
-            <div className="w-8 h-8 rounded-lg bg-[var(--surface-elevated)] animate-pulse" />
-          </div>
+          <div className="w-8 h-8 rounded-lg bg-[var(--surface-elevated)] animate-pulse" />
         </div>
       ))}
     </div>
@@ -136,63 +133,59 @@ function RecurringCard({
             {dueText}
           </p>
         </div>
-        {/* 토글 + ⋮ */}
-        <div className="flex items-center gap-0.5 shrink-0">
+        {/* ⋮ 메뉴 — 토글(일시정지/재개) 포함 */}
+        <div className="relative shrink-0">
           <button
-            onClick={() => onToggle(r)}
-            disabled={togglingIds.has(r.id)}
-            className="p-1.5 rounded-lg hover:bg-[var(--surface-hover)] transition-colors disabled:opacity-50"
-            title={r.is_active ? '일시정지' : '다시 시작'}
-            data-testid={`toggle-${r.id}`}
+            onClick={() => onMenuOpen(openMenuId === r.id ? null : r.id)}
+            disabled={executingIds.has(r.id) || togglingIds.has(r.id)}
+            className="p-2.5 rounded-xl hover:bg-[var(--surface-hover)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            data-testid={`menu-${r.id}`}
+            aria-label="더보기"
           >
-            {r.is_active
-              ? <ToggleRight className="w-5 h-5 text-leaf-500" />
-              : <ToggleLeft className="w-5 h-5 text-[var(--text-tertiary)]" />}
+            {executingIds.has(r.id) ? (
+              <Loader2 className="w-4 h-4 animate-spin text-[var(--text-muted)]" />
+            ) : executedIds.has(r.id) ? (
+              <Check className="w-4 h-4 text-leaf-500" />
+            ) : (
+              <MoreVertical className="w-4 h-4 text-[var(--text-tertiary)]" />
+            )}
           </button>
-          <div className="relative">
-            <button
-              onClick={() => onMenuOpen(openMenuId === r.id ? null : r.id)}
-              disabled={executingIds.has(r.id)}
-              className="p-1.5 rounded-lg hover:bg-[var(--surface-hover)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              data-testid={`menu-${r.id}`}
-              aria-label="더보기"
-            >
-              {executingIds.has(r.id) ? (
-                <Loader2 className="w-4 h-4 animate-spin text-[var(--text-muted)]" />
-              ) : executedIds.has(r.id) ? (
-                <Check className="w-4 h-4 text-leaf-500" />
-              ) : (
-                <MoreVertical className="w-4 h-4 text-[var(--text-tertiary)]" />
-              )}
-            </button>
-            {openMenuId === r.id && (
-              <div className="absolute right-0 top-8 z-10 bg-[var(--surface-card)] rounded-xl shadow-lg border border-[var(--border-default)] py-1 min-w-36">
-                {r.is_active && (
-                  <button
-                    onClick={() => onExecute(r)}
-                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[var(--text-secondary)] hover:bg-[var(--surface-hover)]"
-                  >
-                    <PlusCircle className="w-4 h-4" />
-                    지금 등록
-                  </button>
-                )}
+          {openMenuId === r.id && (
+            <div className="absolute right-0 top-10 z-10 bg-[var(--surface-card)] rounded-xl shadow-lg border border-[var(--border-default)] py-1 min-w-36">
+              {r.is_active && (
                 <button
-                  onClick={() => { onMenuOpen(null); onEdit(r) }}
+                  onClick={() => onExecute(r)}
                   className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[var(--text-secondary)] hover:bg-[var(--surface-hover)]"
                 >
-                  <Pencil className="w-4 h-4" />
-                  수정
+                  <PlusCircle className="w-4 h-4" />
+                  지금 등록
                 </button>
-                <button
-                  onClick={() => { onMenuOpen(null); onDeleteRequest(r.id) }}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-rose-500 hover:bg-rose-50"
-                >
-                  <Trash2 className="w-4 h-4" />
-                  삭제
-                </button>
-              </div>
-            )}
-          </div>
+              )}
+              <button
+                onClick={() => { onMenuOpen(null); onToggle(r) }}
+                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[var(--text-secondary)] hover:bg-[var(--surface-hover)]"
+                data-testid={`toggle-${r.id}`}
+              >
+                {r.is_active
+                  ? <><Pause className="w-4 h-4" />일시정지</>
+                  : <><Play className="w-4 h-4" />다시 시작</>}
+              </button>
+              <button
+                onClick={() => { onMenuOpen(null); onEdit(r) }}
+                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[var(--text-secondary)] hover:bg-[var(--surface-hover)]"
+              >
+                <Pencil className="w-4 h-4" />
+                수정
+              </button>
+              <button
+                onClick={() => { onMenuOpen(null); onDeleteRequest(r.id) }}
+                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-rose-500 hover:bg-rose-50"
+              >
+                <Trash2 className="w-4 h-4" />
+                삭제
+              </button>
+            </div>
+          )}
         </div>
       </div>
       {/* 삭제 확인 인라인 */}
