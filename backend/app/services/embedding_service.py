@@ -4,7 +4,7 @@ text-embedding-3-small으로 텍스트를 벡터화합니다.
 임베딩 실패 시 None을 반환하여 상위 레이어가 graceful degradation 처리합니다.
 """
 
-import numpy as np  # type: ignore[import-not-found]
+import numpy as np
 from openai import AsyncOpenAI
 
 from app.core.config import settings
