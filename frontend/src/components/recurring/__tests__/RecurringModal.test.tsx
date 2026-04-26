@@ -245,4 +245,15 @@ describe('RecurringModal', () => {
     const dialog = screen.getByRole('dialog')
     expect(dialog).toHaveAttribute('aria-modal', 'true')
   })
+
+  // ==================== 결제수단 드롭다운 ====================
+
+  describe('결제수단 드롭다운', () => {
+    it('결제수단 드롭다운에 paymentMethods 옵션이 표시된다', () => {
+      render(<RecurringModal {...defaultProps} />)
+      expect(screen.getByLabelText('결제수단')).toBeInTheDocument()
+      expect(screen.getByText('없음')).toBeInTheDocument()
+      expect(screen.getByText('신용카드')).toBeInTheDocument()
+    })
+  })
 })

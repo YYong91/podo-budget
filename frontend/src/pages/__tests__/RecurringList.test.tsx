@@ -1,10 +1,10 @@
 /**
  * @file RecurringList.test.tsx
- * @description 정기거래 관리 페이지 테스트
+ * @description 정기거래 관리 페이지 테스트 — 카드 레이아웃 + ⋮ 메뉴 + 낙관적 토글
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, waitFor, within } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { server } from '../../mocks/server'
@@ -27,15 +27,15 @@ const mockItems: RecurringTransaction[] = [
   {
     id: 1, user_id: 1, household_id: 1,
     type: 'expense', amount: 17000, description: '넷플릭스',
-    category_id: null, frequency: 'monthly', interval: null,
+    category_id: 1, frequency: 'monthly', interval: null,
     day_of_month: 25, day_of_week: null, month_of_year: null,
     start_date: '2026-01-25', end_date: null,
     next_due_date: '2026-02-25', is_active: true,
     created_at: '2026-01-25T00:00:00Z', updated_at: '2026-01-25T00:00:00Z',
-    category_emoji: null,
-    category_name: null,
-    payment_method_id: null,
-    payment_method_name: null,
+    category_emoji: '🎬',
+    category_name: '구독',
+    payment_method_id: 1,
+    payment_method_name: '삼성카드',
   },
   {
     id: 2, user_id: 1, household_id: 1,
@@ -115,18 +115,20 @@ describe('RecurringList', () => {
     expect(screen.getAllByText('급여').length).toBeGreaterThan(0)
   })
 
-  it('주기를 한국어로 표시한다', async () => {
+  it('주기를 한국어로 표시한다 — next_due_date가 미래이면 "매월 N일"로 표시된다', async () => {
+    // next_due_date가 오늘로부터 14일 후로 설정하면 formatDueDate가 "N일 후"를 반환하고,
+    // 30일 이상 후이면 "매월 N일"을 반환한다
+    const future = new Date()
+    future.setDate(future.getDate() + 35)
+    const futureStr = `${future.getFullYear()}-${String(future.getMonth() + 1).padStart(2, '0')}-${String(future.getDate()).padStart(2, '0')}`
+    server.use(
+      http.get('/api/recurring', () =>
+        HttpResponse.json([{ ...mockItems[0], next_due_date: futureStr }])
+      )
+    )
     renderRecurringList()
     await waitFor(() => {
-      expect(screen.getAllByText('매월 25일').length).toBeGreaterThan(0)
-    })
-  })
-
-  it('활성/정지 상태 뱃지를 표시한다', async () => {
-    renderRecurringList()
-    await waitFor(() => {
-      const badges = screen.getAllByText('사용 중')
-      expect(badges.length).toBeGreaterThan(0)
+      expect(screen.getByText(`매월 ${future.getDate()}일`)).toBeInTheDocument()
     })
   })
 
@@ -214,9 +216,9 @@ describe('RecurringList', () => {
     expect(screen.queryByText('정기거래 추가')).not.toBeInTheDocument()
   })
 
-  // ==================== 바로 등록 (execute) ====================
+  // ==================== 바로 등록 (⋮ 메뉴 → 지금 등록) ====================
 
-  it('활성 항목에서 바로 등록 버튼을 클릭하면 실행된다', async () => {
+  it('활성 항목에서 ⋮ 메뉴를 열고 지금 등록을 클릭하면 실행된다', async () => {
     server.use(
       http.get('/api/recurring', () => HttpResponse.json([mockItems[0]])),
       http.get('/api/categories', () => HttpResponse.json([])),
@@ -237,8 +239,8 @@ describe('RecurringList', () => {
       expect(screen.getAllByText('넷플릭스').length).toBeGreaterThan(0)
     })
 
-    const executeBtns = screen.getAllByTitle('바로 등록')
-    await user.click(executeBtns[0])
+    await user.click(screen.getByTestId('menu-1'))
+    await user.click(screen.getByText('지금 등록'))
 
     await waitFor(() => {
       expect(mockAddToast).toHaveBeenCalledWith('success', '정기 거래를 실행했어요')
@@ -247,7 +249,7 @@ describe('RecurringList', () => {
 
   // ==================== 활성화/비활성화 토글 ====================
 
-  it('활성 항목에서 중지 버튼을 클릭하면 비활성화된다', async () => {
+  it('활성 항목 토글 버튼 클릭 시 비활성화된다', async () => {
     server.use(
       http.get('/api/recurring', () => HttpResponse.json([mockItems[0]])),
       http.get('/api/categories', () => HttpResponse.json([])),
@@ -260,20 +262,20 @@ describe('RecurringList', () => {
     renderRecurringList()
 
     await waitFor(() => {
-      expect(screen.getAllByText('넷플릭스').length).toBeGreaterThan(0)
+      expect(screen.getByTestId('toggle-1')).toBeInTheDocument()
     })
 
-    const pauseBtns = screen.getAllByTitle('중지')
-    await user.click(pauseBtns[0])
+    await user.click(screen.getByTestId('toggle-1'))
 
     await waitFor(() => {
-      expect(mockAddToast).toHaveBeenCalledWith('success', '상태를 변경했어요')
+      expect(mockAddToast).not.toHaveBeenCalledWith('error', '변경에 실패했어요')
     })
   })
 
-  it('비활성 항목에서 다시 시작 버튼을 클릭하면 활성화된다', async () => {
+  it('비활성 항목 토글 버튼 클릭 시 활성화된다', async () => {
+    // 활성 1개 + 비활성 1개 반환 (비활성 섹션이 생기도록)
     server.use(
-      http.get('/api/recurring', () => HttpResponse.json([mockItems[2]])),
+      http.get('/api/recurring', () => HttpResponse.json([mockItems[0], mockItems[2]])),
       http.get('/api/categories', () => HttpResponse.json([])),
       http.put('/api/recurring/3', () =>
         HttpResponse.json({ ...mockItems[2], is_active: true })
@@ -283,21 +285,22 @@ describe('RecurringList', () => {
     const user = userEvent.setup()
     renderRecurringList()
 
-    await waitFor(() => {
-      expect(screen.getAllByText('정지된 거래').length).toBeGreaterThan(0)
-    })
+    // 일시정지 섹션 버튼이 나타날 때까지 대기 후 클릭
+    await waitFor(() => screen.getByTestId('inactive-toggle'))
+    await user.click(screen.getByTestId('inactive-toggle'))
 
-    const playBtns = screen.getAllByTitle('다시 시작')
-    await user.click(playBtns[0])
+    // 비활성 항목 토글 클릭
+    await waitFor(() => screen.getByTestId('toggle-3'))
+    await user.click(screen.getByTestId('toggle-3'))
 
     await waitFor(() => {
-      expect(mockAddToast).toHaveBeenCalledWith('success', '상태를 변경했어요')
+      expect(mockAddToast).not.toHaveBeenCalledWith('error', '변경에 실패했어요')
     })
   })
 
-  // ==================== 삭제 ====================
+  // ==================== 삭제 (⋮ 메뉴 → 인라인 확인 UI) ====================
 
-  it('삭제 버튼 클릭 시 확인 모달이 표시된다', async () => {
+  it('⋮ 메뉴에서 삭제 클릭 시 인라인 확인 UI가 표시된다', async () => {
     server.use(
       http.get('/api/recurring', () => HttpResponse.json([mockItems[0]])),
       http.get('/api/categories', () => HttpResponse.json([])),
@@ -307,18 +310,17 @@ describe('RecurringList', () => {
     renderRecurringList()
 
     await waitFor(() => {
-      expect(screen.getAllByText('넷플릭스').length).toBeGreaterThan(0)
+      expect(screen.getByTestId('menu-1')).toBeInTheDocument()
     })
 
-    const deleteBtns = screen.getAllByTitle('삭제')
-    await user.click(deleteBtns[0])
+    await user.click(screen.getByTestId('menu-1'))
+    await user.click(screen.getByText('삭제'))
 
-    // window.confirm이 아닌 모달이 표시되어야 함
-    expect(screen.getByText('정기거래 삭제')).toBeInTheDocument()
-    expect(screen.getByText('정말로 이 정기거래를 삭제하시겠습니까?')).toBeInTheDocument()
+    expect(screen.getByText(/삭제할까요/)).toBeInTheDocument()
+    expect(screen.getByText('취소')).toBeInTheDocument()
   })
 
-  it('삭제 확인 모달에서 취소 클릭 시 모달이 닫히고 삭제되지 않는다', async () => {
+  it('삭제 확인 UI에서 취소 클릭 시 UI가 닫히고 삭제되지 않는다', async () => {
     server.use(
       http.get('/api/recurring', () => HttpResponse.json([mockItems[0]])),
       http.get('/api/categories', () => HttpResponse.json([])),
@@ -328,21 +330,20 @@ describe('RecurringList', () => {
     renderRecurringList()
 
     await waitFor(() => {
-      expect(screen.getAllByText('넷플릭스').length).toBeGreaterThan(0)
+      expect(screen.getByTestId('menu-1')).toBeInTheDocument()
     })
 
-    const deleteBtns = screen.getAllByTitle('삭제')
-    await user.click(deleteBtns[0])
+    await user.click(screen.getByTestId('menu-1'))
+    await user.click(screen.getByText('삭제'))
 
-    const deleteModal = screen.getByRole('dialog')
-    expect(deleteModal).toBeInTheDocument()
-    await user.click(within(deleteModal).getByRole('button', { name: '취소' }))
+    expect(screen.getByText(/삭제할까요/)).toBeInTheDocument()
+    await user.click(screen.getByText('취소'))
 
-    expect(screen.queryByText('정기거래 삭제')).not.toBeInTheDocument()
+    expect(screen.queryByText(/삭제할까요/)).not.toBeInTheDocument()
     expect(mockAddToast).not.toHaveBeenCalledWith('success', '정기 거래를 삭제했어요')
   })
 
-  it('삭제 확인 모달에서 삭제 버튼 클릭 시 항목이 삭제된다', async () => {
+  it('삭제 확인 UI에서 삭제 버튼 클릭 시 항목이 삭제된다', async () => {
     server.use(
       http.get('/api/recurring', () => HttpResponse.json([mockItems[0]])),
       http.get('/api/categories', () => HttpResponse.json([])),
@@ -353,15 +354,16 @@ describe('RecurringList', () => {
     renderRecurringList()
 
     await waitFor(() => {
-      expect(screen.getAllByText('넷플릭스').length).toBeGreaterThan(0)
+      expect(screen.getByTestId('menu-1')).toBeInTheDocument()
     })
 
-    const deleteBtns = screen.getAllByTitle('삭제')
-    await user.click(deleteBtns[0])
+    await user.click(screen.getByTestId('menu-1'))
+    await user.click(screen.getByText('삭제'))
 
-    const deleteModal = screen.getByRole('dialog')
-    expect(deleteModal).toBeInTheDocument()
-    await user.click(within(deleteModal).getByRole('button', { name: '삭제' }))
+    expect(screen.getByText(/삭제할까요/)).toBeInTheDocument()
+    // 인라인 확인 UI의 삭제 버튼 (rose-500 스타일의 작은 버튼)
+    const deleteButtons = screen.getAllByText('삭제')
+    await user.click(deleteButtons[deleteButtons.length - 1])
 
     await waitFor(() => {
       expect(mockAddToast).toHaveBeenCalledWith('success', '정기 거래를 삭제했어요')
@@ -370,7 +372,7 @@ describe('RecurringList', () => {
 
   // ==================== 수정 ====================
 
-  it('수정 버튼 클릭 시 수정 모달이 열린다', async () => {
+  it('⋮ 메뉴에서 수정 클릭 시 수정 모달이 열린다', async () => {
     server.use(
       http.get('/api/recurring', () => HttpResponse.json([mockItems[0]])),
       http.get('/api/categories', () => HttpResponse.json([])),
@@ -380,11 +382,11 @@ describe('RecurringList', () => {
     renderRecurringList()
 
     await waitFor(() => {
-      expect(screen.getAllByText('넷플릭스').length).toBeGreaterThan(0)
+      expect(screen.getByTestId('menu-1')).toBeInTheDocument()
     })
 
-    const editBtns = screen.getAllByTitle('수정')
-    await user.click(editBtns[0])
+    await user.click(screen.getByTestId('menu-1'))
+    await user.click(screen.getByText('수정'))
 
     expect(screen.getByText('정기거래 수정')).toBeInTheDocument()
   })
@@ -459,8 +461,8 @@ describe('RecurringList', () => {
       expect(screen.getAllByText('넷플릭스').length).toBeGreaterThan(0)
     })
 
-    const executeBtns = screen.getAllByTitle('바로 등록')
-    await user.click(executeBtns[0])
+    await user.click(screen.getByTestId('menu-1'))
+    await user.click(screen.getByText('지금 등록'))
 
     await waitFor(() => {
       expect(mockAddToast).toHaveBeenCalledWith('error', '정기거래 등록에 실패했어요')
@@ -480,11 +482,10 @@ describe('RecurringList', () => {
     renderRecurringList()
 
     await waitFor(() => {
-      expect(screen.getAllByText('넷플릭스').length).toBeGreaterThan(0)
+      expect(screen.getByTestId('toggle-1')).toBeInTheDocument()
     })
 
-    const pauseBtns = screen.getAllByTitle('중지')
-    await user.click(pauseBtns[0])
+    await user.click(screen.getByTestId('toggle-1'))
 
     await waitFor(() => {
       expect(mockAddToast).toHaveBeenCalledWith('error', '변경에 실패했어요')
@@ -502,6 +503,8 @@ describe('RecurringList', () => {
           id: 99, type: 'expense', amount: 10000, description: '테스트',
           frequency: 'monthly', day_of_month: 25, is_active: true,
           next_due_date: '2026-04-25',
+          category_emoji: null, category_name: null,
+          payment_method_id: null, payment_method_name: null,
         }, { status: 201 })
       ),
     )
@@ -538,15 +541,13 @@ describe('RecurringList', () => {
     renderRecurringList()
 
     await waitFor(() => {
-      expect(screen.getAllByText('넷플릭스').length).toBeGreaterThan(0)
+      expect(screen.getByTestId('menu-1')).toBeInTheDocument()
     })
 
-    const editBtns = screen.getAllByTitle('수정')
-    await user.click(editBtns[0])
-
+    await user.click(screen.getByTestId('menu-1'))
+    await user.click(screen.getByText('수정'))
     expect(screen.getByText('정기거래 수정')).toBeInTheDocument()
 
-    // 수정 모달의 저장 버튼 클릭
     await user.click(screen.getByText('수정하기'))
 
     await waitFor(() => {
@@ -567,15 +568,15 @@ describe('RecurringList', () => {
     renderRecurringList()
 
     await waitFor(() => {
-      expect(screen.getAllByText('넷플릭스').length).toBeGreaterThan(0)
+      expect(screen.getByTestId('menu-1')).toBeInTheDocument()
     })
 
-    const deleteBtns = screen.getAllByTitle('삭제')
-    await user.click(deleteBtns[0])
+    await user.click(screen.getByTestId('menu-1'))
+    await user.click(screen.getByText('삭제'))
 
-    const deleteModal = screen.getByRole('dialog')
-    expect(deleteModal).toBeInTheDocument()
-    await user.click(within(deleteModal).getByRole('button', { name: '삭제' }))
+    expect(screen.getByText(/삭제할까요/)).toBeInTheDocument()
+    const deleteButtons = screen.getAllByText('삭제')
+    await user.click(deleteButtons[deleteButtons.length - 1])
 
     await waitFor(() => {
       expect(mockAddToast).toHaveBeenCalledWith('error', '삭제에 실패했어요')
@@ -608,37 +609,117 @@ describe('RecurringList', () => {
     })
   })
 
-  // ==================== tabular-nums ====================
+  // ==================== 카드 레이아웃 ====================
 
-  it('데스크톱 테이블 금액 셀에 tabular-nums 클래스가 있다', async () => {
-    server.use(
-      http.get('/api/recurring', () => HttpResponse.json([mockItems[0]])),
-      http.get('/api/categories', () => HttpResponse.json([])),
-    )
-    renderRecurringList()
-
-    await waitFor(() => {
-      expect(screen.getAllByText('넷플릭스').length).toBeGreaterThan(0)
+  describe('카드 레이아웃', () => {
+    it('이모지와 설명이 표시된다', async () => {
+      renderRecurringList()
+      await waitFor(() => expect(screen.getByText('넷플릭스')).toBeInTheDocument())
+      expect(screen.getByText('🎬')).toBeInTheDocument()
     })
 
-    // 금액이 포함된 요소 중 tabular-nums 클래스를 가진 것이 있어야 함
-    const amountCells = document.querySelectorAll('td.tabular-nums')
-    expect(amountCells.length).toBeGreaterThan(0)
+    it('카테고리명과 결제수단이 표시된다', async () => {
+      renderRecurringList()
+      await waitFor(() => expect(screen.getByText(/구독 · 삼성카드/)).toBeInTheDocument())
+    })
+
+    it('D-day가 표시된다 — next_due_date가 오늘이면 "오늘"', async () => {
+      const today = new Date()
+      const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+      server.use(
+        http.get('/api/recurring', () =>
+          HttpResponse.json([{ ...mockItems[0], next_due_date: todayStr }])
+        )
+      )
+      renderRecurringList()
+      await waitFor(() => expect(screen.getByText('오늘')).toBeInTheDocument())
+    })
   })
 
-  it('모바일 카드 금액 span에 tabular-nums 클래스가 있다', async () => {
-    server.use(
-      http.get('/api/recurring', () => HttpResponse.json([mockItems[0]])),
-      http.get('/api/categories', () => HttpResponse.json([])),
-    )
-    renderRecurringList()
+  // ==================== ⋮ 메뉴 ====================
 
-    await waitFor(() => {
-      expect(screen.getAllByText('넷플릭스').length).toBeGreaterThan(0)
+  describe('⋮ 메뉴', () => {
+    it('⋮ 버튼 클릭 시 메뉴가 열린다', async () => {
+      const user = userEvent.setup()
+      renderRecurringList()
+      await waitFor(() => screen.getByTestId('menu-1'))
+      await user.click(screen.getByTestId('menu-1'))
+      expect(screen.getByText('지금 등록')).toBeInTheDocument()
+      expect(screen.getByText('수정')).toBeInTheDocument()
+      expect(screen.getByText('삭제')).toBeInTheDocument()
     })
 
-    // 금액 텍스트를 가진 span 중 tabular-nums 클래스를 가진 것이 있어야 함
-    const amountSpans = document.querySelectorAll('span.tabular-nums')
-    expect(amountSpans.length).toBeGreaterThan(0)
+    it('"삭제" 클릭 시 인라인 확인 UI가 나타난다', async () => {
+      const user = userEvent.setup()
+      renderRecurringList()
+      await waitFor(() => screen.getByTestId('menu-1'))
+      await user.click(screen.getByTestId('menu-1'))
+      await user.click(screen.getByText('삭제'))
+      expect(screen.getByText(/삭제할까요/)).toBeInTheDocument()
+      expect(screen.getByText('취소')).toBeInTheDocument()
+    })
+
+    it('"취소" 클릭 시 인라인 확인 UI가 닫힌다', async () => {
+      const user = userEvent.setup()
+      renderRecurringList()
+      await waitFor(() => screen.getByTestId('menu-1'))
+      await user.click(screen.getByTestId('menu-1'))
+      await user.click(screen.getByText('삭제'))
+      await user.click(screen.getByText('취소'))
+      expect(screen.queryByText(/삭제할까요/)).not.toBeInTheDocument()
+    })
+  })
+
+  // ==================== 토글 ====================
+
+  describe('토글', () => {
+    it('활성 항목 토글 클릭 시 낙관적으로 상태가 반전된다', async () => {
+      server.use(
+        http.get('/api/recurring', () => HttpResponse.json([mockItems[0]])),
+        http.put('/api/recurring/1', async () => {
+          await new Promise((resolve) => setTimeout(resolve, 200))
+          return HttpResponse.json({ ...mockItems[0], is_active: false })
+        })
+      )
+      const user = userEvent.setup()
+      renderRecurringList()
+      await waitFor(() => screen.getByTestId('toggle-1'))
+      // 클릭 전: 활성 상태 (title="일시정지")
+      expect(screen.getByTestId('toggle-1')).toHaveAttribute('title', '일시정지')
+      await user.click(screen.getByTestId('toggle-1'))
+      // 낙관적 업데이트: 클릭 직후 활성 항목이 비활성 섹션으로 이동 → 일시정지 섹션 버튼 표시
+      await waitFor(() => {
+        expect(screen.getByTestId('inactive-toggle')).toBeInTheDocument()
+      })
+    })
+
+    it('토글 API 실패 시 원래 상태로 롤백된다', async () => {
+      server.use(
+        http.get('/api/recurring', () => HttpResponse.json([mockItems[0]])),
+        http.put('/api/recurring/1', () => HttpResponse.error())
+      )
+      const user = userEvent.setup()
+      renderRecurringList()
+      await waitFor(() => screen.getByTestId('toggle-1'))
+      expect(screen.getByTestId('toggle-1')).toHaveAttribute('title', '일시정지')
+      await user.click(screen.getByTestId('toggle-1'))
+      await waitFor(() => {
+        expect(screen.getByTestId('toggle-1')).toHaveAttribute('title', '일시정지')
+      })
+    })
+  })
+
+  // ==================== 일시정지 섹션 ====================
+
+  describe('일시정지 섹션', () => {
+    it('일시정지 항목이 있으면 섹션 버튼이 표시된다', async () => {
+      // 활성 항목 + 비활성 항목을 모두 반환해야 일시정지 섹션이 나타남
+      server.use(
+        http.get('/api/recurring', () => HttpResponse.json([mockItems[0], mockItems[2]]))
+      )
+      renderRecurringList()
+      await waitFor(() => expect(screen.getByTestId('inactive-toggle')).toBeInTheDocument())
+      expect(screen.getByText(/일시정지/)).toBeInTheDocument()
+    })
   })
 })
