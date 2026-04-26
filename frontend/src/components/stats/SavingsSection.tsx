@@ -127,7 +127,7 @@ export default function SavingsSection({
           )}
 
           {expanded && (
-            <div className="mt-3 space-y-2 pt-3 border-t border-[var(--border-default)]">
+            <div className="mt-3 space-y-3 pt-3 border-t border-[var(--border-default)]">
               {savingsCategories.map(c => (
                 <div key={c.category} className="flex items-center justify-between">
                   <span className="text-sm text-[var(--text-secondary)]">{c.category}</span>

@@ -139,7 +139,7 @@ export default function MonthlyHighlights({
   return (
     <div className="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)] shadow-sm p-4 sm:p-6">
       <h2 className="text-base font-semibold text-[var(--text-primary)] mb-3">💡 이번 달 주목할 점</h2>
-      <ul className="space-y-2">
+      <ul className="space-y-3">
         {highlights.map((h, i) => (
           <li key={i} className={`text-sm flex items-start gap-2 ${colorMap[h.type]}`}>
             <span className="mt-0.5 flex-shrink-0">{iconMap[h.type]}</span>

@@ -76,7 +76,7 @@ export default function CategoryTopList({ categories, maxItems = 5 }: CategoryTo
       {/* 리스트 뷰 */}
       {viewMode === 'list' && (
         <>
-          <div className="space-y-2.5">
+          <div className="space-y-3">
             {visible.map((cat, i) => {
               return (
                 <div key={cat.category} className="-mx-2 px-2 py-1 rounded-lg">
