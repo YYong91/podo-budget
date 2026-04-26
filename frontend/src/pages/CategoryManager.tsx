@@ -6,7 +6,7 @@
 
 import { useEffect, useState } from 'react'
 import { useGoBack } from '../hooks/useGoBack'
-import { ArrowLeft, Lock, Plus, Tags } from 'lucide-react'
+import { ArrowLeft, Lock, Pencil, Plus, Tags, Trash2 } from 'lucide-react'
 import { useToast } from '../hooks/useToast'
 import { TOAST } from '../constants/toastMessages'
 import { categoryApi } from '../api/categories'
@@ -462,18 +462,20 @@ export default function CategoryManager() {
                         기본
                       </span>
                     ) : (
-                      <div className="flex gap-2 flex-shrink-0">
+                      <div className="flex items-center gap-1 flex-shrink-0">
                         <button
                           onClick={() => startEdit(category)}
-                          className="px-3 py-1.5 text-sm font-medium text-grape-600 bg-grape-500/10 rounded-lg hover:bg-grape-500/20 transition-colors"
+                          aria-label="수정"
+                          className="p-1.5 rounded-lg hover:bg-[var(--surface-hover)] transition-colors text-[var(--text-muted)] hover:text-grape-600"
                         >
-                          수정
+                          <Pencil className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => { setDeleteTarget(category.id); setEditingId(null) }}
-                          className="px-3 py-1.5 text-sm font-medium text-rose-600 bg-rose-500/10 rounded-lg hover:bg-rose-500/20 transition-colors"
+                          aria-label="삭제"
+                          className="p-1.5 rounded-lg hover:bg-[var(--surface-hover)] transition-colors text-[var(--text-muted)] hover:text-rose-500"
                         >
-                          삭제
+                          <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
                     )}
