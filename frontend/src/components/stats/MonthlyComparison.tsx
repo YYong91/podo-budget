@@ -11,6 +11,24 @@ type MonthlyComparisonProps = {
   savingsRatePrevious?: number
 }
 
+function ChartTooltip({ active, payload, label }: {
+  active?: boolean
+  payload?: Array<{ name: string; value: number; color: string }>
+  label?: string
+}) {
+  if (!active || !payload?.length) return null
+  return (
+    <div className="bg-surface border border-default rounded-xl shadow-md px-3 py-2 text-xs space-y-1">
+      <p className="font-semibold text-primary mb-1">{label}</p>
+      {payload.map(entry => (
+        <p key={entry.name} style={{ color: entry.color }}>
+          {entry.name} : {Math.round(entry.value / 10000).toLocaleString()}만원
+        </p>
+      ))}
+    </div>
+  )
+}
+
 /** 3개월 트렌드 BarChart — 수입/지출 비교 막대 */
 function TrendBarChart({
   expenseTrend,
@@ -42,17 +60,11 @@ function TrendBarChart({
           <YAxis
             tickFormatter={(v) => `${Math.round(v / 10000)}만`}
             tick={{ fontSize: 10 }}
-            width={32}
+            width={48}
             axisLine={false}
             tickLine={false}
           />
-          <Tooltip
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            formatter={(value: any, name: any) => [
-              `${Math.round(Number(value) / 10000).toLocaleString()}만원`,
-              name as string,
-            ]}
-          />
+          <Tooltip content={<ChartTooltip />} />
           <Bar dataKey="수입" fill="#4ade80" radius={[2, 2, 0, 0]} />
           <Bar dataKey="지출" fill="#a855f7" radius={[2, 2, 0, 0]} />
         </BarChart>
