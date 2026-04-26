@@ -70,12 +70,12 @@ export default function MyAccountSection() {
         </div>
 
         {user.is_telegram_linked ? (
-          <div className="flex items-center justify-between py-2 px-3 bg-leaf-50 rounded-xl">
+          <div className="flex items-center justify-between py-2 px-3 bg-leaf-500/10 rounded-xl">
             <span className="text-sm text-leaf-600 font-medium">✅ 연동됨</span>
             <button
               onClick={telegram.unlink}
               disabled={telegram.loadingUnlink}
-              className="text-sm text-[var(--text-tertiary)] hover:text-red-500 underline disabled:opacity-50"
+              className="text-sm text-[var(--text-tertiary)] hover:text-rose-500 underline disabled:opacity-50"
             >
               {telegram.loadingUnlink ? '해제 중...' : '연동 해제'}
             </button>
@@ -102,7 +102,7 @@ export default function MyAccountSection() {
                   <span>봇에 <span className="font-mono bg-[var(--surface-hover)] px-1 rounded">/link 발급된코드</span>를 입력하면 연동 완료!</span>
                 </li>
               </ol>
-              <div className="mt-3 bg-grape-50 rounded-lg p-3 text-xs text-[var(--text-secondary)] space-y-1">
+              <div className="mt-3 bg-[var(--surface-elevated)] rounded-lg p-3 text-xs text-[var(--text-secondary)] space-y-1">
                 <p className="font-semibold text-[var(--text-secondary)]">연동 후 이런 게 가능해요</p>
                 <p>• <span className="font-mono">"오늘 점심 8000원"</span> → AI가 자동으로 카테고리 분류</p>
                 <p>• <span className="font-mono">"어제 교통비 3회 각 1500원"</span> → 여러 건 한 번에 입력</p>
@@ -111,7 +111,7 @@ export default function MyAccountSection() {
             </div>
 
             {telegram.linkCode ? (
-              <div className="bg-grape-50 rounded-xl p-4 space-y-3">
+              <div className="bg-grape-500/10 rounded-xl p-4 space-y-3">
                 <p className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wide">발급된 연동 코드</p>
                 <div className="flex items-center justify-between">
                   <span className="font-mono text-2xl font-bold text-grape-600 tracking-widest">
@@ -119,7 +119,7 @@ export default function MyAccountSection() {
                   </span>
                   <button
                     onClick={telegram.copyCode}
-                    className="text-xs text-grape-600 border border-grape-300 rounded-lg px-3 py-1 hover:bg-grape-100"
+                    className="text-xs text-grape-600 border border-grape-500/30 rounded-lg px-3 py-1 hover:bg-grape-500/10"
                   >
                     /link {telegram.linkCode.code} 복사
                   </button>
@@ -128,7 +128,7 @@ export default function MyAccountSection() {
                 <div
                   role="button"
                   tabIndex={0}
-                  className="bg-[var(--surface-card)] rounded-lg p-3 border border-grape-200 cursor-pointer active:bg-grape-50"
+                  className="bg-[var(--surface-card)] rounded-lg p-3 border border-grape-200 cursor-pointer active:bg-[var(--surface-hover)]"
                   onClick={(e) => {
                     const el = e.currentTarget.querySelector('p.selectable')
                     if (el && window.getSelection) {
@@ -194,12 +194,12 @@ export default function MyAccountSection() {
         </div>
 
         {user.is_kakao_linked ? (
-          <div className="flex items-center justify-between py-2 px-3 bg-leaf-50 rounded-xl">
+          <div className="flex items-center justify-between py-2 px-3 bg-leaf-500/10 rounded-xl">
             <span className="text-sm text-leaf-600 font-medium">✅ 연동됨</span>
             <button
               onClick={kakao.unlink}
               disabled={kakao.loadingUnlink}
-              className="text-sm text-[var(--text-tertiary)] hover:text-red-500 underline disabled:opacity-50"
+              className="text-sm text-[var(--text-tertiary)] hover:text-rose-500 underline disabled:opacity-50"
             >
               {kakao.loadingUnlink ? '해제 중...' : '연동 해제'}
             </button>
@@ -226,7 +226,7 @@ export default function MyAccountSection() {
                   <span>채널 채팅에 <span className="font-mono bg-[var(--surface-hover)] px-1 rounded">/link 발급된코드</span>를 입력하면 연동 완료!</span>
                 </li>
               </ol>
-              <div className="mt-3 bg-grape-50 rounded-lg p-3 text-xs text-[var(--text-secondary)] space-y-1">
+              <div className="mt-3 bg-[var(--surface-elevated)] rounded-lg p-3 text-xs text-[var(--text-secondary)] space-y-1">
                 <p className="font-semibold text-[var(--text-secondary)]">연동 후 이런 게 가능해요</p>
                 <p>• <span className="font-mono">"오늘 점심 8000원"</span> → AI가 자동으로 카테고리 분류</p>
                 <p>• <span className="font-mono">"어제 교통비 3회 각 1500원"</span> → 여러 건 한 번에 입력</p>
@@ -235,7 +235,7 @@ export default function MyAccountSection() {
             </div>
 
             {kakao.linkCode ? (
-              <div className="bg-grape-50 rounded-xl p-4 space-y-3">
+              <div className="bg-grape-500/10 rounded-xl p-4 space-y-3">
                 <p className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wide">발급된 연동 코드</p>
                 <div className="flex items-center justify-between">
                   <span className="font-mono text-2xl font-bold text-grape-600 tracking-widest">
@@ -243,7 +243,7 @@ export default function MyAccountSection() {
                   </span>
                   <button
                     onClick={kakao.copyCode}
-                    className="text-xs text-grape-600 border border-grape-300 rounded-lg px-3 py-1 hover:bg-grape-100"
+                    className="text-xs text-grape-600 border border-grape-500/30 rounded-lg px-3 py-1 hover:bg-grape-500/10"
                   >
                     /link {kakao.linkCode.code} 복사
                   </button>
@@ -252,7 +252,7 @@ export default function MyAccountSection() {
                 <div
                   role="button"
                   tabIndex={0}
-                  className="bg-[var(--surface-card)] rounded-lg p-3 border border-grape-200 cursor-pointer active:bg-grape-50"
+                  className="bg-[var(--surface-card)] rounded-lg p-3 border border-grape-200 cursor-pointer active:bg-[var(--surface-hover)]"
                   onClick={(e) => {
                     const el = e.currentTarget.querySelector('p.selectable')
                     if (el && window.getSelection) {
@@ -320,7 +320,7 @@ export default function MyAccountSection() {
         <div className="flex flex-wrap gap-3">
           <button
             onClick={logout}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-[var(--border-default)] text-[var(--text-secondary)] text-sm font-medium hover:bg-red-50 hover:border-red-300 hover:text-red-600 transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-[var(--border-default)] text-[var(--text-secondary)] text-sm font-medium hover:bg-rose-500/10 hover:border-rose-300 hover:text-rose-600 transition-colors"
           >
             <LogOut className="w-4 h-4" />
             로그아웃
@@ -464,7 +464,7 @@ function AccountDeleteCard() {
       <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-red-200 dark:border-red-900/30 p-6">
         <button
           onClick={() => setStep('confirm')}
-          className="inline-flex items-center gap-2 text-sm font-medium text-red-500 hover:text-red-600 transition-colors"
+          className="inline-flex items-center gap-2 text-sm font-medium text-rose-500 hover:text-rose-600 transition-colors"
         >
           <Trash2 className="w-4 h-4" />
           계정 삭제
@@ -475,7 +475,7 @@ function AccountDeleteCard() {
 
   return (
     <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-red-300 dark:border-red-900/50 p-6 space-y-3">
-      <h3 className="text-sm font-semibold text-red-600">계정을 정말 삭제하시겠습니까?</h3>
+      <h3 className="text-sm font-semibold text-rose-600">계정을 정말 삭제하시겠습니까?</h3>
       <p className="text-xs text-[var(--text-tertiary)]">
         모든 데이터(거래 내역, 예산, 카테고리 등)가 영구적으로 삭제됩니다. 이 작업은 되돌릴 수 없습니다.
       </p>
@@ -493,7 +493,7 @@ function AccountDeleteCard() {
         <button
           onClick={handleDelete}
           disabled={confirmText !== '삭제' || step === 'deleting'}
-          className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-xl hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="px-4 py-2 text-sm font-medium text-white bg-rose-600 rounded-xl hover:bg-rose-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           {step === 'deleting' ? '삭제 중...' : '계정 영구 삭제'}
         </button>
