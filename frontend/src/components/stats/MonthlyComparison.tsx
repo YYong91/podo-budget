@@ -181,17 +181,15 @@ export default function MonthlyComparison({
       className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] p-4 sm:p-6"
     >
       {/* 헤더 */}
-      <div className="mb-4">
-        <SectionHeader
-          icon="📈"
-          title="지난달 비교"
-          expanded={expanded}
-          onToggle={() => setExpanded(prev => !prev)}
-        />
-      </div>
+      <SectionHeader
+        icon="📈"
+        title="지난달 비교"
+        expanded={expanded}
+        onToggle={() => setExpanded(prev => !prev)}
+      />
 
       {/* 2열 비교 행 */}
-      <div className="space-y-3">
+      <div className="mt-3 space-y-3">
         {incomeComparison && (
           <ComparisonRow
             label="수입"

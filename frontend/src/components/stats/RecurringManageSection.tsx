@@ -148,7 +148,7 @@ export default function RecurringManageSection({ items, monthStr, executedAmount
 
       {/* 접힌 상태: 상태 칩 오버뷰 */}
       {!expanded && (
-        <div className="mt-2">
+        <div className="mt-3">
           <OverviewChips items={items} monthStr={monthStr} executedAmountMap={executedAmountMap} />
         </div>
       )}
