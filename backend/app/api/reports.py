@@ -17,7 +17,7 @@ from app.schemas.monthly_report import (
     MonthlyReportResponse,
 )
 from app.services.report_eligibility import EligibilityResult, check_household_eligibility
-from app.services.report_month_utils import previous_month_kst
+from app.services.report_month_utils import current_month_kst, previous_month_kst
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -80,8 +80,12 @@ async def get_latest_report(
 ) -> object:
     """직전 마감 월의 결산 리포트 조회 (모아보기 상단 카드용)
 
-    KST 기준 직전 월의 completed 리포트를 반환한다.
-    리포트가 없으면 직전 월 기준 eligibility를 반환한다.
+    - 전월에 생성 중/완료된 리포트가 있으면 그 상태를 반환
+    - 없으면 현재 월 기준 eligibility(다음 달 리포트 자격)를 반환
+
+    Note: eligibility 기준을 전월이 아닌 현재 월로 쓰는 이유 —
+    전월 데이터는 이미 확정됐으므로 사용자가 추가 거래를 입력해도 반영되지 않는다.
+    현재 월 기준으로 보여야 "이번 달 15건 채우면 다음 달 리포트 생성" 진행 상황이 의미 있다.
     """
     if household_id is None:
         household_id = await get_user_active_household_id(current_user, db)
@@ -89,11 +93,12 @@ async def get_latest_report(
 
     prev_month = previous_month_kst()
 
+    # 전월 리포트가 생성 중이거나 완료된 경우 해당 상태 반환 (failed는 제외 — 현재 월 progress 표시가 더 유용)
     report = await db.scalar(
         select(MonthlyReport).where(
             MonthlyReport.household_id == household_id,
             MonthlyReport.month == prev_month,
-            MonthlyReport.status == "completed",
+            MonthlyReport.status.in_(["pending", "processing", "completed"]),
         )
     )
 
@@ -103,7 +108,9 @@ async def get_latest_report(
             eligibility=None,
         )
 
-    eligibility = await check_household_eligibility(db, household_id, prev_month)
+    # 전월 리포트가 없으면 현재 월 기준 eligibility 반환 (다음 달 리포트를 위한 진행 상황)
+    this_month = current_month_kst()
+    eligibility = await check_household_eligibility(db, household_id, this_month)
     return MonthlyReportOrEligibility(
         report=None,
         eligibility=_build_eligibility(eligibility),

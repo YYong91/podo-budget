@@ -131,12 +131,40 @@ async def test_get_latest_report_returns_prev_month_completed(
 
 
 @pytest.mark.asyncio
+async def test_get_latest_report_returns_pending_report(
+    authenticated_client: AsyncClient,
+    db_session: AsyncSession,
+    test_household: Household,
+):
+    """직전 달 pending 리포트도 반환 (completed만 반환하던 버그 수정)"""
+    from app.services.report_month_utils import previous_month_kst
+
+    prev_month = previous_month_kst()
+    report = MonthlyReport(
+        household_id=test_household.id,
+        month=prev_month,
+        status="pending",
+        report_data={"expense_total": 200000},
+        insights=None,
+        insights_version=1,
+    )
+    db_session.add(report)
+    await db_session.commit()
+
+    resp = await authenticated_client.get("/api/reports/latest")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["report"]["status"] == "pending"
+    assert data["report"]["month"] == prev_month
+
+
+@pytest.mark.asyncio
 async def test_get_latest_report_no_report_returns_eligibility(
     authenticated_client: AsyncClient,
     db_session: AsyncSession,
     test_household: Household,
 ):
-    """직전 달 리포트 없으면 eligibility 반환"""
+    """직전 달 리포트 없으면 현재 월 eligibility 반환"""
     resp = await authenticated_client.get("/api/reports/latest")
     assert resp.status_code == 200
     data = resp.json()
