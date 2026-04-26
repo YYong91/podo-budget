@@ -26,7 +26,7 @@ export default function ChangelogSection() {
               className={`relative pl-6 ${idx < changelogs.length - 1 ? 'pb-4 border-l-2 border-[var(--border-default)] ml-1' : 'ml-1'}`}
             >
               <div className={`absolute left-0 top-1 w-2.5 h-2.5 rounded-full -translate-x-[5px] ${
-                idx === 0 ? 'bg-grape-500' : 'bg-warm-300'
+                idx === 0 ? 'bg-grape-500' : 'bg-[var(--border-default)]'
               }`} />
               <div className="flex items-baseline gap-2 mb-1.5">
                 <span className="text-sm font-bold text-[var(--text-primary)]">v{log.version}</span>
