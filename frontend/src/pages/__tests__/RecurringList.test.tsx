@@ -247,9 +247,9 @@ describe('RecurringList', () => {
     })
   })
 
-  // ==================== 활성화/비활성화 토글 ====================
+  // ==================== 활성화/비활성화 토글 (⋮ 메뉴 → 일시정지/다시 시작) ====================
 
-  it('활성 항목 토글 버튼 클릭 시 비활성화된다', async () => {
+  it('활성 항목: ⋮ 메뉴에서 일시정지 클릭 시 비활성화된다', async () => {
     server.use(
       http.get('/api/recurring', () => HttpResponse.json([mockItems[0]])),
       http.get('/api/categories', () => HttpResponse.json([])),
@@ -261,19 +261,16 @@ describe('RecurringList', () => {
     const user = userEvent.setup()
     renderRecurringList()
 
-    await waitFor(() => {
-      expect(screen.getByTestId('toggle-1')).toBeInTheDocument()
-    })
-
-    await user.click(screen.getByTestId('toggle-1'))
+    await waitFor(() => screen.getByTestId('menu-1'))
+    await user.click(screen.getByTestId('menu-1'))
+    await user.click(screen.getByTestId('toggle-1'))  // 메뉴 내 일시정지 버튼
 
     await waitFor(() => {
       expect(mockAddToast).not.toHaveBeenCalledWith('error', '변경에 실패했어요')
     })
   })
 
-  it('비활성 항목 토글 버튼 클릭 시 활성화된다', async () => {
-    // 활성 1개 + 비활성 1개 반환 (비활성 섹션이 생기도록)
+  it('비활성 항목: ⋮ 메뉴에서 다시 시작 클릭 시 활성화된다', async () => {
     server.use(
       http.get('/api/recurring', () => HttpResponse.json([mockItems[0], mockItems[2]])),
       http.get('/api/categories', () => HttpResponse.json([])),
@@ -285,9 +282,9 @@ describe('RecurringList', () => {
     const user = userEvent.setup()
     renderRecurringList()
 
-    // 비활성 항목이 목록에 표시될 때까지 대기
-    await waitFor(() => screen.getByTestId('toggle-3'))
-    await user.click(screen.getByTestId('toggle-3'))
+    await waitFor(() => screen.getByTestId('menu-3'))
+    await user.click(screen.getByTestId('menu-3'))
+    await user.click(screen.getByTestId('toggle-3'))  // 메뉴 내 다시 시작 버튼
 
     await waitFor(() => {
       expect(mockAddToast).not.toHaveBeenCalledWith('error', '변경에 실패했어요')
@@ -477,10 +474,8 @@ describe('RecurringList', () => {
     const user = userEvent.setup()
     renderRecurringList()
 
-    await waitFor(() => {
-      expect(screen.getByTestId('toggle-1')).toBeInTheDocument()
-    })
-
+    await waitFor(() => screen.getByTestId('menu-1'))
+    await user.click(screen.getByTestId('menu-1'))
     await user.click(screen.getByTestId('toggle-1'))
 
     await waitFor(() => {
@@ -669,7 +664,7 @@ describe('RecurringList', () => {
   // ==================== 토글 ====================
 
   describe('토글', () => {
-    it('활성 항목 토글 클릭 시 낙관적으로 상태가 반전된다', async () => {
+    it('⋮ 메뉴 일시정지 클릭 시 낙관적으로 카드에 "일시정지" 뱃지가 표시된다', async () => {
       server.use(
         http.get('/api/recurring', () => HttpResponse.json([mockItems[0]])),
         http.put('/api/recurring/1', async () => {
@@ -679,13 +674,13 @@ describe('RecurringList', () => {
       )
       const user = userEvent.setup()
       renderRecurringList()
-      await waitFor(() => screen.getByTestId('toggle-1'))
-      // 클릭 전: 활성 상태 (title="일시정지")
-      expect(screen.getByTestId('toggle-1')).toHaveAttribute('title', '일시정지')
+      await waitFor(() => screen.getByTestId('menu-1'))
+      // 메뉴 열기 → 일시정지 클릭
+      await user.click(screen.getByTestId('menu-1'))
       await user.click(screen.getByTestId('toggle-1'))
-      // 낙관적 업데이트: 클릭 직후 카드가 제자리에서 "다시 시작" 상태로 바뀜 (섹션 이동 없음)
+      // 낙관적 업데이트: 카드에 "일시정지" 뱃지 즉시 표시 (API 응답 전)
       await waitFor(() => {
-        expect(screen.getByTestId('toggle-1')).toHaveAttribute('title', '다시 시작')
+        expect(screen.getByText('일시정지')).toBeInTheDocument()
       })
     })
 
@@ -696,11 +691,12 @@ describe('RecurringList', () => {
       )
       const user = userEvent.setup()
       renderRecurringList()
-      await waitFor(() => screen.getByTestId('toggle-1'))
-      expect(screen.getByTestId('toggle-1')).toHaveAttribute('title', '일시정지')
+      await waitFor(() => screen.getByTestId('menu-1'))
+      await user.click(screen.getByTestId('menu-1'))
       await user.click(screen.getByTestId('toggle-1'))
       await waitFor(() => {
-        expect(screen.getByTestId('toggle-1')).toHaveAttribute('title', '일시정지')
+        // 롤백 후 에러 토스트
+        expect(mockAddToast).toHaveBeenCalledWith('error', expect.any(String))
       })
     })
   })
@@ -713,8 +709,8 @@ describe('RecurringList', () => {
         http.get('/api/recurring', () => HttpResponse.json([mockItems[0], mockItems[2]]))
       )
       renderRecurringList()
-      // 비활성 항목도 목록에 즉시 표시됨 (섹션 이동 없음)
-      await waitFor(() => expect(screen.getByTestId('toggle-3')).toBeInTheDocument())
+      // 비활성 항목도 목록에 즉시 표시됨 (섹션 이동 없음) — ⋮ 메뉴 버튼으로 확인
+      await waitFor(() => expect(screen.getByTestId('menu-3')).toBeInTheDocument())
       // 숨기기 버튼 표시
       expect(screen.getByTestId('inactive-toggle')).toHaveTextContent('일시정지')
       expect(screen.getByTestId('inactive-toggle')).toHaveTextContent('숨기기')
@@ -727,12 +723,12 @@ describe('RecurringList', () => {
       const user = userEvent.setup()
       renderRecurringList()
       await waitFor(() => screen.getByTestId('inactive-toggle'))
-      // 비활성 항목이 보임
-      expect(screen.getByTestId('toggle-3')).toBeInTheDocument()
+      // 비활성 항목이 보임 — ⋮ 메뉴 버튼으로 확인
+      expect(screen.getByTestId('menu-3')).toBeInTheDocument()
       // 숨기기 클릭
       await user.click(screen.getByTestId('inactive-toggle'))
       // 비활성 항목이 사라짐
-      expect(screen.queryByTestId('toggle-3')).not.toBeInTheDocument()
+      expect(screen.queryByTestId('menu-3')).not.toBeInTheDocument()
     })
   })
 })
