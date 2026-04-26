@@ -45,7 +45,7 @@ export default function ReportDetailPage() {
       const res = await reportsApi.getMonthly(prevMonthStr, activeHouseholdId ?? undefined)
       return res.data
     },
-    enabled: isCompleted && !!prevMonthStr,
+    enabled: isCompleted && !!prevMonthStr && !!activeHouseholdId,
     staleTime: 5 * 60 * 1000,
   })
 
@@ -56,7 +56,7 @@ export default function ReportDetailPage() {
       const res = await reportsApi.getMonthly(nextMonthStr, activeHouseholdId ?? undefined)
       return res.data
     },
-    enabled: isCompleted && !!nextMonthStr && nextMonthStr <= currentMonthKst(),
+    enabled: isCompleted && !!nextMonthStr && !!activeHouseholdId && nextMonthStr <= currentMonthKst(),
     staleTime: 5 * 60 * 1000,
   })
 

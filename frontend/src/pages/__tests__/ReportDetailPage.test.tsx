@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -80,8 +80,10 @@ describe('ReportDetailPage', () => {
       render(makeWrapper('2026-01'))
       await screen.findByText('식비가 전체 지출의 37.5%를 차지합니다')
 
-      // 이전 달 2025-12는 pending이므로 링크 없음
-      expect(screen.queryByText(/2025년 12월 리포트/)).not.toBeInTheDocument()
+      // prev 쿼리 응답까지 비동기 대기 후 assertion (pending이므로 링크 없음)
+      await waitFor(() => {
+        expect(screen.queryByText(/2025년 12월 리포트/)).not.toBeInTheDocument()
+      })
     })
 
     it('completed 리포트 + prev 없음(null) → 이전 달 링크가 없다', async () => {
