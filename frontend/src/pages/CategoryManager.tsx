@@ -13,6 +13,7 @@ import { categoryApi } from '../api/categories'
 import EmptyState from '../components/EmptyState'
 import ErrorState from '../components/ErrorState'
 import { Skeleton } from '../components/skeleton/Skeleton'
+import EmojiPicker from '../components/EmojiPicker'
 import type { Category } from '../types'
 
 function CategoryManagerSkeleton() {
@@ -305,16 +306,7 @@ export default function CategoryManager() {
       {isAdding && (
         <div className="bg-[var(--surface-elevated)] rounded-2xl border border-[var(--border-default)] p-4 space-y-3">
           <div className="grid grid-cols-[3.5rem_1fr] gap-3 items-start">
-            <input
-              type="text"
-              value={newEmoji}
-              onChange={(e) => {
-                const val = e.target.value
-                if (val.length <= 2) setNewEmoji(val || '📌')
-              }}
-              className="input-base text-center text-xl p-2"
-              maxLength={2}
-            />
+            <EmojiPicker value={newEmoji} onChange={setNewEmoji} />
             <div className="space-y-2">
               <input
                 type="text"
@@ -390,15 +382,9 @@ export default function CategoryManager() {
                   /* 인라인 편집 폼 */
                   <div className="px-4 py-4 space-y-3">
                     <div className="grid grid-cols-[3.5rem_1fr] gap-3 items-start">
-                      <input
-                        type="text"
+                      <EmojiPicker
                         value={editForm.emoji}
-                        onChange={(e) => {
-                          const val = e.target.value
-                          if (val.length <= 2) setEditForm({ ...editForm, emoji: val || '📌' })
-                        }}
-                        className="input-base text-center text-xl p-2"
-                        maxLength={2}
+                        onChange={(emoji) => setEditForm({ ...editForm, emoji })}
                       />
                       <div className="space-y-2">
                         <input
