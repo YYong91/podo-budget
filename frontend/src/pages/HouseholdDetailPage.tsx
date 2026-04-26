@@ -343,48 +343,46 @@ export default function HouseholdDetailPage() {
       </div>
 
       {/* 탭 */}
-      <div className="border-b border-[var(--border-default)]">
-        <div className="flex gap-6">
+      <div className="flex gap-2">
+        <button
+          onClick={() => setActiveTab('members')}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+            activeTab === 'members'
+              ? 'bg-grape-100 text-grape-600'
+              : 'bg-[var(--surface-hover)] text-[var(--text-secondary)]'
+          }`}
+        >
+          멤버
+        </button>
+        {isAdmin && (
           <button
-            onClick={() => setActiveTab('members')}
-            className={`pb-3 px-1 text-sm font-medium border-b-2 transition-colors ${
-              activeTab === 'members'
-                ? 'border-grape-600 text-grape-600'
-                : 'border-transparent text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]'
+            onClick={() => setActiveTab('invitations')}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              activeTab === 'invitations'
+                ? 'bg-grape-100 text-grape-600'
+                : 'bg-[var(--surface-hover)] text-[var(--text-secondary)]'
             }`}
           >
-            멤버
+            초대
+            {householdInvitations.filter(i => i.status === 'pending').length > 0 && (
+              <span className="ml-1.5 inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-grape-500 rounded-full">
+                {householdInvitations.filter(i => i.status === 'pending').length}
+              </span>
+            )}
           </button>
-          {isAdmin && (
-            <button
-              onClick={() => setActiveTab('invitations')}
-              className={`pb-3 px-1 text-sm font-medium border-b-2 transition-colors ${
-                activeTab === 'invitations'
-                  ? 'border-grape-600 text-grape-600'
-                  : 'border-transparent text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]'
-              }`}
-            >
-              초대
-              {householdInvitations.filter(i => i.status === 'pending').length > 0 && (
-                <span className="ml-1.5 inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-grape-500 rounded-full">
-                  {householdInvitations.filter(i => i.status === 'pending').length}
-                </span>
-              )}
-            </button>
-          )}
-          {isAdmin && (
-            <button
-              onClick={() => setActiveTab('settings')}
-              className={`pb-3 px-1 text-sm font-medium border-b-2 transition-colors ${
-                activeTab === 'settings'
-                  ? 'border-grape-600 text-grape-600'
-                  : 'border-transparent text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]'
-              }`}
-            >
-              설정
-            </button>
-          )}
-        </div>
+        )}
+        {isAdmin && (
+          <button
+            onClick={() => setActiveTab('settings')}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              activeTab === 'settings'
+                ? 'bg-grape-100 text-grape-600'
+                : 'bg-[var(--surface-hover)] text-[var(--text-secondary)]'
+            }`}
+          >
+            설정
+          </button>
+        )}
       </div>
 
       {/* 탭 콘텐츠 */}
