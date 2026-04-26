@@ -236,8 +236,8 @@ def get_expense_parser_prompt(
 
     # RAG 정정 사례 주입 (history_hints보다 우선 — 사용자가 직접 정정한 데이터)
     if correction_hints:
-        safe_hints = [(text.replace("\n", " ").replace('"', "'")[:100], cat) for text, cat in correction_hints[:10]]
-        pairs = "\n".join(f'- "{text}" → {cat}' for text, cat in safe_hints)
+        safe_correction_hints: list[tuple[str, str]] = [(text.replace("\n", " ").replace('"', "'")[:100], cat) for text, cat in correction_hints[:10]]
+        pairs = "\n".join(f'- "{text}" → {cat}' for text, cat in safe_correction_hints)
         prompt += (
             f"\n\n## 이 가구의 보정 사례 (최우선 적용)\n"
             f"아래는 이 가구가 직접 수정한 카테고리 사례입니다. "

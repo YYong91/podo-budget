@@ -676,7 +676,7 @@ class LocalLLMProvider(LLMProvider):
     def __init__(self, model: str = ""):
         self.model = model or DEFAULT_MODELS["local"]
 
-    async def parse_expense(  # type: ignore[override]
+    async def parse_expense(
         self,
         user_input: str,
         categories: list[str] | None = None,
