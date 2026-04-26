@@ -315,7 +315,7 @@ export default function CategoryManager() {
               className="input-base w-14 text-center text-xl p-2 flex-shrink-0"
               maxLength={2}
             />
-            <div className="flex-1 min-w-0 space-y-2">
+            <div className="flex-1 min-w-0 space-y-2 overflow-hidden">
               <input
                 type="text"
                 value={newName}
@@ -400,7 +400,7 @@ export default function CategoryManager() {
                         className="input-base w-14 text-center text-xl p-2 flex-shrink-0"
                         maxLength={2}
                       />
-                      <div className="flex-1 min-w-0 space-y-2">
+                      <div className="flex-1 min-w-0 space-y-2 overflow-hidden">
                         <input
                           type="text"
                           value={editForm.name}

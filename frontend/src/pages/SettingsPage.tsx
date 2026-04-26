@@ -257,7 +257,7 @@ export default function SettingsPage() {
         <SubPageWrapper>
           <div className="space-y-4">
             <h1 className="text-xl font-bold text-[var(--text-primary)]">AI 분석 설정</h1>
-            <p className="text-sm text-warm-500">
+            <p className="text-sm text-secondary">
               가구 정보를 입력하면 AI가 상황에 맞는 분석과 조언을 제공합니다.
             </p>
             <ProfileEditSection
@@ -270,7 +270,7 @@ export default function SettingsPage() {
           {showProfileFlow && (
             <div className="fixed inset-0 z-50 bg-black/40 flex items-end">
               <div className="w-full bg-[var(--surface-card)] rounded-t-2xl p-5 max-h-[90vh] overflow-y-auto">
-                <h2 className="text-base font-semibold text-warm-900 mb-4">가구 정보 설정</h2>
+                <h2 className="text-base font-semibold text-primary mb-4">가구 정보 설정</h2>
                 <ProfileCollectionFlow
                   onComplete={async (input) => {
                     await saveProfile.mutateAsync(input)

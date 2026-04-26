@@ -377,6 +377,20 @@ export default function InsightsPage() {
       .reduce((sum, r) => sum + r.amount, 0)
   }, [activeRecurringItems])
 
+  // 이번 달 실제 실행된 비저축성 정기거래 지출 합계
+  // 정기거래 템플릿 금액 대신 실제 거래 금액을 사용해야 변동비 계산이 정확함
+  const actualFixedExpense = useMemo(() => {
+    const savingsCategoryIds = new Set(
+      expenseCategories.filter(c => c.is_savings).map(c => c.id)
+    )
+    return monthlyExpenseList
+      .filter(e =>
+        e.recurring_transaction_id != null &&
+        (e.category_id == null || !savingsCategoryIds.has(e.category_id))
+      )
+      .reduce((sum, e) => sum + e.amount, 0)
+  }, [monthlyExpenseList, expenseCategories])
+
   // 전월 저축 합계 (MonthlyHighlights 규칙 #6 — 저축 감소 감지용)
   const prevSavingsTotal = useMemo(() => {
     const savingsCatNames = new Set(
@@ -576,7 +590,7 @@ export default function InsightsPage() {
               savingsTotal={savingsTotal}
               incomeTotal={incomeStats?.total ?? 0}
               savingsCategories={savingsCategories}
-              recurringTotal={recurringTotal}
+              recurringTotal={actualFixedExpense}
               expenseTotal={expenseStats?.total ?? 0}
             />
           )}

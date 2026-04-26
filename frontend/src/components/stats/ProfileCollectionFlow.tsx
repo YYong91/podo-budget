@@ -84,7 +84,7 @@ function ChipGroup<T extends string>({
             className={`px-3 py-1.5 rounded-full text-sm border transition-colors ${
               selected
                 ? 'bg-grape-500 text-white border-grape-500'
-                : 'bg-white text-warm-700 border-warm-300 hover:border-grape-400'
+                : 'bg-elevated text-secondary border-default hover:border-grape-400'
             }`}
           >
             {opt.label}
@@ -169,32 +169,32 @@ export default function ProfileCollectionFlow({ onComplete, onAnalysisReady, onC
     return (
       <div className="space-y-5">
         <div>
-          <p className="text-sm font-medium text-warm-800 mb-2">AI가 더 정확한 분석을 하려면 가구 정보가 필요해요.</p>
-          <p className="text-xs text-warm-500">입력하신 정보는 AI 분석에만 사용되며, 언제든 수정할 수 있어요.</p>
+          <p className="text-sm font-medium text-primary mb-2">AI가 더 정확한 분석을 하려면 가구 정보가 필요해요.</p>
+          <p className="text-xs text-secondary">입력하신 정보는 AI 분석에만 사용되며, 언제든 수정할 수 있어요.</p>
         </div>
 
         <div className="space-y-4">
           <div>
-            <p className="text-sm font-medium text-warm-800 mb-2">가구 유형</p>
+            <p className="text-sm font-medium text-primary mb-2">가구 유형</p>
             <ChipGroup options={HOUSEHOLD_TYPE_OPTIONS} value={householdType} onChange={setHouseholdType} />
           </div>
           <div>
-            <p className="text-sm font-medium text-warm-800 mb-2">주거 형태</p>
+            <p className="text-sm font-medium text-primary mb-2">주거 형태</p>
             <ChipGroup options={HOUSING_TYPE_OPTIONS} value={housingType} onChange={setHousingType} />
           </div>
           <div>
-            <p className="text-sm font-medium text-warm-800 mb-2">소득 유형 (복수 선택 가능)</p>
+            <p className="text-sm font-medium text-primary mb-2">소득 유형 (복수 선택 가능)</p>
             <ChipGroup options={INCOME_TYPE_OPTIONS} value={incomeTypes} onChange={toggleIncomeType} multi />
           </div>
           <div>
-            <p className="text-sm font-medium text-warm-800 mb-2">연령대</p>
+            <p className="text-sm font-medium text-primary mb-2">연령대</p>
             <ChipGroup options={AGE_RANGE_OPTIONS} value={ageRange} onChange={setAgeRange} />
           </div>
         </div>
 
         <div className="flex gap-2 pt-2">
           {onCancel && (
-            <button type="button" onClick={onCancel} className="flex-1 py-2.5 rounded-xl border border-warm-300 text-warm-600 text-sm">
+            <button type="button" onClick={onCancel} className="flex-1 py-2.5 rounded-xl border border-default text-secondary text-sm">
               취소
             </button>
           )}
@@ -215,7 +215,7 @@ export default function ProfileCollectionFlow({ onComplete, onAnalysisReady, onC
     <div className="space-y-5">
       <div className="space-y-4">
         <div>
-          <p className="text-sm font-medium text-warm-800 mb-2">재무 목표 (선택)</p>
+          <p className="text-sm font-medium text-primary mb-2">재무 목표 (선택)</p>
           <ChipGroup
             options={FINANCIAL_GOAL_OPTIONS}
             value={financialGoal ?? ''}
@@ -232,9 +232,9 @@ export default function ProfileCollectionFlow({ onComplete, onAnalysisReady, onC
                 placeholder="목표 금액"
                 value={goalAmount}
                 onChange={(e) => handleGoalAmountChange(e.target.value)}
-                className="flex-1 px-3 py-2 rounded-lg border border-warm-300 text-sm"
+                className="flex-1 px-3 py-2 rounded-lg border border-default text-sm"
               />
-              <span className="text-sm text-warm-600 shrink-0">원</span>
+              <span className="text-sm text-secondary shrink-0">원</span>
             </div>
             {/* 날짜: 연도 + 월 드롭다운 */}
             <div className="flex gap-2">
@@ -242,7 +242,7 @@ export default function ProfileCollectionFlow({ onComplete, onAnalysisReady, onC
                 aria-label="목표 연도"
                 value={deadlineYearInput}
                 onChange={(e) => handleDeadlineYearChange(e.target.value)}
-                className="flex-1 px-3 py-2 rounded-lg border border-warm-300 text-sm bg-white"
+                className="flex-1 px-3 py-2 rounded-lg border border-default text-sm bg-[var(--input-bg)] text-primary"
               >
                 <option value="">연도</option>
                 {yearOptions.map((y) => (
@@ -253,7 +253,7 @@ export default function ProfileCollectionFlow({ onComplete, onAnalysisReady, onC
                 aria-label="목표 월"
                 value={deadlineMonthInput}
                 onChange={(e) => handleDeadlineMonthChange(e.target.value)}
-                className="flex-1 px-3 py-2 rounded-lg border border-warm-300 text-sm bg-white"
+                className="flex-1 px-3 py-2 rounded-lg border border-default text-sm bg-[var(--input-bg)] text-primary"
               >
                 <option value="">월</option>
                 {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
@@ -264,7 +264,7 @@ export default function ProfileCollectionFlow({ onComplete, onAnalysisReady, onC
           </div>
         )}
         <div>
-          <p className="text-sm font-medium text-warm-800 mb-2">가장 큰 재무 고민 (선택)</p>
+          <p className="text-sm font-medium text-primary mb-2">가장 큰 재무 고민 (선택)</p>
           <ChipGroup
             options={PRIMARY_CONCERN_OPTIONS}
             value={primaryConcern ?? ''}
@@ -277,7 +277,7 @@ export default function ProfileCollectionFlow({ onComplete, onAnalysisReady, onC
         <button
           type="button"
           onClick={() => handleStep2Submit(true)}
-          className="flex-1 py-2.5 rounded-xl border border-warm-300 text-warm-600 text-sm"
+          className="flex-1 py-2.5 rounded-xl border border-default text-secondary text-sm"
         >
           건너뛰기
         </button>
