@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, LabelList } from 'recharts'
 import type { ComparisonResponse, PeriodTotal } from '../../types'
+import { formatCompact, formatChange } from '../../utils/format'
 import SectionHeader from './SectionHeader'
 
 type MonthlyComparisonProps = {
@@ -86,17 +87,6 @@ function TrendBarChart({
   )
 }
 
-function formatCompact(amount: number): string {
-  const abs = Math.abs(amount)
-  if (abs >= 100_000_000) return `${(abs / 100_000_000).toFixed(1)}억원`
-  if (abs >= 10_000) return `${Math.round(abs / 10_000).toLocaleString()}만원`
-  return `${abs.toLocaleString('ko-KR')}원`
-}
-
-function formatChange(amount: number): string {
-  const sign = amount >= 0 ? '+' : '-'
-  return `${sign}${formatCompact(Math.abs(amount))}`
-}
 
 type ComparisonRowProps = {
   label: string

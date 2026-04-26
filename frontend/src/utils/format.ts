@@ -66,6 +66,27 @@ export function formatKoreanAmount(amount: number): string {
   return `${prefix}${man.toLocaleString('ko-KR')}만원`
 }
 
+/**
+ * 금액을 부호 없이 축약 포맷 (억/만원/원)
+ * 예: 50_000 → "5만원", 200_000_000 → "2.0억원", 9_000 → "9,000원"
+ * 음수는 절댓값으로 처리 — 부호 표시가 필요하면 formatChange 사용
+ */
+export function formatCompact(amount: number): string {
+  const abs = Math.abs(amount)
+  if (abs >= 100_000_000) return `${(abs / 100_000_000).toFixed(1)}억원`
+  if (abs >= 10_000) return `${Math.round(abs / 10_000).toLocaleString()}만원`
+  return `${abs.toLocaleString('ko-KR')}원`
+}
+
+/**
+ * 금액 변화를 +/- 부호 포함 축약 포맷
+ * 예: 50_000 → "+5만원", -30_000 → "-3만원"
+ */
+export function formatChange(amount: number): string {
+  const sign = amount >= 0 ? '+' : '-'
+  return `${sign}${formatCompact(Math.abs(amount))}`
+}
+
 /** 금액을 축약 형태로 포맷 (캘린더 셀용) */
 export function formatCompactAmount(amount: number): string {
   if (amount < 10000) {
