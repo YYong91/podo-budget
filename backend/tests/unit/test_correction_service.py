@@ -175,6 +175,60 @@ async def test_find_similar_corrections_returns_top_matches(db_session, test_hou
 
 
 @pytest.mark.asyncio
+async def test_save_correction_upserts_on_high_similarity(db_session, test_household):
+    """유사도 0.9 이상인 기존 정정이 있으면 새 행 추가 대신 기존 행을 갱신한다"""
+    from unittest.mock import AsyncMock, patch
+
+    food_cat = Category(name="식비", household_id=None, user_id=None)
+    cafe_cat = Category(name="카페/음료", household_id=None, user_id=None)
+    db_session.add_all([food_cat, cafe_cat])
+    await db_session.flush()
+
+    base_vector = [1.0, 0.0] + [0.0] * 1534  # "스타벅스 베이글" 벡터
+
+    # 1차 저장: 스타벅스 베이글 → 식비
+    with patch("app.services.correction_service.get_embedding", new=AsyncMock(return_value=base_vector)):
+        first = await save_correction(db_session, "스타벅스 베이글", food_cat.id, test_household.id)
+    assert first is not None
+    first_id = first.id
+
+    # 거의 동일한 벡터 (단어 순서만 다른 "베이글 스타벅스")
+    similar_vector = [0.99, 0.01] + [0.0] * 1534
+
+    # 2차 저장: 베이글 스타벅스 → 카페/음료 (upsert 기대)
+    with patch("app.services.correction_service.get_embedding", new=AsyncMock(return_value=similar_vector)):
+        second = await save_correction(db_session, "베이글 스타벅스", cafe_cat.id, test_household.id)
+
+    assert second is not None
+    assert second.id == first_id  # 새 행이 아닌 기존 행 갱신
+    assert second.category_id == cafe_cat.id  # 카테고리가 최신 의도로 변경됨
+    assert second.input_text == "베이글 스타벅스"  # 텍스트도 최신으로
+
+
+@pytest.mark.asyncio
+async def test_save_correction_inserts_when_not_similar(db_session, test_household):
+    """유사도 0.9 미만인 경우 기존 행 갱신 없이 새 행으로 추가된다"""
+    from unittest.mock import AsyncMock, patch
+
+    food_cat = Category(name="식비", household_id=None, user_id=None)
+    transport_cat = Category(name="교통", household_id=None, user_id=None)
+    db_session.add_all([food_cat, transport_cat])
+    await db_session.flush()
+
+    food_vector = [1.0, 0.0] + [0.0] * 1534
+    transport_vector = [0.0, 1.0] + [0.0] * 1534  # 직교 → 유사도 0.0
+
+    with patch("app.services.correction_service.get_embedding", new=AsyncMock(return_value=food_vector)):
+        first = await save_correction(db_session, "편의점 도시락", food_cat.id, test_household.id)
+
+    with patch("app.services.correction_service.get_embedding", new=AsyncMock(return_value=transport_vector)):
+        second = await save_correction(db_session, "버스 정기권", transport_cat.id, test_household.id)
+
+    assert second is not None
+    assert second.id != first.id  # 별도 행으로 추가됨
+
+
+@pytest.mark.asyncio
 async def test_find_similar_corrections_no_embeddings_returns_empty(db_session, test_household):
     """임베딩 없는 정정 데이터만 있을 때 빈 리스트 반환"""
     from unittest.mock import AsyncMock, patch
