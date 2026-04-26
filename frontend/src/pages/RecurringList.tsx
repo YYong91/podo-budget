@@ -179,7 +179,7 @@ function RecurringCard({
               </button>
               <button
                 onClick={() => { onMenuOpen(null); onDeleteRequest(r.id) }}
-                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-rose-500 hover:bg-rose-50"
+                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-rose-500 hover:bg-rose-500/10"
               >
                 <Trash2 className="w-4 h-4" />
                 삭제
