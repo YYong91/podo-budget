@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
-import { formatAmount, formatCompactAmount } from '../../utils/format'
+import { formatAmount, formatCompact } from '../../utils/format'
 import type { FinancialScore } from '../../types'
 import FinancialHealthScore from './FinancialHealthScore'
 
@@ -23,10 +23,10 @@ type HeroSummaryProps = {
   className?: string
 }
 
-/** 금액 축약 포맷 (₩ 접두사 포함) */
+/** 금액 축약 포맷 (₩ 접두사 포함) — 0원 특수 처리 후 formatCompact 위임 */
 function formatWon(amount: number): string {
   if (amount === 0) return '₩0'
-  return `₩${formatCompactAmount(amount)}`
+  return `₩${formatCompact(amount)}`
 }
 
 // ─── 상태 분류 ───

@@ -6,6 +6,7 @@
 
 import { Link } from 'react-router-dom'
 import { FEATURES } from '../../config/features'
+import { formatAmount, formatCompact } from '../../utils/format'
 
 type UnifiedSummaryCardsProps = {
   incomeTotal: number
@@ -13,19 +14,6 @@ type UnifiedSummaryCardsProps = {
   /** 저축성 지출 합계 (적금, 투자, 보험 등). 제공 시 저축률 = savingsTotal / incomeTotal */
   savingsTotal?: number
   netWorth?: number | null
-}
-
-function formatAmount(amount: number): string {
-  const abs = Math.abs(amount)
-  const formatted = `₩${abs.toLocaleString('ko-KR')}`
-  return amount < 0 ? `-${formatted}` : formatted
-}
-
-function formatLargeAmount(amount: number): string {
-  const abs = Math.abs(amount)
-  if (abs >= 100000000) return `${(amount / 100000000).toFixed(1)}억원`
-  if (abs >= 10000) return `${Math.round(amount / 10000).toLocaleString()}만원`
-  return formatAmount(amount)
 }
 
 export default function UnifiedSummaryCards({
@@ -61,7 +49,7 @@ export default function UnifiedSummaryCards({
       {FEATURES.assets && netWorth != null && (
         <Link to="/assets" className={`col-span-2 lg:col-span-4 bg-gradient-to-br from-warm-50 to-warm-100 border border-[var(--border-default)] ${cardBase} text-center`}>
           <p className="text-sm text-[var(--text-tertiary)] mb-0.5">순자산</p>
-          <p className="text-xl sm:text-2xl font-bold text-[var(--text-primary)]">{formatLargeAmount(netWorth)}</p>
+          <p className="text-xl sm:text-2xl font-bold text-[var(--text-primary)]">{formatCompact(netWorth)}</p>
         </Link>
       )}
 
