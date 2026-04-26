@@ -298,3 +298,45 @@ async def test_search_incomes_no_match(authenticated_client, test_user: User, te
     response = await authenticated_client.get("/api/income?query=급여")
     assert response.status_code == 200
     assert response.json() == []
+
+
+@pytest.mark.asyncio
+async def test_update_income_category_saves_correction(
+    authenticated_client,
+    test_household,
+    test_user,
+    db_session,
+):
+    """수입 카테고리 수정 시 정정 신호가 저장된다"""
+    from sqlalchemy import select
+
+    from app.models.category import Category
+    from app.models.category_correction import CategoryCorrection
+
+    salary_cat = Category(name="급여", household_id=None, user_id=None)
+    db_session.add(salary_cat)
+    await db_session.flush()
+
+    create_resp = await authenticated_client.post(
+        "/api/income",
+        json={
+            "description": "이번 달 월급",
+            "amount": 3500000,
+            "date": "2026-04-26",
+            "household_id": test_household.id,
+            "category_id": None,
+        },
+    )
+    assert create_resp.status_code == 201
+    income_id = create_resp.json()["id"]
+
+    await authenticated_client.put(
+        f"/api/income/{income_id}",
+        json={"category_id": salary_cat.id},
+    )
+
+    result = await db_session.execute(select(CategoryCorrection).where(CategoryCorrection.household_id == test_household.id))
+    corrections = result.scalars().all()
+    assert len(corrections) == 1
+    assert corrections[0].input_text == "이번 달 월급"
+    assert corrections[0].source == "edit"

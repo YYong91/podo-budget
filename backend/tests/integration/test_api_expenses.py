@@ -501,3 +501,91 @@ async def test_search_summary_expenses_no_query(authenticated_client, test_user:
     data = response.json()
     assert data["total_count"] == 1
     assert data["total_amount"] == 10000.0
+
+
+@pytest.mark.asyncio
+async def test_update_expense_category_saves_correction(
+    authenticated_client,
+    test_household,
+    test_user,
+    db_session,
+):
+    """카테고리 수정 시 정정 신호가 저장된다"""
+    from sqlalchemy import select
+
+    from app.models.category_correction import CategoryCorrection
+
+    # 지출 생성
+    create_resp = await authenticated_client.post(
+        "/api/expenses",
+        json={
+            "description": "쿠팡 우유",
+            "amount": 3500,
+            "date": "2026-04-26",
+            "household_id": test_household.id,
+            "category_id": None,
+        },
+    )
+    assert create_resp.status_code == 201
+    expense_id = create_resp.json()["id"]
+
+    # 카테고리 추가 (식비 카테고리 먼저 생성)
+    from app.models.category import Category
+
+    food_cat = Category(name="식비", household_id=None, user_id=None)
+    db_session.add(food_cat)
+    await db_session.flush()
+
+    # 카테고리 수정 → 정정 신호 발생
+    update_resp = await authenticated_client.put(
+        f"/api/expenses/{expense_id}",
+        json={"category_id": food_cat.id},
+    )
+    assert update_resp.status_code == 200
+
+    # 정정 레코드 확인
+    result = await db_session.execute(select(CategoryCorrection).where(CategoryCorrection.household_id == test_household.id))
+    corrections = result.scalars().all()
+    assert len(corrections) == 1
+    assert corrections[0].input_text == "쿠팡 우유"
+    assert corrections[0].category_id == food_cat.id
+    assert corrections[0].source == "edit"
+
+
+@pytest.mark.asyncio
+async def test_update_expense_same_category_no_correction(
+    authenticated_client,
+    test_household,
+    test_user,
+    db_session,
+):
+    """카테고리 변경 없이 수정 시 정정 신호가 저장되지 않는다"""
+    from sqlalchemy import select
+
+    from app.models.category import Category
+    from app.models.category_correction import CategoryCorrection
+
+    food_cat = Category(name="식비", household_id=None, user_id=None)
+    db_session.add(food_cat)
+    await db_session.flush()
+
+    create_resp = await authenticated_client.post(
+        "/api/expenses",
+        json={
+            "description": "편의점 도시락",
+            "amount": 5000,
+            "date": "2026-04-26",
+            "household_id": test_household.id,
+            "category_id": food_cat.id,
+        },
+    )
+    expense_id = create_resp.json()["id"]
+
+    # 같은 카테고리로 수정
+    await authenticated_client.put(
+        f"/api/expenses/{expense_id}",
+        json={"category_id": food_cat.id},
+    )
+
+    result = await db_session.execute(select(CategoryCorrection).where(CategoryCorrection.household_id == test_household.id))
+    assert len(result.scalars().all()) == 0
