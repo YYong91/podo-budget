@@ -32,7 +32,7 @@ function IncomeFlowBar({
     const total = savingsPct + fixedPct + variablePct || 1
     return (
       <div data-testid="income-flow-bar" className="space-y-1">
-        <div className="flex h-2 rounded-full overflow-hidden w-full">
+        <div className="flex h-1.5 rounded-full overflow-hidden w-full">
           <div className="bg-leaf-500 transition-all" style={{ width: `${(savingsPct / total) * 100}%` }} />
           <div className="bg-amber-400 transition-all" style={{ width: `${(fixedPct / total) * 100}%` }} />
           <div className="bg-grape-400 transition-all" style={{ width: `${(variablePct / total) * 100}%` }} />
@@ -45,7 +45,7 @@ function IncomeFlowBar({
   }
 
   return (
-    <div data-testid="income-flow-bar" className="flex h-2 rounded-full overflow-hidden w-full">
+    <div data-testid="income-flow-bar" className="flex h-1.5 rounded-full overflow-hidden w-full">
       <div className="bg-leaf-500 transition-all" style={{ width: `${savingsPct}%` }} />
       <div className="bg-amber-400 transition-all" style={{ width: `${fixedPct}%` }} />
       <div className="bg-grape-400 transition-all" style={{ width: `${variablePct}%` }} />
