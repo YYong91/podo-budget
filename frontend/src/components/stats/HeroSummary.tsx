@@ -214,7 +214,7 @@ function ProgressBar({
         {hasProjected && (
           <div
             className={`absolute top-0 h-full rounded-r-full ${
-              state.type === 'projectedExceed' ? 'bg-warm-300 dark:bg-warm-400' : 'bg-grape-200 dark:bg-grape-300'
+              state.type === 'projectedExceed' ? 'bg-amber-200 dark:bg-amber-300' : 'bg-grape-200 dark:bg-grape-300'
             } transition-all duration-700 ease-out`}
             style={{
               left: `${(animActual / totalBarMax) * 100}%`,
@@ -269,7 +269,7 @@ function ProgressBar({
               예정 {formatWon(pendingRecurringExpense)}
             </span>
             <span className="text-[var(--text-muted)]">·</span>
-            <span className="text-warm-600 dark:text-warm-400 font-medium">
+            <span className="text-amber-600 dark:text-amber-400 font-medium">
               {formatWon(state.overflowAmount)} 초과 예상 ⚠️
             </span>
           </>
