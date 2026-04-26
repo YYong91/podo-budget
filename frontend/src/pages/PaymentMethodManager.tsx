@@ -307,7 +307,7 @@ export default function PaymentMethodManager() {
                         <span className="text-sm font-semibold text-[var(--text-primary)]">{method.name}</span>
                         <span className="text-xs text-[var(--text-muted)]">{TYPE_LABELS[method.type]}</span>
                         {method.is_system && (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-warm-100 text-[var(--text-muted)]">기본</span>
+                          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[var(--surface-elevated)] text-[var(--text-muted)]">기본</span>
                         )}
                       </div>
                     </div>
@@ -538,7 +538,7 @@ export default function PaymentMethodManager() {
       {!loading && !showForm && (
         <button
           onClick={() => setShowForm(true)}
-          className="w-full flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium text-grape-600 bg-[var(--surface-card)] border border-dashed border-grape-300 rounded-2xl hover:bg-grape-50 transition-colors"
+          className="w-full flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium text-grape-600 bg-[var(--surface-card)] border border-dashed border-grape-300 rounded-2xl hover:bg-[var(--surface-hover)] transition-colors"
         >
           <Plus className="w-4 h-4" />
           결제수단 추가

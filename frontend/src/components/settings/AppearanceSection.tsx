@@ -32,7 +32,7 @@ export default function AppearanceSection() {
                 onClick={() => setMode(opt.value)}
                 className={`w-full flex items-center gap-4 px-4 py-3.5 rounded-xl transition-colors ${
                   isSelected
-                    ? 'bg-grape-50 border-2 border-grape-500'
+                    ? 'bg-grape-500/10 border-2 border-grape-500'
                     : 'bg-[var(--surface-elevated)] border-2 border-transparent hover:border-[var(--border-default)]'
                 }`}
               >

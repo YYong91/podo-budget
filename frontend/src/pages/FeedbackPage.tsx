@@ -16,9 +16,9 @@ import { trackEvent } from '../utils/analytics'
 import { useAuth } from '../contexts/AuthContext'
 
 const SOURCE_LABELS: Record<FeedbackSource, { text: string; className: string }> = {
-  web: { text: '웹', className: 'bg-blue-50 text-blue-600' },
-  telegram: { text: 'TG', className: 'bg-sky-50 text-sky-600' },
-  kakao: { text: '카톡', className: 'bg-yellow-50 text-yellow-700' },
+  web: { text: '웹', className: 'bg-[var(--surface-elevated)] text-[var(--text-secondary)]' },
+  telegram: { text: 'TG', className: 'bg-grape-500/10 text-grape-600' },
+  kakao: { text: '카톡', className: 'bg-amber-500/10 text-amber-700' },
 }
 
 const STATUS_LABELS: Record<FeedbackStatus, { text: string; className: string }> = {
@@ -99,9 +99,13 @@ export default function FeedbackPage() {
   if (error) {
     return (
       <div className="space-y-6">
-        <button onClick={goBack} aria-label="뒤로가기" className="text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] inline-block">
-          <ArrowLeft className="w-5 h-5" />
-        </button>
+        <div className="flex items-center gap-3">
+          <button onClick={goBack} aria-label="뒤로가기" className="p-2.5 -ml-2.5 rounded-lg hover:bg-[var(--surface-hover)] transition-colors">
+            <ArrowLeft className="w-5 h-5 text-[var(--text-secondary)]" />
+          </button>
+          <MessageSquarePlus className="w-5 h-5 text-grape-500" />
+          <h1 className="text-lg font-semibold text-[var(--text-primary)]">피드백</h1>
+        </div>
         <ErrorState onRetry={loadData} />
       </div>
     )
@@ -109,9 +113,13 @@ export default function FeedbackPage() {
 
   return (
     <div className="space-y-6">
-      <button onClick={goBack} aria-label="뒤로가기" className="text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] inline-block">
-        <ArrowLeft className="w-5 h-5" />
-      </button>
+      <div className="flex items-center gap-3">
+        <button onClick={goBack} aria-label="뒤로가기" className="p-2.5 -ml-2.5 rounded-lg hover:bg-[var(--surface-hover)] transition-colors">
+          <ArrowLeft className="w-5 h-5 text-[var(--text-secondary)]" />
+        </button>
+        <MessageSquarePlus className="w-5 h-5 text-grape-500" />
+        <h1 className="text-lg font-semibold text-[var(--text-primary)]">피드백</h1>
+      </div>
 
       {/* 제출 폼 */}
       <form onSubmit={handleSubmit} className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] p-6 space-y-4">
@@ -136,7 +144,7 @@ export default function FeedbackPage() {
             onClick={() => setType('bug')}
             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
               type === 'bug'
-                ? 'bg-red-600 text-white'
+                ? 'bg-rose-600 text-white'
                 : 'bg-[var(--surface-hover)] text-[var(--text-secondary)] hover:bg-[var(--surface-hover)]'
             }`}
           >
@@ -152,7 +160,7 @@ export default function FeedbackPage() {
           onChange={(e) => setTitle(e.target.value)}
           placeholder="제목"
           maxLength={200}
-          className="w-full px-4 py-2.5 rounded-xl border border-[var(--border-default)] text-sm focus:outline-none focus:ring-2 focus:ring-grape-300 focus:border-grape-300"
+          className="w-full px-4 py-2.5 rounded-xl border border-[var(--input-border)] text-sm focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
         />
 
         {/* 내용 */}
@@ -162,7 +170,7 @@ export default function FeedbackPage() {
           placeholder="자세한 내용을 적어주세요"
           rows={4}
           maxLength={5000}
-          className="w-full px-4 py-2.5 rounded-xl border border-[var(--border-default)] text-sm focus:outline-none focus:ring-2 focus:ring-grape-300 focus:border-grape-300 resize-none"
+          className="w-full px-4 py-2.5 rounded-xl border border-[var(--input-border)] text-sm focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500 resize-none"
         />
 
         <button
@@ -235,7 +243,7 @@ function FeedbackCard({
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-2 flex-1 min-w-0">
           <span className={`flex-shrink-0 text-xs px-2 py-0.5 rounded-full font-medium ${
-            isFeature ? 'bg-grape-50 text-grape-600' : 'bg-red-100 text-red-600'
+            isFeature ? 'bg-grape-500/10 text-grape-600' : 'bg-rose-500/10 text-rose-600'
           }`}>
             {isFeature ? '기능' : '버그'}
           </span>
