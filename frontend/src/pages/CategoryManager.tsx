@@ -304,7 +304,7 @@ export default function CategoryManager() {
       {/* 추가 폼 */}
       {isAdding && (
         <div className="bg-[var(--surface-elevated)] rounded-2xl border border-[var(--border-default)] p-4 space-y-3">
-          <div className="flex items-start gap-3">
+          <div className="grid grid-cols-[3.5rem_1fr] gap-3 items-start">
             <input
               type="text"
               value={newEmoji}
@@ -312,10 +312,10 @@ export default function CategoryManager() {
                 const val = e.target.value
                 if (val.length <= 2) setNewEmoji(val || '📌')
               }}
-              className="input-base w-14 text-center text-xl p-2 flex-shrink-0"
+              className="input-base text-center text-xl p-2"
               maxLength={2}
             />
-            <div className="flex-1 min-w-0 space-y-2 overflow-hidden">
+            <div className="space-y-2">
               <input
                 type="text"
                 value={newName}
@@ -389,7 +389,7 @@ export default function CategoryManager() {
                 {isEditing ? (
                   /* 인라인 편집 폼 */
                   <div className="px-4 py-4 space-y-3">
-                    <div className="flex items-start gap-3">
+                    <div className="grid grid-cols-[3.5rem_1fr] gap-3 items-start">
                       <input
                         type="text"
                         value={editForm.emoji}
@@ -397,10 +397,10 @@ export default function CategoryManager() {
                           const val = e.target.value
                           if (val.length <= 2) setEditForm({ ...editForm, emoji: val || '📌' })
                         }}
-                        className="input-base w-14 text-center text-xl p-2 flex-shrink-0"
+                        className="input-base text-center text-xl p-2"
                         maxLength={2}
                       />
-                      <div className="flex-1 min-w-0 space-y-2 overflow-hidden">
+                      <div className="space-y-2">
                         <input
                           type="text"
                           value={editForm.name}
