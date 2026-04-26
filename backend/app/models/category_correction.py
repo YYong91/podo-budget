@@ -4,7 +4,7 @@
 Phase 2에서 임베딩을 추가하여 RAG 기반 유사 사례 검색에 활용합니다.
 """
 
-from sqlalchemy import Column, DateTime, ForeignKey, Integer, String
+from sqlalchemy import JSON, Column, DateTime, ForeignKey, Integer, String
 from sqlalchemy.sql import func
 
 from app.core.database import Base
@@ -41,4 +41,5 @@ class CategoryCorrection(Base):  # type: ignore[misc]
         index=True,
     )
     source = Column(String, nullable=False, default="edit")
+    embedding = Column(JSON, nullable=True)  # list[float] — Phase 2에서 채워짐
     created_at = Column(DateTime, default=func.now(), server_default=func.now(), nullable=False)
