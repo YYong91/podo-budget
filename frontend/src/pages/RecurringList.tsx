@@ -9,7 +9,7 @@ import { useGoBack } from '../hooks/useGoBack'
 import {
   ArrowLeft, Plus, Pencil, Trash2,
   ToggleLeft, ToggleRight, PlusCircle,
-  MoreVertical, Loader2, Check, ChevronDown, Repeat,
+  MoreVertical, Loader2, Check, Repeat,
 } from 'lucide-react'
 import { useToast } from '../hooks/useToast'
 import { TOAST } from '../constants/toastMessages'
@@ -89,7 +89,6 @@ interface RecurringCardProps {
   togglingIds: Set<number>
   executingIds: Set<number>
   executedIds: Set<number>
-  showExecute: boolean
   onToggle: (r: RecurringTransaction) => void
   onMenuOpen: (id: number | null) => void
   onEdit: (r: RecurringTransaction) => void
@@ -100,14 +99,15 @@ interface RecurringCardProps {
 }
 
 function RecurringCard({
-  r, openMenuId, deletingId, togglingIds, executingIds, executedIds, showExecute,
-  onToggle, onMenuOpen, onEdit, onDeleteRequest, onDeleteConfirm, onDeleteCancel, onExecute,
+  r, openMenuId, deletingId, togglingIds, executingIds, executedIds,
+  onToggle, onMenuOpen, onEdit, onDeleteRequest, onDeleteCancel, onDeleteConfirm, onExecute,
 }: RecurringCardProps) {
   const { text: dueText, isUrgent } = formatDueDate(r.next_due_date)
   const secondaryInfo = [r.category_name, r.payment_method_name].filter(Boolean).join(' · ')
 
   return (
-    <div>
+    /* 비활성 카드는 제자리에서 흐려짐 — 섹션 이동 없이 상태만 변경 */
+    <div className={!r.is_active ? 'opacity-60' : ''}>
       <div className="p-4 flex items-center gap-3">
         {/* 이모지 */}
         <div className="w-10 h-10 rounded-xl bg-[var(--surface-elevated)] flex items-center justify-center shrink-0 text-xl">
@@ -115,7 +115,14 @@ function RecurringCard({
         </div>
         {/* 설명 + 2차 정보 */}
         <div className="flex-1 min-w-0">
-          <p className="font-medium text-[var(--text-primary)] truncate">{r.description}</p>
+          <div className="flex items-center gap-2">
+            <p className="font-medium text-[var(--text-primary)] truncate">{r.description}</p>
+            {!r.is_active && (
+              <span className="shrink-0 text-[10px] px-1.5 py-0.5 rounded-md bg-[var(--surface-elevated)] text-[var(--text-muted)]">
+                일시정지
+              </span>
+            )}
+          </div>
           <p className="text-xs text-[var(--text-tertiary)] mt-0.5 truncate">
             {secondaryInfo || '카테고리 없음'}
           </p>
@@ -160,7 +167,7 @@ function RecurringCard({
             </button>
             {openMenuId === r.id && (
               <div className="absolute right-0 top-8 z-10 bg-[var(--surface-card)] rounded-xl shadow-lg border border-[var(--border-default)] py-1 min-w-36">
-                {showExecute && (
+                {r.is_active && (
                   <button
                     onClick={() => onExecute(r)}
                     className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[var(--text-secondary)] hover:bg-[var(--surface-hover)]"
@@ -237,7 +244,8 @@ export default function RecurringList() {
   const [togglingIds, setTogglingIds] = useState<Set<number>>(new Set())
   const [executingIds, setExecutingIds] = useState<Set<number>>(new Set())
   const [executedIds, setExecutedIds] = useState<Set<number>>(new Set())
-  const [showInactive, setShowInactive] = useState(false)
+  /* 비활성 항목 표시 여부 — 기본 보임 (제자리에서 흐려지는 방식이므로 숨기는 게 명시적 선택) */
+  const [showInactive, setShowInactive] = useState(true)
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([])
 
   /* 데이터 로드 */
@@ -419,13 +427,12 @@ export default function RecurringList() {
     }
   }
 
-  /* 렌더링 직전 활성/비활성 분리 + 날짜 기준 정렬
-   * next_due_date(YYYY-MM-DD) 기준 정렬: day_of_month는 monthly 외 weekly/custom에서 null이므로 부정확 */
-  const activeItems = items
-    .filter((r) => r.is_active)
-    .sort((a, b) => a.next_due_date.localeCompare(b.next_due_date))
-  const inactiveItems = items
-    .filter((r) => !r.is_active)
+  /* 렌더링 직전 정렬 + 필터
+   * next_due_date(YYYY-MM-DD) 기준 정렬: day_of_month는 monthly 외 weekly/custom에서 null이므로 부정확
+   * 비활성 항목은 제자리에서 흐려지는 방식 — 섹션 분리 없이 통합 목록 */
+  const inactiveCount = items.filter((r) => !r.is_active).length
+  const visibleItems = items
+    .filter((r) => r.is_active || showInactive)
     .sort((a, b) => a.next_due_date.localeCompare(b.next_due_date))
 
   if (error) {
@@ -510,52 +517,28 @@ export default function RecurringList() {
         </div>
       ) : (
         <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)]/60 overflow-hidden">
-          {/* 활성 정기거래 */}
-          {activeItems.length === 0 ? (
-            <div className="p-8 text-center text-sm text-[var(--text-tertiary)]">
-              활성 정기거래가 없습니다
-            </div>
-          ) : (
-            <div className="divide-y divide-[var(--border-subtle)]">
-              {activeItems.map((r) => (
-                <RecurringCard
-                  key={r.id} r={r} openMenuId={openMenuId} deletingId={deletingId}
-                  togglingIds={togglingIds} executingIds={executingIds} executedIds={executedIds}
-                  showExecute={true}
-                  onToggle={handleToggle} onMenuOpen={setOpenMenuId} onEdit={openEdit}
-                  onDeleteRequest={setDeletingId} onDeleteConfirm={handleDelete}
-                  onDeleteCancel={() => setDeletingId(null)} onExecute={handleExecute}
-                />
-              ))}
-            </div>
-          )}
+          {/* 통합 목록 — 활성/비활성 모두 날짜순, 비활성은 제자리에서 흐려짐 */}
+          <div className="divide-y divide-[var(--border-subtle)]">
+            {visibleItems.map((r) => (
+              <RecurringCard
+                key={r.id} r={r} openMenuId={openMenuId} deletingId={deletingId}
+                togglingIds={togglingIds} executingIds={executingIds} executedIds={executedIds}
+                onToggle={handleToggle} onMenuOpen={setOpenMenuId} onEdit={openEdit}
+                onDeleteRequest={setDeletingId} onDeleteConfirm={handleDelete}
+                onDeleteCancel={() => setDeletingId(null)} onExecute={handleExecute}
+              />
+            ))}
+          </div>
 
-          {/* 비활성(일시정지) 정기거래 — 접기/펼치기 */}
-          {inactiveItems.length > 0 && (
-            <div className="border-t border-[var(--border-subtle)]">
-              <button
-                onClick={() => setShowInactive(!showInactive)}
-                className="w-full flex items-center justify-between px-4 py-3 text-sm text-[var(--text-tertiary)] hover:bg-[var(--surface-hover)] transition-colors"
-                data-testid="inactive-toggle"
-              >
-                <span>일시정지 {inactiveItems.length}건</span>
-                <ChevronDown className={`w-4 h-4 transition-transform ${showInactive ? 'rotate-180' : ''}`} />
-              </button>
-              {showInactive && (
-                <div className="divide-y divide-[var(--border-subtle)] opacity-60">
-                  {inactiveItems.map((r) => (
-                    <RecurringCard
-                      key={r.id} r={r} openMenuId={openMenuId} deletingId={deletingId}
-                      togglingIds={togglingIds} executingIds={executingIds} executedIds={executedIds}
-                      showExecute={false}
-                      onToggle={handleToggle} onMenuOpen={setOpenMenuId} onEdit={openEdit}
-                      onDeleteRequest={setDeletingId} onDeleteConfirm={handleDelete}
-                      onDeleteCancel={() => setDeletingId(null)} onExecute={handleExecute}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
+          {/* 일시정지 항목 숨기기/보기 — 항목이 있을 때만 표시 */}
+          {inactiveCount > 0 && (
+            <button
+              onClick={() => setShowInactive(!showInactive)}
+              className="w-full px-4 py-3 text-sm text-[var(--text-tertiary)] hover:bg-[var(--surface-hover)] transition-colors border-t border-[var(--border-subtle)]"
+              data-testid="inactive-toggle"
+            >
+              일시정지 {inactiveCount}개 {showInactive ? '숨기기' : '보기'}
+            </button>
           )}
         </div>
       )}
