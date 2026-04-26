@@ -318,12 +318,12 @@ export default function BudgetManager() {
   /**
    * 프로그레스바 색상 결정
    * - 초과: rose-500
-   * - 경고 (80% 이상): yellow-500
+   * - 경고 (80% 이상): amber-500
    * - 정상: leaf-500
    */
   const getProgressColor = (usagePct: number, isExceeded: boolean): string => {
     if (isExceeded || usagePct >= 100) return 'bg-rose-500'
-    if (usagePct >= 80) return 'bg-yellow-500'
+    if (usagePct >= 80) return 'bg-amber-500'
     return 'bg-leaf-500'
   }
 
@@ -452,7 +452,7 @@ export default function BudgetManager() {
                     </span>
                     {alert && (
                       <span className={`text-xs font-semibold tabular-nums shrink-0 ${
-                        alert.is_exceeded ? 'text-rose-600' : alert.is_warning ? 'text-yellow-600' : 'text-leaf-600'
+                        alert.is_exceeded ? 'text-rose-600' : alert.is_warning ? 'text-amber-600' : 'text-leaf-600'
                       }`}>
                         {alert.usage_percentage.toFixed(0)}%
                       </span>
