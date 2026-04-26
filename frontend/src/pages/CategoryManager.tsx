@@ -6,7 +6,7 @@
 
 import { useEffect, useState } from 'react'
 import { useGoBack } from '../hooks/useGoBack'
-import { ArrowLeft, Lock, Plus, Tags } from 'lucide-react'
+import { ArrowLeft, Lock, Pencil, Plus, Tags, Trash2 } from 'lucide-react'
 import { useToast } from '../hooks/useToast'
 import { TOAST } from '../constants/toastMessages'
 import { categoryApi } from '../api/categories'
@@ -196,6 +196,7 @@ export default function CategoryManager() {
       fetchCategories()
     } catch {
       addToast('error', TOAST.DELETE_FAILED)
+      setDeleteTarget(null)  // 에러 시에도 확인 행 닫기
     }
   }
 
@@ -461,21 +462,45 @@ export default function CategoryManager() {
                         기본
                       </span>
                     ) : (
-                      <div className="flex gap-2 flex-shrink-0">
+                      <div className="flex items-center gap-1 flex-shrink-0">
                         <button
                           onClick={() => startEdit(category)}
-                          className="px-3 py-1.5 text-sm font-medium text-grape-600 bg-grape-500/10 rounded-lg hover:bg-grape-500/20 transition-colors"
+                          aria-label="수정"
+                          className="p-1.5 rounded-lg hover:bg-[var(--surface-hover)] transition-colors text-[var(--text-muted)] hover:text-grape-600"
                         >
-                          수정
+                          <Pencil className="w-4 h-4" />
                         </button>
                         <button
-                          onClick={() => setDeleteTarget(category.id)}
-                          className="px-3 py-1.5 text-sm font-medium text-rose-600 bg-rose-500/10 rounded-lg hover:bg-rose-500/20 transition-colors"
+                          onClick={() => { setDeleteTarget(category.id); setEditingId(null) }}
+                          aria-label="삭제"
+                          className="p-1.5 rounded-lg hover:bg-[var(--surface-hover)] transition-colors text-[var(--text-muted)] hover:text-rose-500"
                         >
-                          삭제
+                          <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
                     )}
+                  </div>
+                )}
+                {/* 삭제 인라인 확인 */}
+                {deleteTarget === category.id && (
+                  <div className="px-3 py-2.5 bg-rose-500/5 flex items-center justify-between border-t border-rose-200/50">
+                    <p className="text-sm text-[var(--text-secondary)]">
+                      삭제하면 연결된 거래가 '분류 안 됨'이 돼요
+                    </p>
+                    <div className="flex gap-2 flex-shrink-0">
+                      <button
+                        onClick={() => setDeleteTarget(null)}
+                        className="px-3 py-1.5 text-xs rounded-lg bg-[var(--surface-hover)] text-[var(--text-secondary)]"
+                      >
+                        취소
+                      </button>
+                      <button
+                        onClick={() => handleDelete(category.id)}
+                        className="px-3 py-1.5 text-xs rounded-lg bg-rose-500 text-white font-medium"
+                      >
+                        삭제
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
@@ -484,37 +509,6 @@ export default function CategoryManager() {
         </div>
       )}
 
-      {/* 삭제 확인 모달 */}
-      {deleteTarget !== null && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-[var(--surface-card)] rounded-2xl shadow-xl max-w-md w-full p-6">
-            <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-2">
-              카테고리 삭제
-            </h3>
-            <p className="text-[var(--text-secondary)] mb-6">
-              정말로 이 카테고리를 삭제하시겠습니까?
-              <br />
-              <span className="text-sm text-rose-600">
-                이 카테고리에 연결된 지출 내역은 '분류 안 됨' 상태가 됩니다.
-              </span>
-            </p>
-            <div className="flex gap-3 justify-end">
-              <button
-                onClick={() => setDeleteTarget(null)}
-                className="px-4 py-2 text-sm font-medium text-[var(--text-secondary)] bg-[var(--surface-hover)] rounded-lg hover:bg-[var(--surface-hover)] transition-colors"
-              >
-                취소
-              </button>
-              <button
-                onClick={() => handleDelete(deleteTarget)}
-                className="px-4 py-2 text-sm font-medium text-white bg-rose-600 rounded-lg hover:bg-rose-700 transition-colors"
-              >
-                삭제
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }

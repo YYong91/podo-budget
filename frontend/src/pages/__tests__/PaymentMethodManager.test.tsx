@@ -226,6 +226,14 @@ describe('PaymentMethodManager', () => {
       const deleteBtn = within(userItem).getByRole('button', { name: '삭제' })
       await user.click(deleteBtn)
 
+      // 인라인 확인 행이 노출되면 확인 삭제 버튼 클릭
+      await waitFor(() => {
+        expect(within(userItem).getByText(/을 삭제할까요/i)).toBeInTheDocument()
+      })
+
+      const confirmRow = within(userItem).getByText(/을 삭제할까요/i).closest('div')!
+      await user.click(within(confirmRow).getByRole('button', { name: '삭제' }))
+
       await waitFor(() => {
         expect(mockAddToast).toHaveBeenCalledWith('success', expect.stringContaining('삭제'))
       })
