@@ -55,7 +55,7 @@ interface MenuSection {
 /* ─── 단일 메뉴 아이템 렌더링 ─── */
 function SettingsMenuItem({ item, isLast }: { item: MenuItem; isLast: boolean }) {
   const Icon = item.icon
-  const className = `flex items-center gap-4 px-5 py-4 hover:bg-grape-50 transition-colors ${
+  const className = `flex items-center gap-4 px-5 py-4 hover:bg-[var(--surface-hover)] transition-colors ${
     !isLast ? 'border-b border-[var(--border-subtle)]' : ''
   }`
   const content = (
@@ -181,7 +181,7 @@ export default function SettingsPage() {
           label: '새소식',
           icon: Sparkles,
           badge: hasUnread ? (
-            <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-[var(--surface-card)]" />
+            <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-rose-500 rounded-full border-2 border-[var(--surface-card)]" />
           ) : undefined,
         },
         ...(user?.is_admin ? [{ to: '/admin', label: '관리자', icon: ShieldCheck }] : []),
