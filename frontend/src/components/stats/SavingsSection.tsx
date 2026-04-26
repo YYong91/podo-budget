@@ -87,7 +87,7 @@ export default function SavingsSection({
   return (
     <div id="section-savings" className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] p-4 sm:p-6">
       <SectionHeader
-        icon="📊"
+        icon="⚖️"
         title="지출 구성"
         manageTo="/categories"
         expanded={expanded}
