@@ -88,7 +88,7 @@ export default function CardUsageSummary({ usage }: CardUsageSummaryProps) {
                 <div className="w-full bg-[var(--border-default)] rounded-full h-1.5 overflow-hidden">
                   <div
                     className={`h-1.5 rounded-full transition-all ${
-                      pct >= 100 ? 'bg-leaf-500' : pct >= 80 ? 'bg-grape-500' : 'bg-grape-400'
+                      pct >= 100 ? 'bg-leaf-500' : pct >= 80 ? 'bg-leaf-400' : 'bg-grape-400'
                     }`}
                     style={{ width: `${Math.min(pct, 100)}%` }}
                   />
