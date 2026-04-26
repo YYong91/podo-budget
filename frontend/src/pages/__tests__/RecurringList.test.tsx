@@ -285,11 +285,7 @@ describe('RecurringList', () => {
     const user = userEvent.setup()
     renderRecurringList()
 
-    // 일시정지 섹션 버튼이 나타날 때까지 대기 후 클릭
-    await waitFor(() => screen.getByTestId('inactive-toggle'))
-    await user.click(screen.getByTestId('inactive-toggle'))
-
-    // 비활성 항목 토글 클릭
+    // 비활성 항목이 목록에 표시될 때까지 대기
     await waitFor(() => screen.getByTestId('toggle-3'))
     await user.click(screen.getByTestId('toggle-3'))
 
@@ -687,9 +683,9 @@ describe('RecurringList', () => {
       // 클릭 전: 활성 상태 (title="일시정지")
       expect(screen.getByTestId('toggle-1')).toHaveAttribute('title', '일시정지')
       await user.click(screen.getByTestId('toggle-1'))
-      // 낙관적 업데이트: 클릭 직후 활성 항목이 비활성 섹션으로 이동 → 일시정지 섹션 버튼 표시
+      // 낙관적 업데이트: 클릭 직후 카드가 제자리에서 "다시 시작" 상태로 바뀜 (섹션 이동 없음)
       await waitFor(() => {
-        expect(screen.getByTestId('inactive-toggle')).toBeInTheDocument()
+        expect(screen.getByTestId('toggle-1')).toHaveAttribute('title', '다시 시작')
       })
     })
 
@@ -709,17 +705,34 @@ describe('RecurringList', () => {
     })
   })
 
-  // ==================== 일시정지 섹션 ====================
+  // ==================== 일시정지 인라인 표시 ====================
 
-  describe('일시정지 섹션', () => {
-    it('일시정지 항목이 있으면 섹션 버튼이 표시된다', async () => {
-      // 활성 항목 + 비활성 항목을 모두 반환해야 일시정지 섹션이 나타남
+  describe('일시정지 인라인 표시', () => {
+    it('비활성 항목이 있으면 같은 목록에 흐리게 표시되고 숨기기 버튼이 나타난다', async () => {
       server.use(
         http.get('/api/recurring', () => HttpResponse.json([mockItems[0], mockItems[2]]))
       )
       renderRecurringList()
-      await waitFor(() => expect(screen.getByTestId('inactive-toggle')).toBeInTheDocument())
-      expect(screen.getByText(/일시정지/)).toBeInTheDocument()
+      // 비활성 항목도 목록에 즉시 표시됨 (섹션 이동 없음)
+      await waitFor(() => expect(screen.getByTestId('toggle-3')).toBeInTheDocument())
+      // 숨기기 버튼 표시
+      expect(screen.getByTestId('inactive-toggle')).toHaveTextContent('일시정지')
+      expect(screen.getByTestId('inactive-toggle')).toHaveTextContent('숨기기')
+    })
+
+    it('숨기기 버튼 클릭 시 비활성 항목이 목록에서 제거된다', async () => {
+      server.use(
+        http.get('/api/recurring', () => HttpResponse.json([mockItems[0], mockItems[2]]))
+      )
+      const user = userEvent.setup()
+      renderRecurringList()
+      await waitFor(() => screen.getByTestId('inactive-toggle'))
+      // 비활성 항목이 보임
+      expect(screen.getByTestId('toggle-3')).toBeInTheDocument()
+      // 숨기기 클릭
+      await user.click(screen.getByTestId('inactive-toggle'))
+      // 비활성 항목이 사라짐
+      expect(screen.queryByTestId('toggle-3')).not.toBeInTheDocument()
     })
   })
 })
