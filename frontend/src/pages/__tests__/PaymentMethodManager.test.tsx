@@ -77,11 +77,20 @@ describe('PaymentMethodManager', () => {
       })
     })
 
-    it('결제수단 추가 버튼을 표시한다', async () => {
+    it('헤더 우상단에 + 버튼을 표시한다', async () => {
       renderPage()
       await waitFor(() => {
-        expect(screen.getByText('결제수단 추가')).toBeInTheDocument()
+        expect(screen.getByRole('button', { name: '결제수단 추가' })).toBeInTheDocument()
       })
+    })
+
+    it('편집 모드에서는 + 버튼이 숨겨진다', async () => {
+      const user = userEvent.setup()
+      renderPage()
+      await waitFor(() => expect(screen.getByText('편집')).toBeInTheDocument())
+      await user.click(screen.getByText('편집'))
+      await waitFor(() => expect(screen.getByText('완료')).toBeInTheDocument())
+      expect(screen.queryByRole('button', { name: '결제수단 추가' })).not.toBeInTheDocument()
     })
   })
 
@@ -302,11 +311,10 @@ describe('PaymentMethodManager', () => {
       const user = userEvent.setup()
       renderPage()
 
-      await waitFor(() => {
-        expect(screen.getByText('결제수단 추가')).toBeInTheDocument()
-      })
-
-      await user.click(screen.getByText('결제수단 추가'))
+      await waitFor(() =>
+        expect(screen.getByRole('button', { name: '결제수단 추가' })).toBeInTheDocument()
+      )
+      await user.click(screen.getByRole('button', { name: '결제수단 추가' }))
 
       const nameInput = screen.getByPlaceholderText('결제수단 이름')
       expect(nameInput).toBeInTheDocument()
@@ -319,28 +327,41 @@ describe('PaymentMethodManager', () => {
       })
     })
 
-    it('추가 폼에서 이름만 필수이고 타입/목표는 접힘 상태이다', async () => {
+    it('+ 버튼 클릭 시 이름/유형/월목표 3개 필드가 모두 표시된다', async () => {
       const user = userEvent.setup()
       renderPage()
 
-      await waitFor(() => {
-        expect(screen.getByText('결제수단 추가')).toBeInTheDocument()
-      })
+      await waitFor(() =>
+        expect(screen.getByRole('button', { name: '결제수단 추가' })).toBeInTheDocument()
+      )
+      await user.click(screen.getByRole('button', { name: '결제수단 추가' }))
 
-      await user.click(screen.getByText('결제수단 추가'))
-
-      // 이름 필드는 보이고
+      // 3개 필드 즉시 표시 (접힘 없음)
       expect(screen.getByPlaceholderText('결제수단 이름')).toBeInTheDocument()
-
-      // 유형/목표 필드는 접힘 (안 보임)
-      expect(screen.queryByLabelText('유형')).not.toBeInTheDocument()
-      expect(screen.queryByLabelText('월 실적 목표')).not.toBeInTheDocument()
-
-      // 상세 설정 클릭 시 펼침
-      await user.click(screen.getByText('상세 설정'))
-
       expect(screen.getByLabelText('유형')).toBeInTheDocument()
       expect(screen.getByLabelText('월 실적 목표')).toBeInTheDocument()
+
+      // '상세 설정' 토글 버튼 없음
+      expect(screen.queryByText('상세 설정')).not.toBeInTheDocument()
+    })
+
+    it('폼이 열린 상태에서 + 버튼이 숨겨진다', async () => {
+      const user = userEvent.setup()
+      renderPage()
+      await waitFor(() =>
+        expect(screen.getByRole('button', { name: '결제수단 추가' })).toBeInTheDocument()
+      )
+      await user.click(screen.getByRole('button', { name: '결제수단 추가' }))
+      expect(screen.queryByRole('button', { name: '결제수단 추가' })).not.toBeInTheDocument()
+    })
+
+    it('하단 dashed 추가 버튼이 없다', async () => {
+      renderPage()
+      await waitFor(() =>
+        expect(screen.getByTestId('payment-method-1')).toBeInTheDocument()
+      )
+      // 아이콘 버튼이므로 텍스트 "결제수단 추가"는 0개여야 함
+      expect(screen.queryAllByText('결제수단 추가')).toHaveLength(0)
     })
   })
 
@@ -388,15 +409,11 @@ describe('PaymentMethodManager', () => {
       expect(screen.getByText('결제수단을 추가하면 지출 입력 시 태깅할 수 있어요')).toBeInTheDocument()
     })
 
-    it('빈 상태에서 결제수단 추가 버튼 클릭 시 추가 폼이 열린다', async () => {
+    it('빈 상태에서 EmptyState 추가 버튼 클릭 시 추가 폼이 열린다', async () => {
       const user = userEvent.setup()
       server.use(
-        http.get('/api/payment-methods', () => {
-          return HttpResponse.json([])
-        }),
-        http.get('/api/payment-methods/stats/monthly', () => {
-          return HttpResponse.json([])
-        })
+        http.get('/api/payment-methods', () => HttpResponse.json([])),
+        http.get('/api/payment-methods/stats/monthly', () => HttpResponse.json([]))
       )
 
       renderPage()
@@ -405,12 +422,10 @@ describe('PaymentMethodManager', () => {
         expect(screen.getByText('등록된 결제수단이 없습니다')).toBeInTheDocument()
       })
 
-      // EmptyState action 버튼은 여러 "결제수단 추가" 버튼 중 첫 번째 (EmptyState 내부)
-      const addButtons = screen.getAllByRole('button', { name: '결제수단 추가' })
-      expect(addButtons.length).toBeGreaterThanOrEqual(1)
-      await user.click(addButtons[0])
+      // EmptyState action 버튼은 텍스트 "결제수단 추가"를 직접 렌더링 (헤더 + 버튼은 아이콘만)
+      const textBtn = screen.getByText('결제수단 추가')
+      await user.click(textBtn)
 
-      // 추가 폼이 열린다
       expect(screen.getByPlaceholderText('결제수단 이름')).toBeInTheDocument()
     })
   })
