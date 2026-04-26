@@ -496,10 +496,10 @@ async def update_income(
     if new_category_id is not None and new_category_id != old_category_id and income.description:
         await save_correction(
             db,
-            input_text=income.description,
+            input_text=income.description,  # type: ignore[arg-type]
             category_id=new_category_id,
-            household_id=income.household_id,
-            user_id=current_user.id,
+            household_id=income.household_id,  # type: ignore[arg-type]
+            user_id=current_user.id,  # type: ignore[arg-type]
             source="edit",
         )
         await db.commit()
