@@ -3,12 +3,17 @@
 사용자가 거래 카테고리를 수정할 때 정정 신호를 저장하고 조회합니다.
 """
 
+from datetime import UTC, datetime
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.category import Category
 from app.models.category_correction import CategoryCorrection
 from app.services.embedding_service import cosine_similarity, get_embedding
+
+# 유사도 0.9 이상이면 "같은 개념의 다른 표현"으로 간주해 기존 행을 갱신
+_UPSERT_SIMILARITY_THRESHOLD = 0.9
 
 
 async def save_correction(
@@ -19,7 +24,10 @@ async def save_correction(
     user_id: int | None = None,
     source: str = "edit",
 ) -> CategoryCorrection | None:
-    """카테고리 정정 신호 저장
+    """카테고리 정정 신호 저장 (유사도 기반 upsert)
+
+    동일 개념의 다른 표현("스타벅스 베이글" / "베이글 스타벅스")은
+    별도 행 대신 기존 행을 최신 의도로 갱신해 충돌 힌트를 방지합니다.
 
     Args:
         db: DB 세션
@@ -42,6 +50,17 @@ async def save_correction(
     except Exception:
         pass  # 임베딩 실패는 무시 — 정정 신호 저장이 더 중요
 
+    # 유사도 기반 upsert: 임베딩이 있으면 기존 정정 중 매우 유사한 행을 갱신
+    if embedding is not None:
+        existing = await _find_duplicate_correction(db, embedding, household_id)
+        if existing is not None:
+            existing.category_id = category_id  # type: ignore[assignment]
+            existing.input_text = input_text.strip()  # type: ignore[assignment]
+            existing.embedding = embedding  # type: ignore[assignment]
+            existing.created_at = datetime.now(UTC).replace(tzinfo=None)  # type: ignore[assignment]
+            await db.flush()
+            return existing
+
     correction = CategoryCorrection(
         household_id=household_id,
         user_id=user_id,
@@ -53,6 +72,37 @@ async def save_correction(
     db.add(correction)
     await db.flush()
     return correction
+
+
+async def _find_duplicate_correction(
+    db: AsyncSession,
+    embedding: list[float],
+    household_id: int,
+) -> CategoryCorrection | None:
+    """유사도 0.9 이상인 기존 정정 행 탐색 (가장 유사한 1건 반환)"""
+    result = await db.execute(
+        select(CategoryCorrection)
+        .where(
+            CategoryCorrection.household_id == household_id,
+            CategoryCorrection.embedding.isnot(None),
+        )
+        .order_by(CategoryCorrection.created_at.desc())
+        .limit(500)
+    )
+    rows = result.scalars().all()
+
+    best: CategoryCorrection | None = None
+    best_sim = _UPSERT_SIMILARITY_THRESHOLD
+
+    for row in rows:
+        if not row.embedding:
+            continue
+        sim = cosine_similarity(embedding, row.embedding)  # type: ignore[arg-type]
+        if sim >= best_sim:
+            best_sim = sim
+            best = row
+
+    return best
 
 
 async def find_similar_corrections(
