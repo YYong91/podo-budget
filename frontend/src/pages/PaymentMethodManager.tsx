@@ -292,63 +292,65 @@ export default function PaymentMethodManager() {
           {/* 내 결제수단 목록 — 일반 모드 */}
           <div>
             <h2 className="text-sm font-semibold text-[var(--text-primary)] mb-3">내 결제수단</h2>
-            <div className="space-y-3">
-              {methods.map((method) => {
-                const usage = usageMap.get(method.id)
-                const hasTarget = method.monthly_target && method.monthly_target > 0
-                const remaining = hasTarget && usage ? method.monthly_target! - usage.spent_amount : null
-                const isAchieved = hasTarget && usage && (usage.usage_percentage ?? 0) >= 100
+            <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)]/60 overflow-hidden">
+              <div className="divide-y divide-[var(--border-subtle)]">
+                {methods.map((method) => {
+                  const usage = usageMap.get(method.id)
+                  const hasTarget = method.monthly_target && method.monthly_target > 0
+                  const remaining = hasTarget && usage ? method.monthly_target! - usage.spent_amount : null
+                  const isAchieved = hasTarget && usage && (usage.usage_percentage ?? 0) >= 100
 
-                return (
-                  <div
-                    key={method.id}
-                    data-testid={`payment-method-${method.id}`}
-                    className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)]/60 p-4"
-                  >
-                    <div className="flex items-center justify-between mb-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-semibold text-[var(--text-primary)]">{method.name}</span>
-                        <span className="text-xs text-[var(--text-muted)]">{TYPE_LABELS[method.type]}</span>
-                        {method.is_system && (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[var(--surface-elevated)] text-[var(--text-muted)]">기본</span>
-                        )}
+                  return (
+                    <div
+                      key={method.id}
+                      data-testid={`payment-method-${method.id}`}
+                      className="p-4"
+                    >
+                      <div className="flex items-center justify-between mb-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-semibold text-[var(--text-primary)]">{method.name}</span>
+                          <span className="text-xs text-[var(--text-muted)]">{TYPE_LABELS[method.type]}</span>
+                          {method.is_system && (
+                            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[var(--surface-elevated)] text-[var(--text-muted)]">기본</span>
+                          )}
+                        </div>
                       </div>
+
+                      {/* 실적 프로그레스 바: monthly_target이 있는 경우만 */}
+                      {hasTarget && usage && (
+                        <div className="mt-2" data-testid={`usage-bar-${method.id}`}>
+                          <div className="flex justify-between items-center mb-1">
+                            <span className="text-xs text-[var(--text-secondary)] tabular-nums">
+                              {formatAmount(usage.spent_amount)} / {formatAmount(method.monthly_target!)}
+                            </span>
+                            <span className={`text-xs tabular-nums ${isAchieved ? 'text-leaf-600 font-medium' : 'text-[var(--text-muted)]'}`}>
+                              {isAchieved ? '실적 달성' : `잔여 ${formatAmount(usage.remaining ?? 0)}`}
+                            </span>
+                          </div>
+                          <div className="w-full bg-[var(--border-default)] rounded-full h-1.5 overflow-hidden">
+                            <div
+                              className={`h-1.5 rounded-full transition-all ${
+                                isAchieved
+                                  ? 'bg-leaf-500'
+                                  : (usage.usage_percentage ?? 0) >= 80
+                                    ? 'bg-grape-500'
+                                    : 'bg-grape-400'
+                              }`}
+                              style={{ width: `${Math.min(usage.usage_percentage ?? 0, 100)}%` }}
+                            />
+                          </div>
+                          {/* 실적 넛지 */}
+                          {!isAchieved && remaining !== null && remaining > 0 && (
+                            <p className="text-xs text-grape-600 mt-1 tabular-nums" data-testid={`nudge-${method.id}`}>
+                              실적까지 {formatAmount(remaining)} 남음
+                            </p>
+                          )}
+                        </div>
+                      )}
                     </div>
-
-                    {/* 실적 프로그레스 바: monthly_target이 있는 경우만 */}
-                    {hasTarget && usage && (
-                      <div className="mt-2" data-testid={`usage-bar-${method.id}`}>
-                        <div className="flex justify-between items-center mb-1">
-                          <span className="text-xs text-[var(--text-secondary)] tabular-nums">
-                            {formatAmount(usage.spent_amount)} / {formatAmount(method.monthly_target!)}
-                          </span>
-                          <span className={`text-xs tabular-nums ${isAchieved ? 'text-leaf-600 font-medium' : 'text-[var(--text-muted)]'}`}>
-                            {isAchieved ? '실적 달성' : `잔여 ${formatAmount(usage.remaining ?? 0)}`}
-                          </span>
-                        </div>
-                        <div className="w-full bg-[var(--border-default)] rounded-full h-1.5 overflow-hidden">
-                          <div
-                            className={`h-1.5 rounded-full transition-all ${
-                              isAchieved
-                                ? 'bg-leaf-500'
-                                : (usage.usage_percentage ?? 0) >= 80
-                                  ? 'bg-grape-500'
-                                  : 'bg-grape-400'
-                            }`}
-                            style={{ width: `${Math.min(usage.usage_percentage ?? 0, 100)}%` }}
-                          />
-                        </div>
-                        {/* 실적 넛지 */}
-                        {!isAchieved && remaining !== null && remaining > 0 && (
-                          <p className="text-xs text-grape-600 mt-1 tabular-nums" data-testid={`nudge-${method.id}`}>
-                            실적까지 {formatAmount(remaining)} 남음
-                          </p>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                )
-              })}
+                  )
+                })}
+              </div>
             </div>
           </div>
         </div>
