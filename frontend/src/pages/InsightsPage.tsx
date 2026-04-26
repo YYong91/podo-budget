@@ -12,22 +12,19 @@
 
 import { useState, useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Sparkles, Settings } from 'lucide-react'
-import { useQuery, useQueries, useQueryClient, useMutation } from '@tanstack/react-query'
+import { Settings } from 'lucide-react'
+import { useQuery, useQueries, useQueryClient } from '@tanstack/react-query'
 import ErrorState from '../components/ErrorState'
-import { useToast } from '../hooks/useToast'
-import { TOAST } from '../constants/toastMessages'
 import EmptyState from '../components/EmptyState'
 
 // API
-import { statsApi, insightsApi } from '../api/insights'
+import { statsApi } from '../api/insights'
 import { expenseApi } from '../api/expenses'
 import { incomeApi } from '../api/income'
 import { getMonthlyStats } from '../api/budgets'
 import { categoryApi } from '../api/categories'
 import { paymentMethodApi } from '../api/paymentMethods'
 import { recurringApi } from '../api/recurring'
-import { getHouseholdProfile, upsertHouseholdProfile } from '../api/householdProfiles'
 import { useHouseholdStore } from '../stores/useHouseholdStore'
 
 // 컴포넌트
@@ -39,7 +36,6 @@ import BudgetVsActual from '../components/stats/BudgetVsActual'
 import RecurringManageSection from '../components/stats/RecurringManageSection'
 import CardUsageSummary from '../components/stats/CardUsageSummary'
 import MonthlyHighlights from '../components/stats/MonthlyHighlights'
-import StructuredInsightsView from '../components/stats/StructuredInsightsView'
 import SectionToggleModal, {
   loadSectionSettings,
   saveSectionSettings,
@@ -50,18 +46,12 @@ import LayerDivider from '../components/stats/LayerDivider'
 import InsightsOnboarding from '../components/stats/InsightsOnboarding'
 import SavingsSection from '../components/stats/SavingsSection'
 import MonthlyComparison from '../components/stats/MonthlyComparison'
-import ProfileCollectionFlow from '../components/stats/ProfileCollectionFlow'
+import MonthlyReportCard from '../components/reports/MonthlyReportCard'
 
 // 유틸
 import { calculateFinancialScore } from '../utils/financialScore'
-import { trackEvent } from '../utils/analytics'
 import { getHeroLabel } from '../utils/heroLabel'
 
-// 타입
-import type {
-  StructuredInsights,
-  HouseholdProfileInput,
-} from '../types'
 
 // ── 날짜 유틸 ──
 
@@ -138,7 +128,6 @@ const FULL_REPORT_THRESHOLD = 5
 
 export default function InsightsPage() {
   const navigate = useNavigate()
-  const { addToast } = useToast()
   const queryClient = useQueryClient()
   const [monthStr, setMonthStr] = useState(toMonthStr(new Date()))
   const activeHouseholdId = useHouseholdStore((s) => s.activeHouseholdId)
@@ -151,13 +140,6 @@ export default function InsightsPage() {
     setSectionVisibility(updated)
     saveSectionSettings(updated)
   }, [])
-
-  // AI 분석 상태 (사용자 트리거 — 캐시 불필요)
-  const [structuredInsights, setStructuredInsights] = useState<StructuredInsights | null>(null)
-  const [aiLoading, setAiLoading] = useState(false)
-
-  // 프로필 수집 모달 표시 상태
-  const [showProfileFlow, setShowProfileFlow] = useState(false)
 
   const dateStr = `${monthStr}-15`
 
@@ -250,23 +232,7 @@ export default function InsightsPage() {
     enabled: !!activeHouseholdId && sectionVisibility.recurring,
   })
 
-  // ── Group 7: 가구 프로필 — AI 분석 개인화용 (404는 정상, 프로필 미설정 상태) ──
-
-  const { data: householdProfile, refetch: refetchProfile } = useQuery({
-    queryKey: ['householdProfile', activeHouseholdId],
-    queryFn: () => getHouseholdProfile(activeHouseholdId!),
-    enabled: !!activeHouseholdId,
-    retry: false,
-  })
-
-  // 프로필 저장 mutation
-  const saveProfile = useMutation({
-    mutationFn: (input: HouseholdProfileInput) =>
-      upsertHouseholdProfile(activeHouseholdId!, input),
-    onSuccess: () => refetchProfile(),
-  })
-
-  // ── Group 8: 직전 3개월 지출 통계 — 지출 안정성(spendingStability) 지표용 ──
+  // ── Group 7: 직전 3개월 지출 통계 — 지출 안정성(spendingStability) 지표용 ──
 
   const prev3Months = useMemo(() => getPrev3Months(monthStr), [monthStr])
 
@@ -449,95 +415,6 @@ export default function InsightsPage() {
   // 핵심 데이터가 모두 undefined이고 로딩도 끝났으면 에러 (네트워크/서버 오류)
   const error = !expenseStats && !incomeStats && !expLoading && !incLoading && !!activeHouseholdId
 
-  // 프로필 저장 핸들러 (ProfileCollectionFlow → Step 완료 시 호출)
-  async function handleProfileComplete(input: HouseholdProfileInput) {
-    await saveProfile.mutateAsync(input)
-  }
-
-  // 프로필 수집 완료 후 AI 분석 시작
-  function handleProfileFlowDone() {
-    setShowProfileFlow(false)
-    void handleGenerateAI()
-  }
-
-  // AI 분석 버튼 클릭 — 프로필 없으면 수집 플로우, 있으면 바로 분석
-  function handleAIAnalysisClick() {
-    if (!householdProfile) {
-      setShowProfileFlow(true)
-    } else {
-      void handleGenerateAI()
-    }
-  }
-
-  // AI 분석 생성 (사용자 트리거 — React Query 불필요)
-  const handleGenerateAI = useCallback(async () => {
-    if (!expenseStats && !incomeStats) {
-      addToast('error', TOAST.AI_NO_DATA)
-      return
-    }
-
-    setAiLoading(true)
-    try {
-      const requestData: Record<string, unknown> = {
-        month: monthStr,
-        income_total: incomeStats?.total ?? 0,
-        expense_total: expenseStats?.total ?? 0,
-        top_expense_categories: (expenseStats?.by_category ?? []).slice(0, 5).map(c => ({
-          name: c.category,
-          amount: c.amount,
-          percentage: c.percentage,
-        })),
-        savings_rate: incomeStats && incomeStats.total > 0
-          ? (savingsTotal !== undefined
-              ? (savingsTotal / incomeStats.total) * 100
-              : ((incomeStats.total - (expenseStats?.total ?? 0)) / incomeStats.total) * 100)
-          : 0,
-        previous_month_expense: comparison?.previous?.total ?? null,
-        previous_month_income: incomeComparison?.previous?.total ?? null,
-        // 직전 3개월 트렌드 (income은 현재 expense stats만 있어 0 — TODO: income API 연결)
-        trend: prev3MonthsStats
-          .filter((q) => q.isSuccess && q.data)
-          .map((q, i) => ({
-            month: prev3Months[i],
-            income: 0,
-            expense: q.data?.total ?? 0,
-          })),
-        savings_total: savingsTotal ?? undefined,
-        recurring_total: recurringNonSavingsTotal ?? undefined,
-        financial_score: financialScore
-          ? {
-              savings_rate: financialScore.savingsRate,
-              budget_adherence: financialScore.budgetAdherence,
-              fixed_expense_ratio: financialScore.fixedExpenseRatio,
-              spending_stability: financialScore.spendingStability,
-              overall: financialScore.overall,
-              grade: financialScore.grade,
-            }
-          : undefined,
-      }
-
-      // 예산 데이터
-      if (budgetStats?.total_budget) {
-        requestData.budget = {
-          total_budget: budgetStats.total_budget,
-          total_spent: budgetStats.total_spent,
-          over_categories: budgetStats.categories
-            .filter(c => c.is_exceeded)
-            .map(c => c.category_name),
-        }
-      }
-
-      const result = await insightsApi.generateComprehensive(requestData, activeHouseholdId ?? undefined)
-      setStructuredInsights(result.insights)
-      trackEvent('ai_analysis_requested')
-      addToast('success', TOAST.AI_ANALYSIS_COMPLETE)
-    } catch {
-      addToast('error', TOAST.AI_ANALYSIS_FAILED)
-    } finally {
-      setAiLoading(false)
-    }
-  }, [monthStr, expenseStats, incomeStats, budgetStats, financialScore, comparison, incomeComparison, savingsTotal, recurringNonSavingsTotal, prev3MonthsStats, prev3Months, activeHouseholdId, addToast])
-
   // monthStr에서 파생된 연/월 (PeriodNavigator + HeroSummary에서 공유)
   const { currentYear, currentMonth } = useMemo(() => {
     const [y, m] = monthStr.split('-').map(Number)
@@ -552,15 +429,12 @@ export default function InsightsPage() {
 
   const handlePrev = useCallback(() => {
     setMonthStr(m => shiftMonth(m, -1))
-    setStructuredInsights(null) // 월 이동 시 AI 분석 초기화
   }, [])
   const handleNext = useCallback(() => {
     setMonthStr(m => shiftMonth(m, 1))
-    setStructuredInsights(null) // 월 이동 시 AI 분석 초기화
   }, [])
   const handleMonthSelect = useCallback((year: number, month: number) => {
     setMonthStr(toMonthStr(new Date(year, month, 1)))
-    setStructuredInsights(null) // 월 이동 시 AI 분석 초기화
   }, [])
 
   return (
@@ -627,21 +501,6 @@ export default function InsightsPage() {
           hasRecurring={activeRecurringItems.length > 0}
           hasSavingsCategory={expenseCategories.some(c => c.is_savings)}
         />
-      )}
-
-      {/* 프로필 수집 모달 — AI 분석 전 가구 프로필 미설정 시 표시 */}
-      {showProfileFlow && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-end">
-          <div className="bg-white rounded-t-2xl p-6 w-full max-h-[85vh] overflow-y-auto">
-            <h3 className="text-base font-semibold text-warm-900 mb-4">AI 분석을 위한 정보</h3>
-            <ProfileCollectionFlow
-              onComplete={handleProfileComplete}
-              onAnalysisReady={handleProfileFlowDone}
-              onCancel={() => setShowProfileFlow(false)}
-              isLoading={saveProfile.isPending}
-            />
-          </div>
-        </div>
       )}
 
       {/* 풀 리포트 — 거래 5건 이상 */}
@@ -740,47 +599,12 @@ export default function InsightsPage() {
             </div>
           )}
 
-          {/* AI 상세 분석 */}
+          {/* 결산 리포트 */}
           {sectionVisibility.ai && (
-            <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)]/60 p-4">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <Sparkles className="w-5 h-5 text-grape-600" />
-                  <h2 className="text-base font-semibold text-[var(--text-primary)]">AI 상세 분석</h2>
-                </div>
-                {!structuredInsights && (
-                  <button
-                    onClick={handleAIAnalysisClick}
-                    disabled={aiLoading}
-                    className="px-4 py-1.5 text-sm font-medium text-white bg-grape-600 rounded-lg hover:bg-grape-700 disabled:bg-warm-400 disabled:cursor-not-allowed transition-colors"
-                  >
-                    {aiLoading ? '분석 중...' : '분석하기'}
-                  </button>
-                )}
-              </div>
-
-              {/* AI 로딩 */}
-              {aiLoading && (
-                <div className="flex flex-col items-center gap-3 py-8">
-                  <div className="animate-spin rounded-full border-b-2 border-grape-600 h-8 w-8" />
-                  <p className="text-sm text-[var(--text-secondary)]">AI가 가계 데이터를 분석하고 있습니다...</p>
-                </div>
-              )}
-
-              {/* 구조화된 AI 인사이트 */}
-              {!aiLoading && structuredInsights && (
-                <div className="mt-4">
-                  <StructuredInsightsView insights={structuredInsights} />
-                </div>
-              )}
-
-              {/* 분석 전 안내 */}
-              {!aiLoading && !structuredInsights && (
-                <p className="text-sm text-[var(--text-tertiary)] mt-3">
-                  AI가 수입, 지출, 예산, 자산을 분석하여 맞춤 인사이트를 제공합니다.
-                </p>
-              )}
-            </div>
+            <section>
+              <h2 className="text-base font-semibold text-[var(--text-primary)] mb-3">결산 리포트</h2>
+              <MonthlyReportCard />
+            </section>
           )}
         </>
       )}

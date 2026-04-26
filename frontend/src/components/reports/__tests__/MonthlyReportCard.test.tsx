@@ -5,7 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import MonthlyReportCard from '../MonthlyReportCard'
 
 vi.mock('../../../stores/useHouseholdStore', () => ({
-  useHouseholdStore: (selector?: Function) => {
+  useHouseholdStore: (selector?: (s: { activeHouseholdId: number }) => unknown) => {
     const state = { activeHouseholdId: 1 }
     return selector ? selector(state) : state
   },
