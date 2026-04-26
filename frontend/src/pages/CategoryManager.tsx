@@ -312,8 +312,8 @@ export default function CategoryManager() {
                 const val = e.target.value
                 if (val.length <= 2) setNewEmoji(val || '📌')
               }}
+              onFocus={(e) => e.target.select()}
               className="input-base text-center text-xl p-2"
-              maxLength={2}
             />
             <div className="space-y-2">
               <input
@@ -397,8 +397,8 @@ export default function CategoryManager() {
                           const val = e.target.value
                           if (val.length <= 2) setEditForm({ ...editForm, emoji: val || '📌' })
                         }}
+                        onFocus={(e) => e.target.select()}
                         className="input-base text-center text-xl p-2"
-                        maxLength={2}
                       />
                       <div className="space-y-2">
                         <input
