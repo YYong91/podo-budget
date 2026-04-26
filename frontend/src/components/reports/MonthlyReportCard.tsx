@@ -56,15 +56,15 @@ export default function MonthlyReportCard() {
   return (
     <Link
       to={`/insights/reports/${report.month}`}
-      className="block rounded-2xl bg-gradient-to-br from-grape-50 to-grape-100 border border-grape-200 p-4 space-y-2 hover:opacity-90 transition-opacity"
+      className="block rounded-2xl shadow-sm bg-gradient-to-br from-grape-50 to-grape-100 border border-grape-200 p-4 sm:p-6 hover:opacity-90 transition-opacity"
     >
       <div className="flex items-center justify-between">
         <span className="text-xs font-medium text-grape-500">📬 {monthLabel} 결산 리포트</span>
         <ChevronRight className="w-4 h-4 text-grape-400" />
       </div>
-      <p className="text-sm font-semibold text-[var(--text-primary)] line-clamp-2">{headline}</p>
+      <p className="text-sm font-semibold text-[var(--text-primary)] line-clamp-2 mt-2">{headline}</p>
       {report.completed_at && (
-        <p className="text-xs text-[var(--text-tertiary)]">
+        <p className="text-xs text-[var(--text-tertiary)] mt-1">
           {formatRelative(report.completed_at)}에 도착
         </p>
       )}
