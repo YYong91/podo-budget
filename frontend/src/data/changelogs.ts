@@ -18,6 +18,17 @@ export interface Changelog {
 
 export const changelogs: Changelog[] = [
   {
+    version: '0.26.0',
+    date: '2026-04-26',
+    title: '정기거래 UX 개편',
+    items: [
+      { tag: '개선', text: '정기거래 목록이 카드 형태로 바뀌었어요 — 카테고리, 결제수단, 다음 날짜를 한눈에 확인할 수 있어요' },
+      { tag: '개선', text: '⋮ 메뉴에서 수정, 삭제, 지금 등록을 바로 할 수 있어요' },
+      { tag: '개선', text: '일시정지한 정기거래는 접혀서 표시돼요' },
+      { tag: '신규', text: '정기거래 등록/수정 시 결제수단을 선택할 수 있어요' },
+    ],
+  },
+  {
     version: '0.25.0',
     date: '2026-04-25',
     title: '예산 관리 개선',

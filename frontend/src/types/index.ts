@@ -374,6 +374,9 @@ export interface RecurringTransaction {
   created_at: string
   updated_at: string
   category_emoji: string | null
+  category_name: string | null
+  payment_method_id: number | null
+  payment_method_name: string | null
 }
 
 export interface RecurringTransactionCreate {
@@ -390,6 +393,7 @@ export interface RecurringTransactionCreate {
   end_date?: string | null
   household_id?: number | null
   source_id?: number | null
+  payment_method_id?: number | null
 }
 
 export interface ExecuteResponse {

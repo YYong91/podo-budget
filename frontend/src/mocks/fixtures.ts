@@ -305,7 +305,10 @@ export const mockRecurringTransactions: RecurringTransaction[] = [
     next_due_date: '2026-02-15',
     is_active: true,
     created_at: '2026-01-15T00:00:00Z', updated_at: '2026-01-15T00:00:00Z',
-    category_emoji: null,
+    category_emoji: '🎬',
+    category_name: '구독',
+    payment_method_id: 1,
+    payment_method_name: '삼성카드',
   },
   {
     id: 2, user_id: 1, household_id: 1, type: 'income',
@@ -317,6 +320,9 @@ export const mockRecurringTransactions: RecurringTransaction[] = [
     is_active: true,
     created_at: '2026-01-25T00:00:00Z', updated_at: '2026-01-25T00:00:00Z',
     category_emoji: null,
+    category_name: null,
+    payment_method_id: null,
+    payment_method_name: null,
   },
   {
     id: 3, user_id: 1, household_id: 1, type: 'expense',
@@ -328,6 +334,9 @@ export const mockRecurringTransactions: RecurringTransaction[] = [
     is_active: true,
     created_at: '2026-01-28T00:00:00Z', updated_at: '2026-01-28T00:00:00Z',
     category_emoji: null,
+    category_name: null,
+    payment_method_id: null,
+    payment_method_name: null,
   },
   {
     id: 4, user_id: 1, household_id: 1, type: 'expense',
@@ -339,6 +348,9 @@ export const mockRecurringTransactions: RecurringTransaction[] = [
     is_active: false,
     created_at: '2026-01-10T00:00:00Z', updated_at: '2026-01-10T00:00:00Z',
     category_emoji: null,
+    category_name: null,
+    payment_method_id: null,
+    payment_method_name: null,
   },
 ]
 

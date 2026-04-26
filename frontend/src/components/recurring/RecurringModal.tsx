@@ -6,7 +6,7 @@
  */
 
 import { X } from 'lucide-react'
-import type { Category } from '../../types'
+import type { Category, PaymentMethod } from '../../types'
 import FrequencyFields from './FrequencyFields'
 
 /** 모달 폼 데이터 타입 */
@@ -15,6 +15,7 @@ export interface RecurringFormData {
   amount: string
   description: string
   category_id: string
+  payment_method_id: string  // 빈 문자열 = 없음
   frequency: 'monthly' | 'weekly' | 'yearly' | 'custom'
   day_of_month: string
   day_of_week: string
@@ -33,6 +34,8 @@ interface RecurringModalProps {
   onFormChange: (data: RecurringFormData) => void
   /** 카테고리 목록 (타입 필터링 전) */
   categories: Category[]
+  /** 결제수단 목록 */
+  paymentMethods: PaymentMethod[]
   /** 제출 중 여부 */
   submitting: boolean
   /** 폼 제출 핸들러 */
@@ -48,6 +51,7 @@ export default function RecurringModal({
   formData,
   onFormChange,
   categories,
+  paymentMethods,
   submitting,
   onSubmit,
   onClose,
@@ -141,6 +145,26 @@ export default function RecurringModal({
               <option value="">선택 안 함</option>
               {filteredCategories.map((c) => (
                 <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* 결제수단 */}
+          <div>
+            <label htmlFor="reclist-payment-method" className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
+              결제수단
+            </label>
+            <select
+              id="reclist-payment-method"
+              value={formData.payment_method_id}
+              onChange={(e) => updateField('payment_method_id', e.target.value)}
+              className={INPUT_CLASSES}
+            >
+              <option value="">없음</option>
+              {paymentMethods.map((pm) => (
+                <option key={pm.id} value={String(pm.id)}>
+                  {pm.name}
+                </option>
               ))}
             </select>
           </div>
