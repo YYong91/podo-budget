@@ -338,9 +338,9 @@ export default function HeroSummary({
         role: 'button' as const,
         tabIndex: 0,
         onKeyDown: (e: React.KeyboardEvent) => { if (e.key === 'Enter' || e.key === ' ') onProgressClick() },
-        className: `card-surface p-6 bg-gradient-to-b from-grape-50/60 to-transparent dark:from-grape-900/30 dark:to-transparent cursor-pointer ${className}`,
+        className: `card-surface border border-[var(--border-default)] p-6 bg-gradient-to-b from-grape-50/60 to-transparent dark:from-grape-900/30 dark:to-transparent cursor-pointer ${className}`,
       }
-    : { className: `card-surface p-6 bg-gradient-to-b from-grape-50/60 to-transparent dark:from-grape-900/30 dark:to-transparent ${className}` }
+    : { className: `card-surface border border-[var(--border-default)] p-6 bg-gradient-to-b from-grape-50/60 to-transparent dark:from-grape-900/30 dark:to-transparent ${className}` }
 
   return (
     <div {...cardClickProps}>
