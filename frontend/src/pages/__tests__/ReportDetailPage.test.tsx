@@ -2,6 +2,9 @@ import { render, screen } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { http, HttpResponse } from 'msw'
+import { server } from '../../mocks/server'
+import { mockStructuredInsights } from '../../mocks/fixtures'
 import ReportDetailPage from '../ReportDetailPage'
 
 vi.mock('../../stores/useHouseholdStore', () => ({
@@ -82,15 +85,43 @@ describe('ReportDetailPage', () => {
     })
 
     it('completed 리포트 + prev 없음(null) → 이전 달 링크가 없다', async () => {
-      // 2026-03 조회 시 이전 달 2026-02 핸들러는 completed를 반환하지만
-      // 이 테스트는 핸들러 오버라이드 없이 "null" 케이스를 확인하기 위해
-      // 2026-05 기준으로 테스트 (이전 달 2026-04가 없는 시나리오는 직접 null 반환하는 달 필요)
-      // MSW에서 그 외 month → null report 반환: 2099-01 조회하면 이전 달 2098-12가 null
-      render(makeWrapper('2099-01'))
-      // 2099-01은 null report이므로 EmptyState 또는 별도 처리
-      // nav 없음 확인
-      expect(screen.queryByText(/리포트 →/)).not.toBeInTheDocument()
-      expect(screen.queryByText(/← .* 리포트/)).not.toBeInTheDocument()
+      // 2026-03 completed 리포트를 조회하되,
+      // 이전 달 2026-02가 null report인 시나리오를 server.use()로 오버라이드
+      server.use(
+        http.get('/api/reports/monthly', ({ request }) => {
+          const url = new URL(request.url)
+          const month = url.searchParams.get('month')
+          if (month === '2026-02') {
+            return HttpResponse.json({
+              report: null,
+              eligibility: {
+                is_eligible: false,
+                reason: '거래 데이터가 부족합니다',
+                transaction_count: 0,
+                required_count: 5,
+              },
+            })
+          }
+          // 나머지는 기본 핸들러에 위임하지 않으므로 2026-03 completed 직접 반환
+          return HttpResponse.json({
+            report: {
+              id: 1,
+              month: '2026-03',
+              status: 'completed',
+              insights: mockStructuredInsights,
+              completed_at: '2026-04-01T03:30:00Z',
+            },
+            eligibility: null,
+          })
+        }),
+      )
+
+      render(makeWrapper('2026-03'))
+      // completed 리포트가 렌더링될 때까지 대기 (이전 달 null → 이전 달 링크 없음)
+      await screen.findByText('식비가 전체 지출의 37.5%를 차지합니다')
+
+      // 이전 달 2026-02는 null이므로 이전 달 링크 없음
+      expect(screen.queryByText(/← 2026년 2월 리포트/)).not.toBeInTheDocument()
     })
 
     it('completed 리포트 + next가 미래 월 → 다음 달 링크가 없다', async () => {
