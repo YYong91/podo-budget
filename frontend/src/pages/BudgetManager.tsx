@@ -356,6 +356,7 @@ export default function BudgetManager() {
         <button onClick={() => goBack()} className="p-2.5 -ml-2.5 rounded-lg hover:bg-[var(--surface-hover)] transition-colors">
           <ArrowLeft className="w-5 h-5 text-[var(--text-secondary)]" />
         </button>
+        <PiggyBank className="w-5 h-5 text-grape-500 flex-shrink-0" />
         <h1 className="text-lg font-semibold text-[var(--text-primary)]">예산 관리</h1>
       </div>
 
