@@ -179,6 +179,7 @@ def get_expense_parser_prompt(
     history_hints: dict[str, str] | None = None,
     category_mappings: dict[str, str] | None = None,
     payment_methods: list[str] | None = None,
+    correction_hints: list[tuple[str, str]] | None = None,
 ) -> str:
     """오늘 날짜 및 사용자 컨텍스트를 삽입한 시스템 프롬프트 반환
 
@@ -186,6 +187,7 @@ def get_expense_parser_prompt(
         categories: 사용자의 카테고리 이름 목록. 제공 시 하드코딩 목록 대신 이 목록 우선 사용.
         history_hints: 과거 거래 패턴 dict (설명 → 카테고리). 제공 시 프롬프트에 주입.
         category_mappings: 카테고리 별칭 매핑 dict (소스이름 → 대상이름). 예: {"식비": "외식비"}
+        correction_hints: RAG 정정 사례 [(input_text, category_name), ...]. 사용자 직접 수정 데이터 (최우선 적용).
     """
     today = datetime.now(ZoneInfo("Asia/Seoul")).date()
     yesterday = today - timedelta(days=1)
@@ -231,6 +233,16 @@ def get_expense_parser_prompt(
         safe_hints = {desc.replace("\n", " ").replace("\r", "").replace('"', "'")[:100]: cat for desc, cat in list(history_hints.items())[:20]}
         pairs = "\n".join(f'- "{desc}" → {cat}' for desc, cat in safe_hints.items())
         prompt += f"\n\n## 과거 거래 패턴 (히스토리 기반)\n아래 패턴을 참고하여 카테고리를 결정하세요 (유사한 설명은 같은 카테고리 사용):\n{pairs}"
+
+    # RAG 정정 사례 주입 (history_hints보다 우선 — 사용자가 직접 정정한 데이터)
+    if correction_hints:
+        safe_hints = [(text.replace("\n", " ").replace('"', "'")[:100], cat) for text, cat in correction_hints[:10]]
+        pairs = "\n".join(f'- "{text}" → {cat}' for text, cat in safe_hints)
+        prompt += (
+            f"\n\n## 이 가구의 보정 사례 (최우선 적용)\n"
+            f"아래는 이 가구가 직접 수정한 카테고리 사례입니다. "
+            f"유사한 입력은 **반드시** 동일한 카테고리를 사용하세요:\n{pairs}"
+        )
 
     return prompt
 

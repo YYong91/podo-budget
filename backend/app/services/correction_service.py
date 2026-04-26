@@ -6,8 +6,9 @@
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.models.category import Category
 from app.models.category_correction import CategoryCorrection
-from app.services.embedding_service import get_embedding
+from app.services.embedding_service import cosine_similarity, get_embedding
 
 
 async def save_correction(
@@ -52,6 +53,59 @@ async def save_correction(
     db.add(correction)
     await db.flush()
     return correction
+
+
+async def find_similar_corrections(
+    db: AsyncSession,
+    query_text: str,
+    household_id: int,
+    top_k: int = 5,
+    min_similarity: float = 0.75,
+) -> list[tuple[str, str]]:
+    """입력 텍스트와 유사한 정정 사례를 검색 (Numpy 코사인 유사도)
+
+    Args:
+        db: DB 세션
+        query_text: 새 입력 텍스트
+        household_id: 가구 ID (스코프)
+        top_k: 반환할 최대 결과 수
+        min_similarity: 최소 유사도 임계값
+
+    Returns:
+        [(input_text, category_name), ...] — 유사도 내림차순
+    """
+    # 임베딩 있는 정정 데이터만 로드 (최근 500건)
+    result = await db.execute(
+        select(CategoryCorrection, Category.name)
+        .join(Category, CategoryCorrection.category_id == Category.id)
+        .where(
+            CategoryCorrection.household_id == household_id,
+            CategoryCorrection.embedding.isnot(None),
+        )
+        .order_by(CategoryCorrection.created_at.desc())
+        .limit(500)
+    )
+    rows = result.all()
+
+    if not rows:
+        return []
+
+    try:
+        query_embedding = await get_embedding(query_text)
+    except Exception:
+        return []  # 임베딩 실패 시 빈 결과 반환 (graceful degradation)
+
+    scored: list[tuple[float, str, str]] = []
+    for correction, category_name in rows:
+        # SQLite in-memory (테스트) 환경에서 isnot(None) 필터가 불완전할 수 있으므로 방어적 체크
+        if not correction.embedding:
+            continue
+        sim = cosine_similarity(query_embedding, correction.embedding)
+        if sim >= min_similarity:
+            scored.append((sim, correction.input_text, category_name))
+
+    scored.sort(reverse=True)
+    return [(text, cat) for _, text, cat in scored[:top_k]]
 
 
 async def get_corrections_for_household(

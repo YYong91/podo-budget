@@ -36,6 +36,7 @@ from app.schemas.expense import ExpenseResponse
 from app.schemas.income import IncomeResponse
 from app.services.category_hint_service import get_category_hints, get_user_categories
 from app.services.category_service import get_or_create_category
+from app.services.correction_service import find_similar_corrections
 from app.services.exchange_rate import get_exchange_rate
 from app.services.llm_service import get_llm_provider
 
@@ -274,17 +275,25 @@ async def chat(
         _get_active_payment_methods(),
     )
 
+    # RAG 정정 사례 검색 (임베딩 기반 — 실패해도 LLM 파싱은 계속 진행)
+    correction_hints: list[tuple[str, str]] = []
+    try:  # noqa: SIM105 — await 포함이라 contextlib.suppress 불가
+        correction_hints = await find_similar_corrections(db, chat_request.message, household_id, top_k=5)
+    except Exception:
+        pass  # RAG 실패는 무시 — graceful degradation
+
     # 결제수단 이름 → ID 매핑 (LLM 파싱 결과 매칭용)
     payment_method_map: dict[str, int] = {pm.name: pm.id for pm in user_payment_methods}  # type: ignore[misc]
     payment_method_names = list(payment_method_map.keys()) or None
 
-    # LLM으로 사용자 입력 파싱 (결제수단 목록 포함)
+    # LLM으로 사용자 입력 파싱 (결제수단 목록 + RAG 정정 사례 포함)
     parsed = await llm.parse_expense(
         chat_request.message,
         categories=user_categories or None,
         history_hints=history_hints or None,
         category_mappings=cat_mappings or None,
         payment_methods=payment_method_names,
+        correction_hints=correction_hints or None,
     )
 
     # 파싱 실패 처리

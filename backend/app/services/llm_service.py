@@ -53,6 +53,7 @@ class LLMProvider(ABC):
         history_hints: dict[str, Any] | None = None,
         category_mappings: dict[str, str] | None = None,
         payment_methods: list[str] | None = None,
+        correction_hints: list[tuple[str, str]] | None = None,
     ) -> dict[str, Any] | list[dict[str, Any]]:
         """사용자 입력을 파싱하여 지출 정보 추출
 
@@ -61,6 +62,7 @@ class LLMProvider(ABC):
             categories: 사용자의 카테고리 이름 목록 (프롬프트에 주입)
             history_hints: 과거 거래 패턴 dict (설명→카테고리, 프롬프트에 주입)
             category_mappings: 카테고리 별칭 매핑 dict (소스→대상, 프롬프트에 주입)
+            correction_hints: RAG 정정 사례 [(input_text, category_name), ...] (최우선 적용)
 
         Returns:
             단일 지출: dict (에러 포함 가능)
@@ -113,6 +115,7 @@ class AnthropicProvider(LLMProvider):
         history_hints: dict[str, Any] | None = None,
         category_mappings: dict[str, str] | None = None,
         payment_methods: list[str] | None = None,
+        correction_hints: list[tuple[str, str]] | None = None,
     ) -> dict[str, Any] | list[dict[str, Any]]:
         """Claude API로 자연어 지출 입력을 구조화된 데이터로 변환
 
@@ -130,7 +133,11 @@ class AnthropicProvider(LLMProvider):
                         model=self.model,
                         max_tokens=8192,  # Haiku 최대값 — 월간 40건+ 파싱 대응
                         system=get_expense_parser_prompt(
-                            categories=categories, history_hints=history_hints, category_mappings=category_mappings, payment_methods=payment_methods
+                            categories=categories,
+                            history_hints=history_hints,
+                            category_mappings=category_mappings,
+                            payment_methods=payment_methods,
+                            correction_hints=correction_hints,
                         ),
                         messages=[{"role": "user", "content": user_input}],
                         timeout=25.0,  # LLM 응답 타임아웃 (#172)
@@ -376,6 +383,7 @@ class OpenAIProvider(LLMProvider):
         history_hints: dict[str, Any] | None = None,
         category_mappings: dict[str, str] | None = None,
         payment_methods: list[str] | None = None,
+        correction_hints: list[tuple[str, str]] | None = None,
     ) -> dict[str, Any] | list[dict[str, Any]]:
         """OpenAI API로 자연어 지출 입력을 구조화된 데이터로 변환
 
@@ -396,7 +404,11 @@ class OpenAIProvider(LLMProvider):
                             {
                                 "role": "system",
                                 "content": get_expense_parser_prompt(
-                                    categories=categories, history_hints=history_hints, category_mappings=category_mappings, payment_methods=payment_methods
+                                    categories=categories,
+                                    history_hints=history_hints,
+                                    category_mappings=category_mappings,
+                                    payment_methods=payment_methods,
+                                    correction_hints=correction_hints,
                                 ),
                             },
                             {"role": "user", "content": user_input},
@@ -560,6 +572,7 @@ class GoogleProvider(LLMProvider):
         history_hints: dict[str, Any] | None = None,
         category_mappings: dict[str, str] | None = None,
         payment_methods: list[str] | None = None,
+        correction_hints: list[tuple[str, str]] | None = None,
     ) -> dict[str, Any] | list[dict[str, Any]]:
         raise NotImplementedError("Google Gemini 프로바이더는 아직 구현되지 않았습니다")
 
@@ -596,6 +609,7 @@ class MockLLMProvider(LLMProvider):
         history_hints: dict[str, Any] | None = None,
         category_mappings: dict[str, str] | None = None,
         payment_methods: list[str] | None = None,
+        correction_hints: list[tuple[str, str]] | None = None,
     ) -> dict[str, Any] | list[dict[str, Any]]:
         """텍스트에서 금액을 추출하여 고정 형식 반환 — E2E에서 안정적으로 동작"""
         import re
@@ -667,6 +681,9 @@ class LocalLLMProvider(LLMProvider):
         user_input: str,
         categories: list[str] | None = None,
         history_hints: dict[str, Any] | None = None,
+        category_mappings: dict[str, str] | None = None,
+        payment_methods: list[str] | None = None,
+        correction_hints: list[tuple[str, str]] | None = None,
     ) -> dict[str, Any] | list[dict[str, Any]]:
         raise NotImplementedError("로컬 LLM 프로바이더는 아직 구현되지 않았습니다")
 
