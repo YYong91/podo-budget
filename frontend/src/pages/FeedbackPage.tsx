@@ -16,9 +16,9 @@ import { trackEvent } from '../utils/analytics'
 import { useAuth } from '../contexts/AuthContext'
 
 const SOURCE_LABELS: Record<FeedbackSource, { text: string; className: string }> = {
-  web: { text: '웹', className: 'bg-blue-50 text-blue-600' },
-  telegram: { text: 'TG', className: 'bg-sky-50 text-sky-600' },
-  kakao: { text: '카톡', className: 'bg-yellow-50 text-yellow-700' },
+  web: { text: '웹', className: 'bg-[var(--surface-elevated)] text-[var(--text-secondary)]' },
+  telegram: { text: 'TG', className: 'bg-grape-500/10 text-grape-600' },
+  kakao: { text: '카톡', className: 'bg-amber-500/10 text-amber-700' },
 }
 
 const STATUS_LABELS: Record<FeedbackStatus, { text: string; className: string }> = {
@@ -144,7 +144,7 @@ export default function FeedbackPage() {
             onClick={() => setType('bug')}
             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
               type === 'bug'
-                ? 'bg-red-600 text-white'
+                ? 'bg-rose-600 text-white'
                 : 'bg-[var(--surface-hover)] text-[var(--text-secondary)] hover:bg-[var(--surface-hover)]'
             }`}
           >
@@ -243,7 +243,7 @@ function FeedbackCard({
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-2 flex-1 min-w-0">
           <span className={`flex-shrink-0 text-xs px-2 py-0.5 rounded-full font-medium ${
-            isFeature ? 'bg-grape-50 text-grape-600' : 'bg-red-100 text-red-600'
+            isFeature ? 'bg-grape-500/10 text-grape-600' : 'bg-rose-500/10 text-rose-600'
           }`}>
             {isFeature ? '기능' : '버그'}
           </span>
