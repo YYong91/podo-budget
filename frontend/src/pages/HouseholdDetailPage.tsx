@@ -80,6 +80,12 @@ export default function HouseholdDetailPage() {
   const [activeTab, setActiveTab] = useState<TabType>('members')
   const [showInviteModal, setShowInviteModal] = useState(false)
   const [isInviting, setIsInviting] = useState(false)
+  const [pendingConfirm, setPendingConfirm] = useState<{
+    message: string
+    confirmLabel?: string
+    onConfirm: () => Promise<void>
+  } | null>(null)
+  const [isConfirming, setIsConfirming] = useState(false)
 
   /**
    * 컴포넌트 마운트 시 상세 정보 조회
@@ -164,34 +170,42 @@ export default function HouseholdDetailPage() {
   /**
    * 멤버 내보내기 핸들러
    */
-  const handleRemoveMember = async (userId: number, username: string) => {
+  const handleRemoveMember = (userId: number, username: string) => {
     if (!id) return
-    if (!confirm(`정말 ${username}님을 내보내시겠습니까?`)) return
-
-    try {
-      await removeMember(Number(id), userId)
-      addToast('success', TOAST.MEMBER_REMOVED)
-    } catch (err) {
-      console.error('멤버 내보내기 실패:', err)
-      addToast('error', TOAST.PROCESS_FAILED)
-    }
+    setPendingConfirm({
+      message: `${username}님을 가구에서 내보내시겠습니까?`,
+      confirmLabel: '내보내기',
+      onConfirm: async () => {
+        try {
+          await removeMember(Number(id), userId)
+          addToast('success', TOAST.MEMBER_REMOVED)
+        } catch (err) {
+          console.error('멤버 내보내기 실패:', err)
+          addToast('error', TOAST.PROCESS_FAILED)
+        }
+      },
+    })
   }
 
   /**
    * 가구 탈퇴 핸들러
    */
-  const handleLeave = async () => {
+  const handleLeave = () => {
     if (!id) return
-    if (!confirm('정말 이 가구에서 탈퇴하시겠습니까?')) return
-
-    try {
-      await leaveHousehold(Number(id))
-      addToast('success', TOAST.HOUSEHOLD_LEFT)
-      navigate('/households')
-    } catch (err) {
-      console.error('가구 탈퇴 실패:', err)
-      addToast('error', TOAST.PROCESS_FAILED)
-    }
+    setPendingConfirm({
+      message: '이 가구에서 탈퇴하시겠습니까?',
+      confirmLabel: '탈퇴',
+      onConfirm: async () => {
+        try {
+          await leaveHousehold(Number(id))
+          addToast('success', TOAST.HOUSEHOLD_LEFT)
+          navigate('/households')
+        } catch (err) {
+          console.error('가구 탈퇴 실패:', err)
+          addToast('error', TOAST.PROCESS_FAILED)
+        }
+      },
+    })
   }
 
   /**
@@ -212,34 +226,43 @@ export default function HouseholdDetailPage() {
   /**
    * 가구 삭제 핸들러 (owner만 가능)
    */
-  const handleDelete = async () => {
+  const handleDelete = () => {
     if (!id) return
-    if (!confirm('정말 이 가구를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) return
-
-    try {
-      await deleteHousehold(Number(id))
-      addToast('success', TOAST.HOUSEHOLD_DELETED)
-      navigate('/households')
-    } catch (err) {
-      console.error('가구 삭제 실패:', err)
-      addToast('error', TOAST.DELETE_FAILED)
-    }
+    setPendingConfirm({
+      message: '가구를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.',
+      confirmLabel: '삭제',
+      onConfirm: async () => {
+        try {
+          await deleteHousehold(Number(id))
+          addToast('success', TOAST.HOUSEHOLD_DELETED)
+          navigate('/households')
+        } catch (err) {
+          console.error('가구 삭제 실패:', err)
+          addToast('error', TOAST.DELETE_FAILED)
+        }
+      },
+    })
   }
 
   /**
    * 초대 취소 핸들러
    */
-  const handleCancelInvitation = async (invitationId: number) => {
+  const handleCancelInvitation = (invitationId: number) => {
     if (!id) return
     const inv = householdInvitations.find(i => i.id === invitationId)
-    if (inv && !confirm(`${inv.invitee_email}의 초대를 취소하시겠습니까?`)) return
-
-    try {
-      await cancelInvitation(Number(id), invitationId)
-      addToast('success', TOAST.INVITE_CANCELLED)
-    } catch {
-      addToast('error', TOAST.PROCESS_FAILED)
-    }
+    if (!inv) return
+    setPendingConfirm({
+      message: `${inv.invitee_email}의 초대를 취소하시겠습니까?`,
+      confirmLabel: '초대 취소',
+      onConfirm: async () => {
+        try {
+          await cancelInvitation(Number(id), invitationId)
+          addToast('success', TOAST.INVITE_CANCELLED)
+        } catch {
+          addToast('error', TOAST.PROCESS_FAILED)
+        }
+      },
+    })
   }
 
   /**
@@ -401,6 +424,50 @@ export default function HouseholdDetailPage() {
         onSubmit={handleInvite}
         isLoading={isInviting}
       />
+
+      {/* ConfirmSheet — window.confirm() 대체. isConfirming 중에는 배경 탭으로 닫히지 않음 */}
+      {pendingConfirm && (
+        <div
+          role="presentation"
+          className="fixed inset-0 z-50 flex items-end bg-black/40"
+          onClick={(e) => { if (e.target === e.currentTarget && !isConfirming) setPendingConfirm(null) }}
+          onKeyDown={(e) => { if (e.key === 'Escape' && !isConfirming) setPendingConfirm(null) }}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            className="w-full bg-[var(--surface-card)] rounded-t-2xl shadow-lg border-t border-[var(--border-default)] p-5 space-y-4"
+          >
+            <p className="text-sm font-medium text-[var(--text-primary)]">
+              {pendingConfirm.message}
+            </p>
+            <div className="flex gap-2">
+              <button
+                disabled={isConfirming}
+                onClick={() => setPendingConfirm(null)}
+                className="flex-1 px-4 py-2.5 text-sm font-medium text-[var(--text-secondary)] bg-[var(--surface-hover)] rounded-xl transition-colors disabled:opacity-50"
+              >
+                취소
+              </button>
+              <button
+                disabled={isConfirming}
+                onClick={async () => {
+                  setIsConfirming(true)
+                  try {
+                    await pendingConfirm.onConfirm()
+                  } finally {
+                    setIsConfirming(false)
+                    setPendingConfirm(null)
+                  }
+                }}
+                className="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-rose-600 rounded-xl hover:bg-rose-700 transition-colors disabled:opacity-50"
+              >
+                {isConfirming ? '처리 중...' : (pendingConfirm.confirmLabel ?? '확인')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
