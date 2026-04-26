@@ -54,6 +54,9 @@ export default function PaymentMethodManager() {
   const [showDetailSettings, setShowDetailSettings] = useState(false)
   const [saving, setSaving] = useState(false)
 
+  // 삭제 확인 상태
+  const [deletingId, setDeletingId] = useState<number | null>(null)
+
   // 편집 폼 상태
   const [editingMethod, setEditingMethod] = useState<PaymentMethod | null>(null)
   const [editName, setEditName] = useState('')
@@ -358,94 +361,116 @@ export default function PaymentMethodManager() {
             <div
               key={method.id}
               data-testid={`payment-method-${method.id}`}
-              className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)]/60 p-4"
+              className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)]/60 overflow-hidden"
             >
-              {/* 편집 중인 항목 */}
-              {editingMethod?.id === method.id ? (
-                <div className="space-y-3">
-                  <input
-                    type="text"
-                    value={editName}
-                    onChange={(e) => setEditName(e.target.value)}
-                    className="w-full px-3 py-2 border border-[var(--input-border)] rounded-xl text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
-                    placeholder="결제수단 이름"
-                  />
-                  <select
-                    value={editType}
-                    onChange={(e) => setEditType(e.target.value as PaymentMethodType)}
-                    className="w-full px-3 py-2 border border-[var(--input-border)] rounded-xl text-sm"
-                  >
-                    {TYPE_OPTIONS.map((opt) => (
-                      <option key={opt.value} value={opt.value}>{opt.label}</option>
-                    ))}
-                  </select>
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)] text-sm">₩</span>
+              <div className="p-4">
+                {/* 편집 중인 항목 */}
+                {editingMethod?.id === method.id ? (
+                  <div className="space-y-3">
                     <input
-                      type="number"
-                      inputMode="numeric"
-                      value={editTarget}
-                      onChange={(e) => setEditTarget(e.target.value)}
-                      placeholder="월 실적 목표 (선택)"
-                      min="0"
-                      className="w-full pl-7 pr-3 py-2 border border-[var(--input-border)] rounded-xl text-sm"
+                      type="text"
+                      value={editName}
+                      onChange={(e) => setEditName(e.target.value)}
+                      className="w-full px-3 py-2 border border-[var(--input-border)] rounded-xl text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
+                      placeholder="결제수단 이름"
                     />
+                    <select
+                      value={editType}
+                      onChange={(e) => setEditType(e.target.value as PaymentMethodType)}
+                      className="w-full px-3 py-2 border border-[var(--input-border)] rounded-xl text-sm"
+                    >
+                      {TYPE_OPTIONS.map((opt) => (
+                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                      ))}
+                    </select>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)] text-sm">₩</span>
+                      <input
+                        type="number"
+                        inputMode="numeric"
+                        value={editTarget}
+                        onChange={(e) => setEditTarget(e.target.value)}
+                        placeholder="월 실적 목표 (선택)"
+                        min="0"
+                        className="w-full pl-7 pr-3 py-2 border border-[var(--input-border)] rounded-xl text-sm"
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setEditingMethod(null)}
+                        className="flex-1 px-3 py-2 text-sm text-[var(--text-secondary)] bg-[var(--surface-hover)] rounded-xl"
+                      >
+                        취소
+                      </button>
+                      <button
+                        onClick={handleSaveEdit}
+                        disabled={editSaving || !editName.trim()}
+                        className="flex-1 px-3 py-2 text-sm font-medium text-white bg-grape-600 rounded-xl hover:bg-grape-700 disabled:opacity-50"
+                      >
+                        {editSaving ? '저장 중...' : '저장'}
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex gap-2">
+                ) : (
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      {/* 순서 변경 버튼 */}
+                      <div className="flex flex-col gap-0.5">
+                        <button
+                          onClick={() => handleReorder(index, 'up')}
+                          disabled={index === 0}
+                          aria-label="위로"
+                          className="p-0.5 rounded hover:bg-[var(--surface-hover)] transition-colors disabled:opacity-30"
+                        >
+                          <ChevronUp className="w-4 h-4 text-[var(--text-muted)]" />
+                        </button>
+                        <button
+                          onClick={() => handleReorder(index, 'down')}
+                          disabled={index === methods.filter((m) => !m.is_system).length - 1}
+                          aria-label="아래로"
+                          className="p-0.5 rounded hover:bg-[var(--surface-hover)] transition-colors disabled:opacity-30"
+                        >
+                          <ChevronDown className="w-4 h-4 text-[var(--text-muted)]" />
+                        </button>
+                      </div>
+                      <span className="text-sm font-semibold text-[var(--text-primary)]">{method.name}</span>
+                      <span className="text-xs text-[var(--text-muted)]">{TYPE_LABELS[method.type]}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => handleStartEdit(method)}
+                        aria-label="편집"
+                        className="p-1.5 rounded-lg hover:bg-[var(--surface-hover)] transition-colors text-[var(--text-muted)] hover:text-grape-600"
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => setDeletingId(method.id)}
+                        aria-label="삭제"
+                        className="p-1.5 rounded-lg hover:bg-[var(--surface-hover)] transition-colors text-[var(--text-muted)] hover:text-rose-500"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+              {/* 삭제 인라인 확인 */}
+              {deletingId === method.id && (
+                <div className="px-4 py-2.5 bg-rose-500/5 flex items-center justify-between border-t border-rose-200/50">
+                  <p className="text-sm text-[var(--text-secondary)]">'{method.name}'을 삭제할까요?</p>
+                  <div className="flex gap-2 flex-shrink-0">
                     <button
-                      onClick={() => setEditingMethod(null)}
-                      className="flex-1 px-3 py-2 text-sm text-[var(--text-secondary)] bg-[var(--surface-hover)] rounded-xl"
+                      onClick={() => setDeletingId(null)}
+                      className="px-3 py-1.5 text-xs rounded-lg bg-[var(--surface-hover)] text-[var(--text-secondary)]"
                     >
                       취소
                     </button>
                     <button
-                      onClick={handleSaveEdit}
-                      disabled={editSaving || !editName.trim()}
-                      className="flex-1 px-3 py-2 text-sm font-medium text-white bg-grape-600 rounded-xl hover:bg-grape-700 disabled:opacity-50"
+                      onClick={async () => { await handleDelete(method); setDeletingId(null) }}
+                      className="px-3 py-1.5 text-xs rounded-lg bg-rose-500 text-white font-medium"
                     >
-                      {editSaving ? '저장 중...' : '저장'}
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    {/* 순서 변경 버튼 */}
-                    <div className="flex flex-col gap-0.5">
-                      <button
-                        onClick={() => handleReorder(index, 'up')}
-                        disabled={index === 0}
-                        aria-label="위로"
-                        className="p-0.5 rounded hover:bg-[var(--surface-hover)] transition-colors disabled:opacity-30"
-                      >
-                        <ChevronUp className="w-4 h-4 text-[var(--text-muted)]" />
-                      </button>
-                      <button
-                        onClick={() => handleReorder(index, 'down')}
-                        disabled={index === methods.filter((m) => !m.is_system).length - 1}
-                        aria-label="아래로"
-                        className="p-0.5 rounded hover:bg-[var(--surface-hover)] transition-colors disabled:opacity-30"
-                      >
-                        <ChevronDown className="w-4 h-4 text-[var(--text-muted)]" />
-                      </button>
-                    </div>
-                    <span className="text-sm font-semibold text-[var(--text-primary)]">{method.name}</span>
-                    <span className="text-xs text-[var(--text-muted)]">{TYPE_LABELS[method.type]}</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <button
-                      onClick={() => handleStartEdit(method)}
-                      aria-label="편집"
-                      className="p-1.5 rounded-lg hover:bg-[var(--surface-hover)] transition-colors text-[var(--text-muted)] hover:text-grape-600"
-                    >
-                      <Pencil className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(method)}
-                      aria-label="삭제"
-                      className="p-1.5 rounded-lg hover:bg-[var(--surface-hover)] transition-colors text-[var(--text-muted)] hover:text-rose-500"
-                    >
-                      <Trash2 className="w-4 h-4" />
+                      삭제
                     </button>
                   </div>
                 </div>
