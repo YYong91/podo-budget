@@ -160,7 +160,7 @@ export default function FeedbackPage() {
           onChange={(e) => setTitle(e.target.value)}
           placeholder="제목"
           maxLength={200}
-          className="w-full px-4 py-2.5 rounded-xl border border-[var(--border-default)] text-sm focus:outline-none focus:ring-2 focus:ring-grape-300 focus:border-grape-300"
+          className="w-full px-4 py-2.5 rounded-xl border border-[var(--input-border)] text-sm focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
         />
 
         {/* 내용 */}
@@ -170,7 +170,7 @@ export default function FeedbackPage() {
           placeholder="자세한 내용을 적어주세요"
           rows={4}
           maxLength={5000}
-          className="w-full px-4 py-2.5 rounded-xl border border-[var(--border-default)] text-sm focus:outline-none focus:ring-2 focus:ring-grape-300 focus:border-grape-300 resize-none"
+          className="w-full px-4 py-2.5 rounded-xl border border-[var(--input-border)] text-sm focus:outline-none focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500 resize-none"
         />
 
         <button
