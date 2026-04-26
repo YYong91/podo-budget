@@ -14,6 +14,12 @@ def previous_month_kst() -> str:
     return f"{now_kst.year}-{now_kst.month - 1:02d}"
 
 
+def current_month_kst() -> str:
+    """현재 KST 기준 현재 월을 YYYY-MM 형식으로 반환"""
+    now_kst = datetime.now(_KST)
+    return f"{now_kst.year}-{now_kst.month:02d}"
+
+
 def month_boundaries(month: str) -> tuple[date, date]:
     """YYYY-MM → (시작일 inclusive, 종료일 exclusive) 반환"""
     year, mon = map(int, month.split("-"))
