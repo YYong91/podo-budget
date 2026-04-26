@@ -4,12 +4,14 @@
 모든 엔드포인트는 ADMIN_USER_ID 사용자만 접근 가능합니다.
 """
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request, status
+from sqlalchemy import select as sa_select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import require_admin
 from app.core.database import get_db
 from app.core.rate_limit import limiter
+from app.models.monthly_report import MonthlyReport
 from app.models.user import User
 from app.schemas.admin import (
     AdminUserDetailResponse,
@@ -18,6 +20,7 @@ from app.schemas.admin import (
     DashboardStatsResponse,
 )
 from app.services import admin_service
+from app.services.report_scheduler import phase1_enqueue_pending, phase2_process_pending
 
 router = APIRouter()
 
@@ -78,3 +81,38 @@ async def update_user(
     # 수정 후 상세 정보 반환
     result = await admin_service.get_user_detail(db, user_id)
     return result
+
+
+@router.post("/reports/{report_id}/retry", status_code=200)
+async def retry_report(
+    report_id: int,
+    background_tasks: BackgroundTasks,
+    _admin: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """failed/pending 상태 리포트 LLM 재시도"""
+    report = await db.scalar(sa_select(MonthlyReport).where(MonthlyReport.id == report_id))
+    if not report:
+        raise HTTPException(status_code=404, detail="리포트를 찾을 수 없습니다")
+    if report.status not in ("failed", "pending"):
+        raise HTTPException(status_code=400, detail=f"재시도 불가 상태: {report.status}")
+
+    report.status = "pending"
+    report.attempt_count = 0
+    await db.commit()
+
+    background_tasks.add_task(phase2_process_pending, report.month)
+    return {"id": report_id, "status": "retrying"}
+
+
+@router.post("/reports/manual-trigger", status_code=200)
+async def manual_trigger_reports(
+    background_tasks: BackgroundTasks,
+    month: str = Query(..., pattern=r"^\d{4}-\d{2}$"),
+    _admin: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """특정 월 결산 리포트 수동 생성 (디버깅/초기 배포용)"""
+    queued = await phase1_enqueue_pending(db, month)
+    background_tasks.add_task(phase2_process_pending, month)
+    return {"queued": queued, "month": month}
