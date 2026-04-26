@@ -119,7 +119,7 @@ async def trigger_monthly_reports(
     request: Request,
     background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
-) -> dict:
+) -> dict[str, Any]:
     """Supabase pg_cron이 매월 1일 호출하는 월간 결산 리포트 생성 트리거"""
     verify_monthly_report_webhook(request)
 

@@ -12,6 +12,7 @@ mark_completed / mark_failed는 DB 상태 전이만 담당하며 단독으로도
 import asyncio
 import logging
 from datetime import UTC, datetime
+from typing import Any
 
 from sqlalchemy import update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -39,7 +40,7 @@ def _truncate_error(msg: str, max_len: int = MAX_ERROR_LENGTH) -> str:
 async def mark_completed(
     db: AsyncSession,
     report_id: int,
-    insights: dict,
+    insights: dict[str, Any],
 ) -> None:
     """리포트 완료 상태로 전이
 

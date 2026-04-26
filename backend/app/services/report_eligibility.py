@@ -25,12 +25,6 @@ MIN_TRANSACTIONS = 15
 MIN_CATEGORIES = 3
 MIN_SPEND = 200_000
 
-# HouseholdProfile 미존재 시 반환되는 blocker 값
-_BLOCKER_PROFILE_MISSING = "profile_missing"
-_BLOCKER_TRANSACTIONS_SHORT = "transactions_short"
-_BLOCKER_CATEGORIES_SHORT = "categories_short"
-_BLOCKER_SPEND_SHORT = "spend_short"
-
 BlockerType = Literal[
     "profile_missing",
     "transactions_short",
@@ -38,6 +32,12 @@ BlockerType = Literal[
     "spend_short",
     None,
 ]
+
+# HouseholdProfile 미존재 시 반환되는 blocker 값 (Literal 타입으로 선언해야 mypy가 허용)
+_BLOCKER_PROFILE_MISSING: Literal["profile_missing"] = "profile_missing"
+_BLOCKER_TRANSACTIONS_SHORT: Literal["transactions_short"] = "transactions_short"
+_BLOCKER_CATEGORIES_SHORT: Literal["categories_short"] = "categories_short"
+_BLOCKER_SPEND_SHORT: Literal["spend_short"] = "spend_short"
 
 
 @dataclass

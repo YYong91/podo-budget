@@ -16,14 +16,14 @@ from app.schemas.monthly_report import (
     MonthlyReportOrEligibility,
     MonthlyReportResponse,
 )
-from app.services.report_eligibility import check_household_eligibility
+from app.services.report_eligibility import EligibilityResult, check_household_eligibility
 from app.services.report_month_utils import previous_month_kst
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
 
-def _build_eligibility(eligibility) -> MonthlyReportEligibility:
+def _build_eligibility(eligibility: EligibilityResult) -> MonthlyReportEligibility:
     """EligibilityResult → MonthlyReportEligibility 변환 헬퍼"""
     return MonthlyReportEligibility(
         has_profile=eligibility.has_profile,

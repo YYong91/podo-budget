@@ -4,6 +4,8 @@
 모든 엔드포인트는 ADMIN_USER_ID 사용자만 접근 가능합니다.
 """
 
+from typing import Any
+
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request, status
 from sqlalchemy import select as sa_select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -89,7 +91,7 @@ async def retry_report(
     background_tasks: BackgroundTasks,
     _admin: User = Depends(require_admin),
     db: AsyncSession = Depends(get_db),
-) -> dict:
+) -> dict[str, Any]:
     """failed/pending 상태 리포트 LLM 재시도"""
     report = await db.scalar(sa_select(MonthlyReport).where(MonthlyReport.id == report_id))
     if not report:
@@ -111,7 +113,7 @@ async def manual_trigger_reports(
     month: str = Query(..., pattern=r"^\d{4}-\d{2}$"),
     _admin: User = Depends(require_admin),
     db: AsyncSession = Depends(get_db),
-) -> dict:
+) -> dict[str, Any]:
     """특정 월 결산 리포트 수동 생성 (디버깅/초기 배포용)"""
     queued = await phase1_enqueue_pending(db, month)
     background_tasks.add_task(phase2_process_pending, month)

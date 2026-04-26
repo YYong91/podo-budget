@@ -12,6 +12,7 @@ ComprehensiveInsightsRequest 스키마와 호환되는 dict를 반환한다.
 import logging
 import math
 from datetime import date, datetime, time
+from typing import Any
 
 from sqlalchemy import and_, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -67,7 +68,7 @@ async def _sum_expenses(db: AsyncSession, household_id: int, start: date, end: d
             )
         )
     )
-    return float(result.scalar())
+    return float(result.scalar() or 0)
 
 
 async def _sum_income(db: AsyncSession, household_id: int, start: date, end: date) -> float:
@@ -83,7 +84,7 @@ async def _sum_income(db: AsyncSession, household_id: int, start: date, end: dat
             )
         )
     )
-    return float(result.scalar())
+    return float(result.scalar() or 0)
 
 
 async def _top_expense_categories(
@@ -93,7 +94,7 @@ async def _top_expense_categories(
     end: date,
     expense_total: float,
     limit: int = 5,
-) -> list[dict]:
+) -> list[dict[str, Any]]:
     """카테고리별 지출 집계 TOP N
 
     각 항목: {category_id, name, amount, percentage}
@@ -133,7 +134,7 @@ async def _top_expense_categories(
     return items
 
 
-async def _budget_summary(db: AsyncSession, household_id: int, start: date, end: date) -> dict:
+async def _budget_summary(db: AsyncSession, household_id: int, start: date, end: date) -> dict[str, Any]:
     """활성 예산 대비 실제 지출 요약
 
     반환: {total_budget, total_spent, items: [{category_id, name, budget, spent}]}
@@ -201,7 +202,7 @@ async def _budget_summary(db: AsyncSession, household_id: int, start: date, end:
     }
 
 
-async def _expense_income_trend(db: AsyncSession, household_id: int, current_month: str, months: int = 3) -> list[dict]:
+async def _expense_income_trend(db: AsyncSession, household_id: int, current_month: str, months: int = 3) -> list[dict[str, Any]]:
     """최근 N개월 지출/수입 추이
 
     반환: [{month, expense, income}, ...]  최신 월 포함 N개월 (오름차순)
@@ -241,10 +242,10 @@ async def _savings_total(db: AsyncSession, household_id: int, start: date, end: 
             )
         )
     )
-    return float(result.scalar())
+    return float(result.scalar() or 0)
 
 
-async def _recurring_total(db: AsyncSession, household_id: int, start: date, end: date) -> dict:
+async def _recurring_total(db: AsyncSession, household_id: int, start: date, end: date) -> dict[str, Any]:
     """당월 정기 거래 예정 금액 합계
 
     next_due_date가 해당 월 범위 내에 있는 활성 정기 거래를 집계.
@@ -272,9 +273,9 @@ def _calc_financial_score(
     income_total: float,
     expense_total: float,
     savings_total: float,
-    budget: dict,
-    trend: list[dict],
-) -> dict:
+    budget: dict[str, Any],
+    trend: list[dict[str, Any]],
+) -> dict[str, Any]:
     """재무 건강 점수 계산 (0~100)
 
     4가지 지표:
@@ -337,7 +338,7 @@ def _calc_financial_score(
     }
 
 
-async def build_report_data(db: AsyncSession, household_id: int, month: str) -> dict:
+async def build_report_data(db: AsyncSession, household_id: int, month: str) -> dict[str, Any]:
     """ComprehensiveInsightsRequest 호환 dict 생성
 
     Args:

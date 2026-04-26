@@ -1,7 +1,7 @@
 """월간 결산 리포트 엔티티"""
 
 from datetime import datetime
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import JSON, ForeignKey, Index, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -60,12 +60,12 @@ class MonthlyReport(Base):  # type: ignore[misc]
     )
 
     # ── 데이터 스냅샷 ──
-    report_data: Mapped[dict] = mapped_column(
+    report_data: Mapped[dict[str, Any]] = mapped_column(
         JSON,
         nullable=False,
         comment="분석 시점의 입력 스냅샷. 이후 거래 변경과 무관하게 불변.",
     )
-    insights: Mapped[dict | None] = mapped_column(
+    insights: Mapped[dict[str, Any] | None] = mapped_column(
         JSON,
         nullable=True,
         comment="LLM 출력 (StructuredInsightsResponse 구조). completed 시에만 채워짐.",
