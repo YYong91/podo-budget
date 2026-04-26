@@ -294,7 +294,7 @@ export default function CategoryManager() {
           onClick={() => setActiveTab('income')}
           className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-colors ${
             activeTab === 'income'
-              ? 'bg-leaf-500/20 text-leaf-600'
+              ? 'bg-grape-500/20 text-grape-600'
               : 'bg-[var(--surface-elevated)] text-[var(--text-secondary)] hover:bg-[var(--surface-hover)]'
           }`}
         >
