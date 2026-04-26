@@ -113,13 +113,11 @@ export default function RecurringManageSection({ items, monthStr, executedAmount
     return (
       <div id="section-recurring" className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] p-4 sm:p-6">
         <SectionHeader icon="🔄" title="정기거래" manageTo="/recurring" expanded={false} collapsible={false} />
-        <p className="text-sm text-[var(--text-muted)] text-center py-2 mt-3">
-          정기거래를 등록하면 고정비 현황을 볼 수 있어요
-        </p>
-        <div className="text-center mt-2">
+        <div className="text-center py-4 mt-3">
+          <p className="text-sm text-[var(--text-tertiary)]">정기거래를 등록하면 고정비 현황을 볼 수 있어요</p>
           <Link
             to="/recurring"
-            className="text-xs text-grape-600 hover:text-grape-700 font-medium transition-colors"
+            className="text-sm font-medium text-grape-600 hover:text-grape-700 mt-1 inline-block"
           >
             등록하기 →
           </Link>

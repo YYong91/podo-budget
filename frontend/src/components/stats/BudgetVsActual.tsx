@@ -70,11 +70,11 @@ export default function BudgetVsActual({ budgetStats, monthStr }: BudgetVsActual
             )}
           </>
         ) : (
-          <div className="py-2">
-            <p className="text-sm text-[var(--text-muted)]">예산이 설정되지 않았습니다</p>
+          <div className="text-center py-4 mt-3">
+            <p className="text-sm text-[var(--text-tertiary)]">예산이 설정되지 않았습니다</p>
             <Link
               to="/budgets"
-              className="text-xs text-grape-600 hover:text-grape-700 font-medium mt-1 inline-block"
+              className="text-sm font-medium text-grape-600 hover:text-grape-700 mt-1 inline-block"
             >
               설정하기 →
             </Link>

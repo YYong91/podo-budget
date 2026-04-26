@@ -50,19 +50,20 @@ describe('CategoryTopList', () => {
     expect(screen.getByText('37.5%')).toBeInTheDocument()
   })
 
-  it('리스트 뷰에서 6개 이상일 때 더보기 버튼을 표시한다', async () => {
+  it('리스트 뷰에서 6개 이상일 때 SectionHeader 펼치기 버튼이 있다', async () => {
     render(<MemoryRouter><CategoryTopList categories={mockCategories} /></MemoryRouter>)
     await switchToListView()
-    expect(screen.getByText(/더보기/)).toBeInTheDocument()
+    // SectionHeader chevron이 접기/펼치기를 담당
+    expect(screen.getByRole('button', { name: '펼치기' })).toBeInTheDocument()
   })
 
-  it('리스트 뷰에서 더보기 클릭 시 전체 목록을 표시한다', async () => {
+  it('리스트 뷰에서 SectionHeader chevron 클릭 시 전체 목록을 표시한다', async () => {
     render(<MemoryRouter><CategoryTopList categories={mockCategories} /></MemoryRouter>)
     const user = await switchToListView()
 
-    await user.click(screen.getByText(/더보기/))
+    await user.click(screen.getByRole('button', { name: '펼치기' }))
     expect(screen.getByText('기타')).toBeInTheDocument()
-    expect(screen.getByText(/접기/)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '접기' })).toBeInTheDocument()
   })
 
   it('리스트 뷰에서 5개 이하이면 더보기 버튼이 없다', async () => {
