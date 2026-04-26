@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts'
+import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, LabelList } from 'recharts'
 import type { ComparisonResponse, PeriodTotal } from '../../types'
 import SectionHeader from './SectionHeader'
 
@@ -9,24 +9,6 @@ type MonthlyComparisonProps = {
   /** 저축률 현재월 (제공 시에만 저축률 행 표시) */
   savingsRateCurrent?: number
   savingsRatePrevious?: number
-}
-
-function ChartTooltip({ active, payload, label }: {
-  active?: boolean
-  payload?: Array<{ name: string; value: number; color: string }>
-  label?: string
-}) {
-  if (!active || !payload?.length) return null
-  return (
-    <div className="bg-surface border border-default rounded-xl shadow-md px-3 py-2 text-xs space-y-1">
-      <p className="font-semibold text-primary mb-1">{label}</p>
-      {payload.map(entry => (
-        <p key={entry.name} style={{ color: entry.color }}>
-          {entry.name} : {Math.round(entry.value / 10000).toLocaleString()}만원
-        </p>
-      ))}
-    </div>
-  )
 }
 
 /** 3개월 트렌드 BarChart — 수입/지출 비교 막대 */
@@ -54,8 +36,8 @@ function TrendBarChart({
 
   return (
     <div data-testid="trend-bar-chart">
-      <ResponsiveContainer width="100%" height={120}>
-        <BarChart data={chartData} barCategoryGap="30%">
+      <ResponsiveContainer width="100%" height={150}>
+        <BarChart data={chartData} barCategoryGap="30%" margin={{ top: 18, right: 0, left: 0, bottom: 0 }}>
           <XAxis dataKey="name" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
           <YAxis
             tickFormatter={(v) => `${Math.round(v / 10000)}만`}
@@ -64,9 +46,32 @@ function TrendBarChart({
             axisLine={false}
             tickLine={false}
           />
-          <Tooltip content={<ChartTooltip />} />
-          <Bar dataKey="수입" fill="#4ade80" radius={[2, 2, 0, 0]} />
-          <Bar dataKey="지출" fill="#a855f7" radius={[2, 2, 0, 0]} />
+          <Bar dataKey="수입" fill="#4ade80" radius={[2, 2, 0, 0]}>
+            <LabelList
+              dataKey="수입"
+              position="top"
+              style={{ fontSize: 9, fill: 'var(--text-muted)' }}
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              formatter={(v: any) => {
+                if (typeof v !== 'number' || v <= 0) return ''
+                const man = Math.round(v / 10000)
+                return man > 0 ? `${man}만` : ''
+              }}
+            />
+          </Bar>
+          <Bar dataKey="지출" fill="#a855f7" radius={[2, 2, 0, 0]}>
+            <LabelList
+              dataKey="지출"
+              position="top"
+              style={{ fontSize: 9, fill: 'var(--text-muted)' }}
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              formatter={(v: any) => {
+                if (typeof v !== 'number' || v <= 0) return ''
+                const man = Math.round(v / 10000)
+                return man > 0 ? `${man}만` : ''
+              }}
+            />
+          </Bar>
         </BarChart>
       </ResponsiveContainer>
       <div className="flex justify-center gap-4 mt-1">

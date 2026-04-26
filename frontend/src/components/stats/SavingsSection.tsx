@@ -98,7 +98,7 @@ export default function SavingsSection({
       {hasData ? (
         <div className="mt-3">
           <div className="flex items-baseline gap-2 mb-2">
-            <span className="text-lg font-bold text-[var(--text-primary)]">
+            <span className="text-sm font-semibold text-[var(--text-primary)]">
               {formatAmount(savingsTotal!)}
             </span>
             {savingsRate !== undefined && (

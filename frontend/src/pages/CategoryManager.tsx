@@ -283,7 +283,7 @@ export default function CategoryManager() {
           onClick={() => setActiveTab('expense')}
           className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-colors ${
             activeTab === 'expense'
-              ? 'bg-grape-100 text-grape-700'
+              ? 'bg-grape-500/20 text-grape-600'
               : 'bg-[var(--surface-elevated)] text-[var(--text-secondary)] hover:bg-[var(--surface-hover)]'
           }`}
         >
@@ -293,7 +293,7 @@ export default function CategoryManager() {
           onClick={() => setActiveTab('income')}
           className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-colors ${
             activeTab === 'income'
-              ? 'bg-leaf-100 text-leaf-700'
+              ? 'bg-leaf-500/20 text-leaf-600'
               : 'bg-[var(--surface-elevated)] text-[var(--text-secondary)] hover:bg-[var(--surface-hover)]'
           }`}
         >
@@ -303,7 +303,7 @@ export default function CategoryManager() {
 
       {/* 추가 폼 */}
       {isAdding && (
-        <div className="bg-grape-50 rounded-2xl border border-grape-200 p-4 space-y-3">
+        <div className="bg-[var(--surface-elevated)] rounded-2xl border border-[var(--border-default)] p-4 space-y-3">
           <div className="flex items-start gap-3">
             <input
               type="text"
@@ -385,7 +385,7 @@ export default function CategoryManager() {
           {categories.map((category, index) => {
             const isEditing = editingId === category.id
             return (
-              <div key={category.id} className={isEditing ? 'bg-grape-50' : undefined}>
+              <div key={category.id} className={isEditing ? 'bg-[var(--surface-elevated)]' : undefined}>
                 {isEditing ? (
                   /* 인라인 편집 폼 */
                   <div className="px-4 py-4 space-y-3">
@@ -460,7 +460,7 @@ export default function CategoryManager() {
                       <div className="flex items-center gap-1.5">
                         <span className="font-medium text-[var(--text-primary)]">{category.name}</span>
                         {category.is_savings && (
-                          <span className="inline-flex items-center px-1.5 py-0.5 text-[10px] font-medium text-leaf-700 bg-leaf-100 rounded">
+                          <span className="inline-flex items-center px-1.5 py-0.5 text-[10px] font-medium text-leaf-600 bg-leaf-500/15 rounded">
                             저축
                           </span>
                         )}
@@ -478,13 +478,13 @@ export default function CategoryManager() {
                       <div className="flex gap-2 flex-shrink-0">
                         <button
                           onClick={() => startEdit(category)}
-                          className="px-3 py-1.5 text-sm font-medium text-grape-600 bg-grape-50 rounded-lg hover:bg-grape-100 transition-colors"
+                          className="px-3 py-1.5 text-sm font-medium text-grape-600 bg-grape-500/10 rounded-lg hover:bg-grape-500/20 transition-colors"
                         >
                           수정
                         </button>
                         <button
                           onClick={() => setDeleteTarget(category.id)}
-                          className="px-3 py-1.5 text-sm font-medium text-rose-600 bg-rose-50 rounded-lg hover:bg-rose-100 transition-colors"
+                          className="px-3 py-1.5 text-sm font-medium text-rose-600 bg-rose-500/10 rounded-lg hover:bg-rose-500/20 transition-colors"
                         >
                           삭제
                         </button>
