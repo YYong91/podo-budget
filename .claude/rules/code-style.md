@@ -28,3 +28,10 @@
 - Grape 디자인 시스템: grape/leaf/warm/cream 컬러 팔레트
 - 유틸리티 클래스 직접 사용 (CSS 파일 최소화)
 - 반응형: 모바일 퍼스트 (기본 모바일 → md/lg로 확장)
+
+### 다크모드 색상 규칙
+- `text-warm-*`, `bg-warm-*` **직접 사용 금지** — 다크모드에서 색상이 깨짐
+- 텍스트: `text-primary` / `text-secondary` / `text-tertiary` / `text-muted`
+- 배경: `bg-surface` / `bg-elevated` / `bg-hover`
+- 보더: `border-default` / `border-subtle`
+- 위 유틸리티에 없는 경우: `text-[var(--text-primary)]` 형태의 arbitrary value 사용
