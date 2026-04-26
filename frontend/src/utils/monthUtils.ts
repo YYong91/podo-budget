@@ -4,6 +4,9 @@
  * - KST(UTC+9) 기준 현재 월 조회
  */
 
+// KST는 UTC+9 — 서버 타임존과 무관하게 한국 기준 시간을 계산할 때 사용
+const KST_OFFSET_MS = 9 * 60 * 60 * 1000
+
 /**
  * 주어진 월의 이전 월을 반환한다.
  * 1월이면 전년도 12월로 감소한다.
@@ -51,7 +54,6 @@ export function nextMonth(month: string): string {
  * 서버 타임존과 무관하게 한국 기준 월을 보장한다.
  */
 export function currentMonthKst(): string {
-  const KST_OFFSET_MS = 9 * 60 * 60 * 1000
   const nowKst = new Date(Date.now() + KST_OFFSET_MS)
 
   // UTC 기준으로 KST 날짜를 구한 뒤 연월 추출
