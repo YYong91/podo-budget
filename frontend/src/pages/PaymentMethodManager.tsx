@@ -51,7 +51,6 @@ export default function PaymentMethodManager() {
   const [formName, setFormName] = useState('')
   const [formType, setFormType] = useState<PaymentMethodType>('credit_card')
   const [formTarget, setFormTarget] = useState('')
-  const [showDetailSettings, setShowDetailSettings] = useState(false)
   const [saving, setSaving] = useState(false)
 
   // 삭제 확인 상태
@@ -142,7 +141,6 @@ export default function PaymentMethodManager() {
       setFormName('')
       setFormType('credit_card')
       setFormTarget('')
-      setShowDetailSettings(false)
       await fetchData()
     } catch {
       addToast('error', TOAST.SAVE_FAILED)
@@ -227,14 +225,25 @@ export default function PaymentMethodManager() {
             <h1 className="text-lg font-semibold text-[var(--text-primary)]">결제수단</h1>
           </div>
         </div>
-        {!loading && methods.length > 0 && (
-          <button
-            onClick={() => setEditMode(!editMode)}
-            className="text-sm font-medium text-grape-600 hover:text-grape-700 transition-colors"
-          >
-            {editMode ? '완료' : '편집'}
-          </button>
-        )}
+        <div className="flex items-center gap-3">
+          {!loading && !editMode && !showForm && (
+            <button
+              onClick={() => setShowForm(true)}
+              aria-label="결제수단 추가"
+              className="p-1.5 rounded-lg hover:bg-[var(--surface-hover)] transition-colors text-grape-600"
+            >
+              <Plus className="w-5 h-5" />
+            </button>
+          )}
+          {!loading && methods.length > 0 && (
+            <button
+              onClick={() => { setEditMode(!editMode); setShowForm(false) }}
+              className="text-sm font-medium text-grape-600 hover:text-grape-700 transition-colors"
+            >
+              {editMode ? '완료' : '편집'}
+            </button>
+          )}
+        </div>
       </div>
 
       {/* 로딩 */}
@@ -499,53 +508,40 @@ export default function PaymentMethodManager() {
             />
           </div>
 
-          {/* 상세 설정 (접힘) */}
-          <button
-            type="button"
-            onClick={() => setShowDetailSettings(!showDetailSettings)}
-            className="text-sm text-grape-600 hover:text-grape-700 font-medium"
-          >
-            {showDetailSettings ? '상세 설정 접기' : '상세 설정'}
-          </button>
+          <div>
+            <label htmlFor="pm-type" className="block text-xs text-[var(--text-tertiary)] mb-1">유형</label>
+            <select
+              id="pm-type"
+              value={formType}
+              onChange={(e) => setFormType(e.target.value as PaymentMethodType)}
+              className="w-full px-3 py-2 border border-[var(--input-border)] rounded-xl text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
+            >
+              {TYPE_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
+          </div>
 
-          {showDetailSettings && (
-            <>
-              <div>
-                <label htmlFor="pm-type" className="block text-xs text-[var(--text-tertiary)] mb-1">유형</label>
-                <select
-                  id="pm-type"
-                  value={formType}
-                  onChange={(e) => setFormType(e.target.value as PaymentMethodType)}
-                  className="w-full px-3 py-2 border border-[var(--input-border)] rounded-xl text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
-                >
-                  {TYPE_OPTIONS.map((opt) => (
-                    <option key={opt.value} value={opt.value}>{opt.label}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label htmlFor="pm-target" className="block text-xs text-[var(--text-tertiary)] mb-1">월 실적 목표</label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)] text-sm">₩</span>
-                  <input
-                    id="pm-target"
-                    type="number"
-                    inputMode="numeric"
-                    value={formTarget}
-                    onChange={(e) => setFormTarget(e.target.value)}
-                    placeholder="0"
-                    min="0"
-                    className="w-full pl-7 pr-3 py-2 border border-[var(--input-border)] rounded-xl text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
-                  />
-                </div>
-              </div>
-            </>
-          )}
+          <div>
+            <label htmlFor="pm-target" className="block text-xs text-[var(--text-tertiary)] mb-1">월 실적 목표</label>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)] text-sm">₩</span>
+              <input
+                id="pm-target"
+                type="number"
+                inputMode="numeric"
+                value={formTarget}
+                onChange={(e) => setFormTarget(e.target.value)}
+                placeholder="0"
+                min="0"
+                className="w-full pl-7 pr-3 py-2 border border-[var(--input-border)] rounded-xl text-sm focus:ring-2 focus:ring-grape-500/30 focus:border-grape-500"
+              />
+            </div>
+          </div>
 
           <div className="flex gap-3">
             <button
-              onClick={() => { setShowForm(false); setFormName(''); setFormTarget(''); setShowDetailSettings(false) }}
+              onClick={() => { setShowForm(false); setFormName(''); setFormType('credit_card'); setFormTarget('') }}
               className="flex-1 px-4 py-2.5 text-sm font-medium text-[var(--text-secondary)] bg-[var(--surface-hover)] rounded-xl hover:bg-[var(--surface-hover)] transition-colors"
             >
               취소
@@ -561,16 +557,6 @@ export default function PaymentMethodManager() {
         </div>
       )}
 
-      {/* 추가 버튼 (하단) */}
-      {!loading && !showForm && (
-        <button
-          onClick={() => setShowForm(true)}
-          className="w-full flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium text-grape-600 bg-[var(--surface-card)] border border-dashed border-grape-300 rounded-2xl hover:bg-[var(--surface-hover)] transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          결제수단 추가
-        </button>
-      )}
     </div>
   )
 }
