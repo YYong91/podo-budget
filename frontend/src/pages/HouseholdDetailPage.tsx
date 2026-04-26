@@ -298,9 +298,10 @@ export default function HouseholdDetailPage() {
           <div className="flex items-center gap-3">
             <button
               onClick={() => navigate('/households')}
-              className="text-[var(--text-muted)] hover:text-[var(--text-secondary)] transition-colors"
+              aria-label="뒤로가기"
+              className="p-2.5 -ml-2.5 rounded-lg hover:bg-[var(--surface-hover)] transition-colors"
             >
-              <ArrowLeft className="w-5 h-5" />
+              <ArrowLeft className="w-5 h-5 text-[var(--text-secondary)]" />
             </button>
             <span
               className={`text-xs px-2 py-1 rounded-full ${getRoleBadgeColor(
