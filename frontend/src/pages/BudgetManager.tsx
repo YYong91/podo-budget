@@ -402,9 +402,9 @@ export default function BudgetManager() {
         {/* 배분 현황 */}
         {hasTotalBudget && (
           <div className="mt-4 space-y-2">
-            <div className="w-full bg-[var(--border-default)] rounded-full h-3">
+            <div className="w-full bg-[var(--border-default)] rounded-full h-1.5 overflow-hidden">
               <div
-                className={`h-3 rounded-full transition-all ${
+                className={`h-1.5 rounded-full transition-all ${
                   allocationPercent > 100 ? 'bg-rose-500' : 'bg-grape-500'
                 }`}
                 style={{ width: `${Math.min(allocationPercent, 100)}%` }}
