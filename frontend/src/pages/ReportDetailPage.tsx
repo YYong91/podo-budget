@@ -53,13 +53,13 @@ export default function ReportDetailPage() {
         <div className="max-w-[640px] mx-auto">
           <ReportEmptyState eligibility={data?.eligibility ?? null} />
         </div>
-      ) : data.report.status !== 'completed' ? (
+      ) : data.report.status !== 'completed' || !data.report.insights ? (
         <div className="max-w-[640px] mx-auto">
           <ReportPendingState />
         </div>
       ) : (
         <ReportContent
-          insights={data.report.insights!}
+          insights={data.report.insights}
           month={data.report.month}
           completedAt={data.report.completed_at}
         />

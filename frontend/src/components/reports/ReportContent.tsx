@@ -3,7 +3,7 @@
 import { Lightbulb, Target } from 'lucide-react'
 import type { StructuredInsights } from '../../types'
 
-interface Props {
+type Props = {
   insights: StructuredInsights
   month: string
   completedAt: string | null
