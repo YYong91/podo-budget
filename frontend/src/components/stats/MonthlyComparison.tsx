@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, LabelList } from 'recharts'
+import { BarChart, Bar, XAxis, ResponsiveContainer, LabelList } from 'recharts'
 import type { ComparisonResponse, PeriodTotal } from '../../types'
 import { formatCompact, formatChange } from '../../utils/format'
 import SectionHeader from './SectionHeader'
@@ -40,13 +40,6 @@ function TrendBarChart({
       <ResponsiveContainer width="100%" height={150}>
         <BarChart data={chartData} barCategoryGap="30%" margin={{ top: 18, right: 0, left: 0, bottom: 0 }}>
           <XAxis dataKey="name" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
-          <YAxis
-            tickFormatter={(v) => `${Math.round(v / 10000)}만`}
-            tick={{ fontSize: 10 }}
-            width={48}
-            axisLine={false}
-            tickLine={false}
-          />
           <Bar dataKey="수입" fill="#4ade80" radius={[2, 2, 0, 0]}>
             <LabelList
               dataKey="수입"

@@ -24,15 +24,10 @@ function renderSection(props = {}) {
 }
 
 describe('SavingsSection', () => {
-  it('총 저축액을 표시한다', () => {
-    renderSection()
-    expect(screen.getByText('₩530,000')).toBeInTheDocument()
-  })
-
-  it('수입 대비 저축률을 표시한다', () => {
+  it('저축/고정/변동 비율을 표시한다', () => {
     renderSection()
     // 530_000 / 3_500_000 * 100 ≈ 15.1%
-    expect(screen.getByText(/15\.1%/)).toBeInTheDocument()
+    expect(screen.getByText(/저축 15\.1%/)).toBeInTheDocument()
   })
 
   it('savingsCategories가 없으면 설정 유도 메시지를 표시한다', () => {

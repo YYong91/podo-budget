@@ -54,14 +54,6 @@ function IncomeFlowBar({
   )
 }
 
-function LegendDot({ color, label }: { color: string; label: string }) {
-  return (
-    <span className="flex items-center gap-1 text-xs text-[var(--text-muted)]">
-      <span className={`w-2 h-2 rounded-full ${color}`} />
-      {label}
-    </span>
-  )
-}
 
 export default function SavingsSection({
   savingsTotal,
@@ -97,33 +89,22 @@ export default function SavingsSection({
 
       {hasData ? (
         <div className="mt-3">
-          <div className="flex items-baseline gap-2 mb-2">
-            <span className="text-sm font-semibold text-[var(--text-primary)]">
-              {formatAmount(savingsTotal!)}
-            </span>
-            {savingsRate !== undefined && (
-              <span className="text-sm text-[var(--text-muted)]">
-                저축률 {savingsRate.toFixed(1)}%
-              </span>
-            )}
-          </div>
+          {showBar && (
+            <div className="flex flex-wrap gap-x-4 gap-y-1 mb-2">
+              <span className="text-sm font-medium text-leaf-600">저축 {savingsPct.toFixed(1)}%</span>
+              <span className="text-sm font-medium text-amber-600">고정 {fixedPct.toFixed(1)}%</span>
+              <span className="text-sm font-medium text-grape-600">변동 {variablePct.toFixed(1)}%</span>
+            </div>
+          )}
 
           {showBar && (
-            <>
-              <IncomeFlowBar
-                savingsPct={savingsPct}
-                fixedPct={fixedPct}
-                variablePct={variablePct}
-                remainingPct={remainingPct}
-                incomeTotal={incomeTotal}
-              />
-              <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1.5">
-                <LegendDot color="bg-leaf-500" label="저축" />
-                <LegendDot color="bg-amber-400" label="고정비" />
-                <LegendDot color="bg-grape-400" label="변동비" />
-                <LegendDot color="bg-[var(--border-default)]" label="여유" />
-              </div>
-            </>
+            <IncomeFlowBar
+              savingsPct={savingsPct}
+              fixedPct={fixedPct}
+              variablePct={variablePct}
+              remainingPct={remainingPct}
+              incomeTotal={incomeTotal}
+            />
           )}
 
           {expanded && (
