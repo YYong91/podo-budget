@@ -4,8 +4,8 @@
 기존 커스텀 카테고리 중 sort_order < 100인 항목을 100으로 올려
 sort_order DESC 정렬 시 커스텀이 시스템보다 항상 앞에 오도록 보장.
 
-Revision ID: a0b1c2d3e4f5
-Revises: z9a0b1c2d3e4
+Revision ID: b1c2d3e4f5a6
+Revises: 9789df318393
 Create Date: 2026-04-27
 """
 
@@ -15,8 +15,8 @@ import sqlalchemy as sa
 
 from alembic import op
 
-revision: str = "a0b1c2d3e4f5"  # pragma: allowlist secret
-down_revision: str | Sequence[str] | None = "z9a0b1c2d3e4"
+revision: str = "b1c2d3e4f5a6"  # pragma: allowlist secret
+down_revision: str | Sequence[str] | None = "9789df318393"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
