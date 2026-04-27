@@ -86,8 +86,8 @@ async def create_category(
     if existing.scalar_one_or_none():
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="이미 존재하는 카테고리입니다")
 
-    # 가구 소속이 필수이므로 항상 가계 카테고리로 생성
-    db_category = Category(**category.model_dump(), household_id=household_id, user_id=None)
+    # 가구 소속이 필수이므로 항상 가계 카테고리로 생성, sort_order 100으로 초기화 (시스템 카테고리 최대값 18보다 높음)
+    db_category = Category(**category.model_dump(), household_id=household_id, user_id=None, sort_order=100)
 
     db.add(db_category)
     await db.commit()
@@ -121,12 +121,17 @@ async def reorder_categories(
                 detail=f"카테고리 ID {cat_id}에 접근할 수 없습니다",
             )
 
-    total = len(request.category_ids)
-    for idx, cat_id in enumerate(request.category_ids):
-        cat = accessible[cat_id]  # type: ignore[index]
-        # 시스템 카테고리(user_id=None, household_id=None)는 순서 변경 불가
-        if cat.user_id is not None or cat.household_id is not None:
-            cat.sort_order = total - idx  # type: ignore[assignment]
+    # 커스텀 카테고리만 sort_order 재배정 (시스템은 고정, 100 이상 유지)
+    custom_ids_in_order = [
+        cat_id
+        for cat_id in request.category_ids
+        if accessible[cat_id].user_id is not None or accessible[cat_id].household_id is not None  # type: ignore[index]
+    ]
+    total_custom = len(custom_ids_in_order)
+    for idx, cat_id in enumerate(custom_ids_in_order):
+        # 커스텀 카테고리는 sort_order 100 이상 유지 (시스템 카테고리 최대값 18과 분리)
+        new_order: int = max(100, 100 + total_custom - idx)
+        accessible[cat_id].sort_order = new_order  # type: ignore[index, assignment]
 
     await db.commit()
 
