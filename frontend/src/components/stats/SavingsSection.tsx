@@ -72,9 +72,6 @@ export default function SavingsSection({
   const rawVariablePct = showBar ? ((expenseTotal - savingsTotal - recurringTotal) / incomeTotal) * 100 : 0
   const variablePct = Math.max(0, rawVariablePct)
   const remainingPct = showBar ? ((incomeTotal - expenseTotal) / incomeTotal) * 100 : 0
-  const savingsRate = incomeTotal > 0 && savingsTotal !== undefined
-    ? (savingsTotal / incomeTotal) * 100
-    : undefined
 
   return (
     <div id="section-savings" className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] p-4 sm:p-6">
