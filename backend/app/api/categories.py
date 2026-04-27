@@ -130,7 +130,8 @@ async def reorder_categories(
     total_custom = len(custom_ids_in_order)
     for idx, cat_id in enumerate(custom_ids_in_order):
         # 커스텀 카테고리는 sort_order 100 이상 유지 (시스템 카테고리 최대값 18과 분리)
-        accessible[cat_id].sort_order = max(100, 100 + total_custom - idx)  # type: ignore[index, assignment]
+        new_order: int = max(100, 100 + total_custom - idx)
+        accessible[cat_id].sort_order = new_order  # type: ignore[index, assignment]
 
     await db.commit()
 
