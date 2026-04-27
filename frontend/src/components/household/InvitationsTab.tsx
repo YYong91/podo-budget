@@ -13,7 +13,7 @@ interface InvitationsTabProps {
   /** 초대 모달 열기 핸들러 */
   onOpenInviteModal: () => void
   /** 초대 취소 핸들러 */
-  onCancelInvitation: (invitationId: number) => Promise<void>
+  onCancelInvitation: (invitationId: number) => void
   /** 초대 링크 복사 핸들러 */
   onCopyInviteLink: (token: string) => Promise<void>
 }

@@ -6,6 +6,7 @@
 
 import { Link } from 'react-router-dom'
 import { FEATURES } from '../../config/features'
+import { formatAmount, formatCompact } from '../../utils/format'
 
 type UnifiedSummaryCardsProps = {
   incomeTotal: number
@@ -13,19 +14,6 @@ type UnifiedSummaryCardsProps = {
   /** 저축성 지출 합계 (적금, 투자, 보험 등). 제공 시 저축률 = savingsTotal / incomeTotal */
   savingsTotal?: number
   netWorth?: number | null
-}
-
-function formatAmount(amount: number): string {
-  const abs = Math.abs(amount)
-  const formatted = `₩${abs.toLocaleString('ko-KR')}`
-  return amount < 0 ? `-${formatted}` : formatted
-}
-
-function formatLargeAmount(amount: number): string {
-  const abs = Math.abs(amount)
-  if (abs >= 100000000) return `${(amount / 100000000).toFixed(1)}억원`
-  if (abs >= 10000) return `${Math.round(amount / 10000).toLocaleString()}만원`
-  return formatAmount(amount)
 }
 
 export default function UnifiedSummaryCards({
@@ -61,14 +49,14 @@ export default function UnifiedSummaryCards({
       {FEATURES.assets && netWorth != null && (
         <Link to="/assets" className={`col-span-2 lg:col-span-4 bg-gradient-to-br from-warm-50 to-warm-100 border border-[var(--border-default)] ${cardBase} text-center`}>
           <p className="text-sm text-[var(--text-tertiary)] mb-0.5">순자산</p>
-          <p className="text-xl sm:text-2xl font-bold text-[var(--text-primary)]">{formatLargeAmount(netWorth)}</p>
+          <p className="text-xl sm:text-2xl font-bold text-[var(--text-primary)]">{formatCompact(netWorth)}</p>
         </Link>
       )}
 
       {/* 총 수입 */}
       <div className={`bg-gradient-to-br from-leaf-50 to-leaf-100 border border-leaf-200/60 ${cardBase}`}>
         <p className="text-sm text-leaf-600/70">총 수입</p>
-        <p className="text-xl sm:text-2xl font-bold tracking-tight text-[var(--text-primary)] mt-1">
+        <p className="text-xl sm:text-2xl font-bold tabular-nums text-[var(--text-primary)] mt-1">
           {formatAmount(incomeTotal)}
         </p>
       </div>
@@ -76,7 +64,7 @@ export default function UnifiedSummaryCards({
       {/* 총 지출 */}
       <div className={`bg-gradient-to-br from-grape-50 to-grape-100 border border-grape-200/60 ${cardBase}`}>
         <p className="text-sm text-grape-600/70">총 지출</p>
-        <p className="text-xl sm:text-2xl font-bold tracking-tight text-[var(--text-primary)] mt-1">
+        <p className="text-xl sm:text-2xl font-bold tabular-nums text-[var(--text-primary)] mt-1">
           {formatAmount(expenseTotal)}
         </p>
       </div>

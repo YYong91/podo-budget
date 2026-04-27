@@ -5,7 +5,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import userEvent from '@testing-library/user-event'
 import CategoryManager from '../CategoryManager'
@@ -304,7 +304,7 @@ describe('CategoryManager', () => {
   })
 
   describe('카테고리 삭제', () => {
-    it('삭제 버튼을 클릭하면 삭제 확인 모달이 표시된다', async () => {
+    it('삭제 버튼을 클릭하면 인라인 확인 행이 표시된다', async () => {
       const user = userEvent.setup()
       renderCategoryManager()
 
@@ -316,12 +316,11 @@ describe('CategoryManager', () => {
       await user.click(deleteButtons[0])
 
       await waitFor(() => {
-        expect(screen.getByText('카테고리 삭제')).toBeInTheDocument()
-        expect(screen.getByText(/정말로 이 카테고리를 삭제하시겠습니까/i)).toBeInTheDocument()
+        expect(screen.getByText(/삭제하면 연결된 거래가/i)).toBeInTheDocument()
       })
     })
 
-    it('삭제 모달에서 취소를 클릭하면 모달이 닫힌다', async () => {
+    it('인라인 확인 행에서 취소를 클릭하면 닫힌다', async () => {
       const user = userEvent.setup()
       renderCategoryManager()
 
@@ -333,19 +332,18 @@ describe('CategoryManager', () => {
       await user.click(deleteButtons[0])
 
       await waitFor(() => {
-        expect(screen.getByText('카테고리 삭제')).toBeInTheDocument()
+        expect(screen.getByText(/삭제하면 연결된 거래가/i)).toBeInTheDocument()
       })
 
-      const cancelButtons = screen.getAllByRole('button', { name: '취소' })
-      const modalCancelButton = cancelButtons[cancelButtons.length - 1]
-      await user.click(modalCancelButton)
+      const confirmRow = screen.getByText(/삭제하면 연결된 거래가/i).closest('div')!
+      await user.click(within(confirmRow).getByRole('button', { name: '취소' }))
 
       await waitFor(() => {
-        expect(screen.queryByText('카테고리 삭제')).not.toBeInTheDocument()
+        expect(screen.queryByText(/삭제하면 연결된 거래가/i)).not.toBeInTheDocument()
       })
     })
 
-    it('삭제 모달에서 삭제를 클릭하면 카테고리를 삭제한다', async () => {
+    it('인라인 확인 행에서 삭제를 클릭하면 카테고리를 삭제한다', async () => {
       const user = userEvent.setup()
 
       renderCategoryManager()
@@ -358,12 +356,11 @@ describe('CategoryManager', () => {
       await user.click(deleteButtons[0])
 
       await waitFor(() => {
-        expect(screen.getByText('카테고리 삭제')).toBeInTheDocument()
+        expect(screen.getByText(/삭제하면 연결된 거래가/i)).toBeInTheDocument()
       })
 
-      const modalDeleteButtons = screen.getAllByRole('button', { name: '삭제' })
-      const modalDeleteButton = modalDeleteButtons[modalDeleteButtons.length - 1]
-      await user.click(modalDeleteButton)
+      const confirmRow = screen.getByText(/삭제하면 연결된 거래가/i).closest('div')!
+      await user.click(within(confirmRow).getByRole('button', { name: '삭제' }))
 
       await waitFor(() => {
         expect(mockAddToast).toHaveBeenCalledWith('success', '카테고리를 삭제했어요')
@@ -437,12 +434,11 @@ describe('CategoryManager', () => {
       await user.click(deleteButtons[0])
 
       await waitFor(() => {
-        expect(screen.getByText('카테고리 삭제')).toBeInTheDocument()
+        expect(screen.getByText(/삭제하면 연결된 거래가/i)).toBeInTheDocument()
       })
 
-      const modalDeleteButtons = screen.getAllByRole('button', { name: '삭제' })
-      const modalDeleteButton = modalDeleteButtons[modalDeleteButtons.length - 1]
-      await user.click(modalDeleteButton)
+      const confirmRow = screen.getByText(/삭제하면 연결된 거래가/i).closest('div')!
+      await user.click(within(confirmRow).getByRole('button', { name: '삭제' }))
 
       await waitFor(() => {
         expect(mockAddToast).toHaveBeenCalledWith('error', '삭제에 실패했어요')

@@ -321,6 +321,18 @@ input[type="datetime-local"] {
 .animate-stagger > *:nth-child(5) { animation-delay: 160ms; }
 .animate-stagger > *:nth-child(n+6) { animation: none; }
 
+/* ─── 시맨틱 컬러 유틸리티 — 다크모드 자동 대응 ─── */
+/* text-warm-* 직접 사용 금지. 이 유틸리티를 사용할 것 */
+@utility text-primary   { color: var(--text-primary); }
+@utility text-secondary { color: var(--text-secondary); }
+@utility text-tertiary  { color: var(--text-tertiary); }
+@utility text-muted     { color: var(--text-muted); }
+@utility bg-surface     { background-color: var(--surface-card); }
+@utility bg-elevated    { background-color: var(--surface-elevated); }
+@utility bg-hover       { background-color: var(--surface-hover); }
+@utility border-default { border-color: var(--border-default); }
+@utility border-subtle  { border-color: var(--border-subtle); }
+
 @media (prefers-reduced-motion: reduce) {
   .animate-page-in,
   .animate-stagger > *,

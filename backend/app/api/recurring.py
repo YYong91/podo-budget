@@ -104,6 +104,7 @@ async def create_recurring(
         amount=data.amount,
         description=data.description,
         category_id=data.category_id,
+        payment_method_id=data.payment_method_id,
         frequency=data.frequency,
         interval=data.interval,
         day_of_month=data.day_of_month,
@@ -121,9 +122,18 @@ async def create_recurring(
         source_record.recurring_transaction_id = recurring.id
 
     await db.commit()
-    await db.refresh(recurring)
     logger.info("정기 거래 생성: user=%s, description=%s, amount=%s", current_user.id, data.description, data.amount)
-    return recurring
+    # 관계 로드를 위해 selectinload 포함하여 재조회
+    result = await db.execute(
+        select(RecurringTransaction)
+        .where(RecurringTransaction.id == recurring.id)
+        .options(
+            selectinload(RecurringTransaction.category),
+            selectinload(RecurringTransaction.payment_method),
+        )
+    )
+    recurring = result.scalar_one()
+    return RecurringTransactionResponse.from_orm_extended(recurring)
 
 
 @router.get("", response_model=list[RecurringTransactionResponse])
@@ -142,9 +152,12 @@ async def get_recurring_list(
     if type is not None:
         query = query.where(RecurringTransaction.type == type)
 
-    query = query.order_by(RecurringTransaction.next_due_date.asc()).options(selectinload(RecurringTransaction.category))
+    query = query.order_by(RecurringTransaction.next_due_date.asc()).options(
+        selectinload(RecurringTransaction.category),
+        selectinload(RecurringTransaction.payment_method),
+    )
     result = await db.execute(query)
-    return [RecurringTransactionResponse.from_orm_with_emoji(r) for r in result.scalars().all()]
+    return [RecurringTransactionResponse.from_orm_extended(r) for r in result.scalars().all()]
 
 
 @router.get("/pending", response_model=list[RecurringTransactionResponse])
@@ -165,9 +178,12 @@ async def get_pending_recurring(
         RecurringTransaction.is_active.is_(True),
     )
 
-    query = query.order_by(RecurringTransaction.next_due_date.asc()).options(selectinload(RecurringTransaction.category))
+    query = query.order_by(RecurringTransaction.next_due_date.asc()).options(
+        selectinload(RecurringTransaction.category),
+        selectinload(RecurringTransaction.payment_method),
+    )
     result = await db.execute(query)
-    return [RecurringTransactionResponse.from_orm_with_emoji(r) for r in result.scalars().all()]
+    return [RecurringTransactionResponse.from_orm_extended(r) for r in result.scalars().all()]
 
 
 @router.get("/{recurring_id}", response_model=RecurringTransactionResponse)
@@ -178,7 +194,7 @@ async def get_recurring(
 ) -> object:
     """정기 거래 상세 조회"""
     recurring = await _get_user_recurring(recurring_id, current_user, db)
-    return recurring
+    return RecurringTransactionResponse.from_orm_extended(recurring)
 
 
 @router.put("/{recurring_id}", response_model=RecurringTransactionResponse)
@@ -196,8 +212,17 @@ async def update_recurring(
         setattr(recurring, key, value)
 
     await db.commit()
-    await db.refresh(recurring)
-    return recurring
+    # refresh 대신 relationship 포함해서 재조회 (db.refresh는 관계를 로드하지 않음)
+    result = await db.execute(
+        select(RecurringTransaction)
+        .options(
+            selectinload(RecurringTransaction.category),
+            selectinload(RecurringTransaction.payment_method),
+        )
+        .where(RecurringTransaction.id == recurring.id)
+    )
+    recurring = result.scalar_one()
+    return RecurringTransactionResponse.from_orm_extended(recurring)
 
 
 @router.delete("/{recurring_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -275,8 +300,15 @@ async def _get_user_recurring(
     current_user: User,
     db: AsyncSession,
 ) -> RecurringTransaction:
-    """사용자의 정기 거래 조회 (본인 또는 가구 멤버)"""
-    result = await db.execute(select(RecurringTransaction).where(RecurringTransaction.id == recurring_id))
+    """사용자의 정기 거래 조회 (본인 또는 가구 멤버) — category, payment_method 관계 포함"""
+    result = await db.execute(
+        select(RecurringTransaction)
+        .where(RecurringTransaction.id == recurring_id)
+        .options(
+            selectinload(RecurringTransaction.category),
+            selectinload(RecurringTransaction.payment_method),
+        )
+    )
     recurring = result.scalar_one_or_none()
 
     if not recurring:

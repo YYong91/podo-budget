@@ -40,6 +40,11 @@ class RecurringTransaction(Base):  # type: ignore[misc]
     amount = Column(Numeric(12, 2), nullable=False)
     description = Column(String, nullable=False)
     category_id = Column(Integer, ForeignKey("categories.id", ondelete="SET NULL"), nullable=True)
+    payment_method_id = Column(
+        Integer,
+        ForeignKey("payment_methods.id", ondelete="SET NULL"),
+        nullable=True,
+    )
     frequency = Column(String(10), nullable=False)  # monthly | weekly | yearly | custom
     interval = Column(Integer, nullable=True)  # custom일 때 N일
     day_of_month = Column(Integer, nullable=True)  # 1-31
@@ -55,6 +60,7 @@ class RecurringTransaction(Base):  # type: ignore[misc]
     # Relationships
     user = relationship("User")
     category = relationship("Category")
+    payment_method = relationship("PaymentMethod")
     household = relationship("Household")
     expenses = relationship("Expense", back_populates="recurring_transaction")
     incomes = relationship("Income", back_populates="recurring_transaction")

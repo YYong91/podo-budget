@@ -1,7 +1,7 @@
 /**
  * @file PaymentMethodManager.test.tsx
  * @description 결제수단 관리 페이지 테스트 (#305, #477)
- * 주 결제수단 드롭다운, 편집 모드, 실적 넛지, 추가 폼 접힘 등을 테스트한다.
+ * 기본 결제수단 별 아이콘 설정, 편집 모드, 실적 넛지, 추가 폼 등을 테스트한다.
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
@@ -11,7 +11,6 @@ import { MemoryRouter } from 'react-router-dom'
 import { server } from '../../mocks/server'
 import { http, HttpResponse } from 'msw'
 import PaymentMethodManager from '../PaymentMethodManager'
-import { mockPaymentMethods } from '../../mocks/fixtures'
 
 let mockAddToast: ReturnType<typeof vi.fn>
 const mockGoBack = vi.fn()
@@ -77,56 +76,58 @@ describe('PaymentMethodManager', () => {
       })
     })
 
-    it('결제수단 추가 버튼을 표시한다', async () => {
+    it('헤더 우상단에 + 버튼을 표시한다', async () => {
       renderPage()
       await waitFor(() => {
-        expect(screen.getByText('결제수단 추가')).toBeInTheDocument()
+        expect(screen.getByRole('button', { name: '결제수단 추가' })).toBeInTheDocument()
       })
+    })
+
+    it('편집 모드에서는 + 버튼이 숨겨진다', async () => {
+      const user = userEvent.setup()
+      renderPage()
+      await waitFor(() => expect(screen.getByText('편집')).toBeInTheDocument())
+      await user.click(screen.getByText('편집'))
+      await waitFor(() => expect(screen.getByText('완료')).toBeInTheDocument())
+      expect(screen.queryByRole('button', { name: '결제수단 추가' })).not.toBeInTheDocument()
     })
   })
 
-  describe('주 결제수단 드롭다운', () => {
-    it('주 결제수단 드롭다운이 표시된다', async () => {
+  describe('기본 결제수단 설정', () => {
+    it('기본 결제수단에 "기본" 뱃지가 표시된다', async () => {
       renderPage()
       await waitFor(() => {
-        expect(screen.getByLabelText('주 결제수단')).toBeInTheDocument()
+        // 삼성카드(id=1)가 is_default=true
+        const item = screen.getByTestId('payment-method-1')
+        expect(within(item).getByText('기본')).toBeInTheDocument()
       })
     })
 
-    it('현재 기본 결제수단이 드롭다운에 선택되어 있다', async () => {
+    it('편집 모드에서 각 항목에 별 아이콘 버튼이 표시된다', async () => {
+      const user = userEvent.setup()
       renderPage()
+      await waitFor(() => expect(screen.getByText('편집')).toBeInTheDocument())
+      await user.click(screen.getByText('편집'))
       await waitFor(() => {
-        const dropdown = screen.getByLabelText('주 결제수단') as HTMLSelectElement
-        // 삼성카드가 is_default=true이므로 선택되어 있어야 함
-        expect(dropdown.value).toBe('1')
+        // 사용자 결제수단(삼성카드, 국민카드) 각각에 별 버튼
+        const item1 = screen.getByTestId('payment-method-1')
+        const item2 = screen.getByTestId('payment-method-2')
+        expect(within(item1).getByRole('button', { name: /기본/ })).toBeInTheDocument()
+        expect(within(item2).getByRole('button', { name: /기본/ })).toBeInTheDocument()
       })
     })
 
-    it('주 결제수단 변경 시 토스트를 표시한다', async () => {
+    it('편집 모드에서 별 클릭 시 기본 결제수단이 변경되고 토스트가 표시된다', async () => {
       const user = userEvent.setup()
 
-      // 현재 기본 해제 + 새 기본 설정 응답
-      server.use(
-        http.put('/api/payment-methods/:id', async ({ request }) => {
-          const body = (await request.json()) as Record<string, unknown>
-          const id = Number(request.url.split('/').pop())
-          const method = mockPaymentMethods.find((m) => m.id === id)
-          return HttpResponse.json({
-            ...method,
-            ...body,
-            updated_at: new Date().toISOString(),
-          })
-        })
-      )
-
       renderPage()
-      await waitFor(() => {
-        expect(screen.getByLabelText('주 결제수단')).toBeInTheDocument()
-      })
+      await waitFor(() => expect(screen.getByText('편집')).toBeInTheDocument())
+      await user.click(screen.getByText('편집'))
+      await waitFor(() => expect(screen.getByText('완료')).toBeInTheDocument())
 
-      const dropdown = screen.getByLabelText('주 결제수단')
-      // 국민카드(id=2)로 변경
-      await user.selectOptions(dropdown, '2')
+      // 국민카드(id=2, is_default=false)의 "기본으로 설정" 버튼 클릭
+      const item = screen.getByTestId('payment-method-2')
+      await user.click(within(item).getByRole('button', { name: '기본으로 설정' }))
 
       await waitFor(() => {
         expect(mockAddToast).toHaveBeenCalledWith(
@@ -136,40 +137,20 @@ describe('PaymentMethodManager', () => {
       })
     })
 
-    it('주 결제수단 "없음" 선택 시 해제 토스트를 표시한다', async () => {
+    it('편집 모드에서 기본 결제수단의 별 클릭 시 해제된다', async () => {
       const user = userEvent.setup()
 
-      server.use(
-        http.put('/api/payment-methods/:id', async ({ request }) => {
-          const body = (await request.json()) as Record<string, unknown>
-          const id = Number(request.url.split('/').pop())
-          const method = mockPaymentMethods.find((m) => m.id === id)
-          return HttpResponse.json({
-            ...method,
-            ...body,
-            updated_at: new Date().toISOString(),
-          })
-        })
-      )
-
       renderPage()
-      await waitFor(() => {
-        expect(screen.getByLabelText('주 결제수단')).toBeInTheDocument()
-      })
+      await waitFor(() => expect(screen.getByText('편집')).toBeInTheDocument())
+      await user.click(screen.getByText('편집'))
+      await waitFor(() => expect(screen.getByText('완료')).toBeInTheDocument())
 
-      const dropdown = screen.getByLabelText('주 결제수단')
-      await user.selectOptions(dropdown, '')
+      // 삼성카드(id=1, is_default=true)의 "기본 해제" 버튼 클릭
+      const item = screen.getByTestId('payment-method-1')
+      await user.click(within(item).getByRole('button', { name: '기본 해제' }))
 
       await waitFor(() => {
-        expect(mockAddToast).toHaveBeenCalledWith('info', '주 결제수단을 해제했어요')
-      })
-    })
-
-    it('주 결제수단 설정 시 안내 텍스트가 표시된다', async () => {
-      renderPage()
-      await waitFor(() => {
-        // 삼성카드가 기본이므로 안내 텍스트 표시
-        expect(screen.getByText('입력 시 자동으로 이 결제수단이 선택돼요')).toBeInTheDocument()
+        expect(mockAddToast).toHaveBeenCalledWith('info', expect.any(String))
       })
     })
   })
@@ -225,6 +206,14 @@ describe('PaymentMethodManager', () => {
       const userItem = screen.getByTestId('payment-method-2')
       const deleteBtn = within(userItem).getByRole('button', { name: '삭제' })
       await user.click(deleteBtn)
+
+      // 인라인 확인 행이 노출되면 확인 삭제 버튼 클릭
+      await waitFor(() => {
+        expect(within(userItem).getByText(/을 삭제할까요/i)).toBeInTheDocument()
+      })
+
+      const confirmRow = within(userItem).getByText(/을 삭제할까요/i).closest('div')!
+      await user.click(within(confirmRow).getByRole('button', { name: '삭제' }))
 
       await waitFor(() => {
         expect(mockAddToast).toHaveBeenCalledWith('success', expect.stringContaining('삭제'))
@@ -294,11 +283,10 @@ describe('PaymentMethodManager', () => {
       const user = userEvent.setup()
       renderPage()
 
-      await waitFor(() => {
-        expect(screen.getByText('결제수단 추가')).toBeInTheDocument()
-      })
-
-      await user.click(screen.getByText('결제수단 추가'))
+      await waitFor(() =>
+        expect(screen.getByRole('button', { name: '결제수단 추가' })).toBeInTheDocument()
+      )
+      await user.click(screen.getByRole('button', { name: '결제수단 추가' }))
 
       const nameInput = screen.getByPlaceholderText('결제수단 이름')
       expect(nameInput).toBeInTheDocument()
@@ -311,28 +299,41 @@ describe('PaymentMethodManager', () => {
       })
     })
 
-    it('추가 폼에서 이름만 필수이고 타입/목표는 접힘 상태이다', async () => {
+    it('+ 버튼 클릭 시 이름/유형/월목표 3개 필드가 모두 표시된다', async () => {
       const user = userEvent.setup()
       renderPage()
 
-      await waitFor(() => {
-        expect(screen.getByText('결제수단 추가')).toBeInTheDocument()
-      })
+      await waitFor(() =>
+        expect(screen.getByRole('button', { name: '결제수단 추가' })).toBeInTheDocument()
+      )
+      await user.click(screen.getByRole('button', { name: '결제수단 추가' }))
 
-      await user.click(screen.getByText('결제수단 추가'))
-
-      // 이름 필드는 보이고
+      // 3개 필드 즉시 표시 (접힘 없음)
       expect(screen.getByPlaceholderText('결제수단 이름')).toBeInTheDocument()
-
-      // 유형/목표 필드는 접힘 (안 보임)
-      expect(screen.queryByLabelText('유형')).not.toBeInTheDocument()
-      expect(screen.queryByLabelText('월 실적 목표')).not.toBeInTheDocument()
-
-      // 상세 설정 클릭 시 펼침
-      await user.click(screen.getByText('상세 설정'))
-
       expect(screen.getByLabelText('유형')).toBeInTheDocument()
       expect(screen.getByLabelText('월 실적 목표')).toBeInTheDocument()
+
+      // '상세 설정' 토글 버튼 없음
+      expect(screen.queryByText('상세 설정')).not.toBeInTheDocument()
+    })
+
+    it('폼이 열린 상태에서 + 버튼이 숨겨진다', async () => {
+      const user = userEvent.setup()
+      renderPage()
+      await waitFor(() =>
+        expect(screen.getByRole('button', { name: '결제수단 추가' })).toBeInTheDocument()
+      )
+      await user.click(screen.getByRole('button', { name: '결제수단 추가' }))
+      expect(screen.queryByRole('button', { name: '결제수단 추가' })).not.toBeInTheDocument()
+    })
+
+    it('하단 dashed 추가 버튼이 없다', async () => {
+      renderPage()
+      await waitFor(() =>
+        expect(screen.getByTestId('payment-method-1')).toBeInTheDocument()
+      )
+      // 아이콘 버튼이므로 텍스트 "결제수단 추가"는 0개여야 함
+      expect(screen.queryAllByText('결제수단 추가')).toHaveLength(0)
     })
   })
 
@@ -380,15 +381,11 @@ describe('PaymentMethodManager', () => {
       expect(screen.getByText('결제수단을 추가하면 지출 입력 시 태깅할 수 있어요')).toBeInTheDocument()
     })
 
-    it('빈 상태에서 결제수단 추가 버튼 클릭 시 추가 폼이 열린다', async () => {
+    it('빈 상태에서 EmptyState 추가 버튼 클릭 시 추가 폼이 열린다', async () => {
       const user = userEvent.setup()
       server.use(
-        http.get('/api/payment-methods', () => {
-          return HttpResponse.json([])
-        }),
-        http.get('/api/payment-methods/stats/monthly', () => {
-          return HttpResponse.json([])
-        })
+        http.get('/api/payment-methods', () => HttpResponse.json([])),
+        http.get('/api/payment-methods/stats/monthly', () => HttpResponse.json([]))
       )
 
       renderPage()
@@ -397,12 +394,10 @@ describe('PaymentMethodManager', () => {
         expect(screen.getByText('등록된 결제수단이 없습니다')).toBeInTheDocument()
       })
 
-      // EmptyState action 버튼은 여러 "결제수단 추가" 버튼 중 첫 번째 (EmptyState 내부)
-      const addButtons = screen.getAllByRole('button', { name: '결제수단 추가' })
-      expect(addButtons.length).toBeGreaterThanOrEqual(1)
-      await user.click(addButtons[0])
+      // EmptyState action 버튼은 "결제수단 추가" 텍스트, 헤더 버튼은 "추가" 텍스트 (aria-label로 구분)
+      const textBtn = screen.getByText('결제수단 추가')
+      await user.click(textBtn)
 
-      // 추가 폼이 열린다
       expect(screen.getByPlaceholderText('결제수단 이름')).toBeInTheDocument()
     })
   })

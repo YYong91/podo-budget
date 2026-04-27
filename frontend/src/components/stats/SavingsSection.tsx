@@ -32,9 +32,9 @@ function IncomeFlowBar({
     const total = savingsPct + fixedPct + variablePct || 1
     return (
       <div data-testid="income-flow-bar" className="space-y-1">
-        <div className="flex h-2 rounded-full overflow-hidden w-full">
+        <div className="flex h-1.5 rounded-full overflow-hidden w-full">
           <div className="bg-leaf-500 transition-all" style={{ width: `${(savingsPct / total) * 100}%` }} />
-          <div className="bg-warm-400 transition-all" style={{ width: `${(fixedPct / total) * 100}%` }} />
+          <div className="bg-amber-400 transition-all" style={{ width: `${(fixedPct / total) * 100}%` }} />
           <div className="bg-grape-400 transition-all" style={{ width: `${(variablePct / total) * 100}%` }} />
         </div>
         <p className="text-xs text-red-600 text-right">
@@ -45,9 +45,9 @@ function IncomeFlowBar({
   }
 
   return (
-    <div data-testid="income-flow-bar" className="flex h-2 rounded-full overflow-hidden w-full">
+    <div data-testid="income-flow-bar" className="flex h-1.5 rounded-full overflow-hidden w-full">
       <div className="bg-leaf-500 transition-all" style={{ width: `${savingsPct}%` }} />
-      <div className="bg-warm-400 transition-all" style={{ width: `${fixedPct}%` }} />
+      <div className="bg-amber-400 transition-all" style={{ width: `${fixedPct}%` }} />
       <div className="bg-grape-400 transition-all" style={{ width: `${variablePct}%` }} />
       <div className="bg-[var(--border-default)] transition-all" style={{ width: `${remainingPct}%` }} />
     </div>
@@ -87,7 +87,7 @@ export default function SavingsSection({
   return (
     <div id="section-savings" className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] p-4 sm:p-6">
       <SectionHeader
-        icon="📊"
+        icon="⚖️"
         title="지출 구성"
         manageTo="/categories"
         expanded={expanded}
@@ -98,7 +98,7 @@ export default function SavingsSection({
       {hasData ? (
         <div className="mt-3">
           <div className="flex items-baseline gap-2 mb-2">
-            <span className="text-xl font-bold text-[var(--text-primary)]">
+            <span className="text-sm font-semibold text-[var(--text-primary)]">
               {formatAmount(savingsTotal!)}
             </span>
             {savingsRate !== undefined && (
@@ -119,7 +119,7 @@ export default function SavingsSection({
               />
               <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1.5">
                 <LegendDot color="bg-leaf-500" label="저축" />
-                <LegendDot color="bg-warm-400" label="고정비" />
+                <LegendDot color="bg-amber-400" label="고정비" />
                 <LegendDot color="bg-grape-400" label="변동비" />
                 <LegendDot color="bg-[var(--border-default)]" label="여유" />
               </div>
@@ -127,7 +127,7 @@ export default function SavingsSection({
           )}
 
           {expanded && (
-            <div className="mt-3 space-y-2 pt-3 border-t border-[var(--border-default)]">
+            <div className="mt-3 space-y-3 pt-3 border-t border-[var(--border-default)]">
               {savingsCategories.map(c => (
                 <div key={c.category} className="flex items-center justify-between">
                   <span className="text-sm text-[var(--text-secondary)]">{c.category}</span>

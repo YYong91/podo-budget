@@ -57,7 +57,8 @@ jobs:
         # CVE-2026-4539(pygments): dev dep, fix 버전 미출시 — ignore
         # CVE-2026-25645(requests): 2.33.0에서 수정, 하지만 httpx transitive dep으로 직접 업그레이드 불가 — ignore
         # CVE-2025-71176(pytest): dev dep, fix 버전 9.0.3 — pytest-asyncio 0.23 호환 이슈로 major 업그레이드 보류
-        run: uv run pip-audit --ignore-vuln CVE-2024-23342 --ignore-vuln CVE-2026-4539 --ignore-vuln CVE-2026-25645 --ignore-vuln CVE-2025-71176
+        # CVE-2026-3219(pip): fix 버전 미출시 — ignore
+        run: uv run pip-audit --ignore-vuln CVE-2024-23342 --ignore-vuln CVE-2026-4539 --ignore-vuln CVE-2026-25645 --ignore-vuln CVE-2025-71176 --ignore-vuln CVE-2026-3219
 
       - name: 타입 체크 (pyright)
         run: |

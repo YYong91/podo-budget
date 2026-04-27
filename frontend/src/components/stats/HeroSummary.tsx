@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
-import { formatAmount, formatCompactAmount } from '../../utils/format'
+import { formatAmount, formatCompact } from '../../utils/format'
 import type { FinancialScore } from '../../types'
 import FinancialHealthScore from './FinancialHealthScore'
 
@@ -23,10 +23,10 @@ type HeroSummaryProps = {
   className?: string
 }
 
-/** 금액 축약 포맷 (₩ 접두사 포함) */
+/** 금액 축약 포맷 (₩ 접두사 포함) — 0원 특수 처리 후 formatCompact 위임 */
 function formatWon(amount: number): string {
   if (amount === 0) return '₩0'
-  return `₩${formatCompactAmount(amount)}`
+  return `₩${formatCompact(amount)}`
 }
 
 // ─── 상태 분류 ───
@@ -214,7 +214,7 @@ function ProgressBar({
         {hasProjected && (
           <div
             className={`absolute top-0 h-full rounded-r-full ${
-              state.type === 'projectedExceed' ? 'bg-warm-300 dark:bg-warm-400' : 'bg-grape-200 dark:bg-grape-300'
+              state.type === 'projectedExceed' ? 'bg-amber-200 dark:bg-amber-300' : 'bg-grape-200 dark:bg-grape-300'
             } transition-all duration-700 ease-out`}
             style={{
               left: `${(animActual / totalBarMax) * 100}%`,
@@ -269,7 +269,7 @@ function ProgressBar({
               예정 {formatWon(pendingRecurringExpense)}
             </span>
             <span className="text-[var(--text-muted)]">·</span>
-            <span className="text-warm-600 dark:text-warm-400 font-medium">
+            <span className="text-amber-600 dark:text-amber-400 font-medium">
               {formatWon(state.overflowAmount)} 초과 예상 ⚠️
             </span>
           </>
@@ -338,9 +338,9 @@ export default function HeroSummary({
         role: 'button' as const,
         tabIndex: 0,
         onKeyDown: (e: React.KeyboardEvent) => { if (e.key === 'Enter' || e.key === ' ') onProgressClick() },
-        className: `card-surface p-6 bg-gradient-to-b from-grape-50/60 to-transparent dark:from-grape-900/30 dark:to-transparent cursor-pointer ${className}`,
+        className: `card-surface border border-[var(--border-default)] p-6 bg-gradient-to-b from-grape-50/60 to-transparent dark:from-grape-900/30 dark:to-transparent cursor-pointer ${className}`,
       }
-    : { className: `card-surface p-6 bg-gradient-to-b from-grape-50/60 to-transparent dark:from-grape-900/30 dark:to-transparent ${className}` }
+    : { className: `card-surface border border-[var(--border-default)] p-6 bg-gradient-to-b from-grape-50/60 to-transparent dark:from-grape-900/30 dark:to-transparent ${className}` }
 
   return (
     <div {...cardClickProps}>

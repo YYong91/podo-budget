@@ -68,7 +68,7 @@ async function createExpense(
 }
 
 test.describe('예산 관리', () => {
-  test('카테고리별 예산 입력 → 저장 → 표시 확인', async ({ authedPage: page }) => {
+  test('카테고리별 예산 입력 → 자동저장 → 표시 확인', async ({ authedPage: page }) => {
     // 카테고리 생성
     const category = await createCategory(page, { name: 'E2E식비' })
 
@@ -84,24 +84,21 @@ test.describe('예산 관리', () => {
     await expect(budgetInput).toBeVisible({ timeout: 10000 })
     await budgetInput.fill('300000')
 
-    // dirty 상태 → "저장" 버튼이 나타남 → 클릭 + API 응답 대기
-    const saveBtn = page.getByRole('button', { name: '저장' }).first()
-    await expect(saveBtn).toBeVisible({ timeout: 5000 })
+    // blur 시 자동 저장 트리거 + API 응답 대기
     await Promise.all([
       page.waitForResponse(
         (res) => res.url().includes('/api/budgets') && res.status() < 400,
         { timeout: 15000 },
       ),
-      saveBtn.click(),
+      budgetInput.blur(),
     ])
 
-    // 저장 성공 → loadData() → dirty 해제 → 저장 버튼 사라짐
-    await page.waitForTimeout(2000) // loadData 완료 대기
+    await page.waitForTimeout(1000) // 저장 후 UI 업데이트 대기
 
     // 페이지 새로고침 후에도 금액이 유지됨
     await page.reload()
     await page.waitForLoadState('networkidle')
-    await expect(page.getByLabel('E2E식비 예산')).toHaveValue('300000', { timeout: 15000 })
+    await expect(page.getByLabel('E2E식비 예산')).toHaveValue('₩300,000', { timeout: 15000 })
   })
 
   test('지출 등록 후 예산 달성률 표시', async ({ authedPage: page }) => {
@@ -135,11 +132,11 @@ test.describe('예산 관리', () => {
     } else {
       // 예산 상황 섹션이 없으면 카테고리별 예산에서 금액 확인
       // 예산이 100000으로 설정되어 있는지 확인
-      await expect(page.getByLabel('E2E교통비 예산')).toHaveValue('100000', { timeout: 15000 })
+      await expect(page.getByLabel('E2E교통비 예산')).toHaveValue('₩100,000', { timeout: 15000 })
     }
   })
 
-  test('월 총 예산 설정 → 저장', async ({ authedPage: page }) => {
+  test('월 총 예산 설정 → 자동저장', async ({ authedPage: page }) => {
     await page.goto('/budgets')
     await page.waitForLoadState('networkidle')
 
@@ -151,23 +148,20 @@ test.describe('예산 관리', () => {
     await expect(totalInput).toBeVisible({ timeout: 10000 })
     await totalInput.fill('2000000')
 
-    // dirty 상태 → "저장" 버튼 나타남 → 클릭 + API 응답 대기
-    const saveBtn = page.getByRole('button', { name: '저장' }).first()
-    await expect(saveBtn).toBeVisible({ timeout: 5000 })
+    // blur 시 자동 저장 트리거 + API 응답 대기
     await Promise.all([
       page.waitForResponse(
         (res) => res.url().includes('/api/budgets') && res.status() < 400,
         { timeout: 15000 },
       ),
-      saveBtn.click(),
+      totalInput.blur(),
     ])
 
-    // 저장 완료 대기
-    await page.waitForTimeout(2000)
+    await page.waitForTimeout(1000) // 저장 후 UI 업데이트 대기
 
     // 새로고침 후 값 유지 확인
     await page.reload()
     await page.waitForLoadState('networkidle')
-    await expect(page.getByLabel('월 총 예산')).toHaveValue('2000000', { timeout: 15000 })
+    await expect(page.getByLabel('월 총 예산')).toHaveValue('₩2,000,000', { timeout: 15000 })
   })
 })

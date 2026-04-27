@@ -81,7 +81,7 @@ function OverviewChips({
         </span>
       )}
       {statusCounts.overdue > 0 && (
-        <span className="inline-flex items-center gap-0.5 text-xs px-2 py-0.5 rounded-full bg-warm-50 text-warm-700 border border-warm-200">
+        <span className="inline-flex items-center gap-0.5 text-xs px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
           ⚠️ 미처리 {statusCounts.overdue}건
         </span>
       )}
@@ -113,13 +113,11 @@ export default function RecurringManageSection({ items, monthStr, executedAmount
     return (
       <div id="section-recurring" className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] p-4 sm:p-6">
         <SectionHeader icon="🔄" title="정기거래" manageTo="/recurring" expanded={false} collapsible={false} />
-        <p className="text-sm text-[var(--text-muted)] text-center py-2 mt-3">
-          정기거래를 등록하면 고정비 현황을 볼 수 있어요
-        </p>
-        <div className="text-center mt-2">
+        <div className="text-center py-4 mt-3">
+          <p className="text-sm text-[var(--text-tertiary)]">정기거래를 등록하면 고정비 현황을 볼 수 있어요</p>
           <Link
             to="/recurring"
-            className="text-xs text-grape-600 hover:text-grape-700 font-medium transition-colors"
+            className="text-sm font-medium text-grape-600 hover:text-grape-700 mt-1 inline-block"
           >
             등록하기 →
           </Link>
@@ -148,7 +146,7 @@ export default function RecurringManageSection({ items, monthStr, executedAmount
 
       {/* 접힌 상태: 상태 칩 오버뷰 */}
       {!expanded && (
-        <div className="mt-2">
+        <div className="mt-3">
           <OverviewChips items={items} monthStr={monthStr} executedAmountMap={executedAmountMap} />
         </div>
       )}
@@ -197,7 +195,7 @@ export default function RecurringManageSection({ items, monthStr, executedAmount
 
                 <div className="flex items-center gap-3 shrink-0 ml-2 text-right">
                   <div>
-                    <span className={`text-sm font-medium ${isExpense ? 'text-[var(--text-secondary)]' : 'text-leaf-600'}`}>
+                    <span className={`text-sm font-medium tabular-nums ${isExpense ? 'text-[var(--text-secondary)]' : 'text-leaf-600'}`}>
                       {formatAmount(displayAmount)}
                     </span>
                     {amountChanged && (

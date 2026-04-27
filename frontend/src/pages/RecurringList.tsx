@@ -1,26 +1,29 @@
 /**
  * @file RecurringList.tsx
- * @description 정기거래 관리 페이지
+ * @description 정기거래 관리 페이지 — 카드 레이아웃 + 낙관적 토글 + ⋮ 드롭다운 메뉴 + D-day 표현
  * 목록 표시 + 필터만 담당하며, 모달은 RecurringModal로 분리되어 있다.
  */
 
 import { useState, useEffect } from 'react'
 import { useGoBack } from '../hooks/useGoBack'
-import { ArrowLeft, Plus, Pencil, Trash2, Pause, Play, Zap, Repeat } from 'lucide-react'
+import {
+  ArrowLeft, Plus, Pencil, Trash2,
+  PlusCircle, Pause, Play,
+  MoreVertical, Loader2, Check, Repeat,
+} from 'lucide-react'
 import { useToast } from '../hooks/useToast'
 import { TOAST } from '../constants/toastMessages'
 import { recurringApi } from '../api/recurring'
 import { categoryApi } from '../api/categories'
+import { paymentMethodApi } from '../api/paymentMethods'
 import { useHouseholdStore } from '../stores/useHouseholdStore'
 import EmptyState from '../components/EmptyState'
 import ErrorState from '../components/ErrorState'
-import { Skeleton } from '../components/skeleton/Skeleton'
 import RecurringModal from '../components/recurring/RecurringModal'
 import type { RecurringFormData } from '../components/recurring/RecurringModal'
-import type { RecurringTransaction, RecurringTransactionCreate, Category } from '../types'
+import type { RecurringTransaction, RecurringTransactionCreate, Category, PaymentMethod } from '../types'
 import { formatAmount, getLocalDateString } from '../utils/format'
 import { trackEvent } from '../utils/analytics'
-import { formatFrequency } from '../utils/recurringUtils'
 
 /* 빈 폼 데이터 */
 const emptyForm: RecurringFormData = {
@@ -28,6 +31,7 @@ const emptyForm: RecurringFormData = {
   amount: '',
   description: '',
   category_id: '',
+  payment_method_id: '',
   frequency: 'monthly',
   day_of_month: '25',
   day_of_week: '0',
@@ -37,18 +41,173 @@ const emptyForm: RecurringFormData = {
   end_date: '',
 }
 
+/** next_due_date를 사람이 읽기 쉬운 형식으로 변환 */
+function formatDueDate(nextDueDateStr: string): { text: string; isUrgent: boolean } {
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  // 타임존 이슈 방지: 날짜 문자열 직접 파싱
+  const [y, m, d] = nextDueDateStr.split('-').map(Number)
+  const due = new Date(y, m - 1, d)
+  const diffDays = Math.round((due.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+
+  if (diffDays === 0) return { text: '오늘', isUrgent: true }
+  if (diffDays === 1) return { text: '내일', isUrgent: true }
+  if (diffDays > 1 && diffDays <= 7) return { text: `${diffDays}일 후`, isUrgent: true }
+  if (diffDays > 7) return { text: `매월 ${d}일`, isUrgent: false }
+  if (diffDays === -1) return { text: '어제', isUrgent: false }
+  return { text: `${Math.abs(diffDays)}일 전`, isUrgent: false }
+}
+
 function RecurringListSkeleton() {
   return (
-    <div className="space-y-3">
-      {[1, 2, 3, 4].map(i => (
-        <div key={i} className="card-surface p-4 flex items-center justify-between">
-          <div className="space-y-2">
-            <Skeleton className="h-4 w-32" />
-            <Skeleton className="h-3 w-20" />
+    <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)]/60 overflow-hidden">
+      {[1, 2, 3].map((i) => (
+        <div key={i} className="p-4 flex items-center gap-3 border-b border-[var(--border-subtle)] last:border-0">
+          <div className="w-10 h-10 rounded-xl bg-[var(--surface-elevated)] animate-pulse shrink-0" />
+          <div className="flex-1 space-y-2">
+            <div className="h-4 w-32 rounded bg-[var(--surface-elevated)] animate-pulse" />
+            <div className="h-3 w-20 rounded bg-[var(--surface-elevated)] animate-pulse" />
           </div>
-          <Skeleton className="h-8 w-16" />
+          <div className="text-right space-y-2">
+            <div className="h-4 w-16 rounded bg-[var(--surface-elevated)] animate-pulse" />
+            <div className="h-3 w-12 rounded bg-[var(--surface-elevated)] animate-pulse" />
+          </div>
+          <div className="w-8 h-8 rounded-lg bg-[var(--surface-elevated)] animate-pulse" />
         </div>
       ))}
+    </div>
+  )
+}
+
+interface RecurringCardProps {
+  r: RecurringTransaction
+  openMenuId: number | null
+  deletingId: number | null
+  togglingIds: Set<number>
+  executingIds: Set<number>
+  executedIds: Set<number>
+  onToggle: (r: RecurringTransaction) => void
+  onMenuOpen: (id: number | null) => void
+  onEdit: (r: RecurringTransaction) => void
+  onDeleteRequest: (id: number) => void
+  onDeleteConfirm: (id: number) => void
+  onDeleteCancel: () => void
+  onExecute: (r: RecurringTransaction) => void
+}
+
+function RecurringCard({
+  r, openMenuId, deletingId, togglingIds, executingIds, executedIds,
+  onToggle, onMenuOpen, onEdit, onDeleteRequest, onDeleteCancel, onDeleteConfirm, onExecute,
+}: RecurringCardProps) {
+  const { text: dueText, isUrgent } = formatDueDate(r.next_due_date)
+  const secondaryInfo = [r.category_name, r.payment_method_name].filter(Boolean).join(' · ')
+
+  return (
+    /* 비활성 카드는 제자리에서 흐려짐 — 섹션 이동 없이 상태만 변경 */
+    <div className={!r.is_active ? 'opacity-60' : ''}>
+      <div className="p-4 flex items-center gap-3">
+        {/* 이모지 */}
+        <div className="w-10 h-10 rounded-xl bg-[var(--surface-elevated)] flex items-center justify-center shrink-0 text-xl">
+          {r.category_emoji ?? (r.type === 'expense' ? '💸' : '💰')}
+        </div>
+        {/* 설명 + 2차 정보 */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <p className="font-medium text-[var(--text-primary)] truncate">{r.description}</p>
+            {!r.is_active && (
+              <span className="shrink-0 text-[10px] px-1.5 py-0.5 rounded-md bg-[var(--surface-elevated)] text-[var(--text-muted)]">
+                일시정지
+              </span>
+            )}
+          </div>
+          <p className="text-xs text-[var(--text-tertiary)] mt-0.5 truncate">
+            {secondaryInfo || '카테고리 없음'}
+          </p>
+        </div>
+        {/* 금액 + D-day */}
+        <div className="text-right shrink-0">
+          <p className={`font-semibold text-sm ${r.type === 'income' ? 'text-leaf-600' : 'text-[var(--text-primary)]'}`}>
+            {r.type === 'income' ? '+' : ''}{formatAmount(r.amount)}
+          </p>
+          <p className={`text-xs mt-0.5 ${isUrgent ? 'text-amber-500 font-medium' : 'text-[var(--text-tertiary)]'}`}>
+            {dueText}
+          </p>
+        </div>
+        {/* ⋮ 메뉴 — 토글(일시정지/재개) 포함 */}
+        <div className="relative shrink-0">
+          <button
+            onClick={() => onMenuOpen(openMenuId === r.id ? null : r.id)}
+            disabled={executingIds.has(r.id) || togglingIds.has(r.id)}
+            className="p-2.5 rounded-xl hover:bg-[var(--surface-hover)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            data-testid={`menu-${r.id}`}
+            aria-label="더보기"
+          >
+            {executingIds.has(r.id) ? (
+              <Loader2 className="w-4 h-4 animate-spin text-[var(--text-muted)]" />
+            ) : executedIds.has(r.id) ? (
+              <Check className="w-4 h-4 text-leaf-500" />
+            ) : (
+              <MoreVertical className="w-4 h-4 text-[var(--text-tertiary)]" />
+            )}
+          </button>
+          {openMenuId === r.id && (
+            <div className="absolute right-0 top-10 z-10 bg-[var(--surface-card)] rounded-xl shadow-lg border border-[var(--border-default)] py-1 min-w-36">
+              {r.is_active && (
+                <button
+                  onClick={() => onExecute(r)}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[var(--text-secondary)] hover:bg-[var(--surface-hover)]"
+                >
+                  <PlusCircle className="w-4 h-4" />
+                  지금 등록
+                </button>
+              )}
+              <button
+                onClick={() => { onMenuOpen(null); onToggle(r) }}
+                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[var(--text-secondary)] hover:bg-[var(--surface-hover)]"
+                data-testid={`toggle-${r.id}`}
+              >
+                {r.is_active
+                  ? <><Pause className="w-4 h-4" />일시정지</>
+                  : <><Play className="w-4 h-4" />다시 시작</>}
+              </button>
+              <button
+                onClick={() => { onMenuOpen(null); onEdit(r) }}
+                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[var(--text-secondary)] hover:bg-[var(--surface-hover)]"
+              >
+                <Pencil className="w-4 h-4" />
+                수정
+              </button>
+              <button
+                onClick={() => { onMenuOpen(null); onDeleteRequest(r.id) }}
+                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-rose-500 hover:bg-rose-500/10"
+              >
+                <Trash2 className="w-4 h-4" />
+                삭제
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+      {/* 삭제 확인 인라인 */}
+      {deletingId === r.id && (
+        <div className="px-4 py-3 bg-rose-50/50 flex items-center justify-between border-t border-rose-100">
+          <p className="text-sm text-[var(--text-secondary)]">'{r.description}'을 삭제할까요?</p>
+          <div className="flex gap-2">
+            <button
+              onClick={onDeleteCancel}
+              className="px-3 py-1.5 text-xs rounded-lg bg-[var(--surface-hover)] text-[var(--text-secondary)]"
+            >
+              취소
+            </button>
+            <button
+              onClick={() => onDeleteConfirm(r.id)}
+              className="px-3 py-1.5 text-xs rounded-lg bg-rose-500 text-white font-medium"
+            >
+              삭제
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -72,8 +231,15 @@ export default function RecurringList() {
   const [formData, setFormData] = useState<RecurringFormData>(emptyForm)
   const [submitting, setSubmitting] = useState(false)
 
-  /* 삭제 확인 모달 */
-  const [deleteTargetId, setDeleteTargetId] = useState<number | null>(null)
+  /* 카드 인터랙션 상태 */
+  const [openMenuId, setOpenMenuId] = useState<number | null>(null)
+  const [deletingId, setDeletingId] = useState<number | null>(null)
+  const [togglingIds, setTogglingIds] = useState<Set<number>>(new Set())
+  const [executingIds, setExecutingIds] = useState<Set<number>>(new Set())
+  const [executedIds, setExecutedIds] = useState<Set<number>>(new Set())
+  /* 비활성 항목 표시 여부 — 기본 보임 (제자리에서 흐려지는 방식이므로 숨기는 게 명시적 선택) */
+  const [showInactive, setShowInactive] = useState(true)
+  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([])
 
   /* 데이터 로드 */
   const loadData = async () => {
@@ -85,13 +251,15 @@ export default function RecurringList() {
       const params: { type?: string; household_id: number } = { household_id: activeHouseholdId }
       if (typeFilter !== 'all') params.type = typeFilter
 
-      const [recurringRes, categoriesRes] = await Promise.all([
+      const [recurringRes, categoriesRes, pmRes] = await Promise.all([
         recurringApi.getAll(params),
         categoryApi.getAll(),
+        paymentMethodApi.getAll(activeHouseholdId),
       ])
 
       setItems(recurringRes.data)
       setCategories(categoriesRes.data)
+      setPaymentMethods(pmRes.data.filter((pm: PaymentMethod) => pm.is_active))
     } catch {
       setError('데이터를 불러오는데 실패했습니다')
     } finally {
@@ -102,6 +270,19 @@ export default function RecurringList() {
   useEffect(() => {
     loadData()
   }, [typeFilter, activeHouseholdId])
+
+  /* ⋮ 메뉴 외부 클릭 닫기 (setTimeout 0 필수: 버튼 클릭 이벤트 bubbling 완료 후 리스너 등록) */
+  useEffect(() => {
+    if (openMenuId === null) return
+    const handleClickOutside = () => setOpenMenuId(null)
+    const timer = setTimeout(() => {
+      document.addEventListener('click', handleClickOutside)
+    }, 0)
+    return () => {
+      clearTimeout(timer)
+      document.removeEventListener('click', handleClickOutside)
+    }
+  }, [openMenuId])
 
   /* 모달 열기: 추가 */
   const openAdd = () => {
@@ -118,6 +299,7 @@ export default function RecurringList() {
       amount: String(r.amount),
       description: r.description,
       category_id: r.category_id ? String(r.category_id) : '',
+      payment_method_id: r.payment_method_id ? String(r.payment_method_id) : '',
       frequency: r.frequency,
       day_of_month: String(r.day_of_month ?? 25),
       day_of_week: String(r.day_of_week ?? 0),
@@ -129,7 +311,7 @@ export default function RecurringList() {
     setShowModal(true)
   }
 
-  /* 저장 (추가 / 수정) */
+  /* 저장 (추가 / 수정) — API 응답으로 로컬 상태 업데이트 (재로드 없음) */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!formData.description.trim()) {
@@ -144,19 +326,23 @@ export default function RecurringList() {
     setSubmitting(true)
     try {
       if (editingId) {
-        await recurringApi.update(editingId, {
+        // 수정: API 응답 데이터로 해당 항목만 교체
+        const res = await recurringApi.update(editingId, {
           amount: Number(formData.amount),
           description: formData.description,
           category_id: formData.category_id ? Number(formData.category_id) : null,
+          payment_method_id: formData.payment_method_id ? Number(formData.payment_method_id) : null,
           end_date: formData.end_date || null,
         })
-        addToast('success', TOAST.RECURRING_UPDATED)
+        setItems((prev) => prev.map((item) => item.id === editingId ? res.data : item))
       } else {
+        // 생성: API 응답 데이터를 목록에 추가
         const payload: RecurringTransactionCreate = {
           type: formData.type,
           amount: Number(formData.amount),
           description: formData.description,
           category_id: formData.category_id ? Number(formData.category_id) : null,
+          payment_method_id: formData.payment_method_id ? Number(formData.payment_method_id) : null,
           frequency: formData.frequency,
           start_date: formData.start_date,
           end_date: formData.end_date || null,
@@ -174,12 +360,12 @@ export default function RecurringList() {
         if (formData.frequency === 'custom') {
           payload.interval = Number(formData.interval)
         }
-        await recurringApi.create(payload)
-        addToast('success', TOAST.RECURRING_ADDED)
+        const res = await recurringApi.create(payload)
+        setItems((prev) => [...prev, res.data])
         trackEvent('recurring_added')
       }
       setShowModal(false)
-      loadData()
+      addToast('success', editingId ? TOAST.RECURRING_UPDATED : TOAST.RECURRING_ADDED)
     } catch {
       addToast('error', TOAST.SAVE_FAILED)
     } finally {
@@ -187,45 +373,60 @@ export default function RecurringList() {
     }
   }
 
-  /* 삭제: 확인 모달 표시 */
-  const requestDelete = (id: number) => {
-    setDeleteTargetId(id)
+  /* 토글 (낙관적 업데이트) */
+  const handleToggle = async (r: RecurringTransaction) => {
+    // 낙관적 업데이트: API 응답 전에 UI 즉시 반영
+    setItems((prev) => prev.map((item) => item.id === r.id ? { ...item, is_active: !item.is_active } : item))
+    setTogglingIds((prev) => new Set([...prev, r.id]))
+    try {
+      await recurringApi.update(r.id, { is_active: !r.is_active })
+    } catch {
+      // 실패 시 롤백
+      setItems((prev) => prev.map((item) => item.id === r.id ? { ...item, is_active: r.is_active } : item))
+      addToast('error', TOAST.RECURRING_TOGGLE_FAILED)
+    } finally {
+      setTogglingIds((prev) => { const s = new Set(prev); s.delete(r.id); return s })
+    }
   }
 
-  /* 삭제: 실제 삭제 실행 */
-  const handleDelete = async () => {
-    if (deleteTargetId === null) return
+  /* 즉시 실행 (인라인 피드백) */
+  const handleExecute = async (r: RecurringTransaction) => {
+    setOpenMenuId(null)
+    setExecutingIds((prev) => new Set([...prev, r.id]))
     try {
-      await recurringApi.delete(deleteTargetId)
+      await recurringApi.execute(r.id)
+      // 잠깐 체크마크 표시 후 제거
+      setExecutedIds((prev) => new Set([...prev, r.id]))
+      setTimeout(() => {
+        setExecutedIds((prev) => { const s = new Set(prev); s.delete(r.id); return s })
+      }, 800)
+      addToast('success', TOAST.RECURRING_EXECUTED)
+    } catch {
+      addToast('error', TOAST.RECURRING_EXECUTE_FAILED)
+    } finally {
+      setExecutingIds((prev) => { const s = new Set(prev); s.delete(r.id); return s })
+    }
+  }
+
+  /* 삭제: 로컬 상태 업데이트 (재로드 없이) */
+  const handleDelete = async (id: number) => {
+    try {
+      await recurringApi.delete(id)
+      setItems((prev) => prev.filter((item) => item.id !== id))
+      setDeletingId(null)
       addToast('success', TOAST.RECURRING_DELETED)
-      setDeleteTargetId(null)
-      loadData()
     } catch {
       addToast('error', TOAST.DELETE_FAILED)
     }
   }
 
-  /* 바로 등록 (즉시 실행) */
-  const handleExecute = async (r: RecurringTransaction) => {
-    try {
-      await recurringApi.execute(r.id)
-      addToast('success', TOAST.RECURRING_EXECUTED)
-      loadData()
-    } catch {
-      addToast('error', TOAST.RECURRING_EXECUTE_FAILED)
-    }
-  }
-
-  /* 일시정지/재개 */
-  const toggleActive = async (r: RecurringTransaction) => {
-    try {
-      await recurringApi.update(r.id, { is_active: !r.is_active })
-      addToast('success', TOAST.STATUS_CHANGED)
-      loadData()
-    } catch {
-      addToast('error', TOAST.RECURRING_TOGGLE_FAILED)
-    }
-  }
+  /* 렌더링 직전 정렬 + 필터
+   * next_due_date(YYYY-MM-DD) 기준 정렬: day_of_month는 monthly 외 weekly/custom에서 null이므로 부정확
+   * 비활성 항목은 제자리에서 흐려지는 방식 — 섹션 분리 없이 통합 목록 */
+  const inactiveCount = items.filter((r) => !r.is_active).length
+  const visibleItems = items
+    .filter((r) => r.is_active || showInactive)
+    .sort((a, b) => a.next_due_date.localeCompare(b.next_due_date))
 
   if (error) {
     return (
@@ -309,102 +510,29 @@ export default function RecurringList() {
         </div>
       ) : (
         <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)]/60 overflow-hidden">
-          {/* 데스크톱: 테이블 */}
-          <div className="hidden md:block">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-[var(--border-subtle)] bg-[var(--surface-elevated)]/50">
-                  <th className="text-left px-5 py-3 text-[var(--text-tertiary)] font-medium">설명</th>
-                  <th className="text-right px-5 py-3 text-[var(--text-tertiary)] font-medium">금액</th>
-                  <th className="text-left px-5 py-3 text-[var(--text-tertiary)] font-medium">주기</th>
-                  <th className="text-left px-5 py-3 text-[var(--text-tertiary)] font-medium">다음 예정일</th>
-                  <th className="text-center px-5 py-3 text-[var(--text-tertiary)] font-medium">상태</th>
-                  <th className="text-right px-5 py-3 text-[var(--text-tertiary)] font-medium">작업</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[var(--border-subtle)]">
-                {items.map((r) => (
-                  <tr key={r.id} className={`hover:bg-[var(--surface-hover)]/50 ${!r.is_active ? 'opacity-50' : ''}`}>
-                    <td className="px-5 py-3">
-                      <div className="flex items-center gap-2">
-                        <span className={`w-2 h-2 rounded-full ${r.type === 'expense' ? 'bg-grape-500' : 'bg-leaf-500'}`} />
-                        <span className="font-medium text-[var(--text-primary)]">{r.description}</span>
-                      </div>
-                    </td>
-                    <td className={`px-5 py-3 text-right font-semibold tabular-nums ${r.type === 'expense' ? 'text-[var(--text-primary)]' : 'text-leaf-600'}`}>
-                      {r.type === 'income' ? '+' : ''}{formatAmount(r.amount)}
-                    </td>
-                    <td className="px-5 py-3 text-[var(--text-secondary)]">{formatFrequency(r)}</td>
-                    <td className="px-5 py-3 text-[var(--text-secondary)]">{r.next_due_date}</td>
-                    <td className="px-5 py-3 text-center">
-                      <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${
-                        r.is_active ? 'bg-leaf-100 text-leaf-600' : 'bg-[var(--surface-hover)] text-[var(--text-tertiary)]'
-                      }`}>
-                        {r.is_active ? '사용 중' : '중지'}
-                      </span>
-                    </td>
-                    <td className="px-5 py-3">
-                      <div className="flex items-center justify-end gap-1">
-                        {r.is_active && (
-                          <button onClick={() => handleExecute(r)} className="p-2 rounded-md hover:bg-leaf-50 text-[var(--text-tertiary)] hover:text-leaf-600" title="바로 등록">
-                            <Zap className="w-4 h-4" />
-                          </button>
-                        )}
-                        <button onClick={() => toggleActive(r)} className="p-2 rounded-md hover:bg-[var(--surface-hover)] text-[var(--text-tertiary)]" title={r.is_active ? '중지' : '다시 시작'}>
-                          {r.is_active ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-                        </button>
-                        <button onClick={() => openEdit(r)} className="p-2 rounded-md hover:bg-[var(--surface-hover)] text-[var(--text-tertiary)]" title="수정">
-                          <Pencil className="w-4 h-4" />
-                        </button>
-                        <button onClick={() => requestDelete(r.id)} className="p-2 rounded-md hover:bg-red-50 text-[var(--text-tertiary)] hover:text-red-600" title="삭제">
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {/* 모바일 카드 뷰 */}
-          <div className="md:hidden divide-y divide-[var(--border-subtle)]">
-            {items.map((r) => (
-              <div key={r.id} className={`p-4 ${!r.is_active ? 'opacity-50' : ''}`}>
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <span className={`w-2 h-2 rounded-full flex-shrink-0 ${r.type === 'expense' ? 'bg-grape-500' : 'bg-leaf-500'}`} />
-                    <span className="font-medium text-[var(--text-primary)] truncate">{r.description}</span>
-                  </div>
-                  <span className={`font-semibold whitespace-nowrap ml-2 tabular-nums ${r.type === 'expense' ? 'text-[var(--text-primary)]' : 'text-leaf-600'}`}>
-                    {r.type === 'income' ? '+' : ''}{formatAmount(r.amount)}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between mt-2">
-                  <div className="text-sm text-[var(--text-tertiary)] space-x-3">
-                    <span>{formatFrequency(r)}</span>
-                    <span>다음: {r.next_due_date}</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    {r.is_active && (
-                      <button onClick={() => handleExecute(r)} className="p-1 text-[var(--text-muted)] hover:text-leaf-600" title="바로 등록">
-                        <Zap className="w-4 h-4" />
-                      </button>
-                    )}
-                    <button onClick={() => toggleActive(r)} className="p-1 text-[var(--text-muted)]">
-                      {r.is_active ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-                    </button>
-                    <button onClick={() => openEdit(r)} className="p-1 text-[var(--text-muted)]">
-                      <Pencil className="w-4 h-4" />
-                    </button>
-                    <button onClick={() => requestDelete(r.id)} className="p-1 text-[var(--text-muted)]">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              </div>
+          {/* 통합 목록 — 활성/비활성 모두 날짜순, 비활성은 제자리에서 흐려짐 */}
+          <div className="divide-y divide-[var(--border-subtle)]">
+            {visibleItems.map((r) => (
+              <RecurringCard
+                key={r.id} r={r} openMenuId={openMenuId} deletingId={deletingId}
+                togglingIds={togglingIds} executingIds={executingIds} executedIds={executedIds}
+                onToggle={handleToggle} onMenuOpen={setOpenMenuId} onEdit={openEdit}
+                onDeleteRequest={setDeletingId} onDeleteConfirm={handleDelete}
+                onDeleteCancel={() => setDeletingId(null)} onExecute={handleExecute}
+              />
             ))}
           </div>
+
+          {/* 일시정지 항목 숨기기/보기 — 항목이 있을 때만 표시 */}
+          {inactiveCount > 0 && (
+            <button
+              onClick={() => setShowInactive(!showInactive)}
+              className="w-full px-4 py-3 text-sm text-[var(--text-tertiary)] hover:bg-[var(--surface-hover)] transition-colors border-t border-[var(--border-subtle)]"
+              data-testid="inactive-toggle"
+            >
+              일시정지 {inactiveCount}개 {showInactive ? '숨기기' : '보기'}
+            </button>
+          )}
         </div>
       )}
 
@@ -415,46 +543,11 @@ export default function RecurringList() {
           formData={formData}
           onFormChange={setFormData}
           categories={categories}
+          paymentMethods={paymentMethods}
           submitting={submitting}
           onSubmit={handleSubmit}
           onClose={() => setShowModal(false)}
         />
-      )}
-
-      {/* 삭제 확인 모달 */}
-      {deleteTargetId !== null && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="delete-recurring-modal-title"
-            className="bg-[var(--surface-card)] rounded-2xl shadow-xl max-w-md w-full p-6"
-          >
-            <h3
-              id="delete-recurring-modal-title"
-              className="text-lg font-semibold text-[var(--text-primary)] mb-2"
-            >
-              정기거래 삭제
-            </h3>
-            <p className="text-[var(--text-secondary)] mb-6">
-              정말로 이 정기거래를 삭제하시겠습니까?
-            </p>
-            <div className="flex gap-3 justify-end">
-              <button
-                onClick={() => setDeleteTargetId(null)}
-                className="px-4 py-2 text-sm font-medium text-[var(--text-secondary)] bg-[var(--surface-hover)] rounded-lg transition-colors"
-              >
-                취소
-              </button>
-              <button
-                onClick={handleDelete}
-                className="px-4 py-2 text-sm font-medium text-white bg-rose-600 rounded-lg hover:bg-rose-700 transition-colors"
-              >
-                삭제
-              </button>
-            </div>
-          </div>
-        </div>
       )}
     </div>
   )

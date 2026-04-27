@@ -6,13 +6,14 @@
 
 import { useEffect, useState } from 'react'
 import { useGoBack } from '../hooks/useGoBack'
-import { ArrowLeft, Lock, Plus, Tags } from 'lucide-react'
+import { ArrowLeft, Lock, Pencil, Plus, Tags, Trash2 } from 'lucide-react'
 import { useToast } from '../hooks/useToast'
 import { TOAST } from '../constants/toastMessages'
 import { categoryApi } from '../api/categories'
 import EmptyState from '../components/EmptyState'
 import ErrorState from '../components/ErrorState'
 import { Skeleton } from '../components/skeleton/Skeleton'
+import EmojiPicker from '../components/EmojiPicker'
 import type { Category } from '../types'
 
 function CategoryManagerSkeleton() {
@@ -35,14 +36,14 @@ function CategoryManagerSkeleton() {
 function MoveButtons({
   name,
   index,
-  total,
+  customCount,
   reordering,
   isSystem,
   onMove,
 }: {
   name: string
   index: number
-  total: number
+  customCount: number
   reordering: boolean
   isSystem: boolean
   onMove: (direction: 'up' | 'down') => void
@@ -61,7 +62,7 @@ function MoveButtons({
       </button>
       <button
         onClick={() => onMove('down')}
-        disabled={index === total - 1 || reordering || isSystem}
+        disabled={index >= customCount - 1 || reordering || isSystem}
         className="p-0.5 text-[var(--text-muted)] hover:text-grape-600 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
         aria-label={`${name} 아래로 이동`}
       >
@@ -195,6 +196,7 @@ export default function CategoryManager() {
       fetchCategories()
     } catch {
       addToast('error', TOAST.DELETE_FAILED)
+      setDeleteTarget(null)  // 에러 시에도 확인 행 닫기
     }
   }
 
@@ -204,6 +206,8 @@ export default function CategoryManager() {
   const handleMove = async (index: number, direction: 'up' | 'down') => {
     const targetIndex = direction === 'up' ? index - 1 : index + 1
     if (targetIndex < 0 || targetIndex >= categories.length) return
+    // 시스템 카테고리 영역으로 이동 불가
+    if (categories[targetIndex].is_system) return
 
     // 낙관적 업데이트
     const newCategories = [...categories]
@@ -283,7 +287,7 @@ export default function CategoryManager() {
           onClick={() => setActiveTab('expense')}
           className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-colors ${
             activeTab === 'expense'
-              ? 'bg-grape-100 text-grape-700'
+              ? 'bg-grape-500/20 text-grape-600'
               : 'bg-[var(--surface-elevated)] text-[var(--text-secondary)] hover:bg-[var(--surface-hover)]'
           }`}
         >
@@ -293,7 +297,7 @@ export default function CategoryManager() {
           onClick={() => setActiveTab('income')}
           className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-colors ${
             activeTab === 'income'
-              ? 'bg-leaf-100 text-leaf-700'
+              ? 'bg-grape-500/20 text-grape-600'
               : 'bg-[var(--surface-elevated)] text-[var(--text-secondary)] hover:bg-[var(--surface-hover)]'
           }`}
         >
@@ -303,19 +307,10 @@ export default function CategoryManager() {
 
       {/* 추가 폼 */}
       {isAdding && (
-        <div className="bg-grape-50 rounded-2xl border border-grape-200 p-4 space-y-3">
-          <div className="flex items-start gap-3">
-            <input
-              type="text"
-              value={newEmoji}
-              onChange={(e) => {
-                const val = e.target.value
-                if (val.length <= 2) setNewEmoji(val || '📌')
-              }}
-              className="input-base w-14 text-center text-xl p-2 flex-shrink-0"
-              maxLength={2}
-            />
-            <div className="flex-1 min-w-0 space-y-2">
+        <div className="bg-[var(--surface-elevated)] rounded-2xl border border-[var(--border-default)] p-4 space-y-3">
+          <div className="grid grid-cols-[3.5rem_1fr] gap-3 items-start">
+            <EmojiPicker value={newEmoji} onChange={setNewEmoji} />
+            <div className="space-y-2">
               <input
                 type="text"
                 value={newName}
@@ -384,23 +379,19 @@ export default function CategoryManager() {
         <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)]/60 divide-y divide-[var(--border-subtle)]">
           {categories.map((category, index) => {
             const isEditing = editingId === category.id
+            const customCount = categories.filter(c => !c.is_system).length
+            const isFirstSystem = category.is_system && (index === 0 || !categories[index - 1].is_system)
             return (
-              <div key={category.id} className={isEditing ? 'bg-grape-50' : undefined}>
+              <div key={category.id} className={isEditing ? 'bg-[var(--surface-elevated)]' : undefined}>
                 {isEditing ? (
                   /* 인라인 편집 폼 */
                   <div className="px-4 py-4 space-y-3">
-                    <div className="flex items-start gap-3">
-                      <input
-                        type="text"
+                    <div className="grid grid-cols-[3.5rem_1fr] gap-3 items-start">
+                      <EmojiPicker
                         value={editForm.emoji}
-                        onChange={(e) => {
-                          const val = e.target.value
-                          if (val.length <= 2) setEditForm({ ...editForm, emoji: val || '📌' })
-                        }}
-                        className="input-base w-14 text-center text-xl p-2 flex-shrink-0"
-                        maxLength={2}
+                        onChange={(emoji) => setEditForm({ ...editForm, emoji })}
                       />
-                      <div className="flex-1 min-w-0 space-y-2">
+                      <div className="space-y-2">
                         <input
                           type="text"
                           value={editForm.name}
@@ -446,50 +437,81 @@ export default function CategoryManager() {
                   </div>
                 ) : (
                   /* 일반 카드 행 */
-                  <div className="flex items-center gap-3 px-4 py-4">
-                    <MoveButtons
-                      name={category.name}
-                      index={index}
-                      total={categories.length}
-                      reordering={reordering}
-                      isSystem={category.is_system}
-                      onMove={(dir) => handleMove(index, dir)}
-                    />
-                    <span className="text-xl flex-shrink-0 w-8 text-center">{category.emoji}</span>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-1.5">
-                        <span className="font-medium text-[var(--text-primary)]">{category.name}</span>
-                        {category.is_savings && (
-                          <span className="inline-flex items-center px-1.5 py-0.5 text-[10px] font-medium text-leaf-700 bg-leaf-100 rounded">
-                            저축
-                          </span>
-                        )}
-                      </div>
-                      {category.description && (
-                        <p className="text-xs text-[var(--text-secondary)] mt-0.5">{category.description}</p>
-                      )}
-                    </div>
-                    {category.is_system ? (
-                      <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-[var(--text-tertiary)] bg-[var(--surface-elevated)] rounded-md flex-shrink-0">
-                        <Lock className="w-3 h-3" aria-hidden="true" />
-                        기본
-                      </span>
-                    ) : (
-                      <div className="flex gap-2 flex-shrink-0">
-                        <button
-                          onClick={() => startEdit(category)}
-                          className="px-3 py-1.5 text-sm font-medium text-grape-600 bg-grape-50 rounded-lg hover:bg-grape-100 transition-colors"
-                        >
-                          수정
-                        </button>
-                        <button
-                          onClick={() => setDeleteTarget(category.id)}
-                          className="px-3 py-1.5 text-sm font-medium text-rose-600 bg-rose-50 rounded-lg hover:bg-rose-100 transition-colors"
-                        >
-                          삭제
-                        </button>
+                  <div>
+                    {isFirstSystem && customCount > 0 && (
+                      <div className="px-4 py-2 text-xs font-medium text-[var(--text-tertiary)] bg-[var(--surface-elevated)] border-b border-[var(--border-subtle)]">
+                        기본 제공
                       </div>
                     )}
+                    <div className="flex items-center gap-3 px-4 py-4">
+                      <MoveButtons
+                        name={category.name}
+                        index={index}
+                        customCount={customCount}
+                        reordering={reordering}
+                        isSystem={category.is_system}
+                        onMove={(dir) => handleMove(index, dir)}
+                      />
+                      <span className="text-xl flex-shrink-0 w-8 text-center">{category.emoji}</span>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-medium text-[var(--text-primary)]">{category.name}</span>
+                          {category.is_savings && (
+                            <span className="inline-flex items-center px-1.5 py-0.5 text-[10px] font-medium text-leaf-600 bg-leaf-500/15 rounded">
+                              저축
+                            </span>
+                          )}
+                        </div>
+                        {category.description && (
+                          <p className="text-xs text-[var(--text-secondary)] mt-0.5">{category.description}</p>
+                        )}
+                      </div>
+                      {category.is_system ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-[var(--text-tertiary)] bg-[var(--surface-elevated)] rounded-md flex-shrink-0">
+                          <Lock className="w-3 h-3" aria-hidden="true" />
+                          기본
+                        </span>
+                      ) : (
+                        <div className="flex items-center gap-1 flex-shrink-0">
+                          <button
+                            onClick={() => startEdit(category)}
+                            aria-label="수정"
+                            className="p-1.5 rounded-lg hover:bg-[var(--surface-hover)] transition-colors text-[var(--text-muted)] hover:text-grape-600"
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => { setDeleteTarget(category.id); setEditingId(null) }}
+                            aria-label="삭제"
+                            className="p-1.5 rounded-lg hover:bg-[var(--surface-hover)] transition-colors text-[var(--text-muted)] hover:text-rose-500"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+                {/* 삭제 인라인 확인 */}
+                {deleteTarget === category.id && (
+                  <div className="px-3 py-2.5 bg-rose-500/5 flex items-center justify-between border-t border-rose-200/50">
+                    <p className="text-sm text-[var(--text-secondary)]">
+                      삭제하면 연결된 거래가 '분류 안 됨'이 돼요
+                    </p>
+                    <div className="flex gap-2 flex-shrink-0">
+                      <button
+                        onClick={() => setDeleteTarget(null)}
+                        className="px-3 py-1.5 text-xs rounded-lg bg-[var(--surface-hover)] text-[var(--text-secondary)]"
+                      >
+                        취소
+                      </button>
+                      <button
+                        onClick={() => handleDelete(category.id)}
+                        className="px-3 py-1.5 text-xs rounded-lg bg-rose-500 text-white font-medium"
+                      >
+                        삭제
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
@@ -498,37 +520,6 @@ export default function CategoryManager() {
         </div>
       )}
 
-      {/* 삭제 확인 모달 */}
-      {deleteTarget !== null && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-[var(--surface-card)] rounded-2xl shadow-xl max-w-md w-full p-6">
-            <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-2">
-              카테고리 삭제
-            </h3>
-            <p className="text-[var(--text-secondary)] mb-6">
-              정말로 이 카테고리를 삭제하시겠습니까?
-              <br />
-              <span className="text-sm text-rose-600">
-                이 카테고리에 연결된 지출 내역은 '분류 안 됨' 상태가 됩니다.
-              </span>
-            </p>
-            <div className="flex gap-3 justify-end">
-              <button
-                onClick={() => setDeleteTarget(null)}
-                className="px-4 py-2 text-sm font-medium text-[var(--text-secondary)] bg-[var(--surface-hover)] rounded-lg hover:bg-[var(--surface-hover)] transition-colors"
-              >
-                취소
-              </button>
-              <button
-                onClick={() => handleDelete(deleteTarget)}
-                className="px-4 py-2 text-sm font-medium text-white bg-rose-600 rounded-lg hover:bg-rose-700 transition-colors"
-              >
-                삭제
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }

@@ -32,6 +32,7 @@ const LandingPage = lazy(() => import('./pages/LandingPage'))
 const FeedbackPage = lazy(() => import('./pages/FeedbackPage'))
 const AdminPage = lazy(() => import('./pages/AdminPage'))
 const OnboardingPage = lazy(() => import('./pages/OnboardingPage'))
+const ReportDetailPage = lazy(() => import('./pages/ReportDetailPage'))
 
 /* /transactions → /home 쿼리 보존 리다이렉트 */
 function TransactionsRedirect() {
@@ -105,6 +106,7 @@ function App() {
             <Route path="/budgets" element={<BudgetManager />} />
             <Route path="/recurring" element={<RecurringList />} />
             <Route path="/insights" element={<InsightsPage />} />
+            <Route path="/insights/reports/:month" element={<ReportDetailPage />} />
             <Route path="/households" element={<HouseholdListPage />} />
             <Route path="/households/:id" element={<HouseholdDetailPage />} />
             <Route path="/invitations" element={<InvitationListPage />} />

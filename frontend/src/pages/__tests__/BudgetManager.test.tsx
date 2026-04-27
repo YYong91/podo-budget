@@ -4,8 +4,8 @@
  * 카테고리 개요 로드, 인라인 예산 편집, 상황, 월 총 예산, 에러/빈 상태를 테스트한다.
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { describe, it, expect, beforeEach } from 'vitest'
+import { render, screen, waitFor, fireEvent } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import userEvent from '@testing-library/user-event'
 import BudgetManager from '../BudgetManager'
@@ -14,19 +14,13 @@ import { http, HttpResponse } from 'msw'
 import type { BudgetAlert, CategoryBudgetOverview } from '../../types'
 
 /**
- * addToast 모킹 함수
+ * 테스트용 카테고리 목록 (이모지 포함)
  */
-let mockAddToast: ReturnType<typeof vi.fn>
-
-/**
- * useToast 훅 모킹
- */
-vi.mock('../../hooks/useToast', () => ({
-  useToast: () => ({
-    addToast: mockAddToast,
-    removeToast: vi.fn(),
-  }),
-}))
+const mockBudgetCategories = [
+  { id: 1, name: '식비', emoji: '🍚', type: 'expense' },
+  { id: 2, name: '교통', emoji: '🚌', type: 'expense' },
+  { id: 3, name: '여가', emoji: null, type: 'expense' },
+]
 
 /**
  * 테스트용 카테고리 개요 데이터
@@ -48,6 +42,14 @@ const mockOverview: CategoryBudgetOverview[] = [
     category_id: 2,
     category_name: '교통',
     monthly_spending: [{ year: 2024, month: 1, amount: 50000 }],
+    current_budget_id: 2,
+    current_budget_amount: 100000,
+    alert_threshold: 0.8,
+  },
+  {
+    category_id: 3,
+    category_name: '여가',
+    monthly_spending: [],
     current_budget_id: null,
     current_budget_amount: null,
     alert_threshold: null,
@@ -92,6 +94,7 @@ function setupSuccessHandlers(totalBudget: number | null = null) {
     http.get('/api/budgets/total-budget', () =>
       HttpResponse.json({ total_monthly_budget: totalBudget })
     ),
+    http.get('/api/categories', () => HttpResponse.json(mockBudgetCategories)),
   )
 }
 
@@ -105,6 +108,7 @@ function setupEmptyHandlers() {
     http.get('/api/budgets/total-budget', () =>
       HttpResponse.json({ total_monthly_budget: null })
     ),
+    http.get('/api/categories', () => HttpResponse.json([])),
   )
 }
 
@@ -122,6 +126,9 @@ function setupErrorHandlers() {
     http.get('/api/budgets/total-budget', () =>
       HttpResponse.json({ detail: 'Server error' }, { status: 500 })
     ),
+    http.get('/api/categories', () =>
+      HttpResponse.json({ detail: 'Server error' }, { status: 500 })
+    ),
   )
 }
 
@@ -137,7 +144,7 @@ function renderBudgetManager() {
 }
 
 beforeEach(() => {
-  mockAddToast = vi.fn()
+  // 테스트 격리 — 각 테스트 전에 핸들러 초기화는 server.ts afterEach에서 처리
 })
 
 describe('BudgetManager', () => {
@@ -181,32 +188,36 @@ describe('BudgetManager', () => {
       })
     })
 
-    it('카테고리별 최근 지출 내역을 ₩ 접두사 포맷으로 표시한다', async () => {
+    it('예산이 있는 카테고리의 진행바 사용 금액이 표시된다', async () => {
       setupSuccessHandlers()
       renderBudgetManager()
 
       await waitFor(() => {
-        // 식비 최근 1월 ₩195,000 (formatAmount 사용, 원 접미사 아님)
-        expect(screen.getByText(/1월.*₩195,000/)).toBeInTheDocument()
+        // 식비 지출 ₩250,000 사용 (알림 데이터 기반)
+        expect(screen.getByText(/₩250,000 사용/)).toBeInTheDocument()
       })
     })
 
-    it('최근 지출 표시에 원 접미사를 사용하지 않는다', async () => {
+    it('최근 지출 참고 텍스트가 표시되지 않는다 (진행바로 대체됨)', async () => {
       setupSuccessHandlers()
       renderBudgetManager()
 
       await waitFor(() => {
-        expect(screen.queryByText(/195,000원/)).not.toBeInTheDocument()
+        expect(screen.getByText('식비')).toBeInTheDocument()
       })
+
+      // monthly_spending 기반 "X월 ₩Y" 텍스트는 더 이상 표시되지 않음
+      expect(screen.queryByText(/1월.*₩195,000/)).not.toBeInTheDocument()
     })
 
-    it('예산이 있는 카테고리의 입력 필드에 금액이 표시된다', async () => {
+    it('예산이 있는 카테고리의 입력 필드에 금액이 포맷되어 표시된다', async () => {
       setupSuccessHandlers()
       renderBudgetManager()
 
       await waitFor(() => {
-        const input = screen.getByLabelText('식비 예산')
-        expect(input).toHaveValue(300000)
+        const input = screen.getByLabelText('식비 예산') as HTMLInputElement
+        // blur 상태에서 ₩ 포맷으로 표시
+        expect(input.value).toBe('₩300,000')
       })
     })
 
@@ -215,8 +226,8 @@ describe('BudgetManager', () => {
       renderBudgetManager()
 
       await waitFor(() => {
-        const input = screen.getByLabelText('교통 예산')
-        expect(input).toHaveValue(null)
+        const input = screen.getByLabelText('여가 예산') as HTMLInputElement
+        expect(input.value).toBe('')
       })
     })
 
@@ -232,43 +243,55 @@ describe('BudgetManager', () => {
     })
   })
 
-  describe('인라인 예산 편집', () => {
-    it('금액 변경 시 저장 버튼이 나타난다', async () => {
+  describe('카테고리 이모지', () => {
+    it('이모지가 있는 카테고리는 이름 앞에 이모지가 표시된다', async () => {
       setupSuccessHandlers()
-      const user = userEvent.setup()
       renderBudgetManager()
 
-      await waitFor(() => {
-        expect(screen.getByLabelText('교통 예산')).toBeInTheDocument()
-      })
-
-      const input = screen.getByLabelText('교통 예산')
-      await user.type(input, '50000')
-
-      expect(screen.getByRole('button', { name: '저장' })).toBeInTheDocument()
+      await waitFor(() => screen.getByText('식비'))
+      // 식비 이모지 🍚가 표시됨
+      expect(screen.getByText('🍚')).toBeInTheDocument()
     })
 
-    it('기존 금액과 같은 값으로 되돌리면 저장 버튼이 사라진다', async () => {
+    it('이모지가 있는 교통 카테고리도 이모지가 표시된다', async () => {
+      setupSuccessHandlers()
+      renderBudgetManager()
+
+      await waitFor(() => screen.getByText('교통'))
+      expect(screen.getByText('🚌')).toBeInTheDocument()
+    })
+
+    it('이모지가 null인 여가 카테고리는 이모지가 표시되지 않는다', async () => {
+      setupSuccessHandlers()
+      renderBudgetManager()
+
+      await waitFor(() => screen.getByText('여가'))
+      // 여가 카테고리에는 이모지 없음 — 빈 span도 없어야 함
+      const categoryRows = document.querySelectorAll('.divide-y > div')
+      const 여가Row = Array.from(categoryRows).find((row) =>
+        row.textContent?.includes('여가')
+      )
+      // 여가 행이 있고 이모지 span이 없음을 확인
+      expect(여가Row).toBeTruthy()
+    })
+  })
+
+  describe('자동 저장 (blur 기반)', () => {
+    it('저장 버튼이 UI에 존재하지 않는다', async () => {
       setupSuccessHandlers()
       const user = userEvent.setup()
       renderBudgetManager()
 
-      await waitFor(() => {
-        expect(screen.getByLabelText('식비 예산')).toBeInTheDocument()
-      })
+      await waitFor(() => screen.getByLabelText('여가 예산'))
 
-      const input = screen.getByLabelText('식비 예산')
-      // 값 변경 후 원래 값으로 복원
-      await user.clear(input)
-      await user.type(input, '999000')
-      expect(screen.getByRole('button', { name: '저장' })).toBeInTheDocument()
+      const input = screen.getByLabelText('여가 예산')
+      await user.type(input, '50000')
 
-      await user.clear(input)
-      await user.type(input, '300000')
+      // blur 기반 저장 — 저장 버튼 없음
       expect(screen.queryByRole('button', { name: '저장' })).not.toBeInTheDocument()
     })
 
-    it('새 예산 저장 시 POST API를 호출한다', async () => {
+    it('새 예산 입력 후 blur 시 POST API를 호출한다', async () => {
       setupSuccessHandlers()
       const user = userEvent.setup()
 
@@ -279,7 +302,7 @@ describe('BudgetManager', () => {
           return HttpResponse.json(
             {
               id: 10,
-              category_id: 2,
+              category_id: 3,
               amount: 50000,
               period: 'monthly',
               start_date: '2024-01-01T00:00:00Z',
@@ -295,23 +318,18 @@ describe('BudgetManager', () => {
 
       renderBudgetManager()
 
-      await waitFor(() => {
-        expect(screen.getByLabelText('교통 예산')).toBeInTheDocument()
-      })
+      await waitFor(() => screen.getByLabelText('여가 예산'))
 
-      const input = screen.getByLabelText('교통 예산')
+      const input = screen.getByLabelText('여가 예산')
       await user.type(input, '50000')
-
-      const saveButton = screen.getByRole('button', { name: '저장' })
-      await user.click(saveButton)
+      fireEvent.blur(input)
 
       await waitFor(() => {
         expect(postCalled).toBe(true)
       })
-      expect(mockAddToast).toHaveBeenCalledWith('success', '예산을 저장했어요')
     })
 
-    it('기존 예산 수정 시 PUT API를 호출한다', async () => {
+    it('기존 예산 수정 후 blur 시 PUT API를 호출한다', async () => {
       setupSuccessHandlers()
       const user = userEvent.setup()
 
@@ -335,24 +353,19 @@ describe('BudgetManager', () => {
 
       renderBudgetManager()
 
-      await waitFor(() => {
-        expect(screen.getByLabelText('식비 예산')).toBeInTheDocument()
-      })
+      await waitFor(() => screen.getByLabelText('식비 예산'))
 
       const input = screen.getByLabelText('식비 예산')
       await user.clear(input)
       await user.type(input, '400000')
-
-      const saveButton = screen.getByRole('button', { name: '저장' })
-      await user.click(saveButton)
+      fireEvent.blur(input)
 
       await waitFor(() => {
         expect(putCalled).toBe(true)
       })
-      expect(mockAddToast).toHaveBeenCalledWith('success', '예산을 저장했어요')
     })
 
-    it('입력을 비우고 저장하면 기존 예산을 삭제한다', async () => {
+    it('입력을 비우고 blur 시 기존 예산을 삭제한다', async () => {
       setupSuccessHandlers()
       const user = userEvent.setup()
 
@@ -366,85 +379,128 @@ describe('BudgetManager', () => {
 
       renderBudgetManager()
 
-      await waitFor(() => {
-        expect(screen.getByLabelText('식비 예산')).toBeInTheDocument()
-      })
+      await waitFor(() => screen.getByLabelText('식비 예산'))
 
       const input = screen.getByLabelText('식비 예산')
       await user.clear(input)
-
-      const saveButton = screen.getByRole('button', { name: '저장' })
-      await user.click(saveButton)
+      fireEvent.blur(input)
 
       await waitFor(() => {
         expect(deleteCalled).toBe(true)
       })
-      expect(mockAddToast).toHaveBeenCalledWith('success', '예산을 삭제했어요')
     })
-  })
 
-  describe('예산 상황', () => {
-    it('경고 상황의 사용률을 표시한다', async () => {
+    it('변경 없이 blur 하면 API를 호출하지 않는다', async () => {
       setupSuccessHandlers()
-      renderBudgetManager()
+      const user = userEvent.setup()
 
-      await waitFor(() => {
-        expect(screen.getByText('83.3%')).toBeInTheDocument()
-      })
-    })
-
-    it('초과 상황의 사용률을 표시한다', async () => {
-      setupSuccessHandlers()
-      renderBudgetManager()
-
-      await waitFor(() => {
-        expect(screen.getByText('120.0%')).toBeInTheDocument()
-      })
-    })
-
-    it('예산 초과 시 경고 메시지를 표시한다', async () => {
-      setupSuccessHandlers()
-      renderBudgetManager()
-
-      await waitFor(() => {
-        expect(screen.getByText('예산을 초과했습니다!')).toBeInTheDocument()
-      })
-    })
-
-    it('경고 상태일 때 80% 경고 메시지를 표시한다', async () => {
-      setupSuccessHandlers()
-      renderBudgetManager()
-
-      await waitFor(() => {
-        expect(screen.getByText('예산의 80%를 사용했습니다')).toBeInTheDocument()
-      })
-    })
-
-    it('예산 상황 섹션 제목을 표시한다', async () => {
-      setupSuccessHandlers()
-      renderBudgetManager()
-
-      await waitFor(() => {
-        expect(screen.getByText('예산 상황')).toBeInTheDocument()
-      })
-    })
-
-    it('상황이 없으면 상황 섹션을 표시하지 않는다', async () => {
+      let apiCalled = false
       server.use(
-        http.get('/api/budgets/category-overview', () => HttpResponse.json(mockOverview)),
-        http.get('/api/budgets/alerts', () => HttpResponse.json([])),
-        http.get('/api/budgets/total-budget', () =>
-          HttpResponse.json({ total_monthly_budget: null })
-        ),
+        http.put('/api/budgets/1', () => {
+          apiCalled = true
+          return HttpResponse.json({})
+        }),
+        http.post('/api/budgets', () => {
+          apiCalled = true
+          return HttpResponse.json({}, { status: 201 })
+        }),
+        http.delete('/api/budgets/1', () => {
+          apiCalled = true
+          return new HttpResponse(null, { status: 204 })
+        }),
       )
 
       renderBudgetManager()
 
-      await waitFor(() => {
-        expect(screen.getByText('월 총 예산')).toBeInTheDocument()
-      })
+      await waitFor(() => screen.getByLabelText('식비 예산'))
 
+      const input = screen.getByLabelText('식비 예산')
+      // focus만 하고 값은 그대로
+      await user.click(input)
+      fireEvent.blur(input)
+
+      // dirty하지 않으면 API 미호출
+      expect(apiCalled).toBe(false)
+    })
+  })
+
+  describe('설명 문구', () => {
+    it('"자동으로 저장돼요" 설명 문구가 표시된다', async () => {
+      setupSuccessHandlers()
+      renderBudgetManager()
+
+      await waitFor(() => screen.getByText('식비'))
+      expect(screen.getByText(/자동으로 저장돼요/)).toBeInTheDocument()
+    })
+
+    it('"저장 버튼을 누르세요" 문구가 더 이상 표시되지 않는다', async () => {
+      setupSuccessHandlers()
+      renderBudgetManager()
+
+      await waitFor(() => screen.getByText('식비'))
+      expect(screen.queryByText(/저장 버튼을 누르세요/)).not.toBeInTheDocument()
+    })
+  })
+
+  describe('카테고리 행 — 예산 상황 통합', () => {
+    it('예산 설정 + 지출 있는 카테고리는 진행바가 표시된다', async () => {
+      setupSuccessHandlers()
+      renderBudgetManager()
+      await waitFor(() => screen.getByText('식비'))
+      const progressBar = document.querySelector('[data-testid="progress-식비"]')
+      expect(progressBar).toBeInTheDocument()
+    })
+
+    it('예산 초과 카테고리는 초과 금액 텍스트가 표시된다', async () => {
+      setupSuccessHandlers()
+      renderBudgetManager()
+      await waitFor(() => screen.getByText('교통'))
+      expect(screen.getByText(/₩20,000 초과/)).toBeInTheDocument()
+    })
+
+    it('예산 미설정 카테고리는 진행바가 없다', async () => {
+      setupSuccessHandlers()
+      renderBudgetManager()
+      await waitFor(() => screen.getByText('여가'))
+      const progressBar = document.querySelector('[data-testid="progress-여가"]')
+      expect(progressBar).not.toBeInTheDocument()
+    })
+
+    it('"예산 상황" 섹션 헤더가 더 이상 렌더링되지 않는다', async () => {
+      setupSuccessHandlers()
+      renderBudgetManager()
+      await waitFor(() => screen.getByText('식비'))
       expect(screen.queryByText('예산 상황')).not.toBeInTheDocument()
+    })
+
+    it('경고 상태 카테고리의 사용률 뱃지가 카테고리 행에 표시된다', async () => {
+      setupSuccessHandlers()
+      renderBudgetManager()
+      await waitFor(() => screen.getByText('식비'))
+      // 83.3% → toFixed(0) → "83%"
+      expect(screen.getByText('83%')).toBeInTheDocument()
+    })
+
+    it('초과 상태 카테고리의 사용률 뱃지가 카테고리 행에 표시된다', async () => {
+      setupSuccessHandlers()
+      renderBudgetManager()
+      await waitFor(() => screen.getByText('교통'))
+      // 120.0% → toFixed(0) → "120%"
+      expect(screen.getByText('120%')).toBeInTheDocument()
+    })
+
+    it('예산 설정 카테고리는 사용 금액 텍스트가 표시된다', async () => {
+      setupSuccessHandlers()
+      renderBudgetManager()
+      await waitFor(() => screen.getByText('식비'))
+      expect(screen.getByText(/₩250,000 사용/)).toBeInTheDocument()
+    })
+
+    it('예산 미초과 카테고리는 남은 금액 텍스트가 표시된다', async () => {
+      setupSuccessHandlers()
+      renderBudgetManager()
+      await waitFor(() => screen.getByText('식비'))
+      expect(screen.getByText(/₩50,000 남음/)).toBeInTheDocument()
     })
   })
 
@@ -458,13 +514,14 @@ describe('BudgetManager', () => {
       })
     })
 
-    it('저장된 월 총 예산 금액을 표시한다', async () => {
+    it('저장된 월 총 예산 금액을 포맷되어 표시한다', async () => {
       setupSuccessHandlers(3000000)
       renderBudgetManager()
 
       await waitFor(() => {
-        const input = screen.getByLabelText('월 총 예산')
-        expect(input).toHaveValue(3000000)
+        const input = screen.getByLabelText('월 총 예산') as HTMLInputElement
+        // blur 상태에서 ₩ 포맷으로 표시
+        expect(input.value).toBe('₩3,000,000')
       })
     })
 
@@ -479,13 +536,38 @@ describe('BudgetManager', () => {
       })
     })
 
-    it('카테고리별 비율을 표시한다', async () => {
+    it('예산 사용률 뱃지를 카테고리 행에 표시한다', async () => {
       setupSuccessHandlers(3000000)
       renderBudgetManager()
 
       await waitFor(() => {
-        // 식비 300,000 / 3,000,000 = 10.0%
-        expect(screen.getByText('10.0%')).toBeInTheDocument()
+        // 식비 83.3% → toFixed(0) → "83%"
+        expect(screen.getByText('83%')).toBeInTheDocument()
+      })
+    })
+
+    it('월 총 예산 blur 시 자동 저장 API를 호출한다', async () => {
+      setupSuccessHandlers()
+      const user = userEvent.setup()
+
+      let patchCalled = false
+      server.use(
+        http.put('/api/budgets/total-budget', () => {
+          patchCalled = true
+          return HttpResponse.json({ total_monthly_budget: 200000 })
+        }),
+      )
+
+      renderBudgetManager()
+      await waitFor(() => screen.getByLabelText('월 총 예산'))
+
+      const input = screen.getByLabelText('월 총 예산')
+      await user.clear(input)
+      await user.type(input, '200000')
+      fireEvent.blur(input)
+
+      await waitFor(() => {
+        expect(patchCalled).toBe(true)
       })
     })
   })
@@ -526,23 +608,23 @@ describe('BudgetManager', () => {
         expect(screen.getByText(/남은 예산:/)).toBeInTheDocument()
       })
 
-      // 남은 예산: ₩2,700,000
+      // 남은 예산: ₩3,000,000 - ₩300,000(식비) - ₩100,000(교통) = ₩2,600,000
       const allSpans = document.querySelectorAll('span.tabular-nums')
       const remainingSpans = Array.from(allSpans).filter(
-        (el) => el.textContent && el.textContent.includes('₩2,700,000')
+        (el) => el.textContent && el.textContent.includes('₩2,600,000')
       )
       expect(remainingSpans.length).toBeGreaterThan(0)
     })
 
-    it('예산 상황 카드의 사용/예산 금액에 tabular-nums 스타일 span이 있다', async () => {
+    it('카테고리 행 지출 금액에 tabular-nums 스타일 span이 있다', async () => {
       setupSuccessHandlers()
       renderBudgetManager()
 
       await waitFor(() => {
-        expect(screen.getAllByText(/사용:/).length).toBeGreaterThan(0)
+        expect(screen.getByText(/₩250,000 사용/)).toBeInTheDocument()
       })
 
-      // 사용: ₩250,000 / ₩300,000 (식비 카드)
+      // 사용 금액 span에 tabular-nums 적용 (식비: ₩250,000 사용)
       const allSpans = document.querySelectorAll('span.tabular-nums')
       const usageSpans = Array.from(allSpans).filter(
         (el) => el.textContent && el.textContent.includes('₩250,000')
@@ -550,20 +632,100 @@ describe('BudgetManager', () => {
       expect(usageSpans.length).toBeGreaterThan(0)
     })
 
-    it('예산 상황 카드의 남은 금액에 tabular-nums 스타일 span이 있다', async () => {
+    it('카테고리 행 남은 금액에 tabular-nums 스타일 span이 있다', async () => {
       setupSuccessHandlers()
       renderBudgetManager()
 
       await waitFor(() => {
-        expect(screen.getAllByText(/남은 금액:/).length).toBeGreaterThan(0)
+        expect(screen.getByText(/₩50,000 남음/)).toBeInTheDocument()
       })
 
-      // 남은 금액: ₩50,000 (식비 카드)
+      // 남은 금액 span에 tabular-nums 적용 (식비: ₩50,000 남음)
       const allSpans = document.querySelectorAll('span.tabular-nums')
       const remainingSpans = Array.from(allSpans).filter(
         (el) => el.textContent && el.textContent.includes('₩50,000')
       )
       expect(remainingSpans.length).toBeGreaterThan(0)
+    })
+  })
+
+  describe('금액 입력 포맷', () => {
+    it('월 총 예산 입력란 — blur 시 ₩ 포맷으로 표시된다', async () => {
+      const user = userEvent.setup()
+      setupSuccessHandlers()
+      // 자동 저장 PUT 핸들러 추가
+      server.use(
+        http.put('/api/budgets/total-budget', () =>
+          HttpResponse.json({ total_monthly_budget: 200000 })
+        ),
+      )
+      renderBudgetManager()
+      await waitFor(() => screen.getByLabelText('월 총 예산'))
+
+      const input = screen.getByLabelText('월 총 예산') as HTMLInputElement
+      await user.clear(input)
+      await user.type(input, '200000')
+      await user.tab()
+      expect(input.value).toBe('₩200,000')
+    })
+
+    it('월 총 예산 입력란 — focus 시 raw 숫자로 표시된다', async () => {
+      const user = userEvent.setup()
+      setupSuccessHandlers(500000)
+      renderBudgetManager()
+      await waitFor(() => screen.getByLabelText('월 총 예산'))
+
+      const input = screen.getByLabelText('월 총 예산') as HTMLInputElement
+      await user.click(input)
+      // 포커스 상태에서는 raw 숫자만 표시
+      expect(input.value).toMatch(/^\d+$/)
+    })
+
+    it('카테고리 예산 입력란 — blur 시 ₩ 포맷으로 표시된다', async () => {
+      const user = userEvent.setup()
+      setupSuccessHandlers()
+      // 자동 저장 PUT 핸들러 추가
+      server.use(
+        http.put('/api/budgets/1', () =>
+          HttpResponse.json({ id: 1, category_id: 1, amount: 300000 })
+        ),
+      )
+      renderBudgetManager()
+      await waitFor(() => screen.getByLabelText('식비 예산'))
+
+      const input = screen.getByLabelText('식비 예산') as HTMLInputElement
+      await user.clear(input)
+      await user.type(input, '300000')
+      await user.tab()
+      expect(input.value).toBe('₩300,000')
+    })
+
+    it('월 총 예산 입력란 — 인풋 옆에 "원" 텍스트가 없다', async () => {
+      setupSuccessHandlers()
+      renderBudgetManager()
+      await waitFor(() => screen.getByLabelText('월 총 예산'))
+      // 페이지 어디에도 단독 "원" 텍스트 노드가 없어야 함 (₩ 접두사 방식 사용)
+      expect(screen.queryByText('원')).not.toBeInTheDocument()
+    })
+
+    it('예산 미설정 카테고리 — 입력란 placeholder가 "예산 없음"이다', async () => {
+      setupSuccessHandlers()
+      renderBudgetManager()
+      await waitFor(() => screen.getByLabelText('여가 예산'))
+      // 카테고리 예산 입력 필드는 예산 유무와 관계없이 placeholder="예산 없음" 표시
+      const input = screen.getByLabelText('여가 예산') as HTMLInputElement
+      expect(input.placeholder).toBe('예산 없음')
+    })
+  })
+
+  describe('에러 상태 헤더', () => {
+    it('에러 상태에서도 PiggyBank 아이콘이 렌더링된다', async () => {
+      setupErrorHandlers()
+      renderBudgetManager()
+      await waitFor(() => {
+        expect(screen.getByRole('heading', { name: '예산 관리' })).toBeInTheDocument()
+      })
+      expect(screen.getByTestId('piggybank-icon')).toBeInTheDocument()
     })
   })
 

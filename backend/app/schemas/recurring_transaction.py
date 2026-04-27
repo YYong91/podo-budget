@@ -35,12 +35,14 @@ class RecurringTransactionBase(BaseModel):
 class RecurringTransactionCreate(RecurringTransactionBase):
     household_id: int | None = None
     source_id: int | None = None  # 원본 거래 ID (기존 거래에서 등록 시)
+    payment_method_id: int | None = None
 
 
 class RecurringTransactionUpdate(BaseModel):
     amount: float | None = Field(None, gt=0)
     description: str | None = None
     category_id: int | None = None
+    payment_method_id: int | None = None
     is_active: bool | None = None
     end_date: date | None = None
 
@@ -53,16 +55,22 @@ class RecurringTransactionResponse(RecurringTransactionBase):
     is_active: bool
     created_at: datetime
     updated_at: datetime
-    category_emoji: str | None = None  # 카테고리 이모지 (category relationship에서 추출)
+    payment_method_id: int | None = None  # 모달 편집 시 pre-populate용
+    category_emoji: str | None = None  # 카테고리 이모지
+    category_name: str | None = None  # 카테고리명
+    payment_method_name: str | None = None  # 결제수단명
 
     model_config = {"from_attributes": True}
 
     @classmethod
-    def from_orm_with_emoji(cls, obj: object) -> "RecurringTransactionResponse":
-        """ORM 객체에서 category.emoji를 추출하여 category_emoji 필드에 매핑"""
+    def from_orm_extended(cls, obj: object) -> "RecurringTransactionResponse":
+        """ORM 객체에서 category, payment_method 관계를 추출"""
         data = cls.model_validate(obj)
         category = getattr(obj, "category", None)
         data.category_emoji = getattr(category, "emoji", None) if category else None
+        data.category_name = getattr(category, "name", None) if category else None
+        payment_method = getattr(obj, "payment_method", None)
+        data.payment_method_name = getattr(payment_method, "name", None) if payment_method else None
         return data
 
 

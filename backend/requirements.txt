@@ -23,6 +23,10 @@ email-validator>=2.0.0
 
 # LLM 클라이언트
 anthropic>=0.40.0
+openai>=1.0.0  # 임베딩 API (text-embedding-3-small)
+
+# 수치 연산 (임베딩 코사인 유사도)
+numpy>=1.26.0
 
 # 에러 트래킹
 sentry-sdk[fastapi]>=2.0,<3.0

@@ -55,7 +55,7 @@ interface MenuSection {
 /* ─── 단일 메뉴 아이템 렌더링 ─── */
 function SettingsMenuItem({ item, isLast }: { item: MenuItem; isLast: boolean }) {
   const Icon = item.icon
-  const className = `flex items-center gap-4 px-5 py-4 hover:bg-grape-50 transition-colors ${
+  const className = `flex items-center gap-4 px-5 py-4 hover:bg-[var(--surface-hover)] transition-colors ${
     !isLast ? 'border-b border-[var(--border-subtle)]' : ''
   }`
   const content = (
@@ -181,7 +181,7 @@ export default function SettingsPage() {
           label: '새소식',
           icon: Sparkles,
           badge: hasUnread ? (
-            <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-[var(--surface-card)]" />
+            <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-rose-500 rounded-full border-2 border-[var(--surface-card)]" />
           ) : undefined,
         },
         ...(user?.is_admin ? [{ to: '/admin', label: '관리자', icon: ShieldCheck }] : []),
@@ -257,7 +257,7 @@ export default function SettingsPage() {
         <SubPageWrapper>
           <div className="space-y-4">
             <h1 className="text-xl font-bold text-[var(--text-primary)]">AI 분석 설정</h1>
-            <p className="text-sm text-warm-500">
+            <p className="text-sm text-secondary">
               가구 정보를 입력하면 AI가 상황에 맞는 분석과 조언을 제공합니다.
             </p>
             <ProfileEditSection
@@ -270,7 +270,7 @@ export default function SettingsPage() {
           {showProfileFlow && (
             <div className="fixed inset-0 z-50 bg-black/40 flex items-end">
               <div className="w-full bg-[var(--surface-card)] rounded-t-2xl p-5 max-h-[90vh] overflow-y-auto">
-                <h2 className="text-base font-semibold text-warm-900 mb-4">가구 정보 설정</h2>
+                <h2 className="text-base font-semibold text-primary mb-4">가구 정보 설정</h2>
                 <ProfileCollectionFlow
                   onComplete={async (input) => {
                     await saveProfile.mutateAsync(input)

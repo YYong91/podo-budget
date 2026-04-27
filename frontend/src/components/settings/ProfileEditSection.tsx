@@ -56,9 +56,9 @@ interface Props {
 /* ─── 프로필 미설정 상태 ─── */
 function EmptyProfileCard({ onEditClick }: { onEditClick: () => void }) {
   return (
-    <div className="rounded-xl border border-warm-200 p-4 space-y-3">
-      <h3 className="text-sm font-semibold text-warm-900">AI 분석 설정</h3>
-      <p className="text-sm text-warm-500">AI 분석을 사용하려면 가구 정보를 입력해주세요.</p>
+    <div className="rounded-xl border border-default p-4 space-y-3">
+      <h3 className="text-sm font-semibold text-primary">AI 분석 설정</h3>
+      <p className="text-sm text-secondary">AI 분석을 사용하려면 가구 정보를 입력해주세요.</p>
       <button
         onClick={onEditClick}
         className="text-sm text-grape-500 font-medium"
@@ -78,9 +78,9 @@ function ProfileSummaryCard({ profile, onEditClick }: { profile: HouseholdProfil
   const lastUpdated = new Date(profile.updatedAt).toLocaleDateString('ko-KR')
 
   return (
-    <div className="rounded-xl border border-warm-200 p-4 space-y-3">
+    <div className="rounded-xl border border-default p-4 space-y-3">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-warm-900">AI 분석 설정</h3>
+        <h3 className="text-sm font-semibold text-primary">AI 분석 설정</h3>
         <button onClick={onEditClick} className="text-xs text-grape-500">
           수정
         </button>
@@ -88,36 +88,36 @@ function ProfileSummaryCard({ profile, onEditClick }: { profile: HouseholdProfil
 
       <div className="space-y-2 text-sm">
         <div className="flex justify-between">
-          <span className="text-warm-500">가구 유형</span>
-          <span className="text-warm-900">{PROFILE_LABELS.householdType[profile.householdType]}</span>
+          <span className="text-secondary">가구 유형</span>
+          <span className="text-primary">{PROFILE_LABELS.householdType[profile.householdType]}</span>
         </div>
         <div className="flex justify-between">
-          <span className="text-warm-500">주거 형태</span>
-          <span className="text-warm-900">{PROFILE_LABELS.housingType[profile.housingType]}</span>
+          <span className="text-secondary">주거 형태</span>
+          <span className="text-primary">{PROFILE_LABELS.housingType[profile.housingType]}</span>
         </div>
         <div className="flex justify-between">
-          <span className="text-warm-500">소득 유형</span>
-          <span className="text-warm-900">{incomeLabels}</span>
+          <span className="text-secondary">소득 유형</span>
+          <span className="text-primary">{incomeLabels}</span>
         </div>
         <div className="flex justify-between">
-          <span className="text-warm-500">연령대</span>
-          <span className="text-warm-900">{PROFILE_LABELS.ageRange[profile.ageRange]}</span>
+          <span className="text-secondary">연령대</span>
+          <span className="text-primary">{PROFILE_LABELS.ageRange[profile.ageRange]}</span>
         </div>
         {profile.financialGoal && profile.financialGoal !== 'none' && (
           <div className="flex justify-between">
-            <span className="text-warm-500">재무 목표</span>
-            <span className="text-warm-900">{PROFILE_LABELS.financialGoal[profile.financialGoal]}</span>
+            <span className="text-secondary">재무 목표</span>
+            <span className="text-primary">{PROFILE_LABELS.financialGoal[profile.financialGoal]}</span>
           </div>
         )}
         {profile.primaryConcern && profile.primaryConcern !== 'none' && (
           <div className="flex justify-between">
-            <span className="text-warm-500">주요 고민</span>
-            <span className="text-warm-900">{PROFILE_LABELS.primaryConcern[profile.primaryConcern]}</span>
+            <span className="text-secondary">주요 고민</span>
+            <span className="text-primary">{PROFILE_LABELS.primaryConcern[profile.primaryConcern]}</span>
           </div>
         )}
       </div>
 
-      <p className="text-xs text-warm-400">마지막 수정: {lastUpdated}</p>
+      <p className="text-xs text-muted">마지막 수정: {lastUpdated}</p>
     </div>
   )
 }

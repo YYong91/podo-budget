@@ -65,43 +65,10 @@ describe('InsightsPage', () => {
     })
   })
 
-  it('AI 상세 분석 버튼이 표시된다', async () => {
+  it('결산 리포트 섹션이 표시된다', async () => {
     renderWithQuery(<InsightsPage />)
     await waitFor(() => {
-      expect(screen.getByText('AI 상세 분석')).toBeInTheDocument()
-    })
-    expect(screen.getByText('분석하기')).toBeInTheDocument()
-  })
-
-  it('AI 분석 버튼 클릭 시 로딩 후 결과가 표시된다', async () => {
-    // 프로필이 이미 존재하는 상태로 오버라이드 — 바로 AI 분석이 실행되어야 함
-    server.use(
-      http.get('/api/household-profiles/:householdId', () => {
-        return HttpResponse.json({
-          id: 1,
-          household_id: 1,
-          household_type: 'dual_income',
-          housing_type: 'jeonse',
-          income_types: ['salary'],
-          age_range: '30s',
-          created_at: '2026-04-14T00:00:00',
-          updated_at: '2026-04-14T00:00:00',
-        })
-      }),
-    )
-
-    const user = userEvent.setup()
-    renderWithQuery(<InsightsPage />)
-
-    await waitFor(() => {
-      expect(screen.getByText('분석하기')).toBeInTheDocument()
-    })
-
-    await user.click(screen.getByText('분석하기'))
-
-    await waitFor(() => {
-      // 구조화된 인사이트가 표시됨
-      expect(screen.getByText('핵심 발견')).toBeInTheDocument()
+      expect(screen.getByText('결산 리포트')).toBeInTheDocument()
     })
   })
 

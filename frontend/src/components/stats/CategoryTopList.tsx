@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ChevronDown, ChevronUp, BarChart3, PieChart as PieChartIcon } from 'lucide-react'
+import { BarChart3, PieChart as PieChartIcon } from 'lucide-react'
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts'
 import type { CategoryStats } from '../../types'
 import { formatAmount } from '../../utils/format'
+import SectionHeader from './SectionHeader'
 
 // 카테고리가 이 수 이하이면 분석이 의미없어 추가 유도 메시지를 표시한다
 const MIN_CATEGORIES_FOR_ANALYSIS = 2
@@ -36,7 +37,6 @@ export default function CategoryTopList({ categories, maxItems = 5 }: CategoryTo
 
   if (categories.length === 0) return null
 
-  const hasMore = categories.length > maxItems
   const visible = expanded ? categories : categories.slice(0, maxItems)
   const totalAmount = categories.reduce((sum, c) => sum + c.amount, 0)
 
@@ -52,10 +52,17 @@ export default function CategoryTopList({ categories, maxItems = 5 }: CategoryTo
 
   return (
     <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] p-4 sm:p-6">
-      {/* 헤더: 제목 + 탭 전환 */}
-      <div className="flex items-center justify-between mb-3">
-        <h2 className="text-base font-semibold text-[var(--text-primary)]">📋 지출 카테고리</h2>
-        <div className="flex items-center gap-1 bg-[var(--surface-elevated)] rounded-lg p-0.5">
+      {/* 헤더: SectionHeader(flex-1) + 뷰모드 토글(shrink-0) */}
+      <div className="flex items-center gap-2 mb-3">
+        <div className="flex-1">
+          <SectionHeader
+            icon="📋"
+            title="지출 카테고리"
+            expanded={expanded}
+            onToggle={() => setExpanded(!expanded)}
+          />
+        </div>
+        <div className="flex items-center gap-1 bg-[var(--surface-elevated)] rounded-lg p-0.5 shrink-0">
           <button
             onClick={() => setViewMode('list')}
             className={`p-1.5 rounded-md transition-colors ${viewMode === 'list' ? 'bg-[var(--surface-card)] shadow-sm text-grape-600' : 'text-[var(--text-muted)]'}`}
@@ -76,7 +83,7 @@ export default function CategoryTopList({ categories, maxItems = 5 }: CategoryTo
       {/* 리스트 뷰 */}
       {viewMode === 'list' && (
         <>
-          <div className="space-y-2.5">
+          <div className="space-y-3">
             {visible.map((cat, i) => {
               return (
                 <div key={cat.category} className="-mx-2 px-2 py-1 rounded-lg">
@@ -86,7 +93,7 @@ export default function CategoryTopList({ categories, maxItems = 5 }: CategoryTo
                       <span className="text-sm font-medium text-[var(--text-primary)]">{cat.category}</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-sm text-[var(--text-secondary)]">{formatAmount(cat.amount)}</span>
+                      <span className="text-sm font-medium tabular-nums text-[var(--text-secondary)]">{formatAmount(cat.amount)}</span>
                       <span className="text-xs text-[var(--text-tertiary)] w-12 text-right">{cat.percentage.toFixed(1)}%</span>
                     </div>
                   </div>
@@ -98,18 +105,6 @@ export default function CategoryTopList({ categories, maxItems = 5 }: CategoryTo
             })}
           </div>
 
-          {hasMore && (
-            <button
-              onClick={() => setExpanded(!expanded)}
-              className="flex items-center justify-center gap-1 w-full mt-3 py-1.5 text-xs text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] transition-colors"
-            >
-              {expanded ? (
-                <>접기 <ChevronUp className="w-3.5 h-3.5" /></>
-              ) : (
-                <>더보기 ({categories.length - maxItems}) <ChevronDown className="w-3.5 h-3.5" /></>
-              )}
-            </button>
-          )}
         </>
       )}
 

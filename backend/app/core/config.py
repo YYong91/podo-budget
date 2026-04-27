@@ -42,6 +42,10 @@ class Settings(BaseSettings):
     ANTHROPIC_API_KEY: str = ""
     GOOGLE_API_KEY: str = ""
 
+    # OpenAI 임베딩 설정
+    OPENAI_EMBEDDING_MODEL: str = "text-embedding-3-small"
+    OPENAI_EMBEDDING_DIM: int = 1536  # text-embedding-3-small 출력 차원
+
     # Telegram Bot
     TELEGRAM_BOT_TOKEN: str = ""
     TELEGRAM_WEBHOOK_SECRET: str = ""  # setWebhook의 secret_token과 일치해야 함
@@ -56,6 +60,11 @@ class Settings(BaseSettings):
     SENTRY_WEBHOOK_SECRET: str = ""  # Sentry → 텔레그램 알림 webhook 인증용
     SENTRY_ALERT_CHAT_ID: str = ""  # Sentry 알림 수신할 텔레그램 채팅 ID
     SENTRY_ALERT_BOT_TOKEN: str = ""  # Sentry 알림용 별도 봇 토큰 (미설정 시 TELEGRAM_BOT_TOKEN 사용)
+
+    # 월간 결산 리포트
+    MONTHLY_REPORT_WEBHOOK_SECRET: str = ""  # Supabase pg_cron → webhook HMAC 시크릿
+    MONTHLY_REPORT_AUTO_ENABLED: bool = True  # False이면 webhook 수신해도 실행 안 함 (dev용)
+    MONTHLY_REPORT_MAX_PER_RUN: int = 500  # Phase 2 최대 처리 가구 수 (비용 안전장치)
 
     # 관리자 설정 — 기본값 -1은 "미설정" 의미 (DB에 존재하지 않는 ID)
     # .env에서 실제 사용자 ID를 설정하지 않으면 관리자 기능이 비활성화됨

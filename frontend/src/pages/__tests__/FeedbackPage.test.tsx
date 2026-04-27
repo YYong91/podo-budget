@@ -94,7 +94,7 @@ describe('FeedbackPage', () => {
 
     const bugBtn = screen.getByText('버그 신고')
     await user.click(bugBtn)
-    expect(bugBtn.closest('button')!.className).toContain('bg-red-600')
+    expect(bugBtn.closest('button')!.className).toContain('bg-rose-600')
   })
 
   it('제출 후 폼이 초기화된다', async () => {

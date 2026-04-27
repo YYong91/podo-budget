@@ -336,6 +336,10 @@ export const handlers = [
       is_active: true,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
+      category_emoji: null,
+      category_name: null,
+      payment_method_id: body.payment_method_id ?? null,
+      payment_method_name: null,
     }
     return HttpResponse.json(newItem, { status: 201 })
   }),
@@ -900,6 +904,120 @@ export const handlers = [
     return HttpResponse.json({
       code: 'KK-XYZ789',
       expires_at: new Date(Date.now() + 600000).toISOString(),
+    })
+  }),
+
+  // ==================== 결산 리포트 API ====================
+
+  /**
+   * GET /api/reports/monthly - 특정 월 결산 리포트 조회
+   *
+   * 테스트 시나리오별 응답:
+   * - 2026-03: completed (기본 테스트용)
+   * - 2026-02: completed (이전 달 리포트 존재 시나리오)
+   * - 2026-04: completed (다음 달 리포트 존재 시나리오)
+   * - 2025-12: pending (이전 달 pending 시나리오)
+   * - 그 외: null report (리포트 없음 시나리오)
+   */
+  http.get(`${BASE_URL}/reports/monthly`, ({ request }) => {
+    const url = new URL(request.url)
+    const month = url.searchParams.get('month')
+
+    // 2026-03: 기본 completed 리포트
+    if (!month || month === '2026-03') {
+      return HttpResponse.json({
+        report: {
+          id: 1,
+          month: '2026-03',
+          status: 'completed',
+          insights: mockStructuredInsights,
+          completed_at: '2026-04-01T03:30:00Z',
+        },
+        eligibility: null,
+      })
+    }
+
+    // 2026-02: 이전 달 completed 리포트 (nav 테스트용)
+    if (month === '2026-02') {
+      return HttpResponse.json({
+        report: {
+          id: 2,
+          month: '2026-02',
+          status: 'completed',
+          insights: mockStructuredInsights,
+          completed_at: '2026-03-01T03:30:00Z',
+        },
+        eligibility: null,
+      })
+    }
+
+    // 2026-04: 다음 달 completed 리포트 (nav 테스트용)
+    if (month === '2026-04') {
+      return HttpResponse.json({
+        report: {
+          id: 3,
+          month: '2026-04',
+          status: 'completed',
+          insights: mockStructuredInsights,
+          completed_at: '2026-05-01T03:30:00Z',
+        },
+        eligibility: null,
+      })
+    }
+
+    // 2026-01: completed 리포트 — 이전 달(2025-12)이 pending인 시나리오 테스트용
+    if (month === '2026-01') {
+      return HttpResponse.json({
+        report: {
+          id: 5,
+          month: '2026-01',
+          status: 'completed',
+          insights: mockStructuredInsights,
+          completed_at: '2026-02-01T03:30:00Z',
+        },
+        eligibility: null,
+      })
+    }
+
+    // 2025-12: pending 리포트 (nav 미표시 시나리오)
+    if (month === '2025-12') {
+      return HttpResponse.json({
+        report: {
+          id: 4,
+          month: '2025-12',
+          status: 'pending',
+          insights: null,
+          completed_at: null,
+        },
+        eligibility: null,
+      })
+    }
+
+    // 그 외: 리포트 없음
+    return HttpResponse.json({
+      report: null,
+      eligibility: {
+        is_eligible: false,
+        reason: '거래 데이터가 부족합니다',
+        transaction_count: 0,
+        required_count: 5,
+      },
+    })
+  }),
+
+  /**
+   * GET /api/reports/latest - 최근 결산 리포트 조회
+   */
+  http.get(`${BASE_URL}/reports/latest`, () => {
+    return HttpResponse.json({
+      report: {
+        id: 1,
+        month: '2026-03',
+        status: 'completed',
+        insights: mockStructuredInsights,
+        completed_at: '2026-04-01T03:30:00Z',
+      },
+      eligibility: null,
     })
   }),
 ]

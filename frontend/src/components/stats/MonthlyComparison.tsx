@@ -1,6 +1,7 @@
 import { useState } from 'react'
-import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts'
+import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, LabelList } from 'recharts'
 import type { ComparisonResponse, PeriodTotal } from '../../types'
+import { formatCompact, formatChange } from '../../utils/format'
 import SectionHeader from './SectionHeader'
 
 type MonthlyComparisonProps = {
@@ -36,25 +37,42 @@ function TrendBarChart({
 
   return (
     <div data-testid="trend-bar-chart">
-      <ResponsiveContainer width="100%" height={120}>
-        <BarChart data={chartData} barCategoryGap="30%">
+      <ResponsiveContainer width="100%" height={150}>
+        <BarChart data={chartData} barCategoryGap="30%" margin={{ top: 18, right: 0, left: 0, bottom: 0 }}>
           <XAxis dataKey="name" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
           <YAxis
             tickFormatter={(v) => `${Math.round(v / 10000)}만`}
             tick={{ fontSize: 10 }}
-            width={32}
+            width={48}
             axisLine={false}
             tickLine={false}
           />
-          <Tooltip
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            formatter={(value: any, name: any) => [
-              `${Math.round(Number(value) / 10000).toLocaleString()}만원`,
-              name as string,
-            ]}
-          />
-          <Bar dataKey="수입" fill="#4ade80" radius={[2, 2, 0, 0]} />
-          <Bar dataKey="지출" fill="#a855f7" radius={[2, 2, 0, 0]} />
+          <Bar dataKey="수입" fill="#4ade80" radius={[2, 2, 0, 0]}>
+            <LabelList
+              dataKey="수입"
+              position="top"
+              style={{ fontSize: 9, fill: 'var(--text-muted)' }}
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              formatter={(v: any) => {
+                if (typeof v !== 'number' || v <= 0) return ''
+                const man = Math.round(v / 10000)
+                return man > 0 ? `${man}만` : ''
+              }}
+            />
+          </Bar>
+          <Bar dataKey="지출" fill="#a855f7" radius={[2, 2, 0, 0]}>
+            <LabelList
+              dataKey="지출"
+              position="top"
+              style={{ fontSize: 9, fill: 'var(--text-muted)' }}
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              formatter={(v: any) => {
+                if (typeof v !== 'number' || v <= 0) return ''
+                const man = Math.round(v / 10000)
+                return man > 0 ? `${man}만` : ''
+              }}
+            />
+          </Bar>
         </BarChart>
       </ResponsiveContainer>
       <div className="flex justify-center gap-4 mt-1">
@@ -69,17 +87,6 @@ function TrendBarChart({
   )
 }
 
-function formatCompact(amount: number): string {
-  const abs = Math.abs(amount)
-  if (abs >= 100_000_000) return `${(abs / 100_000_000).toFixed(1)}억원`
-  if (abs >= 10_000) return `${Math.round(abs / 10_000).toLocaleString()}만원`
-  return `${abs.toLocaleString('ko-KR')}원`
-}
-
-function formatChange(amount: number): string {
-  const sign = amount >= 0 ? '+' : '-'
-  return `${sign}${formatCompact(Math.abs(amount))}`
-}
 
 type ComparisonRowProps = {
   label: string
@@ -164,17 +171,15 @@ export default function MonthlyComparison({
       className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)] p-4 sm:p-6"
     >
       {/* 헤더 */}
-      <div className="mb-4">
-        <SectionHeader
-          icon="📊"
-          title="지난달 비교"
-          expanded={expanded}
-          onToggle={() => setExpanded(prev => !prev)}
-        />
-      </div>
+      <SectionHeader
+        icon="📈"
+        title="지난달 비교"
+        expanded={expanded}
+        onToggle={() => setExpanded(prev => !prev)}
+      />
 
       {/* 2열 비교 행 */}
-      <div className="space-y-3">
+      <div className="mt-3 space-y-3">
         {incomeComparison && (
           <ComparisonRow
             label="수입"

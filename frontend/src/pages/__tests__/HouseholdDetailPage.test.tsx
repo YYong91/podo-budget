@@ -106,7 +106,6 @@ function renderPage() {
 describe('HouseholdDetailPage', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    vi.spyOn(window, 'confirm').mockReturnValue(true)
     // navigator.clipboard 모킹
     Object.assign(navigator, {
       clipboard: { writeText: vi.fn().mockResolvedValue(undefined) },
@@ -376,14 +375,16 @@ describe('HouseholdDetailPage', () => {
 
   /* ---------- 멤버 내보내기 핸들러 ---------- */
 
-  it('내보내기 버튼 클릭 시 confirm 후 removeMember를 호출한다', async () => {
+  it('내보내기 버튼 클릭 시 확인 후 removeMember를 호출한다', async () => {
     mockRemoveMember.mockResolvedValueOnce(undefined)
     renderPage()
 
     await userEvent.click(screen.getByText('내보내기'))
+    // ConfirmSheet 노출 후 확인 버튼 클릭 (member list + ConfirmSheet 둘 다 '내보내기' 버튼)
+    const confirmBtns = screen.getAllByRole('button', { name: '내보내기' })
+    await userEvent.click(confirmBtns[confirmBtns.length - 1])
 
     await waitFor(() => {
-      expect(window.confirm).toHaveBeenCalled()
       expect(mockRemoveMember).toHaveBeenCalledWith(1, 2)
     })
     expect(addToast).toHaveBeenCalledWith('success', '멤버를 내보냈어요')
@@ -394,6 +395,8 @@ describe('HouseholdDetailPage', () => {
     renderPage()
 
     await userEvent.click(screen.getByText('내보내기'))
+    const confirmBtns = screen.getAllByRole('button', { name: '내보내기' })
+    await userEvent.click(confirmBtns[confirmBtns.length - 1])
 
     await waitFor(() => {
       expect(addToast).toHaveBeenCalledWith('error', '처리에 실패했어요')
@@ -412,9 +415,10 @@ describe('HouseholdDetailPage', () => {
     const invitationTab = screen.getByRole('button', { name: /초대/ })
     await userEvent.click(invitationTab)
 
-    // 취소 버튼 클릭
-    const cancelBtn = screen.getByText('취소')
-    await userEvent.click(cancelBtn)
+    // InvitationsTab 취소 버튼 → ConfirmSheet 노출
+    await userEvent.click(screen.getByText('취소'))
+    // ConfirmSheet 확인 버튼 클릭
+    await userEvent.click(screen.getByRole('button', { name: '초대 취소' }))
 
     await waitFor(() => {
       expect(mockCancelInvitation).toHaveBeenCalledWith(1, 10)
@@ -457,6 +461,9 @@ describe('HouseholdDetailPage', () => {
     renderPage()
 
     await userEvent.click(screen.getByText('탈퇴'))
+    // ConfirmSheet 확인 버튼 클릭 (멤버 목록 '탈퇴' + ConfirmSheet '탈퇴' 모두 존재)
+    const confirmBtns = screen.getAllByRole('button', { name: '탈퇴' })
+    await userEvent.click(confirmBtns[confirmBtns.length - 1])
 
     await waitFor(() => {
       expect(mockLeaveHousehold).toHaveBeenCalledWith(1)
@@ -470,6 +477,8 @@ describe('HouseholdDetailPage', () => {
     renderPage()
 
     await userEvent.click(screen.getByText('탈퇴'))
+    const confirmBtns = screen.getAllByRole('button', { name: '탈퇴' })
+    await userEvent.click(confirmBtns[confirmBtns.length - 1])
 
     await waitFor(() => {
       expect(addToast).toHaveBeenCalledWith('error', '처리에 실패했어요')
@@ -484,9 +493,11 @@ describe('HouseholdDetailPage', () => {
 
     await userEvent.click(screen.getByText('설정'))
 
-    // 가구 삭제 버튼 클릭
+    // 가구 삭제 버튼 클릭 → ConfirmSheet 노출
     const deleteBtn = screen.getByText('가구 삭제')
     await userEvent.click(deleteBtn)
+    // ConfirmSheet 확인 버튼 ('삭제')
+    await userEvent.click(screen.getByRole('button', { name: '삭제' }))
 
     await waitFor(() => {
       expect(mockDeleteHousehold).toHaveBeenCalledWith(1)
@@ -501,29 +512,34 @@ describe('HouseholdDetailPage', () => {
 
     await userEvent.click(screen.getByText('설정'))
     await userEvent.click(screen.getByText('가구 삭제'))
+    await userEvent.click(screen.getByRole('button', { name: '삭제' }))
 
     await waitFor(() => {
       expect(addToast).toHaveBeenCalledWith('error', '삭제에 실패했어요')
     })
   })
 
-  it('가구 삭제 confirm 취소 시 삭제를 실행하지 않는다', async () => {
-    vi.spyOn(window, 'confirm').mockReturnValue(false)
+  it('가구 삭제 취소 시 삭제를 실행하지 않는다', async () => {
     renderPage()
 
     await userEvent.click(screen.getByText('설정'))
     await userEvent.click(screen.getByText('가구 삭제'))
+    // ConfirmSheet 취소 버튼
+    const cancelBtns = screen.getAllByRole('button', { name: '취소' })
+    await userEvent.click(cancelBtns[cancelBtns.length - 1])
 
     expect(mockDeleteHousehold).not.toHaveBeenCalled()
   })
 
   /* ---------- 멤버 내보내기: confirm 취소 ---------- */
 
-  it('내보내기 confirm 취소 시 removeMember를 호출하지 않는다', async () => {
-    vi.spyOn(window, 'confirm').mockReturnValue(false)
+  it('내보내기 취소 시 removeMember를 호출하지 않는다', async () => {
     renderPage()
 
     await userEvent.click(screen.getByText('내보내기'))
+    // ConfirmSheet 취소 버튼
+    const cancelBtns = screen.getAllByRole('button', { name: '취소' })
+    await userEvent.click(cancelBtns[cancelBtns.length - 1])
 
     expect(mockRemoveMember).not.toHaveBeenCalled()
   })
@@ -567,19 +583,19 @@ describe('HouseholdDetailPage', () => {
 
   /* ---------- 가구 탈퇴: confirm 취소 ---------- */
 
-  it('탈퇴 confirm 취소 시 leaveHousehold를 호출하지 않는다', async () => {
-    vi.spyOn(window, 'confirm').mockReturnValue(false)
+  it('탈퇴 취소 시 leaveHousehold를 호출하지 않는다', async () => {
     renderPage()
 
     await userEvent.click(screen.getByText('탈퇴'))
+    const cancelBtns = screen.getAllByRole('button', { name: '취소' })
+    await userEvent.click(cancelBtns[cancelBtns.length - 1])
 
     expect(mockLeaveHousehold).not.toHaveBeenCalled()
   })
 
   /* ---------- 초대 취소: confirm 취소 ---------- */
 
-  it('초대 취소 confirm 취소 시 cancelInvitation을 호출하지 않는다', async () => {
-    vi.spyOn(window, 'confirm').mockReturnValue(false)
+  it('초대 취소 취소 시 cancelInvitation을 호출하지 않는다', async () => {
     storeState.householdInvitations = [
       { id: 10, invitee_email: 'new@test.com', status: 'pending', token: 'abc' },
     ]
@@ -588,7 +604,11 @@ describe('HouseholdDetailPage', () => {
     const invitationTab = screen.getByRole('button', { name: /초대/ })
     await userEvent.click(invitationTab)
 
+    // InvitationsTab의 초대취소 버튼 클릭
     await userEvent.click(screen.getByText('취소'))
+    // ConfirmSheet 노출 → ConfirmSheet 취소 버튼 클릭
+    const cancelBtns = screen.getAllByRole('button', { name: '취소' })
+    await userEvent.click(cancelBtns[cancelBtns.length - 1])
 
     expect(mockCancelInvitation).not.toHaveBeenCalled()
   })
@@ -604,6 +624,7 @@ describe('HouseholdDetailPage', () => {
     await userEvent.click(invitationTab)
 
     await userEvent.click(screen.getByText('취소'))
+    await userEvent.click(screen.getByRole('button', { name: '초대 취소' }))
 
     await waitFor(() => {
       expect(addToast).toHaveBeenCalledWith('error', '처리에 실패했어요')
