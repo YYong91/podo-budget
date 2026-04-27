@@ -36,14 +36,14 @@ function CategoryManagerSkeleton() {
 function MoveButtons({
   name,
   index,
-  total,
+  customCount,
   reordering,
   isSystem,
   onMove,
 }: {
   name: string
   index: number
-  total: number
+  customCount: number
   reordering: boolean
   isSystem: boolean
   onMove: (direction: 'up' | 'down') => void
@@ -62,7 +62,7 @@ function MoveButtons({
       </button>
       <button
         onClick={() => onMove('down')}
-        disabled={index === total - 1 || reordering || isSystem}
+        disabled={index >= customCount - 1 || reordering || isSystem}
         className="p-0.5 text-[var(--text-muted)] hover:text-grape-600 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
         aria-label={`${name} 아래로 이동`}
       >
@@ -206,6 +206,8 @@ export default function CategoryManager() {
   const handleMove = async (index: number, direction: 'up' | 'down') => {
     const targetIndex = direction === 'up' ? index - 1 : index + 1
     if (targetIndex < 0 || targetIndex >= categories.length) return
+    // 시스템 카테고리 영역으로 이동 불가
+    if (categories[targetIndex].is_system) return
 
     // 낙관적 업데이트
     const newCategories = [...categories]
@@ -377,6 +379,8 @@ export default function CategoryManager() {
         <div className="bg-[var(--surface-card)] rounded-2xl shadow-sm border border-[var(--border-default)]/60 divide-y divide-[var(--border-subtle)]">
           {categories.map((category, index) => {
             const isEditing = editingId === category.id
+            const customCount = categories.filter(c => !c.is_system).length
+            const isFirstSystem = category.is_system && (index === 0 || !categories[index - 1].is_system)
             return (
               <div key={category.id} className={isEditing ? 'bg-[var(--surface-elevated)]' : undefined}>
                 {isEditing ? (
@@ -433,52 +437,59 @@ export default function CategoryManager() {
                   </div>
                 ) : (
                   /* 일반 카드 행 */
-                  <div className="flex items-center gap-3 px-4 py-4">
-                    <MoveButtons
-                      name={category.name}
-                      index={index}
-                      total={categories.length}
-                      reordering={reordering}
-                      isSystem={category.is_system}
-                      onMove={(dir) => handleMove(index, dir)}
-                    />
-                    <span className="text-xl flex-shrink-0 w-8 text-center">{category.emoji}</span>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-1.5">
-                        <span className="font-medium text-[var(--text-primary)]">{category.name}</span>
-                        {category.is_savings && (
-                          <span className="inline-flex items-center px-1.5 py-0.5 text-[10px] font-medium text-leaf-600 bg-leaf-500/15 rounded">
-                            저축
-                          </span>
-                        )}
-                      </div>
-                      {category.description && (
-                        <p className="text-xs text-[var(--text-secondary)] mt-0.5">{category.description}</p>
-                      )}
-                    </div>
-                    {category.is_system ? (
-                      <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-[var(--text-tertiary)] bg-[var(--surface-elevated)] rounded-md flex-shrink-0">
-                        <Lock className="w-3 h-3" aria-hidden="true" />
-                        기본
-                      </span>
-                    ) : (
-                      <div className="flex items-center gap-1 flex-shrink-0">
-                        <button
-                          onClick={() => startEdit(category)}
-                          aria-label="수정"
-                          className="p-1.5 rounded-lg hover:bg-[var(--surface-hover)] transition-colors text-[var(--text-muted)] hover:text-grape-600"
-                        >
-                          <Pencil className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => { setDeleteTarget(category.id); setEditingId(null) }}
-                          aria-label="삭제"
-                          className="p-1.5 rounded-lg hover:bg-[var(--surface-hover)] transition-colors text-[var(--text-muted)] hover:text-rose-500"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                  <div>
+                    {isFirstSystem && customCount > 0 && (
+                      <div className="px-4 py-2 text-xs font-medium text-[var(--text-tertiary)] bg-[var(--surface-elevated)] border-b border-[var(--border-subtle)]">
+                        기본 제공
                       </div>
                     )}
+                    <div className="flex items-center gap-3 px-4 py-4">
+                      <MoveButtons
+                        name={category.name}
+                        index={index}
+                        customCount={customCount}
+                        reordering={reordering}
+                        isSystem={category.is_system}
+                        onMove={(dir) => handleMove(index, dir)}
+                      />
+                      <span className="text-xl flex-shrink-0 w-8 text-center">{category.emoji}</span>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-medium text-[var(--text-primary)]">{category.name}</span>
+                          {category.is_savings && (
+                            <span className="inline-flex items-center px-1.5 py-0.5 text-[10px] font-medium text-leaf-600 bg-leaf-500/15 rounded">
+                              저축
+                            </span>
+                          )}
+                        </div>
+                        {category.description && (
+                          <p className="text-xs text-[var(--text-secondary)] mt-0.5">{category.description}</p>
+                        )}
+                      </div>
+                      {category.is_system ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-[var(--text-tertiary)] bg-[var(--surface-elevated)] rounded-md flex-shrink-0">
+                          <Lock className="w-3 h-3" aria-hidden="true" />
+                          기본
+                        </span>
+                      ) : (
+                        <div className="flex items-center gap-1 flex-shrink-0">
+                          <button
+                            onClick={() => startEdit(category)}
+                            aria-label="수정"
+                            className="p-1.5 rounded-lg hover:bg-[var(--surface-hover)] transition-colors text-[var(--text-muted)] hover:text-grape-600"
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => { setDeleteTarget(category.id); setEditingId(null) }}
+                            aria-label="삭제"
+                            className="p-1.5 rounded-lg hover:bg-[var(--surface-hover)] transition-colors text-[var(--text-muted)] hover:text-rose-500"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
                 {/* 삭제 인라인 확인 */}
